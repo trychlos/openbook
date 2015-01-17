@@ -60,10 +60,11 @@ struct _ofaFileFormatBinPrivate {
 	GtkWidget      *field_label;
 	GtkWidget      *dispo_frame;
 	GtkWidget      *headers_btn;
+	GtkWidget      *headers_count;
 
 	/* runtime data
 	 */
-	ofaFFmt         format;
+	ofaFFtype         format;
 };
 
 /* column ordering in the file format combobox
@@ -97,7 +98,7 @@ G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
 
 static void     setup_bin( ofaFileFormatBin *bin );
 static void     init_file_format( ofaFileFormatBin *self );
-static void     on_ffmt_changed( GtkComboBox *box, ofaFileFormatBin *self );
+static void     on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self );
 static void     init_encoding( ofaFileFormatBin *self );
 static void     on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self );
 static void     init_date_format( ofaFileFormatBin *self );
@@ -108,6 +109,7 @@ static void     init_field_separator( ofaFileFormatBin *self );
 static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self );
 static void     init_headers( ofaFileFormatBin *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
+static void     on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self );
 static gboolean is_validable( ofaFileFormatBin *self );
 static gint     get_file_format( ofaFileFormatBin *self );
 static gchar   *get_charmap( ofaFileFormatBin *self );
@@ -282,7 +284,7 @@ init_file_format( ofaFileFormatBin *self )
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
 	gint i, idx;
-	ofaFFmt fmt;
+	ofaFFtype fmt;
 	const gchar *cstr;
 
 	priv = self->priv;
@@ -302,11 +304,11 @@ init_file_format( ofaFileFormatBin *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->format_combo ), cell, "text", EXP_COL_LABEL );
 
-	fmt = ofa_file_format_get_ffmt( priv->settings );
+	fmt = ofa_file_format_get_fftype( priv->settings );
 	idx = -1;
 
 	for( i=1 ; TRUE ; ++i ){
-		cstr = ofa_file_format_get_ffmt_str( i );
+		cstr = ofa_file_format_get_fftype_str( i );
 		if( cstr ){
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( tmodel ),
@@ -324,7 +326,7 @@ init_file_format( ofaFileFormatBin *self )
 	}
 
 	g_signal_connect(
-			G_OBJECT( priv->format_combo ), "changed", G_CALLBACK( on_ffmt_changed ), self );
+			G_OBJECT( priv->format_combo ), "changed", G_CALLBACK( on_fftype_changed ), self );
 
 	/* default to export as csv */
 	if( idx == -1 ){
@@ -334,7 +336,7 @@ init_file_format( ofaFileFormatBin *self )
 }
 
 static void
-on_ffmt_changed( GtkComboBox *box, ofaFileFormatBin *self )
+on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
@@ -349,10 +351,10 @@ on_ffmt_changed( GtkComboBox *box, ofaFileFormatBin *self )
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &priv->format, -1 );
 
-	gtk_widget_set_sensitive( priv->settings_frame, priv->format != OFA_FFMT_OTHER );
-	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_FFMT_CSV );
-	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFMT_CSV );
-	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_FFMT_OTHER );
+	gtk_widget_set_sensitive( priv->settings_frame, priv->format != OFA_FFTYPE_OTHER );
+	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_FFTYPE_CSV );
+	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFTYPE_CSV );
+	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_FFTYPE_OTHER );
 
 	g_signal_emit_by_name( self, "changed" );
 }
@@ -367,11 +369,16 @@ init_encoding( ofaFileFormatBin *self )
 	GList *charmaps, *it;
 	gint i, idx;
 	const gchar *cstr, *svalue;
+	GtkWidget *label;
 
 	priv = self->priv;
 
-	priv->encoding_combo =
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
+	priv->encoding_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
+	g_return_if_fail( priv->encoding_combo && GTK_IS_COMBO_BOX( priv->encoding_combo ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label2x" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->encoding_combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			ENC_N_COLUMNS,
@@ -422,7 +429,7 @@ static void
 init_date_format( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
-	GtkWidget *widget;
+	GtkWidget *widget, *label;
 
 	priv = self->priv;
 
@@ -431,10 +438,14 @@ init_date_format( ofaFileFormatBin *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-parent-date" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label3x" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->date_combo ));
+
 	my_date_combo_attach_to( priv->date_combo, GTK_CONTAINER( widget ));
 	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
 
-	g_signal_connect( priv->date_combo, "changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( priv->date_combo, "ofa-changed", G_CALLBACK( on_date_changed ), self );
 }
 
 static void
@@ -447,7 +458,7 @@ static void
 init_decimal_dot( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *parent, *label;
 	gchar *sep;
 
 	priv = self->priv;
@@ -456,13 +467,17 @@ init_decimal_dot( ofaFileFormatBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->decimal_combo ));
+
 	my_decimal_combo_attach_to( priv->decimal_combo, GTK_CONTAINER( parent ));
 	sep = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
 	/*g_debug( "init_decimal_dot: sep='%s'", sep );*/
 	my_decimal_combo_set_selected( priv->decimal_combo, sep );
 	g_free( sep );
 
-	g_signal_connect( priv->decimal_combo, "changed", G_CALLBACK( on_decimal_changed ), self );
+	g_signal_connect( priv->decimal_combo, "ofa-changed", G_CALLBACK( on_decimal_changed ), self );
 }
 
 static void
@@ -476,6 +491,7 @@ init_field_separator( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	gchar *sep;
+	GtkWidget *label;
 
 	priv = self->priv;
 
@@ -485,12 +501,16 @@ init_field_separator( ofaFileFormatBin *self )
 	g_return_if_fail( priv->field_parent && GTK_IS_CONTAINER( priv->field_parent ));
 	my_field_combo_attach_to( priv->field_combo, GTK_CONTAINER( priv->field_parent ));
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->field_combo ));
+
 	sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
 	/*g_debug( "init_field_dot: sep='%s'", sep );*/
 	my_field_combo_set_selected( priv->field_combo, sep );
 	g_free( sep );
 
-	g_signal_connect( priv->field_combo, "changed", G_CALLBACK( on_field_changed ), self );
+	g_signal_connect( priv->field_combo, "ofa-changed", G_CALLBACK( on_field_changed ), self );
 }
 
 static void
@@ -503,23 +523,67 @@ static void
 init_headers( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
+	ofaFFmode mode;
 	gboolean bvalue;
+	gint count;
+	GtkWidget *widget;
+	GtkAdjustment *adjust;
 
 	priv = self->priv;
 
-	priv->headers_btn =
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
+	mode = ofa_file_format_get_ffmode( priv->settings );
 
-	bvalue = ofa_file_format_has_headers( priv->settings );
+	if( mode == OFA_FFMODE_EXPORT ){
+		priv->headers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
+		g_return_if_fail( priv->headers_btn && GTK_IS_TOGGLE_BUTTON( priv->headers_btn ));
 
-	g_signal_connect(
-			G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );
+		bvalue = ofa_file_format_has_headers( priv->settings );
+		g_signal_connect(
+				G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x1" );
+		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+		gtk_widget_destroy( widget );
+
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
+		g_return_if_fail( widget && GTK_IS_SPIN_BUTTON( widget ));
+		gtk_widget_destroy( widget );
+
+	} else {
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label1x1" );
+		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+		gtk_widget_destroy( widget );
+
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
+		g_return_if_fail( widget && GTK_IS_TOGGLE_BUTTON( widget ));
+		gtk_widget_destroy( widget );
+
+		priv->headers_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
+		g_return_if_fail( priv->headers_count && GTK_IS_SPIN_BUTTON( priv->headers_count ));
+
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x1" );
+		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+		gtk_label_set_mnemonic_widget( GTK_LABEL( widget ), priv->headers_count );
+
+		count = ofa_file_format_get_headers_count( priv->settings );
+		adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
+		gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
+
+		g_signal_connect(
+				G_OBJECT( priv->headers_count ), "value-changed", G_CALLBACK( on_headers_count_changed ), self );
+		gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
+	}
 }
 
 static void
 on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self )
+{
+	g_signal_emit_by_name( self, "changed" );
+}
+
+static void
+on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
@@ -599,7 +663,7 @@ static gint
 get_file_format( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
-	ofaFFmt format;
+	ofaFFtype format;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -670,8 +734,8 @@ do_apply( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
-	gint iexport, ivalue;
-	gboolean bvalue;
+	gint iexport, ivalue, iheaders;
+	ofaFFmode mode;
 
 	priv = self->priv;
 
@@ -680,11 +744,17 @@ do_apply( ofaFileFormatBin *self )
 	ivalue = my_date_combo_get_selected( priv->date_combo );
 	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
 	field_sep = my_field_combo_get_selected( priv->field_combo );
-	bvalue = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
+
+	mode = ofa_file_format_get_ffmode( priv->settings );
+	if( mode == OFA_FFMODE_EXPORT ){
+		iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
+	} else {
+		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
+	}
 
 	ofa_file_format_set( priv->settings,
 								NULL,
-								iexport, charmap, ivalue, decimal_sep[0], field_sep[0], bvalue );
+								iexport, mode, charmap, ivalue, decimal_sep[0], field_sep[0], iheaders );
 
 	g_free( field_sep );
 	g_free( decimal_sep );

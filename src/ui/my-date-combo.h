@@ -55,7 +55,7 @@ typedef struct _myDateComboPrivate        myDateComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject             parent;
+	GtkComboBox         parent;
 
 	/*< private members >*/
 	myDateComboPrivate *priv;
@@ -64,7 +64,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass        parent;
+	GtkComboBoxClass    parent;
 }
 	myDateComboClass;
 
@@ -73,7 +73,7 @@ GType        my_date_combo_get_type    ( void ) G_GNUC_CONST;
 myDateCombo *my_date_combo_new         ( void );
 
 void         my_date_combo_attach_to   ( myDateCombo *combo,
-													GtkContainer *new_parent );
+													GtkContainer *parent );
 
 myDateFormat my_date_combo_get_selected( myDateCombo *combo );
 

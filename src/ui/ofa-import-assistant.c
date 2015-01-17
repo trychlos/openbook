@@ -127,7 +127,6 @@ typedef struct {
 	guint        type_id;
 	const gchar *w_name;				/* the name of the radio button widget */
 	fn_type      get_type;
-	gint         headers;				/* count of header lines in CSV formats */
 }
 	sRadios;
 
@@ -143,14 +142,14 @@ enum {
 };
 
 static const sRadios st_radios[] = {
-		{ IMPORT_BAT,      "p3-releve",   NULL,                      0 },
-		{ IMPORT_CLASS,    "p3-class",    ofo_class_get_type,        1 },
-		{ IMPORT_ACCOUNT,  "p3-account",  ofo_account_get_type,      1 },
-		{ IMPORT_CURRENCY, "p3-currency", ofo_currency_get_type,     1 },
-		{ IMPORT_LEDGER,   "p3-journals", ofo_ledger_get_type,       1 },
-		{ IMPORT_MODEL,    "p3-model",    ofo_ope_template_get_type, 2 },
-		{ IMPORT_RATE,     "p3-rate",     ofo_rate_get_type,         2 },
-		{ IMPORT_ENTRY,    "p3-entries",  ofo_entry_get_type,        1 },
+		{ IMPORT_BAT,      "p3-releve",   NULL },
+		{ IMPORT_CLASS,    "p3-class",    ofo_class_get_type },
+		{ IMPORT_ACCOUNT,  "p3-account",  ofo_account_get_type },
+		{ IMPORT_CURRENCY, "p3-currency", ofo_currency_get_type },
+		{ IMPORT_LEDGER,   "p3-journals", ofo_ledger_get_type },
+		{ IMPORT_MODEL,    "p3-model",    ofo_ope_template_get_type },
+		{ IMPORT_RATE,     "p3-rate",     ofo_rate_get_type },
+		{ IMPORT_ENTRY,    "p3-entries",  ofo_entry_get_type },
 		{ 0 }
 };
 
@@ -588,7 +587,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gchar *str;
 	gboolean complete;
 	myDateFormat format;
-	ofaFFmt ffmt;
+	ofaFFtype ffmt;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -609,13 +608,13 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	ffmt = ofa_file_format_get_ffmt( priv->p4_import_settings );
+	ffmt = ofa_file_format_get_fftype( priv->p4_import_settings );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-ffmt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_ffmt_str( ffmt ));
+	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_fftype_str( ffmt ));
 
-	if( ffmt != OFA_FFMT_OTHER ){
+	if( ffmt != OFA_FFTYPE_OTHER ){
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-charmap" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -763,12 +762,12 @@ p6_do_import( ofaImportAssistant *self )
 	has_worked = TRUE;
 
 	/* first, import */
-	ffmt = ofa_file_format_get_ffmt( priv->p4_import_settings );
+	ffmt = ofa_file_format_get_fftype( priv->p4_import_settings );
 	switch( ffmt ){
-		case OFA_FFMT_CSV:
+		case OFA_FFTYPE_CSV:
 			count = p6_do_import_csv( self, &errors );
 			break;
-		case OFA_FFMT_OTHER:
+		case OFA_FFTYPE_OTHER:
 			g_return_val_if_fail( priv->p6_plugin && OFA_IS_IIMPORTABLE( priv->p6_plugin ), FALSE );
 			count = p6_do_import_other( self, &errors );
 			break;
@@ -822,9 +821,8 @@ p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 	lines = get_lines_from_csv( self );
 	content = lines;
 
-	if( ofa_file_format_has_headers( priv->p4_import_settings )){
-		content = g_slist_nth( lines, st_radios[priv->p3_idx].headers );
-	}
+	count = ofa_file_format_get_headers_count( priv->p4_import_settings );
+	content = g_slist_nth( lines, count );
 
 	count = g_slist_length( content );
 	*errors = ofa_iimportable_import( priv->p6_object,

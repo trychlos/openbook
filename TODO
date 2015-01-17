@@ -372,7 +372,7 @@
                 part of the GuidedInput UI just for simplification
                 reasons.
                 This is ok in documentation and database.
-     2015- 1-11 open back: the ref should be part of the main operation
+     2015- 1-11 opened back: the ref should be part of the main operation
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
@@ -422,11 +422,9 @@
 
  592 2015- 1-14 should MySQLDatabase be an Openbook key ?
 
- 596 2015- 1-16 AccountsChart: when creating the first account, is not
-                displayed - but is refreshed when we double-clic on the
-                AccountsChart page
+ 597 2015- 1-17 filenames in settings must be URIs
 
- 597
+ 598
 
 -----------------------------------------------------------------------
  DONE
@@ -2592,6 +2590,11 @@
                 line has nul amounts - but should be fine, the entry
                 is just not generated
      2015- 1-15 done - svn #4451
+
+ 596 2015- 1-16 AccountsChart: when creating the first account, is not
+                displayed - but is refreshed when we double-clic on the
+                AccountsChart page
+     2015- 1-17 done - svn #4465
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

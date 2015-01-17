@@ -34,12 +34,6 @@
  */
 struct _myDateComboPrivate {
 	gboolean      dispose_has_run;
-	gboolean      from_widget_finalized;
-
-	/* UI
-	 */
-	GtkContainer *container;
-	GtkComboBox  *combo;
 };
 
 /* column ordering in the date combobox
@@ -59,13 +53,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myDateCombo, my_date_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( myDateCombo, my_date_combo, GTK_TYPE_COMBO_BOX )
 
-static void       on_widget_finalized( myDateCombo *self, gpointer finalized_parent );
-static GtkWidget *get_combo_box( myDateCombo *self );
-static void       setup_combo( myDateCombo *self );
-static void       populate_combo( myDateCombo *self );
-static void       on_format_changed( GtkComboBox *box, myDateCombo *self );
+static void setup_combo( myDateCombo *combo );
+static void populate_combo( myDateCombo *combo );
+static void on_format_changed( myDateCombo *combo, void *empty );
 
 static void
 date_combo_finalize( GObject *instance )
@@ -97,10 +89,6 @@ date_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -136,7 +124,7 @@ my_date_combo_class_init( myDateComboClass *klass )
 	g_type_class_add_private( klass, sizeof( myDateComboPrivate ));
 
 	/**
-	 * myDateCombo::changed:
+	 * myDateCombo::ofa-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
@@ -148,7 +136,7 @@ my_date_combo_class_init( myDateComboClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				MY_TYPE_DATE_COMBO,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -158,22 +146,6 @@ my_date_combo_class_init( myDateComboClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_INT );
-}
-
-static void
-on_widget_finalized( myDateCombo *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "my_date_combo_on_widget_finalized";
-	myDateComboPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
-
-	g_return_if_fail( self && MY_IS_DATE_COMBO( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
 }
 
 /**
@@ -186,6 +158,10 @@ my_date_combo_new( void )
 
 	self = g_object_new( MY_TYPE_DATE_COMBO, NULL );
 
+	setup_combo( self );
+	/* we can populate the combobox once as its population is fixed */
+	populate_combo( self );
+
 	return( self );
 }
 
@@ -193,79 +169,50 @@ my_date_combo_new( void )
  * my_date_combo_attach_to:
  */
 void
-my_date_combo_attach_to( myDateCombo *self, GtkContainer *new_parent )
+my_date_combo_attach_to( myDateCombo *combo, GtkContainer *parent )
 {
 	myDateComboPrivate *priv;
-	GtkWidget *box;
 
-	g_return_if_fail( self && MY_IS_DATE_COMBO( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	g_return_if_fail( combo && MY_IS_DATE_COMBO( combo ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = self->priv;
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		box = get_combo_box( self );
-		gtk_container_add( new_parent, box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
+		gtk_container_add( parent, GTK_WIDGET( combo ));
+		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
-}
-
-static GtkWidget *
-get_combo_box( myDateCombo *self )
-{
-	myDateComboPrivate *priv;
-
-	priv = self->priv;
-
-	if( !priv->combo ){
-		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
-		setup_combo( self );
-		/* we can populate the combobox once as its population is fixed */
-		populate_combo( self );
-	}
-
-	return( GTK_WIDGET( priv->combo ));
 }
 
 static void
-setup_combo( myDateCombo *self )
+setup_combo( myDateCombo *combo )
 {
-	myDateComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
-
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_INT ));
-	gtk_combo_box_set_model( priv->combo, tmodel );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), tmodel );
 	g_object_unref( tmodel );
 
 	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_LABEL );
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", COL_LABEL );
 
-	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_format_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_format_changed ), NULL );
 }
 
 static void
-populate_combo( myDateCombo *self )
+populate_combo( myDateCombo *combo )
 {
-	myDateComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint dfmt;
 	const gchar *cstr;
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
-
-	tmodel = gtk_combo_box_get_model( priv->combo );
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 	for( dfmt=MY_DATE_FIRST ; dfmt<MY_DATE_LAST ; ++dfmt ){
@@ -281,16 +228,16 @@ populate_combo( myDateCombo *self )
 }
 
 static void
-on_format_changed( GtkComboBox *combo, myDateCombo *self )
+on_format_changed( myDateCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint format;
 
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &format, -1 );
-		g_signal_emit_by_name( self, "changed", format );
+		g_signal_emit_by_name( combo, "ofa-changed", format );
 	}
 }
 
@@ -301,24 +248,23 @@ on_format_changed( GtkComboBox *combo, myDateCombo *self )
  * Returns the currently selected date format.
  */
 myDateFormat
-my_date_combo_get_selected( myDateCombo *self )
+my_date_combo_get_selected( myDateCombo *combo )
 {
 	myDateComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint format;
 
-	g_return_val_if_fail( self && MY_IS_DATE_COMBO( self ), 0 );
+	g_return_val_if_fail( combo && MY_IS_DATE_COMBO( combo ), 0 );
 
-	priv = self->priv;
-	g_return_val_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ), 0 );
+	priv = combo->priv;
 
 	format = 0;
 
 	if( !priv->dispose_has_run ){
 
-		if( gtk_combo_box_get_active_iter( priv->combo, &iter )){
-			tmodel = gtk_combo_box_get_model( priv->combo );
+		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+			tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 			g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), 0 );
 			gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &format, -1 );
 		}
@@ -333,7 +279,7 @@ my_date_combo_get_selected( myDateCombo *self )
  * @format: the format to be selected
  */
 void
-my_date_combo_set_selected( myDateCombo *self, myDateFormat format )
+my_date_combo_set_selected( myDateCombo *combo, myDateFormat format )
 {
 	static const gchar *thisfn = "my_date_combo_set_selected";
 	myDateComboPrivate *priv;
@@ -341,21 +287,20 @@ my_date_combo_set_selected( myDateCombo *self, myDateFormat format )
 	GtkTreeIter iter;
 	myDateFormat dfmt;
 
-	g_debug( "%s: self=%p, format=%d", thisfn, ( void * ) self, format );
+	g_debug( "%s: combo=%p, format=%d", thisfn, ( void * ) combo, format );
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		tmodel = gtk_combo_box_get_model( priv->combo );
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 			while( TRUE ){
 				gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &dfmt, -1 );
 				if( dfmt == format ){
-					gtk_combo_box_set_active_iter( priv->combo, &iter );
+					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

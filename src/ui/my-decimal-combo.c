@@ -36,12 +36,6 @@
  */
 struct _myDecimalComboPrivate {
 	gboolean      dispose_has_run;
-	gboolean      from_widget_finalized;
-
-	/* UI
-	 */
-	GtkContainer *container;
-	GtkComboBox  *combo;
 };
 
 /* column ordering in the date combobox
@@ -73,13 +67,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myDecimalCombo, my_decimal_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( myDecimalCombo, my_decimal_combo, GTK_TYPE_COMBO_BOX )
 
-static void       on_widget_finalized( myDecimalCombo *self, gpointer finalized_parent );
-static GtkWidget *get_combo_box( myDecimalCombo *self );
-static void       setup_combo( myDecimalCombo *self );
-static void       populate_combo( myDecimalCombo *self );
-static void       on_decimal_changed( GtkComboBox *box, myDecimalCombo *self );
+static void setup_combo( myDecimalCombo *combo );
+static void populate_combo( myDecimalCombo *combo );
+static void on_decimal_changed( myDecimalCombo *combo, void *empty );
 
 static void
 decimal_combo_finalize( GObject *instance )
@@ -111,10 +103,6 @@ decimal_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -150,7 +138,7 @@ my_decimal_combo_class_init( myDecimalComboClass *klass )
 	g_type_class_add_private( klass, sizeof( myDecimalComboPrivate ));
 
 	/**
-	 * myDecimalCombo::changed:
+	 * myDecimalCombo::ofa-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
@@ -162,7 +150,7 @@ my_decimal_combo_class_init( myDecimalComboClass *klass )
 	 * 						gpointer      user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				MY_TYPE_DECIMAL_COMBO,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -172,22 +160,6 @@ my_decimal_combo_class_init( myDecimalComboClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_STRING );
-}
-
-static void
-on_widget_finalized( myDecimalCombo *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "my_decimal_combo_on_widget_finalized";
-	myDecimalComboPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
-
-	g_return_if_fail( self && MY_IS_DECIMAL_COMBO( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
 }
 
 /**
@@ -200,6 +172,10 @@ my_decimal_combo_new( void )
 
 	self = g_object_new( MY_TYPE_DECIMAL_COMBO, NULL );
 
+	setup_combo( self );
+	/* we can populate the combobox once as its population is fixed */
+	populate_combo( self );
+
 	return( self );
 }
 
@@ -207,78 +183,49 @@ my_decimal_combo_new( void )
  * my_decimal_combo_attach_to:
  */
 void
-my_decimal_combo_attach_to( myDecimalCombo *self, GtkContainer *new_parent )
+my_decimal_combo_attach_to( myDecimalCombo *combo, GtkContainer *parent )
 {
 	myDecimalComboPrivate *priv;
-	GtkWidget *box;
 
-	g_return_if_fail( self && MY_IS_DECIMAL_COMBO( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	g_return_if_fail( combo && MY_IS_DECIMAL_COMBO( combo ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = self->priv;
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		box = get_combo_box( self );
-		gtk_container_add( new_parent, box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
+		gtk_container_add( parent, GTK_WIDGET( combo ));
+		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
-}
-
-static GtkWidget *
-get_combo_box( myDecimalCombo *self )
-{
-	myDecimalComboPrivate *priv;
-
-	priv = self->priv;
-
-	if( !priv->combo ){
-		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
-		setup_combo( self );
-		/* we can populate the combobox once as its population is fixed */
-		populate_combo( self );
-	}
-
-	return( GTK_WIDGET( priv->combo ));
 }
 
 static void
-setup_combo( myDecimalCombo *self )
+setup_combo( myDecimalCombo *combo )
 {
-	myDecimalComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
-
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( priv->combo, tmodel );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), tmodel );
 	g_object_unref( tmodel );
 
 	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_LABEL );
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", COL_LABEL );
 
-	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_decimal_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_decimal_changed ), NULL );
 }
 
 static void
-populate_combo( myDecimalCombo *self )
+populate_combo( myDecimalCombo *combo )
 {
-	myDecimalComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint i;
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
-
-	tmodel = gtk_combo_box_get_model( priv->combo );
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 	for( i=0 ; st_dec[i].code ; ++i ){
@@ -293,16 +240,16 @@ populate_combo( myDecimalCombo *self )
 }
 
 static void
-on_decimal_changed( GtkComboBox *combo, myDecimalCombo *self )
+on_decimal_changed( myDecimalCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *decimal_sep;
 
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter, COL_CHARSEP, &decimal_sep, -1 );
-		g_signal_emit_by_name( self, "changed", decimal_sep );
+		g_signal_emit_by_name( combo, "ofa-changed", decimal_sep );
 		g_free( decimal_sep );
 	}
 }
@@ -315,22 +262,22 @@ on_decimal_changed( GtkComboBox *combo, myDecimalCombo *self )
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-my_decimal_combo_get_selected( myDecimalCombo *self )
+my_decimal_combo_get_selected( myDecimalCombo *combo )
 {
 	myDecimalComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *decimal_sep;
 
-	g_return_val_if_fail( self && MY_IS_DECIMAL_COMBO( self ), NULL );
+	g_return_val_if_fail( combo && MY_IS_DECIMAL_COMBO( combo ), NULL );
 
-	priv = self->priv;
+	priv = combo->priv;
 	decimal_sep = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		if( gtk_combo_box_get_active_iter( priv->combo, &iter )){
-			tmodel = gtk_combo_box_get_model( priv->combo );
+		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+			tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 			gtk_tree_model_get( tmodel, &iter, COL_CHARSEP, &decimal_sep, -1 );
 		}
 	}
@@ -340,11 +287,11 @@ my_decimal_combo_get_selected( myDecimalCombo *self )
 
 /**
  * my_decimal_combo_set_selected:
- * @self: this #myDecimalCombo instance.
+ * @combo: this #myDecimalCombo instance.
  * @decimal: the initially selected decimal separator
  */
 void
-my_decimal_combo_set_selected( myDecimalCombo *self, const gchar *decimal_sep )
+my_decimal_combo_set_selected( myDecimalCombo *combo, const gchar *decimal_sep )
 {
 	static const gchar *thisfn = "my_decimal_combo_set_selected";
 	myDecimalComboPrivate *priv;
@@ -353,14 +300,15 @@ my_decimal_combo_set_selected( myDecimalCombo *self, const gchar *decimal_sep )
 	gchar *sep;
 	gint cmp;
 
-	g_debug( "%s: self=%p, decimal_sep=%s", thisfn, ( void * ) self, decimal_sep );
+	g_debug( "%s: combo=%p, decimal_sep=%s", thisfn, ( void * ) combo, decimal_sep );
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
+	g_return_if_fail( combo && MY_IS_DECIMAL_COMBO( combo ));
+
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		tmodel = gtk_combo_box_get_model( priv->combo );
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
@@ -369,7 +317,7 @@ my_decimal_combo_set_selected( myDecimalCombo *self, const gchar *decimal_sep )
 				cmp = g_utf8_collate( sep, decimal_sep );
 				g_free( sep );
 				if( !cmp ){
-					gtk_combo_box_set_active_iter( priv->combo, &iter );
+					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

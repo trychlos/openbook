@@ -72,6 +72,7 @@
                             <property name="xalign">1</property>
                             <property name="label" translatable="yes">Character _encoding :</property>
                             <property name="use_underline">True</property>
+                            <property name="selectable">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -192,6 +193,7 @@
                       <object class="GtkGrid" id="grid1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="column_spacing">4</property>
                         <child>
                           <object class="GtkCheckButton" id="p5-headers">
                             <property name="label" translatable="yes">With _header row(s)</property>
@@ -217,6 +219,36 @@
                           <packing>
                             <property name="left_attach">0</property>
                             <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label4x1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                            <property name="label" translatable="yes">_Headers count :</property>
+                            <property name="use_underline">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">1</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="p3-count">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="climb_rate">1</property>
+                            <property name="snap_to_ticks">True</property>
+                            <property name="numeric">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">1</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -318,6 +350,7 @@
       <widget name="label4x"/>
       <widget name="p5-field-label"/>
       <widget name="label1x1"/>
+      <widget name="label4x1"/>
     </widgets>
   </object>
   <object class="GtkSizeGroup" id="comboSizeGroup">

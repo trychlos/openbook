@@ -36,12 +36,6 @@
  */
 struct _myFieldComboPrivate {
 	gboolean      dispose_has_run;
-	gboolean      from_widget_finalized;
-
-	/* UI
-	 */
-	GtkContainer *container;
-	GtkComboBox  *combo;
 };
 
 /* column ordering in the date combobox
@@ -73,13 +67,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myFieldCombo, my_field_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( myFieldCombo, my_field_combo, GTK_TYPE_COMBO_BOX )
 
-static void       on_widget_finalized( myFieldCombo *self, gpointer finalized_parent );
-static GtkWidget *get_combo_box( myFieldCombo *self );
-static void       setup_combo( myFieldCombo *self );
-static void       populate_combo( myFieldCombo *self );
-static void       on_field_changed( GtkComboBox *box, myFieldCombo *self );
+static void setup_combo( myFieldCombo *combo );
+static void populate_combo( myFieldCombo *combo );
+static void on_field_changed( myFieldCombo *combo, void *empty );
 
 static void
 field_combo_finalize( GObject *instance )
@@ -111,10 +103,6 @@ field_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -150,7 +138,7 @@ my_field_combo_class_init( myFieldComboClass *klass )
 	g_type_class_add_private( klass, sizeof( myFieldComboPrivate ));
 
 	/**
-	 * myFieldCombo::changed:
+	 * myFieldCombo::ofa-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
@@ -162,7 +150,7 @@ my_field_combo_class_init( myFieldComboClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				MY_TYPE_FIELD_COMBO,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -172,22 +160,6 @@ my_field_combo_class_init( myFieldComboClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_STRING );
-}
-
-static void
-on_widget_finalized( myFieldCombo *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "my_field_combo_on_widget_finalized";
-	myFieldComboPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
-
-	g_return_if_fail( self && MY_IS_FIELD_COMBO( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
 }
 
 /**
@@ -200,6 +172,10 @@ my_field_combo_new( void )
 
 	self = g_object_new( MY_TYPE_FIELD_COMBO, NULL );
 
+	setup_combo( self );
+	/* we can populate the combobox once as its population is fixed */
+	populate_combo( self );
+
 	return( self );
 }
 
@@ -207,78 +183,49 @@ my_field_combo_new( void )
  * my_field_combo_attach_to:
  */
 void
-my_field_combo_attach_to( myFieldCombo *self, GtkContainer *new_parent )
+my_field_combo_attach_to( myFieldCombo *combo, GtkContainer *parent )
 {
 	myFieldComboPrivate *priv;
-	GtkWidget *box;
 
-	g_return_if_fail( self && MY_IS_FIELD_COMBO( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	g_return_if_fail( combo && MY_IS_FIELD_COMBO( combo ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = self->priv;
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		box = get_combo_box( self );
-		gtk_container_add( new_parent, box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
+		gtk_container_add( parent, GTK_WIDGET( combo ));
+		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
-}
-
-static GtkWidget *
-get_combo_box( myFieldCombo *self )
-{
-	myFieldComboPrivate *priv;
-
-	priv = self->priv;
-
-	if( !priv->combo ){
-		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
-		setup_combo( self );
-		/* we can populate the combobox once as its population is fixed */
-		populate_combo( self );
-	}
-
-	return( GTK_WIDGET( priv->combo ));
 }
 
 static void
-setup_combo( myFieldCombo *self )
+setup_combo( myFieldCombo *combo )
 {
-	myFieldComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
-
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( priv->combo, tmodel );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), tmodel );
 	g_object_unref( tmodel );
 
 	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_LABEL );
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", COL_LABEL );
 
-	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_field_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_field_changed ), NULL );
 }
 
 static void
-populate_combo( myFieldCombo *self )
+populate_combo( myFieldCombo *combo )
 {
-	myFieldComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint i;
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
-
-	tmodel = gtk_combo_box_get_model( priv->combo );
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 	for( i=0 ; st_dec[i].code ; ++i ){
@@ -293,44 +240,44 @@ populate_combo( myFieldCombo *self )
 }
 
 static void
-on_field_changed( GtkComboBox *combo, myFieldCombo *self )
+on_field_changed( myFieldCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *field_sep;
 
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter, COL_CHARSEP, &field_sep, -1 );
-		g_signal_emit_by_name( self, "changed", field_sep );
+		g_signal_emit_by_name( combo, "ofa-changed", field_sep );
 		g_free( field_sep );
 	}
 }
 
 /**
  * my_field_combo_get_selected:
- * @self:
+ * @combo:
  *
  * Returns: the currently selected field separator, as a newly
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-my_field_combo_get_selected( myFieldCombo *self )
+my_field_combo_get_selected( myFieldCombo *combo )
 {
 	myFieldComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *field_sep;
 
-	g_return_val_if_fail( self && MY_IS_FIELD_COMBO( self ), NULL );
+	g_return_val_if_fail( combo && MY_IS_FIELD_COMBO( combo ), NULL );
 
-	priv = self->priv;
+	priv = combo->priv;
 	field_sep = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		if( gtk_combo_box_get_active_iter( priv->combo, &iter )){
-			tmodel = gtk_combo_box_get_model( priv->combo );
+		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+			tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 			gtk_tree_model_get( tmodel, &iter, COL_CHARSEP, &field_sep, -1 );
 		}
 	}
@@ -340,11 +287,11 @@ my_field_combo_get_selected( myFieldCombo *self )
 
 /**
  * my_field_combo_set_selected:
- * @self: this #myFieldCombo instance.
+ * @combo: this #myFieldCombo instance.
  * @field: the initially selected field separator
  */
 void
-my_field_combo_set_selected( myFieldCombo *self, const gchar *field_sep )
+my_field_combo_set_selected( myFieldCombo *combo, const gchar *field_sep )
 {
 	static const gchar *thisfn = "my_field_combo_set_selected";
 	myFieldComboPrivate *priv;
@@ -353,14 +300,15 @@ my_field_combo_set_selected( myFieldCombo *self, const gchar *field_sep )
 	gchar *sep;
 	gint cmp;
 
-	g_debug( "%s: self=%p, field_sep=%s", thisfn, ( void * ) self, field_sep );
+	g_debug( "%s: combo=%p, field_sep=%s", thisfn, ( void * ) combo, field_sep );
 
-	priv = self->priv;
-	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
+	g_return_if_fail( combo && MY_IS_FIELD_COMBO( combo ));
+
+	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		tmodel = gtk_combo_box_get_model( priv->combo );
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
@@ -369,7 +317,7 @@ my_field_combo_set_selected( myFieldCombo *self, const gchar *field_sep )
 				cmp = g_utf8_collate( sep, field_sep );
 				g_free( sep );
 				if( !cmp ){
-					gtk_combo_box_set_active_iter( priv->combo, &iter );
+					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

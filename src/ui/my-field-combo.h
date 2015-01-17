@@ -54,7 +54,7 @@ typedef struct _myFieldComboPrivate        myFieldComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject              parent;
+	GtkComboBox          parent;
 
 	/*< private members >*/
 	myFieldComboPrivate *priv;
@@ -63,7 +63,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass         parent;
+	GtkComboBoxClass     parent;
 }
 	myFieldComboClass;
 
@@ -72,7 +72,7 @@ GType         my_field_combo_get_type    ( void ) G_GNUC_CONST;
 myFieldCombo *my_field_combo_new         ( void );
 
 void          my_field_combo_attach_to   ( myFieldCombo *combo,
-														GtkContainer *new_parent );
+														GtkContainer *parent );
 
 gchar        *my_field_combo_get_selected( myFieldCombo *combo );
 

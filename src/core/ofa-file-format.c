@@ -48,28 +48,33 @@ struct _ofaFileFormatPrivate {
 	/* runtime data
 	 */
 	gchar       *name;					/* may be %NULL if defaults */
-	ofaFFmt      ffmt;
+	ofaFFtype    type;
+	ofaFFmode    mode;
 	gchar       *charmap;
 	myDateFormat date_format;
 	gchar        decimal_sep;
 	gchar        field_sep;				/* csv only */
-	gboolean     with_headers;
+	union {
+		gboolean with_headers;
+		gint     count_headers;
+	} h;
 };
 
 typedef struct {
-	ofaFFmt      format;
+	ofaFFtype      format;
 	const gchar *label;
 }
 	sFormat;
 
 static const sFormat st_file_format[] = {
-		{ OFA_FFMT_CSV,   N_( "CSV-like file format" )},
-		{ OFA_FFMT_FIXED, N_( "Fixed file format" )},
-		{ OFA_FFMT_OTHER, N_( "Other (plugin-managed) format" )},
+		{ OFA_FFTYPE_CSV,   N_( "CSV-like file format" )},
+		{ OFA_FFTYPE_FIXED, N_( "Fixed file format" )},
+		{ OFA_FFTYPE_OTHER, N_( "Other (plugin-managed) format" )},
 		{ 0 }
 };
 
-static gint         st_def_format       = OFA_FFMT_CSV;
+static gint         st_def_format       = OFA_FFTYPE_CSV;
+static gint         st_def_mode         = OFA_FFMODE_EXPORT;
 static const gchar *st_def_charmap      = "UTF-8";
 static const gint   st_def_date         = MY_DATE_SQL;
 static const gchar *st_def_decimal      = ".";
@@ -157,6 +162,7 @@ ofa_file_format_class_init( ofaFileFormatClass *klass )
  *  used to serialized this file format. If set, the object will be
  *  initialized from settings. If %NULL, the general defaults will
  *  be set.
+ * @mode: whether the file format targets export or import.
  *
  * Returns: a newly allocated #ofaFileFormat object.
  */
@@ -172,9 +178,16 @@ ofa_file_format_new( const gchar *prefs_name )
 	return( self );
 }
 
+/*
+ * read file format from user settings:
+ *
+ * export: name;type;mode;charmap;date_format;decimal_sep;field_sep;with_headers
+ * import: name;type;mode;charmap;date_format;decimal_sep;field_sep;count_headers
+ */
 static void
 do_init( ofaFileFormat *self, const gchar *prefs_name )
 {
+	static const gchar *thisfn = "ofa_file_format_do_init";
 	ofaFileFormatPrivate *priv;
 	GList *prefs_list, *it;
 	const gchar *cstr;
@@ -191,13 +204,24 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	/*g_debug( "do_init: name='%s'", cstr );*/
 	priv->name = ( gchar * )( cstr ? g_strdup( cstr ) : cstr );
 
-	/* file format */
+	/* file format type */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
 	/*g_debug( "do_init: ffmt='%s'", cstr );*/
 	text = cstr ? g_strdup( cstr ) : g_strdup_printf( "%d", st_def_format );
-	priv->ffmt = atoi( text );
+	priv->type = atoi( text );
 	g_free( text );
+
+	/* target mode */
+	it = it ? it->next : NULL;
+	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
+	text = cstr ? g_strdup( cstr ) : g_strdup_printf( "%d", st_def_mode );
+	priv->mode = atoi( text );
+	g_debug( "%s: prefs=%s, type=%d, mode=%d", thisfn, prefs_name, priv->type, priv->mode );
+	g_free( text );
+	if( priv->mode != OFA_FFMODE_EXPORT && priv->mode != OFA_FFMODE_IMPORT ){
+		priv->mode = OFA_FFMODE_EXPORT;
+	}
 
 	/* charmap */
 	it = it ? it->next : NULL;
@@ -233,16 +257,20 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : st_def_headers;
 	/*g_debug( "do_init: headers='%s'", cstr );*/
-	priv->with_headers = g_utf8_collate( cstr, "True" ) == 0;
+	if( priv->mode == OFA_FFMODE_EXPORT ){
+		priv->h.with_headers = g_utf8_collate( cstr, "True" ) == 0;
+	} else {
+		priv->h.count_headers = atoi( cstr );
+	}
 
 	ofa_settings_free_string_list( prefs_list );
 }
 
 /**
- * ofa_file_format_get_locale_format:
+ * ofa_file_format_get_ffmode:
  */
-ofaFFmt
-ofa_file_format_get_ffmt( const ofaFileFormat *settings )
+ofaFFmode
+ofa_file_format_get_ffmode( const ofaFileFormat *settings )
 {
 	ofaFileFormatPrivate *priv;
 
@@ -252,7 +280,7 @@ ofa_file_format_get_ffmt( const ofaFileFormat *settings )
 
 	if( !priv->dispose_has_run ){
 
-		return( priv->ffmt );
+		return( priv->mode );
 	}
 
 	g_return_val_if_reached( 0 );
@@ -260,12 +288,33 @@ ofa_file_format_get_ffmt( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_ffmt_str:
+ * ofa_file_format_get_fftype:
+ */
+ofaFFtype
+ofa_file_format_get_fftype( const ofaFileFormat *settings )
+{
+	ofaFileFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+
+	priv = settings->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->type );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofa_file_format_get_fftype_str:
  */
 const gchar *
-ofa_file_format_get_ffmt_str( ofaFFmt format )
+ofa_file_format_get_fftype_str( ofaFFtype format )
 {
-	static const gchar *thisfn = "ofa_file_format_get_ffmt_str";
+	static const gchar *thisfn = "ofa_file_format_get_fftype_str";
 	gint i;
 
 	for( i=0 ; st_file_format[i].format ; ++i ){
@@ -365,6 +414,27 @@ ofa_file_format_get_field_sep( const ofaFileFormat *settings )
 }
 
 /**
+ * ofa_file_format_get_headers_count:
+ */
+gint
+ofa_file_format_get_headers_count( const ofaFileFormat *settings )
+{
+	ofaFileFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
+
+	priv = settings->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->h.count_headers );
+	}
+
+	g_return_val_if_reached( FALSE );
+	return( FALSE );
+}
+
+/**
  * ofa_file_format_has_headers:
  */
 gboolean
@@ -378,7 +448,7 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
 
 	if( !priv->dispose_has_run ){
 
-		return( priv->with_headers );
+		return( priv->h.with_headers );
 	}
 
 	g_return_val_if_reached( FALSE );
@@ -389,7 +459,8 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
  * ofa_file_format_set:
  * @settings:
  * @name:
- * @ffmt:
+ * @type:
+ * @mode
  * @charmap:
  * @date_format:
  * @decimal_sep:
@@ -399,12 +470,13 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
 void
 ofa_file_format_set( ofaFileFormat *settings,
 								const gchar *name,
-								ofaFFmt ffmt,
+								ofaFFtype type,
+								ofaFFmode mode,
 								const gchar *charmap,
 								myDateFormat date_format,
 								gchar decimal_sep,
 								gchar field_sep,
-								gboolean with_headers )
+								gint count_headers )
 {
 	ofaFileFormatPrivate *priv;
 	GList *prefs_list;
@@ -425,9 +497,14 @@ ofa_file_format_set( ofaFileFormat *settings,
 		priv->name = g_strdup( name );
 		prefs_list = g_list_append( prefs_list, ( gpointer )( name ? name : "" ));
 
-		/* locale format */
-		priv->ffmt = ffmt;
-		sfile = g_strdup_printf( "%d", ffmt );
+		/* file format */
+		priv->type = type;
+		sfile = g_strdup_printf( "%d", type );
+		prefs_list = g_list_append( prefs_list, sfile );
+
+		/* mode */
+		priv->mode = mode;
+		sfile = g_strdup_printf( "%d", mode );
 		prefs_list = g_list_append( prefs_list, sfile );
 
 		/* charmap */
@@ -451,8 +528,13 @@ ofa_file_format_set( ofaFileFormat *settings,
 		prefs_list = g_list_append( prefs_list, sfield );
 
 		/* with headers */
-		priv->with_headers = with_headers;
-		sheaders = g_strdup_printf( "%s", priv->with_headers ? "True":"False" );
+		if( priv->mode == OFA_FFMODE_EXPORT ){
+			priv->h.with_headers = count_headers > 0;
+			sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
+		} else {
+			priv->h.count_headers = count_headers;
+			sheaders = g_strdup_printf( "%d", priv->h.count_headers );
+		}
 		prefs_list = g_list_append( prefs_list, sheaders );
 
 		/* save in user preferences */

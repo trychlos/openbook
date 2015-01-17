@@ -54,7 +54,7 @@ typedef struct _myDecimalComboPrivate        myDecimalComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                parent;
+	GtkComboBox            parent;
 
 	/*< private members >*/
 	myDecimalComboPrivate *priv;
@@ -63,7 +63,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass           parent;
+	GtkComboBoxClass       parent;
 }
 	myDecimalComboClass;
 
@@ -72,7 +72,7 @@ GType           my_decimal_combo_get_type    ( void ) G_GNUC_CONST;
 myDecimalCombo *my_decimal_combo_new         ( void );
 
 void            my_decimal_combo_attach_to   ( myDecimalCombo *combo,
-															GtkContainer *new_parent );
+															GtkContainer *parent );
 
 gchar          *my_decimal_combo_get_selected( myDecimalCombo *combo );
 

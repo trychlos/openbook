@@ -131,8 +131,8 @@ static void       init_dossier_delete_page( ofaPreferences *self );
 static void       init_account_page( ofaPreferences *self );
 static void       init_locales_page( ofaPreferences *self );
 /*static void       get_locales( void );*/
-static void       init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *parent, myDateFormat ivalue );
-static void       init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *wname, const gchar *svalue );
+static void       init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
+static void       init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
 static void       init_export_page( ofaPreferences *self );
 static void       init_import_page( ofaPreferences *self );
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
@@ -369,24 +369,36 @@ init_locales_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *parent;
+	GtkWidget *parent, *label;
 
 	priv = self->priv;
 
 	/*get_locales();*/
 
-	init_locale_date( self, &priv->p3_display_combo, "p3-alignment-display", ofa_prefs_date_display());
-	init_locale_date( self, &priv->p3_check_combo,   "p3-alignment-check",   ofa_prefs_date_check());
+	init_locale_date( self,
+			&priv->p3_display_combo, "l-display", "p3-alignment-display", ofa_prefs_date_display());
+	init_locale_date( self,
+			&priv->p3_check_combo,   "l-visual",  "p3-alignment-check",   ofa_prefs_date_check());
 
+	/* decimal display */
 	priv->p3_decimal_sep = my_decimal_combo_new();
+
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+
 	parent = my_utils_container_get_child_by_name( container, "p3-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
 	my_decimal_combo_attach_to( priv->p3_decimal_sep, GTK_CONTAINER( parent ));
 	my_decimal_combo_set_selected( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
 
-	init_locale_sep( self, &priv->p3_thousand_sep, "p3-thousand-sep", ofa_prefs_amount_thousand_sep());
+	label = my_utils_container_get_child_by_name( container, "l-decimal" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p3_decimal_sep ));
+
+	/* thousand separator */
+	init_locale_sep( self,
+			&priv->p3_thousand_sep, "l-thousand", "p3-thousand-sep", ofa_prefs_amount_thousand_sep());
 }
 
 #if 0
@@ -428,10 +440,10 @@ get_locales( void )
 #endif
 
 static void
-init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *parent, myDateFormat ivalue )
+init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label_name, const gchar *parent, myDateFormat ivalue )
 {
 	GtkContainer *container;
-	GtkWidget *parent_widget;
+	GtkWidget *parent_widget, *label;
 
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -441,14 +453,18 @@ init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *paren
 
 	*wcombo = my_date_combo_new();
 	my_date_combo_attach_to( *wcombo, GTK_CONTAINER( parent_widget ));
-
 	my_date_combo_set_selected( *wcombo, ivalue );
+
+	label = my_utils_container_get_child_by_name( container, label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wcombo ));
 }
 
 static void
-init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *wname, const gchar *svalue )
+init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label_name, const gchar *wname, const gchar *svalue )
 {
 	GtkContainer *container;
+	GtkWidget *label;
 
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -457,6 +473,10 @@ init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *wname, c
 	g_return_if_fail( *wentry && GTK_IS_ENTRY( *wentry ));
 
 	gtk_entry_set_text( GTK_ENTRY( *wentry ), svalue );
+
+	label = my_utils_container_get_child_by_name( container, label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wentry ));
 }
 
 static void
