@@ -336,8 +336,7 @@ init_forward_page( ofaDossierProperties *self, GtkContainer *container )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->closing_parms = ofa_closing_parms_bin_new();
-	ofa_closing_parms_bin_attach_to(
-			priv->closing_parms, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->closing_parms ));
 	ofa_closing_parms_bin_set_main_window(
 			priv->closing_parms, MY_WINDOW( self )->prot->main_window );
 

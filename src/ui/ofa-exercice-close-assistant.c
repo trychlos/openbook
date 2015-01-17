@@ -395,8 +395,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_closing_parms = ofa_closing_parms_bin_new();
-	ofa_closing_parms_bin_attach_to(
-			priv->p2_closing_parms, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_closing_parms ));
 	ofa_closing_parms_bin_set_main_window(
 			priv->p2_closing_parms, MY_WINDOW( self )->prot->main_window );
 	g_signal_connect( G_OBJECT( priv->p2_closing_parms ), "changed", G_CALLBACK( p2_on_closing_parms_changed ), self );

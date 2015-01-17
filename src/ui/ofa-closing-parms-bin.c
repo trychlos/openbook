@@ -94,6 +94,7 @@ static const gchar *st_ui_id            = "ClosingParmsBin";
 
 G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
 
+static void     load_dialog( ofaClosingParmsBin *self );
 static void     setup_dialog( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
@@ -207,39 +208,24 @@ ofa_closing_parms_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
+	load_dialog( self );
+
 	return( self );
 }
 
-/**
- * ofa_closing_parms_bin_attach_to:
- */
-void
-ofa_closing_parms_bin_attach_to( ofaClosingParmsBin *bin, GtkContainer *new_parent )
+static void
+load_dialog( ofaClosingParmsBin *bin )
 {
-	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *window;
 	GtkWidget *top_widget;
 
-	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
+	g_return_if_fail( window && GTK_IS_WINDOW( window ));
 
-	priv = bin->priv;
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "closing-top" );
+	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
-	if( !priv->dispose_has_run ){
-
-		window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-		g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
-		top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "closing-top" );
-		g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-		gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
-		gtk_container_add( new_parent, GTK_WIDGET( bin ));
-
-		setup_dialog( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
-	}
+	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
 }
 
 /**
@@ -272,10 +258,11 @@ setup_dialog( ofaClosingParmsBin *bin )
 	priv = bin->priv;
 
 	if( priv->dossier ){
-
 		setup_closing_opes( bin );
 		setup_currency_accounts( bin );
 	}
+
+	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
 static void

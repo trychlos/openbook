@@ -70,9 +70,6 @@ GType               ofa_closing_parms_bin_get_type       ( void ) G_GNUC_CONST;
 
 ofaClosingParmsBin *ofa_closing_parms_bin_new            ( void );
 
-void                ofa_closing_parms_bin_attach_to      ( ofaClosingParmsBin *prefs,
-																	GtkContainer *new_parent );
-
 void                ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *prefs,
 																	ofaMainWindow *main_window );
 
