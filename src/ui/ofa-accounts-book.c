@@ -511,6 +511,7 @@ on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofa
 	gchar *number;
 	gint class_num;
 
+	g_debug( "on_row_inserted" );
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &number, -1 );
 	class_num = ofo_account_get_class_from_number( number );
 	g_free( number );
@@ -528,6 +529,7 @@ on_ofa_row_inserted( ofaAccountStore *store, gint class_num, ofaAccountsBook *bo
 
 	priv = book->priv;
 
+	g_debug( "on_ofa_row_inserted" );
 	if( class_num != priv->prev_class ){
 		book_get_page_by_class( book, class_num, TRUE );
 		priv->prev_class = class_num;
@@ -599,6 +601,8 @@ book_create_page( ofaAccountsBook *book, gint class_num )
 			book_create_columns( book, class_num, GTK_TREE_VIEW( tview ));
 		}
 	}
+
+	gtk_widget_show_all( scrolled );
 
 	return( scrolled );
 }
@@ -1456,26 +1460,26 @@ select_row_by_number( ofaAccountsBook *book, const gchar *number )
 
 	priv = book->priv;
 
-	if( number && g_utf8_strlen( number, -1 )){
+	if( my_strlen( number )){
 		page_w = book_get_page_by_class( book,
 							ofo_account_get_class_from_number( number ), FALSE );
 		if( page_w ){
 			page_n = gtk_notebook_page_num( priv->book, page_w );
 			gtk_notebook_set_current_page( priv->book, page_n );
 
-			ofa_account_store_get_by_number( priv->store, number, &store_iter );
+			if( ofa_account_store_get_by_number( priv->store, number, &store_iter )){
+				tview = my_utils_container_get_child_by_type(
+								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+				tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+				gtk_tree_model_filter_convert_child_iter_to_iter(
+						GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
 
-			tview = my_utils_container_get_child_by_type(
-							GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-			tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-			gtk_tree_model_filter_convert_child_iter_to_iter(
-					GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
+				path = gtk_tree_model_get_path( tfilter, &filter_iter );
+				gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
+				gtk_tree_path_free( path );
 
-			path = gtk_tree_model_get_path( tfilter, &filter_iter );
-			gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
-			gtk_tree_path_free( path );
-
-			select_row_by_iter( book, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
+				select_row_by_iter( book, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
+			}
 		}
 	}
 }
