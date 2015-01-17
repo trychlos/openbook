@@ -66,7 +66,10 @@ typedef struct {
 
 GType    ofa_dossier_login_get_type( void ) G_GNUC_CONST;
 
-void     ofa_dossier_login_run     ( const ofaMainWindow *main_window, const gchar *label, gchar **account, gchar **password );
+void     ofa_dossier_login_run     ( const ofaMainWindow *main_window,
+												const gchar *dname,
+												gchar **account,
+												gchar **password );
 
 G_END_DECLS
 

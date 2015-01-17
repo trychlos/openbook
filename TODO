@@ -262,9 +262,6 @@
                 (autoresize on double click is automatically handled)
                 and the current width should be kept in settings
 
- 342 2014-10-26 document signals + callbacks should be signals
-                - ofaAccountsBook
-
  429 2014-11-11 implement print preview inside of Openbook
 
  442 2014-11-13 AccountsBook: add a notes indicator
@@ -277,8 +274,8 @@
 
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
-
- 457 2014-11-14 have more entries and more accounts in OFAT base of test
+     2015- 1-17 done in ofaSettlement
+                left to be done: ofaReconciliation
 
  461 2014-11-24 ExportAssistant: implement 'on_new_profile'
 
@@ -303,6 +300,8 @@
                 ofaIExportable interface *and* if exports any amounts -
                 so it is not urgent
      2015- 1- 8 nonetheless required to correctly implement field sep
+     2015- 1-17 field sep is currently (and rightly) taken into account
+                by ImportAssistant 
 
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
@@ -327,8 +326,6 @@
                 + has to with command-line management and maybe also
                 command language
 
- 508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
-
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
 
@@ -348,13 +345,6 @@
  520 2014-12-11 ImportAssistant: the list of importables should be
                 dynamically computed from the list of classes which
                 implement the ofaIImportable interface
-
- 522 2014-12-12 pieces of dialogs should have the corresponding code
-                isolated and named accordingly (see ofaFileFormatPiece)
-     2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
-                ofa_preferences_dispose
-     2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
-     2015- 1- 9 review ofaBatCommon
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
@@ -380,9 +370,6 @@
 
  562 2015- 1- 8 Add misc menu option to see the loaded stores, and
                 reset them
-
- 563 2015- 1- 8 IImportable interface: take FileFormat settings into
-                account
 
  564 2015- 1- 8 Changing the dates of the exercice should update the
                 main window title
@@ -1616,6 +1603,10 @@
                 be the base of pages with a GtkNotebook
      2014-10-19 done - svn #3916
 
+ 342 2014-10-26 document signals + callbacks should be signals
+                - ofaAccountsBook
+     2015- 1-17 done
+
  343 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
                 myDialog
@@ -2152,6 +2143,9 @@
                 on last page: remove 'is_last' argument
      2014-11-14 done - svn #4115
 
+ 457 2014-11-14 have more entries and more accounts in OFAT base of test
+     2015- 1-17 no more useful since we are able to safely restore db
+
  458 2014-11-17 view_entries: the st_renderes should not be a static
                 variable, but member of the instance data
      2014-11-21 done - svn #4133
@@ -2299,6 +2293,9 @@
  507 2014-12- 6 remove dossier_dates_changed signal ?
      2014-12- 7 done - svn #4258
 
+ 508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
+     2015- 1-17 no as this may lead to a security drawback - cancelled
+
  509 2014-12- 8 LedgerCombo: use same column enumeration than Ledger
                 Treeview (instead of two booleans)
      2014-12-13 done
@@ -2325,6 +2322,14 @@
  521 2014-12-11 IExportable: use myProgressBar
                 getting rid of defined callbacks
      2015- 1- 5 done - svn #4407
+
+ 522 2014-12-12 pieces of dialogs should have the corresponding code
+                isolated and named accordingly (see ofaFileFormatPiece)
+     2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
+                ofa_preferences_dispose
+     2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
+     2015- 1- 9 review ofaBatCommon
+     2015- 1-17 done
 
  523 2014-12-12 review BAT import
      2014-12-22 done - svn #4365
@@ -2476,6 +2481,10 @@
  560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
                 a field separator!
      2015- 1-17 done - svn #4468
+
+ 563 2015- 1- 8 IImportable interface: take FileFormat settings into
+                account
+     2015- 1-17 done - svn #4469
 
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
      2015- 1- 8 due to a bad management of weak references

@@ -1413,9 +1413,11 @@ ofa_accounts_book_get_selected( ofaAccountsBook *book )
 	if( !priv->dispose_has_run ){
 
 		tview = ( GtkTreeView * ) get_current_tree_view( book );
-		select = gtk_tree_view_get_selection( tview );
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &account, -1 );
+		if( tview ){
+			select = gtk_tree_view_get_selection( tview );
+			if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+				gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &account, -1 );
+			}
 		}
 	}
 

@@ -132,7 +132,7 @@ ofa_dossier_login_class_init( ofaDossierLoginClass *klass )
  * Update the properties of an journal
  */
 void
-ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *label, gchar **account, gchar **password )
+ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *dname, gchar **account, gchar **password )
 {
 	static const gchar *thisfn = "ofa_dossier_login_run";
 	ofaDossierLogin *self;
@@ -140,8 +140,8 @@ ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *label, gch
 	g_debug( "%s: main_window=%p, account=%p, password=%p",
 				thisfn, ( void * ) main_window, ( void * ) account, ( void * ) password );
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	g_return_val_if_fail( account && password, FALSE );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( account && password );
 
 	self = g_object_new(
 					OFA_TYPE_DOSSIER_LOGIN,
@@ -150,12 +150,16 @@ ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *label, gch
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->priv->label = label;
+	self->priv->label = dname;
+	self->priv->account = g_strdup( *account );
+	self->priv->password = g_strdup( *password );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	if( self->priv->ok ){
+		g_free( *account );
 		*account = g_strdup( self->priv->account );
+		g_free( *password );
 		*password = g_strdup( self->priv->password );
 	}
 
@@ -186,10 +190,16 @@ v_init_dialog( myDialog *dialog )
 	entry = my_utils_container_get_child_by_name( container, "account" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
+	if( priv->account ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->account );
+	}
 
 	entry = my_utils_container_get_child_by_name( container, "password" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
+	if( priv->password ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->password );
+	}
 
 	check_for_enable_dlg( OFA_DOSSIER_LOGIN( dialog ));
 }

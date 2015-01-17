@@ -968,17 +968,11 @@ warning_archived_dossier( const ofaMainWindow *window )
 static gboolean
 check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo )
 {
-	if( !sdo->account || !g_utf8_strlen( sdo->account, -1 ) ||
-		! sdo->password || !g_utf8_strlen( sdo->password, -1 )){
-
-		g_free( sdo->account );
-		g_free( sdo->password );
-
+	if( !my_strlen( sdo->account ) || !my_strlen( sdo->password )){
 		ofa_dossier_login_run( main_window, sdo->dname, &sdo->account, &sdo->password );
 	}
 
-	return( sdo->account && g_utf8_strlen( sdo->account, -1 ) &&
-			sdo->password && g_utf8_strlen( sdo->password, -1 ));
+	return( my_strlen( sdo->account ) && my_strlen( sdo->password ));
 }
 
 static void
