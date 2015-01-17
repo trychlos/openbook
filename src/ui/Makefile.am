@@ -137,8 +137,6 @@ openbook_SOURCES = \
 	ofa-exercice-close-assistant.h						\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
-	ofa-exercice-treeview.c								\
-	ofa-exercice-treeview.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
 	ofa-file-format-bin.c								\
