@@ -413,7 +413,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
 	combo = ofa_currency_combo_new();
-	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( widget ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, priv->main_window );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );

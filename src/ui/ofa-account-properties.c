@@ -267,7 +267,7 @@ v_init_dialog( myDialog *dialog )
 	combo = ofa_currency_combo_new();
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( dialog )->prot->main_window );
 	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
