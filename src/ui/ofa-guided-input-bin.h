@@ -78,9 +78,6 @@ GType              ofa_guided_input_bin_get_type        ( void ) G_GNUC_CONST;
 
 ofaGuidedInputBin *ofa_guided_input_bin_new             ( void );
 
-void               ofa_guided_input_bin_attach_to       ( ofaGuidedInputBin *bin,
-																	GtkContainer *parent );
-
 void               ofa_guided_input_bin_set_main_window ( ofaGuidedInputBin *bin,
 																	const ofaMainWindow *main_window );
 

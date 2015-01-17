@@ -210,6 +210,7 @@ static const gchar *st_bin_id         = "GuidedInputBin";
 
 G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
 
+static void              load_dialog( ofaGuidedInputBin *bin );
 static void              setup_dialog( ofaGuidedInputBin *bin );
 static void              init_model_data( ofaGuidedInputBin *bin );
 static void              add_entry_row( ofaGuidedInputBin *bin, gint i );
@@ -288,7 +289,8 @@ guided_input_bin_dispose( GObject *instance )
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+		if( priv->dossier &&
+				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
 			for( iha=priv->handlers ; iha ; iha=iha->next ){
 				handler_id = ( gulong ) iha->data;
 				g_signal_handler_disconnect( priv->dossier, handler_id );
@@ -370,43 +372,23 @@ ofa_guided_input_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
+	load_dialog( self );
+
 	return( self );
 }
 
-/**
- * ofa_guided_input_bin_attach_to:
- */
-void
-ofa_guided_input_bin_attach_to( ofaGuidedInputBin *bin, GtkContainer *parent )
+static void
+load_dialog( ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_attach_to";
-	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *window, *top_widget;
 
-	g_debug( "%s: bin=%p, parent=%p", thisfn, ( void * ) bin, ( void * ) parent );
+	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
+	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
+	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
-		g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-		gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
-		gtk_container_add( parent, GTK_WIDGET( bin ));
-
-		/* setup the dialog part which do not depend of the operation
-		 * template */
-		if( priv->main_window ){
-			setup_dialog( bin );
-		}
-	}
+	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
 }
 
 /**
@@ -525,6 +507,8 @@ setup_dialog( ofaGuidedInputBin *bin )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-message" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->message = widget;
+
+	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
 /**

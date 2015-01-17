@@ -172,7 +172,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->input_bin = ofa_guided_input_bin_new();
-	ofa_guided_input_bin_attach_to( priv->input_bin, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
 	ofa_guided_input_bin_set_main_window( priv->input_bin, MY_WINDOW( dialog )->prot->main_window );
 	ofa_guided_input_bin_set_ope_template( priv->input_bin, priv->model );
 

@@ -301,7 +301,7 @@ setup_view_right( ofaGuidedEx *self )
 	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
 
 	priv->input_bin = ofa_guided_input_bin_new();
-	ofa_guided_input_bin_attach_to( priv->input_bin, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
 	ofa_guided_input_bin_set_main_window( priv->input_bin, ofa_page_get_main_window( OFA_PAGE( self )));
 
 	g_signal_connect( priv->input_bin, "changed", G_CALLBACK( on_right_piece_changed ), self );
