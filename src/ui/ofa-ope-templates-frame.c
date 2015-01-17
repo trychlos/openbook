@@ -67,18 +67,18 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaOpeTemplatesFrame, ofa_ope_templates_frame, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaOpeTemplatesFrame, ofa_ope_templates_frame, GTK_TYPE_BIN )
 
-static GtkWidget *get_top_grid( ofaOpeTemplatesFrame *frame );
-static void       on_new_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void       on_properties_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void       on_duplicate_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void       on_delete_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void       on_guided_input_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void       on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
-static void       on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
-static void       update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo );
-static void       on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty );
+static void setup_top_grid( ofaOpeTemplatesFrame *frame );
+static void on_new_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
+static void on_properties_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
+static void on_duplicate_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
+static void on_delete_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
+static void on_guided_input_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
+static void on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
+static void on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
+static void update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo );
+static void on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty );
 
 static void
 ope_templates_frame_finalize( GObject *instance )
@@ -155,7 +155,7 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_OPE_TEMPLATES_FRAME,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -179,7 +179,7 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"activated",
+				"ofa-activated",
 				OFA_TYPE_OPE_TEMPLATES_FRAME,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -204,7 +204,7 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CLOSED ] = g_signal_new_class_handler(
-				"closed",
+				"ofa-closed",
 				OFA_TYPE_OPE_TEMPLATES_FRAME,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -244,36 +244,38 @@ ofa_ope_templates_frame_new( void  )
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATES_FRAME, NULL );
 
-	get_top_grid( self );
+	setup_top_grid( self );
 
-	g_signal_connect( self, "closed", G_CALLBACK( on_frame_closed ), NULL );
+	g_signal_connect( self, "ofa-closed", G_CALLBACK( on_frame_closed ), NULL );
 
 	return( self );
 }
 
-/**
- * ofa_ope_templates_frame_attach_to:
- *
- * Attachs the created content to the specified parent.
- */
-void
-ofa_ope_templates_frame_attach_to( ofaOpeTemplatesFrame *frame, GtkContainer *parent )
+static void
+setup_top_grid( ofaOpeTemplatesFrame *frame )
 {
 	ofaOpeTemplatesFramePrivate *priv;
 	GtkWidget *grid;
 
-	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
 	priv = frame->priv;
 
-	if( !priv->dispose_has_run ){
+	grid = gtk_grid_new();
+	gtk_widget_set_margin_left( grid, 4 );
+	gtk_widget_set_margin_bottom( grid, 4 );
+	gtk_container_add( GTK_CONTAINER( frame ), grid );
+	priv->grid = GTK_GRID( grid );
 
-		grid = get_top_grid( frame );
-		gtk_container_add( parent, grid );
+	/* create the operation template notebook
+	 */
+	priv->book = ofa_ope_templates_book_new();
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->book ), 0, 0, 1, 1 );
 
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
+	g_signal_connect(
+			G_OBJECT( priv->book ), "ofa-changed", G_CALLBACK( on_book_selection_changed ), frame );
+	g_signal_connect(
+			G_OBJECT( priv->book ), "ofa-activated", G_CALLBACK( on_book_selection_activated ), frame );
+
+	gtk_widget_show_all( GTK_WIDGET( frame ));
 }
 
 /**
@@ -298,39 +300,6 @@ ofa_ope_templates_frame_set_main_window( ofaOpeTemplatesFrame *frame, ofaMainWin
 
 		ofa_ope_templates_book_set_main_window( priv->book, main_window );
 	}
-}
-
-static GtkWidget *
-get_top_grid( ofaOpeTemplatesFrame *frame )
-{
-	ofaOpeTemplatesFramePrivate *priv;
-	GtkWidget *grid, *alignment;
-
-	priv = frame->priv;
-
-	if( !priv->grid ){
-
-		grid = gtk_grid_new();
-
-		priv->grid = GTK_GRID( grid );
-		gtk_widget_set_margin_left( grid, 4 );
-		gtk_widget_set_margin_bottom( grid, 4 );
-
-		/* create the operation template notebook
-		 */
-		alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-		gtk_grid_attach( priv->grid, alignment, 0, 0, 1, 1 );
-
-		priv->book = ofa_ope_templates_book_new();
-		ofa_ope_templates_book_attach_to( priv->book, GTK_CONTAINER( alignment ));
-
-		g_signal_connect(
-				G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), frame );
-		g_signal_connect(
-				G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), frame );
-	}
-
-	return( GTK_WIDGET( priv->grid ));
 }
 
 static void
@@ -487,13 +456,13 @@ static void
 on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame )
 {
 	update_buttons_sensitivity( frame, mnemo );
-	g_signal_emit_by_name( frame, "changed", mnemo );
+	g_signal_emit_by_name( frame, "ofa-changed", mnemo );
 }
 
 static void
 on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame )
 {
-	g_signal_emit_by_name( frame, "activated", mnemo );
+	g_signal_emit_by_name( frame, "ofa-activated", mnemo );
 }
 
 static void
@@ -544,5 +513,5 @@ on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty )
 
 	priv = frame->priv;
 
-	g_signal_emit_by_name( priv->book, "closed" );
+	g_signal_emit_by_name( priv->book, "ofa-closed" );
 }

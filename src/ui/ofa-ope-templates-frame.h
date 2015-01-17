@@ -56,7 +56,7 @@ typedef struct _ofaOpeTemplatesFramePrivate         ofaOpeTemplatesFramePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                      parent;
+	GtkBin                       parent;
 
 	/*< private members >*/
 	ofaOpeTemplatesFramePrivate *priv;
@@ -65,29 +65,26 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass                 parent;
+	GtkBinClass                  parent;
 }
 	ofaOpeTemplatesFrameClass;
 
-GType             ofa_ope_templates_frame_get_type                ( void ) G_GNUC_CONST;
+GType                 ofa_ope_templates_frame_get_type                ( void ) G_GNUC_CONST;
 
 ofaOpeTemplatesFrame *ofa_ope_templates_frame_new                     ( void );
 
-void              ofa_ope_templates_frame_attach_to               ( ofaOpeTemplatesFrame *frame,
-																			GtkContainer *parent );
-
-void              ofa_ope_templates_frame_set_main_window         ( ofaOpeTemplatesFrame *frame,
+void                  ofa_ope_templates_frame_set_main_window         ( ofaOpeTemplatesFrame *frame,
 																			ofaMainWindow *main_window );
 
-void              ofa_ope_templates_frame_set_buttons             ( ofaOpeTemplatesFrame *frame,
+void                  ofa_ope_templates_frame_set_buttons             ( ofaOpeTemplatesFrame *frame,
 																			gboolean guided_input );
 
-gchar            *ofa_ope_templates_frame_get_selected            ( ofaOpeTemplatesFrame *frame );
+gchar                *ofa_ope_templates_frame_get_selected            ( ofaOpeTemplatesFrame *frame );
 
-void              ofa_ope_templates_frame_set_selected            ( ofaOpeTemplatesFrame *frame,
+void                  ofa_ope_templates_frame_set_selected            ( ofaOpeTemplatesFrame *frame,
 																			const gchar *mnemo );
 
-GtkWidget        *ofa_ope_templates_frame_get_top_focusable_widget( const ofaOpeTemplatesFrame *frame );
+GtkWidget            *ofa_ope_templates_frame_get_top_focusable_widget( const ofaOpeTemplatesFrame *frame );
 
 G_END_DECLS
 

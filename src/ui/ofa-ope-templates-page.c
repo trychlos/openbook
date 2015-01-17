@@ -136,12 +136,12 @@ v_setup_page( ofaPage *page )
 	gtk_grid_attach( grid, alignment, 0, 0, 1, 1 );
 
 	priv->ope_frame = ofa_ope_templates_frame_new();
-	ofa_ope_templates_frame_attach_to( priv->ope_frame, GTK_CONTAINER( alignment ));
+	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->ope_frame ));
 	ofa_ope_templates_frame_set_main_window( priv->ope_frame, ofa_page_get_main_window( page ));
 	ofa_ope_templates_frame_set_buttons( priv->ope_frame, TRUE );
 
 	g_signal_connect(
-			G_OBJECT( priv->ope_frame ), "activated", G_CALLBACK( on_row_activated ), page );
+			G_OBJECT( priv->ope_frame ), "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
 	g_signal_connect(
 			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
@@ -188,5 +188,5 @@ on_page_removed( ofaOpeTemplatesPage *page, GtkWidget *page_w, guint page_n, voi
 
 	priv = page->priv;
 
-	g_signal_emit_by_name( priv->ope_frame, "closed" );
+	g_signal_emit_by_name( priv->ope_frame, "ofa-closed" );
 }

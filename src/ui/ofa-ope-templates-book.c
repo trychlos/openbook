@@ -47,7 +47,6 @@
  */
 struct _ofaOpeTemplatesBookPrivate {
 	gboolean             dispose_has_run;
-	gboolean             from_widget_finalized;
 
 	ofaMainWindow       *main_window;
 	ofoDossier          *dossier;
@@ -84,7 +83,6 @@ enum {
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static void       create_notebook( ofaOpeTemplatesBook *book );
-static void       on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_parent );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplatesBook *book );
 static void       on_ofa_row_inserted( ofaOpeTemplateStore *store, const ofoOpeTemplate *ope, ofaOpeTemplatesBook *book );
@@ -120,7 +118,7 @@ static void       select_row_by_iter( ofaOpeTemplatesBook *self, GtkTreeView *tv
 static void       on_action_closed( ofaOpeTemplatesBook *book );
 static void       write_settings( ofaOpeTemplatesBook *book );
 
-G_DEFINE_TYPE( ofaOpeTemplatesBook, ofa_ope_templates_book, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaOpeTemplatesBook, ofa_ope_templates_book, GTK_TYPE_BIN )
 
 static void
 ope_templates_book_finalize( GObject *instance )
@@ -157,13 +155,10 @@ ope_templates_book_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 
 		/* disconnect from ofoDossier */
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+		if( priv->dossier &&
+				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
 			for( it=priv->dos_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
 			}
@@ -221,7 +216,7 @@ ofa_ope_templates_book_class_init( ofaOpeTemplatesBookClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_OPE_TEMPLATES_BOOK,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -246,7 +241,7 @@ ofa_ope_templates_book_class_init( ofaOpeTemplatesBookClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"activated",
+				"ofa-activated",
 				OFA_TYPE_OPE_TEMPLATES_BOOK,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -271,7 +266,7 @@ ofa_ope_templates_book_class_init( ofaOpeTemplatesBookClass *klass )
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ CLOSED ] = g_signal_new_class_handler(
-				"closed",
+				"ofa-closed",
 				OFA_TYPE_OPE_TEMPLATES_BOOK,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -300,82 +295,31 @@ ofa_ope_templates_book_new( void  )
 
 	create_notebook( book );
 
-	g_signal_connect( book, "closed", G_CALLBACK( on_action_closed ), book );
+	g_signal_connect( book, "ofa-closed", G_CALLBACK( on_action_closed ), book );
 
 	return( book );
 }
 
 static void
-create_notebook( ofaOpeTemplatesBook *book )
+create_notebook( ofaOpeTemplatesBook *self )
 {
 	ofaOpeTemplatesBookPrivate *priv;
+	GtkWidget *book;
 
-	priv = book->priv;
+	priv = self->priv;
 
-	if( !priv->book ){
+	book = gtk_notebook_new();
+	gtk_container_add( GTK_CONTAINER( self ), book );
+	priv->book = GTK_NOTEBOOK( book );
 
-		priv->book = GTK_NOTEBOOK( gtk_notebook_new());
+	gtk_notebook_popup_enable( priv->book );
+	gtk_notebook_set_scrollable( priv->book, TRUE );
 
-		gtk_notebook_popup_enable( priv->book );
-		gtk_notebook_set_scrollable( priv->book, TRUE );
+	g_signal_connect(
+			G_OBJECT( priv->book ),
+			"switch-page", G_CALLBACK( on_book_page_switched ), book );
 
-		g_signal_connect(
-				G_OBJECT( priv->book ),
-				"switch-page", G_CALLBACK( on_book_page_switched ), book );
-	}
-}
-
-/**
- * ofa_ope_templates_book_attach_to:
- * @book: this #ofaOpeTemplatesBook book.
- * @parent: the #GtkContainer to which the widget should be attached.
- *
- * Attach the widget to its parent.
- *
- * This should be done right after the instanciation of the object, and
- * before setting the main window (which actually will load the dataset
- * in the underlying store).
- *
- * A weak notify reference is put on the parent widget, so that the
- * instance will be unreffed when the parent will be destroyed.
- */
-void
-ofa_ope_templates_book_attach_to( ofaOpeTemplatesBook *book, GtkContainer *parent )
-{
-	static const gchar *thisfn = "ofa_ope_templates_book_attach_to";
-	ofaOpeTemplatesBookPrivate *priv;
-
-	g_debug( "%s: book=%p, parent=%p", thisfn, ( void * ) book, ( void * ) parent );
-
-	g_return_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = book->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( priv->book ));
-		g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, book );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
-static void
-on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_ope_templates_book_on_widget_finalized";
-	ofaOpeTemplatesBookPrivate *priv;
-
-	g_debug( "%s: book=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) book, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ));
-
-	priv = book->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( book );
+	gtk_widget_show_all( GTK_WIDGET( self ));
 }
 
 /*
@@ -697,7 +641,7 @@ on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplatesBook *self )
 	if( selection ){
 		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
-			g_signal_emit_by_name( self, "changed", mnemo );
+			g_signal_emit_by_name( self, "ofa-changed", mnemo );
 			g_free( mnemo );
 		}
 	}
@@ -718,7 +662,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
 	select = gtk_tree_view_get_selection( tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
-		g_signal_emit_by_name( self, "activated", mnemo );
+		g_signal_emit_by_name( self, "ofa-activated", mnemo );
 		g_free( mnemo );
 	}
 }

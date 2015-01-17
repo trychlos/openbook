@@ -64,7 +64,7 @@ typedef struct _ofaOpeTemplatesBookPrivate         ofaOpeTemplatesBookPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                    parent;
+	GtkBin                      parent;
 
 	/*< private members >*/
 	ofaOpeTemplatesBookPrivate *priv;
@@ -73,16 +73,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass               parent;
+	GtkBinClass                 parent;
 }
 	ofaOpeTemplatesBookClass;
 
 GType               ofa_ope_templates_book_get_type                ( void ) G_GNUC_CONST;
 
 ofaOpeTemplatesBook *ofa_ope_templates_book_new                     ( void );
-
-void                ofa_ope_templates_book_attach_to               ( ofaOpeTemplatesBook *book,
-																			GtkContainer *parent );
 
 void                ofa_ope_templates_book_set_main_window         ( ofaOpeTemplatesBook *book,
 																			ofaMainWindow *main_window );

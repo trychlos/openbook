@@ -205,6 +205,7 @@
                                   <object class="GtkLabel" id="label18">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_left">12</property>
                                     <property name="xalign">1</property>
                                     <property name="label" translatable="yes">_Ref :</property>
                                     <property name="use_underline">True</property>

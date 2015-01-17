@@ -216,14 +216,14 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->ope_templates_frame = ofa_ope_templates_frame_new();
-	ofa_ope_templates_frame_attach_to( priv->ope_templates_frame, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
 	ofa_ope_templates_frame_set_main_window( priv->ope_templates_frame, MY_WINDOW( dialog )->prot->main_window );
 	ofa_ope_templates_frame_set_buttons( priv->ope_templates_frame, FALSE );
 
 	g_signal_connect(
-			G_OBJECT( priv->ope_templates_frame ), "changed", G_CALLBACK( on_ope_template_changed ), dialog );
+			G_OBJECT( priv->ope_templates_frame ), "ofa-changed", G_CALLBACK( on_ope_template_changed ), dialog );
 	g_signal_connect(
-			G_OBJECT( priv->ope_templates_frame ), "activated", G_CALLBACK( on_ope_template_activated ), dialog );
+			G_OBJECT( priv->ope_templates_frame ), "ofa-activated", G_CALLBACK( on_ope_template_activated ), dialog );
 }
 
 static void
