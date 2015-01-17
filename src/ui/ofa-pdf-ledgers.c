@@ -334,14 +334,14 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	priv->alignment = widget;
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_attach_to( priv->ledgers_tview, GTK_CONTAINER( widget ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ledgers_tview ));
 	ofa_ledger_treeview_set_columns( priv->ledgers_tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, MY_WINDOW( self )->prot->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 
 	g_signal_connect(
-			G_OBJECT( priv->ledgers_tview ), "activated", G_CALLBACK( on_ledgers_activated ), self );
+			G_OBJECT( priv->ledgers_tview ), "ofa-activated", G_CALLBACK( on_ledgers_activated ), self );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-all-ledgers" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));

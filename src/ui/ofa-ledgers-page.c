@@ -170,16 +170,16 @@ setup_tree_view( ofaPage *page )
 	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 4, 0 );
 
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( alignment ));
+	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
-	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_row_activated ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "insert", G_CALLBACK( on_insert_key ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "delete", G_CALLBACK( on_delete_key ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-insert", G_CALLBACK( on_insert_key ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-delete", G_CALLBACK( on_delete_key ), page );
 
 	return( alignment );
 }

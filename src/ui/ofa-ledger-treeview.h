@@ -39,6 +39,8 @@
  * embedded in a GtkScrolledWindow.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofo-dossier-def.h"
 
 #include "core/ofa-main-window-def.h"
@@ -58,7 +60,7 @@ typedef struct _ofaLedgerTreeviewPrivate        ofaLedgerTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                   parent;
+	GtkBin                    parent;
 
 	/*< private members >*/
 	ofaLedgerTreeviewPrivate *priv;
@@ -67,16 +69,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass              parent;
+	GtkBinClass               parent;
 }
 	ofaLedgerTreeviewClass;
 
 GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
 ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
-
-void               ofa_ledger_treeview_attach_to               ( ofaLedgerTreeview *view,
-																			GtkContainer *parent );
 
 void               ofa_ledger_treeview_set_columns             ( ofaLedgerTreeview *view,
 																			ofaLedgerColumns columns );

@@ -217,14 +217,14 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( container, "treeview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, MY_WINDOW( dialog )->prot->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 
-	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_rows_selected ), dialog );
-	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_rows_activated ), dialog );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), dialog );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_rows_activated ), dialog );
 
 	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
