@@ -442,7 +442,7 @@ init_date_format( ofaFileFormatBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->date_combo ));
 
-	my_date_combo_attach_to( priv->date_combo, GTK_CONTAINER( widget ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->date_combo ));
 	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
 
 	g_signal_connect( priv->date_combo, "ofa-changed", G_CALLBACK( on_date_changed ), self );

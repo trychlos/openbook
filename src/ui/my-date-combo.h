@@ -72,9 +72,6 @@ GType        my_date_combo_get_type    ( void ) G_GNUC_CONST;
 
 myDateCombo *my_date_combo_new         ( void );
 
-void         my_date_combo_attach_to   ( myDateCombo *combo,
-													GtkContainer *parent );
-
 myDateFormat my_date_combo_get_selected( myDateCombo *combo );
 
 void         my_date_combo_set_selected( myDateCombo *combo,

@@ -452,7 +452,7 @@ init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label
 	g_return_if_fail( parent_widget && GTK_IS_CONTAINER( parent_widget ));
 
 	*wcombo = my_date_combo_new();
-	my_date_combo_attach_to( *wcombo, GTK_CONTAINER( parent_widget ));
+	gtk_container_add( GTK_CONTAINER( parent_widget ), GTK_WIDGET( *wcombo ));
 	my_date_combo_set_selected( *wcombo, ivalue );
 
 	label = my_utils_container_get_child_by_name( container, label_name );
