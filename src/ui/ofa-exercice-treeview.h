@@ -38,6 +38,8 @@
  * embedded in a GtkScrolledWindow.
  */
 
+#include <gtk/gtk.h>
+
 #include "ui/ofa-exercice-store.h"
 
 G_BEGIN_DECLS
@@ -53,7 +55,7 @@ typedef struct _ofaExerciceTreeviewPrivate        ofaExerciceTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                     parent;
+	GtkBin                      parent;
 
 	/*< private members >*/
 	ofaExerciceTreeviewPrivate *priv;
@@ -62,26 +64,22 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass                parent;
+	GtkBinClass                 parent;
 }
 	ofaExerciceTreeviewClass;
 
-GType                ofa_exercice_treeview_get_type                ( void ) G_GNUC_CONST;
+GType                ofa_exercice_treeview_get_type   ( void ) G_GNUC_CONST;
 
-ofaExerciceTreeview *ofa_exercice_treeview_new                     ( void );
+ofaExerciceTreeview *ofa_exercice_treeview_new        ( void );
 
-void                 ofa_exercice_treeview_attach_to               ( ofaExerciceTreeview *view,
-																			GtkContainer *parent );
+void                 ofa_exercice_treeview_set_columns( ofaExerciceTreeview *view,
+																ofaExerciceColumns columns );
 
-void                 ofa_exercice_treeview_set_columns             ( ofaExerciceTreeview *view,
-																			ofaExerciceColumns columns );
-
-void                 ofa_exercice_treeview_set_dossier             ( ofaExerciceTreeview *view,
-																			const gchar *dname );
+void                 ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view,
+																const gchar *dname );
 
 #if 0
 GList               *ofa_exercice_treeview_get_selected            ( ofaExerciceTreeview *view );
-
 #define              ofa_exercice_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 #endif
 
