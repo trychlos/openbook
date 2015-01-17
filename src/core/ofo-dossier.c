@@ -484,6 +484,15 @@ ofo_dossier_new( void )
 	return( dossier );
 }
 
+/**
+ * ofo_dossier_has_dispose_run:
+ */
+gboolean
+ofo_dossier_has_dispose_run( const ofoDossier *dossier )
+{
+	return( OFO_BASE( dossier )->prot->dispose_has_run );
+}
+
 #if 0
 static gboolean
 check_user_exists( ofaDbms *dbms, const gchar *account )

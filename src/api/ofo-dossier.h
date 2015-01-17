@@ -55,6 +55,8 @@ G_BEGIN_DECLS
 
 ofoDossier      *ofo_dossier_new                       ( void );
 
+gboolean         ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
+
 gboolean         ofo_dossier_open                      ( ofoDossier *dossier,
 																const gchar *dname,
 																const gchar *dbname,
@@ -96,12 +98,15 @@ ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 
-GDate           *ofo_dossier_get_min_deffect           ( GDate *date, const ofoDossier *dossier, ofoLedger *ledger );
+GDate           *ofo_dossier_get_min_deffect           ( GDate *date,
+																const ofoDossier *dossier,
+																ofoLedger *ledger );
 
 GSList          *ofo_dossier_get_currencies            ( const ofoDossier *dossier );
 #define          ofo_dossier_free_currencies( L )      g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-const gchar     *ofo_dossier_get_sld_account           ( ofoDossier *dossier, const gchar *currency );
+const gchar     *ofo_dossier_get_sld_account           ( ofoDossier *dossier,
+																const gchar *currency );
 
 gboolean         ofo_dossier_is_current                ( const ofoDossier *dossier );
 gboolean         ofo_dossier_is_valid                  ( const gchar *label,

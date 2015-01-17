@@ -214,7 +214,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->accounts_frame = ofa_accounts_frame_new();
-	ofa_accounts_frame_attach_to( priv->accounts_frame, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->accounts_frame ));
 	ofa_accounts_frame_set_main_window( priv->accounts_frame, MY_WINDOW( dialog )->prot->main_window );
 	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE );
 

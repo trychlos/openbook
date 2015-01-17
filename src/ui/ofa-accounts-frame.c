@@ -65,16 +65,16 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaAccountsFrame, ofa_accounts_frame, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaAccountsFrame, ofa_accounts_frame, GTK_TYPE_BIN )
 
-static GtkWidget *get_top_grid( ofaAccountsFrame *frame );
-static void       on_new_clicked( GtkButton *button, ofaAccountsFrame *frame );
-static void       on_properties_clicked( GtkButton *button, ofaAccountsFrame *frame );
-static void       on_delete_clicked( GtkButton *button, ofaAccountsFrame *frame );
-static void       on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame );
-static void       on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
-static void       on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
-static void       update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number );
+static void setup_top_grid( ofaAccountsFrame *frame );
+static void on_new_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_properties_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_delete_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
+static void on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
+static void update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number );
 
 static void
 accounts_frame_finalize( GObject *instance )
@@ -215,34 +215,41 @@ ofa_accounts_frame_new( void  )
 
 	self = g_object_new( OFA_TYPE_ACCOUNTS_FRAME, NULL );
 
-	get_top_grid( self );
+	setup_top_grid( self );
 
 	return( self );
 }
 
-/**
- * ofa_accounts_frame_attach_to:
- *
- * Attachs the created content to the specified parent.
+/*
+ * create the top grid which contains the accounts notebook and the
+ * buttons, and attach it to our #GtkBin
  */
-void
-ofa_accounts_frame_attach_to( ofaAccountsFrame *frame, GtkContainer *parent )
+static void
+setup_top_grid( ofaAccountsFrame *frame )
 {
 	ofaAccountsFramePrivate *priv;
 	GtkWidget *grid;
 
-	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
 	priv = frame->priv;
 
-	if( !priv->dispose_has_run ){
+	grid = gtk_grid_new();
+	gtk_container_add( GTK_CONTAINER( frame ), grid );
 
-		grid = get_top_grid( frame );
-		gtk_container_add( parent, grid );
+	priv->grid = GTK_GRID( grid );
+	gtk_widget_set_margin_left( grid, 4 );
+	gtk_widget_set_margin_bottom( grid, 4 );
 
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
+	/* create the accounts notebook
+	 */
+	priv->book = ofa_accounts_book_new();
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->book ), 0, 0, 1, 1 );
+
+	g_signal_connect(
+			G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), frame );
+	g_signal_connect(
+			G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), frame );
+
+	gtk_widget_show_all( GTK_WIDGET( frame ));
 }
 
 /**
@@ -264,44 +271,9 @@ ofa_accounts_frame_set_main_window( ofaAccountsFrame *frame, ofaMainWindow *main
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
-
 		ofa_accounts_book_set_main_window( priv->book, main_window );
 		ofa_accounts_book_expand_all( priv->book );
 	}
-}
-
-static GtkWidget *
-get_top_grid( ofaAccountsFrame *frame )
-{
-	ofaAccountsFramePrivate *priv;
-	GtkWidget *grid, *alignment;
-
-	priv = frame->priv;
-
-	if( !priv->grid ){
-
-		grid = gtk_grid_new();
-
-		priv->grid = GTK_GRID( grid );
-		gtk_widget_set_margin_left( grid, 4 );
-		gtk_widget_set_margin_bottom( grid, 4 );
-
-		/* create the accounts notebook
-		 */
-		alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-		gtk_grid_attach( priv->grid, alignment, 0, 0, 1, 1 );
-
-		priv->book = ofa_accounts_book_new();
-
-		ofa_accounts_book_attach_to( priv->book, GTK_CONTAINER( alignment ));
-
-		g_signal_connect(
-				G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), frame );
-		g_signal_connect(
-				G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), frame );
-	}
-
-	return( GTK_WIDGET( priv->grid ));
 }
 
 static void

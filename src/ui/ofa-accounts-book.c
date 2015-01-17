@@ -50,7 +50,6 @@
  */
 struct _ofaAccountsBookPrivate {
 	gboolean         dispose_has_run;
-	gboolean         from_widget_finalized;
 
 	ofaMainWindow   *main_window;
 	ofoDossier      *dossier;
@@ -98,7 +97,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void       create_notebook( ofaAccountsBook *book );
-static void       on_widget_finalized( ofaAccountsBook *book, gpointer finalized_parent );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsBook *self );
 static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book );
@@ -133,7 +131,7 @@ static GtkWidget *get_current_tree_view( const ofaAccountsBook *self );
 static void       select_row_by_number( ofaAccountsBook *self, const gchar *number );
 static void       select_row_by_iter( ofaAccountsBook *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
 
-G_DEFINE_TYPE( ofaAccountsBook, ofa_accounts_book, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaAccountsBook, ofa_accounts_book, GTK_TYPE_BIN )
 
 static void
 accounts_book_finalize( GObject *instance )
@@ -166,19 +164,12 @@ accounts_book_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, instance );
-
-			/* disconnect from ofoDossier */
-			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-				for( it=priv->dos_handlers ; it ; it=it->next ){
-					g_debug( "about to disconnect from dossier" );
-					g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-				}
+		if( priv->dossier &&
+				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
+			for( it=priv->dos_handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
 			}
 		}
-
 	}
 
 	/* chain up to the parent class */
@@ -303,70 +294,20 @@ create_notebook( ofaAccountsBook *book )
 
 	priv = book->priv;
 
-	if( !priv->book ){
+	priv->book = GTK_NOTEBOOK( gtk_notebook_new());
+	gtk_notebook_popup_enable( priv->book );
+	gtk_notebook_set_scrollable( priv->book, TRUE );
 
-		priv->book = GTK_NOTEBOOK( gtk_notebook_new());
-		gtk_notebook_popup_enable( priv->book );
-		gtk_notebook_set_scrollable( priv->book, TRUE );
+	g_signal_connect(
+			G_OBJECT( priv->book ),
+			"switch-page", G_CALLBACK( on_book_page_switched ), book );
 
-		g_signal_connect(
-				G_OBJECT( priv->book ),
-				"switch-page", G_CALLBACK( on_book_page_switched ), book );
+	g_signal_connect(
+			G_OBJECT( priv->book ),
+			"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
 
-		g_signal_connect(
-				G_OBJECT( priv->book ),
-				"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
-	}
-}
-
-/**
- * ofa_accounts_book_attach_to:
- * @book: this #ofaAccountsBook book.
- * @parent: the #GtkContainer to which the widget should be attached.
- *
- * Attach the widget to its parent.
- *
- * This should be done right after the instanciation of the object, and
- * before setting the main window (which actually will load the dataset
- * in the underlying store).
- *
- * A weak notify reference is put on the parent widget, so that the
- * instance will be unreffed when the parent will be destroyed.
- */
-void
-ofa_accounts_book_attach_to( ofaAccountsBook *book, GtkContainer *parent )
-{
-	ofaAccountsBookPrivate *priv;
-
-	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = book->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( priv->book ));
-		g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, book );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
-static void
-on_widget_finalized( ofaAccountsBook *book, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_accounts_book_on_widget_finalized";
-	ofaAccountsBookPrivate *priv;
-
-	g_debug( "%s: book=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) book, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
-
-	priv = book->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( book );
+	gtk_container_add( GTK_CONTAINER( book ), GTK_WIDGET( priv->book ));
+	gtk_widget_show_all( GTK_WIDGET( book ));
 }
 
 /*

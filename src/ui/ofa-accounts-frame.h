@@ -56,7 +56,7 @@ typedef struct _ofaAccountsFramePrivate        ofaAccountsFramePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                  parent;
+	GtkBin                   parent;
 
 	/*< private members >*/
 	ofaAccountsFramePrivate *priv;
@@ -65,16 +65,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass             parent;
+	GtkBinClass              parent;
 }
 	ofaAccountsFrameClass;
 
 GType             ofa_accounts_frame_get_type                ( void ) G_GNUC_CONST;
 
 ofaAccountsFrame *ofa_accounts_frame_new                     ( void );
-
-void              ofa_accounts_frame_attach_to               ( ofaAccountsFrame *frame,
-																		GtkContainer *parent );
 
 void              ofa_accounts_frame_set_main_window         ( ofaAccountsFrame *frame,
 																		ofaMainWindow *main_window );

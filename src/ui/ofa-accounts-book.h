@@ -53,6 +53,8 @@
  * the main window, so that the treeviews are rightly created.
  */
 
+#include <gtk/gtk.h>
+
 #include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -68,7 +70,7 @@ typedef struct _ofaAccountsBookPrivate        ofaAccountsBookPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                 parent;
+	GtkBin                  parent;
 
 	/*< private members >*/
 	ofaAccountsBookPrivate *priv;
@@ -77,16 +79,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass            parent;
+	GtkBinClass             parent;
 }
 	ofaAccountsBookClass;
 
 GType            ofa_accounts_book_get_type                ( void ) G_GNUC_CONST;
 
 ofaAccountsBook *ofa_accounts_book_new                     ( void );
-
-void             ofa_accounts_book_attach_to               ( ofaAccountsBook *book,
-																	GtkContainer *parent );
 
 void             ofa_accounts_book_set_main_window         ( ofaAccountsBook *book,
 																	ofaMainWindow *main_window );
