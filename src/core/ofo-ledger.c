@@ -194,7 +194,7 @@ static guint      iexportable_get_interface_version( const ofaIExportable *insta
 static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
 static gboolean   ledger_do_drop_content( const ofaDbms *dbms );
 
 OFA_IDATASET_LOAD( LEDGER, ledger );
@@ -1807,7 +1807,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - we silently ignore other lines.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;

@@ -102,6 +102,7 @@ typedef struct {
 	 */
 	gint     ( *import )               ( ofaIImportable *instance,
 												GSList *lines,
+												const ofaFileFormat *settings,
 												ofoDossier *dossier );
 
 	/**

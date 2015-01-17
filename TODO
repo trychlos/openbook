@@ -374,9 +374,6 @@
  559 2015- 1- 8 have a macro language to automate dossier creation,
                 import of files
 
- 560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
-                a field separator!
-
  561 2015- 1- 8 importing operation templates (while the corresponding
                 page is opened) doesn't update it - As the store is
                 loaded, there is no way to reset it :(
@@ -2475,6 +2472,10 @@
                 count of headers to be removed from the file (rather
                 than with_headers)
      2015- 1-17 done - svn #4466
+
+ 560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
+                a field separator!
+     2015- 1-17 done - svn #4468
 
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
      2015- 1- 8 due to a bad management of weak references

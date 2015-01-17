@@ -143,9 +143,9 @@ static guint     iexportable_get_interface_version( const ofaIExportable *instan
 static gboolean  iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
-static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, guint count, guint *errors );
-static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, guint count, guint *errors, gchar **mnemo );
+static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
+static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors );
+static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean  rate_do_drop_content( const ofaDbms *dbms );
 
 OFA_IDATASET_LOAD( RATE, rate );
@@ -1300,7 +1300,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * Replace the whole table with the provided datas.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1326,14 +1326,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		type = atoi( cstr );
 		switch( type ){
 			case 1:
-				rate = rate_import_csv_rate( importable, fields, line, &errors );
+				rate = rate_import_csv_rate( importable, fields, settings, line, &errors );
 				if( rate ){
 					dataset = g_list_prepend( dataset, rate );
 				}
 				break;
 			case 2:
 				mnemo = NULL;
-				detail = rate_import_csv_validity( importable, fields, line, &errors, &mnemo );
+				detail = rate_import_csv_validity( importable, fields, settings, line, &errors, &mnemo );
 				if( detail ){
 					rate = rate_find_by_mnemo( dataset, mnemo );
 					if( rate ){
@@ -1381,7 +1381,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 }
 
 static ofoRate *
-rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, guint *errors )
+rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
 {
 	ofoRate *rate;
 	const gchar *cstr;
@@ -1427,7 +1427,7 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, gu
 }
 
 static GList *
-rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line, guint *errors, gchar **mnemo )
+rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
 	const gchar *cstr;
@@ -1463,7 +1463,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line
 	/* rate rate */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	amount = my_double_set_from_sql( cstr );
+	amount = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
 
 	detail = rate_val_new_detail( *mnemo, &begin, &end, amount );
 

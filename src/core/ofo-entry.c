@@ -231,7 +231,7 @@ static guint        iexportable_get_interface_version( const ofaIExportable *ins
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
 
 static void
 entry_finalize( GObject *instance )
@@ -2604,7 +2604,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * Both rough and future entries must be balanced per currency.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -2620,7 +2620,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofaEntryStatus status;
 	GList *past, *exe, *fut;
 	ofsCurrency *sdet;
-	gint digits;
 	ofoCurrency *cur_object;
 	ofxCounter counter;
 	const GDate *cdate;
@@ -2764,18 +2763,17 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			errors += 1;
 			continue;
 		}
-		digits = ofo_currency_get_digits( cur_object );
 		ofo_entry_set_currency( entry, currency );
 
 		/* debit */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		debit = my_double_set_from_sql_ex( cstr, digits );
+		debit = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
 
 		/* credit */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		credit = my_double_set_from_sql_ex( cstr, digits );
+		credit = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
 
 		/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
 		if(( debit && !credit ) || ( !debit && credit )){

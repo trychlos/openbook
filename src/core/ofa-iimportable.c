@@ -187,6 +187,7 @@ ofa_iimportable_import( ofaIImportable *importable,
 	gchar *sstart, *send;
 	guint count;
 	gulong udelay;
+	GSList *content;
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 	g_return_val_if_fail( OFO_IS_BASE( importable ), 0 );
@@ -197,14 +198,17 @@ ofa_iimportable_import( ofaIImportable *importable,
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
 
+	count = ofa_file_format_get_headers_count( settings );
+	content = g_slist_nth( lines, count );
+
 	errors = 0;
 	sdata->caller = caller;
 	sdata->progress = 0;
 	sdata->insert = 0;
-	sdata->count = g_slist_length( lines );
+	sdata->count = g_slist_length( content );
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
-		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, lines, dossier );
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, content, settings, dossier );
 	}
 
 	my_utils_stamp_set_now( &stamp_end );

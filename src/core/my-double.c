@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "api/my-double.h"
+#include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-settings.h"
 
@@ -128,6 +129,36 @@ double_set_locale( void )
 }
 
 /**
+ * my_double_set_from_csv:
+ *
+ * Returns a double from the imported field
+ */
+gdouble
+my_double_set_from_csv( const gchar *sql_string, gchar decimal_sep )
+{
+	gchar *str;
+	gint i;
+	gdouble amount;
+
+	str = g_strdup( sql_string );
+
+	if( decimal_sep != '.' ){
+		for( i=0 ; str[i] ; ++i ){
+			if( str[i] == decimal_sep ){
+				str[i] = '.';
+				break;
+			}
+		}
+	}
+
+	amount = my_double_set_from_sql( str );
+
+	g_free( str );
+
+	return( amount );
+}
+
+/**
  * my_double_set_from_sql:
  *
  * Returns a double from the specified SQL-stringified decimal
@@ -153,7 +184,7 @@ my_double_set_from_sql_ex( const gchar *sql_string, gint digits )
 	gdouble amount;
 	gdouble precision;
 
-	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
+	if( !my_strlen( sql_string )){
 		return( 0.0 );
 	}
 

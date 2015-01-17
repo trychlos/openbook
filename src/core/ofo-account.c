@@ -221,7 +221,7 @@ static guint        iexportable_get_interface_version( const ofaIExportable *ins
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
 static gboolean     account_do_drop_content( const ofaDbms *dbms );
 
 OFA_IDATASET_LOAD( ACCOUNT, account );
@@ -2126,7 +2126,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * All the balances are set to NULL.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *def_dev_code;

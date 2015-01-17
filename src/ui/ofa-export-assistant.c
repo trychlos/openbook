@@ -672,6 +672,14 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-headers" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	str = g_strdup(
+			ofa_file_format_has_headers( priv->p3_export_settings ) ? _( "True" ) : _( "False" ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-output" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );

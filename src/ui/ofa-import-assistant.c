@@ -640,6 +640,13 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 		str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p4_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
+
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-headers" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		str = g_strdup_printf( "%d", ofa_file_format_get_headers_count( priv->p4_import_settings ));
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
 	}
 
 	gtk_widget_show_all( page );
@@ -815,18 +822,15 @@ p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
 	guint count;
-	GSList *lines, *content;
+	GSList *lines;
 
 	priv = self->priv;
+
 	lines = get_lines_from_csv( self );
-	content = lines;
+	count = g_slist_length( lines );
 
-	count = ofa_file_format_get_headers_count( priv->p4_import_settings );
-	content = g_slist_nth( lines, count );
-
-	count = g_slist_length( content );
 	*errors = ofa_iimportable_import( priv->p6_object,
-			content, priv->p4_import_settings, MY_WINDOW( self )->prot->dossier, self );
+			lines, priv->p4_import_settings, MY_WINDOW( self )->prot->dossier, self );
 
 	free_lines( lines );
 
