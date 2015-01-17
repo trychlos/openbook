@@ -71,9 +71,6 @@ GType           my_decimal_combo_get_type    ( void ) G_GNUC_CONST;
 
 myDecimalCombo *my_decimal_combo_new         ( void );
 
-void            my_decimal_combo_attach_to   ( myDecimalCombo *combo,
-															GtkContainer *parent );
-
 gchar          *my_decimal_combo_get_selected( myDecimalCombo *combo );
 
 void            my_decimal_combo_set_selected( myDecimalCombo *combo,

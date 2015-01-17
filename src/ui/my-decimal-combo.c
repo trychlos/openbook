@@ -179,26 +179,6 @@ my_decimal_combo_new( void )
 	return( self );
 }
 
-/**
- * my_decimal_combo_attach_to:
- */
-void
-my_decimal_combo_attach_to( myDecimalCombo *combo, GtkContainer *parent )
-{
-	myDecimalComboPrivate *priv;
-
-	g_return_if_fail( combo && MY_IS_DECIMAL_COMBO( combo ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = combo->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( combo ));
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
 static void
 setup_combo( myDecimalCombo *combo )
 {
@@ -216,6 +196,8 @@ setup_combo( myDecimalCombo *combo )
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", COL_LABEL );
 
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_decimal_changed ), NULL );
+
+	gtk_widget_show_all( GTK_WIDGET( combo ));
 }
 
 static void

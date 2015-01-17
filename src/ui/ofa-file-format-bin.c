@@ -467,13 +467,13 @@ init_decimal_dot( ofaFileFormatBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->decimal_combo ));
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->decimal_combo ));
 
-	my_decimal_combo_attach_to( priv->decimal_combo, GTK_CONTAINER( parent ));
 	sep = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
-	/*g_debug( "init_decimal_dot: sep='%s'", sep );*/
 	my_decimal_combo_set_selected( priv->decimal_combo, sep );
 	g_free( sep );
 
@@ -499,7 +499,8 @@ init_field_separator( ofaFileFormatBin *self )
 	priv->field_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
 	priv->field_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-parent" );
 	g_return_if_fail( priv->field_parent && GTK_IS_CONTAINER( priv->field_parent ));
-	my_field_combo_attach_to( priv->field_combo, GTK_CONTAINER( priv->field_parent ));
+
+	gtk_container_add( GTK_CONTAINER( priv->field_parent ), GTK_WIDGET( priv->field_combo ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

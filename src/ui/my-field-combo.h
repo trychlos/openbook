@@ -71,9 +71,6 @@ GType         my_field_combo_get_type    ( void ) G_GNUC_CONST;
 
 myFieldCombo *my_field_combo_new         ( void );
 
-void          my_field_combo_attach_to   ( myFieldCombo *combo,
-														GtkContainer *parent );
-
 gchar        *my_field_combo_get_selected( myFieldCombo *combo );
 
 void          my_field_combo_set_selected( myFieldCombo *combo,

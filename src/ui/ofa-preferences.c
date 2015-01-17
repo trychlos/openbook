@@ -389,7 +389,7 @@ init_locales_page( ofaPreferences *self )
 	parent = my_utils_container_get_child_by_name( container, "p3-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	my_decimal_combo_attach_to( priv->p3_decimal_sep, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_decimal_sep ));
 	my_decimal_combo_set_selected( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
 
 	label = my_utils_container_get_child_by_name( container, "l-decimal" );
