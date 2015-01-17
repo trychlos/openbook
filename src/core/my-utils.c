@@ -209,7 +209,7 @@ my_utils_export_multi_lines( const gchar *str )
 			return( NULL );
 		}
 
-		export = g_regex_replace_literal( regex, str, -1, 0, "|", 0, &error );
+		export = g_regex_replace_literal( regex, str, -1, 0, "][", 0, &error );
 		if( error ){
 			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
 			g_error_free( error );
@@ -240,7 +240,7 @@ my_utils_import_multi_lines( const gchar *str )
 
 	if( str && g_utf8_strlen( str, -1 )){
 
-		array = g_strsplit( str, "|", -1 );
+		array = g_strsplit( str, "][", -1 );
 		iter = array;
 
 		while( *iter ){

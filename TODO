@@ -365,15 +365,6 @@
      2015- 1-10 idem when validating entries:
                 count=484: average is 0.09846 s
 
- 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
-                main ope template or of the detail line - makes change
-                accordingly (doc, database, class, ofsOpe struct)
-     2015- 1- 4 piece ref is part of detail entry - it is in the global
-                part of the GuidedInput UI just for simplification
-                reasons.
-                This is ok in documentation and database.
-     2015- 1-11 opened back: the ref should be part of the main operation
-
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
@@ -2427,6 +2418,16 @@
  545 2014-12-29 set the main window title to the description of the
                 opened exercice
      2014-12-29 done - svn #4390
+
+ 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
+                main ope template or of the detail line - makes change
+                accordingly (doc, database, class, ofsOpe struct)
+     2015- 1- 4 piece ref is part of detail entry - it is in the global
+                part of the GuidedInput UI just for simplification
+                reasons.
+                This is ok in documentation and database.
+     2015- 1-11 opened back: the ref should be part of the main operation
+     2015- 1-17 done - svn #4467
 
  547 2014-12-31 migrate local sCurrency used for currency balance 
                 computings to the global ofsCurrency struct declaration
