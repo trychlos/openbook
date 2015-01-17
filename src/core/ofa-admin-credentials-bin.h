@@ -69,9 +69,6 @@ GType                   ofa_admin_credentials_bin_get_type ( void ) G_GNUC_CONST
 
 ofaAdminCredentialsBin *ofa_admin_credentials_bin_new      ( void );
 
-void                    ofa_admin_credentials_bin_attach_to( ofaAdminCredentialsBin *bin,
-																			GtkContainer *parent );
-
 gboolean                ofa_admin_credentials_bin_is_valid ( const ofaAdminCredentialsBin *bin );
 
 G_END_DECLS

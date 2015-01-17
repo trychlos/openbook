@@ -252,7 +252,7 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "admin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->admin_credentials = ofa_admin_credentials_bin_new();
-	ofa_admin_credentials_bin_attach_to( priv->admin_credentials, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_credentials ));
 
 	g_signal_connect( priv->admin_credentials, "changed", G_CALLBACK( on_admin_credentials_changed ), dialog );
 

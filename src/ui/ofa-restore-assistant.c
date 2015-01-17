@@ -613,7 +613,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p5_admin_credentials = ofa_admin_credentials_bin_new();
-	ofa_admin_credentials_bin_attach_to( priv->p5_admin_credentials, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_admin_credentials ));
 
 	g_signal_connect(
 			priv->p5_admin_credentials, "changed", G_CALLBACK( p5_on_admin_credentials_changed ), self );

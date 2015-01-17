@@ -65,11 +65,11 @@ static const gchar *st_bin_id           = "AdminCredentialsBin";
 
 G_DEFINE_TYPE( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN )
 
-static void     setup_dialog( ofaAdminCredentialsBin *bin );
-static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     check_for_enable_dlg( ofaAdminCredentialsBin *self );
+static void setup_dialog( ofaAdminCredentialsBin *bin );
+static void on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void check_for_enable_dlg( ofaAdminCredentialsBin *self );
 
 static void
 admin_credentials_bin_finalize( GObject *instance )
@@ -176,47 +176,26 @@ ofa_admin_credentials_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_ADMIN_CREDENTIALS_BIN, NULL );
 
+	setup_dialog( bin );
+
 	return( bin );
-}
-
-/**
- * ofa_admin_credentials_bin_attach_to:
- */
-void
-ofa_admin_credentials_bin_attach_to( ofaAdminCredentialsBin *bin, GtkContainer *parent )
-{
-	ofaAdminCredentialsBinPrivate *priv;
-	GtkWidget *window, *widget;
-
-	g_return_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "adm-top" );
-		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
-
-		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
-		gtk_container_add( parent, GTK_WIDGET( bin ));
-
-		setup_dialog( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
 }
 
 static void
 setup_dialog( ofaAdminCredentialsBin *bin )
 {
 	ofaAdminCredentialsBinPrivate *priv;
-	GtkWidget *entry;
+	GtkWidget *window, *top_widget, *entry;
 
 	priv =bin->priv;
+
+	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
+	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
+
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "adm-top" );
+	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+
+	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-account" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -235,6 +214,8 @@ setup_dialog( ofaAdminCredentialsBin *bin )
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 
 	check_for_enable_dlg( bin );
+
+	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
 static void
