@@ -35,6 +35,8 @@
  * This class manages a combobox which display the known exercices.
  */
 
+#include <gtk/gtk.h>
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXERCICE_COMBO                ( ofa_exercice_combo_get_type())
@@ -48,7 +50,7 @@ typedef struct _ofaExerciceComboPrivate        ofaExerciceComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                  parent;
+	GtkComboBox              parent;
 
 	/*< private members >*/
 	ofaExerciceComboPrivate *priv;
@@ -57,18 +59,15 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass             parent;
+	GtkComboBoxClass         parent;
 }
 	ofaExerciceComboClass;
 
-GType             ofa_exercice_combo_get_type    ( void ) G_GNUC_CONST;
+GType             ofa_exercice_combo_get_type   ( void ) G_GNUC_CONST;
 
-ofaExerciceCombo *ofa_exercice_combo_new         ( void );
+ofaExerciceCombo *ofa_exercice_combo_new        ( void );
 
-void              ofa_exercice_combo_attach_to   ( ofaExerciceCombo *combo,
-															GtkContainer *new_parent );
-
-void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
+void              ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo,
 															const gchar *dname );
 
 G_END_DECLS

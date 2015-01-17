@@ -39,12 +39,9 @@
  */
 struct _ofaExerciceComboPrivate {
 	gboolean          dispose_has_run;
-	gboolean          from_widget_finalized;
 
 	/* UI
 	 */
-	GtkContainer     *container;
-	GtkComboBox      *combo;
 	ofaExerciceStore *store;
 };
 
@@ -57,12 +54,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaExerciceCombo, ofa_exercice_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaExerciceCombo, ofa_exercice_combo, GTK_TYPE_COMBO_BOX )
 
-static void on_widget_finalized( ofaExerciceCombo *self, gpointer finalized_parent );
-static void setup_combo( ofaExerciceCombo *self );
-static void on_exercice_changed( GtkComboBox *box, ofaExerciceCombo *self );
-static void on_exercice_changed_cleanup_handler( ofaExerciceCombo *self, gchar *label, gchar *dbname );
+static void setup_combo( ofaExerciceCombo *combo );
+static void on_exercice_changed( ofaExerciceCombo *combo, void *empty );
+static void on_exercice_changed_cleanup_handler( ofaExerciceCombo *combo, gchar *label, gchar *dbname );
 
 static void
 exercice_combo_finalize( GObject *instance )
@@ -94,10 +90,6 @@ exercice_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -149,7 +141,7 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_EXERCICE_COMBO,
 				G_SIGNAL_RUN_CLEANUP,
 				G_CALLBACK( on_exercice_changed_cleanup_handler ),
@@ -161,82 +153,42 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
-static void
-on_widget_finalized( ofaExerciceCombo *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_exercice_combo_on_widget_finalized";
-	ofaExerciceComboPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( self && OFA_IS_EXERCICE_COMBO( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
-}
-
 /**
  * ofa_exercice_combo_new:
  */
 ofaExerciceCombo *
 ofa_exercice_combo_new( void )
 {
-	ofaExerciceCombo *self;
+	ofaExerciceCombo *combo;
 
-	self = g_object_new( OFA_TYPE_EXERCICE_COMBO, NULL );
+	combo = g_object_new( OFA_TYPE_EXERCICE_COMBO, NULL );
 
-	return( self );
-}
+	setup_combo( combo );
 
-/**
- * ofa_exercice_combo_attach_to:
- */
-void
-ofa_exercice_combo_attach_to( ofaExerciceCombo *self, GtkContainer *new_parent )
-{
-	ofaExerciceComboPrivate *priv;
-	GtkWidget *box;
-
-	g_return_if_fail( self && OFA_IS_EXERCICE_COMBO( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
-
-	priv = self->priv;
-
-	if( !priv->dispose_has_run ){
-
-		box = gtk_combo_box_new();
-		gtk_container_add( new_parent, box );
-		priv->combo = GTK_COMBO_BOX( box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
-
-		setup_combo( self );
-	}
+	return( combo );
 }
 
 static void
-setup_combo( ofaExerciceCombo *self )
+setup_combo( ofaExerciceCombo *combo )
 {
 	ofaExerciceComboPrivate *priv;
 	GtkCellRenderer *cell;
 
-	priv = self->priv;
+	priv = combo->priv;
 
 	priv->store = ofa_exercice_store_new();
-	gtk_combo_box_set_model( priv->combo, GTK_TREE_MODEL( priv->store ));
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
 	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", EXERCICE_COL_LABEL );
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", EXERCICE_COL_LABEL );
 
-	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_exercice_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_exercice_changed ), NULL );
 }
 
 static void
-on_exercice_changed( GtkComboBox *combo, ofaExerciceCombo *self )
+on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -244,22 +196,22 @@ on_exercice_changed( GtkComboBox *combo, ofaExerciceCombo *self )
 
 	label = NULL;
 
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter,
 				EXERCICE_COL_LABEL, &label,
 				EXERCICE_COL_DBNAME, &dbname,
 				-1 );
-		g_signal_emit_by_name( self, "changed", label, dbname );
+		g_signal_emit_by_name( combo, "ofa-changed", label, dbname );
 	}
 }
 
 static void
-on_exercice_changed_cleanup_handler( ofaExerciceCombo *self, gchar *label, gchar *dbname )
+on_exercice_changed_cleanup_handler( ofaExerciceCombo *combo, gchar *label, gchar *dbname )
 {
 	static const gchar *thisfn = "ofa_exercice_combo_on_exercice_changed_cleanup_handler";
 
-	g_debug( "%s: self=%p, label=%s, dbname=%s", thisfn, ( void * ) self, label, dbname );
+	g_debug( "%s: combo=%p, label=%s, dbname=%s", thisfn, ( void * ) combo, label, dbname );
 
 	g_free( dbname );
 	g_free( label );
@@ -267,22 +219,22 @@ on_exercice_changed_cleanup_handler( ofaExerciceCombo *self, gchar *label, gchar
 
 /**
  * ofa_exercice_combo_set_dossier:
- * @self: this #ofaExerciceCombo instance.
+ * @combo: this #ofaExerciceCombo instance.
  * @dname: the name of the dossier from which we want known exercices
  */
 void
-ofa_exercice_combo_set_dossier( ofaExerciceCombo *self, const gchar *dname )
+ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_exercice_combo_set_dossier";
 	ofaExerciceComboPrivate *priv;
 
-	g_debug( "%s: self=%p, dname=%s", thisfn, ( void * ) self, dname );
+	g_debug( "%s: combo=%p, dname=%s", thisfn, ( void * ) combo, dname );
 
-	priv = self->priv;
+	priv = combo->priv;
 
 	ofa_exercice_store_set_dossier( priv->store, dname );
 
-	gtk_combo_box_set_active( priv->combo, 0 );
+	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }
 
 #if 0

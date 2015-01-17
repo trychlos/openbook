@@ -208,9 +208,9 @@ v_init_dialog( myDialog *dialog )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-exercice" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	priv->exercice_combo = ofa_exercice_combo_new();
-	ofa_exercice_combo_attach_to( priv->exercice_combo, GTK_CONTAINER( container ));
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
 	g_signal_connect(
-			G_OBJECT( priv->exercice_combo ), "changed", G_CALLBACK( on_exercice_changed ), dialog );
+			G_OBJECT( priv->exercice_combo ), "ofa-changed", G_CALLBACK( on_exercice_changed ), dialog );
 
 	/* setup dossier treeview */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-dossier" );
