@@ -73,9 +73,6 @@ GType           ofa_ledger_combo_get_type       ( void );
 
 ofaLedgerCombo *ofa_ledger_combo_new            ( void );
 
-void            ofa_ledger_combo_attach_to      ( ofaLedgerCombo *instance,
-															GtkContainer *parent );
-
 void            ofa_ledger_combo_set_columns    ( ofaLedgerCombo *instance,
 															ofaLedgerColumns columns );
 

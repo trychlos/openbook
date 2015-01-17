@@ -520,8 +520,7 @@ setup_ledger_selection( ofaViewEntries *self )
 
 	priv->ledger_parent = my_utils_container_get_child_by_name( priv->top_box, "f1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
-
-	ofa_ledger_combo_attach_to( priv->ledger_combo, GTK_CONTAINER( priv->ledger_parent ));
+	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, ofa_page_get_main_window( OFA_PAGE( self )));
 

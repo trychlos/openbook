@@ -179,29 +179,6 @@ on_ledger_changed( ofaLedgerCombo *combo, void *empty )
 }
 
 /**
- * ofa_ledger_combo_attach_to:
- */
-void
-ofa_ledger_combo_attach_to( ofaLedgerCombo *combo, GtkContainer *parent )
-{
-	ofaLedgerComboPrivate *priv;
-
-	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	g_debug( "ofa_ledger_combo_attach_to: combo=%p, parent=%p (%s)",
-			( void * ) combo,
-			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
-
-	priv = combo->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( combo ));
-	}
-}
-
-/**
  * ofa_ledger_combo_set_columns:
  */
 void
