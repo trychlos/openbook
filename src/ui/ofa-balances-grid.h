@@ -52,7 +52,7 @@ typedef struct _ofaBalancesGridPrivate        ofaBalancesGridPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                 parent;
+	GtkBin                  parent;
 
 	/*< private members >*/
 	ofaBalancesGridPrivate *priv;
@@ -61,15 +61,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass            parent;
+	GtkBinClass             parent;
 }
 	ofaBalancesGridClass;
 
 GType            ofa_balances_grid_get_type ( void ) G_GNUC_CONST;
 
 ofaBalancesGrid *ofa_balances_grid_new      ( void );
-
-void             ofa_balances_grid_attach_to( ofaBalancesGrid *combo, GtkContainer *new_parent );
 
 G_END_DECLS
 

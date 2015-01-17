@@ -35,13 +35,11 @@
 /* private instance data
  */
 struct _ofaBalancesGridPrivate {
-	gboolean        dispose_has_run;
-	gboolean        from_widget_finalized;
+	gboolean dispose_has_run;
 
 	/* UI
 	 */
-	GtkContainer   *container;
-	GtkGrid        *grid;				/* top grid */
+	GtkGrid *grid;						/* top grid */
 };
 
 /* signals defined here
@@ -53,9 +51,9 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaBalancesGrid, ofa_balances_grid, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaBalancesGrid, ofa_balances_grid, GTK_TYPE_BIN )
 
-static void on_widget_finalized( ofaBalancesGrid *self, gpointer finalized_parent );
+static void setup_grid( ofaBalancesGrid *self );
 static void on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
 static void write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top );
 
@@ -89,10 +87,6 @@ balances_grid_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->grid ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -152,23 +146,6 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 				G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE );
 }
 
-static void
-on_widget_finalized( ofaBalancesGrid *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_balances_grid_on_widget_finalized";
-	ofaBalancesGridPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
-}
-
 /**
  * ofa_balances_grid_new:
  */
@@ -179,36 +156,28 @@ ofa_balances_grid_new( void )
 
 	self = g_object_new( OFA_TYPE_BALANCES_GRID, NULL );
 
+	setup_grid( self );
+
 	return( self );
 }
 
-/**
- * ofa_balances_grid_attach_to:
- */
-void
-ofa_balances_grid_attach_to( ofaBalancesGrid *self, GtkContainer *new_parent )
+static void
+setup_grid( ofaBalancesGrid *self )
 {
 	ofaBalancesGridPrivate *priv;
 	GtkWidget *grid;
 
-	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
-
 	priv = self->priv;
 
-	if( !priv->dispose_has_run ){
+	grid = gtk_grid_new();
+	gtk_container_add( GTK_CONTAINER( self ), grid );
 
-		grid = gtk_grid_new();
-		gtk_container_add( new_parent, grid );
-		priv->grid = GTK_GRID( grid );
-		gtk_grid_set_column_spacing( priv->grid, 4 );
+	priv->grid = GTK_GRID( grid );
+	gtk_grid_set_column_spacing( priv->grid, 4 );
 
-		g_object_weak_ref( G_OBJECT( grid ), ( GWeakNotify ) on_widget_finalized, self );
+	g_signal_connect( G_OBJECT( self ), "update", G_CALLBACK( on_update ), NULL );
 
-		g_signal_connect( G_OBJECT( self ), "update", G_CALLBACK( on_update ), NULL );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
-	}
+	gtk_widget_show_all( GTK_WIDGET( self ));
 }
 
 static void

@@ -725,7 +725,7 @@ p4_get_new_balances( ofaExerciceCloseAssistant *self, const gchar *w_name )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
 	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 	grid = ofa_balances_grid_new();
-	ofa_balances_grid_attach_to( grid, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
 
 	return( grid );
 }
