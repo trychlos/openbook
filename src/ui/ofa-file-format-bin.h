@@ -73,9 +73,6 @@ GType             ofa_file_format_bin_get_type    ( void ) G_GNUC_CONST;
 
 ofaFileFormatBin *ofa_file_format_bin_new         ( ofaFileFormat *settings );
 
-void              ofa_file_format_bin_attach_to   ( ofaFileFormatBin *bin,
-															GtkContainer *parent );
-
 gboolean          ofa_file_format_bin_is_validable( ofaFileFormatBin *bin );
 
 gboolean          ofa_file_format_bin_apply       ( ofaFileFormatBin *bin );

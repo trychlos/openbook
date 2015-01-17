@@ -96,6 +96,7 @@ static const gchar *st_window_id        = "FileFormatBin";
 
 G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
 
+static void     load_dialog( ofaFileFormatBin *bin );
 static void     setup_bin( ofaFileFormatBin *bin );
 static void     init_file_format( ofaFileFormatBin *self );
 static void     on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self );
@@ -215,42 +216,26 @@ ofa_file_format_bin_new( ofaFileFormat *settings )
 
 	self->priv->settings = g_object_ref( settings );
 
+	load_dialog( self );
+	setup_bin( self );
+
 	return( self );
 }
 
-/**
- * ofa_file_format_bin_attach_to:
- *
- * This attach the widgets to the designed parent.
- * This must be called only once, at initialization time.
+/*
  */
-void
-ofa_file_format_bin_attach_to( ofaFileFormatBin *bin, GtkContainer *new_parent )
+static void
+load_dialog( ofaFileFormatBin *bin )
 {
-	ofaFileFormatBinPrivate *priv;
 	GtkWidget *window, *widget;
 
-	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
+	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-	priv = bin->priv;
-	g_return_if_fail( priv->settings && OFA_IS_FILE_FORMAT( priv->settings ));
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "parent-top" );
+	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	if( !priv->dispose_has_run ){
-
-		window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "parent-top" );
-		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
-
-		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
-		gtk_container_add( new_parent, GTK_WIDGET( bin ));
-
-		setup_bin( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
-	}
+	gtk_widget_reparent( widget, GTK_WIDGET( bin ));
 }
 
 static void
@@ -274,6 +259,8 @@ setup_bin( ofaFileFormatBin *bin )
 	/* export format at the end so that it is able to rely on
 	   precomputed widgets */
 	init_file_format( bin );
+
+	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
 static void

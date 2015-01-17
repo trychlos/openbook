@@ -530,7 +530,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p4_import_settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 	priv->p4_settings_prefs = ofa_file_format_bin_new( priv->p4_import_settings );
-	ofa_file_format_bin_attach_to( priv->p4_settings_prefs, GTK_CONTAINER( widget ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->p4_settings_prefs ));
 
 	g_signal_connect(
 			G_OBJECT( priv->p4_settings_prefs ), "changed", G_CALLBACK( p4_on_settings_changed ), self );

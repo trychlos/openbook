@@ -428,7 +428,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p3_export_settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
 	priv->p3_settings_prefs = ofa_file_format_bin_new( priv->p3_export_settings );
-	ofa_file_format_bin_attach_to( priv->p3_settings_prefs, GTK_CONTAINER( widget ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->p3_settings_prefs ));
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));

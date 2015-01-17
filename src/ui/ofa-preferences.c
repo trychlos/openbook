@@ -498,7 +498,7 @@ init_export_page( ofaPreferences *self )
 	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
 	priv->export_settings = ofa_file_format_bin_new( settings );
 	g_object_unref( settings );
-	ofa_file_format_bin_attach_to( priv->export_settings, GTK_CONTAINER( target ));
+	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
@@ -547,7 +547,7 @@ init_import_page( ofaPreferences *self )
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 	priv->import_settings = ofa_file_format_bin_new( settings );
 	g_object_unref( settings );
-	ofa_file_format_bin_attach_to( priv->import_settings, GTK_CONTAINER( target ));
+	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
 }
 
 static void
