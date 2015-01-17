@@ -972,8 +972,10 @@ dbmodel_to_v1( const ofoDossier *dossier )
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
-			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_STATUS) "
-			"	VALUES (1,'%s',%u,'EUR','%s')", priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED );
+			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
+			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
+			"	VALUES (1,'%s',%u,'EUR','%s','CLORAN','CLOSLD')",
+			priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED );
 	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );

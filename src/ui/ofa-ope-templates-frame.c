@@ -385,7 +385,6 @@ void
 ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guided_input )
 {
 	ofaOpeTemplatesFramePrivate *priv;
-	GtkWidget *alignment;
 
 	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ));
 
@@ -393,11 +392,8 @@ ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guide
 
 	if( !priv->dispose_has_run ){
 
-		alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-		gtk_grid_attach( priv->grid, alignment, 1, 0, 1, 1 );
-
 		priv->box = ofa_buttons_box_new();
-		ofa_buttons_box_attach_to( priv->box, GTK_CONTAINER( alignment ));
+		gtk_grid_attach( priv->grid, GTK_WIDGET( priv->box ), 1, 0, 1, 1 );
 
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */

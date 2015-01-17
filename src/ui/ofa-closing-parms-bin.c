@@ -92,9 +92,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-closing-parms-bin.ui";
 static const gchar *st_ui_id            = "ClosingParmsBin";
 
-static const gchar *st_def_sld_ope      = N_( "CLOSLD" );
-static const gchar *st_def_for_ope      = N_( "CLORAN" );
-
 G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
 
 static void     setup_dialog( ofaClosingParmsBin *self );
@@ -298,10 +295,9 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 			G_OBJECT( priv->sld_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
 
 	cstr = ofo_dossier_get_sld_ope( priv->dossier );
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		cstr = gettext( st_def_sld_ope );
+	if( cstr ){
+		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 	}
-	gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -317,10 +313,9 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 			G_OBJECT( priv->for_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
 
 	cstr = ofo_dossier_get_forward_ope( priv->dossier );
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		cstr = gettext( st_def_for_ope );
+	if( cstr ){
+		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 	}
-	gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));

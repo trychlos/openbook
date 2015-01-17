@@ -36,11 +36,9 @@
  */
 struct _ofaButtonsBoxPrivate {
 	gboolean   dispose_has_run;
-	gboolean   from_widget_finalized;
 
 	/* internals
 	 */
-	GtkWidget *alignment;
 	GtkGrid   *grid;
 	gint       rows;
 	gint       spacers;
@@ -53,10 +51,9 @@ struct _ofaButtonsBoxPrivate {
 #define STYLE_ROW_MARGIN                4
 #define STYLE_SPACER                    28
 
-G_DEFINE_TYPE( ofaButtonsBox, ofa_buttons_box, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaButtonsBox, ofa_buttons_box, GTK_TYPE_BIN )
 
-static void       on_widget_finalized( ofaButtonsBox *box, gpointer finalized_parent );
-static GtkWidget *get_top_grid( ofaButtonsBox *box );
+static void setup_top_grid( ofaButtonsBox *box );
 
 static void
 buttons_box_finalize( GObject *instance )
@@ -88,10 +85,6 @@ buttons_box_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->alignment ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -134,71 +127,32 @@ ofa_buttons_box_new( void )
 
 	box = g_object_new( OFA_TYPE_BUTTONS_BOX, NULL );
 
+	setup_top_grid( box );
+
 	return( box );
 }
 
-/**
- * ofa_buttons_box_attach_to:
- * @box: this #ofaButtonsBox object.
- * @parent
- *
- * Attach the buttons box to the parent.
- */
-void
-ofa_buttons_box_attach_to( ofaButtonsBox *box, GtkContainer *parent )
-{
-	GtkWidget *top_grid;
-
-	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	top_grid = get_top_grid( box );
-	gtk_container_add( parent, top_grid );
-	g_object_weak_ref( G_OBJECT( top_grid ), ( GWeakNotify ) on_widget_finalized, box );
-
-	gtk_widget_show_all( GTK_WIDGET( parent ));
-}
-
 static void
-on_widget_finalized( ofaButtonsBox *box, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_buttons_box_on_widget_finalized";
-	ofaButtonsBoxPrivate *priv;
-
-	g_debug( "%s: box=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) box, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
-
-	priv = box->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( G_OBJECT( box ));
-}
-
-static GtkWidget *
-get_top_grid( ofaButtonsBox *box )
+setup_top_grid( ofaButtonsBox *box )
 {
 	ofaButtonsBoxPrivate *priv;
-	GtkWidget *grid;
+	GtkWidget *alignment, *grid;
 
 	priv = box->priv;
 
-	if( !priv->grid ){
+	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_container_add( GTK_CONTAINER( box ), alignment );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 0, 0, 8, 8 );
 
-		priv->alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-		gtk_alignment_set_padding( GTK_ALIGNMENT( priv->alignment ), 0, 0, 8, 8 );
+	grid = gtk_grid_new();
+	gtk_container_add( GTK_CONTAINER( alignment ), grid );
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), STYLE_ROW_MARGIN );
 
-		grid = gtk_grid_new();
-		gtk_container_add( GTK_CONTAINER( priv->alignment ), grid );
-		gtk_grid_set_row_spacing( GTK_GRID( grid ), STYLE_ROW_MARGIN );
+	priv->grid = GTK_GRID( grid );
+	priv->rows = 0;
+	priv->spacers = 0;
 
-		priv->grid = GTK_GRID( grid );
-		priv->rows = 0;
-		priv->spacers = 0;
-	}
-
-	return( priv->alignment );
+	gtk_widget_show_all( GTK_WIDGET( box ));
 }
 
 /**
@@ -218,7 +172,6 @@ ofa_buttons_box_add_spacer( ofaButtonsBox *box )
 
 	if( !priv->dispose_has_run ){
 
-		get_top_grid( box );
 		priv->spacers += 1;
 	}
 }
@@ -248,8 +201,6 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 	button = NULL;
 
 	if( !priv->dispose_has_run ){
-
-		get_top_grid( box );
 
 		switch( button_id ){
 			case BUTTON_NEW:
@@ -304,29 +255,4 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 	}
 
 	return( button );
-}
-
-/**
- * ofa_buttons_box_get_top_widget:
- * @box: this #ofaButtonsBox object.
- *
- * Returns: the top box widget.
- */
-GtkWidget *
-ofa_buttons_box_get_top_widget( ofaButtonsBox *box )
-{
-	ofaButtonsBoxPrivate *priv;
-	GtkWidget *top;
-
-	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
-
-	priv = box->priv;
-	top = NULL;
-
-	if( !priv->dispose_has_run ){
-
-		top = get_top_grid( box );
-	}
-
-	return( top );
 }

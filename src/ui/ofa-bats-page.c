@@ -287,7 +287,7 @@ v_setup_buttons( ofaPage *page )
 	priv->import_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_IMPORT, TRUE, G_CALLBACK( on_import_clicked ), page );
 
-	return( ofa_buttons_box_get_top_widget( buttons_box ));
+	return( GTK_WIDGET( buttons_box ));
 }
 
 static void

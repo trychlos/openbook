@@ -65,7 +65,7 @@ typedef struct _ofaButtonsBoxPrivate        ofaButtonsBoxPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject               parent;
+	GtkBin                parent;
 
 	/*< private members >*/
 	ofaButtonsBoxPrivate *priv;
@@ -74,7 +74,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass          parent;
+	GtkBinClass           parent;
 }
 	ofaButtonsBoxClass;
 
@@ -97,9 +97,6 @@ GType          ofa_buttons_box_get_type      ( void ) G_GNUC_CONST;
 
 ofaButtonsBox *ofa_buttons_box_new           ( void );
 
-void           ofa_buttons_box_attach_to     ( ofaButtonsBox *box,
-														GtkContainer *parent );
-
 void           ofa_buttons_box_add_spacer    ( ofaButtonsBox *box );
 
 GtkWidget     *ofa_buttons_box_add_button    ( ofaButtonsBox *box,
@@ -107,8 +104,6 @@ GtkWidget     *ofa_buttons_box_add_button    ( ofaButtonsBox *box,
 														gboolean sensitive,
 														GCallback cb,
 														void *user_data );
-
-GtkWidget     *ofa_buttons_box_get_top_widget( ofaButtonsBox *box );
 
 G_END_DECLS
 
