@@ -81,9 +81,12 @@ GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
 
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,
-													const gchar *notes );
+													const gchar *notes,
+													gboolean is_current );
 
-#define    my_utils_init_notes_ex( C,T ) my_utils_init_notes( GTK_CONTAINER(C),"pn-notes", ofo_ ## T ## _get_notes( priv->T))
+#define    my_utils_init_notes_ex( C,T,I ) my_utils_init_notes( \
+												GTK_CONTAINER(C),"pn-notes", \
+												ofo_ ## T ## _get_notes( priv->T ), ( I ))
 
 #define    my_utils_getback_notes_ex( C,T ) GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( \
 												GTK_CONTAINER( C ), "pn-notes" )); GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); \

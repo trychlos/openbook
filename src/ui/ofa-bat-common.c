@@ -491,7 +491,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 	}
 
 	priv->bat = bat;
-	my_utils_init_notes_ex( priv->box, bat );
+	my_utils_init_notes_ex( priv->box, bat, ofo_dossier_is_current( priv->dossier ));
 	my_utils_init_upd_user_stamp_ex( priv->box, bat );
 }
 

@@ -51,6 +51,7 @@ struct _ofaClosingParmsBinPrivate {
 	 */
 	GtkWidget      *forward;
 	ofaMainWindow  *main_window;
+	gboolean        is_current;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
 
@@ -245,6 +246,7 @@ ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *m
 
 		priv->main_window = main_window;
 		priv->dossier = ofa_main_window_get_dossier( main_window );
+		priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 		setup_dialog( bin );
 	}
@@ -285,6 +287,7 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 	}
+	gtk_widget_set_can_focus( priv->sld_ope, priv->is_current );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -292,6 +295,7 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	gtk_button_set_image( GTK_BUTTON( widget ), image );
 	g_signal_connect(
 			G_OBJECT( widget ), "clicked", G_CALLBACK( on_sld_ope_select ), bin );
+	gtk_widget_set_sensitive( widget, priv->is_current );
 
 	/* forward ope template */
 	priv->for_ope = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
@@ -303,12 +307,14 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 	}
+	gtk_widget_set_can_focus( priv->for_ope, priv->is_current );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( widget ), image );
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_for_ope_select ), bin );
+	gtk_widget_set_sensitive( widget, priv->is_current );
 }
 
 static void
@@ -419,6 +425,8 @@ add_empty_row( ofaClosingParmsBin *self )
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
+	gtk_combo_box_set_button_sensitivity(
+			GTK_COMBO_BOX( combo ), priv->is_current ? GTK_SENSITIVITY_AUTO : GTK_SENSITIVITY_OFF );
 
 	/* account number */
 	widget = gtk_entry_new();
@@ -426,6 +434,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 10 );
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
+	gtk_widget_set_can_focus( widget, priv->is_current );
 
 	/* account select */
 	add_button( self, "gtk-index", COL_SELECT, row );
@@ -444,16 +453,20 @@ add_empty_row( ofaClosingParmsBin *self )
 static void
 add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row )
 {
-	GtkWidget *image;
-	GtkButton *button;
+	ofaClosingParmsBinPrivate *priv;
+	GtkWidget *image, *button;
 
-	button = GTK_BUTTON( gtk_button_new());
+	priv = self->priv;
+
+	button = gtk_button_new();
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( button, image );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_grid_attach( self->priv->grid, button, column, row, 1, 1 );
+
+	gtk_widget_set_sensitive( button, priv->is_current );
 }
 
 static void

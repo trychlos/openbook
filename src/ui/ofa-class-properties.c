@@ -215,7 +215,8 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	my_utils_init_notes_ex( toplevel, class );
+	my_utils_init_notes_ex(
+			toplevel, class, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( toplevel, class );
 
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));

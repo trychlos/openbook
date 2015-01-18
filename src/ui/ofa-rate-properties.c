@@ -255,7 +255,8 @@ v_init_dialog( myDialog *dialog )
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex( container, rate );
+	my_utils_init_notes_ex(
+			container, rate, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( container, rate );
 
 	check_for_enable_dlg( self );

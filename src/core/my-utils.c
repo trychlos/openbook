@@ -596,7 +596,7 @@ my_utils_widget_get_toplevel_window( GtkWidget *widget )
  * macro.
  */
 GObject *
-my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes )
+my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean is_current )
 {
 	GtkTextView *text;
 	GtkTextBuffer *buffer;
@@ -616,6 +616,8 @@ my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gc
 
 	g_object_unref( buffer );
 	g_free( str );
+
+	gtk_widget_set_can_focus( GTK_WIDGET( text ), is_current );
 
 	return( G_OBJECT( buffer ));
 }

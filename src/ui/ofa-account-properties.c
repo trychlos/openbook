@@ -325,7 +325,8 @@ v_init_dialog( myDialog *dialog )
 		init_balances_page( self );
 	}
 
-	my_utils_init_notes_ex( container, account );
+	my_utils_init_notes_ex(
+			container, account, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( container, account );
 
 	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );

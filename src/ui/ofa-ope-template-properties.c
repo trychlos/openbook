@@ -298,7 +298,8 @@ v_init_dialog( myDialog *dialog )
 
 	init_dialog_ref( self );
 
-	my_utils_init_notes_ex( toplevel, ope_template );
+	my_utils_init_notes_ex(
+			toplevel, ope_template, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
 	init_dialog_detail( self );

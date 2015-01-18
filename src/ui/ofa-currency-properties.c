@@ -234,7 +234,8 @@ v_init_dialog( myDialog *dialog )
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 
-	my_utils_init_notes_ex( toplevel, currency );
+	my_utils_init_notes_ex(
+			toplevel, currency, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( toplevel, currency );
 
 	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));

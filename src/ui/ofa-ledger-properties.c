@@ -234,7 +234,8 @@ v_init_dialog( myDialog *dialog )
 
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
-	my_utils_init_notes_ex( container, ledger );
+	my_utils_init_notes_ex(
+			container, ledger, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
 	my_utils_init_upd_user_stamp_ex( container, ledger );
 
 	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));

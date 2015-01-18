@@ -76,8 +76,12 @@ struct _ofaDossierPropertiesPrivate {
 	GtkWidget          *msgerr;
 };
 
-static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
-static const gchar *st_ui_id  = "DossierPropertiesDlg";
+#define MSG_NORMAL                      "#000000"
+#define MSG_WARNING                     "#ff8000"
+#define MSG_ERROR                       "#ff0000"
+
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-properties.ui";
+static const gchar *st_ui_id            = "DossierPropertiesDlg";
 
 G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, MY_TYPE_DIALOG )
 
@@ -96,7 +100,7 @@ static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierPr
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
-static void      set_msgerr( ofaDossierProperties *self, const gchar *msg );
+static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
 
@@ -213,7 +217,6 @@ v_init_dialog( myDialog *dialog )
 	ofaDossierProperties *self;
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GdkRGBA color;
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
 	priv = self->priv;
@@ -227,12 +230,10 @@ v_init_dialog( myDialog *dialog )
 	init_counters_page( self, container );
 
 	/* these are main notes of the dossier */
-	my_utils_init_notes_ex( container, dossier );
+	my_utils_init_notes_ex( container, dossier, priv->is_current );
 	my_utils_init_upd_user_stamp_ex( container, dossier );
 
 	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );
-	gdk_rgba_parse( &color, "#ff0000" );
-	gtk_widget_override_color( priv->msgerr, GTK_STATE_FLAG_NORMAL, &color );
 
 	check_for_enable_dlg( self );
 }
@@ -275,6 +276,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( self )->prot->main_window );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( combo, ofo_dossier_get_default_currency( priv->dossier ));
+	gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( combo ), GTK_SENSITIVITY_OFF );
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -348,19 +350,15 @@ init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GObject *buffer;
-	GtkWidget *widget;
 
 	priv = self->priv;
 	priv->exe_notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier ));
-	buffer = my_utils_init_notes( container, "pexe-notes", priv->exe_notes );
+	buffer = my_utils_init_notes( container, "pexe-notes", priv->exe_notes, priv->is_current );
 	g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
 
 	if( priv->is_current ){
 		g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
 	}
-
-	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
-	gtk_widget_set_can_focus( widget, priv->is_current );
 }
 
 static void
@@ -510,30 +508,32 @@ is_dialog_valid( ofaDossierProperties *self )
 	gchar *msg;
 
 	priv = self->priv;
-	set_msgerr( self, "" );
+	set_msgerr( self, "", MSG_NORMAL );
 
 	if( !priv->begin_empty && !my_date_is_valid( &priv->begin )){
-		set_msgerr( self, _( "Not empty and not valid exercice beginning date" ));
+		set_msgerr( self, _( "Not empty and not valid exercice beginning date" ), MSG_ERROR );
 		return( FALSE );
 	}
 
 	if( !priv->end_empty && !my_date_is_valid( &priv->end )){
-		set_msgerr( self, _( "nNot empty and not valid exercice ending date" ));
+		set_msgerr( self, _( "nNot empty and not valid exercice ending date" ), MSG_ERROR );
 		return( FALSE );
 	}
 
 	if( !ofo_dossier_is_valid(
 				priv->label, priv->duree, priv->currency, &priv->begin, &priv->end, &msg )){
-		set_msgerr( self, msg );
+		set_msgerr( self, msg, MSG_ERROR );
 		g_free( msg );
 		return( FALSE );
 	}
 
 	if( priv->closing_parms ){
 		if( !ofa_closing_parms_bin_is_valid( priv->closing_parms, &msg )){
-			set_msgerr( self, msg );
+			set_msgerr( self, msg, MSG_WARNING );
 			g_free( msg );
-			return( FALSE );
+			/* doesn't refuse to validate the dialog here
+			 * as this is only mandatory when closing the exercice */
+			return( TRUE );
 		}
 	}
 
@@ -541,14 +541,17 @@ is_dialog_valid( ofaDossierProperties *self )
 }
 
 static void
-set_msgerr( ofaDossierProperties *self, const gchar *msg )
+set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 {
 	ofaDossierPropertiesPrivate *priv;
+	GdkRGBA color;
 
 	priv = self->priv;
 
 	if( priv->msgerr ){
 		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
+		gdk_rgba_parse( &color, spec );
+		gtk_widget_override_color( priv->msgerr, GTK_STATE_FLAG_NORMAL, &color );
 	}
 }
 

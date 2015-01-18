@@ -391,8 +391,6 @@
                 only), we should only be able to restore an archived
                 exercice on a new dossier.
 
- 592 2015- 1-14 should MySQLDatabase be an Openbook key ?
-
  598
 
 -----------------------------------------------------------------------
@@ -2587,6 +2585,9 @@
  591 2015- 1-14 closing the exercice: one date is enough to compute the
                 three others
      2015- 1-14 done - svn #4447
+
+ 592 2015- 1-14 should MySQLDatabase be an Openbook key ?
+     2015- 1-18 done - svn #4493
 
  593 2015- 1-15 GuidedInput: %RATE doesn't work ?
      2015- 1-15 Have to choose between %TVAN and %RATE(TVAN) !
