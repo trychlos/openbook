@@ -88,7 +88,9 @@ typedef struct {
 
 GType        ofa_pdf_dialog_get_type    ( void ) G_GNUC_CONST;
 
-const gchar *ofa_pdf_dialog_get_filename( const ofaPDFDialog *dialog );
+gchar       *ofa_pdf_dialog_get_filename( const ofaPDFDialog *dialog );
+
+const gchar *ofa_pdf_dialog_get_uri     ( const ofaPDFDialog *dialog );
 
 G_END_DECLS
 

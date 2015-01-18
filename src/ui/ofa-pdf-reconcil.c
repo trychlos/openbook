@@ -55,6 +55,7 @@ struct _ofaPDFReconcilPrivate {
 
 	/* internals
 	 */
+	gchar         *account_number;
 	ofoAccount    *account;
 	const gchar   *currency;
 	gint           digits;					/* decimal digits for the currency */
@@ -89,15 +90,14 @@ struct _ofaPDFReconcilPrivate {
 	gdouble        account_solde;
 };
 
-static const gchar *st_ui_xml              = PKGUIDIR "/ofa-print-reconcil.ui";
-static const gchar *st_ui_id               = "PrintReconciliationDlg";
+static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-reconcil.ui";
+static const gchar *st_ui_id             = "PrintReconciliationDlg";
 
-static const gchar *st_pref_fname          = "PDFReconciliationFilename";
-static const gchar *st_pref_account        = "PDFReconciliationAccount";
-static const gchar *st_pref_date           = "PDFReconciliationDate";
+static const gchar *st_pref_uri          = "PDFReconciliationURI";
+static const gchar *st_pref_settings     = "PDFReconciliationSettings";
 
-static const gchar *st_def_fname           = "Reconciliation";
-static const gchar *st_page_header_title   = N_( "Account Reconciliation Summary" );
+static const gchar *st_def_fname         = "Reconciliation.pdf";
+static const gchar *st_page_header_title = N_( "Account Reconciliation Summary" );
 
 /* these are parms which describe the page layout
  */
@@ -145,6 +145,8 @@ static void     iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOp
 static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *account_solde_to_str( ofaPDFReconcil *self, gdouble amount );
+static void     get_settings( ofaPDFReconcil *self );
+static void     set_settings( ofaPDFReconcil *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPDFReconcil, ofa_pdf_reconcil, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
@@ -153,6 +155,7 @@ static void
 pdf_reconcil_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_pdf_reconcil_finalize";
+	ofaPDFReconcilPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -160,6 +163,9 @@ pdf_reconcil_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PDF_RECONCIL( instance ));
 
 	/* free data members here */
+	priv = OFA_PDF_RECONCIL( instance )->priv;
+
+	g_free( priv->account_number );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_pdf_reconcil_parent_class )->finalize( instance );
@@ -260,7 +266,7 @@ ofa_pdf_reconcil_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
-				PDF_PROP_PREF_NAME,  st_pref_fname,
+				PDF_PROP_PREF_NAME,  st_pref_uri,
 				NULL );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -274,6 +280,7 @@ ofa_pdf_reconcil_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	get_settings( OFA_PDF_RECONCIL( dialog ));
 	init_account_selection( OFA_PDF_RECONCIL( dialog ));
 	init_date_selection( OFA_PDF_RECONCIL( dialog ));
 }
@@ -284,7 +291,6 @@ init_account_selection( ofaPDFReconcil *self )
 	ofaPDFReconcilPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gchar *text;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -298,11 +304,9 @@ init_account_selection( ofaPDFReconcil *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
-	text = ofa_settings_get_string( st_pref_account );
-	if( text && g_utf8_strlen( text, -1 )){
-		gtk_entry_set_text( GTK_ENTRY( widget ), text );
+	if( priv->account_number ){
+		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}
-	g_free( text );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -315,7 +319,6 @@ init_date_selection( ofaPDFReconcil *self )
 	ofaPDFReconcilPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gchar *text;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -323,12 +326,9 @@ init_date_selection( ofaPDFReconcil *self )
 	priv->date_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-entry" );
 	my_editable_date_init( GTK_EDITABLE( priv->date_entry ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->date_entry ), MY_DATE_DMYY );
-	text = ofa_settings_get_string( st_pref_date );
-	my_date_set_from_sql( &priv->date, text );
 	if( my_date_is_valid( &priv->date )){
 		my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &priv->date );
 	}
-	g_free( text );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-label" );
 	my_editable_date_set_label( GTK_EDITABLE( priv->date_entry ), widget, MY_DATE_DMMM );
@@ -338,12 +338,16 @@ static void
 on_account_changed( GtkEntry *entry, ofaPDFReconcil *self )
 {
 	ofaPDFReconcilPrivate *priv;
-	const gchar *str;
+	const gchar *cstr;
 	ofoCurrency *currency;
 
 	priv = self->priv;
-	str = gtk_entry_get_text( entry );
-	priv->account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, str );
+
+	g_free( priv->account_number );
+	cstr = gtk_entry_get_text( entry );
+	priv->account_number = g_strdup( cstr );
+
+	priv->account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, cstr );
 
 	if( priv->account ){
 		gtk_label_set_text(
@@ -378,10 +382,15 @@ on_account_select( GtkButton *button, ofaPDFReconcil *self )
 	}
 }
 
+/*
+ * #GtkPrintOperation only export to PDF addressed by filename (not URI)
+ * so first convert
+ */
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	gboolean ok;
+	gchar *fname;
 
 	/* chain up to the parent class */
 	ok = MY_DIALOG_CLASS( ofa_pdf_reconcil_parent_class )->quit_on_ok( dialog );
@@ -394,9 +403,9 @@ v_quit_on_ok( myDialog *dialog )
 		ofa_iprintable_set_paper_orientation( OFA_IPRINTABLE( dialog ), st_default_orientation );
 		ofa_iprintable_set_default_font_size( OFA_IPRINTABLE( dialog ), st_default_font_size );
 
-		ok &= ofa_iprintable_print_to_pdf(
-					OFA_IPRINTABLE( dialog ),
-					ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog )));
+		fname = ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog ));
+		ok &= ofa_iprintable_print_to_pdf( OFA_IPRINTABLE( dialog ), fname );
+		g_free( fname );
 	}
 
 	return( ok );
@@ -406,7 +415,6 @@ static gboolean
 do_apply( ofaPDFReconcil *self )
 {
 	ofaPDFReconcilPrivate *priv;
-	gchar *sdate;
 
 	priv = self->priv;
 
@@ -414,7 +422,11 @@ do_apply( ofaPDFReconcil *self )
 		my_utils_dialog_error( _( "Invalid account" ));
 		return( FALSE );
 	}
-	ofa_settings_set_string( st_pref_account, ofo_account_get_number( priv->account ));
+
+	if( ofo_account_is_root( priv->account )){
+		my_utils_dialog_error( _( "Root account is not allowed here" ));
+		return( FALSE );
+	}
 
 	my_date_set_from_date( &priv->date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), NULL ));
@@ -424,9 +436,7 @@ do_apply( ofaPDFReconcil *self )
 		return( FALSE );
 	}
 
-	sdate = my_date_to_str( &priv->date, MY_DATE_SQL );
-	ofa_settings_set_string( st_pref_date, sdate );
-	g_free( sdate );
+	set_settings( self );
 
 	return( TRUE );
 }
@@ -760,4 +770,54 @@ account_solde_to_str( ofaPDFReconcil *self, gdouble amount )
 	g_free( str_amount );
 
 	return( str );
+}
+
+/*
+ * settings are:
+ * account;date;
+ */
+static void
+get_settings( ofaPDFReconcil *self )
+{
+	ofaPDFReconcilPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( st_pref_settings );
+
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->account_number = g_strdup( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &priv->date, cstr, MY_DATE_SQL );
+	}
+
+	ofa_settings_free_string_list( slist );
+}
+
+static void
+set_settings( ofaPDFReconcil *self )
+{
+	ofaPDFReconcilPrivate *priv;
+	gchar *str, *sdate;
+
+	priv = self->priv;
+
+	sdate = my_date_to_str( &priv->date, MY_DATE_SQL );
+
+	str = g_strdup_printf( "%s;%s;",
+			priv->account_number ? priv->account_number : "",
+			sdate );
+
+	ofa_settings_set_string( st_pref_settings, str );
+
+	g_free( str );
+	g_free( sdate );
 }

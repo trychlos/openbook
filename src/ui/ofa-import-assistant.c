@@ -88,7 +88,7 @@ struct _ofaImportAssistantPrivate {
 	 */
 	GtkFileChooser   *p2_chooser;
 	gchar            *p2_folder;
-	gchar            *p2_fname;			/* the utf-8 imported filename */
+	gchar            *p2_uri;			/* the utf-8 imported filename */
 
 	/* p3: select a type of data to be imported
 	 */
@@ -159,7 +159,7 @@ static const sRadios st_radios[] = {
 /* the user preferences stored as a string list
  * folder
  */
-static const gchar *st_prefs_import     = "ImportAssistant";
+static const gchar *st_prefs_import     = "ImportAssistant-settings";
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-import-assistant.ui";
 static const gchar *st_ui_id            = "ImportAssistant";
@@ -242,7 +242,7 @@ import_assistant_finalize( GObject *instance )
 	priv = OFA_IMPORT_ASSISTANT( instance )->priv;
 
 	g_free( priv->p2_folder );
-	g_free( priv->p2_fname );
+	g_free( priv->p2_uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_import_assistant_parent_class )->finalize( instance );
@@ -387,7 +387,7 @@ p2_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv = self->priv;
 
 	if( priv->p2_folder ){
-		gtk_file_chooser_set_current_folder( priv->p2_chooser, priv->p2_folder );
+		gtk_file_chooser_set_current_folder_uri( priv->p2_chooser, priv->p2_folder );
 	}
 }
 
@@ -411,13 +411,11 @@ p2_check_for_complete( ofaImportAssistant *self )
 
 	priv = self->priv;
 
-	g_free( priv->p2_fname );
-	priv->p2_fname = gtk_file_chooser_get_filename( priv->p2_chooser );
-	g_debug( "p2_check_for_complete: fname=%s", priv->p2_fname );
+	g_free( priv->p2_uri );
+	priv->p2_uri = gtk_file_chooser_get_uri( priv->p2_chooser );
 
-	ok = priv->p2_fname &&
-			g_utf8_strlen( priv->p2_fname, -1 ) > 0 &&
-			my_utils_file_is_readable_file( priv->p2_fname );
+	ok = my_strlen( priv->p2_uri ) &&
+			my_utils_uri_is_readable_file( priv->p2_uri );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }
@@ -430,7 +428,7 @@ p2_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv = self->priv;
 
 	g_free( priv->p2_folder );
-	priv->p2_folder = gtk_file_chooser_get_current_folder( priv->p2_chooser );
+	priv->p2_folder = gtk_file_chooser_get_current_folder_uri( priv->p2_chooser );
 
 	update_settings( self );
 }
@@ -599,7 +597,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-fname" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_fname );
+	gtk_label_set_text( GTK_LABEL( label ), priv->p2_uri );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-type" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -651,7 +649,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_widget_show_all( page );
 
-	complete = ( priv->p2_fname && g_utf8_strlen( priv->p2_fname, -1 ) > 0 );
+	complete = ( priv->p2_uri && g_utf8_strlen( priv->p2_uri, -1 ) > 0 );
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
 }
 
@@ -721,7 +719,7 @@ p6_search_for_plugin( ofaImportAssistant *self )
 
 	for( it=modules ; it ; it=it->next ){
 		if( ofa_iimportable_is_willing_to(
-				OFA_IIMPORTABLE( it->data ), priv->p2_fname, priv->p4_import_settings )){
+				OFA_IIMPORTABLE( it->data ), priv->p2_uri, priv->p4_import_settings )){
 			found = g_object_ref( OFA_IIMPORTABLE( it->data ));
 			break;
 		}
@@ -794,11 +792,11 @@ p6_do_import( ofaImportAssistant *self )
 			count = ofa_iimportable_get_count( priv->p6_object );
 			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
 					"imported into « %s »." ),
-					count, priv->p2_fname, str );
+					count, priv->p2_uri, str );
 		} else {
 			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n"
 					"The « %s » recordset has been left unchanged.\n"
-					"Please fix these errors, and retry then." ), priv->p2_fname, str );
+					"Please fix these errors, and retry then." ), priv->p2_uri, str );
 		}
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, the required file format is not "
@@ -913,7 +911,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 
 	priv = self->priv;
 
-	sysfname = my_utils_filename_from_utf8( priv->p2_fname );
+	sysfname = my_utils_filename_from_utf8( priv->p2_uri );
 	if( !sysfname ){
 		return( NULL );
 	}
@@ -923,7 +921,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 	error = NULL;
 	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
 		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ),
-				priv->p2_fname, error->message );
+				priv->p2_uri, error->message );
 		my_utils_dialog_error( str );
 		g_free( str );
 		g_error_free( error );
@@ -1003,16 +1001,16 @@ get_settings( ofaImportAssistant *self )
 	list = ofa_settings_get_string_list( st_prefs_import );
 
 	it = list;
-	cstr = ( it && it->data ? ( const gchar * ) it->data : NULL );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
-		g_free( priv->p2_folder );
-		priv->p2_folder = g_strdup( cstr );
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p3_type = atoi( cstr );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = ( it && it->data ? ( const gchar * ) it->data : NULL );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
-		priv->p3_type = atoi( cstr );
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->p2_folder );
+		priv->p2_folder = g_strdup( cstr );
 	}
 
 	ofa_settings_free_string_list( list );
@@ -1022,17 +1020,15 @@ static void
 update_settings( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
-	GList *list;
 	gchar *str;
 
 	priv = self->priv;
 
-	list = g_list_append( NULL, g_strdup( priv->p2_folder ));
+	str = g_strdup_printf( "%d;%s;",
+			priv->p3_type,
+			priv->p2_folder ? priv->p2_folder : "" );
 
-	str = g_strdup_printf( "%d", priv->p3_type );
-	list = g_list_append( list, str );
+	ofa_settings_set_string( st_prefs_import, str );
 
-	ofa_settings_set_string_list( st_prefs_import, list );
-
-	ofa_settings_free_string_list( list );
+	g_free( str );
 }

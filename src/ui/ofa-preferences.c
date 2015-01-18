@@ -502,8 +502,8 @@ init_export_page( ofaPreferences *self )
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
-	if( str && g_utf8_strlen( str, -1 )){
-		gtk_file_chooser_set_current_folder( priv->p5_chooser, str );
+	if( my_strlen( str )){
+		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
 	}
 	g_free( str );
 
@@ -916,8 +916,8 @@ do_update_export_page( ofaPreferences *self )
 
 	ofa_file_format_bin_apply( priv->export_settings );
 
-	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
-	if( text && g_utf8_strlen( text, -1 )){
+	text = gtk_file_chooser_get_current_folder_uri( priv->p5_chooser );
+	if( my_strlen( text )){
 		ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );
 	}
 	g_free( text );

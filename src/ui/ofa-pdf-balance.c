@@ -63,7 +63,6 @@ struct _ofaPDFBalancePrivate {
 	GtkWidget     *to_account_entry;
 	GtkWidget     *to_account_btn;
 	GtkWidget     *to_account_label;
-	GtkWidget     *all_accounts_btn;
 
 	GtkWidget     *from_date_entry;		/* date selection */
 	GtkWidget     *to_date_entry;
@@ -115,16 +114,10 @@ typedef struct {
 static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-balance.ui";
 static const gchar *st_ui_id             = "PrintBalanceDlg";
 
-static const gchar *st_pref_fname        = "PDFBalanceFilename";
-static const gchar *st_pref_from_account = "PDFBalanceFromAccount";
-static const gchar *st_pref_to_account   = "PDFBalanceToAccount";
-static const gchar *st_pref_all_accounts = "PDFBalanceAllAccounts";
-static const gchar *st_pref_from_date    = "PDFBalanceFromDate";
-static const gchar *st_pref_to_date      = "PDFBalanceToDate";
-static const gchar *st_pref_per_class    = "PDFBalancePerClass";
-static const gchar *st_pref_new_page     = "PDFBalanceNewPage";
+static const gchar *st_pref_uri          = "PDFBalanceURI";
+static const gchar *st_pref_settings     = "PDFBalanceSettings";
 
-static const gchar *st_def_fname         = "AccountsBalance";
+static const gchar *st_def_fname         = "AccountsBalance.pdf";
 static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
 
 /* these are parms which describe the page layout
@@ -160,10 +153,11 @@ static void     on_from_account_changed( GtkEntry *entry, ofaPDFBalance *self );
 static void     on_from_account_select( GtkButton *button, ofaPDFBalance *self );
 static void     on_to_account_changed( GtkEntry *entry, ofaPDFBalance *self );
 static void     on_to_account_select( GtkButton *button, ofaPDFBalance *self );
-static void     on_account_changed( GtkEntry *entry, ofaPDFBalance *self, GtkWidget *label );
+static void     on_account_changed( ofaPDFBalance *self, GtkEntry *entry, GtkWidget *label, gchar **dest );
 static void     on_account_select( GtkButton *button, ofaPDFBalance *self, GtkWidget *entry );
 static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalance *self );
 static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFBalance *self );
+static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFBalance *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFBalance *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
@@ -184,6 +178,8 @@ static void     draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperati
 static void     draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context, GList *list, gdouble top, const gchar *title );
 static GList   *add_account_balance( ofaPDFBalance *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
+static void     get_settings( ofaPDFBalance *self );
+static void     set_settings( ofaPDFBalance *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPDFBalance, ofa_pdf_balance, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
@@ -320,7 +316,7 @@ ofa_pdf_balance_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
-				PDF_PROP_PREF_NAME,  st_pref_fname,
+				PDF_PROP_PREF_NAME,  st_pref_uri,
 				NULL );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -334,6 +330,8 @@ ofa_pdf_balance_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	get_settings( OFA_PDF_BALANCE( dialog ));
+
 	init_account_selection( OFA_PDF_BALANCE( dialog ));
 	init_date_selection( OFA_PDF_BALANCE( dialog ));
 	init_others( OFA_PDF_BALANCE( dialog ));
@@ -345,8 +343,6 @@ init_account_selection( ofaPDFBalance *self )
 	ofaPDFBalancePrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gchar *text;
-	gboolean bvalue;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -362,12 +358,10 @@ init_account_selection( ofaPDFBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-account-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_from_account_changed ), self );
-	text = ofa_settings_get_string( st_pref_from_account );
-	if( text && g_utf8_strlen( text, -1 )){
-		gtk_entry_set_text( GTK_ENTRY( widget ), text );
-	}
-	g_free( text );
 	priv->from_account_entry = widget;
+	if( priv->from_account ){
+		gtk_entry_set_text( GTK_ENTRY( widget ), priv->from_account );
+	}
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -385,12 +379,10 @@ init_account_selection( ofaPDFBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-account-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_to_account_changed ), self );
-	text = ofa_settings_get_string( st_pref_to_account );
-	if( text && g_utf8_strlen( text, -1 )){
-		gtk_entry_set_text( GTK_ENTRY( widget ), text );
-	}
-	g_free( text );
 	priv->to_account_entry = widget;
+	if( priv->to_account ){
+		gtk_entry_set_text( GTK_ENTRY( widget ), priv->to_account );
+	}
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -400,10 +392,8 @@ init_account_selection( ofaPDFBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "all-accounts" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_all_accounts_toggled ), self );
-	bvalue = ofa_settings_get_boolean( st_pref_all_accounts );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), !bvalue );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
-	priv->all_accounts_btn = widget;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->all_accounts );
+	on_all_accounts_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 }
 
 static void
@@ -412,8 +402,6 @@ init_date_selection( ofaPDFBalance *self )
 	ofaPDFBalancePrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gchar *text;
-	GDate date;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -428,12 +416,9 @@ init_date_selection( ofaPDFBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-date-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->from_date_entry ), widget, MY_DATE_DMMM );
-	text = ofa_settings_get_string( st_pref_from_date );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &date, text );
-		my_editable_date_set_date( GTK_EDITABLE( priv->from_date_entry ), &date );
+	if( my_date_is_valid( &priv->from_date )){
+		my_editable_date_set_date( GTK_EDITABLE( priv->from_date_entry ), &priv->from_date );
 	}
-	g_free( text );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
@@ -445,12 +430,9 @@ init_date_selection( ofaPDFBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, MY_DATE_DMMM );
-	text = ofa_settings_get_string( st_pref_to_date );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &date, text );
-		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &date );
+	if( my_date_is_valid( &priv->to_date )){
+		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &priv->to_date );
 	}
-	g_free( text );
 }
 
 static void
@@ -459,7 +441,6 @@ init_others( ofaPDFBalance *self )
 	ofaPDFBalancePrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gboolean bvalue;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -468,23 +449,23 @@ init_others( ofaPDFBalance *self )
 	 * safely updated when setting the later preference */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p3-new-page" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
-	bvalue = ofa_settings_get_boolean( st_pref_new_page );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = widget;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->new_page );
+	on_new_page_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p3-per-class" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_per_class_toggled ), self );
-	bvalue = ofa_settings_get_boolean( st_pref_per_class );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), !bvalue );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
 	priv->per_class_btn = widget;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->per_class );
+	on_per_class_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 }
 
 static void
 on_from_account_changed( GtkEntry *entry, ofaPDFBalance *self )
 {
-	on_account_changed( entry, self, self->priv->from_account_label );
+	on_account_changed( self, entry, self->priv->from_account_label, &self->priv->from_account );
 }
 
 static void
@@ -496,7 +477,7 @@ on_from_account_select( GtkButton *button, ofaPDFBalance *self )
 static void
 on_to_account_changed( GtkEntry *entry, ofaPDFBalance *self )
 {
-	on_account_changed( entry, self, self->priv->to_account_label );
+	on_account_changed( self, entry, self->priv->to_account_label, &self->priv->to_account );
 }
 
 static void
@@ -506,19 +487,22 @@ on_to_account_select( GtkButton *button, ofaPDFBalance *self )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaPDFBalance *self, GtkWidget *label )
+on_account_changed( ofaPDFBalance *self, GtkEntry *entry, GtkWidget *label, gchar **dest )
 {
-	const gchar *str;
+	const gchar *cstr;
 	ofoAccount *account;
 
-	str = gtk_entry_get_text( entry );
+	cstr = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number(
-					ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window ), str );
+					ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window ), cstr );
 	if( account ){
 		gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account ));
 	} else {
 		gtk_label_set_text( GTK_LABEL( label ), "" );
 	}
+
+	g_free( *dest );
+	*dest = g_strdup( cstr );
 }
 
 static void
@@ -542,6 +526,7 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalance *self )
 	gboolean bvalue;
 
 	priv = self->priv;
+
 	bvalue = gtk_toggle_button_get_active( button );
 
 	gtk_widget_set_sensitive( priv->from_account_etiq, !bvalue );
@@ -553,6 +538,9 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalance *self )
 	gtk_widget_set_sensitive( priv->to_account_entry, !bvalue );
 	gtk_widget_set_sensitive( priv->to_account_btn, !bvalue );
 	gtk_widget_set_sensitive( priv->to_account_label, !bvalue );
+
+	priv->all_accounts = bvalue;
+	g_debug( "on_all_accounts_toggled: settings all_accounts=%s", priv->all_accounts ? "True":"False" );
 }
 
 static void
@@ -562,16 +550,32 @@ on_per_class_toggled( GtkToggleButton *button, ofaPDFBalance *self )
 	gboolean bvalue;
 
 	priv = self->priv;
+
 	bvalue = gtk_toggle_button_get_active( button );
 	gtk_widget_set_sensitive( priv->new_page_btn, bvalue );
+
+	priv->per_class = bvalue;
+}
+
+static void
+on_new_page_toggled( GtkToggleButton *button, ofaPDFBalance *self )
+{
+	ofaPDFBalancePrivate *priv;
+
+	priv = self->priv;
+
+	priv->new_page = gtk_toggle_button_get_active( button );
 }
 
 /*
+ * #GtkPrintOperation only export to PDF addressed by filename (not URI)
+ * so first convert
  */
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	gboolean ok;
+	gchar *fname;
 
 	/* chain up to the parent class */
 	ok = MY_DIALOG_CLASS( ofa_pdf_balance_parent_class )->quit_on_ok( dialog );
@@ -581,9 +585,9 @@ v_quit_on_ok( myDialog *dialog )
 	}
 
 	if( ok ){
-		ok &= ofa_iprintable_print_to_pdf(
-					OFA_IPRINTABLE( dialog ),
-					ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog )));
+		fname = ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog ));
+		ok &= ofa_iprintable_print_to_pdf( OFA_IPRINTABLE( dialog ), fname );
+		g_free( fname );
 	}
 
 	return( ok );
@@ -597,40 +601,17 @@ static gboolean
 do_apply( ofaPDFBalance *self )
 {
 	ofaPDFBalancePrivate *priv;
-	gboolean all_accounts;
-	gchar *text;
 
 	priv = self->priv;
 
-	all_accounts = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->all_accounts_btn ));
-	ofa_settings_set_boolean( st_pref_all_accounts, all_accounts );
-
-	/* preferences are only saved if they have been useful */
-	if( !all_accounts ){
-		priv->from_account = g_strdup( gtk_entry_get_text( GTK_ENTRY( priv->from_account_entry )));
-		ofa_settings_set_string( st_pref_from_account, priv->from_account );
-
-		priv->to_account = g_strdup( gtk_entry_get_text( GTK_ENTRY( priv->to_account_entry )));
-		ofa_settings_set_string( st_pref_to_account, priv->to_account );
-	}
-
 	my_date_set_from_date( &priv->from_date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->from_date_entry ), NULL ));
-	text = my_date_to_str( &priv->from_date, MY_DATE_SQL );
-	ofa_settings_set_string( st_pref_from_date, text );
-	g_free( text );
 
 	my_date_set_from_date( &priv->to_date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->to_date_entry ), NULL ));
-	text = my_date_to_str( &priv->to_date, MY_DATE_SQL );
-	ofa_settings_set_string( st_pref_to_date, text );
-	g_free( text );
 
-	priv->per_class = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->per_class_btn ));
-	ofa_settings_set_boolean( st_pref_per_class, priv->per_class );
+	set_settings( self );
 
-	priv->new_page = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->new_page_btn ));
-	ofa_settings_set_boolean( st_pref_new_page, priv->new_page );
 	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 
 	return( TRUE );
@@ -1181,4 +1162,90 @@ static gint
 cmp_currencies( const sCurrency *a, const sCurrency *b )
 {
 	return( g_utf8_collate( a->currency, b->currency ));
+}
+
+/*
+ * settings are:
+ * from_account;to_account;all_accounts;from_date;to_date;per_class;new_page;
+ */
+static void
+get_settings( ofaPDFBalance *self )
+{
+	ofaPDFBalancePrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( st_pref_settings );
+
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->from_account = g_strdup( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->to_account = g_strdup( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->all_accounts = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &priv->from_date, cstr, MY_DATE_SQL );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &priv->to_date, cstr, MY_DATE_SQL );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->per_class = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->new_page = my_utils_boolean_from_str( cstr );
+	}
+
+	ofa_settings_free_string_list( slist );
+}
+
+static void
+set_settings( ofaPDFBalance *self )
+{
+	ofaPDFBalancePrivate *priv;
+	gchar *str, *sfrom, *sto;
+
+	priv = self->priv;
+
+	sfrom = my_date_to_str( &priv->from_date, MY_DATE_SQL );
+	sto = my_date_to_str( &priv->to_date, MY_DATE_SQL );
+
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;",
+			priv->from_account ? priv->from_account : "",
+			priv->to_account ? priv->to_account : "",
+			priv->all_accounts ? "True":"False",
+			sfrom, sto,
+			priv->per_class ? "True":"False",
+			priv->new_page ? "True":"False" );
+
+	ofa_settings_set_string( st_pref_settings, str );
+
+	g_free( str );
+	g_free( sfrom );
+	g_free( sto );
 }

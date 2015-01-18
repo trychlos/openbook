@@ -111,13 +111,10 @@ struct _ofaPDFLedgersPrivate {
 static const gchar *st_ui_xml              = PKGUIDIR "/ofa-print-ledgers.ui";
 static const gchar *st_ui_id               = "PrintLedgersDlg";
 
-static const gchar *st_pref_fname          = "PDFLedgersFilename";
-static const gchar *st_pref_all_ledgers    = "PDFLedgersAllLedgers";
-static const gchar *st_pref_from_date      = "PDFLedgersFromDate";
-static const gchar *st_pref_to_date        = "PDFLedgersToDate";
-static const gchar *st_pref_new_page       = "PDFLedgersNewPage";
+static const gchar *st_pref_uri            = "PDFLedgersURI";
+static const gchar *st_pref_settings       = "PDFLedgersSettings";
 
-static const gchar *st_def_fname           = "Ledgers";
+static const gchar *st_def_fname           = "Ledgers.pdf";
 static const gchar *st_page_header_title   = N_( "Ledgers Summary" );
 
 /* these are parms which describe the page layout
@@ -148,6 +145,7 @@ static void     init_date_selection( ofaPDFLedgers *self );
 static void     init_others( ofaPDFLedgers *self );
 static void     on_ledgers_activated( ofaLedgerTreeview *view, GList *selected, ofaPDFLedgers *self );
 static void     on_all_ledgers_toggled( GtkToggleButton *button, ofaPDFLedgers *self );
+static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFLedgers *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFLedgers *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
@@ -165,6 +163,8 @@ static void     iprintable_draw_group_bottom_report( ofaIPrintable *instance, Gt
 static void     iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     get_settings( ofaPDFLedgers *self );
+static void     set_settings( ofaPDFLedgers *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPDFLedgers, ofa_pdf_ledgers, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
@@ -300,7 +300,7 @@ ofa_pdf_ledgers_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
-				PDF_PROP_PREF_NAME,  st_pref_fname,
+				PDF_PROP_PREF_NAME,  st_pref_uri,
 				NULL );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -314,6 +314,7 @@ ofa_pdf_ledgers_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	get_settings( OFA_PDF_LEDGERS( dialog ));
 	init_ledgers_selection( OFA_PDF_LEDGERS( dialog ));
 	init_date_selection( OFA_PDF_LEDGERS( dialog ));
 	init_others( OFA_PDF_LEDGERS( dialog ));
@@ -346,9 +347,9 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-all-ledgers" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_all_ledgers_toggled ), self );
-	priv->all_ledgers = ofa_settings_get_boolean( st_pref_all_ledgers );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->all_ledgers );
 	priv->all_ledgers_btn = widget;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->all_ledgers );
+	on_all_ledgers_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 }
 
 static void
@@ -357,8 +358,6 @@ init_date_selection( ofaPDFLedgers *self )
 	ofaPDFLedgersPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gchar *text;
-	GDate date;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -373,13 +372,9 @@ init_date_selection( ofaPDFLedgers *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-date-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->from_date_entry ), widget, MY_DATE_DMMM );
-
-	text = ofa_settings_get_string( st_pref_from_date );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &date, text );
-		my_editable_date_set_date( GTK_EDITABLE( priv->from_date_entry ), &date );
+	if( my_date_is_valid( &priv->from_date )){
+		my_editable_date_set_date( GTK_EDITABLE( priv->from_date_entry ), &priv->from_date );
 	}
-	g_free( text );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
@@ -391,13 +386,9 @@ init_date_selection( ofaPDFLedgers *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, MY_DATE_DMMM );
-
-	text = ofa_settings_get_string( st_pref_to_date );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &date, text );
-		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &date );
+	if( my_date_is_valid( &priv->to_date )){
+		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &priv->to_date );
 	}
-	g_free( text );
 }
 
 static void
@@ -406,16 +397,16 @@ init_others( ofaPDFLedgers *self )
 	ofaPDFLedgersPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	gboolean bvalue;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p3-new-page" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
-	bvalue = ofa_settings_get_boolean( st_pref_new_page );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = widget;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->new_page );
+	on_new_page_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 }
 
 static void
@@ -434,14 +425,29 @@ on_all_ledgers_toggled( GtkToggleButton *button, ofaPDFLedgers *self )
 	bvalue = gtk_toggle_button_get_active( button );
 
 	gtk_widget_set_sensitive( priv->alignment, !bvalue );
+
+	priv->all_ledgers = bvalue;
+}
+
+static void
+on_new_page_toggled( GtkToggleButton *button, ofaPDFLedgers *self )
+{
+	ofaPDFLedgersPrivate *priv;
+
+	priv = self->priv;
+
+	priv->new_page = gtk_toggle_button_get_active( button );
 }
 
 /*
+ * #GtkPrintOperation only export to PDF addressed by filename (not URI)
+ * so first convert
  */
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	gboolean ok;
+	gchar *fname;
 
 	/* chain up to the parent class */
 	ok = MY_DIALOG_CLASS( ofa_pdf_ledgers_parent_class )->quit_on_ok( dialog );
@@ -454,9 +460,9 @@ v_quit_on_ok( myDialog *dialog )
 		ofa_iprintable_set_paper_orientation( OFA_IPRINTABLE( dialog ), st_default_orientation );
 		ofa_iprintable_set_default_font_size( OFA_IPRINTABLE( dialog ), st_default_font_size );
 
-		ok &= ofa_iprintable_print_to_pdf(
-					OFA_IPRINTABLE( dialog ),
-					ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog )));
+		fname = ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog ));
+		ok &= ofa_iprintable_print_to_pdf( OFA_IPRINTABLE( dialog ), fname );
+		g_free( fname );
 	}
 
 	return( ok );
@@ -470,17 +476,12 @@ static gboolean
 do_apply( ofaPDFLedgers *self )
 {
 	ofaPDFLedgersPrivate *priv;
-	gboolean all_ledgers;
-	gchar *text;
 	GList *list, *it;
 	ofoLedger *ledger;
 
 	priv = self->priv;
 
-	all_ledgers = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ));
-	ofa_settings_set_boolean( st_pref_all_ledgers, all_ledgers );
-
-	if( all_ledgers ){
+	if( priv->all_ledgers ){
 		priv->selected = ofo_ledger_get_dataset( MY_WINDOW( self )->prot->dossier );
 	} else {
 		list = ofa_ledger_treeview_get_selected( priv->ledgers_tview );
@@ -500,18 +501,12 @@ do_apply( ofaPDFLedgers *self )
 
 	my_date_set_from_date( &priv->from_date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->from_date_entry ), NULL ));
-	text = my_date_to_str( &priv->from_date, MY_DATE_SQL );
-	ofa_settings_set_string( st_pref_from_date, text );
-	g_free( text );
 
 	my_date_set_from_date( &priv->to_date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->to_date_entry ), NULL ));
-	text = my_date_to_str( &priv->to_date, MY_DATE_SQL );
-	ofa_settings_set_string( st_pref_to_date, text );
-	g_free( text );
 
-	priv->new_page = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->new_page_btn ));
-	ofa_settings_set_boolean( st_pref_new_page, priv->new_page );
+	set_settings( self );
+
 	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 
 	return( TRUE );
@@ -1043,4 +1038,69 @@ draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 	}
 
 	ofa_iprintable_set_last_y( instance, y );
+}
+
+/*
+ * settings are:
+ * all_ledgers;from_date;to_date;new_page;
+ */
+static void
+get_settings( ofaPDFLedgers *self )
+{
+	ofaPDFLedgersPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( st_pref_settings );
+
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->all_ledgers = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &priv->from_date, cstr, MY_DATE_SQL );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &priv->to_date, cstr, MY_DATE_SQL );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->new_page = my_utils_boolean_from_str( cstr );
+	}
+
+	ofa_settings_free_string_list( slist );
+}
+
+static void
+set_settings( ofaPDFLedgers *self )
+{
+	ofaPDFLedgersPrivate *priv;
+	gchar *str, *sfrom, *sto;
+
+	priv = self->priv;
+
+	sfrom = my_date_to_str( &priv->from_date, MY_DATE_SQL );
+	sto = my_date_to_str( &priv->to_date, MY_DATE_SQL );
+
+	str = g_strdup_printf( "%s;%s;%s;%s;",
+			priv->all_ledgers ? "True":"False",
+			sfrom, sto,
+			priv->new_page ? "True":"False" );
+
+	ofa_settings_set_string( st_pref_settings, str );
+
+	g_free( str );
+	g_free( sfrom );
+	g_free( sto );
 }

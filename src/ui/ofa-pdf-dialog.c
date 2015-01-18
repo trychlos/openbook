@@ -55,7 +55,7 @@ struct _ofaPDFDialogPrivate {
 
 	/* runtime data
 	 */
-	gchar     *filename;
+	gchar     *uri;
 };
 
 /* class properties
@@ -93,7 +93,7 @@ pdf_dialog_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->def_name );
 	g_free( priv->pref_name );
-	g_free( priv->filename );
+	g_free( priv->uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_pdf_dialog_parent_class )->finalize( instance );
@@ -253,7 +253,7 @@ ofa_pdf_dialog_class_init( ofaPDFDialogClass *klass )
 			g_param_spec_string(
 					PDF_PROP_PREF_NAME,
 					"Preference key",
-					"The key of the user preference which stores the last selected filename",
+					"The key of the user preference which stores the last selected URI",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
@@ -267,7 +267,7 @@ init_filechooser( ofaPDFDialog *self )
 	ofaPDFDialogPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *book, *label;
-	gchar *last_fname, *basename;
+	gchar *last_uri, *basename;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -288,14 +288,14 @@ init_filechooser( ofaPDFDialog *self )
 	}
 
 	/* get the last stored filename (if any) */
-	last_fname = NULL;
+	last_uri = NULL;
 	if( priv->pref_name && g_utf8_strlen( priv->pref_name, -1 )){
-		last_fname = ofa_settings_get_string( priv->pref_name );
+		last_uri = ofa_settings_get_string( priv->pref_name );
 	}
 
-	if( last_fname && g_utf8_strlen( last_fname, -1 ) ){
-		gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( priv->filechooser ), last_fname );
-		basename = g_path_get_basename( last_fname );
+	if( my_strlen( last_uri )){
+		gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->filechooser ), last_uri );
+		basename = g_path_get_basename( last_uri );
 		gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->filechooser ), basename );
 		g_free( basename );
 
@@ -341,24 +341,24 @@ apply_on_filechooser( ofaPDFDialog *self )
 
 	priv = self->priv;
 
-	g_free( priv->filename );
-	priv->filename = NULL;
+	g_free( priv->uri );
+	priv->uri = NULL;
 
 	/* the export filename is the only mandatory argument */
-	priv->filename = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->filechooser ));
-	if( !my_strlen( priv->filename )){
+	priv->uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->filechooser ));
+	if( !my_strlen( priv->uri )){
 		my_utils_dialog_error( _( "Empty export selection: unable to continue" ));
 		return( FALSE );
 	}
 
-	if( my_utils_file_exists( priv->filename )){
-		if( !confirm_overwrite( self, priv->filename )){
+	if( my_utils_uri_exists( priv->uri )){
+		if( !confirm_overwrite( self, priv->uri )){
 			return( FALSE );
 		}
 	}
 
-	if( priv->pref_name && g_utf8_strlen( priv->pref_name, -1 )){
-		ofa_settings_set_string( priv->pref_name, priv->filename );
+	if( my_strlen( priv->pref_name )){
+		ofa_settings_set_string( priv->pref_name, priv->uri );
 	}
 
 	return( TRUE );
@@ -402,19 +402,53 @@ confirm_overwrite( const ofaPDFDialog *self, const gchar *fname )
 /**
  * ofa_pdf_dialog_get_filename:
  *
- * Returns: the selected filename.
+ * Returns: the filename from the selected URI as a newly allocated
+ * string which should be g_free() by the caller.
+ *
+ * This must be called after the user has validated the dialog, and the
+ * checks have been OK.
+ */
+gchar *
+ofa_pdf_dialog_get_filename( const ofaPDFDialog *dialog )
+{
+	static const gchar *thisfn = "ofa_pdf_dialog_get_filename";
+	gchar *fname;
+	GError *error;
+
+	g_return_val_if_fail( OFA_IS_PDF_DIALOG( dialog ), NULL );
+
+	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
+
+		error = NULL;
+		fname = g_filename_from_uri( dialog->priv->uri, NULL, &error );
+		if( error ){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_free( fname );
+			fname = NULL;
+		}
+
+		return( fname );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_pdf_dialog_get_uri:
+ *
+ * Returns: the selected URI.
  *
  * This must be called after the user has validated the dialog, and the
  * checks have been OK.
  */
 const gchar *
-ofa_pdf_dialog_get_filename( const ofaPDFDialog *dialog )
+ofa_pdf_dialog_get_uri( const ofaPDFDialog *dialog )
 {
 	g_return_val_if_fail( OFA_IS_PDF_DIALOG( dialog ), NULL );
 
 	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
 
-		return( dialog->priv->filename );
+		return( dialog->priv->uri );
 	}
 
 	return( NULL );

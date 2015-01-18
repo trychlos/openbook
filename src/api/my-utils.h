@@ -100,7 +100,7 @@ void       my_utils_init_upd_user_stamp    ( GtkContainer *container,
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_upd_stamp( priv->T ), \
 														ofo_ ## T ## _get_upd_user( priv->T )); }
 
-gboolean   my_utils_output_stream_new      ( const gchar *filename, GFile **file, GOutputStream **stream );
+gboolean   my_utils_output_stream_new      ( const gchar *uri, GFile **file, GOutputStream **stream );
 
 gboolean   my_utils_input_stream_new       ( const gchar *filename, GFile **file, GInputStream **stream );
 
@@ -113,6 +113,9 @@ gboolean   my_utils_file_exists            ( const gchar *filename );
 gboolean   my_utils_file_is_readable_file  ( const gchar *filename );
 
 gchar     *my_utils_filename_from_utf8     ( const gchar *filename );
+
+gboolean   my_utils_uri_exists             ( const gchar *uri );
+gboolean   my_utils_uri_is_readable_file   ( const gchar *uri );
 
 G_END_DECLS
 

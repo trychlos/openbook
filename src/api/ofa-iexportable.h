@@ -96,7 +96,7 @@ GType    ofa_iexportable_get_type                  ( void );
 guint    ofa_iexportable_get_interface_last_version( void );
 
 gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
-															const gchar *fname,
+															const gchar *uri,
 															const ofaFileFormat *settings,
 															ofoDossier *dossier,
 															const void *instance );

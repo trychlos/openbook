@@ -42,7 +42,6 @@
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-treeview.h"
-#include "ui/ofa-exercice-treeview.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-restore-assistant.h"
 #include "ui/ofa-main-window.h"
@@ -113,7 +112,7 @@ struct _ofaRestoreAssistantPrivate {
 /* the user preferences stored as a string list
  * folder
  */
-static const gchar *st_prefs_import     = "RestoreAssistant";
+static const gchar *st_prefs_import     = "RestoreAssistant-settings";
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-restore-assistant.ui";
 static const gchar *st_ui_id            = "RestoreAssistant";
@@ -335,7 +334,7 @@ p2_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = self->priv;
 
 	if( priv->p2_folder ){
-		gtk_file_chooser_set_current_folder( priv->p2_chooser, priv->p2_folder );
+		gtk_file_chooser_set_current_folder_uri( priv->p2_chooser, priv->p2_folder );
 	}
 }
 
@@ -378,7 +377,7 @@ p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	priv = self->priv;
 
 	g_free( priv->p2_folder );
-	priv->p2_folder = gtk_file_chooser_get_current_folder( priv->p2_chooser );
+	priv->p2_folder = gtk_file_chooser_get_current_folder_uri( priv->p2_chooser );
 
 	update_settings( self );
 }
@@ -922,14 +921,14 @@ get_settings( ofaRestoreAssistant *self )
 	list = ofa_settings_get_string_list( st_prefs_import );
 
 	it = list;
-	cstr = ( it && it->data ? ( const gchar * ) it->data : NULL );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
 		g_free( priv->p2_folder );
 		priv->p2_folder = g_strdup( cstr );
 	}
 	it = it ? it->next : NULL;
-	cstr = ( it && it->data ? ( const gchar * ) it->data : NULL );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
 		priv->p5_open = my_utils_boolean_from_str( cstr );
 	}
 

@@ -202,7 +202,7 @@ ofa_iexportable_get_interface_last_version( void )
  */
 gboolean
 ofa_iexportable_export_to_path( ofaIExportable *exportable,
-									const gchar *fname, const ofaFileFormat *settings,
+									const gchar *uri, const ofaFileFormat *settings,
 									ofoDossier *dossier, const void *instance )
 {
 	GFile *output_file;
@@ -218,7 +218,7 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 	sdata->settings = settings;
 	sdata->instance = instance;
 
-	if( !my_utils_output_stream_new( fname, &output_file, &output_stream )){
+	if( !my_utils_output_stream_new( uri, &output_file, &output_stream )){
 		return( FALSE );
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );

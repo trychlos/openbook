@@ -69,6 +69,7 @@ struct _ofaExportAssistantPrivate {
 	GSList           *p2_group;
 	GtkWidget        *p2_btn;
 	gint              p2_idx;
+	gint              p2_last_code;
 
 	/* p3: select format
 	 */
@@ -78,7 +79,7 @@ struct _ofaExportAssistantPrivate {
 	/* p4: output file
 	 */
 	GtkFileChooser   *p4_chooser;
-	gchar            *p4_fname;		/* the output file */
+	gchar            *p4_uri;			/* the output file URI */
 	gchar            *p4_last_folder;
 
 	/* p6: apply
@@ -160,8 +161,7 @@ static sTypes st_types[] = {
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-export-assistant.ui";
 static const gchar *st_ui_id            = "ExportAssistant";
 
-static const gchar *st_pref_data        = "ExportAssistantContent";
-static const gchar *st_pref_fname       = "ExportAssistantFilename";
+static const gchar *st_pref_settings    = "ExportAssistant-settings";
 
 G_DEFINE_TYPE( ofaExportAssistant, ofa_export_assistant, MY_TYPE_ASSISTANT )
 
@@ -184,6 +184,8 @@ static gboolean  confirm_overwrite( const ofaExportAssistant *self, const gchar 
 static void      p6_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  export_data( ofaExportAssistant *self );
 static void      p6_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
+static void      get_settings( ofaExportAssistant *self );
+static void      set_settings( ofaExportAssistant *self );
 
 static const ofsAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
@@ -227,7 +229,7 @@ export_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_EXPORT_ASSISTANT( instance )->priv;
 	g_free( priv->p4_last_folder );
-	g_free( priv->p4_fname );
+	g_free( priv->p4_uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_export_assistant_parent_class )->finalize( instance );
@@ -263,6 +265,8 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 	g_return_if_fail( self && OFA_IS_EXPORT_ASSISTANT( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT_ASSISTANT, ofaExportAssistantPrivate );
+
+	self->priv->p2_last_code = -1;
 }
 
 static void
@@ -301,6 +305,7 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 							NULL );
 
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
+	get_settings( self );
 
 	my_assistant_run( MY_ASSISTANT( self ));
 }
@@ -320,14 +325,13 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_init";
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *btn;
-	gint i, last;
+	gint i;
 	gboolean found;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	last = ofa_settings_get_int( st_pref_data );
 	found = FALSE;
 
 	for( i=0 ; st_types[i].code ; ++i ){
@@ -342,7 +346,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			priv->p2_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( btn ));
 		}
 
-		if( st_types[i].code == last ){
+		if( st_types[i].code == priv->p2_last_code ){
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
 			found = TRUE;
 		}
@@ -401,7 +405,8 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 		priv = self->priv;
 		g_debug( "%s: idx=%d", thisfn, priv->p2_idx );
-		ofa_settings_set_int( st_pref_data, st_types[priv->p2_idx].code );
+		priv->p2_last_code = st_types[priv->p2_idx].code;
+		set_settings( self );
 	}
 }
 
@@ -469,7 +474,7 @@ p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p4_do_init";
 	ofaExportAssistantPrivate *priv;
-	gchar *fname, *dirname;
+	gchar *dirname;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -478,7 +483,6 @@ p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv->current_page_w = page;
 
 	g_return_if_fail( priv->p2_idx >= 0 );
-	g_return_if_fail( priv->p4_fname == NULL );
 
 	priv->p4_chooser =
 			( GtkFileChooser * ) my_utils_container_get_child_by_name(
@@ -493,15 +497,15 @@ p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* build a default output filename from the last used folder
 	 * plus the default basename for this data type class */
-	fname = ofa_settings_get_string( st_pref_fname );
-	if( my_strlen( fname )){
-		dirname = g_path_get_dirname( fname );
+	if( my_strlen( priv->p4_uri )){
+		dirname = g_path_get_dirname( priv->p4_uri );
 	} else {
 		dirname = g_strdup( ofa_settings_get_string( SETTINGS_EXPORT_FOLDER ));
 	}
-	priv->p4_fname = g_build_filename( dirname, st_types[priv->p2_idx].base_name, NULL );
+	g_free( priv->p4_uri );
+	priv->p4_uri = g_build_filename( dirname, st_types[priv->p2_idx].base_name, NULL );
+
 	g_free( dirname );
-	g_free( fname );
 }
 
 static void
@@ -516,15 +520,15 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	if( my_strlen( priv->p4_fname )){
-		dirname = g_path_get_dirname( priv->p4_fname );
-		gtk_file_chooser_set_current_folder( priv->p4_chooser, dirname );
+	if( my_strlen( priv->p4_uri )){
+		dirname = g_path_get_dirname( priv->p4_uri );
+		gtk_file_chooser_set_current_folder_uri( priv->p4_chooser, dirname );
 		g_free( dirname );
-		basename = g_path_get_basename( priv->p4_fname );
+		basename = g_path_get_basename( priv->p4_uri );
 		gtk_file_chooser_set_current_name( priv->p4_chooser, basename );
 		g_free( basename );
 
-	} else if( priv->p4_last_folder && g_utf8_strlen( priv->p4_last_folder, -1 )){
+	} else if( my_strlen( priv->p4_last_folder )){
 		gtk_file_chooser_set_current_folder( priv->p4_chooser, priv->p4_last_folder );
 	}
 }
@@ -563,9 +567,12 @@ p4_check_for_filename( ofaExportAssistant *self )
 	gchar *name, *final, *folder;
 
 	priv = self->priv;
+	g_free( priv->p4_uri );
 
 	name = gtk_file_chooser_get_current_name( priv->p4_chooser );
+
 	if( my_strlen( name )){
+		final = NULL;
 		if( g_path_is_absolute( name )){
 			final = g_strdup( name );
 		} else {
@@ -573,15 +580,17 @@ p4_check_for_filename( ofaExportAssistant *self )
 			final = g_build_filename( folder, name, NULL );
 			g_free( folder );
 		}
+		g_debug( "p4_check_for_filename: final=%s", final );
+		priv->p4_uri = g_filename_to_uri( final, NULL, NULL );
+		g_free( final );
+
 	} else {
-		final = gtk_file_chooser_get_filename( priv->p4_chooser );
+		priv->p4_uri = gtk_file_chooser_get_uri( priv->p4_chooser );
 	}
+
 	g_free( name );
 
-	g_free( priv->p4_fname );
-	priv->p4_fname = final;
-
-	ok = my_strlen( priv->p4_fname ) > 0;
+	ok = my_strlen( priv->p4_uri ) > 0;
 
 	return( ok );
 }
@@ -602,20 +611,20 @@ p4_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	 * we choose to keep the same folder, letting the user choose
 	 * another basename */
 	g_free( priv->p4_last_folder );
-	priv->p4_last_folder = g_path_get_dirname( priv->p4_fname );
+	priv->p4_last_folder = g_path_get_dirname( priv->p4_uri );
 
 	complete = p4_check_for_filename( self );
 
-	if( my_utils_file_exists( priv->p4_fname )){
-		complete = confirm_overwrite( self, priv->p4_fname );
+	if( my_utils_uri_exists( priv->p4_uri )){
+		complete = confirm_overwrite( self, priv->p4_uri );
 		if( !complete ){
-			g_free( priv->p4_fname );
-			priv->p4_fname = NULL;
+			g_free( priv->p4_uri );
+			priv->p4_uri = NULL;
 		}
 	}
 
 	if( complete ){
-		ofa_settings_set_string( st_pref_fname, priv->p4_fname );
+		set_settings( self );
 	}
 }
 
@@ -683,9 +692,9 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-output" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	gtk_label_set_text( GTK_LABEL( label ), priv->p4_fname );
+	gtk_label_set_text( GTK_LABEL( label ), priv->p4_uri );
 
-	complete = ( priv->p4_fname && g_utf8_strlen( priv->p4_fname, -1 ) > 0 );
+	complete = ( my_strlen( priv->p4_uri ) > 0 );
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
 }
 
@@ -790,7 +799,7 @@ export_data( ofaExportAssistant *self )
 
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
-			priv->p6_base, priv->p4_fname, priv->p3_export_settings,
+			priv->p6_base, priv->p4_uri, priv->p3_export_settings,
 			MY_WINDOW( self )->prot->dossier, self );
 
 	/* then display the result */
@@ -801,11 +810,11 @@ export_data( ofaExportAssistant *self )
 	if( ok ){
 		text = g_strdup_printf( _( "OK: « %s » has been successfully exported.\n\n"
 				"%ld lines have been written in '%s' output file." ),
-				str, ofa_iexportable_get_count( priv->p6_base ), priv->p4_fname );
+				str, ofa_iexportable_get_count( priv->p6_base ), priv->p4_uri );
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, « %s » export has encountered errors.\n\n"
 				"The '%s' file may be incomplete or inaccurate.\n\n"
-				"Please fix these errors, and retry then." ), str, priv->p4_fname );
+				"Please fix these errors, and retry then." ), str, priv->p4_uri );
 	}
 	g_free( str );
 
@@ -835,4 +844,51 @@ p6_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text,
 
 	g_signal_emit_by_name( priv->p6_bar, "ofa-double", progress );
 	g_signal_emit_by_name( priv->p6_bar, "ofa-text", text );
+}
+
+/*
+ * settings are:
+ * content;uri;
+ */
+static void
+get_settings( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( st_pref_settings );
+
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p2_last_code = atoi( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_uri = g_strdup( cstr );
+	}
+
+	ofa_settings_free_string_list( slist );
+}
+
+static void
+set_settings( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	gchar *str;
+
+	priv = self->priv;
+
+	str = g_strdup_printf( "%d;%s;",
+			priv->p2_last_code,
+			priv->p4_uri ? priv->p4_uri : "" );
+
+	ofa_settings_set_string( st_pref_settings, str );
+
+	g_free( str );
 }

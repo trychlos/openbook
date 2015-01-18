@@ -662,22 +662,22 @@ my_utils_init_upd_user_stamp( GtkContainer *container,
  * @filename: the UTF-8 encoded output filename
  */
 gboolean
-my_utils_output_stream_new( const gchar *filename, GFile **file, GOutputStream **stream )
+my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream )
 {
 	static const gchar *thisfn = "my_utils_output_stream_new";
 	GError *error;
 	gchar *sysfname;
 
-	g_return_val_if_fail( filename && g_utf8_strlen( filename, -1 ), FALSE );
+	g_return_val_if_fail( uri && g_utf8_strlen( uri, -1 ), FALSE );
 	g_return_val_if_fail( file, FALSE );
 	g_return_val_if_fail( stream, FALSE );
 
 	error = NULL;
-	sysfname = my_utils_filename_from_utf8( filename );
+	sysfname = my_utils_filename_from_utf8( uri );
 	if( !sysfname ){
 		return( FALSE );
 	}
-	*file = g_file_new_for_path( sysfname );
+	*file = g_file_new_for_uri( sysfname );
 	g_free( sysfname );
 
 	*stream = ( GOutputStream * ) g_file_create( *file, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
@@ -989,4 +989,80 @@ my_utils_filename_from_utf8( const gchar *filename )
 	}
 
 	return( sysfname );
+}
+
+/**
+ * my_utils_uri_exists:
+ * @uri: an uri pathname
+ *
+ * Returns: %TRUE if the specified uri exists, %FALSE else.
+ *
+ * This function doesn't distinguish between uris and directories
+ * (as in "all is file in Unix") - so if you really want a *uri* then
+ * rather take a glance at #my_utils_is_readable_uri() function.
+ *
+ * The caller should be conscious and take care of the usual race
+ * condition: anything may happen between this test and the actual
+ * use of its result...
+ */
+gboolean
+my_utils_uri_exists( const gchar *uri )
+{
+	GFile *file;
+	gboolean exists;
+	gchar *sysfname;
+
+	exists = FALSE;
+
+	sysfname = my_utils_filename_from_utf8( uri );
+	if( sysfname ){
+		file = g_file_new_for_uri( sysfname );
+		exists = g_file_query_exists( file, NULL );
+		g_object_unref( file );
+	}
+	g_free( sysfname );
+
+	g_debug( "my_utils_uri_exists: the uri '%s' exists: %s", uri, exists ? "True":"False" );
+
+	return( exists );
+}
+
+/**
+ * my_utils_uri_is_readable_file:
+ * @uri: a file URI
+ *
+ * Returns: %TRUE if the specified file exists, is a file and is readable,
+ *  %FALSE else.
+ *
+ * The caller should be conscious and take care of the usual race
+ * condition: anything may happen between this test and the actual
+ * use of its result...
+ */
+gboolean
+my_utils_uri_is_readable_file( const gchar *uri )
+{
+	GFile *file;
+	gboolean ok;
+	gchar *sysfname;
+	GFileInfo *info;
+	GFileType type;
+
+	ok = FALSE;
+
+	sysfname = my_utils_filename_from_utf8( uri );
+	if( sysfname ){
+		ok = TRUE;
+		file = g_file_new_for_uri( sysfname );
+		info = g_file_query_info( file,
+				G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
+				G_FILE_QUERY_INFO_NONE, NULL, NULL );
+		type = g_file_info_get_attribute_uint32( info, G_FILE_ATTRIBUTE_STANDARD_TYPE );
+		ok &= ( type == G_FILE_TYPE_REGULAR );
+		ok &= g_file_info_get_attribute_boolean( info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ );
+		g_object_unref( file );
+	}
+	g_free( sysfname );
+
+	g_debug( "my_utils_file_is_readable_file: uri=%s, ok=%s", uri, ok ? "True":"False" );
+	return( ok );
 }
