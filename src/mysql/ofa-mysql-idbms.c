@@ -70,10 +70,6 @@ static void      *idbms_connect( const ofaIDbms *instance,const gchar *dname, co
 static gboolean   idbms_connect_ex( const ofaIDbms *instance,void *infos, const gchar *account, const gchar *password );
 static void       setup_infos( mysqlInfos *infos );
 static void       idbms_close( const ofaIDbms *instance, void *handle );
-static GSList    *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
-static gchar     *idbms_get_current( const ofaIDbms *instance, const gchar *dname );
-static gchar     *exercice_get_description( const gchar *dname, const gchar *key );
-static void       idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end );
 static gboolean   idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
 static gboolean   idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
 static gchar     *idbms_last_error( const ofaIDbms *instance, void *handle );
@@ -97,9 +93,6 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->connect = idbms_connect;
 	iface->connect_ex = idbms_connect_ex;
 	iface->close = idbms_close;
-	iface->get_exercices = idbms_get_exercices;
-	iface->get_current = idbms_get_current;
-	iface->set_current = idbms_set_current;
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->last_error = idbms_last_error;
@@ -282,212 +275,6 @@ idbms_close( const ofaIDbms *instance, void *handle )
 	g_free( infos );
 }
 
-/*
- * returned the known exercices
- *
- * MySQLDatabase=<database>;<begin>;<end>;
- * MySQLDatabase_<end>=<database>;<begin>;
- *
- * where <begin> and <end> are 'yyyymmdd' dates.
- *
- * Rationale:
- * 1/ in order to keep the database size at a stable size, the database
- *    only contains one exercice
- * 2/ as a consequence, each exercice is contained in its own database
- * 3/ we want propose to the user to open each database/exercice by
- *    showing him the status of the exercice: whether it is opened or
- *    archived, and the begin and end dates
- * 4/ we so required that these datas be available in the settings
- *
- * When restoring:
- * 1/ user may choose between restoring in an existing database, thus
- *    overwriting its content, or restoring to a new database
- * 2/ when restoring to an existing database, the settings must be
- *    updated to reflect the status of the restored content
- * 3/ idem when restoring to a new database
- * 4/ as a consequence, the two options may lead to a situation where
- *    the user will have several databases with the same content
- *
- * or:
- * Openbook software may force the user to only restore to its current
- * database, which happens to be the simplest solution.
- */
-static GSList *
-idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
-{
-	GSList *keys_list, *it;
-	GSList *out_list;
-	const gchar *cstr;
-	gchar *line;
-
-	out_list = NULL;
-	keys_list = ofa_settings_dossier_get_keys( dname );
-
-	for( it=keys_list ; it ; it=it->next ){
-		cstr = ( const gchar * ) it->data;
-		if( g_str_has_prefix( cstr, SETTINGS_DATABASE )){
-			line = exercice_get_description( dname, cstr );
-			out_list = g_slist_prepend( out_list, line );
-		}
-	}
-
-	ofa_settings_dossier_free_keys( keys_list );
-
-	return( out_list );
-}
-
-/*
- * returned the current exercice description as a semi-colon separated
- * string.
- */
-static gchar *
-idbms_get_current( const ofaIDbms *instance, const gchar *dname )
-{
-	gchar *out_value;
-
-	out_value = exercice_get_description( dname, SETTINGS_DATABASE );
-
-	return( out_value );
-}
-
-/*
- * returned the current exercice description as a semi-colon separated
- * string:
- * - a displayable label
- * - the database name
- * - the begin of exercice yyyy-mm-dd
- * - the end of exercice yyyy-mm-dd
- * - the status
- */
-static gchar *
-exercice_get_description( const gchar *dname, const gchar *key )
-{
-	GList *strlist, *it;
-	const gchar *sdb, *sbegin;
-	gchar *send;
-	gchar **array;
-	gboolean is_current;
-	GDate begin, end;
-	gchar *label, *svalue, *sdbegin, *sdend, *status;
-
-	strlist = ofa_settings_dossier_get_string_list( dname, key );
-
-	sdb = sbegin = send = NULL;
-	it = strlist;
-	sdb = ( const gchar * ) it->data;
-	it = it->next;
-	if( it ){
-		sbegin = ( const gchar * ) it->data;
-	}
-	if( g_utf8_collate( key, SETTINGS_DATABASE )){
-		array = g_strsplit( key, "_", -1 );
-		send = g_strdup( *(array+1 ));
-		g_strfreev( array );
-		is_current = FALSE;
-	} else {
-		it = it ? it->next : NULL;
-		if( it ){
-			send = g_strdup(( const gchar * ) it->data );
-		}
-		is_current = TRUE;
-	}
-
-	status = g_strdup( is_current ? _( "Current" ) : _( "Archived" ));
-
-	my_date_set_from_str( &begin, sbegin, MY_DATE_YYMD );
-	sdbegin = my_date_to_str( &begin, MY_DATE_SQL );
-
-	my_date_set_from_str( &end, send, MY_DATE_YYMD );
-	sdend = my_date_to_str( &end, MY_DATE_SQL );
-
-	label = ofa_dossier_misc_get_exercice_label( &begin, &end, is_current );
-
-	svalue = g_strdup_printf( "%s;%s;%s;%s;%s;", label, sdb, sdbegin, sdend, status );
-
-	g_free( label );
-	g_free( send );
-	g_free( sdbegin );
-	g_free( sdend );
-	g_free( status );
-
-	ofa_settings_free_string_list( strlist );
-
-	return( svalue );
-}
-
-/*
- * set the settings with the dates of the current exercice
- */
-static void
-idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end )
-{
-	GList *list, *it;
-	gchar *dbname, *sbegin, *send, *str;
-
-	list = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
-	dbname = NULL;
-	it = list;
-	if( it ){
-		dbname = g_strdup(( const gchar * ) it->data );
-	}
-	ofa_settings_free_string_list( list );
-
-	sbegin = my_date_to_str( begin, MY_DATE_YYMD );
-	send = my_date_to_str( end, MY_DATE_YYMD );
-	str = g_strdup_printf( "%s;%s;%s;", dbname, sbegin, send );
-
-	ofa_settings_dossier_set_string( dname, SETTINGS_DATABASE, str );
-
-	g_free( dbname );
-	g_free( str );
-	g_free( sbegin );
-	g_free( send );
-}
-
-/*
- * move the current exercice as an archived one
- * define a new current exercice with the provided dates
- */
-void
-ofa_mysql_set_new_exercice( const ofaIDbms *instance, const gchar *dname, const gchar *dbname, const GDate *begin, const GDate *end )
-{
-	GList *slist, *it;
-	const gchar *sdb, *sbegin, *send;
-	gchar *key, *content, *sbegin_next, *send_next;
-
-	/* move current exercice to archived */
-	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
-
-	sdb = sbegin = send = NULL;
-	it = slist;
-	sdb = ( const gchar * ) it->data;
-	it = it ? it->next : NULL;
-	sbegin = it ? ( const gchar * ) it->data : NULL;
-	it = it ? it->next : NULL;
-	send = it ? ( const gchar * ) it->data : NULL;
-	g_return_if_fail( sdb && sbegin && send );
-
-	key = g_strdup_printf( "%s_%s", SETTINGS_DATABASE, send );
-	content = g_strdup_printf( "%s;%s;", sdb, sbegin );
-
-	ofa_settings_dossier_set_string( dname, key, content );
-
-	ofa_settings_free_string_list( slist );
-	g_free( key );
-	g_free( content );
-
-	/* define new current exercice */
-	sbegin_next = my_date_to_str( begin, MY_DATE_YYMD );
-	send_next = my_date_to_str( end, MY_DATE_YYMD );
-	content = g_strdup_printf( "%s;%s;%s;", dbname, sbegin_next, send_next );
-
-	ofa_settings_dossier_set_string( dname, SETTINGS_DATABASE, content );
-
-	g_free( content );
-	g_free( sbegin_next );
-	g_free( send_next );
-}
-
 static gboolean
 idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {
@@ -576,15 +363,12 @@ mysqlInfos *
 ofa_mysql_get_connect_infos( const gchar *dname )
 {
 	mysqlInfos *infos;
-	GList *slist;
 
 	infos = g_new0( mysqlInfos, 1 );
 	infos->dname = g_strdup( dname );
 	setup_infos( infos );
 
-	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
-	infos->dbname = g_strdup(( const gchar * ) slist->data );
-	ofa_settings_free_string_list( slist );
+	infos->dbname = ofa_dossier_misc_get_current_dbname( dname );
 
 	return( infos );
 }

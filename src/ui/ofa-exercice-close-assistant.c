@@ -35,6 +35,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -497,7 +498,7 @@ p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	ofo_dossier_set_exe_begin( dossier, begin_cur );
 	ofo_dossier_set_exe_end( dossier, end_cur );
-	ofa_idbms_set_current( priv->dbms, priv->dname, begin_cur, end_cur );
+	ofa_dossier_misc_set_current( priv->dname, begin_cur, end_cur );
 	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
 	ofa_closing_parms_bin_apply( priv->p2_closing_parms );

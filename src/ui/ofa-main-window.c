@@ -287,7 +287,6 @@ static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *m
 static void             connect_window_for_enabled_updates( ofaMainWindow *window );
 static void             set_window_title( const ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
-static void             set_default_database( ofaMainWindow *window, ofsDossierOpen *sdo );
 static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
 static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             warning_archived_dossier( const ofaMainWindow *window );
@@ -823,7 +822,7 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	priv->dossier = ofo_dossier_new();
 
 	if( !sdo->dbname ){
-		set_default_database( window, sdo );
+		sdo->dbname = ofa_dossier_misc_get_current_dbname( sdo->dname );
 	}
 
 	if( !ofo_dossier_open( priv->dossier, sdo->dname, sdo->dbname, sdo->account, sdo->password )){
@@ -849,30 +848,6 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
 		warning_exercice_unset( window );
 	}
-}
-
-static void
-set_default_database( ofaMainWindow *window, ofsDossierOpen *sdo )
-{
-	gchar *provider;
-	ofaIDbms *dbms;
-	gchar *str;
-	gchar **array, **iter;
-
-	provider = ofa_settings_get_dossier_provider( sdo->dname );
-	g_return_if_fail( provider && g_utf8_strlen( provider, -1 ));
-
-	dbms = ofa_idbms_get_provider_by_name( provider );
-	g_return_if_fail( dbms && OFA_IS_IDBMS( dbms ));
-
-	str = ofa_idbms_get_current( dbms, sdo->dname );
-	array = g_strsplit( str, ";", -1 );
-	iter = array+1;
-	sdo->dbname = g_strdup( *iter );
-
-	g_strfreev( array );
-	g_free( str );
-	g_clear_object( &dbms );
 }
 
 /*

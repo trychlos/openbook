@@ -182,8 +182,8 @@ init_dialog( ofaBackup *self )
 
 	last_folder = ofa_settings_dossier_get_string(
 						ofo_dossier_get_name( priv->dossier ), st_backup_folder );
-	if( last_folder && g_utf8_strlen( last_folder, -1 )){
-		gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
+	if( my_strlen( last_folder )){
+		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
 	}
 	g_free( last_folder );
 }
@@ -222,7 +222,7 @@ do_backup( ofaBackup *self )
 
 	priv = self->priv;
 
-	folder = gtk_file_chooser_get_current_folder( GTK_FILE_CHOOSER( priv->dialog ));
+	folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));
 	ofa_settings_dossier_set_string(
 				ofo_dossier_get_name( priv->dossier ), st_backup_folder, folder );
 	g_free( folder );

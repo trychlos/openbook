@@ -34,6 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
@@ -588,8 +589,7 @@ ofo_dossier_open( ofoDossier *dossier,
 			 * (this may not be the case when the dossier has just been restored
 			 *  or created) */
 			if( !g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED )){
-				ofa_dbms_set_current_exercice( dbms,
-						ofo_dossier_get_name( dossier ),
+				ofa_dossier_misc_set_current( ofo_dossier_get_name( dossier ),
 						ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 			}
 		}
@@ -666,8 +666,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 static void
 on_exe_dates_changed( const ofoDossier *dossier, void *empty )
 {
-	ofa_dbms_set_current_exercice(
-			( ofaDbms * ) ofo_dossier_get_dbms( dossier ),
+	ofa_dossier_misc_set_current(
 			ofo_dossier_get_name( dossier ),
 			ofo_dossier_get_exe_begin( dossier ),
 			ofo_dossier_get_exe_end( dossier ));

@@ -45,15 +45,6 @@ gboolean  ofa_dbms_connect             ( ofaDbms *dbms,
 												const gchar *account, const gchar *password,
 												gboolean display_error );
 
-GSList   *ofa_dbms_get_exercices       ( ofaDbms *dbms,
-												const gchar *dname );
-
-#define   ofa_dbms_free_exercices(L)   ofa_idbms_free_exercices( L )
-
-void      ofa_dbms_set_current_exercice( ofaDbms *dbms,
-												const gchar *dname,
-												const GDate *begin, const GDate *end );
-
 gboolean  ofa_dbms_query               ( const ofaDbms *dbms,
 												const gchar *query,
 												gboolean display_error );

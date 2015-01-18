@@ -32,6 +32,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -475,8 +476,7 @@ static void
 p3_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
 	ofaRestoreAssistantPrivate *priv;
-	gchar *provider, *slist;
-	gchar **array;
+	gchar *provider;
 
 	priv = self->priv;
 	g_clear_object( &priv->p3_dbms );
@@ -487,13 +487,8 @@ p3_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	priv->p3_dbms = ofa_idbms_get_provider_by_name( provider );
 	g_return_if_fail( priv->p3_dbms && OFA_IS_IDBMS( priv->p3_dbms ));
 
-	slist = ofa_idbms_get_current( priv->p3_dbms, priv->p3_dossier );
-	array = g_strsplit( slist, ";", -1 );
+	priv->p3_database = ofa_dossier_misc_get_current_dbname( priv->p3_dossier );
 
-	priv->p3_database = g_strdup( *( array+1 ));
-
-	g_strfreev( array );
-	g_free( slist );
 	g_free( provider );
 
 	update_settings( self );

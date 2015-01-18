@@ -29,6 +29,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
@@ -46,7 +47,6 @@ ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar
 	GtkWidget *label;
 	gchar *text;
 	gint port_num;
-	GList *strlist;
 
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
 	g_return_if_fail( window && GTK_IS_WINDOW( window ));
@@ -79,9 +79,9 @@ ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "database" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	strlist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
-	gtk_label_set_text( GTK_LABEL( label ), ( const gchar * ) strlist->data );
-	ofa_settings_free_string_list( strlist );
+	text = ofa_dossier_misc_get_current_dbname( dname );
+	gtk_label_set_text( GTK_LABEL( label ), text );
+	g_free( text );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "port" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

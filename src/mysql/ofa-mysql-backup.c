@@ -47,6 +47,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
@@ -259,7 +260,7 @@ ofa_mysql_archive( const ofaIDbms *instance,
 	infos->dbname = new_dbname;
 
 	if( ok ){
-		ofa_mysql_set_new_exercice( instance, dname, infos->dbname, begin_next, end_next );
+		ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
 		ofa_mysql_duplicate_grants( instance, infos, user_account, prev_dbname );
 	}
 

@@ -264,14 +264,11 @@ ofa_mysql_connect_enter_piece_apply( const ofaIDbms *instance, const gchar *dnam
 {
 	mysqlInfos *sInfos;
 	gboolean ok;
-	gchar *str;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
 	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
 
 	sInfos = ( mysqlInfos * ) infos;
-
-	str = g_strdup_printf( "%s;;;", sInfos->dbname );
 
 	ok = ofa_settings_create_dossier(
 						dname,
@@ -279,10 +276,8 @@ ofa_mysql_connect_enter_piece_apply( const ofaIDbms *instance, const gchar *dnam
 						SETTINGS_HOST,          SETTINGS_TYPE_STRING, sInfos->host,
 						SETTINGS_PORT,          SETTINGS_TYPE_INT,    sInfos->port,
 						SETTINGS_SOCKET,        SETTINGS_TYPE_STRING, sInfos->socket,
-						SETTINGS_DATABASE,      SETTINGS_TYPE_STRING, str,
+						SETTINGS_DBMS_DATABASE, SETTINGS_TYPE_STRING, sInfos->dbname,
 						NULL );
-
-	g_free( str );
 
 	return( ok );
 }

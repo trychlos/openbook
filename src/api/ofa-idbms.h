@@ -146,56 +146,6 @@ typedef struct {
 	const gchar * ( *get_provider_name )         ( const ofaIDbms *instance );
 
 	/**
-	 * get_exercices:
-	 * @instance: the #ofaIDbms provider.
-	 * @dname: the name of the dossier from settings.
-	 *
-	 * Returns the list of the known exercices as a semi-colon separated
-	 * list of strings:
-	 * - a displayable label
-	 * - the corresponding database.
-	 *
-	 * The returned list should be #ofa_idbms_free_exercices() by the
-	 * caller.
-	 *
-	 * Since: version 1
-	 */
-	GSList *      ( *get_exercices )             ( const ofaIDbms *instance,
-															const gchar *dname );
-
-	/**
-	 * get_current:
-	 * @instance: the #ofaIDbms provider.
-	 * @dname: the name of the dossier from settings.
-	 *
-	 * Returns: a semi-colon separated string which contains:
-	 * - a displayable label
-	 * - the database name for the current exercice.
-	 *
-	 * The returned string should be #g_free() by the caller.
-	 *
-	 * Since: version 1
-	 */
-	gchar *       ( *get_current )               ( const ofaIDbms *instance,
-															const gchar *dname );
-
-	/**
-	 * set_current:
-	 * @instance: the #ofaIDbms provider.
-	 * @dname: the name of the dossier from settings.
-	 * @begin: the new beginning of the exercice.
-	 * @end: the new end of the exercice.
-	 *
-	 * Update the settings with the new provided dates.
-	 *
-	 * Since: version 1
-	 */
-	void          ( *set_current )               ( const ofaIDbms *instance,
-															const gchar *dname,
-															const GDate *begin,
-															const GDate *end );
-
-	/**
 	 * query:
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
@@ -562,20 +512,6 @@ void         ofa_idbms_close                     ( const ofaIDbms *instance,
 ofaIDbms    *ofa_idbms_get_provider_by_name      ( const gchar *pname );
 
 const gchar *ofa_idbms_get_provider_name         ( const ofaIDbms *instance );
-
-GSList      *ofa_idbms_get_exercices             ( const ofaIDbms *instance,
-															const gchar *dname );
-
-#define      ofa_idbms_free_exercices(L)         g_debug( "ofa_idbms_free_exercices" ); \
-													g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
-
-gchar       *ofa_idbms_get_current               ( const ofaIDbms *instance,
-															const gchar *dname );
-
-void         ofa_idbms_set_current               ( const ofaIDbms *instance,
-															const gchar *dname,
-															const GDate *begin,
-															const GDate *end );
 
 GSList      *ofa_idbms_get_providers_list        ( void );
 

@@ -61,6 +61,7 @@ typedef enum {
 
 /* some used keys */
 #define SETTINGS_DBMS_PROVIDER          "DBMSProvider"
+#define SETTINGS_DBMS_DATABASE          "DBMSDatabase"
 #define SETTINGS_EXPORT_FOLDER          "ExportDefaultFolder"
 #define SETTINGS_EXPORT_SETTINGS        "ExportSettings"
 #define SETTINGS_IMPORT_SETTINGS        "ImportSettings"

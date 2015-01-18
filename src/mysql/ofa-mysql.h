@@ -100,7 +100,6 @@ typedef struct {
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
 #define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
-#define SETTINGS_DATABASE               "MySQLDatabase"
 #define SETTINGS_HOST                   "MySQLHost"
 #define SETTINGS_PORT                   "MySQLPort"
 #define SETTINGS_SOCKET                 "MySQLSocket"

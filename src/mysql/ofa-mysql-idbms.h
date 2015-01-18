@@ -55,12 +55,6 @@ gboolean     ofa_mysql_connect_with_infos     ( mysqlInfos *infos );
 
 void         ofa_mysql_free_connect_infos     ( mysqlInfos *infos );
 
-void         ofa_mysql_set_new_exercice       ( const ofaIDbms *instance,
-														const gchar *dname,
-														const gchar *dbname,
-														const GDate *begin_next,
-														const GDate *end_next );
-
 gboolean     ofa_mysql_duplicate_grants       ( const ofaIDbms *instance,
 														mysqlInfos *infos,
 														const gchar *user_account,

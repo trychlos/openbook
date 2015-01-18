@@ -354,58 +354,6 @@ error_with_infos( const ofaDbms *dbms,
 }
 
 /**
- * ofa_dbms_get_exercices:
- * @dbms: this #ofaDbms object
- * @dname: the name of the dossier from the settings.
- *
- * Returns: the list of exercices as a #GSList of semi-colon separated
- * strings:
- * - a displayable label
- * - the corresponding database name.
- *
- * The returned list should be #ofa_dbms_free_exercices() by the caller.
- */
-GSList *
-ofa_dbms_get_exercices( ofaDbms *dbms, const gchar *dname )
-{
-	ofaIDbms *pmodule;
-	GSList *list;
-
-	list = NULL;
-	pmodule = get_provider_module_from_dossier_name( dbms, dname, FALSE );
-	if( pmodule ){
-		g_return_val_if_fail( OFA_IS_IDBMS( pmodule ), NULL );
-
-		list = ofa_idbms_get_exercices( pmodule, dname );
-	}
-
-	return( list );
-}
-
-/**
- * ofa_dbms_set_current_exercice:
- * @dbms: this #ofaDbms object
- * @dname: the name of the dossier from the settings.
- * @begin: the new beginning of the exercice
- * @end: the new end of the exercice
- *
- * Ask the DBMS provider to update its settings with the new dates of
- * the exercice.
- */
-void
-ofa_dbms_set_current_exercice( ofaDbms *dbms, const gchar *dname, const GDate *begin, const GDate *end )
-{
-	ofaIDbms *pmodule;
-
-	pmodule = get_provider_module_from_dossier_name( dbms, dname, FALSE );
-	if( pmodule ){
-		g_return_if_fail( OFA_IS_IDBMS( pmodule ));
-
-		ofa_idbms_set_current( pmodule, dname, begin, end );
-	}
-}
-
-/**
  * ofa_dbms_query:
  * @dbms: this #ofaDbms object
  * @query: the query

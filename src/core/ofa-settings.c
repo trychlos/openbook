@@ -1019,9 +1019,9 @@ ofa_settings_create_dossier( const gchar *name, ... )
 	static const gchar *thisfn = "ofa_settings_create_dossier";
 	gchar *group;
 	va_list ap;
-	const gchar *key;
+	const gchar *key, *scontent;
 	gint type;
-	const gchar *scontent;
+	gchar *str;
 	gint icontent;
 	GKeyFile *kfile;
 
@@ -1043,9 +1043,15 @@ ofa_settings_create_dossier( const gchar *name, ... )
 
 			case SETTINGS_TYPE_STRING:
 				scontent = va_arg( ap, const gchar * );
-				if( scontent && g_utf8_strlen( scontent, -1 )){
-					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, scontent );
-					g_key_file_set_string( kfile, group, key, scontent );
+				if( my_strlen( scontent )){
+					if( !g_utf8_collate( key, SETTINGS_DBMS_DATABASE )){
+						str = g_strdup_printf( "%s;;;", scontent );
+					} else {
+						str = g_strdup( scontent );
+					}
+					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, str );
+					g_key_file_set_string( kfile, group, key, str );
+					g_free( str );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
 					g_key_file_remove_key( kfile, group, key, NULL );

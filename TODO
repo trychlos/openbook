@@ -393,8 +393,6 @@
 
  592 2015- 1-14 should MySQLDatabase be an Openbook key ?
 
- 597 2015- 1-17 filenames in settings must be URIs
-
  598
 
 -----------------------------------------------------------------------
@@ -2607,6 +2605,9 @@
                 displayed - but is refreshed when we double-clic on the
                 AccountsChart page
      2015- 1-17 done - svn #4465
+
+ 597 2015- 1-17 filenames in settings must be URIs
+     2015- 1-18 done - svn #4492
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

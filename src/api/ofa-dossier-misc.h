@@ -43,9 +43,22 @@ GSList  *ofa_dossier_misc_get_dossiers      ( void );
 #define  ofa_dossier_misc_free_dossiers(L)  g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 GSList  *ofa_dossier_misc_get_exercices     ( const gchar *dname );
-#define  ofa_dossier_misc_free_exercices(L) ofa_dbms_free_exercices(L)
+#define  ofa_dossier_misc_free_exercices(L) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-gchar   *ofa_dossier_misc_get_exercice_label( const GDate *begin, const GDate *end, gboolean is_current );
+gchar   *ofa_dossier_misc_get_exercice_label( const GDate *begin,
+													const GDate *end,
+													gboolean is_current );
+
+gchar   *ofa_dossier_misc_get_current_dbname( const gchar *dname );
+
+void     ofa_dossier_misc_set_current       ( const gchar *dname,
+													const GDate *begin,
+													const GDate *end );
+
+void     ofa_dossier_misc_set_new_exercice  ( const gchar *dname,
+													const gchar *dbname,
+													const GDate *begin_next,
+													const GDate *end_next );
 
 G_END_DECLS
 

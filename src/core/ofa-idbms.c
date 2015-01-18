@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/ofa-idbms.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 
 #include "core/ofa-plugin.h"
@@ -282,82 +283,6 @@ ofa_idbms_get_provider_name( const ofaIDbms *instance )
 	}
 
 	return( name );
-}
-
-/**
- * ofa_idbms_get_exercices:
- * @instance: this #ofaIDbms instance.
- * @dname: the dossier name read from settings.
- *
- * Returns: the list of known exercices for the dossier as a sem-colon
- * separated list of strings:
- * - a displayable label
- * - the corresponding database name
- * - the exercice begin date as a sql-formatted string yyyy-mm-dd
- * - the exercice end date as a sql-formatted string yyyy-mm-dd
- * - the status of the exercice.
- *
- * The returned list should be ofa_idbms_free_exercices() by the caller.
- */
-GSList *
-ofa_idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
-{
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), NULL );
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->get_exercices ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->get_exercices( instance, dname ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_idbms_get_current:
- * @instance: this #ofaIDbms instance.
- * @dname: the dossier name read from settings.
- *
- * Returns: a semi-colon separated string which contains:
- * - a displayable label
- * - the database name for the current exercice
- * - the begin of exercice yyyy-mm-dd
- * - the end of exercice yyyy-mm-dd
- * - the status.
- *
- * The returned string should be g_free() by the caller.
- */
-gchar *
-ofa_idbms_get_current( const ofaIDbms *instance, const gchar *dname )
-{
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), NULL );
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->get_current ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->get_current( instance, dname ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_idbms_set_current:
- * @instance: this #ofaIDbms instance.
- * @dname: the name of the dossier from the settings.
- * @begin: the new beginning of the exercice
- * @end: the new end of the exercice
- *
- * Ask the DBMS provider to update its settings with the new dates of
- * the exercice.
- */
-void
-ofa_idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end )
-{
-	g_return_if_fail( OFA_IS_IDBMS( instance ));
-	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->set_current ){
-		OFA_IDBMS_GET_INTERFACE( instance )->set_current( instance, dname, begin, end );
-	}
 }
 
 /**
@@ -627,8 +552,7 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
 {
 	gboolean ok;
 	gchar *query;
-	gchar *slist, *dbname;
-	gchar **array;
+	gchar *dbname;
 	void *handle;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
@@ -642,11 +566,7 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
 
 	/* define the dossier administrative account */
 	if( ok ){
-		slist = ofa_idbms_get_current( instance, dname );
-		array = g_strsplit( slist, ";", -1 );
-		dbname = g_strdup( *( array+1 ));
-		g_strfreev( array );
-		g_free( slist );
+		dbname = ofa_dossier_misc_get_current_dbname( dname );
 
 		handle = ofa_idbms_connect( instance, dname, dbname, root_account, root_password );
 		query = g_strdup_printf(
