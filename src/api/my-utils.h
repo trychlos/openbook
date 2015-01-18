@@ -54,6 +54,7 @@ gchar     *my_utils_quote                  ( const gchar *str );
 
 GTimeVal  *my_utils_stamp_set_now          ( GTimeVal *stamp );
 GTimeVal  *my_utils_stamp_set_from_sql     ( GTimeVal *timeval, const gchar *str );
+GTimeVal  *my_utils_stamp_set_from_str     ( GTimeVal *timeval, const gchar *str );
 GTimeVal  *my_utils_stamp_set_from_stamp   ( GTimeVal *timeval, const GTimeVal *orig );
 gchar     *my_utils_stamp_to_str           ( const GTimeVal *stamp, myStampFormat format );
 

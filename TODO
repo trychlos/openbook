@@ -375,23 +375,21 @@
                 main window title
 
  567 2015- 1- 9 have an EntryStore ?
+     2015- 1-18 ofaViewEntries add its own columns to its store
+                ofaReconciliation is a tree store with bat lines
+                so the usefulness has yet to be proved...
 
- 572 2015- 1-10 refactor: get rid of amounts, replacing them with
-                integers ?
+ 572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
+                them with integers ?
 
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement groups if they are set in the object
                 (would prevent two updates when closing the exercice)
 
- 585 2015- 1-12 Restore: must adapt title and settings to the restored 
-                content so that we cannot end with the same archive
-                staying in two databases for a dossier
-                => can only restore an exercice on the same exercice
-                + as we cannot restore on an archived exercice (read-
-                only), we should only be able to restore an archived
-                exercice on a new dossier.
+ 598 2015- 1-18 remediate the entries when modifying the exercice
+                beginning or end dates 
 
- 598
+ 599
 
 -----------------------------------------------------------------------
  DONE
@@ -2561,6 +2559,15 @@
  583 2015- 1-12 homogeneïze ofo_entry_update_settlement() and
                 ofo_entry_update_concil( with or without provider arg)
      2015- 1-13 done - svn #4441
+
+ 585 2015- 1-12 Restore: must adapt title and settings to the restored 
+                content so that we cannot end with the same archive
+                staying in two databases for a dossier
+                => can only restore an exercice on the same exercice
+                + as we cannot restore on an archived exercice (read-
+                only), we should only be able to restore an archived
+                exercice on a new dossier.
+     2015- 1-18 only restore as a current exercice
 
  586 2015- 1-12 when entering account/password for opening a database,
                 do not sensitive OK button only when password is ok

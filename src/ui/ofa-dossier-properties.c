@@ -103,6 +103,7 @@ static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
+static gboolean  confirm_remediation( ofaDossierProperties *self );
 
 static void
 dossier_properties_finalize( GObject *instance )
@@ -583,10 +584,7 @@ do_update( ofaDossierProperties *self )
 	ofa_closing_parms_bin_apply( priv->closing_parms );
 
 	ofo_dossier_set_exe_notes( priv->dossier, priv->exe_notes );
-
 	my_utils_getback_notes_ex( container, dossier );
-
-	priv->updated = ofo_dossier_update( priv->dossier );
 
 	/* have begin or end exe dates changed ? */
 	date_has_changed = FALSE;
@@ -608,8 +606,54 @@ do_update( ofaDossierProperties *self )
 	}
 
 	if( date_has_changed ){
-		g_signal_emit_by_name( priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED );
+		if( !confirm_remediation( self )){
+			return( FALSE );
+		}
+	}
+
+	/* first update the dossier, and only then send the advertising signal */
+	priv->updated = ofo_dossier_update( priv->dossier );
+
+	if( date_has_changed ){
+		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+		g_signal_emit_by_name(
+				priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED, &priv->begin_init, &priv->end_init );
 	}
 
 	return( priv->updated );
+}
+
+static gboolean
+confirm_remediation( ofaDossierProperties *self )
+{
+	GtkWidget *dialog;
+	gint response;
+	gchar *str;
+
+	str = g_strdup(
+			_( "You have modified the begin and/or the end dates of the current exercice.\n"
+				"This operation may lead to a more or leass heavy remediation, "
+				"as each concerned entry must update its intern status and thus "
+				"update the corresponding account and ledger balances.\n"
+				"Are your sure ?" ));
+
+	dialog = gtk_message_dialog_new(
+			my_window_get_toplevel( MY_WINDOW( self )),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", str );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "Con_firm" ), GTK_RESPONSE_OK,
+			NULL );
+
+	g_free( str );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }

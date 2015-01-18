@@ -198,6 +198,11 @@ static void         on_updated_object_account_number( const ofoDossier *dossier,
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
+static void         on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void         move_from_exercice_to_past( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin );
+static void         move_from_past_to_exercice( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin );
+static void         move_from_exercice_to_future( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end );
+static void         move_from_future_to_exercice( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
 static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
@@ -357,6 +362,9 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
 
 	g_signal_connect( G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_EXE_DATE_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
 }
 
 /*
@@ -487,6 +495,123 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 
 	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
+}
+
+/*
+ * The cases of remediation:
+ *
+ * 1/ entries were considered in the past, but are now in the exercice
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, these entries will become rough or validated
+ *
+ * 2/ entries were considered in the past, but are now in the future
+ *
+ * 3/ entries were considered in the exercice, but are now in the past
+ *    these entries will become past
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, the account and ledger rough/validated balances will
+ *    be updated
+ *
+ * 4/ entries were considered in the exercice, but are not in the future
+ *    these entries will become future
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, the account and ledger rough/validated balances will
+ *    be updated
+ *
+ * 5/ these entries were considered in the future, but are now considered
+ *    in the exercice
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, these entries will become rough or validated
+ *
+ * 6/ entries were considered in the future, but are now set in the past
+ */
+static void
+on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
+{
+	const GDate *new_begin, *new_end;
+
+	new_begin = ofo_dossier_get_exe_begin( dossier );
+	new_end = ofo_dossier_get_exe_end( dossier );
+
+	if( !my_date_is_valid( prev_begin )){
+		if( !my_date_is_valid( new_begin )){
+			/* nothing to do here */
+
+		} else {
+			/* setting a beginning date for the exercice
+			 * there may be entries which were considered in the
+			 * exercice (either rough or validated) but are now
+			 * considered in the past */
+			move_from_exercice_to_past( dossier, prev_begin, new_begin );
+		}
+	} else if( !my_date_is_valid( new_begin )){
+		/* removing the beginning date of the exercice
+		 * there may be entries which were considered in the past
+		 * but are now considered in the exercice */
+		move_from_past_to_exercice( dossier, prev_begin, new_begin );
+
+	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
+		/* there may be entries which were considered in the exercice
+		 * but are now considered in the past */
+		move_from_exercice_to_past( dossier, prev_begin, new_begin );
+
+	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
+		/* there may be entries which were considered in the past
+		 * but are now considered in the exercice */
+		move_from_past_to_exercice( dossier, prev_begin, new_begin );
+	}
+
+	if( !my_date_is_valid( prev_end )){
+		if( !my_date_is_valid( new_end )){
+			/* nothing to do here */
+
+		} else {
+			/* setting an ending date for the exercice
+			 * there may be entries which were considered in the
+			 * exercice (either rough or validated) but are now
+			 * considered in the future */
+			move_from_exercice_to_future( dossier, prev_end, new_end );
+		}
+	} else if( !my_date_is_valid( new_end )){
+		/* removing the ending date of the exercice
+		 * there may be entries which were considered in the future
+		 * but are now considered in the exercice */
+		move_from_future_to_exercice( dossier, prev_end, new_end );
+
+	} else if( my_date_compare( prev_end, new_end ) < 0 ){
+		/* there may be entries which were considered in the future
+		 * but are now considered in the exercice */
+		move_from_future_to_exercice( dossier, prev_end, new_end );
+
+	} else if( my_date_compare( prev_end, new_end ) > 0 ){
+		/* there may be entries which were considered in the exercice
+		 * but are now considered in the future */
+		move_from_exercice_to_future( dossier, prev_end, new_end );
+	}
+}
+
+static void
+move_from_exercice_to_past( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin )
+{
+
+}
+
+static void
+move_from_past_to_exercice( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin )
+{
+
+}
+
+static void
+move_from_exercice_to_future( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end )
+{
+
+}
+
+static void
+move_from_future_to_exercice( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end )
+{
+
 }
 
 /**

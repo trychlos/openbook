@@ -118,7 +118,7 @@ static void        dossier_class_init( ofoDossierClass *klass );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void        on_exe_dates_changed( const ofoDossier *dossier, void *empty );
+static void        on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gboolean    dbmodel_update( const ofoDossier *dossier );
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
@@ -457,6 +457,8 @@ dossier_class_init( ofoDossierClass *klass )
 	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier  *dossier,
+	 * 								const GDate *prev_begin,
+	 * 								const GDate *prev_end,
 	 * 								gpointer user_data );
 	 */
 	st_signals[ EXE_DATE_CHANGED ] = g_signal_new_class_handler(
@@ -468,8 +470,8 @@ dossier_class_init( ofoDossierClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
+				2,
+				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**
@@ -664,7 +666,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 }
 
 static void
-on_exe_dates_changed( const ofoDossier *dossier, void *empty )
+on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
 	ofa_dossier_misc_set_current(
 			ofo_dossier_get_name( dossier ),
