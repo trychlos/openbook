@@ -773,6 +773,14 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - notes (opt)
  *
  * Replace the whole table with the provided datas.
+ *
+ * Returns: 0 if no error has occurred, >0 if an error has been detected
+ * during import phase (input file read), <0 if an error has occured
+ * during insert phase.
+ *
+ * As the table is dropped between import phase and insert phase, if an
+ * error occurs during insert phase, then the table is changed and only
+ * contains the successfully inserted records.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
@@ -837,11 +845,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
-			class_do_insert(
+			if( !class_do_insert(
 					OFO_CLASS( it->data ),
 					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ));
-
+					ofo_dossier_get_user( dossier ))){
+				errors -= 1;
+			}
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 

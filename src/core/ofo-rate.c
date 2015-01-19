@@ -1298,6 +1298,14 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * may have all 'rate' records, then all 'validity' records...
  *
  * Replace the whole table with the provided datas.
+ *
+ * Returns: 0 if no error has occurred, >0 if an error has been detected
+ * during import phase (input file read), <0 if an error has occured
+ * during insert phase.
+ *
+ * As the table is dropped between import phase and insert phase, if an
+ * error occurs during insert phase, then the table is changed and only
+ * contains the successfully inserted records.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
@@ -1359,11 +1367,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		for( it=dataset ; it ; it=it->next ){
 			rate = OFO_RATE( it->data );
-			rate_do_insert(
+			if( !rate_do_insert(
 					rate,
 					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ));
-
+					ofo_dossier_get_user( dossier ))){
+				errors -= 1;
+			}
 			ofa_iimportable_increment_progress(
 					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_rate_get_val_count( rate ));
 		}

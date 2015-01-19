@@ -371,9 +371,6 @@
  562 2015- 1- 8 Add misc menu option to see the loaded stores, and
                 reset them
 
- 564 2015- 1- 8 Changing the dates of the exercice should update the
-                main window title
-
  567 2015- 1- 9 have an EntryStore ?
      2015- 1-18 ofaViewEntries add its own columns to its store
                 ofaReconciliation is a tree store with bat lines
@@ -2479,6 +2476,10 @@
  563 2015- 1- 8 IImportable interface: take FileFormat settings into
                 account
      2015- 1-17 done - svn #4469
+
+ 564 2015- 1- 8 Changing the dates of the exercice should update the
+                main window title
+     2015- 1-18 done - svn #4495
 
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
      2015- 1- 8 due to a bad management of weak references

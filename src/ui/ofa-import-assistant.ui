@@ -106,7 +106,7 @@ Press Continue.</property>
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="p3-model">
-                    <property name="label" translatable="yes">Entry _models</property>
+                    <property name="label" translatable="yes">Reference: _operation templates</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -142,7 +142,7 @@ Press Continue.</property>
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="p3-class">
-                    <property name="label" translatable="yes">Reference : class _labels</property>
+                    <property name="label" translatable="yes">Reference : accounts class _labels</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -196,7 +196,7 @@ Press Continue.</property>
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="p3-journals">
-                    <property name="label" translatable="yes">Reference: _ledgers</property>
+                    <property name="label" translatable="yes">Reference: le_dgers</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>

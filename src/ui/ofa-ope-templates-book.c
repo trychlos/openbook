@@ -61,6 +61,12 @@ struct _ofaOpeTemplatesBookPrivate {
 /* the ledger mnemo is attached to each page of the notebook,
  * and also attached to the underlying treemodelfilter
  */
+typedef struct {
+	ofoDossier *dossier;
+	gchar      *ledger;
+}
+	sPageData;
+
 #define DATA_PAGE_LEDGER                    "ofa-data-page-ledger"
 
 /* the column identifier is attached to each column header
@@ -85,13 +91,13 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 static void       create_notebook( ofaOpeTemplatesBook *book );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplatesBook *book );
-static void       on_ofa_row_inserted( ofaOpeTemplateStore *store, const ofoOpeTemplate *ope, ofaOpeTemplatesBook *book );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplatesBook *self, const gchar *ledger, gboolean create );
 static GtkWidget *book_create_page( ofaOpeTemplatesBook *self, const gchar *ledger );
 static GtkWidget *book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger );
+static void       on_finalized_page( sPageData *sdata, gpointer finalized_page );
 static GtkWidget *book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContainer *parent );
 static void       book_create_columns( ofaOpeTemplatesBook *book, const gchar *ledger, GtkTreeView *tview );
-static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, const gchar *ledger );
+static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
 static void       on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplatesBook *self );
 static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplatesBook *self );
 static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplatesBook *self );
@@ -317,7 +323,7 @@ create_notebook( ofaOpeTemplatesBook *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
-			"switch-page", G_CALLBACK( on_book_page_switched ), book );
+			"switch-page", G_CALLBACK( on_book_page_switched ), self );
 
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }
@@ -372,7 +378,8 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 
 		/* create one page per ledger
 		 * if strlist is set, then create one page per ledger
-		 * other needed pages will be created on fly */
+		 * other needed pages will be created on fly
+		 * nb: if the ledger no more exists, no page is created */
 		priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
 		strlist = ofa_settings_dossier_get_string_list( priv->dname, st_ledger_order );
 		for( it=strlist ; it ; it=it->next ){
@@ -384,10 +391,6 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 				priv->ope_store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
 		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
 
-		handler = g_signal_connect(
-				priv->ope_store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
-		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
-
 		ofa_ope_template_store_load_dataset( priv->ope_store );
 
 		dossier_signals_connect( book );
@@ -396,31 +399,21 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 
 /*
  * is triggered by the store when a row is inserted
- * we try to optimize the search by keeping the ledger of the last
- * inserted row;
  */
 static void
 on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplatesBook *book )
 {
 	ofoOpeTemplate *ope;
+	const gchar *ledger;
 
 	gtk_tree_model_get( tmodel, iter, OPE_TEMPLATE_COL_OBJECT, &ope, -1 );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 	g_object_unref( ope );
 
-	on_ofa_row_inserted( NULL, ope, book );
-}
-
-/*
- * store may be NULL when called from above on_row_inserted()
- */
-static void
-on_ofa_row_inserted( ofaOpeTemplateStore *store, const ofoOpeTemplate *ope, ofaOpeTemplatesBook *book )
-{
-	const gchar *ledger;
-
 	ledger = ofo_ope_template_get_ledger( ope );
-	book_get_page_by_ledger( book, ledger, TRUE );
+	if( !book_get_page_by_ledger( book, ledger, TRUE )){
+		book_get_page_by_ledger( book, UNKNOWN_LEDGER_MNEMO, TRUE );
+	}
 }
 
 /*
@@ -436,7 +429,7 @@ book_get_page_by_ledger( ofaOpeTemplatesBook *book, const gchar *ledger, gboolea
 	ofaOpeTemplatesBookPrivate *priv;
 	gint count, i;
 	GtkWidget *found, *page_widget;
-	const gchar *page_ledger;
+	sPageData *sdata;
 
 	priv = book->priv;
 	found = NULL;
@@ -445,8 +438,8 @@ book_get_page_by_ledger( ofaOpeTemplatesBook *book, const gchar *ledger, gboolea
 	/* search for an existing page */
 	for( i=0 ; i<count ; ++i ){
 		page_widget = gtk_notebook_get_nth_page( priv->book, i );
-		page_ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_LEDGER );
-		if( !g_utf8_collate( page_ledger, ledger )){
+		sdata = ( sPageData * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_LEDGER );
+		if( sdata && !g_utf8_collate( sdata->ledger, ledger )){
 			found = page_widget;
 			break;
 		}
@@ -504,20 +497,28 @@ book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger )
 	ofoLedger *ledger_obj;
 	const gchar *ledger_label;
 	gint page_num;
+	sPageData *sdata;
 
 	priv = book->priv;
+
+	if( !g_utf8_collate( ledger, UNKNOWN_LEDGER_MNEMO )){
+		ledger_label = UNKNOWN_LEDGER_LABEL;
+		ledger = UNKNOWN_LEDGER_MNEMO;
+
+	} else {
+		ledger_obj = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
+		if( ledger_obj ){
+			g_return_val_if_fail( OFO_IS_LEDGER( ledger_obj ), NULL );
+			ledger_label = ofo_ledger_get_label( ledger_obj );
+		} else {
+			/* ledger doesn't exist */
+			return( NULL );
+		}
+	}
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
 	gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-
-	ledger_obj = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
-	if( ledger_obj ){
-		g_return_val_if_fail( OFO_IS_LEDGER( ledger_obj ), NULL );
-		ledger_label = ofo_ledger_get_label( ledger_obj );
-	} else {
-		ledger_label = UNKNOWN_LEDGER_LABEL;
-	}
 
 	label = gtk_label_new( ledger_label );
 
@@ -527,9 +528,25 @@ book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger )
 		return( NULL );
 	}
 	gtk_notebook_set_tab_reorderable( priv->book, scrolled, TRUE );
-	g_object_set_data( G_OBJECT( scrolled ), DATA_PAGE_LEDGER, g_strdup( ledger ));
+
+	sdata = g_new0( sPageData, 1 );
+	sdata->dossier = priv->dossier;
+	sdata->ledger = g_strdup( ledger );
+	g_object_set_data( G_OBJECT( scrolled ), DATA_PAGE_LEDGER, sdata );
+	g_object_weak_ref( G_OBJECT( scrolled ), ( GWeakNotify ) on_finalized_page, sdata );
 
 	return( scrolled );
+}
+
+static void
+on_finalized_page( sPageData *sdata, gpointer finalized_page )
+{
+	static const gchar *thisfn = "ofa_ope_templates_book_on_finalized_page";
+
+	g_debug( "%s: sdata=%p, finalized_page=%p", thisfn, ( void * ) sdata, ( void * ) finalized_page );
+
+	g_free( sdata->ledger );
+	g_free( sdata );
 }
 
 /*
@@ -559,7 +576,7 @@ book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContain
 	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->ope_store, ( void * ) tfilter );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) is_visible_row, g_strdup( ledger ), NULL );
+			( GtkTreeModelFilterVisibleFunc ) is_visible_row, parent, NULL );
 
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tfilter );
 	g_object_unref( tfilter );
@@ -610,12 +627,21 @@ book_create_columns( ofaOpeTemplatesBook *book, const gchar *ledger, GtkTreeView
 
 /*
  * tmodel here is the ofaListStore
+ *
+ * the operation template is visible:
+ * - if its ledger is the same than those of the displayed page (from
+ *   args)
+ * - or its ledger doesn't exist and the ledger of the displayed page
+ *   (from args) is 'unclassed)
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, const gchar *ledger )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page )
 {
 	gboolean is_visible;
 	ofoOpeTemplate *ope;
+	const gchar *ope_ledger;
+	sPageData *sdata;
+	ofoLedger *ledger_obj;
 
 	is_visible = FALSE;
 
@@ -623,7 +649,18 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, const gchar *ledger )
 	g_return_val_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ), FALSE );
 	g_object_unref( ope );
 
-	is_visible = ( !g_utf8_collate( ledger, ofo_ope_template_get_ledger( ope )));
+	ope_ledger = ofo_ope_template_get_ledger( ope );
+	sdata = ( sPageData * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
+
+	if( !g_utf8_collate( sdata->ledger, ope_ledger )){
+		is_visible = TRUE;
+
+	} else if( !g_utf8_collate( sdata->ledger, UNKNOWN_LEDGER_MNEMO )){
+		ledger_obj = ofo_ledger_get_by_mnemo( sdata->dossier, ope_ledger );
+		if( !ledger_obj ){
+			is_visible = TRUE;
+		}
+	}
 
 	return( is_visible );
 }
@@ -734,6 +771,7 @@ do_insert_ope_template( ofaOpeTemplatesBook *self )
 	gint page_n;
 	GtkWidget *page_w;
 	const gchar *ledger;
+	sPageData *sdata;
 
 	priv = self->priv;
 	ledger = NULL;
@@ -741,7 +779,10 @@ do_insert_ope_template( ofaOpeTemplatesBook *self )
 	page_n = gtk_notebook_get_current_page( priv->book );
 	if( page_n >= 0 ){
 		page_w = gtk_notebook_get_nth_page( priv->book, page_n );
-		ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
+		sdata = ( sPageData * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
+		if( sdata ){
+			ledger = sdata->ledger;
+		}
 	}
 
 	ope = ofo_ope_template_new();
@@ -1029,6 +1070,7 @@ on_deleted_ledger_object( ofaOpeTemplatesBook *book, ofoLedger *ledger )
 {
 	ofaOpeTemplatesBookPrivate *priv;
 	GtkWidget *page_w;
+	gint page_n;
 	const gchar *mnemo;
 
 	priv = book->priv;
@@ -1037,8 +1079,9 @@ on_deleted_ledger_object( ofaOpeTemplatesBook *book, ofoLedger *ledger )
 	page_w = book_get_page_by_ledger( book, mnemo, FALSE );
 	if( page_w ){
 		g_return_if_fail( GTK_IS_WIDGET( page_w ));
-		gtk_notebook_set_tab_label_text( priv->book, page_w, UNKNOWN_LEDGER_LABEL );
-		g_object_set_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER, UNKNOWN_LEDGER_MNEMO );
+		page_n = gtk_notebook_page_num( priv->book, page_w );
+		gtk_notebook_remove_page( priv->book, page_n );
+		book_get_page_by_ledger( book, UNKNOWN_LEDGER_MNEMO, TRUE );
 	}
 }
 
@@ -1278,7 +1321,7 @@ write_settings( ofaOpeTemplatesBook *book )
 	GList *strlist;
 	gint i, count;
 	GtkWidget *page;
-	const gchar *mnemo;
+	sPageData *sdata;
 
 	priv = book->priv;
 	strlist = NULL;
@@ -1287,8 +1330,10 @@ write_settings( ofaOpeTemplatesBook *book )
 	count = gtk_notebook_get_n_pages( priv->book );
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( priv->book, i );
-		mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
-		strlist = g_list_append( strlist, ( gpointer ) mnemo );
+		sdata = ( sPageData * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
+		if( g_utf8_collate( sdata->ledger, UNKNOWN_LEDGER_MNEMO )){
+			strlist = g_list_append( strlist, ( gpointer ) sdata->ledger );
+		}
 	}
 
 	ofa_settings_dossier_set_string_list( priv->dname, st_ledger_order, strlist );

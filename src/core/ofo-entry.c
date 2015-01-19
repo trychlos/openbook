@@ -2727,6 +2727,10 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * 'future'.
  *
  * Both rough and future entries must be balanced per currency.
+ *
+ * Returns: 0 if no error has occurred, >0 if an error has been detected
+ * during import phase (input file read), <0 if an error has occured
+ * during insert phase.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
@@ -3032,17 +3036,19 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
-			ofo_entry_insert( entry, dossier );
-			if( entry_get_import_settled( entry )){
-				counter = ofo_dossier_get_next_settlement( dossier );
-				ofo_entry_update_settlement( entry, dossier, counter );
-			}
-			cdate = ofo_entry_get_concil_dval( entry );
-			if( my_date_is_valid( cdate )){
-				ofo_entry_update_concil( entry, dossier, cdate );
+			if( ofo_entry_insert( entry, dossier )){
+				if( entry_get_import_settled( entry )){
+					counter = ofo_dossier_get_next_settlement( dossier );
+					ofo_entry_update_settlement( entry, dossier, counter );
+				}
+				cdate = ofo_entry_get_concil_dval( entry );
+				if( my_date_is_valid( cdate )){
+					ofo_entry_update_concil( entry, dossier, cdate );
+				}
+			} else {
+				errors -= 1;
 			}
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
-			/*g_debug( "it=%p", ( void * ) it );*/
 		}
 	}
 

@@ -1352,7 +1352,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "%d", ofo_ope_template_get_ref_locked( model ) ? 1:0 );
+	g_string_append_printf( query, "%d,", ofo_ope_template_get_ref_locked( model ) ? 1:0 );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -1830,6 +1830,14 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * may have all 'model' records, then all 'validity' records...
  *
  * Replace the whole table with the provided datas.
+ *
+ * Returns: 0 if no error has occurred, >0 if an error has been detected
+ * during import phase (input file read), <0 if an error has occured
+ * during insert phase.
+ *
+ * As the table is dropped between import phase and insert phase, if an
+ * error occurs during insert phase, then the table is changed and only
+ * contains the successfully inserted records.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
@@ -1891,10 +1899,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		for( it=dataset ; it ; it=it->next ){
 			model = OFO_OPE_TEMPLATE( it->data );
-			model_do_insert(
+			if( !model_do_insert(
 					model,
 					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ));
+					ofo_dossier_get_user( dossier ))){
+				errors -= 1;
+			}
 
 			ofa_iimportable_increment_progress(
 					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_ope_template_get_detail_count( model ));

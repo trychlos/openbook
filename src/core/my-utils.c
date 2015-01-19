@@ -1100,6 +1100,6 @@ my_utils_uri_is_readable_file( const gchar *uri )
 	}
 	g_free( sysfname );
 
-	g_debug( "my_utils_file_is_readable_file: uri=%s, ok=%s", uri, ok ? "True":"False" );
+	g_debug( "my_utils_uri_is_readable_file: uri=%s, ok=%s", uri, ok ? "True":"False" );
 	return( ok );
 }

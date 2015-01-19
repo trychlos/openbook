@@ -41,7 +41,6 @@ struct _ofaOpeTemplateStorePrivate {
 
 	/* runtime data
 	 */
-	gboolean    dataset_loaded;
 };
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
@@ -54,15 +53,6 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
  * store
  */
 #define STORE_DATA_DOSSIER                   "ofa-ope-template-store"
-
-/* signals defined here
- */
-enum {
-	INSERTED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]         = { 0 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *store );
 static void     load_dataset( ofaOpeTemplateStore *store, ofoDossier *dossier );
@@ -138,35 +128,6 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ope_template_store_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaOpeTemplateStorePrivate ));
-
-	/**
-	 * ofaOpeTemplateStore::ofa-row-inserted:
-	 *
-	 * This signal is sent on the store when we are trying to load the
-	 * dataset after the first time.
-	 * Rationale: the OpeTemplateBook takes advantage of the
-	 * 'row-inserted' signal sent by the GtkListStore when loading the
-	 * dataset the first time. After that, we have yet to iter through
-	 * the opes in order to populate the treeviews.
-	 *
-	 * Argument is the operation template object.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplateStore    *store,
-	 * 						const ofoOpeTemplate *ope,
-	 * 						gpointer              user_data );
-	 */
-	st_signals[ INSERTED ] = g_signal_new_class_handler(
-				"ofa-row-inserted",
-				OFA_TYPE_OPE_TEMPLATE_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
 }
 
 /**
@@ -266,24 +227,15 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
 static void
 load_dataset( ofaOpeTemplateStore *store, ofoDossier *dossier )
 {
-	ofaOpeTemplateStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
-
-	priv = store->priv;
 
 	dataset = ofo_ope_template_get_dataset( dossier );
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
-		if( !priv->dataset_loaded ){
-			insert_row( store, dossier, ope );
-		} else {
-			g_signal_emit_by_name( store, "ofa-row-inserted", ope );
-		}
+		insert_row( store, dossier, ope );
 	}
-
-	priv->dataset_loaded = TRUE;
 }
 
 static void

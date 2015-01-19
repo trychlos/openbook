@@ -793,9 +793,15 @@ p6_do_import( ofaImportAssistant *self )
 			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
 					"imported into « %s »." ),
 					count, priv->p2_uri, str );
-		} else {
-			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n"
+		} else if( errors > 0 ){
+			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
+					"during analyse and import phase.\n"
 					"The « %s » recordset has been left unchanged.\n"
+					"Please fix these errors, and retry then." ), priv->p2_uri, str );
+		} else if( errors < 0 ){
+			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
+					"during insertion phase.\n"
+					"The « %s » recordset only contains the successfully inserted records.\n"
 					"Please fix these errors, and retry then." ), priv->p2_uri, str );
 		}
 	} else {
@@ -824,13 +830,20 @@ p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 
 	priv = self->priv;
 
+	count = 0;
 	lines = get_lines_from_csv( self );
-	count = g_slist_length( lines );
 
-	*errors = ofa_iimportable_import( priv->p6_object,
-			lines, priv->p4_import_settings, MY_WINDOW( self )->prot->dossier, self );
+	if( !lines ){
+		*errors += 1;
 
-	free_lines( lines );
+	} else {
+		count = g_slist_length( lines );
+
+		*errors = ofa_iimportable_import( priv->p6_object,
+				lines, priv->p4_import_settings, MY_WINDOW( self )->prot->dossier, self );
+
+		free_lines( lines );
+	}
 
 	return( count );
 }
@@ -913,12 +926,16 @@ get_lines_from_csv( ofaImportAssistant *self )
 
 	sysfname = my_utils_filename_from_utf8( priv->p2_uri );
 	if( !sysfname ){
+		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), priv->p2_uri );
+		my_utils_dialog_error( str );
+		g_free( str );
 		return( NULL );
 	}
-	gfile = g_file_new_for_path( sysfname );
+	gfile = g_file_new_for_uri( sysfname );
 	g_free( sysfname );
 
 	error = NULL;
+	contents = NULL;
 	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
 		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ),
 				priv->p2_uri, error->message );
@@ -945,7 +962,8 @@ get_lines_from_csv( ofaImportAssistant *self )
 								ofa_file_format_get_charmap( priv->p4_import_settings ),
 								"UTF-8", NULL, NULL, &error );
 		if( !str ){
-			str = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
+			str = g_strdup_printf(
+					_( "Charset conversion error: %s\nline='%s'" ), error->message, *iter_line );
 			my_utils_dialog_error( str );
 			g_free( str );
 			g_strfreev( lines );
