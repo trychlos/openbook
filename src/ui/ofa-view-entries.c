@@ -1670,7 +1670,8 @@ on_account_select( GtkButton *button, ofaViewEntries *self )
 
 	acc_number = ofa_account_select_run(
 							ofa_page_get_main_window( OFA_PAGE( self )),
-							gtk_entry_get_text( priv->account_entry ));
+							gtk_entry_get_text( priv->account_entry ),
+							FALSE );
 	if( acc_number ){
 		gtk_entry_set_text( priv->account_entry, acc_number );
 		g_free( acc_number );

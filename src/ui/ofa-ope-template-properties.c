@@ -689,8 +689,9 @@ on_account_selection( ofaOpeTemplateProperties *self, gint row )
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_ACCOUNT, row ));
 	number = ofa_account_select_run(
 					MY_WINDOW( self )->prot->main_window,
-					gtk_entry_get_text( entry ));
-	if( number && g_utf8_strlen( number, -1 )){
+					gtk_entry_get_text( entry ),
+					FALSE );
+	if( my_strlen( number )){
 		gtk_entry_set_text( entry, number );
 	}
 	g_free( number );

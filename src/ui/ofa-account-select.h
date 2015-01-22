@@ -66,7 +66,9 @@ typedef struct {
 
 GType  ofa_account_select_get_type( void ) G_GNUC_CONST;
 
-gchar *ofa_account_select_run     ( const ofaMainWindow *main_window, const gchar *asked_number );
+gchar *ofa_account_select_run     ( const ofaMainWindow *main_window,
+											const gchar *asked_number,
+											gboolean allow_root );
 
 G_END_DECLS
 

@@ -375,7 +375,8 @@ on_account_select( GtkButton *button, ofaPDFReconcil *self )
 	priv = self->priv;
 	number = ofa_account_select_run(
 						MY_WINDOW( self )->prot->main_window,
-						gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
+						gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
+						FALSE );
 	if( number ){
 		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
 		g_free( number );

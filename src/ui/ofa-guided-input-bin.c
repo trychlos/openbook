@@ -950,7 +950,7 @@ on_account_selection( ofaGuidedInputBin *bin, gint row )
 	priv = bin->priv;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row ));
-	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ));
+	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ), FALSE );
 	if( number && g_utf8_strlen( number, -1 )){
 		priv->focused_row = row;
 		priv->focused_column = OPE_COL_ACCOUNT;
@@ -977,7 +977,7 @@ check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row  )
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number( priv->dossier, asked_account );
 	if( !account || ofo_account_is_root( account )){
-		number = ofa_account_select_run( priv->main_window, asked_account );
+		number = ofa_account_select_run( priv->main_window, asked_account, FALSE );
 		if( number ){
 			priv->focused_row = row;
 			priv->focused_column = OPE_COL_ACCOUNT;

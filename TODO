@@ -66,27 +66,17 @@
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
 
- 101 2014- 5-24 when updating the currency of an account, the 'delete'
-                button of the 'currencies' page should be updated
-     2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
-                _object...
-
- 107 2014- 5-24 have a message when current exercice changes
-                so that e.g. the journals set may adapt its display
-
  126 2014- 5-28 have several demo dossiers
-
- 130 2014- 5-28 do not delete an account which has an account_exe archive
-                detail record, but set a 'deleted' flag
 
  149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
                 the current selection) should advance to the next page
+     2015- 1-22 this suppose to be able to simulate the click on the
+                'Continue' button, but unfortunately GtkAssistant is 
+                not a GtkDialog, so do not known how to do ?
 
  152 2014- 6- 3 import qif files
 
  153 2014- 6- 3 import ofx/ofc files
-
- 155 2014- 6- 3 GuidedInput: diff should be red
 
  156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
 
@@ -751,6 +741,12 @@
                                   <class>_count_for_devise
      2014-10-14 cancelled (no added value)
 
+ 101 2014- 5-24 when updating the currency of an account, the 'delete'
+                button of the 'currencies' page should be updated
+     2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
+                _object...
+     2015- 1-22 done - svn #4498
+
  102 2014- 5-24 test the GtkTreeSortable interface - if not works:
                 define an interface for ofaMainPage which sorts the 
                 embedded treeview on the specified column
@@ -771,6 +767,11 @@
  106 2014- 5-24 check how and when is set the ofaMainPage 'theme' 
                 property ?
      2014- 5-24 done svn #3491
+
+ 107 2014- 5-24 have a message when current exercice changes
+                so that e.g. the journals set may adapt its display
+     2015- 1-22 the ledgers page doesn't display the dates of the
+                exercice -> cancelled
 
  108 2014- 5-24 ofaJournalsSet: implement on_view_entries
      2014- 6-11 done - svn #3685
@@ -839,6 +840,10 @@
  129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
                 table details
      2015- 1-12 done - svn #4434
+
+ 130 2014- 5-28 do not delete an account which has an account_exe archive
+                detail record, but set a 'deleted' flag
+     2015- 1-22 obsolete
 
  131 2014- 5-28 have a currency combo box convenience class
      2014- 5-31 done - svn #3566
@@ -910,6 +915,9 @@
                 account) if we have been interrupted in a previous
                 session
      2014- 6- 4 done - svn #3617
+
+ 155 2014- 6- 3 GuidedInput: diff should be red
+     2015- 1-22 done
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done

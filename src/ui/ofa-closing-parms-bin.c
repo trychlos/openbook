@@ -494,7 +494,7 @@ on_account_select( ofaClosingParmsBin *self, gint row )
 
 	acc_number = ofa_account_select_run(
 						priv->main_window,
-						gtk_entry_get_text( GTK_ENTRY( entry )));
+						gtk_entry_get_text( GTK_ENTRY( entry )), FALSE );
 
 	if( acc_number ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), acc_number );

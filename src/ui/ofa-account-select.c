@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 
@@ -41,10 +43,15 @@
  */
 struct _ofaAccountSelectPrivate {
 
+	/* input data
+	 */
+	gboolean          allow_root;
+
 	/* UI
 	 */
 	ofaAccountsFrame *accounts_frame;
 	GtkWidget        *ok_btn;
+	GtkWidget        *msg_label;
 
 	/* returned value
 	 */
@@ -63,8 +70,10 @@ static void      v_init_dialog( myDialog *dialog );
 static void      on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
+static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
+static void      set_message( ofaAccountSelect *self, const gchar *str );
 
 static void
 account_select_finalize( GObject *instance )
@@ -148,7 +157,7 @@ on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
  * that must be g_free() by the caller
  */
 gchar *
-ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number )
+ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gboolean allow_root )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
@@ -182,6 +191,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 	g_free( priv->account_number );
 	priv->account_number = NULL;
+	priv->allow_root = allow_root;
 
 	ofa_accounts_frame_set_selected( priv->accounts_frame, asked_number );
 	check_for_enable_dlg( st_this );
@@ -248,10 +258,36 @@ check_for_enable_dlg( ofaAccountSelect *self )
 	priv = self->priv;
 
 	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
-	ok = account && g_utf8_strlen( account, -1 );
+	ok = is_selection_valid( self, account );
 	g_free( account );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
+}
+
+static gboolean
+is_selection_valid( ofaAccountSelect *self, const gchar *number )
+{
+	ofaAccountSelectPrivate *priv;
+	gboolean ok;
+	ofoAccount *account;
+
+	priv = self->priv;
+	ok = FALSE;
+	set_message( self, "" );
+
+	if( my_strlen( number )){
+		account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, number );
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+		if( ofo_account_is_root( account ) && !priv->allow_root ){
+			set_message( self, _( "Not allowed to select a root account here" ));
+
+		} else {
+			ok = TRUE;
+		}
+	}
+
+	return( ok );
 }
 
 static gboolean
@@ -265,14 +301,38 @@ do_select( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
 	gchar *account;
+	gboolean ok;
 
 	priv = self->priv;
 
 	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
-	if( account && g_utf8_strlen( account, -1 )){
+	ok = is_selection_valid( self, account );
+	if( ok ){
 		priv->account_number = g_strdup( account );
 	}
 	g_free( account );
 
-	return( TRUE );
+	return( ok );
+}
+
+static void
+set_message( ofaAccountSelect *self, const gchar *str )
+{
+	ofaAccountSelectPrivate *priv;
+	GtkWindow *toplevel;
+	GdkRGBA color;
+
+	priv = self->priv;
+
+	if( !priv->msg_label ){
+		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
+		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p-message" );
+		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
+	gdk_rgba_parse( &color, "#ff0000" );
+	gtk_widget_override_color( priv->msg_label, GTK_STATE_FLAG_NORMAL, &color );
 }

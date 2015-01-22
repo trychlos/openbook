@@ -1185,13 +1185,14 @@ do_account_selection( ofaReconciliation *self )
 	gchar *number;
 
 	account_number = gtk_entry_get_text( self->priv->account );
-	if( !account_number || !g_utf8_strlen( account_number, -1 )){
+	if( !my_strlen( account_number )){
 		account_number = st_default_reconciliated_class;
 	}
 
 	number = ofa_account_select_run(
 					ofa_page_get_main_window( OFA_PAGE( self )),
-					account_number );
+					account_number,
+					FALSE );
 
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( self->priv->account, number );
