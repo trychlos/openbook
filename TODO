@@ -66,10 +66,6 @@
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
 
-  96 2014- 5-22 entry_models: check that journal always exist as it
-                may be deleted at any time while it is empty -
-                so reclass the entry models on journal-changed signal
-
  101 2014- 5-24 when updating the currency of an account, the 'delete'
                 button of the 'currencies' page should be updated
      2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
@@ -379,13 +375,8 @@
                 them with integers ?
 
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
-                settlement groups if they are set in the object
+                settlement data groups if they are set in the object
                 (would prevent two updates when closing the exercice)
-
- 598 2015- 1-18 remediate the entries when modifying the exercice
-                beginning or end dates
-     2015- 1-19 have a function to display count of involved entries
-                only display the confirmation dialog if count > 0 
 
  599 2015- 1-22 GtkFileChooser in an assistant: unable to select again
                 the previously selected file when coming back from an
@@ -732,6 +723,12 @@
 
   95 2014- 5-22 implement journal_is_deletable
      2014- 5-22 done
+
+  96 2014- 5-22 entry_models: check that journal always exist as it
+                may be deleted at any time while it is empty -
+                so reclass the entry models on journal-changed signal
+     2015- 1-22 unable to delete a ledger on which an operation template
+                is defined -> cancelled
 
   97 2014- 5-22 journals set: add a 'view entries' function 
      2014- 5-24 done - svn #3496
@@ -2627,6 +2624,12 @@
 
  597 2015- 1-17 filenames in settings must be URIs
      2015- 1-18 done - svn #4492
+
+ 598 2015- 1-18 remediate the entries when modifying the exercice
+                beginning or end dates
+     2015- 1-19 have a function to display count of involved entries
+                only display the confirmation dialog if count > 0
+     2015- 1-22 done - svn #4497 
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

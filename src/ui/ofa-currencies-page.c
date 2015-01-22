@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/ofo-currency.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-buttons-box.h"
@@ -79,6 +80,7 @@ static gboolean     delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *curr
 static void         do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void         on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
 static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesPage *self );
+static void         do_on_updated_account( ofaCurrenciesPage *self, ofoAccount *account );
 static void         on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
 static void         on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self );
 
@@ -584,8 +586,24 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 			thisfn, ( void * ) dossier,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
 
-	if( OFO_IS_CURRENCY( object )){
+	/* make sure the buttons reflect the new currency of the account */
+	if( OFO_IS_ACCOUNT( object )){
+		do_on_updated_account( self, OFO_ACCOUNT( object ));
 	}
+}
+
+/*
+ * make sure the buttons reflect the new currency of the account
+ */
+static void
+do_on_updated_account( ofaCurrenciesPage *self, ofoAccount *account )
+{
+	ofaCurrenciesPagePrivate *priv;
+	GtkTreeSelection *select;
+
+	priv = self->priv;
+	select = gtk_tree_view_get_selection( priv->tview );
+	on_currency_selected( select, self );
 }
 
 /*
