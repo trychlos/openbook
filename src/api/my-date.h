@@ -65,22 +65,23 @@ typedef enum {
 }
 	myDateFormat;
 
-void         my_date_clear         ( GDate *date );
+void         my_date_clear          ( GDate *date );
 
-gboolean     my_date_is_valid      ( const GDate *date );
+gboolean     my_date_is_valid       ( const GDate *date );
 
-gint         my_date_compare       ( const GDate *a, const GDate *b );
-gint         my_date_compare_ex    ( const GDate *a, const GDate *b, gboolean clear_is_past_infinite );
-gint         my_date_compare_by_str( const gchar *a, const gchar *b, myDateFormat format );
+gint         my_date_compare        ( const GDate *a, const GDate *b );
+gint         my_date_compare_ex     ( const GDate *a, const GDate *b, gboolean clear_is_past_infinite );
+gint         my_date_compare_by_str ( const gchar *a, const gchar *b, myDateFormat format );
 
-GDate       *my_date_set_now       ( GDate *date );
-GDate       *my_date_set_from_date ( GDate *date, const GDate *orig );
-GDate       *my_date_set_from_sql  ( GDate *date, const gchar *sql_string );
-GDate       *my_date_set_from_str  ( GDate *date, const gchar *fmt_string, myDateFormat format );
+GDate       *my_date_set_now        ( GDate *date );
+GDate       *my_date_set_from_date  ( GDate *date, const GDate *orig );
+GDate       *my_date_set_from_sql   ( GDate *date, const gchar *sql_string );
+GDate       *my_date_set_from_str   ( GDate *date, const gchar *fmt_string, myDateFormat format );
+GDate       *my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat format, gint *year );
 
-gchar       *my_date_to_str        ( const GDate *date, myDateFormat format );
+gchar       *my_date_to_str         ( const GDate *date, myDateFormat format );
 
-const gchar *my_date_get_format_str( myDateFormat format );
+const gchar *my_date_get_format_str ( myDateFormat format );
 
 G_END_DECLS
 

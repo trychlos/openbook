@@ -906,9 +906,9 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 static gboolean
 p6_solde_accounts( ofaExerciceCloseAssistant *self )
 {
-	p6_do_solde_accounts( self, TRUE );
-
-	g_idle_add(( GSourceFunc ) p6_close_ledgers, self );
+	if( !p6_do_solde_accounts( self, TRUE )){
+		g_idle_add(( GSourceFunc ) p6_close_ledgers, self );
+	}
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -1478,7 +1478,8 @@ p6_future( ofaExerciceCloseAssistant *self )
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		ofo_entry_future_to_rough( entry, dossier );
+		g_signal_emit_by_name( dossier,
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );

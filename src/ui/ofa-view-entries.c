@@ -304,9 +304,9 @@ static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *o
 static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
 static void           do_update_ledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
 static void           do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
+static void           do_update_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
-static void           on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static gboolean       on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
 static ofaEntryStatus get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static GDate         *get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date );
@@ -1455,11 +1455,6 @@ setup_signaling_connect( ofaViewEntries *self )
 	handler = g_signal_connect(
 					G_OBJECT( priv->dossier ),
 					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_dossier_validated_entry ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
@@ -3054,6 +3049,9 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 
 		} else if( OFO_IS_CURRENCY( object )){
 			do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
+
+		} else if( OFO_IS_ENTRY( object )){
+			do_update_entry( self, OFO_ENTRY( object ));
 		}
 	}
 }
@@ -3130,6 +3128,16 @@ do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *c
 	}
 }
 
+static void
+do_update_entry( ofaViewEntries *self, ofoEntry *entry )
+{
+	GtkTreeIter iter;
+
+	if( find_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
+		display_entry( self, entry, &iter );
+	}
+}
+
 /*
  * a ledger mnemo, an account number, a currency code or an entry may
  *  have been deleted
@@ -3156,29 +3164,6 @@ do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry )
 	static const gchar *thisfn = "ofa_view_entries_on_deleted_entries";
 
 	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
-}
-
-static void
-on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self )
-{
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_validated_entry";
-	GtkTreeIter iter;
-
-	g_debug( "%s: dossier=%p, object=%p (%s), user_data=%p",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	g_return_if_fail( object && OFO_IS_ENTRY( object ));
-
-	if( find_entry_by_number( self, ofo_entry_get_number( OFO_ENTRY( object )), &iter )){
-		gtk_list_store_set(
-				GTK_LIST_STORE( self->priv->tstore ),
-				&iter,
-				ENT_COL_STATUS, ofo_entry_get_abr_status( OFO_ENTRY( object )),
-				-1 );
-	}
 }
 
 static gboolean

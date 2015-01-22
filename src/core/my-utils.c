@@ -35,9 +35,10 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-static void    on_notes_changed( GtkTextBuffer *buffer, void *user_data );
-static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
-static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
+static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
+static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
+static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
+static gboolean is_readable_gfile( GFile *file );
 
 /**
  * my_strlen:
@@ -981,21 +982,13 @@ my_utils_file_is_readable_file( const gchar *filename )
 	GFile *file;
 	gboolean ok;
 	gchar *sysfname;
-	GFileInfo *info;
-	GFileType type;
 
 	ok = FALSE;
 
 	sysfname = my_utils_filename_from_utf8( filename );
 	if( sysfname ){
-		ok = TRUE;
 		file = g_file_new_for_path( sysfname );
-		info = g_file_query_info( file,
-				G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
-				G_FILE_QUERY_INFO_NONE, NULL, NULL );
-		type = g_file_info_get_attribute_uint32( info, G_FILE_ATTRIBUTE_STANDARD_TYPE );
-		ok &= ( type == G_FILE_TYPE_REGULAR );
-		ok &= g_file_info_get_attribute_boolean( info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ );
+		ok = is_readable_gfile( file );
 		g_object_unref( file );
 	}
 	g_free( sysfname );
@@ -1081,25 +1074,40 @@ my_utils_uri_is_readable_file( const gchar *uri )
 	GFile *file;
 	gboolean ok;
 	gchar *sysfname;
-	GFileInfo *info;
-	GFileType type;
 
 	ok = FALSE;
 
 	sysfname = my_utils_filename_from_utf8( uri );
 	if( sysfname ){
-		ok = TRUE;
 		file = g_file_new_for_uri( sysfname );
-		info = g_file_query_info( file,
-				G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
-				G_FILE_QUERY_INFO_NONE, NULL, NULL );
-		type = g_file_info_get_attribute_uint32( info, G_FILE_ATTRIBUTE_STANDARD_TYPE );
-		ok &= ( type == G_FILE_TYPE_REGULAR );
-		ok &= g_file_info_get_attribute_boolean( info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ );
+		ok = is_readable_gfile( file );
 		g_object_unref( file );
 	}
 	g_free( sysfname );
 
 	g_debug( "my_utils_uri_is_readable_file: uri=%s, ok=%s", uri, ok ? "True":"False" );
+	return( ok );
+}
+
+static gboolean
+is_readable_gfile( GFile *file )
+{
+	gboolean ok;
+	GFileInfo *info;
+	GFileType type;
+
+	ok = FALSE;
+
+	info = g_file_query_info( file,
+			G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
+			G_FILE_QUERY_INFO_NONE, NULL, NULL );
+	if( info ){
+		ok = TRUE;
+		type = g_file_info_get_attribute_uint32( info, G_FILE_ATTRIBUTE_STANDARD_TYPE );
+		ok &= ( type == G_FILE_TYPE_REGULAR );
+		ok &= g_file_info_get_attribute_boolean( info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ );
+		g_object_unref( info );
+	}
+
 	return( ok );
 }

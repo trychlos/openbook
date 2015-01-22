@@ -34,11 +34,15 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
+#include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
 
 #include "ui/my-editable-date.h"
+#include "ui/my-progress-bar.h"
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
@@ -56,6 +60,7 @@ struct _ofaDossierPropertiesPrivate {
 	gboolean            is_current;
 	GDate               begin_init;
 	GDate               end_init;
+	GDate               min_end;
 
 	/* data
 	 */
@@ -74,6 +79,16 @@ struct _ofaDossierPropertiesPrivate {
 	GtkWidget          *siren_entry;
 	ofaClosingParmsBin *closing_parms;
 	GtkWidget          *msgerr;
+	GtkWidget          *ok_btn;
+
+	/* when remediating entries
+	 */
+	GtkWidget          *dialog;
+	GtkWidget          *button;
+	myProgressBar      *bar;
+	gulong              total;
+	gulong              count;
+	GList              *dos_handlers;
 };
 
 #define MSG_NORMAL                      "#000000"
@@ -103,7 +118,11 @@ static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
-static gboolean  confirm_remediation( ofaDossierProperties *self );
+static gboolean  confirm_remediation( ofaDossierProperties *self, gint count );
+static void      display_progress_init( ofaDossierProperties *self );
+static void      display_progress_end( ofaDossierProperties *self );
+static void      on_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
+static void      on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
 
 static void
 dossier_properties_finalize( GObject *instance )
@@ -130,11 +149,21 @@ dossier_properties_finalize( GObject *instance )
 static void
 dossier_properties_dispose( GObject *instance )
 {
+	ofaDossierPropertiesPrivate *priv;
+	GList *it;
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
+
+		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+			for( it=priv->dos_handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+			}
+		}
 	}
 
 	/* chain up to the parent class */
@@ -157,6 +186,7 @@ ofa_dossier_properties_init( ofaDossierProperties *self )
 	self->priv->updated = FALSE;
 	my_date_clear( &self->priv->begin );
 	my_date_clear( &self->priv->end );
+	self->priv->dos_handlers = NULL;
 }
 
 static void
@@ -236,6 +266,10 @@ v_init_dialog( myDialog *dialog )
 
 	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );
 
+	if( !priv->is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
+
 	check_for_enable_dlg( self );
 }
 
@@ -298,15 +332,13 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
-	if( priv->is_current ){
-		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
-	} else {
-		str = my_date_to_str( &priv->begin, MY_DATE_DMYY );
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-		g_free( str );
-	}
-	gtk_widget_set_can_focus( entry, priv->is_current );
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	/* beginning date of the exercice cannot be modified if at least one
+	 * account has an opening balance (main reason is that we do not know
+	 * how to remediate this ;) */
+	gtk_widget_set_can_focus( entry,
+			priv->is_current || ofo_account_has_open_balance( priv->dossier ));
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-end" );
@@ -315,16 +347,14 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
-	if( priv->is_current ){
-		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
-	} else {
-		str = my_date_to_str( &priv->end, MY_DATE_DMYY );
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-		g_free( str );
-	}
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
 	gtk_widget_set_can_focus( entry, priv->is_current );
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
+
+	/* the end of the exercice cannot be rewinf back before the last
+	 * close of the ledgers */
+	ofo_ledger_get_max_last_close( &priv->min_end, priv->dossier );
 }
 
 static void
@@ -453,7 +483,7 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 	gboolean valid;
 
 	content = gtk_editable_get_chars( editable, 0, -1 );
-	if( content && g_utf8_strlen( content, -1 )){
+	if( my_strlen( content )){
 		*is_empty = FALSE;
 		my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( editable ), &valid ));
 		/*g_debug( "ofa_dossier_properties_on_date_changed: is_empty=False, valid=%s", valid ? "True":"False" );*/
@@ -490,23 +520,29 @@ on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
-	GtkWidget *button;
+	ofaDossierPropertiesPrivate *priv;
 	gboolean ok;
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+	priv = self->priv;
 
-	/*g_debug( "label=%s, duree=%u, currency=%s", priv->label, priv->duree, priv->currency );*/
-	ok = is_dialog_valid( self );
+	if( priv->is_current ){
 
-	gtk_widget_set_sensitive( button, ok );
+		if( !priv->ok_btn ){
+			priv->ok_btn = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+			g_return_if_fail( priv->ok_btn && GTK_IS_WIDGET( priv->ok_btn ));
+		}
+
+		ok = is_dialog_valid( self );
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	}
 }
 
 static gboolean
 is_dialog_valid( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	gchar *msg;
+	gchar *msg, *sdate;
 
 	priv = self->priv;
 	set_msgerr( self, "", MSG_NORMAL );
@@ -516,9 +552,19 @@ is_dialog_valid( ofaDossierProperties *self )
 		return( FALSE );
 	}
 
-	if( !priv->end_empty && !my_date_is_valid( &priv->end )){
-		set_msgerr( self, _( "nNot empty and not valid exercice ending date" ), MSG_ERROR );
-		return( FALSE );
+	if( !priv->end_empty ){
+		if( !my_date_is_valid( &priv->end )){
+			set_msgerr( self, _( "Not empty and not valid exercice ending date" ), MSG_ERROR );
+			return( FALSE );
+
+		} else if( my_date_is_valid( &priv->min_end ) && my_date_compare( &priv->min_end, &priv->end ) >=0 ){
+			sdate = my_date_to_str( &priv->min_end, MY_DATE_DMYY );
+			msg = g_strdup_printf( _( "Invalid end of the exercice before or equal to the ledger last closure %s" ), sdate );
+			set_msgerr( self, msg, MSG_ERROR );
+			g_free( msg );
+			g_free( sdate );
+			return( FALSE );
+		}
 	}
 
 	if( !ofo_dossier_is_valid(
@@ -568,6 +614,7 @@ do_update( ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
 	gboolean date_has_changed;
+	gint count;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
@@ -606,7 +653,9 @@ do_update( ofaDossierProperties *self )
 	}
 
 	if( date_has_changed ){
-		if( !confirm_remediation( self )){
+		count = ofo_entry_get_exe_changed_count(
+				priv->dossier, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
+		if( count > 0 && !confirm_remediation( self, count )){
 			return( FALSE );
 		}
 	}
@@ -616,26 +665,28 @@ do_update( ofaDossierProperties *self )
 
 	if( date_has_changed ){
 		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+		display_progress_init( self );
 		g_signal_emit_by_name(
 				priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED, &priv->begin_init, &priv->end_init );
+		display_progress_end( self );
 	}
 
 	return( priv->updated );
 }
 
 static gboolean
-confirm_remediation( ofaDossierProperties *self )
+confirm_remediation( ofaDossierProperties *self, gint count )
 {
 	GtkWidget *dialog;
 	gint response;
 	gchar *str;
 
-	str = g_strdup(
+	str = g_strdup_printf(
 			_( "You have modified the begin and/or the end dates of the current exercice.\n"
-				"This operation may lead to a more or leass heavy remediation, "
-				"as each concerned entry must update its intern status and thus "
+				"This operation will lead to the remediation of %d entries, "
+				"as each one must update its intern status and thus "
 				"update the corresponding account and ledger balances.\n"
-				"Are your sure ?" ));
+				"Are your sure ?" ), count );
 
 	dialog = gtk_message_dialog_new(
 			my_window_get_toplevel( MY_WINDOW( self )),
@@ -656,4 +707,93 @@ confirm_remediation( ofaDossierProperties *self )
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
+}
+
+static void
+display_progress_init( ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	GtkWidget *content, *grid, *alignment;
+	gulong handler;
+
+	priv = self->priv;
+
+	priv->dialog = gtk_dialog_new_with_buttons(
+					_( "Remediating entries" ),
+					my_window_get_toplevel( MY_WINDOW( self )),
+					GTK_DIALOG_MODAL,
+					_( "_Close" ), GTK_RESPONSE_OK,
+					NULL );
+
+	priv->button = gtk_dialog_get_widget_for_response( GTK_DIALOG( priv->dialog ), GTK_RESPONSE_OK );
+	g_return_if_fail( priv->button && GTK_IS_BUTTON( priv->button ));
+	gtk_widget_set_sensitive( priv->button, FALSE );
+
+	content = gtk_dialog_get_content_area( GTK_DIALOG( priv->dialog ));
+	g_return_if_fail( content && GTK_IS_CONTAINER( content ));
+
+	grid = gtk_grid_new();
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
+	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
+	gtk_container_add( GTK_CONTAINER( content ), grid );
+
+	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 10, 10 );
+	gtk_grid_attach( GTK_GRID( grid ), alignment, 0, 0, 1, 1 );
+
+	priv->bar = my_progress_bar_new();
+	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->bar ));
+
+	handler = g_signal_connect( priv->dossier,
+			SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_entry_status_count ), self );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->dossier,
+			SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), self );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+
+	gtk_widget_show_all( priv->dialog );
+}
+
+static void
+display_progress_end( ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	gtk_widget_set_sensitive( priv->button, TRUE );
+
+	gtk_dialog_run( GTK_DIALOG( priv->dialog ));
+	gtk_widget_destroy( priv->dialog );
+}
+
+static void
+on_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	priv->total = count;
+	priv->count = 0;
+}
+
+static void
+on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gdouble progress;
+	gchar *text;
+
+	priv = self->priv;
+
+	priv->count += 1;
+	progress = ( gdouble ) priv->count / ( gdouble ) priv->total;
+	text = g_strdup_printf( "%lu/%lu", priv->count, priv->total );
+
+	g_signal_emit_by_name( priv->bar, "ofa-double", progress );
+	g_signal_emit_by_name( priv->bar, "ofa-text", text );
+
+	g_free( text );
 }

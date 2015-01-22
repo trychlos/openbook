@@ -782,7 +782,7 @@ p6_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* message provided by the ofaIExportable interface */
 	g_signal_connect(
-			G_OBJECT( priv->p6_base ), "progress", G_CALLBACK( p6_on_progress ), self );
+			G_OBJECT( priv->p6_base ), "ofa-progress", G_CALLBACK( p6_on_progress ), self );
 
 	g_idle_add(( GSourceFunc ) export_data, self );
 }

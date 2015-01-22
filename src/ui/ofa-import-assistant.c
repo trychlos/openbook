@@ -372,6 +372,7 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-filechooser" );
 	g_return_if_fail( widget && GTK_IS_FILE_CHOOSER_WIDGET( widget ));
 	priv->p2_chooser = GTK_FILE_CHOOSER( widget );
+	gtk_file_chooser_set_action( priv->p2_chooser, GTK_FILE_CHOOSER_ACTION_OPEN );
 
 	g_signal_connect(
 			G_OBJECT( widget ), "selection-changed", G_CALLBACK( p2_on_selection_changed ), self );
@@ -379,14 +380,31 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 			G_OBJECT( widget ), "file-activated", G_CALLBACK( p2_on_file_activated ), self );
 }
 
+/*
+ * gtk_file_chooser_select_uri() is supposed to first set the ad-hoc
+ * folder, and then select the appropriate file - but doesn't seem to
+ * work alone :(
+ *
+ * gtk_file_chooser_set_current_folder_uri() rightly set the current
+ * folder, but reset the selection (and have a bad location 'ebp_')
+ * so, has to select after the right file
+ *
+ * gtk_file_chooser_set_uri() doesn't work (doesn't select the parent
+ * folder, doesn't select the file)
+ * gtk_file_chooser_set_filename() idem
+ */
 static void
 p2_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
+	/*static const gchar *thisfn = "ofa_import_assistant_p2_display";*/
 	ofaImportAssistantPrivate *priv;
 
 	priv = self->priv;
 
-	if( priv->p2_folder ){
+	if( priv->p2_uri ){
+		gtk_file_chooser_set_uri( priv->p2_chooser, priv->p2_uri );
+
+	} else if( priv->p2_folder ){
 		gtk_file_chooser_set_current_folder_uri( priv->p2_chooser, priv->p2_folder );
 	}
 }
@@ -649,7 +667,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_widget_show_all( page );
 
-	complete = ( priv->p2_uri && g_utf8_strlen( priv->p2_uri, -1 ) > 0 );
+	complete = my_strlen( priv->p2_uri ) > 0;
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
 }
 

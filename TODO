@@ -172,6 +172,8 @@
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
                 the model)
+     2015- 1-22 this is removed from now: only able to create a new
+                database when restoring an exercice
 
  303 2014- 8-15 dropping the administrative accounts when deleting a
                 dossier is not possible without first checking that
@@ -261,6 +263,7 @@
  336 2014-10-18 all treeview columns in main pages should be resizeable
                 (autoresize on double click is automatically handled)
                 and the current width should be kept in settings
+     2015- 1-22 no GtkTreeViewColumn primitive for setting a width ??
 
  429 2014-11-11 implement print preview inside of Openbook
 
@@ -364,16 +367,12 @@
  559 2015- 1- 8 have a macro language to automate dossier creation,
                 import of files
 
- 561 2015- 1- 8 importing operation templates (while the corresponding
-                page is opened) doesn't update it - As the store is
-                loaded, there is no way to reset it :(
-
  562 2015- 1- 8 Add misc menu option to see the loaded stores, and
                 reset them
 
  567 2015- 1- 9 have an EntryStore ?
-     2015- 1-18 ofaViewEntries add its own columns to its store
-                ofaReconciliation is a tree store with bat lines
+     2015- 1-18 - ofaViewEntries add its own columns to its store
+                - ofaReconciliation is a tree store with bat lines
                 so the usefulness has yet to be proved...
 
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
@@ -384,9 +383,15 @@
                 (would prevent two updates when closing the exercice)
 
  598 2015- 1-18 remediate the entries when modifying the exercice
-                beginning or end dates 
+                beginning or end dates
+     2015- 1-19 have a function to display count of involved entries
+                only display the confirmation dialog if count > 0 
 
- 599
+ 599 2015- 1-22 GtkFileChooser in an assistant: unable to select again
+                the previously selected file when coming back from an
+                other page
+
+ 600
 
 -----------------------------------------------------------------------
  DONE
@@ -2472,6 +2477,11 @@
  560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
                 a field separator!
      2015- 1-17 done - svn #4468
+
+ 561 2015- 1- 8 importing operation templates (while the corresponding
+                page is opened) doesn't update it - As the store is
+                loaded, there is no way to reset it :(
+     2015- 1-19 done - svn #4496
 
  563 2015- 1- 8 IImportable interface: take FileFormat settings into
                 account

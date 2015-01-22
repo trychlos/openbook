@@ -80,7 +80,6 @@ static GRegex  *st_regex_global_ref     = NULL;
 static GRegex  *st_regex_fn             = NULL;
 
 static gboolean st_debug                = FALSE;
-
 #define DEBUG                           if( st_debug ) g_debug
 
 static void         ope_free_detail( ofsOpeDetail *detail );

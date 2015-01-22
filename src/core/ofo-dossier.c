@@ -96,10 +96,10 @@ enum {
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
 	RELOAD_DATASET,
-	PRE_VALID_ENTRY,
 	FUTURE_ROUGH,
-	VALIDATED_ENTRY,
 	EXE_DATE_CHANGED,
+	ENTRY_STATUS_COUNT,
+	ENTRY_STATUS_CHANGED,
 	N_SIGNALS
 };
 
@@ -137,7 +137,6 @@ static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
-static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
@@ -392,67 +391,6 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_GTYPE );
 
 	/**
-	 * ofoDossier::ofa-signal-pre-valid-entry:
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier      *dossier,
-	 * 								const gchar *ledger,
-	 * 								gint         count,
-	 * 								gpointer     user_data );
-	 */
-	st_signals[ PRE_VALID_ENTRY ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_PRE_VALID_ENTRY,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_ACTION,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_STRING, G_TYPE_UINT );
-
-	/**
-	 * ofoDossier::ofa-signal-dossier-future-rough-entry:
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								ofoEntry *entry,
-	 * 								gpointer  user_data );
-	 */
-	st_signals[ FUTURE_ROUGH ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_validated_entry_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofoDossier::ofa-signal-validated-entry:
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								ofoEntry *entry,
-	 * 								gpointer  user_data );
-	 */
-	st_signals[ VALIDATED_ENTRY ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_VALIDATED_ENTRY,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_validated_entry_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
 	 * ofoDossier::ofa-signal-exe-date-changed:
 	 *
 	 * Handler is of type:
@@ -472,6 +410,52 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_POINTER, G_TYPE_POINTER );
+
+	/**
+	 * ofoDossier::ofa-signal-entry-status-count:
+	 *
+	 * This signal is sent on the dossier before each batch of status
+	 * changes.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier  *dossier,
+	 *								gint     new_status,
+	 *								gulong   count,
+	 * 								gpointer user_data );
+	 */
+	st_signals[ ENTRY_STATUS_COUNT ] = g_signal_new_class_handler(
+				SIGNAL_DOSSIER_ENTRY_STATUS_COUNT,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_UINT, G_TYPE_ULONG );
+
+	/**
+	 * ofoDossier::ofa-signal-entry-status-changed:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier         *dossier,
+	 * 								const ofoEntry *entry
+	 * 								gint            prev_status,
+	 *								gint            new_status,
+	 * 								gpointer        user_data );
+	 */
+	st_signals[ ENTRY_STATUS_CHANGED ] = g_signal_new_class_handler(
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				3,
+				G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_UINT );
 }
 
 /**
@@ -974,8 +958,8 @@ dbmodel_to_v1( const ofoDossier *dossier )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
-			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
-			"	VALUES (1,'%s',%u,'EUR','%s','CLORAN','CLOSLD')",
+			"	 DOS_STATUS) "
+			"	VALUES (1,'%s',%u,'EUR','%s')",
 			priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED );
 	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
@@ -2417,14 +2401,6 @@ on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type )
 	static const gchar *thisfn = "ofo_dossier_on_reloaded_dataset_cleanup_handler";
 
 	g_debug( "%s: dossier=%p, type=%lu", thisfn, ( void * ) dossier, type );
-}
-
-static void
-on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry )
-{
-	static const gchar *thisfn = "ofo_dossier_on_validated_entry_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, entry=%p", thisfn, ( void * ) dossier, ( void * ) entry );
 }
 
 static gboolean

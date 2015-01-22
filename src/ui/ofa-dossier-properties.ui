@@ -678,6 +678,7 @@
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
+                    <property name="halign">start</property>
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">Last update :</property>
                   </object>
@@ -706,7 +707,6 @@
                   <object class="GtkLabel" id="px-msgerr">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">8</property>
                     <property name="xalign">0</property>
                   </object>
                   <packing>

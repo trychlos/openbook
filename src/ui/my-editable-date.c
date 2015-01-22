@@ -65,10 +65,15 @@ typedef struct {
 }
 	sEditableDate;
 
-#define DEFAULT_ENTRY_FORMAT    MY_DATE_DMYY
-#define DEFAULT_MANDATORY       TRUE
+#define DEFAULT_ENTRY_FORMAT            MY_DATE_DMYY
+#define DEFAULT_MANDATORY               TRUE
 
-#define EDITABLE_DATE_DATA      "my-editable-date-data"
+#define EDITABLE_DATE_DATA              "my-editable-date-data"
+
+static const gboolean st_debug          = FALSE;
+#define DEBUG                           if( st_debug ) g_debug
+
+static gint           st_year           = -1;
 
 static void               on_editable_finalized( sEditableDate *data, GObject *was_the_editable );
 static sEditableDate     *get_editable_date_data( GtkEditable *editable );
@@ -78,6 +83,8 @@ static gchar             *on_text_inserted_dmyy( GtkEditable *editable, gchar *n
 static void               insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *data );
 static void               on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableDate *data );
 static void               on_changed( GtkEditable *editable, sEditableDate *data );
+static gboolean           on_key_pressed( GtkWidget *widget, GdkEventKey *event, sEditableDate *data );
+static void               try_for_completion( sEditableDate *data, GtkEntry *entry );
 static gboolean           on_focus_in( GtkWidget *entry, GdkEvent *event, sEditableDate *data );
 static gboolean           on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data );
 /*static gchar         *editable_date_get_string( GtkEditable *editable, sEditableDate **pdata );*/
@@ -87,7 +94,7 @@ static void               editable_date_render( GtkEditable *editable );
  * my_editable_date_init:
  * @editable: the #GtkEditable object
  *
- * Initialize the GtkEditable to enter an amount. Is supposed to be
+ * Initialize the GtkEditable to enter a date. Is supposed to be
  * called each time the edition is started.
  */
 void
@@ -142,6 +149,8 @@ get_editable_date_data( GtkEditable *editable )
 					G_OBJECT( editable ), "focus-in-event", G_CALLBACK( on_focus_in ), data );
 			g_signal_connect(
 					G_OBJECT( editable ), "focus-out-event", G_CALLBACK( on_focus_out ), data );
+			g_signal_connect(
+					G_OBJECT( editable ), "key-press-event", G_CALLBACK( on_key_pressed ), data );
 		}
 	}
 
@@ -197,13 +206,13 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 	static const gchar *thisfn = "my_editable_date_on_text_inserted";
 	gchar *text;
 
-	g_debug( "%s: editable=%p, new_text=%s, new_text_length=%u, position=%d",
+	DEBUG( "%s: editable=%p, new_text=%s, new_text_length=%u, position=%d",
 			thisfn, ( void * ) editable, new_text, new_text_length, *position );
 
 	text = NULL;
 
 	if( data->setting_text ){
-		g_debug( "%s: setting_text=%s", thisfn, "True" );
+		DEBUG( "%s: setting_text=%s", thisfn, "True" );
 		text = g_strndup( new_text, new_text_length );
 
 	} else {
@@ -310,7 +319,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 		ithpos = g_utf8_offset_to_pointer( new_text, i );
 		ithchar = g_utf8_get_char( ithpos );
 
-		g_debug( "%s: i=%u, char='%c', pos=%u, position=%u, day=%u, month=%u, have_year=%s",
+		DEBUG( "%s: i=%u, char='%c', pos=%u, position=%u, day=%u, month=%u, have_year=%s",
 				thisfn, i, ithchar, pos, *position, day, month, have_year ? "True":"False" );
 
 		if( g_unichar_isdigit( ithchar )){
@@ -332,19 +341,19 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_insert = g_string_append_c( str_insert, '0' );
 						str_result = g_string_insert_c( str_result, pos, '0' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
 					str_insert = g_string_append_c( str_insert, ithchar );
 					str_result = g_string_insert_c( str_result, pos, ithchar );
 					pos += 1;
-					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+					DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 							thisfn, str_insert->str, *position, str_result->str, pos );
 					if( pos == 2 && str_result->str[pos] != '/' && ( i == new_text_length-1 || new_text[i+1] != '/' )){
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
 				} else {
@@ -361,7 +370,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					} else {
 						ok = FALSE;
@@ -378,13 +387,13 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_insert = g_string_append_c( str_insert, '0' );
 						str_result = g_string_insert_c( str_result, pos, '0' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
 					str_insert = g_string_append_c( str_insert, ithchar );
 					str_result = g_string_insert_c( str_result, pos, ithchar );
 					pos += 1;
-					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+					DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 							thisfn, str_insert->str, *position, str_result->str, pos );
 					if( pos == 5 && str_result->str[pos] != '/' &&
 							( i == new_text_length-1 || new_text[i+1] != '/' ) &&
@@ -392,7 +401,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
 				} else {
@@ -409,7 +418,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
-						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+						DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 								thisfn, str_insert->str, *position, str_result->str, pos );
 					} else {
 						ok = FALSE;
@@ -425,7 +434,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						str_result = g_string_insert( str_result, pos, "19" );
 					}
 					pos += 2;
-					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+					DEBUG( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 							thisfn, str_insert->str, *position, str_result->str, pos );
 				}
 				str_insert = g_string_append_c( str_insert, ithchar );
@@ -501,7 +510,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 
 	g_string_free( str_result, TRUE );
 
-	g_debug( "%s: ok=%s, str_insert=%s", thisfn, ok ? "True":"False", str_insert->str );
+	DEBUG( "%s: ok=%s, str_insert=%s", thisfn, ok ? "True":"False", str_insert->str );
 	str = g_string_free( str_insert, FALSE );
 	if( !ok ){
 		g_free( str );
@@ -534,7 +543,7 @@ insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *dat
 static void
 on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableDate *data )
 {
-	g_debug( "my_editable_date_on_text_deleted: editable=%p, start=%d, end=%d",
+	DEBUG( "my_editable_date_on_text_deleted: editable=%p, start=%d, end=%d",
 			( void * ) editable, start_pos, end_pos );
 
 	g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_deleted, data );
@@ -556,7 +565,7 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 		len_text = g_utf8_strlen( text, -1 );
 		my_date_set_from_str( &data->date, text, data->format->date_format );
 		data->valid = my_date_is_valid( &data->date );
-		g_debug( "%s: editable=%p, data=%p, text='%s', valid=%s",
+		DEBUG( "%s: editable=%p, data=%p, text='%s', valid=%s",
 				thisfn, ( void * ) editable, ( void * ) data, text, data->valid ? "True":"False" );
 		g_free( text );
 
@@ -577,8 +586,46 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 		}
 
 	} else {
-		g_debug( "%s: editable=%p, data=%p: set 'setting_text' to False", thisfn, ( void * ) editable, ( void * ) data );
+		DEBUG( "%s: editable=%p, data=%p: set 'setting_text' to False", thisfn, ( void * ) editable, ( void * ) data );
 		data->setting_text = FALSE;
+	}
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ *
+ * We automatically open a selection dialog box for the account if we
+ * are leaving the field with a Tab key while it is invalid
+ *
+ * Note that if we decide to open the selection dialog box, then the
+ * Gtk toolkit will complain as we return too late from this function
+ */
+static gboolean
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, sEditableDate *data )
+{
+	if( event->state == 0 && event->keyval == GDK_KEY_Tab ){
+		try_for_completion( data, GTK_ENTRY( widget ));
+	}
+
+	return( FALSE );
+}
+
+static void
+try_for_completion( sEditableDate *data, GtkEntry *entry )
+{
+	const gchar *cstr;
+	GDate date;
+
+	if( !data->valid ){
+		cstr = gtk_entry_get_text( entry );
+		my_date_set_from_str_ex( &date, cstr, data->format->date_format, &st_year );
+		if( my_date_is_valid( &date )){
+			my_date_set_from_date( &data->date, &date );
+			data->valid = TRUE;
+			editable_date_render( GTK_EDITABLE( entry ));
+		}
 	}
 }
 

@@ -178,6 +178,12 @@ ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
 
+gint           ofo_entry_get_exe_changed_count( ofoDossier *dossier,
+													const GDate *prev_begin,
+													const GDate *prev_end,
+													const GDate *new_begin,
+													const GDate *new_end );
+
 GDate         *ofo_entry_get_max_val_deffect  ( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
@@ -218,7 +224,6 @@ gboolean       ofo_entry_update               ( ofoEntry *entry, const ofoDossie
 gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier, const GDate *date );
 gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
-gboolean       ofo_entry_future_to_rough      ( ofoEntry *entry, const ofoDossier *dossier );
 
 gboolean       ofo_entry_validate_by_ledger   ( ofoDossier *dossier,
 													const gchar *mnemo, const GDate *deffect );

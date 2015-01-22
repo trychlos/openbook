@@ -50,7 +50,7 @@ static const sDateFormat st_date_format[] = {
 		{ 0 }
 };
 
-static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *string );
+static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year );
 static gboolean parse_yyyymmdd_string( GDate *date, const gchar *string );
 
 /**
@@ -107,7 +107,7 @@ my_date_compare( const GDate *a, const GDate *b )
 }
 
 /**
- * my_date1_compare_ex:
+ * my_date_compare_ex:
  * @a: the first #GDate to be compared
  * @b: the second #GDate to be compared to @a
  * @clear_is_past_infinite: if %TRUE, then any cleared or invalid date
@@ -266,41 +266,15 @@ my_date_set_from_sql( GDate *date, const gchar *sql_string )
 GDate *
 my_date_set_from_str( GDate *date, const gchar *fmt_string, myDateFormat format )
 {
-	static const gchar *thisfn = "my_date_set_from_str";
-
-	g_return_val_if_fail( date, NULL);
-
-	switch( format ){
-
-		case MY_DATE_DMYY:
-			if( !parse_ddmmyyyy_string( date, fmt_string )){
-				my_date_clear( date );
-			}
-			break;
-
-		case MY_DATE_SQL:
-			my_date_set_from_sql( date, fmt_string );
-			break;
-
-		case MY_DATE_YYMD:
-			if( !parse_yyyymmdd_string( date, fmt_string )){
-				my_date_clear( date );
-			}
-			break;
-
-		default:
-			g_warning( "%s: unhandled format code %u", thisfn, format );
-			break;
-	}
-
-	return( date );
+	return( my_date_set_from_str_ex( date, fmt_string, format, NULL ));
 }
 
 /*
  * Returns TRUE if the string parses to a valid 'dd/mm/yyyy' date
+ * even if the provider default @year is to be used for that
  */
 static gboolean
-parse_ddmmyyyy_string( GDate *date, const gchar *string )
+parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 {
 	gboolean valid;
 	gchar **tokens, **iter;
@@ -310,17 +284,19 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string )
 	valid = FALSE;
 	my_date_clear( date );
 
-	if( string && g_utf8_strlen( string, -1 )){
+	if( my_strlen( string )){
 		tokens = g_strsplit( string, "/", -1 );
 		iter = tokens;
-		if( *iter && g_utf8_strlen( *iter, -1 )){
+		if( my_strlen( *iter )){
 			dd = atoi( *iter );
 			iter++;
-			if( *iter && g_utf8_strlen( *iter, -1 )){
+			if( my_strlen( *iter )){
 				mm = atoi( *iter );
 				iter++;
-				if( *iter && g_utf8_strlen( *iter, -1 )){
+				if( my_strlen( *iter )){
 					yy = atoi( *iter );
+				} else if( year && *year > 0 ){
+					yy = *year;
 				}
 			}
 		}
@@ -330,6 +306,9 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string )
 	if( g_date_valid_dmy( dd, mm, yy )){
 		g_date_set_dmy( date, dd, mm, yy );
 		valid = TRUE;
+		if( year ){
+			*year = yy;
+		}
 	}
 
 	return( valid );
@@ -375,6 +354,54 @@ parse_yyyymmdd_string( GDate *date, const gchar *string )
 	}
 
 	return( valid );
+}
+
+/**
+ * my_date_set_from_str_ex:
+ * @date: [out]: a not-null pointer to the destination GDate structure
+ * @fmt_string: [in][allow-none]: the string to be parsed
+ * @format: the expected format of the string
+ * @year: [in][out][allow-none]: if set, may be used as a default year if it is
+ *  missing from the @fmt_string - On output, is set with the year of
+ *  the @date if it is valid.
+ *
+ * Parse a string which should represent a date into a #GDate structure.
+ * The dest @date is set invalid if the @sql_string doesn't evaluate to
+ * a valid date.
+ *
+ * Returns: @date, in order to be able to chain the functions.
+ */
+GDate *
+my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat format, gint *year )
+{
+	static const gchar *thisfn = "my_date_set_from_str_ex";
+
+	g_return_val_if_fail( date, NULL);
+
+	switch( format ){
+
+		case MY_DATE_DMYY:
+			if( !parse_ddmmyyyy_string( date, fmt_string, year )){
+				my_date_clear( date );
+			}
+			break;
+
+		case MY_DATE_SQL:
+			my_date_set_from_sql( date, fmt_string );
+			break;
+
+		case MY_DATE_YYMD:
+			if( !parse_yyyymmdd_string( date, fmt_string )){
+				my_date_clear( date );
+			}
+			break;
+
+		default:
+			g_warning( "%s: unhandled format code %u", thisfn, format );
+			break;
+	}
+
+	return( date );
 }
 
 /**

@@ -167,8 +167,7 @@ static void       on_new_object( ofoDossier *dossier, ofoBase *object, gpointer 
 static void       on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void       on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void       on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty );
-static void       on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
+static void       on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static GList     *ledger_load_dataset( ofoDossier *dossier );
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint       ledger_count_for_currency( const ofaDbms *dbms, const gchar *currency );
@@ -177,6 +176,7 @@ static gint       cmp_currencies( const gchar *a_currency, const gchar *b_curren
 static GList     *ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_add_balance_rough( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
+static GList     *ledger_add_balance_validated( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
 static GList     *ledger_add_balance_future( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
 static GList     *ledger_add_to_balance( ofoLedger *ledger, const gchar *currency, gint debit_id, ofxAmount debit, gint credit_id, ofxAmount credit );
 static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
@@ -346,10 +346,7 @@ ofo_ledger_connect_handlers( const ofoDossier *dossier )
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, G_CALLBACK( on_future_to_rough_entry ), NULL );
-
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
 }
 
 static void
@@ -454,92 +451,60 @@ on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, cons
 	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
 }
 
-/*
- * an entry becomes rough from future, when closing the exercice
- */
 static void
-on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty )
+on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_on_validated_entry";
-	const gchar *currency, *mnemo;
+	static const gchar *thisfn = "ofo_ledger_on_entry_status_changed";
+	const gchar *currency;
 	ofoLedger *ledger;
+	ofxAmount debit, credit;
 	GList *balance;
-	ofxAmount debit, credit, amount;
 
-	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) empty );
+	g_debug( "%s: dossier=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
-	mnemo = ofo_entry_get_ledger( entry );
-	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( dossier, ofo_entry_get_ledger( entry ));
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	currency = ofo_entry_get_currency( entry );
-	balance = ledger_find_balance_by_code( ledger, currency );
-	/* the entry has necessarily be already recorded while in rough status */
-	g_return_if_fail( balance );
 
 	debit = ofo_entry_get_debit( entry );
-	amount = ofa_box_get_amount( balance, LED_ROUGH_DEBIT );
-	ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount+debit );
-	amount = ofa_box_get_amount( balance, LED_FUT_DEBIT );
-	ofa_box_set_amount( balance, LED_FUT_DEBIT, amount-debit );
-
-
 	credit = ofo_entry_get_credit( entry );
-	amount = ofa_box_get_amount( balance, LED_ROUGH_CREDIT );
-	ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount+credit );
-	amount = ofa_box_get_amount( balance, LED_FUT_CREDIT );
-	ofa_box_set_amount( balance, LED_FUT_CREDIT, amount-credit );
 
-	if( ledger_do_update_balance( ledger, balance, ofo_dossier_get_dbms( dossier ))){
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
+	switch( prev_status ){
+		case ENT_STATUS_ROUGH:
+			ledger_add_balance_rough( ledger, currency, -debit, -credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			ledger_add_balance_validated( ledger, currency, -debit, -credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			ledger_add_balance_future( ledger, currency, -debit, -credit );
+			break;
+		default:
+			break;
 	}
-}
 
-/*
- * an entry is validated, either individually or as the result of the
- * closing of a ledger
- */
-static void
-on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
-{
-	static const gchar *thisfn = "ofo_ledger_on_validated_entry";
-	const gchar *currency, *mnemo;
-	ofoLedger *ledger;
-	GList *balance;
-	ofxAmount debit, credit, amount;
+	switch( new_status ){
+		case ENT_STATUS_ROUGH:
+			ledger_add_balance_rough( ledger, currency, debit, credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			ledger_add_balance_validated( ledger, currency, debit, credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			ledger_add_balance_future( ledger, currency, debit, credit );
+			break;
+		default:
+			break;
+	}
 
-	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
-
-	mnemo = ofo_entry_get_ledger( entry );
-	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-
-	currency = ofo_entry_get_currency( entry );
 	balance = ledger_find_balance_by_code( ledger, currency );
-	/* the entry has necessarily be already recorded while in rough status */
-	g_return_if_fail( balance );
-
-	debit = ofo_entry_get_debit( entry );
-	amount = ofa_box_get_amount( balance, LED_ROUGH_DEBIT );
-	ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount-debit );
-	amount = ofa_box_get_amount( balance, LED_VAL_DEBIT );
-	ofa_box_set_amount( balance, LED_VAL_DEBIT, amount+debit );
-
-
-	credit = ofo_entry_get_credit( entry );
-	amount = ofa_box_get_amount( balance, LED_ROUGH_CREDIT );
-	ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount-credit );
-	amount = ofa_box_get_amount( balance, LED_VAL_CREDIT );
-	ofa_box_set_amount( balance, LED_VAL_CREDIT, amount+credit );
 
 	if( ledger_do_update_balance( ledger, balance, ofo_dossier_get_dbms( dossier ))){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 	}
 }
 
@@ -1001,6 +966,16 @@ ledger_add_balance_rough( ofoLedger *ledger, const gchar *currency, ofxAmount de
 }
 
 /*
+ * add debit/credit to validated balance for the currency, creating the
+ * new record if needed
+ */
+static GList *
+ledger_add_balance_validated( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit )
+{
+	return( ledger_add_to_balance( ledger, currency, LED_VAL_DEBIT, debit, LED_VAL_CREDIT, credit ));
+}
+
+/*
  * add debit/credit to future balance for the currency, creating the
  * new record if needed
  */
@@ -1028,6 +1003,34 @@ ledger_add_to_balance( ofoLedger *ledger, const gchar *currency, gint debit_id, 
 	}
 
 	return( balance );
+}
+
+/**
+ * ofo_ledger_get_max_last_close:
+ * @date: [out]: the date to be set
+ * @dossier:
+ *
+ * Set the @date to the max of all closing dates for the ledgers.
+ *
+ * Return: this same @date.
+ */
+GDate *
+ofo_ledger_get_max_last_close( GDate *date, const ofoDossier *dossier )
+{
+	GSList *result, *icol;
+
+	my_date_clear( date );
+
+	if( ofa_dbms_query_ex(
+			ofo_dossier_get_dbms( dossier ),
+			"SELECT MAX(LED_LAST_CLO) FROM OFA_T_LEDGERS", &result, TRUE )){
+
+		icol = result ? result->data : NULL;
+		my_date_set_from_sql( date, icol ? icol->data : NULL );
+		ofa_dbms_free_results( result );
+	}
+
+	return( date );
 }
 
 /**

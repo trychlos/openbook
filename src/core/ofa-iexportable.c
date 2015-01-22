@@ -146,7 +146,7 @@ interface_base_init( ofaIExportableInterface *klass )
 		 * 						gpointer      user_data );
 		 */
 		st_signals[ PROGRESS ] = g_signal_new_class_handler(
-					"progress",
+					"ofa-progress",
 					interface_type,
 					G_SIGNAL_ACTION,
 					NULL,
@@ -285,7 +285,9 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 
 		/* a small delay so that user actually see the progression
 		 * else it is too fast and we just see the end */
-		g_usleep( 0.01*G_USEC_PER_SEC );
+		if( !sdata->count || sdata->count < 100 ){
+			g_usleep( 0.01*G_USEC_PER_SEC );
+		}
 
 		str = g_strdup_printf( "%s\n", ( const gchar * ) it->data );
 		converted = g_convert( str, -1,

@@ -82,10 +82,6 @@ typedef struct {
  * @SIGNAL_DOSSIER_RELOAD_DATASET:
  *  sent on the dossier by one the #ofoBase class when the full dataset
  *  is reloaded.
- * @SIGNAL_DOSSIER_PRE_VALID_ENTRY:
- *  sent on the dossier when validating by ledgers, after having loaded
- *  the entries dataset, in order to publish the count of candidate
- *  entries.
  * @SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY:
  *  sent on the dossier when the status becomes 'rough' from 'future'.
  * @SIGNAL_DOSSIER_VALIDATED_ENTRY:
@@ -94,14 +90,13 @@ typedef struct {
  *  sent on the dossier when the beginning or the ending date of the
  *  exercice has been changed.
  */
-#define SIGNAL_DOSSIER_NEW_OBJECT         "ofa-signal-dossier-new-object"
-#define SIGNAL_DOSSIER_UPDATED_OBJECT     "ofa-signal-dossier-updated-object"
-#define SIGNAL_DOSSIER_DELETED_OBJECT     "ofa-signal-dossier-deleted-object"
-#define SIGNAL_DOSSIER_RELOAD_DATASET     "ofa-signal-dossier-reload-dataset"
-#define SIGNAL_DOSSIER_PRE_VALID_ENTRY    "ofa-signal-dossier-pre-valid-entry"
-#define SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY "ofa-signal-dossier-future-rough-entry"
-#define SIGNAL_DOSSIER_VALIDATED_ENTRY    "ofa-signal-dossier-validated-entry"
-#define SIGNAL_DOSSIER_EXE_DATE_CHANGED   "ofa-signal-dossier-exe-date-changed"
+#define SIGNAL_DOSSIER_NEW_OBJECT           "ofa-signal-dossier-new-object"
+#define SIGNAL_DOSSIER_UPDATED_OBJECT       "ofa-signal-dossier-updated-object"
+#define SIGNAL_DOSSIER_DELETED_OBJECT       "ofa-signal-dossier-deleted-object"
+#define SIGNAL_DOSSIER_RELOAD_DATASET       "ofa-signal-dossier-reload-dataset"
+#define SIGNAL_DOSSIER_EXE_DATE_CHANGED     "ofa-signal-dossier-exe-date-changed"
+#define SIGNAL_DOSSIER_ENTRY_STATUS_COUNT   "ofa-signal-dossier-entry-status-count"
+#define SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED "ofa-signal-dossier-entry-status-changed"
 
 /* default length of exercice in months
  */

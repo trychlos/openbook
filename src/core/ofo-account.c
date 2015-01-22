@@ -189,8 +189,7 @@ static void         on_new_object( ofoDossier *dossier, ofoBase *object, gpointe
 static void         on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
 static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void         on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty );
-static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
+static void         on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static GList       *account_load_dataset( ofoDossier *dossier );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaDbms *dbms, const gchar *currency );
@@ -377,10 +376,7 @@ ofo_account_connect_handlers( const ofoDossier *dossier )
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, G_CALLBACK( on_future_to_rough_entry ), NULL );
-
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
 }
 
 static void
@@ -509,76 +505,66 @@ on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, cons
 	}
 }
 
-/*
- * an entry is becomes rough from a future status (after closing exercice)
- */
 static void
-on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty )
+on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_on_validated_entry";
+	static const gchar *thisfn = "ofo_account_on_entry_status_changed";
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
 
-	g_debug( "%s: dossier=%p, entry=%p, empty=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) empty );
+	g_debug( "%s: dossier=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
 	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 	debit = ofo_entry_get_debit( entry );
-	if( debit ){
-		amount = ofo_account_get_rough_debit( account );
-		account_set_rough_debit( account, amount+debit );
-		amount = ofo_account_get_futur_debit( account );
-		account_set_futur_debit( account, amount-debit );
-	}
-
 	credit = ofo_entry_get_credit( entry );
-	if( credit ){
-		amount = ofo_account_get_rough_credit( account );
-		account_set_rough_credit( account, amount+credit );
-		amount = ofo_account_get_futur_credit( account );
-		account_set_futur_credit( account, amount-credit );
+
+	switch( prev_status ){
+		case ENT_STATUS_ROUGH:
+			amount = ofo_account_get_rough_debit( account );
+			account_set_rough_debit( account, amount-debit );
+			amount = ofo_account_get_rough_credit( account );
+			account_set_rough_credit( account, amount-credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			amount = ofo_account_get_val_debit( account );
+			account_set_val_debit( account, amount-debit );
+			amount = ofo_account_get_val_credit( account );
+			account_set_val_credit( account, amount-credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			amount = ofo_account_get_futur_debit( account );
+			account_set_futur_debit( account, amount-debit );
+			amount = ofo_account_get_futur_credit( account );
+			account_set_futur_credit( account, amount-credit );
+			break;
+		default:
+			break;
 	}
 
-	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
-	}
-}
-
-/*
- * an entry is validated, either individually or as the result of the
- * closing of a journal
- */
-static void
-on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
-{
-	static const gchar *thisfn = "ofo_account_on_validated_entry";
-	ofoAccount *account;
-	ofxAmount debit, credit, amount;
-
-	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
-
-	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-
-	debit = ofo_entry_get_debit( entry );
-	if( debit ){
-		amount = ofo_account_get_rough_debit( account );
-		account_set_rough_debit( account, amount-debit );
-		amount = ofo_account_get_val_debit( account );
-		account_set_val_debit( account, amount+debit );
-	}
-
-	credit = ofo_entry_get_credit( entry );
-	if( credit ){
-		amount = ofo_account_get_rough_credit( account );
-		account_set_rough_credit( account, amount-credit );
-		amount = ofo_account_get_val_credit( account );
-		account_set_val_credit( account, amount+credit );
+	switch( new_status ){
+		case ENT_STATUS_ROUGH:
+			amount = ofo_account_get_rough_debit( account );
+			account_set_rough_debit( account, amount+debit );
+			amount = ofo_account_get_rough_credit( account );
+			account_set_rough_credit( account, amount+credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			amount = ofo_account_get_val_debit( account );
+			account_set_val_debit( account, amount+debit );
+			amount = ofo_account_get_val_credit( account );
+			account_set_val_credit( account, amount+credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			amount = ofo_account_get_futur_debit( account );
+			account_set_futur_debit( account, amount+debit );
+			amount = ofo_account_get_futur_credit( account );
+			account_set_futur_credit( account, amount+credit );
+			break;
+		default:
+			break;
 	}
 
 	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
@@ -1387,7 +1373,31 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
 }
 
 /**
+ * ofo_account_has_open_balances:
+ * @dossier: the currently opened dossier.
+ *
+ * Returns: %TRUE if at least one account has an opening balance.
+ * This means that there has been an archived exercice before this one,
+ * and thus that the beginning date of the exercice cannot be modified.
+ */
+gboolean
+ofo_account_has_open_balance( const ofoDossier *dossier )
+{
+	gint count;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	ofa_dbms_query_int(
+			ofo_dossier_get_dbms( dossier ),
+			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_FUT_DEBIT>0 OR ACC_FUT_CREDIT>0",
+			&count, TRUE );
+
+	return( count > 0 );
+}
+
+/**
  * ofo_account_archive_open_balances:
+ * @account:
  * @dossier: the currently opened dossier.
  *
  * As part of the closing of the exercice N, we archive the balances

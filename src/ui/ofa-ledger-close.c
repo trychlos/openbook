@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
@@ -87,8 +88,8 @@ static gboolean  do_close( ofaLedgerClose *self );
 static void      prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
 static gboolean  close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
 static void      do_end_close( ofaLedgerClose *self );
-static void      on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaLedgerClose *self );
-static void      on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaLedgerClose *self );
+static void      on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, guint count, ofaLedgerClose *self );
+static void      on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self );
 
 static void
 ledger_close_finalize( GObject *instance )
@@ -256,12 +257,12 @@ connect_to_dossier( ofaLedgerClose *dialog )
 
 	handler = g_signal_connect(
 					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_PRE_VALID_ENTRY, G_CALLBACK( on_dossier_pre_valid_entry ), dialog );
+					SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_dossier_entry_status_count ), dialog );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_dossier_validated_entry ), dialog );
+					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_dossier_entry_status_changed ), dialog );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
@@ -463,6 +464,9 @@ do_close( ofaLedgerClose *self )
 
 	ofa_ledger_treeview_free_selected( selected );
 	do_end_close( self );
+
+	gtk_widget_set_sensitive( button, TRUE );
+	gtk_dialog_run( GTK_DIALOG( dialog ));
 	gtk_widget_destroy( dialog );
 
 	return( TRUE );
@@ -555,15 +559,15 @@ do_end_close( ofaLedgerClose *self )
 }
 
 static void
-on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaLedgerClose *self )
+on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, guint count, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 
 	priv = self->priv;
 
 	priv->entries_count = count;
+
 	if( priv->entries_count == 0 ){
-		g_signal_emit_by_name( priv->bar, "ofa-double", 1 );
 		g_signal_emit_by_name( priv->bar, "ofa-text", "0/0" );
 	}
 
@@ -571,7 +575,7 @@ on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint coun
 }
 
 static void
-on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaLedgerClose *self )
+on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 	gdouble progress;

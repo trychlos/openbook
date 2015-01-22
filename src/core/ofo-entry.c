@@ -198,11 +198,11 @@ static void         on_updated_object_account_number( const ofoDossier *dossier,
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
-static void         on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static void         move_from_exercice_to_past( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin );
-static void         move_from_past_to_exercice( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin );
-static void         move_from_exercice_to_future( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end );
-static void         move_from_future_to_exercice( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end );
+static void         on_exe_dates_changed( ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static gint         check_for_changed_begin_exe_dates( ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
+static gint         check_for_changed_end_exe_dates( ofoDossier *dossier, const GDate *prev_end, const GDate *new_end, gboolean remediate );
+static gint         remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
+static void         on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
 static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
@@ -365,6 +365,9 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
 
 	g_signal_connect( G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_EXE_DATE_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
 }
 
 /*
@@ -526,12 +529,27 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
  * 6/ entries were considered in the future, but are now set in the past
  */
 static void
-on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
+on_exe_dates_changed( ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
 	const GDate *new_begin, *new_end;
 
 	new_begin = ofo_dossier_get_exe_begin( dossier );
 	new_end = ofo_dossier_get_exe_end( dossier );
+
+	check_for_changed_begin_exe_dates( dossier, prev_begin, new_begin, TRUE );
+	check_for_changed_end_exe_dates( dossier, prev_end, new_end, TRUE );
+}
+
+static gint
+check_for_changed_begin_exe_dates( ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
+{
+	gint count;
+	gchar *sprev, *snew, *where;
+
+	count = 0;
+	sprev = my_date_to_str( prev_begin, MY_DATE_SQL );
+	snew = my_date_to_str( new_begin, MY_DATE_SQL );
+	where = NULL;
 
 	if( !my_date_is_valid( prev_begin )){
 		if( !my_date_is_valid( new_begin )){
@@ -542,24 +560,56 @@ on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const 
 			 * there may be entries which were considered in the
 			 * exercice (either rough or validated) but are now
 			 * considered in the past */
-			move_from_exercice_to_past( dossier, prev_begin, new_begin );
+			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+			count = remediate_status( dossier, remediate, where, ENT_STATUS_PAST );
 		}
 	} else if( !my_date_is_valid( new_begin )){
 		/* removing the beginning date of the exercice
 		 * there may be entries which were considered in the past
 		 * but are now considered in the exercice */
-		move_from_past_to_exercice( dossier, prev_begin, new_begin );
+		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
 		/* there may be entries which were considered in the exercice
 		 * but are now considered in the past */
-		move_from_exercice_to_past( dossier, prev_begin, new_begin );
+		/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_PAST );
 
 	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
 		/* there may be entries which were considered in the past
 		 * but are now considered in the exercice */
-		move_from_past_to_exercice( dossier, prev_begin, new_begin );
+		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_ROUGH );
 	}
+
+	g_free( sprev );
+	g_free( snew );
+	g_free( where );
+
+	return( count );
+}
+
+static gint
+check_for_changed_end_exe_dates( ofoDossier *dossier, const GDate *prev_end, const GDate *new_end, gboolean remediate )
+{
+	gint count;
+	gchar *sprev, *snew, *where;
+
+	count = 0;
+	sprev = my_date_to_str( prev_end, MY_DATE_SQL );
+	snew = my_date_to_str( new_end, MY_DATE_SQL );
+	where = NULL;
 
 	if( !my_date_is_valid( prev_end )){
 		if( !my_date_is_valid( new_end )){
@@ -570,48 +620,110 @@ on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const 
 			 * there may be entries which were considered in the
 			 * exercice (either rough or validated) but are now
 			 * considered in the future */
-			move_from_exercice_to_future( dossier, prev_end, new_end );
+			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+			count = remediate_status( dossier, remediate, where, ENT_STATUS_FUTURE );
 		}
 	} else if( !my_date_is_valid( new_end )){
 		/* removing the ending date of the exercice
 		 * there may be entries which were considered in the future
 		 * but are now considered in the exercice */
-		move_from_future_to_exercice( dossier, prev_end, new_end );
+		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) < 0 ){
 		/* there may be entries which were considered in the future
 		 * but are now considered in the exercice */
-		move_from_future_to_exercice( dossier, prev_end, new_end );
+		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) > 0 ){
 		/* there may be entries which were considered in the exercice
 		 * but are now considered in the future */
-		move_from_exercice_to_future( dossier, prev_end, new_end );
+		/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( dossier, remediate, where, ENT_STATUS_FUTURE );
 	}
+
+	return( count );
+}
+
+static gint
+remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
+{
+	static const gchar *thisfn = "ofo_entry_remediate_status";
+	gint count;
+	GList *dataset, *it;
+	ofoEntry *entry;
+	ofaEntryStatus prev_status;
+	ofoLedger *ledger;
+	const GDate *last_close, *deffect;
+
+	count = 0;
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where );
+	count = g_list_length( dataset );
+
+	if( remediate ){
+		g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, new_status, count );
+
+		for( it=dataset ; it ; it=it->next ){
+			entry = OFO_ENTRY( it->data );
+			prev_status = ofo_entry_get_status( entry );
+
+			/* new status actually depends of the last closing date of
+			 * the ledger of the entry */
+			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
+				ledger = ofo_ledger_get_by_mnemo( dossier, ofo_entry_get_ledger( entry ));
+				if( !ledger || !OFO_IS_LEDGER( ledger )){
+					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
+					return( -1 );
+				}
+				deffect = ofo_entry_get_deffect( entry );
+				last_close = ofo_ledger_get_last_close( ledger );
+				if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
+					new_status = ENT_STATUS_VALIDATED;
+				}
+			}
+
+			g_signal_emit_by_name(
+					dossier, SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, prev_status, new_status );
+		}
+	}
+	ofo_entry_free_dataset( dataset );
+
+	return( count );
 }
 
 static void
-move_from_exercice_to_past( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin )
+on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
+	static const gchar *thisfn = "ofo_entry_on_entry_status_changed";
+	gchar *query;
 
-}
+	g_debug( "%s: dossier=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
-static void
-move_from_past_to_exercice( const ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin )
-{
+	entry_set_status( entry, new_status );
 
-}
+	query = g_strdup_printf(
+					"UPDATE OFA_T_ENTRIES SET ENT_STATUS=%u WHERE ENT_NUMBER=%ld",
+						new_status,
+						ofo_entry_get_number( entry ));
 
-static void
-move_from_exercice_to_future( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end )
-{
+	if( ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE )){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+	}
 
-}
-
-static void
-move_from_future_to_exercice( const ofoDossier *dossier, const GDate *prev_end, const GDate *new_end )
-{
-
+	g_free( query );
 }
 
 /**
@@ -1407,6 +1519,22 @@ const GTimeVal *
 ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
+}
+
+/**
+ * ofo_entry_get_exe_changed_count:
+ */
+gint
+ofo_entry_get_exe_changed_count( ofoDossier *dossier,
+									const GDate *prev_begin, const GDate *prev_end,
+									const GDate *new_begin, const GDate *new_end )
+{
+	gint count_begin, count_end;
+
+	count_begin = check_for_changed_begin_exe_dates( dossier, prev_begin, new_begin, FALSE );
+	count_end = check_for_changed_end_exe_dates( dossier, prev_end, new_end, FALSE );
+
+	return( count_begin+count_end );
 }
 
 /*
@@ -2417,69 +2545,15 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 gboolean
 ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 {
-	ofaEntryStatus status;
-	gchar *query;
-
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		status = ofo_entry_get_status( entry );
-		g_return_val_if_fail( status == ENT_STATUS_ROUGH, FALSE );
+		g_signal_emit_by_name( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
-		entry_set_status( entry, ENT_STATUS_VALIDATED );
-
-		query = g_strdup_printf(
-						"UPDATE OFA_T_ENTRIES "
-						"	SET ENT_STATUS=%d "
-						"	WHERE ENT_NUMBER=%ld",
-								ofo_entry_get_status( entry ),
-								ofo_entry_get_number( entry ));
-
-		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
-		g_free( query );
-
-		/* use the dossier signaling system to update account and ledger */
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
-	}
-
-	return( FALSE );
-}
-
-/**
- * ofo_entry_future_to_rough:
- *
- * entry must be in 'future' status
- */
-gboolean
-ofo_entry_future_to_rough( ofoEntry *entry, const ofoDossier *dossier )
-{
-	ofaEntryStatus status;
-	gchar *query;
-
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
-
-		status = ofo_entry_get_status( entry );
-		g_return_val_if_fail( status == ENT_STATUS_FUTURE, FALSE );
-
-		entry_set_status( entry, ENT_STATUS_ROUGH );
-
-		query = g_strdup_printf(
-						"UPDATE OFA_T_ENTRIES "
-						"	SET ENT_STATUS=%d "
-						"	WHERE ENT_NUMBER=%ld",
-								ofo_entry_get_status( entry ),
-								ofo_entry_get_number( entry ));
-
-		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
-		g_free( query );
-
-		/* use the dossier signaling system to update account and ledger */
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, entry );
+		return( TRUE );
 	}
 
 	return( FALSE );
@@ -2494,20 +2568,15 @@ ofo_entry_future_to_rough( ofoEntry *entry, const ofoDossier *dossier )
 gboolean
 ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDate *deffect )
 {
-	gchar *where, *query, *str;
+	gchar *query, *sdate;
 	ofoEntry *entry;
 	GList *dataset, *it;
 
-	str = my_date_to_str( deffect, MY_DATE_SQL );
-	where = g_strdup_printf(
-					"	WHERE ENT_LEDGER='%s' AND ENT_STATUS=%d AND ENT_DEFFECT<='%s'",
-							mnemo, ENT_STATUS_ROUGH, str );
-	g_free( str );
-
+	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
-					"OFA_T_ENTRIES %s", where );
-
-	g_free( where );
+					"OFA_T_ENTRIES WHERE ENT_LEDGER='%s' AND ENT_STATUS=%d AND ENT_DEFFECT<='%s'",
+					mnemo, ENT_STATUS_ROUGH, sdate );
+	g_free( sdate );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
@@ -2516,25 +2585,15 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 					OFO_TYPE_ENTRY );
 
 	g_free( query );
-	g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_PRE_VALID_ENTRY, mnemo, g_list_length( dataset ));
+
+	g_signal_emit_by_name( dossier,
+			SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 
-		/* update data for each entry
-		 * this let each account updates itself */
-		query = g_strdup_printf(
-						"UPDATE OFA_T_ENTRIES "
-						"	SET ENT_STATUS=%d "
-						"	WHERE ENT_NUMBER=%ld",
-								ENT_STATUS_VALIDATED,
-								ofo_entry_get_number( entry ));
-
-		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
-		g_free( query );
-
-		/* use the dossier signaling system to update the account */
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
+		g_signal_emit_by_name( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 	}
 
 	ofo_entry_free_dataset( dataset );

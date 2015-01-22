@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "core/my-dialog.h"
 #include "core/my-window-prot.h"
 
@@ -357,4 +359,36 @@ static gboolean
 v_quit_on_code( myDialog *dialog, gint code )
 {
 	return( FALSE );
+}
+
+/**
+ * my_dialog_set_readonly_buttons:
+ *
+ * Replace the OK/Cancal buttons with a Close one.
+ */
+void
+my_dialog_set_readonly_buttons( myDialog *dialog )
+{
+	GtkWindow *toplevel;
+	GtkWidget *button;
+
+	g_return_if_fail( dialog && MY_IS_DIALOG( dialog ));
+
+	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
+
+		toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
+		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( toplevel ), GTK_RESPONSE_OK );
+		if( button ){
+			gtk_widget_destroy( button );
+		}
+
+		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( toplevel ), GTK_RESPONSE_CANCEL );
+		if( button ){
+			gtk_widget_destroy( button );
+		}
+
+		gtk_dialog_add_button( GTK_DIALOG( toplevel ), _( "Close" ), GTK_RESPONSE_OK );
+	}
 }

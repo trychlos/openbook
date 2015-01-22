@@ -105,6 +105,7 @@ gboolean        ofo_account_has_children         ( const ofoAccount *account, of
 GList          *ofo_account_get_children         ( const ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_is_child_of          ( const ofoAccount *account, const ofoAccount *candidate );
 
+gboolean        ofo_account_has_open_balance     ( const ofoDossier *dossier );
 gboolean        ofo_account_archive_open_balance ( ofoAccount *account, ofoDossier *dossier );
 
 void            ofo_account_set_number           ( ofoAccount *account, const gchar *number );

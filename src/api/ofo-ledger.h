@@ -44,47 +44,48 @@ G_BEGIN_DECLS
 /* a fake ledger under which we reclass the entry models which are
  * attached to an unfound ledger
  */
-#define UNKNOWN_LEDGER_MNEMO               "__xx__"
-#define UNKNOWN_LEDGER_LABEL              _( "Unclassed" )
+#define UNKNOWN_LEDGER_MNEMO                 "__xx__"
+#define UNKNOWN_LEDGER_LABEL                 _( "Unclassed" )
 
-void            ofo_ledger_connect_handlers( const ofoDossier *dossier );
+void            ofo_ledger_connect_handlers  ( const ofoDossier *dossier );
 
-GList          *ofo_ledger_get_dataset     ( ofoDossier *dossier );
-ofoLedger      *ofo_ledger_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_ledger_use_currency    ( ofoDossier *dossier, const gchar *currency );
+GList          *ofo_ledger_get_dataset       ( ofoDossier *dossier );
+ofoLedger      *ofo_ledger_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
+gboolean        ofo_ledger_use_currency      ( ofoDossier *dossier, const gchar *currency );
 
-ofoLedger      *ofo_ledger_new             ( void );
+ofoLedger      *ofo_ledger_new               ( void );
 
-const gchar    *ofo_ledger_get_mnemo       ( const ofoLedger *ledger );
-const gchar    *ofo_ledger_get_label       ( const ofoLedger *ledger );
-const gchar    *ofo_ledger_get_notes       ( const ofoLedger *ledger );
-const gchar    *ofo_ledger_get_upd_user    ( const ofoLedger *ledger );
-const GTimeVal *ofo_ledger_get_upd_stamp   ( const ofoLedger *ledger );
-const GDate    *ofo_ledger_get_last_close  ( const ofoLedger *ledger );
-GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger, ofoDossier *dossier );
+const gchar    *ofo_ledger_get_mnemo         ( const ofoLedger *ledger );
+const gchar    *ofo_ledger_get_label         ( const ofoLedger *ledger );
+const gchar    *ofo_ledger_get_notes         ( const ofoLedger *ledger );
+const gchar    *ofo_ledger_get_upd_user      ( const ofoLedger *ledger );
+const GTimeVal *ofo_ledger_get_upd_stamp     ( const ofoLedger *ledger );
+const GDate    *ofo_ledger_get_last_close    ( const ofoLedger *ledger );
+GDate          *ofo_ledger_get_last_entry    ( const ofoLedger *ledger, ofoDossier *dossier );
 
-GList          *ofo_ledger_get_currencies  ( const ofoLedger *ledger );
+GList          *ofo_ledger_get_currencies    ( const ofoLedger *ledger );
 
-ofxAmount       ofo_ledger_get_val_debit   ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_val_credit  ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_rough_debit ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_futur_debit ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_debit     ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_credit    ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_debit   ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_credit  ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_debit   ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_credit  ( const ofoLedger *ledger, const gchar *currency );
 
-gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger, ofoDossier *dossier );
-gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, ofoDossier *dossier );
-gboolean        ofo_ledger_is_valid        ( const gchar *mnemo, const gchar *label );
+GDate          *ofo_ledger_get_max_last_close( GDate *date, const ofoDossier *dossier );
+gboolean        ofo_ledger_has_entries       ( const ofoLedger *ledger, ofoDossier *dossier );
+gboolean        ofo_ledger_is_deletable      ( const ofoLedger *ledger, ofoDossier *dossier );
+gboolean        ofo_ledger_is_valid          ( const gchar *mnemo, const gchar *label );
 
-void            ofo_ledger_set_mnemo       ( ofoLedger *ledger, const gchar *number );
-void            ofo_ledger_set_label       ( ofoLedger *ledger, const gchar *label );
-void            ofo_ledger_set_notes       ( ofoLedger *ledger, const gchar *notes );
+void            ofo_ledger_set_mnemo         ( ofoLedger *ledger, const gchar *number );
+void            ofo_ledger_set_label         ( ofoLedger *ledger, const gchar *label );
+void            ofo_ledger_set_notes         ( ofoLedger *ledger, const gchar *notes );
 
-gboolean        ofo_ledger_close           ( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing );
+gboolean        ofo_ledger_close             ( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing );
 
-gboolean        ofo_ledger_insert          ( ofoLedger *ledger, ofoDossier *dossier );
-gboolean        ofo_ledger_update          ( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_ledger_delete          ( ofoLedger *ledger, ofoDossier *dossier );
+gboolean        ofo_ledger_insert            ( ofoLedger *ledger, ofoDossier *dossier );
+gboolean        ofo_ledger_update            ( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_ledger_delete            ( ofoLedger *ledger, ofoDossier *dossier );
 
 G_END_DECLS
 
