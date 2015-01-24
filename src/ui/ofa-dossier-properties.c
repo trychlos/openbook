@@ -47,6 +47,7 @@
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-ledger-combo.h"
 
 /* private instance data
  */
@@ -67,6 +68,7 @@ struct _ofaDossierPropertiesPrivate {
 	gchar              *label;
 	gchar              *siren;
 	gchar              *currency;
+	gchar              *import_ledger;
 	GDate               begin;
 	gboolean            begin_empty;
 	GDate               end;
@@ -107,6 +109,7 @@ static void      init_exe_notes_page( ofaDossierProperties *self, GtkContainer *
 static void      init_counters_page( ofaDossierProperties *self, GtkContainer *container );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
+static void      on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
@@ -137,8 +140,10 @@ dossier_properties_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
+
 	g_free( priv->label );
 	g_free( priv->currency );
+	g_free( priv->import_ledger );
 	g_free( priv->exe_notes );
 	g_free( priv->siren );
 
@@ -279,7 +284,8 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *entry, *label, *parent;
 	gchar *str;
-	ofaCurrencyCombo *combo;
+	ofaCurrencyCombo *c_combo;
+	ofaLedgerCombo *l_combo;
 	const gchar *cstr;
 	gint ivalue;
 
@@ -305,13 +311,27 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	combo = ofa_currency_combo_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_main_window( combo, MY_WINDOW( self )->prot->main_window );
-	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
-	ofa_currency_combo_set_selected( combo, ofo_dossier_get_default_currency( priv->dossier ));
-	gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( combo ), GTK_SENSITIVITY_OFF );
+	c_combo = ofa_currency_combo_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
+	ofa_currency_combo_set_columns( c_combo, CURRENCY_DISP_CODE );
+	ofa_currency_combo_set_main_window( c_combo, MY_WINDOW( self )->prot->main_window );
+	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
+	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
+	if( !priv->is_current ){
+		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( c_combo ), GTK_SENSITIVITY_OFF );
+	}
+
+	parent = my_utils_container_get_child_by_name( container, "p1-ledger-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	l_combo = ofa_ledger_combo_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( l_combo ));
+	ofa_ledger_combo_set_columns( l_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_main_window( l_combo, MY_WINDOW( self )->prot->main_window );
+	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
+	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
+	if( !priv->is_current ){
+		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( l_combo ), GTK_SENSITIVITY_OFF );
+	}
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -436,7 +456,7 @@ on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
 }
 
 /*
- * ofaCurrencyComboCb
+ * ofaCurrencyCombo signal cb
  */
 static void
 on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self )
@@ -447,6 +467,22 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierPrope
 
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
+
+	check_for_enable_dlg( self );
+}
+
+/*
+ * ofaLedgerCombo signal cb
+ */
+static void
+on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->import_ledger );
+	priv->import_ledger = g_strdup( mnemo );
 
 	check_for_enable_dlg( self );
 }
@@ -584,6 +620,10 @@ is_dialog_valid( ofaDossierProperties *self )
 		}
 	}
 
+	if( !my_strlen( priv->import_ledger )){
+		set_msgerr( self, _( "Default import ledger empty" ), MSG_WARNING );
+	}
+
 	return( TRUE );
 }
 
@@ -624,6 +664,7 @@ do_update( ofaDossierProperties *self )
 	ofo_dossier_set_label( priv->dossier, priv->label );
 	ofo_dossier_set_siren( priv->dossier, gtk_entry_get_text( GTK_ENTRY( priv->siren_entry )));
 	ofo_dossier_set_default_currency( priv->dossier, priv->currency );
+	ofo_dossier_set_import_ledger( priv->dossier, priv->import_ledger );
 	ofo_dossier_set_exe_length( priv->dossier, priv->duree );
 	ofo_dossier_set_exe_begin( priv->dossier, &priv->begin );
 	ofo_dossier_set_exe_end( priv->dossier, &priv->end );

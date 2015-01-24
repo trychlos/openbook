@@ -71,6 +71,8 @@ gboolean         ofo_dossier_use_account               ( const ofoDossier *dossi
 																const gchar *account );
 gboolean         ofo_dossier_use_currency              ( const ofoDossier *dossier,
 																const gchar *currency );
+gboolean         ofo_dossier_use_ledger                ( const ofoDossier *dossier,
+																const gchar *ledger );
 gboolean         ofo_dossier_use_ope_template          ( const ofoDossier *dossier,
 																const gchar *ope_template );
 
@@ -80,6 +82,7 @@ const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossi
 gint             ofo_dossier_get_exe_length            ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_forward_ope           ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_import_ledger         ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
@@ -122,6 +125,7 @@ void             ofo_dossier_set_exe_end               ( ofoDossier *dossier, co
 void             ofo_dossier_set_exe_length            ( ofoDossier *dossier, gint nb_months );
 void             ofo_dossier_set_exe_notes             ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_forward_ope           ( ofoDossier *dossier, const gchar *ope );
+void             ofo_dossier_set_import_ledger         ( ofoDossier *dossier, const gchar *mnemo );
 void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );

@@ -67,6 +67,7 @@ struct _ofoDossierPrivate {
 	gint        exe_length;				/* exercice length (in month) */
 	gchar      *exe_notes;
 	gchar      *forward_ope;
+	gchar      *import_ledger;
 	gchar      *label;					/* raison sociale */
 	gchar      *notes;					/* notes */
 	gchar      *siren;
@@ -225,6 +226,9 @@ dossier_finalize( GObject *instance )
 	g_free( priv->userid );
 
 	g_free( priv->label );
+	g_free( priv->forward_ope );
+	g_free( priv->sld_ope );
+	g_free( priv->import_ledger );
 	g_free( priv->notes );
 	g_free( priv->siren );
 	g_free( priv->upd_user );
@@ -940,6 +944,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	DOS_EXE_LENGTH       INTEGER                   COMMENT 'Exercice length in months',"
 			"	DOS_EXE_NOTES        VARCHAR(4096)             COMMENT 'Exercice notes',"
 			"	DOS_FORW_OPE         VARCHAR(6)                COMMENT 'Operation mnemo for carried forward entries',"
+			"	DOS_IMPORT_LEDGER    VARCHAR(6)                COMMENT 'Default import ledger',"
 			"	DOS_LABEL            VARCHAR(80)               COMMENT 'Raison sociale',"
 			"	DOS_NOTES            VARCHAR(4096)             COMMENT 'Dossier notes',"
 			"	DOS_SIREN            VARCHAR(9)                COMMENT 'Siren identifier',"
@@ -958,9 +963,9 @@ dbmodel_to_v1( const ofoDossier *dossier )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
-			"	 DOS_STATUS) "
-			"	VALUES (1,'%s',%u,'EUR','%s')",
-			priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED );
+			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
+			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
+			priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLSLD" );
 	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
@@ -1257,6 +1262,32 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 }
 
 /**
+ * ofo_dossier_use_ledger:
+ *
+ * Returns: %TRUE if the dossier makes use of this ledger, thus
+ * preventing its deletion.
+ */
+gboolean
+ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
+{
+	const gchar *import_ledger;
+	gint cmp;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		import_ledger = ofo_dossier_get_import_ledger( dossier );
+		if( my_strlen( import_ledger )){
+			cmp = g_utf8_collate( ledger, import_ledger );
+			return( cmp == 0 );
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_dossier_use_ope_template:
  *
  * Returns: %TRUE if the dossier makes use of this operation template,
@@ -1419,6 +1450,25 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->forward_ope );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_import_ledger:
+ *
+ * Returns: the default import ledger of the dossier.
+ */
+const gchar *
+ofo_dossier_get_import_ledger( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->import_ledger );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -2140,6 +2190,23 @@ ofo_dossier_set_forward_ope( ofoDossier *dossier, const gchar *ope )
 }
 
 /**
+ * ofo_dossier_set_import_ledger:
+ *
+ * Not mandatory until importing entries.
+ */
+void
+ofo_dossier_set_import_ledger( ofoDossier *dossier, const gchar *ledger )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->import_ledger );
+		dossier->priv->import_ledger = g_strdup( ledger );
+	}
+}
+
+/**
  * ofo_dossier_set_label:
  */
 void
@@ -2425,7 +2492,7 @@ dossier_read_properties( ofoDossier *dossier )
 	query = g_strdup_printf(
 			"SELECT DOS_DEF_CURRENCY,"
 			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
-			"	DOS_FORW_OPE,"
+			"	DOS_FORW_OPE,DOS_IMPORT_LEDGER,"
 			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
 			"	DOS_SLD_OPE,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP,"
@@ -2437,87 +2504,92 @@ dossier_read_properties( ofoDossier *dossier )
 	if( ofa_dbms_query_ex( dossier->priv->dbms, query, &result, TRUE )){
 		icol = ( GSList * ) result->data;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_default_currency( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_exe_begin( dossier, my_date_set_from_sql( &date, cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_exe_end( dossier, my_date_set_from_sql( &date, cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_exe_length( dossier, atoi( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_exe_notes( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_forward_ope( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
+			ofo_dossier_set_import_ledger( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( my_strlen( cstr )){
 			ofo_dossier_set_label( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_notes( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_siren( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_sld_ope( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_upd_user( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_upd_stamp( dossier, my_utils_stamp_set_from_sql( &timeval, cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_last_bat( dossier, atol( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_last_batline( dossier, atol( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_last_entry( dossier, atol( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			dossier_set_last_settlement( dossier, atol( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
+		if( my_strlen( cstr )){
 			ofo_dossier_set_status( dossier, cstr );
 		}
 
@@ -2594,7 +2666,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	cstr = ofo_dossier_get_default_currency( dossier );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_DEF_CURRENCY='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_DEF_CURRENCY=NULL," );
@@ -2630,10 +2702,17 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	g_free( notes );
 
 	cstr = ofo_dossier_get_forward_ope( dossier );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_FORW_OPE='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_FORW_OPE=NULL," );
+	}
+
+	cstr = ofo_dossier_get_import_ledger( dossier );
+	if( my_strlen( cstr )){
+		g_string_append_printf( query, "DOS_IMPORT_LEDGER='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_IMPORT_LEDGER=NULL," );
 	}
 
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
@@ -2653,14 +2732,14 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	g_free( notes );
 
 	cstr = ofo_dossier_get_siren( dossier );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_SIREN='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_SIREN=NULL," );
 	}
 
 	cstr = ofo_dossier_get_sld_ope( dossier );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_SLD_OPE=NULL," );

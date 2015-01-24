@@ -78,9 +78,6 @@
 
  153 2014- 6- 3 import ofx/ofc files
 
- 158 2014- 6- 4 do a coherency check (sgbd constraints, account and
-                journal balances, etc.)
-
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present
 
@@ -89,18 +86,11 @@
  163 2014- 6- 5 move the table definition from ofo-dossier to the
                 corresponding classes
 
- 179 2014- 6- 9 ofaModelsSet: manage ledger deletion (reclass in 
-                'Unclassed')
-
  182 2014- 6-10 configure at the dossier level the default import journal 
                 when we are importing entries
                 for now, this is harcoded with 'IMPORT' mnemo
                 Note that the journal should be configurable: it is ok
                 to import e.g. amortissements entries
-
- 183 2014- 6-10 consistency check: check that we do not have entries on 
-                unexistant account (this is the case on EBP export which
-                 has kept entries on closed accounts
 
  186 2014- 6-10 check that the IMPORT journal exists before trying to
                 import the entries
@@ -928,6 +918,10 @@
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
 
+ 158 2014- 6- 4 do a coherency check (sgbd constraints, account and
+                journal balances, etc.)
+     2015- 1-24 done - svn #4514
+
  159 2014- 6- 4 open a dossier from the command-line:
                 ./_install/bin/openbook "Test OFAT v0.3" ofat ofat
      2014- 6- 7 done - svn #3662
@@ -993,12 +987,22 @@
  178 2014- 6- 9 ofaModelsSet: manage update journal (tab labels)
      2014- 6-12 same item as #52 
 
+ 179 2014- 6- 9 ofaModelsSet: manage ledger deletion (reclass in 
+                'Unclassed')
+     2015- 1-24 cancelled as ledger deletion is forbidden if referenced
+                in an operation template
+
  180 2014- 6- 9 ofoEntry: manage change journal mnemo
      2014- 6-12 done - svn #3706
 
  181 2014- 6- 9 ofoModel: manage change journal mnemo
      2014- 6-12 ofoModel: manage change taux mnemo
      2014- 6-12 done - svn #3706
+
+ 183 2014- 6-10 consistency check: check that we do not have entries on 
+                unexistant account (this is the case on EBP export which
+                 has kept entries on closed accounts
+     2015- 1-24 done - svn #4514
 
  184 2014- 6-10 use the count of decimal digits of the currency when 
                 displaying all amounts

@@ -2878,11 +2878,18 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		currency = g_strdup( cstr );
 
-		/* ledger - default to IMPORT */
+		/* ledger - default is from the dossier */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			cstr = "IMPORT";
+		if( !my_strlen( cstr )){
+			cstr = ofo_dossier_get_import_ledger( dossier );
+			if( !my_strlen( cstr )){
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR,
+						_( "dossier is missing a default import ledger" ));
+				errors += 1;
+				continue;
+			}
 		}
 		ledger = ofo_ledger_get_by_mnemo( dossier, cstr );
 		if( !ledger ){
