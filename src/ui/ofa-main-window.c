@@ -57,7 +57,6 @@
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledgers-page.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-misc-arcaccopebal.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-pdf-balance.h"
@@ -129,7 +128,6 @@ static void on_ref_rates           ( GSimpleAction *action, GVariant *parameter,
 static void on_ref_classes         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_batfiles        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_balances      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "properties",    on_properties,           NULL, NULL, NULL },
@@ -155,7 +153,6 @@ static const GActionEntry st_dos_entries[] = {
 		{ "classes",       on_ref_classes,          NULL, NULL, NULL },
 		{ "batfiles",      on_ref_batfiles,         NULL, NULL, NULL },
 		{ "chkbal",        on_check_balances,       NULL, NULL, NULL },
-		{ "arcaccopebal",  on_misc_arc_acc_ope_bal, NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -1458,19 +1455,6 @@ on_check_balances( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_check_balances_run( OFA_MAIN_WINDOW( user_data ));
-}
-
-static void
-on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer user_data )
-{
-	static const gchar *thisfn = "ofa_main_window_on_misc_arc_acc_ope_bal";
-
-	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
-			thisfn, action, parameter, ( void * ) user_data );
-
-	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
-
-	ofa_misc_arcaccopebal_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 /**
