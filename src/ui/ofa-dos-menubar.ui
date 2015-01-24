@@ -158,6 +158,12 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">Check _balances...</attribute>
+          <attribute name="action">win.chkbal</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
           <attribute name="label" translatable="yes">_Archive accounts to opening balances...</attribute>
           <attribute name="action">win.arcaccopebal</attribute>
         </item>

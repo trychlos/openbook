@@ -54,6 +54,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-balances-grid.h"
+#include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-exercice-close-assistant.h"
 #include "ui/ofa-main-window.h"
@@ -63,49 +64,51 @@
  */
 struct _ofaExerciceCloseAssistantPrivate {
 
-	GtkWidget          *current_page_widget;
+	GtkWidget           *current_page_widget;
 
 	/* dossier
 	 */
-	const gchar        *dname;
-	gchar              *provider;
-	ofaIDbms           *dbms;
-	const gchar        *cur_account;
-	const gchar        *cur_password;
+	const gchar         *dname;
+	gchar               *provider;
+	ofaIDbms            *dbms;
+	const gchar         *cur_account;
+	const gchar         *cur_password;
 
 	/* p2 - closing parms
 	 */
-	GtkWidget          *p2_begin_cur;
-	GtkWidget          *p2_end_cur;
-	GtkWidget          *p2_begin_next;
-	GtkWidget          *p2_end_next;
-	ofaClosingParmsBin *p2_closing_parms;
+	GtkWidget           *p2_begin_cur;
+	GtkWidget           *p2_end_cur;
+	GtkWidget           *p2_begin_next;
+	GtkWidget           *p2_end_next;
+	ofaClosingParmsBin  *p2_closing_parms;
 
 	/* p3 - get DBMS root credentials
 	 */
-	ofaDBMSRootBin     *p3_dbms_credentials;
-	gchar              *p3_account;
-	gchar              *p3_password;
+	ofaDBMSRootBin      *p3_dbms_credentials;
+	gchar               *p3_account;
+	gchar               *p3_password;
 
 	/* p4 - checking that entries, accounts and ledgers are balanced
 	 */
-	gboolean            p4_entries_ok;
-	GList              *p4_entries_list;		/* entry balances per currency */
-	gboolean            p4_ledgers_ok;
-	GList              *p4_ledgers_list;		/* ledger balances per currency */
-	gboolean            p4_accounts_ok;
-	GList              *p4_accounts_list;		/* account balances per currency */
-	gboolean            p4_result;
-	gboolean            p4_done;
+	ofaCheckBalancesBin *p4_checks_bin;
+	gboolean             p4_done;
+
+	gboolean             p4_entries_ok;
+	GList               *p4_entries_list;		/* entry balances per currency */
+	gboolean             p4_ledgers_ok;
+	GList               *p4_ledgers_list;		/* ledger balances per currency */
+	gboolean             p4_accounts_ok;
+	GList               *p4_accounts_list;		/* account balances per currency */
+	gboolean             p4_result;
 
 	/* p5 - confirmation page
 	 */
 
 	/* p6 - close the exercice
 	 */
-	GList              *p6_forwards;			/* forward operations */
-	GList              *p6_cleanup;
-	GList              *p6_unreconciliated;
+	GList               *p6_forwards;			/* forward operations */
+	GList               *p6_cleanup;
+	GList               *p6_unreconciliated;
 };
 
 /* the pages of this assistant
@@ -141,13 +144,7 @@ static void             p3_check_for_complete( ofaExerciceCloseAssistant *self )
 static void             p3_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static gboolean         p4_check_entries_balance( ofaExerciceCloseAssistant *self );
-static gboolean         p4_check_ledgers_balance( ofaExerciceCloseAssistant *self );
-static gboolean         p4_check_accounts_balance( ofaExerciceCloseAssistant *self );
-static myProgressBar   *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
-static ofaBalancesGrid *p4_get_new_balances( ofaExerciceCloseAssistant *self, const gchar *w_name );
-static void             p4_check_status( ofaExerciceCloseAssistant *self, gboolean ok, const gchar *w_name );
-static gboolean         p4_info_checks( ofaExerciceCloseAssistant *self );
+static void             p4_on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaExerciceCloseAssistant *self );
 static void             p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static gboolean         p6_validate_entries( ofaExerciceCloseAssistant *self );
 static gboolean         p6_solde_accounts( ofaExerciceCloseAssistant *self );
@@ -160,6 +157,7 @@ static gboolean         p6_cleanup( ofaExerciceCloseAssistant *self );
 static gboolean         p6_forward( ofaExerciceCloseAssistant *self );
 static gboolean         p6_open( ofaExerciceCloseAssistant *self );
 static gboolean         p6_future( ofaExerciceCloseAssistant *self );
+static myProgressBar   *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
 
 static const ofsAssistant st_pages_cb [] = {
 		{ PAGE_INTRO,
@@ -584,12 +582,17 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv = self->priv;
 
+	priv->p4_checks_bin = ofa_check_balances_bin_new();
+	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
+	gtk_widget_show_all( page_widget );
+
+	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );
+
 	priv->p4_done = FALSE;
-	priv->current_page_widget = page_widget;
 }
 
 /*
- * begins the checks before exercice closing
+ * run the checks before exercice closing
  */
 static void
 p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
@@ -603,218 +606,31 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 	if( !priv->p4_done ){
 
 		priv->current_page_widget = page_widget;
-		priv->p4_entries_ok = FALSE;
-		priv->p4_ledgers_ok = FALSE;
-		priv->p4_accounts_ok = FALSE;
+		my_assistant_set_page_type( MY_ASSISTANT( self ), page_widget, GTK_ASSISTANT_PAGE_PROGRESS );
 
-		g_idle_add(( GSourceFunc ) p4_check_entries_balance, self );
+		ofa_check_balances_bin_set_dossier( priv->p4_checks_bin, MY_WINDOW( self )->prot->dossier );
 	}
 }
 
-/*
- * 1/ check that entries are balanced per currency
- */
-static gboolean
-p4_check_entries_balance( ofaExerciceCloseAssistant *self )
-{
-	ofaExerciceCloseAssistantPrivate *priv;
-	myProgressBar *bar;
-	ofaBalancesGrid *grid;
-
-	priv = self->priv;
-
-	bar = get_new_bar( self, "p4-entry-parent" );
-	grid = p4_get_new_balances( self, "p4-entry-bals" );
-	gtk_widget_show_all( priv->current_page_widget );
-
-	priv->p4_entries_ok = ofa_misc_chkbalent_run(
-			MY_WINDOW( self )->prot->dossier, &priv->p4_entries_list, bar, grid );
-
-	p4_check_status( self, priv->p4_entries_ok, "p4-entry-ok" );
-
-	/* next: check for ledgers balances */
-	g_idle_add(( GSourceFunc ) p4_check_ledgers_balance, self );
-
-	/* do not continue and remove from idle callbacks list */
-	return( G_SOURCE_REMOVE );
-}
-
-/*
- * 2/ check that ledgers are balanced per currency
- */
-static gboolean
-p4_check_ledgers_balance( ofaExerciceCloseAssistant *self )
-{
-	ofaExerciceCloseAssistantPrivate *priv;
-	myProgressBar *bar;
-	ofaBalancesGrid *grid;
-
-	priv = self->priv;
-
-	bar = get_new_bar( self, "p4-ledger-parent" );
-	grid = p4_get_new_balances( self, "p4-ledger-bals" );
-	gtk_widget_show_all( priv->current_page_widget );
-
-	priv->p4_ledgers_ok = ofa_misc_chkballed_run(
-			MY_WINDOW( self )->prot->dossier, &priv->p4_ledgers_list, bar, grid );
-
-	p4_check_status( self, priv->p4_ledgers_ok, "p4-ledger-ok" );
-
-	/* next: check for accounts balances */
-	g_idle_add(( GSourceFunc ) p4_check_accounts_balance, self );
-
-	/* do not continue and remove from idle callbacks list */
-	return( G_SOURCE_REMOVE );
-}
-
-/*
- * 3/ check that accounts are balanced per currency
- */
-static gboolean
-p4_check_accounts_balance( ofaExerciceCloseAssistant *self )
-{
-	ofaExerciceCloseAssistantPrivate *priv;
-	myProgressBar *bar;
-	ofaBalancesGrid *grid;
-	gboolean complete;
-
-	priv = self->priv;
-
-	bar = get_new_bar( self, "p4-account-parent" );
-	grid = p4_get_new_balances( self, "p4-account-bals" );
-	gtk_widget_show_all( priv->current_page_widget );
-
-	priv->p4_accounts_ok = ofa_misc_chkbalacc_run(
-			MY_WINDOW( self )->prot->dossier, &priv->p4_accounts_list, bar, grid );
-
-	p4_check_status( self, priv->p4_accounts_ok, "p4-account-ok" );
-
-	/* next: if all checks complete and ok ?
-	 * set priv->p4_done */
-	complete = p4_info_checks( self );
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, complete );
-
-	/* do not continue and remove from idle callbacks list */
-	return( G_SOURCE_REMOVE );
-}
-
-static myProgressBar *
-get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name )
-{
-	GtkAssistant *toplevel;
-	GtkWidget *parent;
-	myProgressBar *bar;
-
-	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
-	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
-
-	return( bar );
-}
-
-static ofaBalancesGrid *
-p4_get_new_balances( ofaExerciceCloseAssistant *self, const gchar *w_name )
-{
-	GtkWidget *parent;
-	GtkAssistant *toplevel;
-	ofaBalancesGrid *grid;
-
-	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
-	grid = ofa_balances_grid_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
-
-	return( grid );
-}
-
-/*
- * display OK/NOT OK for a single balance check
- */
 static void
-p4_check_status( ofaExerciceCloseAssistant *self, gboolean ok, const gchar *w_name )
-{
-	GtkAssistant *toplevel;
-	GtkWidget *label;
-	GdkRGBA color;
-
-	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-
-	gdk_rgba_parse( &color, ok ? "#000000" : "#ff0000" );
-
-	if( ok ){
-		gtk_label_set_text( GTK_LABEL( label ), _( "OK" ));
-
-	} else {
-		gtk_label_set_text( GTK_LABEL( label ), _( "NOT OK" ));
-	}
-
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-}
-
-/*
- * after the end of individual checks (entries, ledgers, accounts)
- * check that the balances are the sames
- */
-static gboolean
-p4_info_checks( ofaExerciceCloseAssistant *self )
+p4_on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaExerciceCloseAssistant *self )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
-	GtkWidget *dialog, *label;
 
 	priv = self->priv;
 
-	priv->p4_result = priv->p4_entries_ok && priv->p4_ledgers_ok && priv->p4_accounts_ok;
 	priv->p4_done = TRUE;
 
-	if( !priv->p4_result ){
-		dialog = gtk_message_dialog_new(
-				my_window_get_toplevel( MY_WINDOW( self )),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_CLOSE,
-				"%s", _( "We have detected losses of balance in your books.\n\n"
-						"In this current state, we are unable to close this exercice\n"
-						"until you fix your balances." ));
-
-		gtk_dialog_run( GTK_DIALOG( dialog ));
-		gtk_widget_destroy( dialog );
-
+	if( ok ){
+		my_assistant_set_page_type(
+				MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_CONTENT );
 	} else {
-		priv->p4_result = ofa_misc_chkbalsame_run(
-				priv->p4_entries_list, priv->p4_ledgers_list, priv->p4_accounts_list );
-
-		label = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( priv->current_page_widget ), "p4-label-end" );
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
-
-		if( priv->p4_result ){
-			gtk_label_set_text( GTK_LABEL( label ),
-					_( "Your books are rightly balanced. Good !" ));
-
-		} else {
-			gtk_label_set_text( GTK_LABEL( label ),
-					_( "\nThough each book is individually balanced, it appears "
-						"that some distorsion has happended among them.\n"
-						"In this current state, we are unable to close this exercice "
-						"until you fix your balances." ));
-		}
+		my_assistant_set_page_type(
+				MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
 	}
 
-	ofa_misc_chkbal_free( priv->p4_entries_list );
-	priv->p4_entries_list = NULL;
-
-	ofa_misc_chkbal_free( priv->p4_ledgers_list );
-	priv->p4_ledgers_list = NULL;
-
-	ofa_misc_chkbal_free( priv->p4_accounts_list );
-	priv->p4_accounts_list = NULL;
-
-	return( priv->p4_result );
+	my_assistant_set_page_complete(
+			MY_ASSISTANT( self ), priv->current_page_widget, priv->p4_done );
 }
 
 static void
@@ -1508,4 +1324,20 @@ p6_future( ofaExerciceCloseAssistant *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
+}
+
+static myProgressBar *
+get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name )
+{
+	GtkAssistant *toplevel;
+	GtkWidget *parent;
+	myProgressBar *bar;
+
+	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
+	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+	bar = my_progress_bar_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
+
+	return( bar );
 }

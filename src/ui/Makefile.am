@@ -95,6 +95,10 @@ openbook_SOURCES = \
 	ofa-bats-page.h										\
 	ofa-buttons-box.c									\
 	ofa-buttons-box.h									\
+	ofa-check-balances.c								\
+	ofa-check-balances.h								\
+	ofa-check-balances-bin.c							\
+	ofa-check-balances-bin.h							\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
 	ofa-classes-page.c									\
@@ -170,8 +174,6 @@ openbook_SOURCES = \
 	ofa-main-window.h									\
 	ofa-misc-arcaccopebal.c								\
 	ofa-misc-arcaccopebal.h								\
-	ofa-misc-chkbal.c									\
-	ofa-misc-chkbal.h									\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-template-select.c							\
@@ -239,6 +241,8 @@ ui_files = \
 	ofa-bat-common.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
+	ofa-check-balances.ui								\
+	ofa-check-balances-bin.ui							\
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\

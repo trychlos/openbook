@@ -134,7 +134,7 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 	 * 						gpointer       user_data );
 	 */
 	st_signals[ UPDATE ] = g_signal_new_class_handler(
-				"update",
+				"ofa-update",
 				OFA_TYPE_BALANCES_GRID,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -175,7 +175,7 @@ setup_grid( ofaBalancesGrid *self )
 	priv->grid = GTK_GRID( grid );
 	gtk_grid_set_column_spacing( priv->grid, 4 );
 
-	g_signal_connect( G_OBJECT( self ), "update", G_CALLBACK( on_update ), NULL );
+	g_signal_connect( G_OBJECT( self ), "ofa-update", G_CALLBACK( on_update ), NULL );
 
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }

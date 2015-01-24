@@ -78,8 +78,6 @@
 
  153 2014- 6- 3 import ofx/ofc files
 
- 156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
-
  158 2014- 6- 4 do a coherency check (sgbd constraints, account and
                 journal balances, etc.)
 
@@ -918,6 +916,9 @@
 
  155 2014- 6- 3 GuidedInput: diff should be red
      2015- 1-22 done
+
+ 156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
+     2015- 1-22 done - svn #4499
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
