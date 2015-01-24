@@ -1,0 +1,5 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER ADD COLUMN DOS_IMPORT_LEDGER    VARCHAR(6)                COMMENT 'Default import ledger';
+
+DESCRIBE OFA_T_DOSSIER;
