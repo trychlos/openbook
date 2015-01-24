@@ -618,13 +618,14 @@ try_for_completion( sEditableDate *data, GtkEntry *entry )
 	const gchar *cstr;
 	GDate date;
 
-	if( !data->valid ){
+	if( data->valid ){
+		st_year = g_date_get_year( &data->date );
+
+	} else {
 		cstr = gtk_entry_get_text( entry );
 		my_date_set_from_str_ex( &date, cstr, data->format->date_format, &st_year );
 		if( my_date_is_valid( &date )){
-			my_date_set_from_date( &data->date, &date );
-			data->valid = TRUE;
-			editable_date_render( GTK_EDITABLE( entry ));
+			my_editable_date_set_date( GTK_EDITABLE( entry ), &date );
 		}
 	}
 }

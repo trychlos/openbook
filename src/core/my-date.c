@@ -276,6 +276,7 @@ my_date_set_from_str( GDate *date, const gchar *fmt_string, myDateFormat format 
 static gboolean
 parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 {
+	static const gchar *thisfn = "my_date_parse_ddmmyyyy_string";
 	gboolean valid;
 	gchar **tokens, **iter;
 	gint dd, mm, yy;
@@ -296,6 +297,7 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 				if( my_strlen( *iter )){
 					yy = atoi( *iter );
 				} else if( year && *year > 0 ){
+					g_debug( "%s: setting yy to %u", thisfn, *year );
 					yy = *year;
 				}
 			}
@@ -307,6 +309,7 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 		g_date_set_dmy( date, dd, mm, yy );
 		valid = TRUE;
 		if( year ){
+			g_debug( "%s: setting year to %u", thisfn, yy );
 			*year = yy;
 		}
 	}
