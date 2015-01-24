@@ -485,8 +485,17 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 static void
 on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self )
 {
+	/* select the operation template if the current selected row is an
+	 * operation template */
 	if( is_left_select_enableable( self )){
 		select_model( self );
+
+	/* else collapse/expand the ledger */
+	} else if( gtk_tree_view_row_expanded( view, path )){
+		gtk_tree_view_collapse_row( view, path );
+
+	} else {
+		gtk_tree_view_expand_row( view, path, TRUE );
 	}
 }
 
@@ -571,6 +580,9 @@ enable_left_select( ofaGuidedEx *self )
 			GTK_WIDGET( self->priv->left_select ), is_left_select_enableable( self ));
 }
 
+/*
+ * return %TRUE if the current selection is an operation template
+ */
 static gboolean
 is_left_select_enableable( ofaGuidedEx *self )
 {

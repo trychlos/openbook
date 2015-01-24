@@ -158,10 +158,6 @@
 
  325 2014-10-12 DossierManage Properties: to be written
 
- 326 2014-10-12 when entering a new operation via an operation template,
-                let the user enter only dd/mm, then automatically
-                computing the year on focus out
-
  329 2014-10-17 updating an entry in ViewEntries should be repercuted
                 to the same entry in Reconciliation
 
@@ -1596,6 +1592,11 @@
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted
+
+ 326 2014-10-12 when entering a new operation via an operation template,
+                let the user enter only dd/mm, then automatically
+                computing the year on focus out
+     2015- 1-24 done - svn #4518
 
  327 2014-10-14 Select account: size and position should be kept 
                 distinctly for each usage
