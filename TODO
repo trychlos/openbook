@@ -319,9 +319,6 @@
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
 
- 602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
-                click
-
  603
 
 -----------------------------------------------------------------------
@@ -2662,6 +2659,10 @@
      2015- 1-19 have a function to display count of involved entries
                 only display the confirmation dialog if count > 0
      2015- 1-22 done - svn #4497 
+
+ 602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
+                click
+     2015- 1-24 done - svn #4519
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

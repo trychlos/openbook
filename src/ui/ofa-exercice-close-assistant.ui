@@ -338,6 +338,18 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       <object class="GtkAlignment" id="alignment5">
         <property name="can_focus">False</property>
         <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">progress</property>
+        <property name="title" translatable="yes">Check the DBMS integrity</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkAlignment" id="alignment6">
+        <property name="can_focus">False</property>
+        <child>
           <object class="GtkGrid" id="grid5">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -370,7 +382,7 @@ The new exercice will be automatically opened after the operation.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkAlignment" id="alignment6">
+      <object class="GtkAlignment" id="alignment7">
         <property name="can_focus">False</property>
         <child>
           <object class="GtkGrid" id="grid6">
@@ -393,7 +405,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-validating">
+              <object class="GtkAlignment" id="p7-validating">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -422,7 +434,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-balancing">
+              <object class="GtkAlignment" id="p7-balancing">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -451,7 +463,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-ledgers">
+              <object class="GtkAlignment" id="p7-ledgers">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -480,7 +492,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="p6-archived">
+              <object class="GtkLabel" id="p7-archived">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
@@ -507,7 +519,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-forward">
+              <object class="GtkAlignment" id="p7-forward">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -536,7 +548,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="p6-cleanup">
+              <object class="GtkLabel" id="p7-cleanup">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
@@ -563,7 +575,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-open">
+              <object class="GtkAlignment" id="p7-open">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -578,7 +590,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="p6-summary">
+              <object class="GtkLabel" id="p7-summary">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="ypad">20</property>
@@ -606,7 +618,7 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-future">
+              <object class="GtkAlignment" id="p7-future">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -627,15 +639,6 @@ The new exercice will be automatically opened after the operation.</property>
         <property name="page_type">progress</property>
         <property name="title" translatable="yes">Closing the exercice</property>
       </packing>
-    </child>
-    <child>
-      <placeholder/>
-    </child>
-    <child>
-      <placeholder/>
-    </child>
-    <child>
-      <placeholder/>
     </child>
     <child internal-child="action_area">
       <object class="GtkBox" id="assistant-action_area1">
