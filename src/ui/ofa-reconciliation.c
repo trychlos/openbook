@@ -206,7 +206,7 @@ reconciliation_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = ( OFA_RECONCILIATION( instance ))->priv;
-		g_list_free_full( priv->batlines, ( GDestroyNotify ) g_object_unref );
+		ofo_bat_line_free_dataset( priv->batlines );
 	}
 
 	/* chain up to the parent class */

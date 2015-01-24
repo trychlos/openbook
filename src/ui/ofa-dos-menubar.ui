@@ -161,6 +161,10 @@
           <attribute name="label" translatable="yes">Check _balances...</attribute>
           <attribute name="action">win.chkbal</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">Check DBMS _integrity...</attribute>
+          <attribute name="action">win.integrity</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>

@@ -45,6 +45,7 @@
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bats-page.h"
 #include "ui/ofa-check-balances.h"
+#include "ui/ofa-check-integrity.h"
 #include "ui/ofa-classes-page.h"
 #include "ui/ofa-currencies-page.h"
 #include "ui/ofa-dossier-login.h"
@@ -128,6 +129,7 @@ static void on_ref_rates           ( GSimpleAction *action, GVariant *parameter,
 static void on_ref_classes         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_batfiles        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_balances      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_check_integrity     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "properties",    on_properties,           NULL, NULL, NULL },
@@ -153,6 +155,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "classes",       on_ref_classes,          NULL, NULL, NULL },
 		{ "batfiles",      on_ref_batfiles,         NULL, NULL, NULL },
 		{ "chkbal",        on_check_balances,       NULL, NULL, NULL },
+		{ "integrity",     on_check_integrity,      NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -1455,6 +1458,19 @@ on_check_balances( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_check_balances_run( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_misc_check_integrity";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_check_integrity_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 /**

@@ -370,7 +370,12 @@
                 the previously selected file when coming back from an
                 other page
 
- 600
+ 600 2015- 1-24 ExerciceClose: check DBMS integrity
+
+ 601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
+                database
+
+ 602
 
 -----------------------------------------------------------------------
  DONE

@@ -58,7 +58,6 @@
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-exercice-close-assistant.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-misc-chkbal.h"
 
 /* private instance data
  */

@@ -99,6 +99,10 @@ openbook_SOURCES = \
 	ofa-check-balances.h								\
 	ofa-check-balances-bin.c							\
 	ofa-check-balances-bin.h							\
+	ofa-check-integrity.c								\
+	ofa-check-integrity.h								\
+	ofa-check-integrity-bin.c							\
+	ofa-check-integrity-bin.h							\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
 	ofa-classes-page.c									\
@@ -172,8 +176,6 @@ openbook_SOURCES = \
 	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
-	ofa-misc-arcaccopebal.c								\
-	ofa-misc-arcaccopebal.h								\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-template-select.c							\
@@ -243,6 +245,8 @@ ui_files = \
 	ofa-bat-select.ui									\
 	ofa-check-balances.ui								\
 	ofa-check-balances-bin.ui							\
+	ofa-check-integrity.ui								\
+	ofa-check-integrity-bin.ui							\
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\

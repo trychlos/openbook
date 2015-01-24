@@ -37,6 +37,7 @@
                           <object class="GtkAlignment" id="p4-entry-parent">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
                             <child>
                               <placeholder/>
                             </child>
@@ -136,6 +137,7 @@
                           <object class="GtkAlignment" id="p4-ledger-parent">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
                             <child>
                               <placeholder/>
                             </child>
@@ -235,6 +237,7 @@
                           <object class="GtkAlignment" id="p4-account-parent">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
                             <child>
                               <placeholder/>
                             </child>
