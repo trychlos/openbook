@@ -66,6 +66,7 @@ struct _ofoBatPrivate {
 G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
 static GList      *bat_load_dataset( ofoDossier *dossier );
+static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
@@ -179,7 +180,7 @@ bat_load_dataset( ofoDossier *dossier )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			bat = ofo_bat_new();
-			ofo_bat_set_id( bat, atol(( gchar * ) icol->data ));
+			bat_set_id( bat, atol(( gchar * ) icol->data ));
 			icol = icol->next;
 			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
 			icol = icol->next;
@@ -548,11 +549,11 @@ ofo_bat_is_deletable( const ofoBat *bat )
 	return( FALSE );
 }
 
-/**
- * ofo_bat_set_id:
+/*
+ * bat_set_id:
  */
-void
-ofo_bat_set_id( ofoBat *bat, ofxCounter id )
+static void
+bat_set_id( ofoBat *bat, ofxCounter id )
 {
 	g_return_if_fail( OFO_IS_BAT( bat ));
 

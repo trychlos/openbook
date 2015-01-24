@@ -86,17 +86,6 @@
  163 2014- 6- 5 move the table definition from ofo-dossier to the
                 corresponding classes
 
- 182 2014- 6-10 configure at the dossier level the default import journal 
-                when we are importing entries
-                for now, this is harcoded with 'IMPORT' mnemo
-                Note that the journal should be configurable: it is ok
-                to import e.g. amortissements entries
-
- 186 2014- 6-10 check that the IMPORT journal exists before trying to
-                import the entries
-     2014- 6-11 Is it really mandatory as the imported entries may do
-                not use this default import journal at all ?
-
  187 2014- 6-10 TauxProperties - Validities page: should be sorted by
                 end date desc (most recent first)
      2014- 6-13 no: this should be left sorted as the user entered the
@@ -137,8 +126,6 @@
 
  259 2014- 6-23 editing rough entries: copy/paste a line
 
- 271 2014- 6-27 ViewEntries: set a default effect date with the ope date
-
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
                 styles
 
@@ -167,11 +154,7 @@
                 (i.e. entering '14' gives '2014')
 
  317 2014-10- 5 view_entries: let the user select an operation template
-
- 319 2014-10- 7 review ofo_entry_get_csv()
-
- 321 2014-10- 8 Ledger properties balance: should have '€' sign like
-                account properties balance
+     2015- 1-25 find a use case/rationale ?
 
  323 2014-10- 9 review the setters as most probably only properties
                 setters are useful, while others may be only internally
@@ -999,6 +982,13 @@
      2014- 6-12 ofoModel: manage change taux mnemo
      2014- 6-12 done - svn #3706
 
+ 182 2014- 6-10 configure at the dossier level the default import journal 
+                when we are importing entries
+                for now, this is harcoded with 'IMPORT' mnemo
+                Note that the journal should be configurable: it is ok
+                to import e.g. amortissements entries
+     2015- 1-24 done - svn #4516
+
  183 2014- 6-10 consistency check: check that we do not have entries on 
                 unexistant account (this is the case on EBP export which
                  has kept entries on closed accounts
@@ -1010,6 +1000,15 @@
 
  185 2014- 6-10 imported entries must be balanced
      2014- 6-10 done - svn #3681
+
+ 186 2014- 6-10 check that the IMPORT journal exists before trying to
+                import the entries
+     2014- 6-11 Is it really mandatory as the imported entries may do
+                not use this default import journal at all ?
+     2015- 1-24 see also #182
+                Importing an entry is just refused if it has no ledger
+                and no default import ledger is set in the dossier
+     2015- 1-24 done - svn #4516
 
  187 2014- 6-10 TauxProperties: the validities begin and end displayed
                 in the treeview do not take into account all validity
@@ -1410,6 +1409,9 @@
                 OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=1,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:11' 	WHERE ECR_NUMBER=328'
      2014- 9- 6 done
 
+ 271 2014- 6-27 ViewEntries: set a default effect date with the ope date
+     2015- 1-24 done
+
  272 2014- 6-27 Have a myDate class or family of functions and take an
                 inventory of use (single case vs. couple case - e.g.
                 dope/deff, dfrom/dto, etc.)
@@ -1573,10 +1575,17 @@
  318 2014-10- 6 print the balance for a periode
      2014-11- 1 done - svn #4022
 
+ 319 2014-10- 7 review ofo_entry_get_csv()
+     2015- 1-24 done
+
  320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
                 the top right part, as the operation templates are 
                 already sorted by ledgers
      2014-10-13 cancelled: permit the ledger be modified by the user
+
+ 321 2014-10- 8 Ledger properties balance: should have '€' sign like
+                account properties balance
+     2015- 1-24 done
 
  322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
      2014-10-30 done - svn #4016

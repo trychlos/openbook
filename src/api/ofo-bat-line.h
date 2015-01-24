@@ -85,7 +85,6 @@ ofxCounter      ofo_bat_line_get_entry       ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_upd_user    ( const ofoBatLine *batline );
 const GTimeVal *ofo_bat_line_get_upd_stamp   ( const ofoBatLine *batline );
 
-void            ofo_bat_line_set_line_id     ( ofoBatLine *batline, ofxCounter id );
 void            ofo_bat_line_set_deffect     ( ofoBatLine *batline, const GDate *date );
 void            ofo_bat_line_set_dope        ( ofoBatLine *batline, const GDate *date );
 void            ofo_bat_line_set_ref         ( ofoBatLine *batline, const gchar *ref );

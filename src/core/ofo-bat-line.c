@@ -62,6 +62,7 @@ struct _ofoBatLinePrivate {
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
 static GList      *bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms );
+static void        bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user );
 static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
@@ -193,7 +194,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			line = ofo_bat_line_new( bat_id );
-			ofo_bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
+			bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
 			icol = icol->next;
 			my_date_set_from_sql( &line->priv->deffect, ( const gchar * ) icol->data );
 			icol = icol->next;
@@ -422,11 +423,11 @@ ofo_bat_line_get_upd_stamp( const ofoBatLine *bat )
 	return( NULL );
 }
 
-/**
- * ofo_bat_line_set_line_id:
+/*
+ * bat_line_set_line_id:
  */
-void
-ofo_bat_line_set_line_id( ofoBatLine *bat, ofxCounter id )
+static void
+bat_line_set_line_id( ofoBatLine *bat, ofxCounter id )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 

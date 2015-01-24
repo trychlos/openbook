@@ -212,6 +212,7 @@ static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gch
 static gint         entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, ofoDossier *dossier );
 static gboolean     entry_get_import_settled( const ofoEntry *entry );
+static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
@@ -737,7 +738,7 @@ ofo_entry_new( void )
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 	OFO_BASE( entry )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
-	ofo_entry_set_number( entry, OFO_BASE_UNSET_ID );
+	entry_set_number( entry, OFO_BASE_UNSET_ID );
 	entry_set_status( entry, ENT_STATUS_ROUGH );
 
 	return( entry );
@@ -1765,11 +1766,11 @@ entry_get_import_settled( const ofoEntry *entry )
 	return( FALSE );
 }
 
-/**
- * ofo_entry_set_number:
+/*
+ * entry_set_number:
  */
-void
-ofo_entry_set_number( ofoEntry *entry, ofxCounter number )
+static void
+entry_set_number( ofoEntry *entry, ofxCounter number )
 {
 	ofo_base_setter( ENTRY, entry, counter, ENT_NUMBER, number );
 }
@@ -2123,7 +2124,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		ofo_entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
+		entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
 		entry_compute_status( entry, dossier );
 
 		if( entry_do_insert( entry,

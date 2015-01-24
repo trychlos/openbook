@@ -104,7 +104,6 @@ gboolean        ofo_bat_exists       ( const ofoDossier *dossier,
 										const gchar *rib, const GDate *begin, const GDate *end );
 gboolean        ofo_bat_is_deletable ( const ofoBat *bat );
 
-void            ofo_bat_set_id       ( ofoBat *bat, ofxCounter id );
 void            ofo_bat_set_uri      ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format   ( ofoBat *bat, const gchar *format );
 void            ofo_bat_set_begin    ( ofoBat *bat, const GDate *date );
