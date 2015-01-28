@@ -78,8 +78,10 @@ fi
 glib_required=2.28
 gtk_required=3.4
 OFA_CHECK_FOR_GTK
-OFA_CHECK_MODULE([GLIB],    [glib-2.0 >= ${glib_required}])
-OFA_CHECK_MODULE([GMODULE], [gmodule-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([GLIB],         [glib-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([GMODULE],      [gmodule-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([POPPLER],      [poppler >= 0.24])
+OFA_CHECK_MODULE([POPPLER_GLIB], [poppler-glib >= 0.24])
 
 MYSQL_CLIENT([5.5.0])
 OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS}"
@@ -117,6 +119,7 @@ AC_CONFIG_FILES([
 	src/css/Makefile
 	src/import-bourso/Makefile
 	src/import-lcl/Makefile
+	src/import-lcl-pdf/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile
 	src/ui/Makefile

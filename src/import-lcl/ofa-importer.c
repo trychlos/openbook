@@ -417,8 +417,8 @@ lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer )
 			scan_date_dmyy( &sbat->end, *iter );
 
 			iter +=1 ;
-			sbat->solde = get_double( *iter );
-			sbat->solde_set = TRUE;
+			sbat->end_solde = get_double( *iter );
+			sbat->end_solde_set = TRUE;
 
 			iter += 1;
 			/* no ref */

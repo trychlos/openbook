@@ -258,6 +258,27 @@ ofa_iimportable_get_string( GSList **it )
 }
 
 /**
+ * ofa_iimportable_pulse:
+ * @importable: this #ofaIImportable instance.
+ * @phase: whether this is the import or the insert phase
+ *
+ * Make the progress bar pulsing.
+ */
+void
+ofa_iimportable_pulse( ofaIImportable *importable,
+										ofeImportablePhase phase )
+{
+	sIImportable *sdata;
+
+	g_return_if_fail( OFA_IS_IIMPORTABLE( importable ));
+
+	sdata = get_iimportable_data( importable );
+	g_return_if_fail( sdata );
+
+	g_signal_emit_by_name( sdata->caller, "pulse", phase );
+}
+
+/**
  * ofa_iimportable_increment_progress:
  * @importable: this #ofaIImportable instance.
  * @phase: whether this is the import or the insert phase
@@ -411,8 +432,12 @@ guint
 ofa_iimportable_import_fname( ofaIImportable *importable,
 									ofoDossier *dossier, void *caller )
 {
+	static const gchar *thisfn = "ofa_iimportable_import_fname";
 	sIImportable *sdata;
 	gint errors;
+
+	g_debug( "%s: importable=%p, dossier=%p, caller=%p",
+			thisfn, ( void * ) importable, ( void * ) dossier, ( void * ) caller );
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
@@ -442,7 +467,10 @@ ofa_iimportable_import_fname( ofaIImportable *importable,
 guint
 ofa_iimportable_get_count( ofaIImportable *importable )
 {
+	static const gchar *thisfn = "ofa_iimportable_get_count";
 	sIImportable *sdata;
+
+	g_debug( "%s: importable=%p", thisfn, ( void * ) importable );
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 

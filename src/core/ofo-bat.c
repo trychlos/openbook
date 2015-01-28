@@ -56,8 +56,8 @@ struct _ofoBatPrivate {
 	GDate      end;
 	gchar     *rib;
 	gchar     *currency;
-	ofxAmount  solde;
-	gboolean   solde_set;
+	ofxAmount  end_solde;
+	gboolean   end_solde_set;
 	gchar     *notes;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
@@ -385,7 +385,7 @@ ofo_bat_get_solde( const ofoBat *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->priv->solde );
+		return( bat->priv->end_solde );
 	}
 
 	g_assert_not_reached();
@@ -402,7 +402,7 @@ ofo_bat_get_solde_set( const ofoBat *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->priv->solde_set );
+		return( bat->priv->end_solde_set );
 	}
 
 	g_assert_not_reached();
@@ -661,7 +661,7 @@ ofo_bat_set_solde( ofoBat *bat, ofxAmount solde )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->priv->solde = solde;
+		bat->priv->end_solde = solde;
 	}
 }
 
@@ -675,7 +675,7 @@ ofo_bat_set_solde_set( ofoBat *bat, gboolean set )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->priv->solde_set = set;
+		bat->priv->end_solde_set = set;
 	}
 }
 
@@ -1037,8 +1037,8 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 	ofo_bat_set_end( bat, &sbat->end );
 	ofo_bat_set_rib( bat, sbat->rib );
 	ofo_bat_set_currency( bat, sbat->currency );
-	ofo_bat_set_solde( bat, sbat->solde );
-	ofo_bat_set_solde_set( bat, sbat->solde_set );
+	ofo_bat_set_solde( bat, sbat->end_solde );
+	ofo_bat_set_solde_set( bat, sbat->end_solde_set );
 
 	ok = ofo_bat_insert( bat, dossier );
 	if( ok ){

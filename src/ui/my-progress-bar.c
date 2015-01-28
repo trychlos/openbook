@@ -41,6 +41,7 @@ struct _myProgressBarPrivate {
 enum {
 	DOUBLE = 0,
 	TEXT,
+	PULSE,
 	N_SIGNALS
 };
 
@@ -50,6 +51,7 @@ G_DEFINE_TYPE( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR )
 
 static void on_double( myProgressBar *self, gdouble progress, void *empty );
 static void on_text( myProgressBar *self, const gchar *text, void *empty );
+static void on_pulse( myProgressBar *self, void *empty );
 
 static void
 progress_bar_finalize( GObject *instance )
@@ -162,6 +164,27 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_STRING );
+
+	/**
+	 * myProgressBar::pulse:
+	 *
+	 * This signal may be sent to make the bar pulsing.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( myProgressBar *bar,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ PULSE ] = g_signal_new_class_handler(
+				"ofa-pulse",
+				MY_TYPE_PROGRESS_BAR,
+				G_SIGNAL_ACTION,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -176,6 +199,7 @@ my_progress_bar_new( void )
 
 	g_signal_connect( G_OBJECT( self ), "ofa-double", G_CALLBACK( on_double ), NULL );
 	g_signal_connect( G_OBJECT( self ), "ofa-text", G_CALLBACK( on_text ), NULL );
+	g_signal_connect( G_OBJECT( self ), "ofa-pulse", G_CALLBACK( on_pulse ), NULL );
 
 	return( self );
 }
@@ -200,6 +224,19 @@ on_text( myProgressBar *self, const gchar *text, void *empty )
 
 	gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( self ), TRUE );
 	gtk_progress_bar_set_text( GTK_PROGRESS_BAR( self ), text );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
+}
+
+static void
+on_pulse( myProgressBar *self, void *empty )
+{
+	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
+
+	gtk_progress_bar_pulse( GTK_PROGRESS_BAR( self ));
 
 	/* let Gtk update the display */
 	while( gtk_events_pending()){

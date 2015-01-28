@@ -28,6 +28,7 @@ SUBDIRS = \
 	css									\
 	import-bourso						\
 	import-lcl							\
+	import-lcl-pdf						\
 	mysql								\
 	postgre								\
 	ui									\

@@ -314,12 +314,18 @@
                 the previously selected file when coming back from an
                 other page
 
- 600 2015- 1-24 ExerciceClose: check DBMS integrity
-
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
 
- 603
+ 603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
+
+ 604 2015- 1-26 Bat: solde becomes end_solde (dbms and methods)
+
+ 605 2015- 1-28 add the dbname in the main window title
+
+ 606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
+
+ 607
 
 -----------------------------------------------------------------------
  DONE
@@ -2659,6 +2665,9 @@
      2015- 1-19 have a function to display count of involved entries
                 only display the confirmation dialog if count > 0
      2015- 1-22 done - svn #4497 
+
+ 600 2015- 1-24 ExerciceClose: check DBMS integrity
+     2015- 1-25 done - svn #4520
 
  602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
                 click

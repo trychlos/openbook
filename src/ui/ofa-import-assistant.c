@@ -189,6 +189,7 @@ static gboolean        p6_do_import( ofaImportAssistant *self );
 static guint           p6_do_import_csv( ofaImportAssistant *self, guint *errors );
 static guint           p6_do_import_other( ofaImportAssistant *self, guint *errors );
 static void            p6_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
+static void            p6_on_pulse( ofaIImporter *importer, ofeImportablePhase phase, ofaImportAssistant *self );
 static void            p6_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
 static GSList         *get_lines_from_csv( ofaImportAssistant *self );
 static void            free_fields( GSList *fields );
@@ -342,6 +343,8 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 	get_settings( self );
 
 	/* messages provided by the ofaIImporter interface */
+	g_signal_connect(
+			G_OBJECT( self ), "pulse", G_CALLBACK( p6_on_pulse ), self );
 	g_signal_connect(
 			G_OBJECT( self ), "progress", G_CALLBACK( p6_on_progress ), self );
 	g_signal_connect(
@@ -807,7 +810,6 @@ p6_do_import( ofaImportAssistant *self )
 
 	if( has_worked ){
 		if( !errors ){
-			count = ofa_iimportable_get_count( priv->p6_object );
 			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
 					"imported into « %s »." ),
 					count, priv->p2_uri, str );
@@ -895,6 +897,22 @@ p6_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progre
 		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
 		g_signal_emit_by_name( priv->p6_insert, "ofa-double", progress );
 		g_signal_emit_by_name( priv->p6_insert, "ofa-text", text );
+	}
+}
+
+static void
+p6_on_pulse( ofaIImporter *importer, ofeImportablePhase phase, ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+
+	priv = self->priv;
+
+	if( phase == IMPORTABLE_PHASE_IMPORT ){
+		g_signal_emit_by_name( priv->p6_import, "ofa-pulse" );
+
+	} else {
+		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
+		g_signal_emit_by_name( priv->p6_insert, "ofa-pulse" );
 	}
 }
 

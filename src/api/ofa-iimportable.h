@@ -187,6 +187,9 @@ void     ofa_iimportable_set_count                 ( ofaIImportable *importable,
  */
 gchar   *ofa_iimportable_get_string                ( GSList **it );
 
+void     ofa_iimportable_pulse                     ( ofaIImportable *importable,
+															ofeImportablePhase phase );
+
 void     ofa_iimportable_increment_progress        ( ofaIImportable *importable,
 															ofeImportablePhase phase,
 															guint count );

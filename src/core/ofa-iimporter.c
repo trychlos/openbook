@@ -36,6 +36,7 @@
  */
 enum {
 	PROGRESS = 0,
+	PULSE,
 	MESSAGE,
 	N_SIGNALS
 };
@@ -138,6 +139,30 @@ interface_base_init( ofaIImporterInterface *klass )
 					G_TYPE_NONE,
 					3,
 					G_TYPE_UINT, G_TYPE_DOUBLE, G_TYPE_STRING );
+
+		/**
+		 * ofaIImporter::pulse:
+		 *
+		 * This signal is to be sent to the importer by an importable
+		 * in order to let the former visually render the import
+		 * progression of the later.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIImporter        *importer,
+		 *						ofeImportablePhase phase,
+		 * 						gpointer           user_data );
+		 */
+		st_signals[ PULSE ] = g_signal_new_class_handler(
+					"pulse",
+					interface_type,
+					G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_UINT );
 
 		/**
 		 * ofaIImporter::message:

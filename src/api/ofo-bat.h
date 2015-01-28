@@ -59,8 +59,10 @@ typedef struct {
 	GDate    end;
 	gchar   *rib;
 	gchar   *currency;
-	gdouble  solde;
-	gboolean solde_set;
+	gdouble  begin_solde;				/* <0 if debit */
+	gboolean begin_solde_set;
+	gdouble  end_solde;					/* <0 if debit */
+	gboolean end_solde_set;
 	GList   *details;
 }
 	ofsBat;

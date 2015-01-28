@@ -150,7 +150,7 @@ static void             p7_do_close( ofaExerciceCloseAssistant *self, gint page_
 static gboolean         p7_validate_entries( ofaExerciceCloseAssistant *self );
 static gboolean         p7_solde_accounts( ofaExerciceCloseAssistant *self );
 static gint             p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui );
-static void             set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter );
+static void             p7_set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter );
 static gboolean         p7_close_ledgers( ofaExerciceCloseAssistant *self );
 static gboolean         p7_archive_exercice( ofaExerciceCloseAssistant *self );
 static gboolean         p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui );
@@ -939,7 +939,7 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
 					counter = ofo_dossier_get_next_settlement( dossier );
 					ofo_entry_update_settlement( entry, dossier, counter );
-					set_forward_settlement_number( for_entries, acc_number, counter );
+					p7_set_forward_settlement_number( for_entries, acc_number, counter );
 				}
 				if( ofo_account_is_reconciliable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
@@ -986,9 +986,9 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
  * as soon as we have found it
  */
 static void
-set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter )
+p7_set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_set_forward_settlement_number";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_set_forward_settlement_number";
 	GList *it;
 	ofoEntry *entry;
 
@@ -1141,6 +1141,7 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
  * remove reconciliated entries on reconciliable accounts
  * remove all entries on unsettleable or unreconciliable accounts
  * update remaining entries status to PAST
+ * remove BAT files (and lines) which have been fully reconciliated
  * reset all account and ledger balances to zero
  */
 static gboolean
@@ -1199,6 +1200,48 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 	}
 
 	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_BATS" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "CREATE TABLE OFA_T_KEEP_BATS "
+					"SELECT BAT_ID FROM OFA_T_BAT_LINES WHERE BAT_LINE_ENTRY IS NULL" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BATS" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BATS "
+					"SELECT * FROM OFA_T_BAT a, OFA_T_BAT_LINES b WHERE "
+					"	a.BAT_ID=b.BAT_ID AND "
+					"	a.BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_BAT "
+					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_BAT_LINES "
+					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_ACCOUNTS SET "
 					"ACC_VAL_DEBIT=0, ACC_VAL_CREDIT=0, "
 					"ACC_ROUGH_DEBIT=0, ACC_ROUGH_CREDIT=0, "
@@ -1232,7 +1275,7 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * generate carried forward entries
+ * apply generated carried forward entries
  */
 static gboolean
 p7_forward( ofaExerciceCloseAssistant *self )
@@ -1371,7 +1414,6 @@ p7_future( ofaExerciceCloseAssistant *self )
 		g_free( text );
 	}
 	if( !count ){
-		g_signal_emit_by_name( bar, "ofa-double", 1.0 );
 		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
 	}
 
