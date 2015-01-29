@@ -263,12 +263,6 @@
  513 2014-12- 9 whether balancing accounts are settleable or reconciliable
                 has to be checked when setting these accounts for balance
 
- 516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
-                + forbid that an entry becomes in the past before exercice
-     2015- 1- 6 actually all changes on begin and end exercice dates 
-                should be forbidden, or a remediation be provided (which
-                is possible in all cases)
-
  519 2014-12-11 ExportAssistant: the list of exportables should be
                 dynamically computed from the list of classes which
                 implement the ofaIExportable interface
@@ -320,12 +314,6 @@
  603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
 
  604 2015- 1-26 Bat: solde becomes end_solde (dbms and methods)
-
- 605 2015- 1-28 add the dbname in the main window title
-     2015- 1-29 done
-
- 606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
-     2015- 1-29 done
 
  607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
                 dossier_login in order to mutualize some code if possible
@@ -2348,6 +2336,13 @@
  515 2014-12- 9 refactor ledger amount names as account
      2014-12- 9 done - svn #4265
 
+ 516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
+                + forbid that an entry becomes in the past before exercice
+     2015- 1- 6 actually all changes on begin and end exercice dates 
+                should be forbidden, or a remediation be provided (which
+                is possible in all cases)
+     2015- 1-29 actually done
+
  517 2014-12-10 define two new entry status: PAST and FUTURE
      2014-12-13 done - svn #4293
 
@@ -2679,6 +2674,12 @@
  602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
                 click
      2015- 1-24 done - svn #4519
+
+ 605 2015- 1-28 add the dbname in the main window title
+     2015- 1-29 done - svn #4523
+
+ 606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
+     2015- 1-29 done - svn #4523
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
