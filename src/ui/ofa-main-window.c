@@ -818,6 +818,12 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	priv = window->priv;
 
+	/* database name defaults to current */
+	if( !sdo->dbname ){
+		sdo->dbname = ofa_dossier_misc_get_current_dbname( sdo->dname );
+	}
+
+	/* no default for credentials - so have to set them */
 	if( !check_for_account( window, sdo )){
 		return;
 	}
@@ -829,15 +835,13 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	priv->dossier = ofo_dossier_new();
 
-	if( !sdo->dbname ){
-		sdo->dbname = ofa_dossier_misc_get_current_dbname( sdo->dname );
-	}
-
 	if( !ofo_dossier_open( priv->dossier, sdo->dname, sdo->dbname, sdo->account, sdo->password )){
 		g_clear_object( &priv->dossier );
 		return;
 	}
 
+	priv->dos_account = g_strdup( sdo->account );
+	priv->dos_password = g_strdup( sdo->password );
 	priv->dos_dbname = g_strdup( sdo->dbname );
 
 	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
@@ -849,9 +853,6 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	set_menubar( window, priv->menu );
 	set_window_title( window );
 	connect_dossier_for_enabled_updates( window );
-
-	priv->dos_account = g_strdup( sdo->account );
-	priv->dos_password = g_strdup( sdo->password );
 
 	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
 	exe_end = ofo_dossier_get_exe_end( priv->dossier );
