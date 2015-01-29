@@ -75,11 +75,14 @@ struct _ofaReconciliationPrivate {
 	 */
 	GDate              dconcil;
 	GList             *batlines;				/* loaded bank account transaction lines */
+	ofoDossier        *dossier;
+	GList             *handlers;
 };
 
 /* column ordering in the main entries listview
  */
 enum {
+	COL_ACCOUNT,
 	COL_DOPE,
 	COL_PIECE,
 	COL_NUMBER,
@@ -160,6 +163,8 @@ static gboolean     check_for_enable_view( ofaReconciliation *self, ofoAccount *
 static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
 static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_fetch_entries( ofaReconciliation *self );
+static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry );
+static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
@@ -180,6 +185,12 @@ static void         reconciliate_entry( ofaReconciliation *self, ofoEntry *entry
 static void         set_reconciliated_balance( ofaReconciliation *self );
 static void         get_settings( ofaReconciliation *self );
 static void         set_settings( ofaReconciliation *self );
+static void         dossier_signaling_connect( ofaReconciliation *self );
+static void         on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *self );
+static void         on_new_entry( ofaReconciliation *self, ofoEntry *entry );
+static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self );
+static void         on_updated_entry( ofaReconciliation *self, ofoEntry *entry );
+static gboolean     find_entry_by_number( ofaReconciliation *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
 
 static void
 reconciliation_finalize( GObject *instance )
@@ -201,6 +212,7 @@ static void
 reconciliation_dispose( GObject *instance )
 {
 	ofaReconciliationPrivate *priv;
+	GList *it;
 
 	g_return_if_fail( OFA_IS_RECONCILIATION( instance ));
 
@@ -208,7 +220,15 @@ reconciliation_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = ( OFA_RECONCILIATION( instance ))->priv;
+
 		ofo_bat_line_free_dataset( priv->batlines );
+
+		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+			for( it=priv->handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+			}
+			priv->handlers = NULL;
+		}
 	}
 
 	/* chain up to the parent class */
@@ -288,6 +308,8 @@ v_setup_view( ofaPage *page )
 	gtk_grid_attach( grid, soldes, 0, 3, 3, 1 );
 
 	get_settings( OFA_RECONCILIATION( page ));
+
+	dossier_signaling_connect( OFA_RECONCILIATION( page ));
 
 	return( GTK_WIDGET( frame ));
 }
@@ -602,7 +624,8 @@ setup_treeview( ofaPage *page )
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dope, piece, number */
+			G_TYPE_STRING,									/* account */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* dope, piece, number */
 			G_TYPE_STRING,									/* label */
 			G_TYPE_STRING, G_TYPE_STRING,					/* debit, credit */
 			G_TYPE_STRING, G_TYPE_BOOLEAN,					/* dcreconcil, bvalid */
@@ -624,6 +647,8 @@ setup_treeview( ofaPage *page )
 
 	g_debug( "%s: treestore=%p, tfilter=%p, tsort=%p",
 			thisfn, ( void * ) tmodel, ( void * ) priv->tfilter, ( void * ) priv->tsort );
+
+	/* account is not displayed */
 
 	/* operation date
 	 */
@@ -669,22 +694,7 @@ setup_treeview( ofaPage *page )
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
-	/* number
-	 */
-	column_id = COL_NUMBER;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Number" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+	/* entry number is not displayed */
 
 	/* entry label
 	 */
@@ -1337,6 +1347,8 @@ get_reconciliable_account( ofaReconciliation *self )
 /*
  * there used to be a 'Fetch' button, but we have remove it to provide
  * a more dynamic display
+ * All entries for the given account are fetched as soon as the account
+ * entry is valid
  */
 static void
 on_fetch_button_clicked( GtkButton *button /* =NULL */, ofaReconciliation *self )
@@ -1352,11 +1364,7 @@ do_fetch_entries( ofaReconciliation *self )
 	static const gchar *thisfn = "ofa_reconciliation_do_fetch_entries";
 	ofoAccount *account;
 	GList *entries, *it;
-	ofoEntry *entry;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *sdope, *sdeb, *scre, *sdrap, *snum;
-	const GDate *dconcil;
 
 	check_for_enable_view( self, &account, NULL );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -1371,40 +1379,52 @@ do_fetch_entries( ofaReconciliation *self )
 					ofo_account_get_number( account ));
 
 	for( it=entries ; it ; it=it->next ){
-
-		entry = OFO_ENTRY( it->data );
-
-		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-		sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
-		scre = my_double_to_str( ofo_entry_get_credit( entry ));
-		dconcil = ofo_entry_get_concil_dval( entry );
-		sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
-		snum = g_strdup_printf( "%ld", ofo_entry_get_number( entry ));
-
-		gtk_tree_store_insert_with_values(
-				GTK_TREE_STORE( tmodel ),
-				&iter,
-				NULL,
-				-1,
-				COL_DOPE,      sdope,
-				COL_PIECE,     ofo_entry_get_ref( entry ),
-				COL_NUMBER,    snum,
-				COL_LABEL,     ofo_entry_get_label( entry ),
-				COL_DEBIT,     sdeb,
-				COL_CREDIT,    scre,
-				COL_DRECONCIL, sdrap,
-				COL_VALID,     my_date_is_valid( dconcil ),
-				COL_OBJECT,    entry,
-				-1 );
-
-		g_free( snum );
-		g_free( sdope );
-		g_free( sdeb );
-		g_free( scre );
-		g_free( sdrap );
+		insert_entry( self, tmodel, OFO_ENTRY( it->data ));
 	}
 
 	ofo_entry_free_dataset( entries );
+}
+
+static void
+insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry )
+{
+	GtkTreeIter iter;
+
+	gtk_tree_store_insert( GTK_TREE_STORE( tstore ), &iter, NULL, -1 );
+	set_row_entry( self, tstore, &iter, entry );
+}
+
+static void
+set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
+{
+	gchar *sdope, *sdeb, *scre, *sdrap;
+	const GDate *dconcil;
+
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
+	sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
+	scre = my_double_to_str( ofo_entry_get_credit( entry ));
+	dconcil = ofo_entry_get_concil_dval( entry );
+	sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
+
+	gtk_tree_store_set(
+			GTK_TREE_STORE( tstore ),
+			iter,
+			COL_ACCOUNT,   ofo_entry_get_account( entry ),
+			COL_DOPE,      sdope,
+			COL_PIECE,     ofo_entry_get_ref( entry ),
+			COL_NUMBER,    ofo_entry_get_number( entry ),
+			COL_LABEL,     ofo_entry_get_label( entry ),
+			COL_DEBIT,     sdeb,
+			COL_CREDIT,    scre,
+			COL_DRECONCIL, sdrap,
+			COL_VALID,     my_date_is_valid( dconcil ),
+			COL_OBJECT,    entry,
+			-1 );
+
+	g_free( sdope );
+	g_free( sdeb );
+	g_free( scre );
+	g_free( sdrap );
 }
 
 static void
@@ -2135,4 +2155,128 @@ set_settings( ofaReconciliation *self )
 
 	g_free( str );
 	g_free( smode );
+}
+
+static void
+dossier_signaling_connect( ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	gulong handler;
+
+	priv = self->priv;
+	priv->dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+}
+
+static void
+on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *self )
+{
+	static const gchar *thisfn = "ofa_reconciliation_on_dossier_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		on_new_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * insert the new entry in the tree store if it is registered on the
+ * currently selected account
+ */
+static void
+on_new_entry( ofaReconciliation *self, ofoEntry *entry )
+{
+	ofaReconciliationPrivate *priv;
+	const gchar *selected_account, *entry_account;
+	GtkTreeModel *tstore;
+
+	priv = self->priv;
+
+	selected_account = gtk_entry_get_text( priv->account );
+	entry_account = ofo_entry_get_account( entry );
+
+	if( !g_utf8_collate( selected_account, entry_account )){
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		insert_entry( self, tstore, entry );
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+	}
+}
+
+/*
+ * a ledger mnemo, an account number, a currency code may has changed
+ */
+static void
+on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		on_updated_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+static void
+on_updated_entry( ofaReconciliation *self, ofoEntry *entry )
+{
+	ofaReconciliationPrivate *priv;
+	const gchar *selected_account, *entry_account;
+	GtkTreeModel *tstore;
+	GtkTreeIter iter;
+
+	priv = self->priv;
+
+	selected_account = gtk_entry_get_text( priv->account );
+	entry_account = ofo_entry_get_account( entry );
+
+	if( !g_utf8_collate( selected_account, entry_account )){
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		if( find_entry_by_number( self, tstore, ofo_entry_get_number( entry ), &iter )){
+			set_row_entry( self, tstore, &iter, entry );
+			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		}
+	}
+}
+
+/*
+ * return TRUE if we have found the requested entry row
+ */
+static gboolean
+find_entry_by_number( ofaReconciliation *self, GtkTreeModel *tmodel, ofxCounter entry_number, GtkTreeIter *iter )
+{
+	ofxCounter row_number;
+
+	if( gtk_tree_model_get_iter_first( tmodel, iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, iter, COL_NUMBER, &row_number, -1 );
+			if( row_number == entry_number ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( tmodel, iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }

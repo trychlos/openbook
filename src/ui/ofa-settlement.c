@@ -55,6 +55,7 @@ struct _ofaSettlementPrivate {
 	gchar             *account_number;
 	const gchar       *account_currency;
 	ofaEntrySettlement settlement;
+	GList             *handlers;
 
 	/* sorting the view
 	 */
@@ -182,6 +183,7 @@ static gboolean       settlement_status_is_valid( ofaSettlement *self );
 static void           try_display_entries( ofaSettlement *self );
 static void           display_entries( ofaSettlement *self, GList *entries );
 static void           display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry );
+static void           set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
 static void           on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *self );
 static void           enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnumSelected *ses );
 static void           on_settle_clicked( GtkButton *button, ofaSettlement *self );
@@ -190,6 +192,11 @@ static void           update_selection( ofaSettlement *self, gboolean settle );
 static void           update_row( GtkTreeModel *tmodel, GtkTreeIter *iter, sEnumSelected *ses );
 static void           get_settings( ofaSettlement *self );
 static void           set_settings( ofaSettlement *self );
+static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaSettlement *self );
+static void           on_new_entry( ofaSettlement *self, ofoEntry *entry );
+static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaSettlement *self );
+static void           on_updated_entry( ofaSettlement *self, ofoEntry *entry );
+static gboolean       find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
 
 static void
 settlement_finalize( GObject *instance )
@@ -214,11 +221,22 @@ settlement_finalize( GObject *instance )
 static void
 settlement_dispose( GObject *instance )
 {
+	ofaSettlementPrivate *priv;
+	GList *it;
+
 	g_return_if_fail( OFA_IS_SETTLEMENT( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_SETTLEMENT( instance )->priv;
+
+		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+			for( it=priv->handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+			}
+			priv->handlers = NULL;
+		}
 	}
 
 	/* chain up to the parent class */
@@ -368,7 +386,7 @@ setup_entries_treeview( ofaSettlement *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			ENT_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* dope, deff, number */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* dope, deff, number */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, label, ledger */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
 			G_TYPE_STRING, G_TYPE_STRING,					/* settlement, status */
@@ -672,6 +690,20 @@ setup_settlement_selection( ofaSettlement *self )
 static void
 setup_signaling_connect( ofaSettlement *self )
 {
+	ofaSettlementPrivate *priv;
+	gulong handler;
+
+	priv = self->priv;
+
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
 static GtkWidget *
@@ -1059,6 +1091,14 @@ static void
 display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry )
 {
 	GtkTreeIter iter;
+
+	gtk_list_store_insert( GTK_LIST_STORE( tmodel ), &iter, -1 );
+	set_row_entry( self, tmodel, &iter, entry );
+}
+
+static void
+set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+{
 	gchar *sdope, *sdeff, *sdeb, *scre, *str_number;
 	gdouble amount;
 	gint set_number;
@@ -1084,10 +1124,9 @@ display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry )
 		str_number = g_strdup_printf( "%u", set_number );
 	}
 
-	gtk_list_store_insert_with_values(
+	gtk_list_store_set(
 				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
+				iter,
 				ENT_COL_DOPE,       sdope,
 				ENT_COL_DEFF,       sdeff,
 				ENT_COL_NUMBER,     ofo_entry_get_number( entry ),
@@ -1354,4 +1393,108 @@ set_settings( ofaSettlement *self )
 	ofa_settings_set_string( st_pref_settlement, str );
 
 	g_free( str );
+}
+
+static void
+on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaSettlement *self )
+{
+	static const gchar *thisfn = "ofa_settlement_on_dossier_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		on_new_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * insert the new entry in the list store if it is registered on the
+ * currently selected account
+ */
+static void
+on_new_entry( ofaSettlement *self, ofoEntry *entry )
+{
+	ofaSettlementPrivate *priv;
+	const gchar *entry_account;
+	GtkTreeModel *tsort, *tfilter, *tstore;
+
+	priv = self->priv;
+	entry_account = ofo_entry_get_account( entry );
+
+	if( !g_utf8_collate( priv->account_number, entry_account )){
+		tsort = gtk_tree_view_get_model( priv->tview );
+		tfilter = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( tsort ));
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tfilter ));
+		display_entry( self, tstore, entry );
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( tfilter ));
+	}
+}
+
+/*
+ * a ledger mnemo, an account number, a currency code may has changed
+ */
+static void
+on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaSettlement *self )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		on_updated_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+static void
+on_updated_entry( ofaSettlement *self, ofoEntry *entry )
+{
+	ofaSettlementPrivate *priv;
+	const gchar *entry_account;
+	GtkTreeModel *tsort, *tfilter, *tstore;
+	GtkTreeIter iter;
+
+	priv = self->priv;
+	entry_account = ofo_entry_get_account( entry );
+
+	if( !g_utf8_collate( priv->account_number, entry_account )){
+		tsort = gtk_tree_view_get_model( priv->tview );
+		tfilter = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( tsort ));
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tfilter ));
+		if( find_entry_by_number( self, tstore, ofo_entry_get_number( entry ), &iter )){
+			set_row_entry( self, tstore, &iter, entry );
+			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( tfilter ));
+		}
+	}
+}
+
+/*
+ * return TRUE if we have found the requested entry row
+ */
+static gboolean
+find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter entry_number, GtkTreeIter *iter )
+{
+	ofxCounter row_number;
+
+	if( gtk_tree_model_get_iter_first( tmodel, iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, iter, ENT_COL_NUMBER, &row_number, -1 );
+			if( row_number == entry_number ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( tmodel, iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }

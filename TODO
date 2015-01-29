@@ -203,11 +203,6 @@
      2014-11-23 done - svn #4145
      2015- 1- 8 opened back as doesn't work
 
- 455 2014-11-14 report colored footer in other pages with balances
-                (as view entries)
-     2015- 1-17 done in ofaSettlement
-                left to be done: ofaReconciliation
-
  461 2014-11-24 ExportAssistant: implement 'on_new_profile'
 
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
@@ -326,7 +321,10 @@
  609 2015- 1-29 BatProperties: entries should be read only, but not
                 disabled
 
- 610
+ 610 2015- 1-29 ViewEntries, Reconciliation, Settlement: make sure new
+                entries are displayed
+
+ 611
 
 -----------------------------------------------------------------------
  DONE
@@ -2167,6 +2165,12 @@
 
  454 2014-11-14 view entries: save display configuration as preferences
      2014-11-21 done - svn #4138
+
+ 455 2014-11-14 report colored footer in other pages with balances
+                (as view entries)
+     2015- 1-17 done in ofaSettlement
+                left to be done: ofaReconciliation
+     2015- 1-29 done - svn #4527
 
  456 2014-11-14 printings: there is no sens to have a special header
                 on last page: remove 'is_last' argument
