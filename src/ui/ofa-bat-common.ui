@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkWindow" id="BatCommonWindow">
     <property name="can_focus">False</property>
     <child>
@@ -75,10 +76,8 @@
                         <child>
                           <object class="GtkEntry" id="p1-format">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="invisible_char">●</property>
-                            <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -104,12 +103,11 @@
                         <child>
                           <object class="GtkEntry" id="p1-count">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="invisible_char">●</property>
-                            <property name="width_chars">4</property>
-                            <property name="invisible_char_set">True</property>
+                            <property name="width_chars">6</property>
+                            <property name="xalign">1</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -135,12 +133,11 @@
                         <child>
                           <object class="GtkEntry" id="p1-solde">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="invisible_char">●</property>
-                            <property name="width_chars">10</property>
-                            <property name="invisible_char_set">True</property>
+                            <property name="width_chars">12</property>
+                            <property name="xalign">1</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -171,12 +168,10 @@
                             <child>
                               <object class="GtkEntry" id="p1-currency">
                                 <property name="visible">True</property>
-                                <property name="sensitive">False</property>
-                                <property name="can_focus">True</property>
+                                <property name="can_focus">False</property>
                                 <property name="halign">end</property>
                                 <property name="invisible_char">●</property>
                                 <property name="width_chars">4</property>
-                                <property name="invisible_char_set">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -188,11 +183,9 @@
                             <child>
                               <object class="GtkEntry" id="p1-rib">
                                 <property name="visible">True</property>
-                                <property name="sensitive">False</property>
-                                <property name="can_focus">True</property>
+                                <property name="can_focus">False</property>
                                 <property name="invisible_char">●</property>
-                                <property name="width_chars">23</property>
-                                <property name="invisible_char_set">True</property>
+                                <property name="width_chars">30</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -226,12 +219,11 @@
                         <child>
                           <object class="GtkEntry" id="p1-begin">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">10</property>
-                            <property name="invisible_char_set">True</property>
+                            <property name="xalign">0.5</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -249,12 +241,11 @@
                             <child>
                               <object class="GtkEntry" id="p1-end">
                                 <property name="visible">True</property>
-                                <property name="sensitive">False</property>
-                                <property name="can_focus">True</property>
+                                <property name="can_focus">False</property>
                                 <property name="halign">end</property>
                                 <property name="invisible_char">●</property>
                                 <property name="width_chars">10</property>
-                                <property name="invisible_char_set">True</property>
+                                <property name="xalign">0.5</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -302,13 +293,11 @@
                         <child>
                           <object class="GtkEntry" id="p1-id">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="invisible_char">●</property>
-                            <property name="width_chars">10</property>
+                            <property name="width_chars">6</property>
                             <property name="xalign">1</property>
-                            <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>

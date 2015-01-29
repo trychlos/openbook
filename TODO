@@ -321,10 +321,11 @@
  609 2015- 1-29 BatProperties: entries should be read only, but not
                 disabled
 
- 610 2015- 1-29 ViewEntries, Reconciliation, Settlement: make sure new
-                entries are displayed
+ 611 2015- 1-30 refactor BatCommon as a Bin
 
- 611
+ 612 2015- 1-30 BatProperties: view bat lines
+
+ 613
 
 -----------------------------------------------------------------------
  DONE
@@ -2690,6 +2691,10 @@
 
  606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
      2015- 1-29 done - svn #4523
+
+ 610 2015- 1-29 Reconciliation, Settlement: make sure new entries are
+                displayed
+     2015- 1-29 done - svn #4528
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

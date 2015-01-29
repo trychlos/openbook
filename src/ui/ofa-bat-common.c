@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -268,7 +269,6 @@ do_move_between_containers( ofaBatCommon *self )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-count" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	gtk_entry_set_alignment( GTK_ENTRY( entry ), 1.0 );
 	priv->count = GTK_ENTRY( entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-begin" );
@@ -483,7 +483,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 	}
 
 	if( ofo_bat_get_solde_set( bat )){
-		str = g_strdup_printf( "%.2lf", ofo_bat_get_solde( bat ));
+		str = my_double_to_str( ofo_bat_get_solde( bat ));
 		gtk_entry_set_text( priv->solde, str );
 		g_free( str );
 	} else {
