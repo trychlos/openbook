@@ -117,6 +117,8 @@ static const sConcil st_concils[] = {
 		{ 0 }
 };
 
+#define COLOR_ACCOUNT                   "#0000ff"	/* blue */
+
 static const gchar *st_reconciliation   = "Reconciliation";
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
@@ -125,8 +127,8 @@ static const gchar *st_reconciliation   = "Reconciliation";
  * we are defining the inverse indicator, and we are going to sort
  * in reverse order to have our own illusion
  */
-#define OFA_SORT_ASCENDING    GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING   GTK_SORT_ASCENDING
+#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
@@ -469,7 +471,7 @@ setup_auto_rappro( ofaPage *page )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
 	label = GTK_LABEL( gtk_label_new( NULL ));
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Automatic reconciliation" ));
+	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Assisted reconciliation" ));
 	gtk_label_set_markup( label, markup );
 	gtk_frame_set_label_widget( frame, GTK_WIDGET( label ));
 	g_free( markup );
@@ -517,30 +519,37 @@ setup_account_display( ofaPage *page )
 	ofaReconciliationPrivate *priv;
 	GtkBox *box;
 	GtkLabel *label;
+	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
+
+	gdk_rgba_parse( &color, COLOR_ACCOUNT );
 
 	label = GTK_LABEL( gtk_label_new( "" ));
 	gtk_label_set_width_chars( label, 13 );
 	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
 
 	priv->account_credit = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_override_color( GTK_WIDGET( priv->account_credit ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( priv->account_credit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->account_credit, 11 );
+	gtk_label_set_width_chars( priv->account_credit, 12 );
 	gtk_box_pack_end( box, GTK_WIDGET( priv->account_credit ), FALSE, FALSE, 0 );
 
 	priv->account_debit = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_override_color( GTK_WIDGET( priv->account_debit ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( priv->account_debit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->account_debit, 11 );
+	gtk_label_set_width_chars( priv->account_debit, 12 );
 	gtk_box_pack_end( box, GTK_WIDGET( priv->account_debit ), FALSE, FALSE, 0 );
 
-	label = GTK_LABEL( gtk_label_new( _( "Account balance :" )));
+	label = GTK_LABEL( gtk_label_new( _( "Openbook account balance :" )));
+	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
 
 	priv->account_label = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_override_color( GTK_WIDGET( priv->account_label ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( priv->account_label ), 0, 0.5 );
 	gtk_label_set_ellipsize( priv->account_label, PANGO_ELLIPSIZE_END );
 	gtk_box_pack_end( box, GTK_WIDGET( priv->account_label ), TRUE, TRUE, 0 );
@@ -774,8 +783,11 @@ setup_balance( ofaPage *page )
 	ofaReconciliationPrivate *priv;
 	GtkBox *box;
 	GtkLabel *label;
+	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
+
+	gdk_rgba_parse( &color, COLOR_ACCOUNT );
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
 	gtk_widget_set_margin_bottom( GTK_WIDGET( box ), 2 );
@@ -785,16 +797,19 @@ setup_balance( ofaPage *page )
 	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
 
 	priv->bal_credit = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_override_color( GTK_WIDGET( priv->bal_credit ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( priv->bal_credit ), 1.0, 0.5 );
 	gtk_label_set_width_chars( priv->bal_credit, 11 );
 	gtk_box_pack_end( box, GTK_WIDGET( priv->bal_credit ), FALSE, FALSE, 0 );
 
 	priv->bal_debit = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_override_color( GTK_WIDGET( priv->bal_debit ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( priv->bal_debit ), 1.0, 0.5 );
 	gtk_label_set_width_chars( priv->bal_debit, 11 );
 	gtk_box_pack_end( box, GTK_WIDGET( priv->bal_debit ), FALSE, FALSE, 0 );
 
-	label = GTK_LABEL( gtk_label_new( _( "Reconciliated balance :" )));
+	label = GTK_LABEL( gtk_label_new( _( "Bank reconciliated balance :" )));
+	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_box_pack_end( box, GTK_WIDGET( label ), TRUE, TRUE, 0 );
 
@@ -1132,8 +1147,8 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 	static const gchar *thisfn = "ofa_reconciliation_on_account_changed";
 	ofaReconciliationPrivate *priv;
 	ofoAccount *account;
-	gdouble amount;
-	gchar *str;
+	gdouble debit, credit;
+	gchar *str, *msg;
 
 	priv = self->priv;
 	check_for_enable_view( self, &account, NULL );
@@ -1143,15 +1158,23 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 
 		gtk_label_set_text( priv->account_label, ofo_account_get_label( account ));
 
-		amount = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
-		str = my_double_to_str( amount );
-		gtk_label_set_text( priv->account_debit, str );
-		g_free( str );
+		debit = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
+		credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
 
-		amount = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
-		str = my_double_to_str( amount );
-		gtk_label_set_text( priv->account_credit, str );
-		g_free( str );
+		if( credit >= debit ){
+			str = my_double_to_str( credit - debit );
+			msg = g_strdup_printf( _( "%s CR" ), str );
+			gtk_label_set_text( priv->account_credit, msg );
+			g_free( str );
+			g_free( msg );
+
+		} else {
+			str = my_double_to_str( debit - credit );
+			msg = g_strdup_printf( _( "%s DB" ), str );
+			gtk_label_set_text( priv->account_debit, msg );
+			g_free( str );
+			g_free( msg );
+		}
 
 		set_settings( self );
 
@@ -1994,7 +2017,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 	gboolean bvalid;
 	GObject *object;
 	gdouble amount;
-	gchar *sdeb, *scre;
+	gchar *str, *sdeb, *scre;
 
 	account = NULL;
 	account_debit = 0.0;
@@ -2038,16 +2061,19 @@ set_reconciliated_balance( ofaReconciliation *self )
 	}
 
 	if( debit > credit ){
-		sdeb = my_double_to_str( debit-credit );
+		str = my_double_to_str( debit-credit );
+		sdeb = g_strdup_printf( _( "%s DB" ), str );
 		scre = g_strdup( "" );
 	} else {
 		sdeb = g_strdup( "" );
-		scre = my_double_to_str( credit-debit );
+		str = my_double_to_str( credit-debit );
+		scre = g_strdup_printf( _( "%s CR" ), str );
 	}
 
 	gtk_label_set_text( self->priv->bal_debit, sdeb );
 	gtk_label_set_text( self->priv->bal_credit, scre );
 
+	g_free( str );
 	g_free( sdeb );
 	g_free( scre );
 }

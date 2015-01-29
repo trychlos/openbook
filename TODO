@@ -320,7 +320,13 @@
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
 
- 608
+ 608 2015- 1-29 ViewEntries: when modifying account or ledger, make sure
+                corresponding balances are updated
+
+ 609 2015- 1-29 BatProperties: entries should be read only, but not
+                disabled
+
+ 610
 
 -----------------------------------------------------------------------
  DONE
