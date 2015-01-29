@@ -1029,6 +1029,8 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 	g_return_val_if_fail( sbat, FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
+	OFA_IDATASET_GET( dossier, BAT, bat );
+
 	bat = ofo_bat_new();
 
 	ofo_bat_set_uri( bat, sbat->uri );
@@ -1058,34 +1060,9 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 			g_object_unref( bline );
 		}
 	}
-	g_object_unref( bat );
+
+	/* do not g_object_unref() the newly created BAT as the ownership
+	 * has been given to the global dataset */
 
 	return( ok );
-}
-
-/**
- * ofo_bat_free:
- * @sbat:
- *
- * Free the provided #ofsBat structure.
- */
-static void
-bat_free_detail( ofsBatDetail *detail )
-{
-	g_free( detail->ref );
-	g_free( detail->label );
-	g_free( detail->currency );
-	g_free( detail );
-}
-
-void
-ofo_bat_free( ofsBat *sbat )
-{
-	g_list_free_full( sbat->details, ( GDestroyNotify ) bat_free_detail );
-
-	g_free( sbat->uri );
-	g_free( sbat->format );
-	g_free( sbat->rib );
-	g_free( sbat->currency );
-	g_free( sbat );
 }

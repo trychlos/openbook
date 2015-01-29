@@ -876,7 +876,7 @@ p6_do_import_other( ofaImportAssistant *self, guint *errors )
 
 	priv = self->priv;
 
-	*errors = ofa_iimportable_import_fname( priv->p6_plugin, MY_WINDOW( self )->prot->dossier, self );
+	*errors = ofa_iimportable_import_uri( priv->p6_plugin, MY_WINDOW( self )->prot->dossier, self );
 	count = ofa_iimportable_get_count( priv->p6_plugin );
 
 	return( count );

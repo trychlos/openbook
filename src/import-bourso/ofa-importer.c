@@ -85,9 +85,9 @@ static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *bourso_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
-static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *fname );
+static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
+static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
 static gboolean     bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
 static ofsBat      *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
 static gchar       *bourso_strip_field( gchar *str );
@@ -207,7 +207,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->is_willing_to = iimportable_is_willing_to;
-	iface->import_fname = iimportable_import_fname;
+	iface->import_uri = iimportable_import_uri;
 }
 
 static guint
@@ -223,20 +223,20 @@ iimportable_get_interface_version( const ofaIImportable *bourso_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_bourso_importer_iimportable_is_willing_to";
 	ofaBoursoImporterPrivate *priv;
 	gint i;
 	gboolean ok;
 
-	g_debug( "%s: bourso_importer=%p, fname=%s, settings=%p, count=%p",
-			thisfn, ( void * ) bourso_importer, fname, ( void * ) settings, ( void * ) count );
+	g_debug( "%s: bourso_importer=%p, uri=%s, settings=%p, count=%p",
+			thisfn, ( void * ) bourso_importer, uri, ( void * ) settings, ( void * ) count );
 
 	priv = OFA_BOURSO_IMPORTER( bourso_importer )->priv;
 	ok = FALSE;
 
-	priv->lines = get_file_content( bourso_importer, fname );
+	priv->lines = get_file_content( bourso_importer, uri );
 	priv->settings = settings;
 
 	for( i=0 ; st_import_formats[i].label ; ++i ){
@@ -257,20 +257,20 @@ iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *fname, 
  * import the file
  */
 static guint
-iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_fname";
+	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_uri";
 	ofaBoursoImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
 
-	g_debug( "%s: bourso_importer=%p, ref=%p, fname=%s, settings=%p, dossier=%p",
+	g_debug( "%s: bourso_importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p",
 			thisfn, ( void * ) bourso_importer, ref,
-			fname, ( void * ) settings, ( void * ) dossier );
+			uri, ( void * ) settings, ( void * ) dossier );
 
 	priv = OFA_BOURSO_IMPORTER( bourso_importer )->priv;
 
-	priv->lines = get_file_content( bourso_importer, fname );
+	priv->lines = get_file_content( bourso_importer, uri );
 	priv->settings = settings;
 	priv->dossier = dossier;
 
@@ -280,10 +280,10 @@ iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gcha
 	if( st_import_formats[idx].fnImport ){
 		bat = st_import_formats[idx].fnImport( OFA_BOURSO_IMPORTER( bourso_importer ));
 		if( bat ){
-			bat->uri = g_strdup( fname );
+			bat->uri = g_strdup( uri );
 			bat->format = g_strdup( st_import_formats[idx].label );
 			ofo_bat_import( bourso_importer, bat, dossier );
-			ofo_bat_free( bat );
+			ofs_bat_free( bat );
 		}
 	}
 
@@ -293,7 +293,7 @@ iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gcha
 }
 
 static GSList *
-get_file_content( ofaIImportable *bourso_importer, const gchar *fname )
+get_file_content( ofaIImportable *bourso_importer, const gchar *uri )
 {
 	GFile *gfile;
 	gchar *contents;
@@ -301,7 +301,7 @@ get_file_content( ofaIImportable *bourso_importer, const gchar *fname )
 	GSList *list;
 
 	list = NULL;
-	gfile = g_file_new_for_path( fname );
+	gfile = g_file_new_for_uri( uri );
 	if( g_file_load_contents( gfile, NULL, &contents, NULL, NULL, NULL )){
 		lines = g_strsplit( contents, "\n", -1 );
 		g_free( contents );
@@ -477,7 +477,7 @@ bourso_tabulated_text_v1_import( ofaBoursoImporter *bourso_importer, const gchar
 		g_free( sbegin );
 		g_free( send );
 		priv->errors += 1;
-		ofo_bat_free( sbat );
+		ofs_bat_free( sbat );
 		return( NULL );
 	}
 

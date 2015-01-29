@@ -108,7 +108,7 @@ typedef struct {
 	/**
 	 * is_willing_to:
 	 * @instance: the #ofaIImportable provider.
-	 * @fname: the filename to be imported.
+	 * @uri: the URI to be imported.
 	 * @settings: the (supposed) input file format.
 	 * @ref: [out]: the internal ref of the provider
 	 * @count: [out]: the count of records to be imported.
@@ -116,24 +116,24 @@ typedef struct {
 	 * Return: %TRUE if the provider is willing to import this file.
 	 */
 	gboolean ( *is_willing_to )        ( ofaIImportable *instance,
-												const gchar *fname,
+												const gchar *uri,
 												ofaFileFormat *settings,
 												void **ref,
 												guint *count );
 
 	/**
-	 * import_fname:
+	 * import_uri:
 	 * @instance: the #ofaIImportable provider.
 	 * @ref: the internal ref of the provider as returned from #is_willing_to().
 	 * @dossier: the #ofoDossier
 	 *
-	 * Import the specified @fname.
+	 * Import the specified @uri.
 	 *
 	 * Return: the count of errors.
 	 */
-	guint    ( *import_fname )         ( ofaIImportable *instance,
+	guint    ( *import_uri )           ( ofaIImportable *instance,
 												void *ref,
-												const gchar *fname,
+												const gchar *uri,
 												ofaFileFormat *settings,
 												ofoDossier *dossier );
 }
@@ -171,10 +171,10 @@ gint     ofa_iimportable_import                    ( ofaIImportable *importable,
 															void *caller );
 
 gboolean ofa_iimportable_is_willing_to             ( ofaIImportable *importable,
-															const gchar *fname,
+															const gchar *uri,
 															ofaFileFormat *settings );
 
-guint    ofa_iimportable_import_fname              ( ofaIImportable *importable,
+guint    ofa_iimportable_import_uri                ( ofaIImportable *importable,
 															ofoDossier *dossier,
 															void *caller );
 

@@ -112,7 +112,7 @@ static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
 static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
+static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
 static ofsBat      *read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list );
 static void         read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint page_i, GList *rc_list );
 static GList       *get_ordered_layout_list( ofaLclPdfImporter *importer, PopplerPage *page );
@@ -236,7 +236,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->is_willing_to = iimportable_is_willing_to;
-	iface->import_fname = iimportable_import_fname;
+	iface->import_uri = iimportable_import_uri;
 }
 
 static guint
@@ -283,9 +283,9 @@ iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, ofaFileFo
  * import the file
  */
 static guint
-iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_import_fname";
+	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_import_uri";
 	ofaLclPdfImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
@@ -308,7 +308,7 @@ iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *uri,
 			bat->uri = g_strdup( uri );
 			bat->format = g_strdup( st_import_formats[idx].label );
 			ofo_bat_import( importer, bat, dossier );
-			ofo_bat_free( bat );
+			ofs_bat_free( bat );
 		}
 	}
 
@@ -367,7 +367,7 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 	GList *rc_list, *it;
 	ofxAmount debit, credit;
 	ofsBatDetail *detail;
-	gchar *sdope, *sdeffect;
+	gchar *sbegin, *send, *msg, *sdebit, *scredit;
 
 	priv = importer->priv;
 	bat = NULL;
@@ -387,8 +387,35 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 
 		if( page_i == 0 ){
 			bat = read_header( importer, page, rc_list );
+
+			sbegin = my_date_to_str( &bat->begin, MY_DATE_DMYY );
+			send = my_date_to_str( &bat->end, MY_DATE_DMYY );
+
+			if( ofo_bat_exists( priv->dossier, bat->rib, &bat->begin, &bat->end )){
+				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
+						bat->rib, sbegin, send );
+				ofa_iimportable_set_message(
+						OFA_IIMPORTABLE( importer ), 0, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				priv->errors += 1;
+				ofs_bat_free( bat );
+				bat = NULL;
+
+			} else {
+				msg = g_strdup_printf( _( "Importing RIB=%s, begin=%s, end=%s" ),
+						bat->rib, sbegin, send );
+				ofa_iimportable_set_message(
+						OFA_IIMPORTABLE( importer ), 0, IMPORTABLE_MSG_STANDARD, msg );
+				g_free( msg );
+			}
+
+			g_free( sbegin );
+			g_free( send );
 		}
-		read_lines( importer, bat, page, page_i, rc_list );
+
+		if( bat ){
+			read_lines( importer, bat, page, page_i, rc_list );
+		}
 
 		g_list_free_full( rc_list, ( GDestroyNotify ) free_rc );
 		g_object_unref( page );
@@ -397,20 +424,19 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 	g_object_unref( doc );
 	ofa_iimportable_set_count( OFA_IIMPORTABLE( importer ), priv->count );
 
+	/* put back lines in their initial order */
+	if( bat ){
+		bat->details = g_list_reverse( bat->details );
+	}
+
 	/* display, just for make debug easier */
-	for( it=bat->details ; it ; it=it->next ){
-		detail = ( ofsBatDetail * ) it->data;
-		sdope = my_date_to_str( &detail->dope, MY_DATE_DMYY );
-		sdeffect = my_date_to_str( &detail->deffect, MY_DATE_DMYY );
-		g_debug( "%s: dope=%s, label=%s, deffect=%s, amount=%lf",
-				thisfn, sdope, detail->label, sdeffect, detail->amount );
-		g_free( sdeffect );
-		g_free( sdope );
+	if( bat ){
+		ofs_bat_dump( bat );
 	}
 
 	/* check the totals: this make sure we have all lines with right
 	 *  amounts */
-	if( priv->tot_debit || priv->tot_credit ){
+	if( bat && ( priv->tot_debit || priv->tot_credit )){
 		debit = 0;
 		credit = 0;
 		for( it=bat->details ; it ; it=it->next ){
@@ -421,22 +447,43 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 				credit += detail->amount;
 			}
 		}
+
 		if( bat->begin_solde < 0 ){
 			debit += -1*bat->begin_solde;
 		} else {
 			credit += bat->begin_solde;
 		}
+
+		sdebit = my_double_to_str( priv->tot_debit );
+		scredit = my_double_to_str( priv->tot_credit );
+		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
+		ofa_iimportable_set_message(
+				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
+		g_free( msg );
+		g_free( scredit );
+		g_free( sdebit );
+
 		if( debit == priv->tot_debit && credit == priv->tot_credit ){
-			g_debug( "%s: all lines successfully read: tot_debit=%lf, tot_credit=%lf",
-					thisfn, priv->tot_debit, priv->tot_credit );
+			ofa_iimportable_set_message(
+					OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD,
+					_( "All lines successfully imported" ));
+
 		} else {
 			if( debit != priv->tot_debit ){
-				g_warning( "%s: error when computing totals: bank_tot_debit=%lf, read_tot_debit=%lf",
-						thisfn, priv->tot_debit, debit );
+				sdebit = my_double_to_str( debit );
+				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
+				ofa_iimportable_set_message(
+						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( sdebit );
 			}
 			if( credit != priv->tot_credit ){
-				g_warning( "%s: error when computing totals: bank_tot_credit=%lf, read_tot_credit=%lf",
-					thisfn, priv->tot_credit, credit );
+				scredit = my_double_to_str( credit );
+				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
+				ofa_iimportable_set_message(
+						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( scredit );
 			}
 		}
 	}
@@ -453,7 +500,6 @@ read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list )
 	GList *it, *it_next;
 	sRC *src, *src_next;
 	gchar sbegin[80], send[80], foo[80];
-	gchar *ssbeg, *ssend;
 	GDate date;
 	gboolean begin_end_found, iban_found, begin_solde_found;
 	ofxAmount amount;
@@ -506,13 +552,6 @@ read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list )
 		}
 	}
 
-	ssbeg = my_date_to_str( &bat->begin, MY_DATE_DMYY );
-	ssend = my_date_to_str( &bat->end, MY_DATE_DMYY );
-	g_debug( "%s: begin=%s, end=%s, rib=%s, begin_solde=%lf, begin_solde_set=%s",
-			thisfn, ssbeg, ssend, bat->rib, bat->begin_solde, bat->begin_solde_set ? "True":"False" );
-	g_free( ssend );
-	g_free( ssbeg );
-
 	return( bat );
 }
 
@@ -530,9 +569,10 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	GList *lines, *it;
 	sLine *line;
 	ofsBatDetail *detail, *prev_detail;
-	ofxAmount amount;
+	ofxAmount debit, credit;
 	gboolean next_is_last;
 	gchar *str;
+	gboolean dbg1;
 
 	g_debug( "%s: importer=%p, bat=%p, page=%p, page_i=%u, rc_list=%p",
 			thisfn, ( void * ) importer, ( void * ) bat, ( void * ) page, page_i, ( void * ) rc_list );
@@ -542,6 +582,7 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	lines = NULL;
 	next_is_last = FALSE;
 	prev_detail = NULL;
+	dbg1 = FALSE;
 
 	for( i=0, it=rc_list ; it ; ++i, it=it->next ){
 		src = ( sRC * ) it->data;
@@ -568,17 +609,45 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 			/* a transaction field */
 			if( src->rc->y1 > first_y ){
 				line = find_line( &lines, src->rc->y1 );
+				if( dbg1 ){
+					g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+							thisfn, src->rc->x1, src->rc->y1, src->rc->x2, src->rc->y2, src->text );
+				}
 
 				if( src->rc->x1 < st_label_min_x ){
+					g_free( line->sdate );
 					line->sdate = g_strdup( src->text );
+					if( dbg1 ){
+						g_debug( "%s: setting as date", thisfn );
+					}
+
 				} else if( src->rc->x1 < st_valeur_min_x ){
+					g_free( line->slabel );
 					line->slabel = g_strdup( src->text );
+					if( dbg1 ){
+						g_debug( "%s: setting as label", thisfn );
+					}
+
 				} else if( src->rc->x1 < st_debit_min_x ){
+					g_free( line->svaleur );
 					line->svaleur = g_strdup( src->text );
+					if( dbg1 ){
+						g_debug( "%s: setting as value", thisfn );
+					}
+
 				} else if( src->rc->x1 < st_credit_min_x ){
+					g_free( line->sdebit );
 					line->sdebit = g_strdup( src->text );
+					if( dbg1 ){
+						g_debug( "%s: setting as debit", thisfn );
+					}
+
 				} else {
+					g_free( line->scredit );
 					line->scredit = g_strdup( src->text );
+					if( dbg1 ){
+						g_debug( "%s: setting as credit", thisfn );
+					}
 				}
 
 				if( next_is_last ){
@@ -619,14 +688,9 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 
 		/* final solde */
 		if( g_str_has_prefix( line->slabel, "SOLDE EN " )){
-			if( line->sdebit ){
-				amount = -1*my_double_set_from_str( line->sdebit );
-			} else if( line->scredit ){
-				amount = my_double_set_from_str( line->scredit );
-			} else {
-				amount = 0;
-			}
-			bat->end_solde = amount;
+			debit = my_double_set_from_str( line->sdebit );
+			credit = my_double_set_from_str( line->scredit );
+			bat->end_solde = credit - debit;
 			bat->end_solde_set = TRUE;
 			break;
 		}
@@ -637,11 +701,9 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 			get_dope_from_str( &detail->dope, bat, line->sdate );
 			get_dot_dmyy( &detail->deffect, line->svaleur );
 			detail->label = g_strdup( line->slabel );
-			if( line->sdebit ){
-				detail->amount = -1*my_double_set_from_str( line->sdebit );
-			} else if( line->scredit ){
-				detail->amount = my_double_set_from_str( line->scredit );
-			}
+			debit = my_double_set_from_str( line->sdebit );
+			credit = my_double_set_from_str( line->scredit );
+			detail->amount = credit - debit;
 			prev_detail = detail;
 			bat->details = g_list_prepend( bat->details, detail );
 			priv->count += 1;
@@ -665,22 +727,39 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 static GList *
 get_ordered_layout_list( ofaLclPdfImporter *importer, PopplerPage *page )
 {
-	PopplerRectangle *rc_layout;
+	static const gchar *thisfn = "ofa_importer_get_ordered_layout_list";
+	PopplerRectangle *rc_layout, *rc;
 	guint rc_count, i;
 	GList *rc_ordered;
 	gint len;
 	sRC *src;
+	gchar *text;
 
 	/* extract all the text layout rectangles, only keeping the first
 	 * of each serie - then sort them by line */
 	poppler_page_get_text_layout( page, &rc_layout, &rc_count );
+
+	if( 0 ){
+		for( i=0 ; i<rc_count ; ++i ){
+			rc = &rc_layout[i];
+			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
+			g_free( text );
+		}
+	}
+
 	rc_ordered = NULL;
 	for( i=0 ; i<rc_count ; ){
 		src = g_new0( sRC, 1 );
 		src->rc = poppler_rectangle_copy( &rc_layout[i] );
 		src->text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, src->rc );
-		len = my_strlen( src->text );
+		if( 0 ){
+			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, src->rc->x1, src->rc->y1, src->rc->x2, src->rc->y2, src->text );
+		}
 		rc_ordered = g_list_insert_sorted( rc_ordered, src, ( GCompareFunc ) cmp_rectangles );
+		len = my_strlen( src->text );
 		i += len+1;
 	}
 	g_free( rc_layout );

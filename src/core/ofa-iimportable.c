@@ -53,7 +53,7 @@ typedef struct {
 
 	/* when importing via a plugin
 	 */
-	gchar         *fname;
+	gchar         *uri;
 	ofaFileFormat *settings;
 	void          *ref;
 }
@@ -374,21 +374,21 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );
 
-	g_free( sdata->fname );
+	g_free( sdata->uri );
 	g_free( sdata );
 }
 
 /**
  * ofa_iimportable_is_willing_to:
  * @importable: this #ofaIImportable instance.
- * @fname: the filename to be imported.
+ * @uri: the URI to be imported.
  * @settings: an #ofaFileFormat object.
  *
  * Returns: %TRUE if the provider is willing to import the file.
  */
 gboolean
 ofa_iimportable_is_willing_to( ofaIImportable *importable,
-									const gchar *fname, ofaFileFormat *settings )
+									const gchar *uri, ofaFileFormat *settings )
 {
 	static const gchar *thisfn = "ofa_iimportable_is_willing_to";
 	sIImportable *sdata;
@@ -401,12 +401,12 @@ ofa_iimportable_is_willing_to( ofaIImportable *importable,
 	g_return_val_if_fail( sdata, FALSE );
 
 	ok = FALSE;
-	sdata->fname = g_strdup( fname );
+	sdata->uri = g_strdup( uri );
 	sdata->settings = settings;
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to ){
 		ok = OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to(
-					importable, sdata->fname, sdata->settings, &sdata->ref, &sdata->count );
+					importable, sdata->uri, sdata->settings, &sdata->ref, &sdata->count );
 	}
 
 	g_debug( "%s: importable=%p (%s), ok=%s, count=%u",
@@ -417,22 +417,20 @@ ofa_iimportable_is_willing_to( ofaIImportable *importable,
 }
 
 /**
- * ofa_iimportable_import_fname:
+ * ofa_iimportable_import_uri:
  * @importable: this #ofaIImportable instance.
- * @fname: the filename to be imported.
- * @settings: an #ofaFileFormat object.
  * @dossier: the current dossier.
  * @caller: the caller instance.
  *
- * Import the specified @fname.
+ * Import the specified @uri.
  *
  * Returns: the count of errors.
  */
 guint
-ofa_iimportable_import_fname( ofaIImportable *importable,
+ofa_iimportable_import_uri( ofaIImportable *importable,
 									ofoDossier *dossier, void *caller )
 {
-	static const gchar *thisfn = "ofa_iimportable_import_fname";
+	static const gchar *thisfn = "ofa_iimportable_import_uri";
 	sIImportable *sdata;
 	gint errors;
 
@@ -450,9 +448,9 @@ ofa_iimportable_import_fname( ofaIImportable *importable,
 	sdata->progress = 0;
 	sdata->insert = 0;
 
-	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_fname ){
-		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_fname(
-						importable, sdata->ref, sdata->fname, sdata->settings, dossier );
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri ){
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri(
+						importable, sdata->ref, sdata->uri, sdata->settings, dossier );
 	}
 
 	return( errors );

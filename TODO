@@ -322,10 +322,17 @@
  604 2015- 1-26 Bat: solde becomes end_solde (dbms and methods)
 
  605 2015- 1-28 add the dbname in the main window title
+     2015- 1-29 done
 
  606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
+     2015- 1-29 done
 
- 607
+ 607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
+                dossier_login in order to mutualize some code if possible
+                common behavior is: do not close current dossier if we
+                are not sure that credentials are ok
+
+ 608
 
 -----------------------------------------------------------------------
  DONE

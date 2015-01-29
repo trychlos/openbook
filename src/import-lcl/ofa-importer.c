@@ -82,9 +82,9 @@ static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_fname( ofaIImportable *lcl_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
-static GSList      *get_file_content( ofaIImportable *lcl_importer, const gchar *fname );
+static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
+static GSList      *get_file_content( ofaIImportable *lcl_importer, const gchar *uri );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
 static gboolean     lcl_tabulated_text_v1_check( ofaLCLImporter *lcl_importer );
 static ofsBat      *lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer );
@@ -205,7 +205,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->is_willing_to = iimportable_is_willing_to;
-	iface->import_fname = iimportable_import_fname;
+	iface->import_uri = iimportable_import_uri;
 }
 
 static guint
@@ -221,20 +221,20 @@ iimportable_get_interface_version( const ofaIImportable *lcl_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_iimportable_is_willing_to";
 	ofaLCLImporterPrivate *priv;
 	gint i;
 	gboolean ok;
 
-	g_debug( "%s: lcl_importer=%p, fname=%s, settings=%p, count=%p",
-			thisfn, ( void * ) lcl_importer, fname, ( void * ) settings, ( void * ) count );
+	g_debug( "%s: lcl_importer=%p, uri=%s, settings=%p, count=%p",
+			thisfn, ( void * ) lcl_importer, uri, ( void * ) settings, ( void * ) count );
 
 	priv = OFA_LCL_IMPORTER( lcl_importer )->priv;
 	ok = FALSE;
 
-	priv->lines = get_file_content( lcl_importer, fname );
+	priv->lines = get_file_content( lcl_importer, uri );
 	priv->settings = settings;
 
 	for( i=0 ; st_import_formats[i].label ; ++i ){
@@ -255,20 +255,20 @@ iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *fname, ofa
  * import the file
  */
 static guint
-iimportable_import_fname( ofaIImportable *lcl_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofa_lcl_importer_iimportable_import_fname";
+	static const gchar *thisfn = "ofa_lcl_importer_iimportable_import_uri";
 	ofaLCLImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
 
-	g_debug( "%s: lcl_importer=%p, ref=%p, fname=%s, settings=%p, dossier=%p",
+	g_debug( "%s: lcl_importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p",
 			thisfn, ( void * ) lcl_importer, ref,
-			fname, ( void * ) settings, ( void * ) dossier );
+			uri, ( void * ) settings, ( void * ) dossier );
 
 	priv = OFA_LCL_IMPORTER( lcl_importer )->priv;
 
-	priv->lines = get_file_content( lcl_importer, fname );
+	priv->lines = get_file_content( lcl_importer, uri );
 	priv->settings = settings;
 	priv->dossier = dossier;
 
@@ -278,10 +278,10 @@ iimportable_import_fname( ofaIImportable *lcl_importer, void *ref, const gchar *
 	if( st_import_formats[idx].fnImport ){
 		bat = st_import_formats[idx].fnImport( OFA_LCL_IMPORTER( lcl_importer ));
 		if( bat ){
-			bat->uri = g_strdup( fname );
+			bat->uri = g_strdup( uri );
 			bat->format = g_strdup( st_import_formats[idx].label );
 			ofo_bat_import( lcl_importer, bat, dossier );
-			ofo_bat_free( bat );
+			ofs_bat_free( bat );
 		}
 	}
 
@@ -291,7 +291,7 @@ iimportable_import_fname( ofaIImportable *lcl_importer, void *ref, const gchar *
 }
 
 static GSList *
-get_file_content( ofaIImportable *lcl_importer, const gchar *fname )
+get_file_content( ofaIImportable *lcl_importer, const gchar *uri )
 {
 	GFile *gfile;
 	gchar *contents;
@@ -299,7 +299,7 @@ get_file_content( ofaIImportable *lcl_importer, const gchar *fname )
 	GSList *list;
 
 	list = NULL;
-	gfile = g_file_new_for_path( fname );
+	gfile = g_file_new_for_uri( uri );
 	if( g_file_load_contents( gfile, NULL, &contents, NULL, NULL, NULL )){
 		lines = g_strsplit( contents, "\n", -1 );
 		g_free( contents );
@@ -436,7 +436,7 @@ lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer )
 				g_free( sbegin );
 				g_free( send );
 				priv->errors += 1;
-				ofo_bat_free( sbat );
+				ofs_bat_free( sbat );
 				sbat = NULL;
 			}
 		}

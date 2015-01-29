@@ -78,6 +78,7 @@ struct _ofaMainWindowPrivate {
 	 */
 	gchar         *dos_account;
 	gchar         *dos_password;
+	gchar         *dos_dbname;
 
 	/* internals
 	 */
@@ -325,6 +326,9 @@ main_window_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_MAIN_WINDOW( instance )->priv;
 
+	g_free( priv->dos_account );
+	g_free( priv->dos_password );
+	g_free( priv->dos_dbname );
 	g_free( priv->orig_title );
 
 	/* chain up to the parent class */
@@ -784,8 +788,9 @@ set_window_title( const ofaMainWindow *window )
 	priv = window->priv;
 
 	if( priv->dossier ){
-		title = g_strdup_printf( "%s - %s - %s",
+		title = g_strdup_printf( "%s (%s) %s - %s",
 				ofo_dossier_get_name( priv->dossier ),
+				priv->dos_dbname,
 				ofa_dossier_misc_get_exercice_label(
 						ofo_dossier_get_exe_begin( priv->dossier ),
 						ofo_dossier_get_exe_end( priv->dossier ),
@@ -832,6 +837,8 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 		g_clear_object( &priv->dossier );
 		return;
 	}
+
+	priv->dos_dbname = g_strdup( sdo->dbname );
 
 	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
