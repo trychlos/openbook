@@ -297,6 +297,8 @@ static void           set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, co
 /*static void           set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );*/
 static void           display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void           remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
+static void           remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
 static gboolean       find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter );
 static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static void           do_new_entry( ofaViewEntries *self, ofoEntry *entry );
@@ -1992,7 +1994,7 @@ static gboolean
 is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	gboolean visible;
+	gboolean visible, ok;
 	ofoEntry *entry;
 	ofaEntryStatus status;
 	GDate deffect;
@@ -2027,10 +2029,18 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 			}
 
 			get_row_deffect( self, tmodel, iter, &deffect );
-			visible &= !my_date_is_valid( &priv->d_from ) ||
-					!my_date_is_valid( &deffect ) || my_date_compare( &priv->d_from, &deffect ) <= 0;
-			visible &= !my_date_is_valid( &priv->d_to ) ||
-					!my_date_is_valid( &deffect ) || my_date_compare( &priv->d_to, &deffect ) >= 0;
+			if( visible ){
+				ok = !my_date_is_valid( &priv->d_from ) ||
+						!my_date_is_valid( &deffect ) ||
+						my_date_compare( &priv->d_from, &deffect ) <= 0;
+				visible &= ok;
+			}
+			if( visible ){
+				ok = !my_date_is_valid( &priv->d_to ) ||
+						!my_date_is_valid( &deffect ) ||
+						my_date_compare( &priv->d_to, &deffect ) >= 0;
+				visible &= ok;
+			}
 
 			/*gchar *sdeff, *sfrom, *sto;
 			sdeff = my_date_to_str( &deffect, MY_DATE_DMYY );
@@ -2902,10 +2912,16 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	GDate dope, deff;
 	gint number;
 	ofoEntry *entry;
-	gboolean ok;
+	gboolean is_new, ok;
+	const gchar *prev_account, *prev_ledger;
+	ofxAmount prev_debit, prev_credit;
 
 	priv = self->priv;
 	ok = FALSE;
+	prev_debit = 0;						/* so that gcc -pedantic is happy */
+	prev_credit = 0;
+	prev_account = NULL;
+	prev_ledger = NULL;
 
 	gtk_tree_model_get(
 			tmodel,
@@ -2926,6 +2942,15 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	/*g_debug( "save_entry: ref_count=%d", G_OBJECT( entry )->ref_count );*/
 	g_object_unref( entry );
 
+	is_new = ofo_entry_get_number( entry ) == 0;
+
+	if( !is_new ){
+		prev_account = ofo_entry_get_account( entry );
+		prev_ledger = ofo_entry_get_ledger( entry );
+		prev_debit = ofo_entry_get_debit( entry );
+		prev_credit = ofo_entry_get_credit( entry );
+	}
+
 	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
 	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 	ofo_entry_set_dope( entry, &dope );
@@ -2942,10 +2967,12 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofo_entry_set_credit( entry, my_double_set_from_str( scre ));
 	ofo_entry_set_currency( entry, currency );
 
-	if( ofo_entry_get_number( entry ) > 0 ){
-		ok = ofo_entry_update( entry, priv->dossier );
-	} else {
+	if( is_new ){
 		ok = ofo_entry_insert( entry, priv->dossier );
+	} else {
+		ok = ofo_entry_update( entry, priv->dossier );
+		remediate_entry_account( self, entry, prev_account, prev_debit, prev_credit );
+		remediate_entry_ledger( self, entry, prev_ledger, prev_debit, prev_credit );
 	}
 
 	g_free( currency );
@@ -2959,6 +2986,166 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_free( sdope );
 
 	return( ok );
+}
+
+/*
+ * update balances of account and/or ledger if something relevant has
+ * changed
+ * note that the status cannot be modified here
+ */
+static void
+remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit )
+{
+	ofaViewEntriesPrivate *priv;
+	const gchar *account;
+	ofxAmount amount, debit, credit;
+	ofaEntryStatus status;
+	ofoAccount *account_new, *account_prev;
+	gint cmp;
+	gboolean remediate;
+
+	priv = self->priv;
+
+	remediate = FALSE;
+	account = ofo_entry_get_account( entry );
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+	status = ofo_entry_get_status( entry );
+	cmp = g_utf8_collate( account, prev_account );
+
+	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
+
+		remediate = TRUE;
+		account_new = ofo_account_get_by_number( priv->dossier, account );
+		g_return_if_fail( account_new && OFO_IS_ACCOUNT( account_new ));
+		if( cmp != 0 ){
+			account_prev = ofo_account_get_by_number( priv->dossier, prev_account );
+			g_return_if_fail( account_prev && OFO_IS_ACCOUNT( account_prev ));
+		} else {
+			account_prev = account_new;
+		}
+
+		switch( status ){
+			case ENT_STATUS_VALIDATED:
+				amount = ofo_account_get_val_debit( account_prev );
+				ofo_account_set_val_debit( account_prev, amount-prev_debit );
+				amount = ofo_account_get_val_credit( account_prev );
+				ofo_account_set_val_credit( account_prev, amount-prev_credit );
+				amount = ofo_account_get_val_debit( account_new );
+				ofo_account_set_val_debit( account_new, amount+debit );
+				amount = ofo_account_get_val_credit( account_new );
+				ofo_account_set_val_credit( account_new, amount+credit );
+				break;
+			case ENT_STATUS_ROUGH:
+				amount = ofo_account_get_rough_debit( account_prev );
+				ofo_account_set_rough_debit( account_prev, amount-prev_debit );
+				amount = ofo_account_get_rough_credit( account_prev );
+				ofo_account_set_rough_credit( account_prev, amount-prev_credit );
+				amount = ofo_account_get_rough_debit( account_new );
+				ofo_account_set_rough_debit( account_new, amount+debit );
+				amount = ofo_account_get_rough_credit( account_new );
+				ofo_account_set_rough_credit( account_new, amount+credit );
+				break;
+			case ENT_STATUS_FUTURE:
+				amount = ofo_account_get_futur_debit( account_prev );
+				ofo_account_set_futur_debit( account_prev, amount-prev_debit );
+				amount = ofo_account_get_futur_credit( account_prev );
+				ofo_account_set_futur_credit( account_prev, amount-prev_credit );
+				amount = ofo_account_get_futur_debit( account_new );
+				ofo_account_set_futur_debit( account_new, amount+debit );
+				amount = ofo_account_get_futur_credit( account_new );
+				ofo_account_set_futur_credit( account_new, amount+credit );
+				break;
+			default:
+				remediate = FALSE;
+				break;
+		}
+
+		if( remediate ){
+			if( cmp != 0 ){
+				ofo_account_update_amounts( account_prev, priv->dossier );
+			}
+			ofo_account_update_amounts( account_new, priv->dossier );
+		}
+	}
+}
+
+static void
+remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit )
+{
+	ofaViewEntriesPrivate *priv;
+	const gchar *ledger, *currency;
+	ofxAmount amount, debit, credit;
+	ofaEntryStatus status;
+	ofoLedger *ledger_new, *ledger_prev;
+	gint cmp;
+	gboolean remediate;
+
+	priv = self->priv;
+
+	remediate = FALSE;
+	ledger = ofo_entry_get_ledger( entry );
+	currency = ofo_entry_get_currency( entry );
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+	status = ofo_entry_get_status( entry );
+	cmp = g_utf8_collate( ledger, prev_ledger );
+
+	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
+
+		remediate = TRUE;
+		ledger_new = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
+		g_return_if_fail( ledger_new && OFO_IS_LEDGER( ledger_new ));
+		if( cmp != 0 ){
+			ledger_prev = ofo_ledger_get_by_mnemo( priv->dossier, prev_ledger );
+			g_return_if_fail( ledger_prev && OFO_IS_LEDGER( ledger_prev ));
+		} else {
+			ledger_prev = ledger_new;
+		}
+
+		switch( status ){
+			case ENT_STATUS_VALIDATED:
+				amount = ofo_ledger_get_val_debit( ledger_prev, currency );
+				ofo_ledger_set_val_debit( ledger_prev, amount-prev_debit, currency );
+				amount = ofo_ledger_get_val_credit( ledger_prev, currency );
+				ofo_ledger_set_val_credit( ledger_prev, amount-prev_credit, currency );
+				amount = ofo_ledger_get_val_debit( ledger_new, currency );
+				ofo_ledger_set_val_debit( ledger_new, amount+debit, currency );
+				amount = ofo_ledger_get_val_credit( ledger_new, currency );
+				ofo_ledger_set_val_credit( ledger_new, amount+credit, currency );
+				break;
+			case ENT_STATUS_ROUGH:
+				amount = ofo_ledger_get_rough_debit( ledger_prev, currency );
+				ofo_ledger_set_rough_debit( ledger_prev, amount-prev_debit, currency );
+				amount = ofo_ledger_get_rough_credit( ledger_prev, currency );
+				ofo_ledger_set_rough_credit( ledger_prev, amount-prev_credit, currency );
+				amount = ofo_ledger_get_rough_debit( ledger_new, currency );
+				ofo_ledger_set_rough_debit( ledger_new, amount+debit, currency );
+				amount = ofo_ledger_get_rough_credit( ledger_new, currency );
+				ofo_ledger_set_rough_credit( ledger_new, amount+credit, currency );
+				break;
+			case ENT_STATUS_FUTURE:
+				amount = ofo_ledger_get_futur_debit( ledger_prev, currency );
+				ofo_ledger_set_futur_debit( ledger_prev, amount-prev_debit, currency );
+				amount = ofo_ledger_get_futur_credit( ledger_prev, currency );
+				ofo_ledger_set_futur_credit( ledger_prev, amount-prev_credit, currency );
+				amount = ofo_ledger_get_futur_debit( ledger_new, currency );
+				ofo_ledger_set_futur_debit( ledger_new, amount+debit, currency );
+				amount = ofo_ledger_get_futur_credit( ledger_new, currency );
+				ofo_ledger_set_futur_credit( ledger_new, amount+credit, currency );
+				break;
+			default:
+				remediate = FALSE;
+				break;
+		}
+
+		if( remediate ){
+			if( cmp != 0 ){
+				ofo_ledger_update( ledger_prev, priv->dossier, prev_ledger );
+			}
+			ofo_ledger_update( ledger_new, priv->dossier, ledger );
+		}
+	}
 }
 
 /*

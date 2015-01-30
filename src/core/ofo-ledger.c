@@ -1164,10 +1164,10 @@ ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
 	ofo_base_setter( LEDGER, ledger, date, LED_LAST_CLO, date );
 }
 
-#if 0
-/*
+/**
  * ofo_ledger_set_val_debit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the debit balance of this ledger from validated entries for
@@ -1175,25 +1175,26 @@ ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_val_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_val_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
-	g_return_if_fail( OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->val_debit += amount;
+		ofa_box_set_amount( balance, LED_VAL_DEBIT, amount );
 	}
 }
 
-/*
+/**
  * ofo_ledger_set_val_credit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the credit balance of this ledger from validated entries for
@@ -1201,25 +1202,26 @@ ledger_set_val_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_val_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_val_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
-	g_return_if_fail( OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->val_credit += amount;
+		ofa_box_set_amount( balance, LED_VAL_CREDIT, amount );
 	}
 }
 
-/*
+/**
  * ofo_ledger_set_rough_debit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the current debit balance of this ledger for
@@ -1227,25 +1229,26 @@ ledger_set_val_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amoun
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_rough_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
 	g_return_if_fail( OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->rough_debit += amount;
+		ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount );
 	}
 }
 
-/*
+/**
  * ofo_ledger_set_rough_credit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the current credit balance of this ledger for
@@ -1253,25 +1256,26 @@ ledger_set_rough_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amou
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_rough_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
 	g_return_if_fail( OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->rough_credit += amount;
+		ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount );
 	}
 }
 
-/*
+/**
  * ofo_ledger_set_futur_debit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the debit balance of this ledger for
@@ -1279,25 +1283,26 @@ ledger_set_rough_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amo
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_futur_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_futur_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
 	g_return_if_fail( OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->futur_debit += amount;
+		ofa_box_set_amount( balance, LED_FUT_DEBIT, amount );
 	}
 }
 
-/*
+/**
  * ofo_ledger_set_futur_credit:
  * @ledger:
+ * @amount:
  * @currency:
  *
  * Set the credit balance of this ledger for
@@ -1305,22 +1310,21 @@ ledger_set_futur_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amou
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-static void
-ledger_set_futur_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+void
+ofo_ledger_set_futur_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
 {
-	sDetailCur *sdev;
+	GList *balance;
 
 	g_return_if_fail( OFO_IS_LEDGER( ledger ));
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( sdev );
+		balance = ledger_new_balance_with_code( ledger, currency );
+		g_return_if_fail( balance );
 
-		sdev->futur_credit += amount;
+		ofa_box_set_amount( balance, LED_FUT_CREDIT, amount );
 	}
 }
-#endif
 
 /**
  * ofo_ledger_close:
@@ -1465,6 +1469,7 @@ ofo_ledger_update( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mne
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -1546,6 +1551,43 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaDbms *dbm
 	}
 
 	return( ok );
+}
+
+/**
+ * ofo_ledger_update_balance:
+ */
+gboolean
+ofo_ledger_update_balance( ofoLedger *ledger, ofoDossier *dossier, const gchar *currency )
+{
+	static const gchar *thisfn = "ofo_ledger_update_balance";
+	GList *balance;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( currency && g_utf8_strlen( currency, -1 ), FALSE );
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		g_debug( "%s: ledger=%p, dossier=%p, currency=%s",
+				thisfn, ( void * ) ledger, ( void * ) dossier, currency );
+
+		balance = ledger_find_balance_by_code( ledger, currency );
+		g_return_val_if_fail( balance, FALSE );
+
+		if( ledger_do_update_balance(
+					ledger,
+					balance,
+					ofo_dossier_get_dbms( dossier ))){
+
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
 }
 
 static gboolean

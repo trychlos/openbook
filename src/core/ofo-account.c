@@ -201,17 +201,11 @@ static void         account_iter_children( const ofoAccount *account, sChildren 
 static gboolean     do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void         account_set_val_debit( ofoAccount *account, ofxAmount amount );
-static void         account_set_val_credit( ofoAccount *account, ofxAmount amount );
-static void         account_set_rough_debit( ofoAccount *account, ofxAmount amount );
-static void         account_set_rough_credit( ofoAccount *account, ofxAmount amount );
-static void         account_set_futur_debit( ofoAccount *account, ofxAmount amount );
-static void         account_set_futur_credit( ofoAccount *account, ofxAmount amount );
 static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user );
 static gboolean     account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number );
-static gboolean     account_update_amounts( ofoAccount *account, const ofaDbms *dbms );
+static gboolean     account_do_update_amounts( ofoAccount *account, const ofaDbms *dbms );
 static gboolean     account_do_delete( ofoAccount *account, const ofaDbms *dbms );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
@@ -428,22 +422,22 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 		case ENT_STATUS_ROUGH:
 			if( debit ){
 				prev = ofo_account_get_rough_debit( account );
-				account_set_rough_debit( account, prev+debit );
+				ofo_account_set_rough_debit( account, prev+debit );
 
 			} else {
 				prev = ofo_account_get_rough_credit( account );
-				account_set_rough_credit( account, prev+credit );
+				ofo_account_set_rough_credit( account, prev+credit );
 			}
 			break;
 
 		case ENT_STATUS_FUTURE:
 			if( debit ){
 				prev = ofo_account_get_futur_debit( account );
-				account_set_futur_debit( account, prev+debit );
+				ofo_account_set_futur_debit( account, prev+debit );
 
 			} else {
 				prev = ofo_account_get_futur_credit( account );
-				account_set_futur_credit( account, prev+credit );
+				ofo_account_set_futur_credit( account, prev+credit );
 			}
 			break;
 
@@ -452,7 +446,7 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 			break;
 	}
 
-	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
+	if( account_do_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
@@ -524,21 +518,21 @@ on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus pr
 	switch( prev_status ){
 		case ENT_STATUS_ROUGH:
 			amount = ofo_account_get_rough_debit( account );
-			account_set_rough_debit( account, amount-debit );
+			ofo_account_set_rough_debit( account, amount-debit );
 			amount = ofo_account_get_rough_credit( account );
-			account_set_rough_credit( account, amount-credit );
+			ofo_account_set_rough_credit( account, amount-credit );
 			break;
 		case ENT_STATUS_VALIDATED:
 			amount = ofo_account_get_val_debit( account );
-			account_set_val_debit( account, amount-debit );
+			ofo_account_set_val_debit( account, amount-debit );
 			amount = ofo_account_get_val_credit( account );
-			account_set_val_credit( account, amount-credit );
+			ofo_account_set_val_credit( account, amount-credit );
 			break;
 		case ENT_STATUS_FUTURE:
 			amount = ofo_account_get_futur_debit( account );
-			account_set_futur_debit( account, amount-debit );
+			ofo_account_set_futur_debit( account, amount-debit );
 			amount = ofo_account_get_futur_credit( account );
-			account_set_futur_credit( account, amount-credit );
+			ofo_account_set_futur_credit( account, amount-credit );
 			break;
 		default:
 			break;
@@ -547,31 +541,27 @@ on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus pr
 	switch( new_status ){
 		case ENT_STATUS_ROUGH:
 			amount = ofo_account_get_rough_debit( account );
-			account_set_rough_debit( account, amount+debit );
+			ofo_account_set_rough_debit( account, amount+debit );
 			amount = ofo_account_get_rough_credit( account );
-			account_set_rough_credit( account, amount+credit );
+			ofo_account_set_rough_credit( account, amount+credit );
 			break;
 		case ENT_STATUS_VALIDATED:
 			amount = ofo_account_get_val_debit( account );
-			account_set_val_debit( account, amount+debit );
+			ofo_account_set_val_debit( account, amount+debit );
 			amount = ofo_account_get_val_credit( account );
-			account_set_val_credit( account, amount+credit );
+			ofo_account_set_val_credit( account, amount+credit );
 			break;
 		case ENT_STATUS_FUTURE:
 			amount = ofo_account_get_futur_debit( account );
-			account_set_futur_debit( account, amount+debit );
+			ofo_account_set_futur_debit( account, amount+debit );
 			amount = ofo_account_get_futur_credit( account );
-			account_set_futur_credit( account, amount+credit );
+			ofo_account_set_futur_credit( account, amount+credit );
 			break;
 		default:
 			break;
 	}
 
-	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
-	}
+	ofo_account_update_amounts( account, dossier );
 }
 
 /*
@@ -1576,42 +1566,42 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
 	account_set_timestamp( ACC_UPD_STAMP, stamp );
 }
 
-/*
- * ofo_account_set_val_debit:
+/**
+ * ofo_ofo_account_set_val_debit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_val_debit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_val_debit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_VAL_DEBIT, amount );
 }
 
-/*
- * ofo_account_set_val_credit:
+/**
+ * ofo_ofo_account_set_val_credit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_val_credit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_val_credit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_VAL_CREDIT, amount );
 }
 
-/*
- * ofo_account_set_rough_debit:
+/**
+ * ofo_ofo_account_set_rough_debit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_rough_debit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_rough_debit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_ROUGH_DEBIT, amount );
 }
 
-/*
- * ofo_account_set_rough_credit:
+/**
+ * ofo_ofo_account_set_rough_credit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_rough_credit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_rough_credit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_ROUGH_CREDIT, amount );
 }
@@ -1636,22 +1626,22 @@ account_set_open_credit( ofoAccount *account, ofxAmount amount )
 	account_set_amount( ACC_OPEN_CREDIT, amount );
 }
 
-/*
- * ofo_account_set_futur_debit:
+/**
+ * ofo_ofo_account_set_futur_debit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_futur_debit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_futur_debit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_FUT_DEBIT, amount );
 }
 
-/*
- * ofo_account_set_futur_credit:
+/**
+ * ofo_ofo_account_set_futur_credit:
  * @account: the #ofoAccount account
  */
-static void
-account_set_futur_credit( ofoAccount *account, ofxAmount amount )
+void
+ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_FUT_CREDIT, amount );
 }
@@ -1885,8 +1875,39 @@ account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, 
 	return( ok );
 }
 
+/**
+ * ofo_account_update_amounts:
+ */
+gboolean
+ofo_account_update_amounts( ofoAccount *account, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_account_do_update_amounts";
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		g_debug( "%s: account=%p, dossier=%p",
+					thisfn, ( void * ) account, ( void * ) dossier );
+
+		if( account_do_update_amounts(
+					account,
+					ofo_dossier_get_dbms( dossier ))){
+
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
 static gboolean
-account_update_amounts( ofoAccount *account, const ofaDbms *dbms )
+account_do_update_amounts( ofoAccount *account, const ofaDbms *dbms )
 {
 	GString *query;
 	gboolean ok;

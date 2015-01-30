@@ -116,9 +116,16 @@ void            ofo_account_set_type_account     ( ofoAccount *account, const gc
 void            ofo_account_set_settleable       ( ofoAccount *account, gboolean settleable );
 void            ofo_account_set_reconciliable    ( ofoAccount *account, gboolean reconciliable );
 void            ofo_account_set_forward          ( ofoAccount *account, gboolean forward );
+void            ofo_account_set_val_debit        ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_val_credit       ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_rough_debit      ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_rough_credit     ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_debit      ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_credit     ( ofoAccount *account, ofxAmount amount );
 
 gboolean        ofo_account_insert               ( ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_update               ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
+gboolean        ofo_account_update_amounts       ( ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_delete               ( ofoAccount *account, ofoDossier *dossier );
 
 G_END_DECLS

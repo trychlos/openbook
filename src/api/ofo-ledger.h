@@ -81,10 +81,18 @@ void            ofo_ledger_set_mnemo         ( ofoLedger *ledger, const gchar *n
 void            ofo_ledger_set_label         ( ofoLedger *ledger, const gchar *label );
 void            ofo_ledger_set_notes         ( ofoLedger *ledger, const gchar *notes );
 
+void            ofo_ledger_set_val_debit     ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+void            ofo_ledger_set_val_credit    ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+void            ofo_ledger_set_rough_debit   ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+void            ofo_ledger_set_rough_credit  ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+void            ofo_ledger_set_futur_debit   ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+void            ofo_ledger_set_futur_credit  ( ofoLedger *ledger, ofxAmount amount, const gchar *currency );
+
 gboolean        ofo_ledger_close             ( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing );
 
 gboolean        ofo_ledger_insert            ( ofoLedger *ledger, ofoDossier *dossier );
 gboolean        ofo_ledger_update            ( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_ledger_update_balance    ( ofoLedger *ledger, ofoDossier *dossier, const gchar *currency );
 gboolean        ofo_ledger_delete            ( ofoLedger *ledger, ofoDossier *dossier );
 
 G_END_DECLS
