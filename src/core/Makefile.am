@@ -83,6 +83,8 @@ libofa_core_la_SOURCES = \
 	ofo-class.c											\
 	ofo-currency.c										\
 	ofo-dossier.c										\
+	ofo-dossier-ddl.c									\
+	ofo-dossier-ddl.h									\
 	ofo-entry.c											\
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
