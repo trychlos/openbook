@@ -318,10 +318,8 @@
  608 2015- 1-29 ViewEntries: when modifying account or ledger, make sure
                 corresponding balances are updated
 
- 609 2015- 1-29 BatProperties: entries should be read only, but not
-                disabled
-
- 611 2015- 1-30 refactor BatCommon as a Bin
+ 611 2015- 1-30 refactor BatCommon as a Bin + replace callbacks with 
+                signals
 
  612 2015- 1-30 BatProperties: view bat lines
 
@@ -2691,6 +2689,10 @@
 
  606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
      2015- 1-29 done - svn #4523
+
+ 609 2015- 1-29 BatProperties: entries should be read only, but not
+                disabled
+     2015- 1-30 done - svn #4529
 
  610 2015- 1-29 Reconciliation, Settlement: make sure new entries are
                 displayed

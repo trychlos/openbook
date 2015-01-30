@@ -36,8 +36,8 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-properties.h"
+#include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -46,17 +46,17 @@ struct _ofaBatPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoBat        *bat;
-	gboolean       is_new;				/* always FALSE here */
-	gboolean       updated;
-	ofaBatCommon  *child_box;
+	ofoBat              *bat;
+	gboolean             is_new;		/* always FALSE here */
+	gboolean             updated;
+	ofaBatPropertiesBin *bat_bin;
 
 	/* data
 	 */
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-bat-properties.ui";
-static const gchar  *st_ui_id  = "BatPropertiesDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-bat-properties.ui";
+static const gchar *st_ui_id            = "BatPropertiesDlg";
 
 G_DEFINE_TYPE( ofaBatProperties, ofa_bat_properties, MY_TYPE_DIALOG )
 
@@ -169,9 +169,9 @@ v_init_dialog( myDialog *dialog )
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
 	gchar *title;
-	ofsBatCommonParms parms;
 	GtkWindow *toplevel;
 	GtkWidget *container;
+	ofoDossier *dossier;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
@@ -180,21 +180,16 @@ v_init_dialog( myDialog *dialog )
 
 	self = OFA_BAT_PROPERTIES( dialog );
 	priv = self->priv;
+	dossier = MY_WINDOW( dialog )->prot->dossier;
 
 	container = my_utils_container_get_child_by_name(
-								GTK_CONTAINER( toplevel ), "containing-frame" );
+			GTK_CONTAINER( toplevel ), "containing-frame" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	parms.container = GTK_CONTAINER( container );
-	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
-	parms.with_tree_view = FALSE;
-	parms.editable = TRUE;
-	parms.pfnSelection = NULL;
-	parms.pfnActivation = NULL;
-	parms.user_data = NULL;
-
-	priv->child_box = ofa_bat_common_init_dialog( &parms );
-	ofa_bat_common_set_bat( priv->child_box, priv->bat );
+	priv->bat_bin = ofa_bat_properties_bin_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
+	ofa_bat_properties_bin_set_bat(
+			priv->bat_bin, priv->bat, dossier, ofo_dossier_is_current( dossier ));
 
 	check_for_enable_dlg( self );
 }

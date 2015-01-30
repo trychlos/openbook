@@ -85,10 +85,10 @@ openbook_SOURCES = \
 	ofa-backup.h										\
 	ofa-balances-grid.c									\
 	ofa-balances-grid.h									\
-	ofa-bat-common.c									\
-	ofa-bat-common.h									\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
+	ofa-bat-properties-bin.c							\
+	ofa-bat-properties-bin.h							\
 	ofa-bat-select.c									\
 	ofa-bat-select.h									\
 	ofa-bats-page.c										\
@@ -240,8 +240,8 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
-	ofa-bat-common.ui									\
 	ofa-bat-properties.ui								\
+	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\
 	ofa-check-balances.ui								\
 	ofa-check-balances-bin.ui							\
