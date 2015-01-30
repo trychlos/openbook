@@ -1036,6 +1036,12 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 	GObject *object;
 
 	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &object, -1 );
+
+	/* as we insert the row before populating it, it may happen that
+	 * the object be not set */
+	if( !object ){
+		return( FALSE );
+	}
 	g_object_unref( object );
 	g_return_val_if_fail( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object ), TRUE );
 

@@ -318,9 +318,6 @@
  608 2015- 1-29 ViewEntries: when modifying account or ledger, make sure
                 corresponding balances are updated
 
- 611 2015- 1-30 refactor BatCommon as a Bin + replace callbacks with 
-                signals
-
  612 2015- 1-30 BatProperties: view bat lines
 
  613
@@ -2697,6 +2694,10 @@
  610 2015- 1-29 Reconciliation, Settlement: make sure new entries are
                 displayed
      2015- 1-29 done - svn #4528
+
+ 611 2015- 1-30 refactor BatCommon as a Bin + replace callbacks with 
+                signals
+     2015- 1-30 done - svn #4530
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

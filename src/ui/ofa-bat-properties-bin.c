@@ -188,70 +188,6 @@ load_dialog( ofaBatPropertiesBin *bin )
 	g_return_if_fail( priv->bat_solde && GTK_IS_ENTRY( priv->bat_solde ));
 }
 
-#if 0
-static void
-remove_treeview( ofaBatPropertiesBin *bin )
-{
-	GtkWidget *widget;
-
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p0-scrolledwindow" );
-	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
-
-	gtk_widget_destroy( widget );
-}
-
-/**
- * ofa_bat_properties_bin_set_dossier:
- */
-void
-ofa_bat_properties_bin_set_dossier( ofaBatPropertiesBin *bin, ofoDossier *dossier )
-{
-	ofaBatPropertiesBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dossier = dossier;
-
-		if( priv->with_treeview ){
-			init_treeview( bin );
-			setup_first_selection( bin );
-		}
-	}
-}
-
-/**
- * ofa_bat_properties_bin_get_selected:
- * @bin:
- *
- * Returns the currently selected object.
- */
-const ofoBat *
-ofa_bat_properties_bin_get_selected( const ofaBatPropertiesBin *bin )
-{
-	ofaBatPropertiesBinPrivate *priv;
-	GtkTreeSelection *select;
-	const ofoBat *bat;
-
-	g_return_val_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ), NULL );
-
-	priv = bin->priv;
-	bat = NULL;
-
-	if( !priv->dispose_has_run ){
-
-		select = gtk_tree_view_get_selection( priv->tview );
-		bat = get_selected_object( bin, select );
-	}
-
-	return( bat );
-}
-#endif
-
 static void
 display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable )
 {
@@ -317,7 +253,11 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 void
 ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable )
 {
+	static const gchar *thisfn = "ofa_bat_properties_bin_set_bat";
 	ofaBatPropertiesBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, bat=%p, dossier=%p, editable=%s",
+			thisfn, ( void * ) bin, ( void * ) bat, ( void * ) dossier, editable ? "True":"False" );
 
 	g_return_if_fail( OFA_IS_BAT_PROPERTIES_BIN( bin ));
 	g_return_if_fail( OFO_IS_BAT( bat ));
