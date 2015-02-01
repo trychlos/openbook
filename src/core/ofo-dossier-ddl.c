@@ -326,19 +326,18 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-#if 0
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
-			priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLSLD" );
+			ofo_dossier_get_name( dossier ),
+			DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLSLD" );
 	if( !ofa_dbms_query( dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
-#endif
 
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR ("

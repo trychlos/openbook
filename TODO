@@ -307,7 +307,13 @@
  614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
                 the compilation of pdf-aware plugins
 
- 615
+ 615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
+                the compilation of mysql plugin
+
+ 616 2015- 2- 1 configure.ac: have a warning if no sgbd plugin is compiled
+                (only a warning as a plugin may be provided from elsewhere)
+
+ 617
 
 -----------------------------------------------------------------------
  DONE
