@@ -2425,11 +2425,18 @@ ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier, const GDate
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( do_update_concil(
+		if( do_update_concil(
 						entry,
 						date,
 						ofo_dossier_get_user( dossier ),
-						ofo_dossier_get_dbms( dossier )));
+						ofo_dossier_get_dbms( dossier ))){
+
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+
+			return( TRUE );
+		}
 	}
 
 	return( FALSE );
@@ -2490,11 +2497,18 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCoun
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( do_update_settlement(
+		if( do_update_settlement(
 						entry,
 						ofo_dossier_get_user( dossier ),
 						ofo_dossier_get_dbms( dossier ),
-						number ));
+						number )){
+
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+
+			return( TRUE );
+		}
 	}
 
 	return( FALSE );

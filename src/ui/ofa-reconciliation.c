@@ -34,7 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
-#include "api/ofa-iimporter.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat-line.h"
@@ -46,7 +46,6 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
-#include "ui/ofa-importer.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-reconciliation.h"
@@ -1451,6 +1450,8 @@ on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
 
 /*
  * select an already imported Bank Account Transaction list file
+ *
+ * @button is NULL when called from on_file_set().
  */
 static void
 on_select_bat( GtkButton *button, ofaReconciliation *self )
@@ -1470,18 +1471,27 @@ on_select_bat( GtkButton *button, ofaReconciliation *self )
 static void
 on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 {
-#if 0
-	gint bat_id;
+	ofaReconciliationPrivate *priv;
+	ofaFileFormat *settings;
+	ofaIImportable *importable;
 
-	bat_id = ofa_importer_import_from_uri(
-					ofa_page_get_dossier( OFA_PAGE( self )),
-					IMPORTER_TYPE_BAT,
-					gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )));
+	priv = self->priv;
 
-	if( bat_id > 0 ){
-		setup_bat_lines( self, bat_id );
+	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
+	ofa_file_format_set( settings,
+			NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, 0, 0, 0 );
+
+	importable = ofa_iimportable_find_willing_to(
+			gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )), settings );
+
+	if( importable ){
+		if( !ofa_iimportable_import_uri( importable, priv->dossier, NULL )){
+			on_select_bat( NULL, self );
+		}
+		g_object_unref( importable );
 	}
-#endif
+
+	g_object_unref( settings );
 }
 
 static void
@@ -1492,7 +1502,7 @@ on_clear_button_clicked( GtkButton *button, ofaReconciliation *self )
 
 /*
  * makes use of a Bank Account Transaction (BAT) list
- * whether is has just been importer, or it is reloaded from sgbd
+ * whether is has just been imported, or it is reloaded from sgbd
  *
  * only lines which have not yet been used for reconciliation are read
  */
@@ -2228,14 +2238,14 @@ on_new_entry( ofaReconciliation *self, ofoEntry *entry )
 static void
 on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_reconciliation_on_dossier_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
 			( void * ) dossier,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) self );
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	if( OFO_IS_ENTRY( object )){
 		on_updated_entry( self, OFO_ENTRY( object ));

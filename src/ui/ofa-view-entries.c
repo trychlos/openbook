@@ -2009,6 +2009,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 			g_object_unref( entry );
 
 			status = get_row_status( self, tmodel, iter );
+			/*g_debug( "is_visible_row: label=%s", ofo_entry_get_label( entry ));*/
 
 			switch( status ){
 				case ENT_STATUS_PAST:
@@ -2041,16 +2042,6 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 						my_date_compare( &priv->d_to, &deffect ) >= 0;
 				visible &= ok;
 			}
-
-			/*gchar *sdeff, *sfrom, *sto;
-			sdeff = my_date_to_str( &deffect, MY_DATE_DMYY );
-			sfrom = my_date_to_str( &priv->d_from, MY_DATE_DMYY );
-			sto = my_date_to_str( &priv->d_to, MY_DATE_DMYY );
-			g_debug( "is_visible_row: from=%s, to=%s, effect=%s, visible=%s",
-					sfrom, sto, sdeff, visible ? "True":"False" );
-			g_free( sdeff );
-			g_free( sfrom );
-			g_free( sto );*/
 		}
 	}
 
@@ -3222,12 +3213,12 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 {
 	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
 			( void * ) dossier,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) self );
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	if( prev_id ){
 		if( OFO_IS_ACCOUNT( object )){
@@ -3238,10 +3229,9 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 
 		} else if( OFO_IS_CURRENCY( object )){
 			do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
-
-		} else if( OFO_IS_ENTRY( object )){
-			do_update_entry( self, OFO_ENTRY( object ));
 		}
+	} else if( OFO_IS_ENTRY( object )){
+		do_update_entry( self, OFO_ENTRY( object ));
 	}
 }
 
@@ -3320,10 +3310,14 @@ do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *c
 static void
 do_update_entry( ofaViewEntries *self, ofoEntry *entry )
 {
+	ofaViewEntriesPrivate *priv;
 	GtkTreeIter iter;
+
+	priv = self->priv;
 
 	if( find_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
 		display_entry( self, entry, &iter );
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	}
 }
 

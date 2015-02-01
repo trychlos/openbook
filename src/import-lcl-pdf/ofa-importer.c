@@ -48,15 +48,15 @@
 /* private instance data
  */
 struct _ofaLclPdfImporterPrivate {
-	gboolean       dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaFileFormat *settings;
-	ofoDossier    *dossier;
-	guint          count;
-	guint          errors;
+	const ofaFileFormat *settings;
+	ofoDossier          *dossier;
+	guint                count;
+	guint                errors;
 
-	ofxAmount      tot_debit;
-	ofxAmount      tot_credit;
+	ofxAmount            tot_debit;
+	ofxAmount            tot_credit;
 
 };
 
@@ -111,8 +111,8 @@ static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier );
 static ofsBat      *read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list );
 static void         read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint page_i, GList *rc_list );
 static GList       *get_ordered_layout_list( ofaLclPdfImporter *importer, PopplerPage *page );
@@ -252,7 +252,7 @@ iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_is_willing_to";
 	ofaLclPdfImporterPrivate *priv;
@@ -283,7 +283,7 @@ iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, ofaFileFo
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_import_uri";
 	ofaLclPdfImporterPrivate *priv;

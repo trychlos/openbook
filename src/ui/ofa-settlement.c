@@ -1440,14 +1440,14 @@ on_new_entry( ofaSettlement *self, ofoEntry *entry )
 static void
 on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaSettlement *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_settlement_on_dossier_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
 			( void * ) dossier,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) self );
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	if( OFO_IS_ENTRY( object )){
 		on_updated_entry( self, OFO_ENTRY( object ));

@@ -61,7 +61,7 @@
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
                 + my_utils_entry_set_valid
-     2014- 5-22 see also Todo #20
+     2014- 5-22 see also todo #20
 
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
@@ -82,9 +82,6 @@
                 present
 
  162 2014- 6- 5 Reconciliation: remove/add a proposition
-
- 163 2014- 6- 5 move the table definition from ofo-dossier to the
-                corresponding classes
 
  187 2014- 6-10 TauxProperties - Validities page: should be sorted by
                 end date desc (most recent first)
@@ -305,8 +302,6 @@
 
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
-
- 603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
 
  604 2015- 1-26 Bat: solde becomes end_solde (dbms, methods, properties)
 
@@ -881,6 +876,10 @@
 
  160 2014- 6- 4 print a reconciliation page (as a pdf)
      2014- 6-21 done
+
+ 163 2014- 6- 5 move the table definition from ofo-dossier to the
+                corresponding classes
+     2015- 1-30 cancelled: all ddl is grouped into ofo-dossier-ddl.c
 
  164 2014- 6- 5 ExportAssistant: improve the entering of the output file
      2014-11-26 done - svn #4149
@@ -2678,6 +2677,9 @@
  602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
                 click
      2015- 1-24 done - svn #4519
+
+ 603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
+     2015- 1-30 done - svn #4535
 
  605 2015- 1-28 add the dbname in the main window title
      2015- 1-29 done - svn #4523

@@ -35,10 +35,12 @@
  *
  * The #ofaIImportable interface imports items from the outside world.
  *
- * The #ofaIImportable interface is supposed to be implemented by object
- * classes which want to be imported (so are "importable"). The interface
- * provides several function to let the implementation communicate with
- * the caller (see infra for what is a caller):
+ * The #ofaIImportable interface is supposed to be implemented either
+ * by object classes which want to be imported (so are "importable"),
+ * or by the plugins which manage the import of files.
+ *
+ * The interface provides several function to let the implementation
+ * communicate with the caller (see infra for what is a caller):
  * - increment the count of imported lines
  * - send a standard, warning or error message to the caller.
  * At the end, the implementation must return the count of found errors.
@@ -117,7 +119,7 @@ typedef struct {
 	 */
 	gboolean ( *is_willing_to )        ( ofaIImportable *instance,
 												const gchar *uri,
-												ofaFileFormat *settings,
+												const ofaFileFormat *settings,
 												void **ref,
 												guint *count );
 
@@ -134,7 +136,7 @@ typedef struct {
 	guint    ( *import_uri )           ( ofaIImportable *instance,
 												void *ref,
 												const gchar *uri,
-												ofaFileFormat *settings,
+												const ofaFileFormat *settings,
 												ofoDossier *dossier );
 }
 	ofaIImportableInterface;
@@ -158,43 +160,41 @@ typedef enum {
 }
 	ofeImportableMsg;
 
-GType    ofa_iimportable_get_type                  ( void );
+GType           ofa_iimportable_get_type                  ( void );
 
-guint    ofa_iimportable_get_interface_last_version( void );
+guint           ofa_iimportable_get_interface_last_version( void );
 
 /* an importer-oriented API
  */
-gint     ofa_iimportable_import                    ( ofaIImportable *importable,
+ofaIImportable *ofa_iimportable_find_willing_to   ( const gchar *uri, const ofaFileFormat *settings );
+
+gint            ofa_iimportable_import            ( ofaIImportable *importable,
 															GSList *lines,
 															const ofaFileFormat *settings,
 															ofoDossier *dossier,
 															void *caller );
 
-gboolean ofa_iimportable_is_willing_to             ( ofaIImportable *importable,
-															const gchar *uri,
-															ofaFileFormat *settings );
-
-guint    ofa_iimportable_import_uri                ( ofaIImportable *importable,
+guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,
 															ofoDossier *dossier,
 															void *caller );
 
-guint    ofa_iimportable_get_count                 ( ofaIImportable *importable );
+guint           ofa_iimportable_get_count         ( ofaIImportable *importable );
 
-void     ofa_iimportable_set_count                 ( ofaIImportable *importable,
+void            ofa_iimportable_set_count         ( ofaIImportable *importable,
 															guint count );
 
 /* an importable-oriented API
  */
-gchar   *ofa_iimportable_get_string                ( GSList **it );
+gchar          *ofa_iimportable_get_string        ( GSList **it );
 
-void     ofa_iimportable_pulse                     ( ofaIImportable *importable,
+void            ofa_iimportable_pulse             ( ofaIImportable *importable,
 															ofeImportablePhase phase );
 
-void     ofa_iimportable_increment_progress        ( ofaIImportable *importable,
+void            ofa_iimportable_increment_progress( ofaIImportable *importable,
 															ofeImportablePhase phase,
 															guint count );
 
-void     ofa_iimportable_set_message               ( ofaIImportable *importable,
+void            ofa_iimportable_set_message       ( ofaIImportable *importable,
 															guint line_number,
 															ofeImportableMsg status,
 															const gchar *msg );

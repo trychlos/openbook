@@ -48,12 +48,10 @@
 #include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-plugin.h"
 
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-import-assistant.h"
-#include "ui/ofa-importer.h"
 #include "ui/ofa-main-window.h"
 
 /* Export Assistant
@@ -183,7 +181,6 @@ static void            p4_check_for_complete( ofaImportAssistant *self );
 static void            p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void            p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
-static ofaIImportable *p6_search_for_plugin( ofaImportAssistant *self );
 static void            p6_error_no_interface( const ofaImportAssistant *self );
 static gboolean        p6_do_import( ofaImportAssistant *self );
 static guint           p6_do_import_csv( ofaImportAssistant *self, guint *errors );
@@ -712,7 +709,7 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	if( st_radios[priv->p3_idx].get_type ){
 		priv->p6_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p3_idx].get_type(), NULL );
 	} else {
-		priv->p6_plugin = p6_search_for_plugin( self );
+		priv->p6_plugin = ofa_iimportable_find_willing_to( priv->p2_uri, priv->p4_import_settings );
 	}
 	if( !OFA_IS_IIMPORTABLE( priv->p6_object ) && !priv->p6_plugin ){
 		p6_error_no_interface( self );
@@ -720,35 +717,6 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	g_idle_add(( GSourceFunc ) p6_do_import, self );
-}
-
-/*
- * search for a plugin willing to import an 'other' format
- */
-static ofaIImportable *
-p6_search_for_plugin( ofaImportAssistant *self )
-{
-	static const gchar *thisfn = "ofa_import_assistant_p6_search_for_plugin";
-	ofaImportAssistantPrivate *priv;
-	GList *modules, *it;
-	ofaIImportable *found;
-
-	priv = self->priv;
-	found = NULL;
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTABLE );
-	g_debug( "%s: modules=%p, count=%d", thisfn, ( void * ) modules, g_list_length( modules ));
-
-	for( it=modules ; it ; it=it->next ){
-		if( ofa_iimportable_is_willing_to(
-				OFA_IIMPORTABLE( it->data ), priv->p2_uri, priv->p4_import_settings )){
-			found = g_object_ref( OFA_IIMPORTABLE( it->data ));
-			break;
-		}
-	}
-
-	ofa_plugin_free_extensions( modules );
-
-	return( found );
 }
 
 static void

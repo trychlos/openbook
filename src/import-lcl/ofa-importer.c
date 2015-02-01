@@ -45,13 +45,13 @@
 /* private instance data
  */
 struct _ofaLCLImporterPrivate {
-	gboolean       dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaFileFormat *settings;
-	ofoDossier    *dossier;
-	GSList        *lines;
-	guint          count;
-	guint          errors;
+	const ofaFileFormat *settings;
+	ofoDossier          *dossier;
+	GSList              *lines;
+	guint                count;
+	guint                errors;
 
 };
 
@@ -82,8 +82,8 @@ static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier );
 static GSList      *get_file_content( ofaIImportable *lcl_importer, const gchar *uri );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
 static gboolean     lcl_tabulated_text_v1_check( ofaLCLImporter *lcl_importer );
@@ -221,7 +221,7 @@ iimportable_get_interface_version( const ofaIImportable *lcl_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_iimportable_is_willing_to";
 	ofaLCLImporterPrivate *priv;
@@ -255,7 +255,7 @@ iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, ofaFi
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_iimportable_import_uri";
 	ofaLCLImporterPrivate *priv;

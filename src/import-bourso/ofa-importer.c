@@ -45,13 +45,13 @@
 /* private instance data
  */
 struct _ofaBoursoImporterPrivate {
-	gboolean       dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaFileFormat *settings;
-	ofoDossier    *dossier;
-	GSList        *lines;
-	guint          count;
-	guint          errors;
+	const ofaFileFormat *settings;
+	ofoDossier          *dossier;
+	GSList              *lines;
+	guint                count;
+	guint                errors;
 
 };
 
@@ -85,8 +85,8 @@ static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *bourso_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier );
 static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
 static gboolean     bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
 static ofsBat      *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
@@ -223,7 +223,7 @@ iimportable_get_interface_version( const ofaIImportable *bourso_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_bourso_importer_iimportable_is_willing_to";
 	ofaBoursoImporterPrivate *priv;
@@ -257,7 +257,7 @@ iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, of
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_uri";
 	ofaBoursoImporterPrivate *priv;
