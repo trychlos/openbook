@@ -155,15 +155,6 @@
 
  325 2014-10-12 DossierManage Properties: to be written
 
- 329 2014-10-17 updating an entry in ViewEntries should be repercuted
-                to the same entry in Reconciliation
-
- 330 2014-10-17 reconciliating an entry in Reconciliation should update
-                the display of corresponding column in ViewEntries
-
- 331 2014-10-17 clearing the display BAT lines in Reconciliation : what
-                is it supposed to do ?
-
  332 2014-10-17 Reconciliation: should not accept Enter to annulate the
                 reconciliation on an entry, as it is too easy to make
                 an error
@@ -313,7 +304,10 @@
  613 2015- 1-30 have a BatStore+BatTreeview ?
                 would be used in BatSelect and BatPage
 
- 614
+ 614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
+                the compilation of pdf-aware plugins
+
+ 615
 
 -----------------------------------------------------------------------
  DONE
@@ -1600,6 +1594,18 @@
  328 2014-10-17 DossierOpen: display an error message box if account or
                 password are false
      2014-10-29 done - svn #4005
+
+ 329 2014-10-17 updating an entry in ViewEntries should be repercuted
+                to the same entry in Reconciliation
+     2015- 2- 1 done - svn #4536
+
+ 330 2014-10-17 reconciliating an entry in Reconciliation should update
+                the display of corresponding column in ViewEntries
+     2015- 2- 1 done - svn #4536
+
+ 331 2014-10-17 clearing the display BAT lines in Reconciliation : what
+                is it supposed to do ?
+     2015- 2- 1 this is supposed to clear an erroneous loaded BAT!
 
  337 2014-10-19 ofaAccountsChart: should be a tree store
      2014-10-29 note that this may imply to define fake root accounts
