@@ -676,6 +676,7 @@ do_update( ofaDossierProperties *self )
 
 	/* have begin or end exe dates changed ? */
 	date_has_changed = FALSE;
+	count = 0;
 
 	if( my_date_is_valid( &priv->begin_init )){
 		if( !my_date_is_valid( &priv->begin ) || my_date_compare( &priv->begin_init, &priv->begin )){
@@ -704,7 +705,7 @@ do_update( ofaDossierProperties *self )
 	/* first update the dossier, and only then send the advertising signal */
 	priv->updated = ofo_dossier_update( priv->dossier );
 
-	if( date_has_changed ){
+	if( count > 0 ){
 		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 		display_progress_init( self );
 		g_signal_emit_by_name(

@@ -108,6 +108,7 @@ AC_CONFIG_FILES([
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
+	misc/init_utf8_comma_pipe_fr/Makefile
 	misc/t_amounts/Makefile
 	misc/t_delete/Makefile
 	misc/t_spawn/Makefile

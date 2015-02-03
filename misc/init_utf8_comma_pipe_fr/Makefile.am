@@ -22,10 +22,20 @@
 #
 # $Id$
 
-SUBDIRS = \
-	init_utf8_comma_pipe_fr				\
-	t_amounts							\
-	t_delete							\
-	t_spawn								\
-	t_weakref							\
+init_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
+
+init_files = \
+	classes-h1.csv										\
+	currencies-h1.csv									\
+	ledgers-h1.csv										\
+	ope-templates-h2.csv								\
+	rates-h2.csv										\
+	$(NULL)
+
+init_data_DATA = \
+	$(init_files)										\
+	$(NULL)
+
+EXTRA_DIST = \
+	$(init_data_DATA)									\
 	$(NULL)

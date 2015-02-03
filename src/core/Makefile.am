@@ -28,6 +28,8 @@ core_datadir = $(pkgdatadir)/core
 
 css_datadir = $(pkgdatadir)/css
 
+init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
+
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
@@ -37,6 +39,7 @@ AM_CPPFLAGS += \
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
+	-DINIT1DIR=\""$(init1_datadir)"\"					\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 

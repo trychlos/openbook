@@ -1182,7 +1182,7 @@ entry_load_dataset( const ofaDbms *dbms, const gchar *where )
 
 	g_string_free( query, TRUE );
 
-	return( g_list_reverse( dataset ));
+	return( dataset );
 }
 
 /**

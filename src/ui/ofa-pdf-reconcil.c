@@ -674,7 +674,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 		ofa_iprintable_set_text( instance, context,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde -= amount;
+		priv->account_solde += amount;
 	}
 
 	amount = ofo_entry_get_credit( entry );
@@ -683,7 +683,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 		ofa_iprintable_set_text( instance, context,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde += amount;
+		priv->account_solde -= amount;
 	}
 	/* current solde */
 	ofa_iprintable_set_color( instance, context, COLOR_DARK_CYAN );

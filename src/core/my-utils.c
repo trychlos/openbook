@@ -821,7 +821,7 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 			/*g_debug( "%s rc.width=%u, max_size=%u", strref, rc.width, max_width );*/
 		}
 	} else {
-		g_warning( "%s: not a valid UTF8 string: %s", thisfn, pango_layout_get_text( layout ));
+		g_warning( "%s: not a valid UTF-8 string: %s", thisfn, pango_layout_get_text( layout ));
 	}
 	g_free( strref );
 }

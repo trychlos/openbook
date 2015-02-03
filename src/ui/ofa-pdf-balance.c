@@ -622,13 +622,17 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFBalancePrivate *priv;
+	const gchar *acc_from, *acc_to;
 	GList *dataset;
 
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
+	acc_from = priv->all_accounts ? NULL : priv->from_account;
+	acc_to = priv->all_accounts ? NULL : priv->to_account;
+
 	dataset = ofo_entry_get_dataset_for_print_balance(
 						MY_WINDOW( instance )->prot->dossier,
-						priv->from_account, priv->to_account,
+						acc_from, acc_to,
 						&priv->from_date, &priv->to_date );
 
 	priv->count = g_list_length( dataset );

@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
@@ -188,9 +189,6 @@ static guint           p6_do_import_other( ofaImportAssistant *self, guint *erro
 static void            p6_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
 static void            p6_on_pulse( ofaIImporter *importer, ofeImportablePhase phase, ofaImportAssistant *self );
 static void            p6_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
-static GSList         *get_lines_from_csv( ofaImportAssistant *self );
-static void            free_fields( GSList *fields );
-static void            free_lines( GSList *lines );
 static void            get_settings( ofaImportAssistant *self );
 static void            update_settings( ofaImportAssistant *self );
 
@@ -814,24 +812,12 @@ p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
 	guint count;
-	GSList *lines;
 
 	priv = self->priv;
 
-	count = 0;
-	lines = get_lines_from_csv( self );
-
-	if( !lines ){
-		*errors += 1;
-
-	} else {
-		count = g_slist_length( lines );
-
-		*errors = ofa_iimportable_import( priv->p6_object,
-				lines, priv->p4_import_settings, MY_WINDOW( self )->prot->dossier, self );
-
-		free_lines( lines );
-	}
+	count = ofa_dossier_misc_import_csv(
+			MY_WINDOW( self )->prot->dossier,
+			priv->p6_object, priv->p2_uri, priv->p4_import_settings, self, NULL );
 
 	return( count );
 }
@@ -908,104 +894,6 @@ p6_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg statu
 	while( gtk_events_pending()){
 		gtk_main_iteration();
 	}
-}
-
-/*
- * Returns a GSList of lines, where each lines->data is a GSList of
- * fields
- */
-static GSList *
-get_lines_from_csv( ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	GFile *gfile;
-	gchar *sysfname, *contents, *str;
-	GError *error;
-	gchar **lines, **iter_line;
-	gchar **fields, **iter_field;
-	GSList *s_fields, *s_lines;
-	gchar *field, *field_sep;
-
-	priv = self->priv;
-
-	sysfname = my_utils_filename_from_utf8( priv->p2_uri );
-	if( !sysfname ){
-		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), priv->p2_uri );
-		my_utils_dialog_error( str );
-		g_free( str );
-		return( NULL );
-	}
-	gfile = g_file_new_for_uri( sysfname );
-	g_free( sysfname );
-
-	error = NULL;
-	contents = NULL;
-	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
-		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ),
-				priv->p2_uri, error->message );
-		my_utils_dialog_error( str );
-		g_free( str );
-		g_error_free( error );
-		g_free( contents );
-		g_object_unref( gfile );
-		return( NULL );
-	}
-
-	lines = g_strsplit( contents, "\n", -1 );
-
-	g_free( contents );
-	g_object_unref( gfile );
-
-	s_lines = NULL;
-	iter_line = lines;
-	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p4_import_settings ));
-
-	while( *iter_line ){
-		error = NULL;
-		str = g_convert( *iter_line, -1,
-								ofa_file_format_get_charmap( priv->p4_import_settings ),
-								"UTF-8", NULL, NULL, &error );
-		if( !str ){
-			str = g_strdup_printf(
-					_( "Charset conversion error: %s\nline='%s'" ), error->message, *iter_line );
-			my_utils_dialog_error( str );
-			g_free( str );
-			g_strfreev( lines );
-			return( NULL );
-		}
-		if( g_utf8_strlen( *iter_line, -1 )){
-			fields = g_strsplit(( const gchar * ) *iter_line, field_sep, -1 );
-			s_fields = NULL;
-			iter_field = fields;
-
-			while( *iter_field ){
-				field = g_strstrip( g_strdup( *iter_field ));
-				s_fields = g_slist_prepend( s_fields, field );
-				iter_field++;
-			}
-
-			g_strfreev( fields );
-			s_lines = g_slist_prepend( s_lines, g_slist_reverse( s_fields ));
-		}
-		g_free( str );
-		iter_line++;
-	}
-
-	g_free( field_sep );
-	g_strfreev( lines );
-	return( g_slist_reverse( s_lines ));
-}
-
-static void
-free_fields( GSList *fields )
-{
-	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
-}
-
-static void
-free_lines( GSList *lines )
-{
-	g_slist_free_full( lines, ( GDestroyNotify ) free_fields );
 }
 
 /*

@@ -313,7 +313,16 @@
  616 2015- 2- 1 configure.ac: have a warning if no sgbd plugin is compiled
                 (only a warning as a plugin may be provided from elsewhere)
 
- 617
+ 617 2015- 2- 2 configure.ac: display built plugins
+
+ 618 2015- 2- 2 display Bat lines
+
+ 621 2015- 2- 2 ope template: have an help dialog which lists the 
+                available macro and functions
+     2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
+                while keeping to react to user interactions
+
+ 622
 
 -----------------------------------------------------------------------
  DONE
@@ -2717,6 +2726,14 @@
 
  612 2015- 1-30 BatProperties: view bat lines
      2015- 1-30 done - svn #4532
+
+ 619 2015- 2- 2 ope template properties: locking the ledger makes the
+                piece ref insensitive (but shouldn't)
+     2015- 2- 2 fixed
+
+ 620 2015- 2- 2 guided input: the piece ref which comes from ope template
+                is ignored (but shouldn't)
+     2015- 2- 2 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

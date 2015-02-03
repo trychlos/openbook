@@ -39,6 +39,7 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-ope-template-help.h"
 #include "ui/ofa-ope-template-properties.h"
 
 /* private instance data
@@ -63,28 +64,32 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* internals
 	 */
-	ofoOpeTemplate  *ope_template;
-	ofaLedgerCombo  *ledger_combo;
-	GtkWidget       *ledger_parent;
-	GtkWidget       *ref_entry;
-	GtkGrid         *grid;				/* detail grid */
-	gint             count;				/* count of added detail lines */
+	ofoOpeTemplate     *ope_template;
+	ofaLedgerCombo     *ledger_combo;
+	GtkWidget          *ledger_parent;
+	GtkWidget          *ref_entry;
+	GtkGrid            *grid;			/* detail grid */
+	gint                count;			/* count of added detail lines */
 
 	/* result
 	 */
-	gboolean         is_new;
-	gboolean         updated;
+	gboolean            is_new;
+	gboolean            updated;
 
 	/* data
 	 */
-	gchar           *mnemo;
-	gchar           *label;
-	gchar           *ledger;			/* ledger mnemo */
-	gboolean         ledger_locked;
-	gchar           *ref;			/* ref mnemo */
-	gboolean         ref_locked;
-	gchar           *upd_user;
-	GTimeVal         upd_stamp;
+	gchar              *mnemo;
+	gchar              *label;
+	gchar              *ledger;			/* ledger mnemo */
+	gboolean            ledger_locked;
+	gchar              *ref;			/* ref mnemo */
+	gboolean            ref_locked;
+	gchar              *upd_user;
+	GTimeVal            upd_stamp;
+
+	/* UI
+	 */
+	ofaOpeTemplateHelp *help_dlg;
 };
 
 /* columns in the detail treeview
@@ -145,6 +150,7 @@ static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateP
 static void      on_account_selection( ofaOpeTemplateProperties *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
 static void      remove_row( ofaOpeTemplateProperties *self, gint row );
+static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -177,11 +183,19 @@ ope_template_properties_finalize( GObject *instance )
 static void
 ope_template_properties_dispose( GObject *instance )
 {
+	ofaOpeTemplatePropertiesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_OPE_TEMPLATE_PROPERTIES( instance )->priv;
+
+		/* close the help window */
+		if( priv->help_dlg ){
+			ofa_ope_template_help_close( priv->help_dlg );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -268,6 +282,7 @@ v_init_dialog( myDialog *dialog )
 	ofaOpeTemplatePropertiesPrivate *priv;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
+	GtkWidget *button;
 
 	self = OFA_OPE_TEMPLATE_PROPERTIES( dialog );
 	priv = self->priv;
@@ -280,10 +295,9 @@ v_init_dialog( myDialog *dialog )
 	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
-	priv->ledger_combo = ofa_ledger_combo_new();
-
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
+	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, MY_WINDOW( dialog )->prot->main_window );
@@ -304,6 +318,10 @@ v_init_dialog( myDialog *dialog )
 
 	init_dialog_detail( self );
 	check_for_enable_dlg( self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-help" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), dialog );
 
 	gtk_widget_grab_focus(
 			my_utils_container_get_child_by_name(
@@ -380,6 +398,8 @@ init_dialog_ledger_locked( ofaOpeTemplateProperties *self )
 	gtk_toggle_button_set_active( btn, priv->ledger_locked );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
+
+	on_ledger_locked_toggled( btn, self );
 }
 
 static void
@@ -402,10 +422,11 @@ init_dialog_ref( ofaOpeTemplateProperties *self )
 		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );
 	}
 
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-jou-locked" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-locked" );
 	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
 
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
+	on_ref_locked_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
 }
@@ -665,7 +686,7 @@ on_ledger_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 
 	gtk_widget_set_sensitive( priv->ledger_parent, !priv->ledger_locked );
 
-	check_for_enable_dlg( self );
+	/* doesn't change the validable status of the dialog */
 }
 
 static void
@@ -678,6 +699,8 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	priv->ref_locked = gtk_toggle_button_get_active( btn );
 
 	gtk_widget_set_sensitive( priv->ref_entry, !priv->ref_locked );
+
+	/* doesn't change the validable status of the dialog */
 }
 
 static void
@@ -794,6 +817,16 @@ remove_row( ofaOpeTemplateProperties *self, gint row )
 	signal_row_removed( self );
 
 	gtk_widget_show_all( GTK_WIDGET( self->priv->grid ));
+}
+
+static void
+on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	priv->help_dlg = ofa_ope_template_help_run( MY_WINDOW( self )->prot->main_window  );
 }
 
 /*

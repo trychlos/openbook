@@ -82,6 +82,7 @@ struct _ofaGuidedInputBinPrivate {
 	GtkEntry             *deffect_entry;
 	gboolean              deffect_has_focus;
 	gboolean              deffect_changed_while_focus;
+	GtkWidget            *ref_entry;
 	GtkGrid              *entries_grid;			/* entries grid container */
 	gint                  entries_count;		/* count of added entry rows */
 	gint                  totals_count;			/* count of total/diff lines */
@@ -274,6 +275,7 @@ guided_input_bin_finalize( GObject *instance )
 static void
 guided_input_bin_dispose( GObject *instance )
 {
+	static const gchar *thisfn = "ofa_guided_input_bin_dispose";
 	ofaGuidedInputBinPrivate *priv;
 	GList *iha;
 	gulong handler_id;
@@ -288,12 +290,19 @@ guided_input_bin_dispose( GObject *instance )
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
-		 * terminates) */
+		 * terminates)
+		 * Note: it seems that Gtk automagically disconnect the handlers
+		 * from the dossier - don't understand why nor how ? */
 		if( priv->dossier &&
 				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
 			for( iha=priv->handlers ; iha ; iha=iha->next ){
 				handler_id = ( gulong ) iha->data;
-				g_signal_handler_disconnect( priv->dossier, handler_id );
+				if( g_signal_handler_is_connected( priv->dossier, handler_id )){
+					g_signal_handler_disconnect( priv->dossier, handler_id );
+				} else {
+					g_debug( "%s: handler %lu is no longer connected to dossier=%p",
+							thisfn, handler_id, ( void * ) priv->dossier );
+				}
 			}
 		}
 	}
@@ -421,11 +430,13 @@ ofa_guided_input_bin_set_main_window( ofaGuidedInputBin *bin, const ofaMainWindo
 		handler = g_signal_connect(
 						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
+		g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
 		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 		handler = g_signal_connect(
 						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
+		g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
 		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 		/* setup the dialog part which do not depend of the operation
@@ -489,6 +500,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), bin );
+	priv->ref_entry = widget;
 
 	/* setup other widgets */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-model-label" );
@@ -561,6 +573,7 @@ init_model_data( ofaGuidedInputBin *bin )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gchar *str;
+	const gchar *cstr;
 
 	priv = bin->priv;
 
@@ -574,7 +587,15 @@ init_model_data( ofaGuidedInputBin *bin )
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 
+	/* ledger */
 	ofa_ledger_combo_set_selected( priv->ledger_combo, ofo_ope_template_get_ledger( priv->model ));
+
+	/* piece ref */
+	cstr = ofo_ope_template_get_ref( priv->model );
+	if( cstr ){
+		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), cstr );
+	}
+	gtk_widget_set_sensitive( priv->ref_entry, !ofo_ope_template_get_ref_locked( priv->model ));
 
 	gtk_widget_set_sensitive(
 			priv->ledger_parent, !ofo_ope_template_get_ledger_locked( priv->model ));

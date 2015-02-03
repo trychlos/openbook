@@ -628,7 +628,7 @@ display_output( const gchar *str, backupInfos *infos )
 	textbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW( infos->textview ));
 	gtk_text_buffer_get_end_iter( textbuf, &enditer );
 
-	/* Check if messages are in UTF8. If not, assume
+	/* Check if messages are in UTF-8. If not, assume
 	 *  they are in current locale and try to convert.
 	 *  We assume we're getting the stream in a 1-byte
 	 *   encoding here, ie. that we do not have cut-off

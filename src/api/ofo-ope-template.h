@@ -54,12 +54,6 @@
  * If not locked, the user may choose to modify this data in the
  * operation, thus eventually generating different entries.
  *
- * As a special case, the Guided Input UI will force all the entries
- * generated from an operation template to have the same piece
- * reference. This is mainly for easy of use reasons. Nonetheless, it
- * would be perfectly correct to have a program-generated operation
- * which generates entries with different piece references.
- *
  * Formulas may be used to automatically compute the value of some
  * fields, based on the value of other fields.
  * Formulas are mainly a substituting system, outputing an new string

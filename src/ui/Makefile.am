@@ -176,6 +176,8 @@ openbook_SOURCES = \
 	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-ope-template-help.c								\
+	ofa-ope-template-help.h								\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-template-select.c							\
@@ -267,6 +269,7 @@ ui_files = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
+	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\

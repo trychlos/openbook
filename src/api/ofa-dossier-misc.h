@@ -36,29 +36,40 @@
  */
 
 #include "api/ofa-dbms.h"
+#include "api/ofa-file-format.h"
+#include "api/ofa-iimportable.h"
+#include "api/ofo-base-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
-GSList  *ofa_dossier_misc_get_dossiers      ( void );
-#define  ofa_dossier_misc_free_dossiers(L)  g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+GSList   *ofa_dossier_misc_get_dossiers      ( void );
+#define   ofa_dossier_misc_free_dossiers(L)  g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-GSList  *ofa_dossier_misc_get_exercices     ( const gchar *dname );
-#define  ofa_dossier_misc_free_exercices(L) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+GSList   *ofa_dossier_misc_get_exercices     ( const gchar *dname );
+#define   ofa_dossier_misc_free_exercices(L) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-gchar   *ofa_dossier_misc_get_exercice_label( const GDate *begin,
+gchar    *ofa_dossier_misc_get_exercice_label( const GDate *begin,
 													const GDate *end,
 													gboolean is_current );
 
-gchar   *ofa_dossier_misc_get_current_dbname( const gchar *dname );
+gchar    *ofa_dossier_misc_get_current_dbname( const gchar *dname );
 
-void     ofa_dossier_misc_set_current       ( const gchar *dname,
+void      ofa_dossier_misc_set_current       ( const gchar *dname,
 													const GDate *begin,
 													const GDate *end );
 
-void     ofa_dossier_misc_set_new_exercice  ( const gchar *dname,
+void      ofa_dossier_misc_set_new_exercice  ( const gchar *dname,
 													const gchar *dbname,
 													const GDate *begin_next,
 													const GDate *end_next );
+
+guint     ofa_dossier_misc_import_csv        ( ofoDossier *dossier,
+													ofaIImportable *object,
+													const gchar *uri,
+													const ofaFileFormat *settings,
+													void *caller,
+													guint *errors);
 
 G_END_DECLS
 

@@ -48,7 +48,7 @@ G_BEGIN_DECLS
  */
 #define THIS_DOS_ID                     1
 
-gboolean ofo_dossier_ddl_update( const ofoDossier *dossier );
+gboolean ofo_dossier_ddl_update( ofoDossier *dossier );
 
 G_END_DECLS
 

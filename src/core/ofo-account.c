@@ -770,7 +770,7 @@ ofo_account_get_class( const ofoAccount *account )
  *
  * Returns: the class number of this @account_number.
  *
- * TODO: make this UTF8-compliant as first character (a digit) may not
+ * TODO: make this UTF-8-compliant as first character (a digit) may not
  * always be one byte wide (or is it ?)
  */
 gint
@@ -797,7 +797,7 @@ ofo_account_get_class_from_number( const gchar *account_number )
  * A class is defined as of level 1.
  * Any actual account is at least of level 2.
  *
- * Note: this is UTF8-compliant as g_utf8_strlen() rightly returns
+ * Note: this is UTF-8-compliant as g_utf8_strlen() rightly returns
  *  the count of characters.
  */
 gint

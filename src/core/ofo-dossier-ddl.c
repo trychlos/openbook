@@ -28,13 +28,37 @@
 #include <config.h>
 #endif
 
+#include "api/my-date.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-dossier-misc.h"
+#include "api/ofa-iimportable.h"
+#include "api/ofa-settings.h"
+#include "api/ofo-class.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-ledger.h"
+#include "api/ofo-ope-template.h"
+#include "api/ofo-rate.h"
 
 #include "core/ofo-dossier-ddl.h"
 
+typedef GType ( *fnType )( void );
+
+static const gchar *st_classes          = INIT1DIR "/classes-h1.csv";
+static const gchar *st_currencies       = INIT1DIR "/currencies-h1.csv";
+static const gchar *st_ledgers          = INIT1DIR "/ledgers-h1.csv";
+static const gchar *st_ope_templates    = INIT1DIR "/ope-templates-h2.csv";
+static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
+
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
+static gboolean    insert_classes( ofoDossier *dossier );
+static gboolean    insert_currencies( ofoDossier *dossier );
+static gboolean    insert_ledgers( ofoDossier *dossier );
+static gboolean    insert_ope_templates( ofoDossier *dossier );
+static gboolean    insert_rates( ofoDossier *dossier );
+static gboolean    import_utf8_comma_pipe_file( ofoDossier *dossier, const gchar *table, const gchar *fname, gint headers, fnType fn );
+static gint        count_rows( const ofoDossier *dossier, const gchar *table );
 
 /**
  * ofo_dossier_ddl_update:
@@ -44,7 +68,7 @@ static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
  * Update the DB model in the DBMS
  */
 gboolean
-ofo_dossier_ddl_update( const ofoDossier *dossier )
+ofo_dossier_ddl_update( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_ddl_update";
 	gint cur_version;
@@ -58,6 +82,11 @@ ofo_dossier_ddl_update( const ofoDossier *dossier )
 		if( cur_version < 20 ){
 			dbmodel_to_v20( dossier );
 		}
+		insert_classes( dossier );
+		insert_currencies( dossier );
+		insert_ledgers( dossier );
+		insert_ope_templates( dossier );
+		insert_rates( dossier );
 	}
 
 	return( TRUE );
@@ -518,4 +547,80 @@ dbmodel_to_v20( const ofoDossier *dossier )
 	g_free( query );
 
 	return( TRUE );
+}
+
+static gboolean
+insert_classes( ofoDossier *dossier )
+{
+	return( import_utf8_comma_pipe_file(
+			dossier, "OFA_T_CLASSES", st_classes, 1, ofo_class_get_type ));
+}
+
+static gboolean
+insert_currencies( ofoDossier *dossier )
+{
+	return( import_utf8_comma_pipe_file(
+			dossier, "OFA_T_CURRENCIES", st_currencies, 1, ofo_currency_get_type ));
+}
+
+static gboolean
+insert_ledgers( ofoDossier *dossier )
+{
+	return( import_utf8_comma_pipe_file(
+			dossier, "OFA_T_LEDGERS", st_ledgers, 1, ofo_ledger_get_type ));
+}
+
+static gboolean
+insert_ope_templates( ofoDossier *dossier )
+{
+	return( import_utf8_comma_pipe_file(
+			dossier, "OFA_T_OPE_TEMPLATES", st_ope_templates, 2, ofo_ope_template_get_type ));
+}
+
+static gboolean
+insert_rates( ofoDossier *dossier )
+{
+	return( import_utf8_comma_pipe_file(
+			dossier, "OFA_T_RATES", st_rates, 2, ofo_rate_get_type ));
+}
+
+static gboolean
+import_utf8_comma_pipe_file( ofoDossier *dossier, const gchar *table, const gchar *fname, gint headers, fnType fn )
+{
+	gint count;
+	gboolean ok;
+	ofaFileFormat *settings;
+	ofoBase *object;
+	gchar *uri;
+
+	ok = TRUE;
+	count = count_rows( dossier, table );
+	if( !count ){
+		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
+		ofa_file_format_set( settings,
+				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', headers );
+		object = g_object_new( fn(), NULL );
+		uri = g_filename_to_uri( fname, NULL, NULL );
+		count = ofa_dossier_misc_import_csv(
+				dossier, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
+		ok = ( count > 0 );
+		g_free( uri );
+		g_object_unref( object );
+		g_object_unref( settings );
+	}
+
+	return( ok );
+}
+
+static gint
+count_rows( const ofoDossier *dossier, const gchar *table )
+{
+	gint count;
+	gchar *query;
+
+	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+	g_free( query );
+
+	return( count );
 }
