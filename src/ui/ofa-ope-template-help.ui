@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
+<interface>
+  <requires lib="gtk+" version="3.10"/>
+  <object class="GtkDialog" id="OpeTemplateHelpDialog">
+    <property name="can_focus">False</property>
+    <property name="type_hint">dialog</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox1">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area1">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn-close">
+                <property name="label">gtk-close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkViewport" id="viewport1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkLabel" id="label1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                    <property name="label" translatable="yes">An Operation Template is a template for an operation. It embeds two types of datas:
+- the template intrinsic datas:
+   . mnemonic and label
+   . notes
+   . user and timestamp of last update
+   . a comment on each detail line
+ - the datas used to generate entries:
+   . ledger
+   . piece reference
+   . entry label
+   . account
+   . debit and credit amounts.
+
+Each entry-generation-data may be locked in the template: it will be used as a mandatory, non-modifiable (though possibly not fixed, see formula below) value for the generated entries.
+
+If not locked, the user may choose to modify this data in the operation, thus eventually generating different entries.
+
+Formulas may be used to automatically compute the value of some fields, based on the value of other fields.
+Formulas are mainly a substituting system, outputing an new string after having replaced tokens by their value.
+
+Tokens are identified by a percent character '%', followed by an uppercase letter. Unrecognized tokens are just reconducted as-is to the output string. Tokens are case sensitive.
+
+Tokens may be:
+  1/ a reference to another field of the operation;
+      these tokens are single-uppercase-letter, immediately followed by the number of the row, counted from 1:
+     - 'Ai': account number
+     - 'Li': label
+     - 'Di': debit
+     - 'Ci': credit
+     E.g.: the '%A1' string (without the quotes) will be substituted with the account number from row n° 1.
+
+ 2/ a reference to a global field of the operation
+     - 'OPMN':    operation template mnemo
+     - 'OPLA':    operation template label
+     - 'LEMN':    ledger mnemo
+     - 'LELA':    ledger label
+     - 'REF':     the operation piece reference
+     - 'DOPE':    operation date (format from user preferences)
+     - 'DOMY':    operation date as mmm yyyy
+     - 'DEFFECT': effect date (format from user preferences)
+     - 'SOLDE':   the solde of the entries debit and credit to balance the operation
+     - 'IDEM':    the content of the same field from the previous row
+
+Other keywords are searched as rate mnemonics (as a convenient shortcut to RATE() function).
+
+ 3/ a function, arguments being passed between parenthesis:
+     - 'ACLA()': returns account label
+     - 'ACCU()': returns account currency
+     - 'EVAL()': evaluate the result of the operation ; may be omitted when in an amount entry
+     - 'RATE()': evaluates the rate value at the operation date ; may be omitted, only using %&lt;rate&gt; if the 'rate' mnemonic is not ambiguous
+     - 'ACCL()': the closing account for the currency of the specified account number
+
+    The opening parenthesis must immediately follow the function name.
+    E.g.:
+    - the '%ACLA(%A1)' (without the quotes) will be substituted with the label of the account whose number is found in row 1
+    - the '%EVAL( %D1 + %D2 ) will be susbtituted with the sum of debits from row 1 and 2
+    Caution: the '%D1 + %D2' string will be only substituted with the string '&lt;debit_1&gt; + &lt;debit_2', which is probably not what you want
+    - the '%RATE( TVAN )' is the same that '%TVAN'.
+</property>
+                    <property name="wrap">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="-6">btn-close</action-widget>
+    </action-widgets>
+  </object>
+</interface>
