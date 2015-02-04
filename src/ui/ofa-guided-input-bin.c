@@ -1523,7 +1523,7 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, row );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
-	if( ddiff ){
+	if( ddiff > 0.001 ){
 		amount_str = my_double_to_str( ddiff );
 		has_diff = TRUE;
 	}
@@ -1535,7 +1535,7 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, row );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
-	if( cdiff ){
+	if( cdiff > 0.001 ){
 		amount_str = my_double_to_str( cdiff );
 		has_diff = TRUE;
 	}

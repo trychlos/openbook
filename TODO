@@ -2764,7 +2764,7 @@
  622 2015- 2- 3 GuidedInput: when setting a new model, the dates are not
                 reset (fine), check the check dialog sees them as empty
                 (wrong)
-     2015- 2- 3 fixed
+     2015- 2- 4 done - svn #4545 
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
