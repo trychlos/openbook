@@ -339,9 +339,6 @@
 
  628 2015- 2- 3 OpeTemplateProperties: segfault when saving
 
- 629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
-                when the dialog is validable: why ??
-
  632
 
 -----------------------------------------------------------------------
@@ -2759,6 +2756,10 @@
                 reset (fine), check the check dialog sees them as empty
                 (wrong)
      2015- 2- 4 done - svn #4545 
+
+ 629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
+                when the dialog is validable: why ??
+     2015- 2- 4 done - svn #4547
 
  630 2015- 2- 3 OpeTemplateProperties: when modifying an ope template
                 mnemo, also update the entries which were created from

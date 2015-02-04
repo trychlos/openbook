@@ -398,8 +398,6 @@ init_dialog_ledger_locked( ofaOpeTemplateProperties *self )
 	gtk_toggle_button_set_active( btn, priv->ledger_locked );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
-
-	on_ledger_locked_toggled( btn, self );
 }
 
 static void
@@ -426,7 +424,6 @@ init_dialog_ref( ofaOpeTemplateProperties *self )
 	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
 
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
-	on_ref_locked_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
 }
@@ -684,8 +681,6 @@ on_ledger_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 
 	priv->ledger_locked = gtk_toggle_button_get_active( btn );
 
-	gtk_widget_set_sensitive( priv->ledger_parent, !priv->ledger_locked );
-
 	/* doesn't change the validable status of the dialog */
 }
 
@@ -697,8 +692,6 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	priv = self->priv;
 
 	priv->ref_locked = gtk_toggle_button_get_active( btn );
-
-	gtk_widget_set_sensitive( priv->ref_entry, !priv->ref_locked );
 
 	/* doesn't change the validable status of the dialog */
 }
