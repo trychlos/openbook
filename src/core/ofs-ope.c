@@ -987,18 +987,21 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Account is root: %s" ), detail->account );
 
-		} else if( !detail->label || !g_utf8_strlen( detail->label, -1 )){
-			g_free( checker->message );
-			checker->message = g_strdup( _( "Empty label" ));
-
-		} else if( detail->debit && detail->credit ){
-			g_free( checker->message );
-			checker->message = g_strdup( _( "Invalid amounts" ));
-
 		} else {
 			currency = ofo_account_get_currency( account );
 			ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
-			ok = TRUE;
+
+			if( detail->debit && detail->credit ){
+				g_free( checker->message );
+				checker->message = g_strdup( _( "Invalid amounts" ));
+
+			} else if( !detail->label || !g_utf8_strlen( detail->label, -1 )){
+				g_free( checker->message );
+				checker->message = g_strdup( _( "Empty label" ));
+
+			} else {
+				ok = TRUE;
+			}
 		}
 	}
 

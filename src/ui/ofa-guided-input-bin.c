@@ -84,8 +84,9 @@ struct _ofaGuidedInputBinPrivate {
 	gboolean              deffect_changed_while_focus;
 	GtkWidget            *ref_entry;
 	GtkGrid              *entries_grid;			/* entries grid container */
-	gint                  entries_count;		/* count of added entry rows */
-	gint                  totals_count;			/* count of total/diff lines */
+	/* total count of rows = count of entries + 2 * count of currencies
+	 * rows are at position starting with 1 (as row 0 is for headers) */
+	gint                  rows_count;
 	GtkWidget            *comment;
 	GtkWidget            *message;
 
@@ -98,8 +99,7 @@ struct _ofaGuidedInputBinPrivate {
 	gint                  focused_row;
 	gint                  focused_column;
 
-	/* a list which keeps trace of used currencies
-	 * one list item is created for each used currency */
+	/* a list of ofsCurrency structs which keeps trace of used currencies */
 	GList                *currency_list;
 };
 
@@ -219,7 +219,6 @@ static void              add_entry_row_widget( ofaGuidedInputBin *bin, gint col_
 static GtkWidget        *row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
-static void              remove_entry_row( ofaGuidedInputBin *bin, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
 static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *bin );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
@@ -242,7 +241,7 @@ static void              set_comment( ofaGuidedInputBin *bin, const gchar *comme
 static void              set_message( ofaGuidedInputBin *bin, const gchar *errmsg );
 static void              display_currencies( ofaGuidedInputBin *bin );
 static gboolean          update_totals( ofaGuidedInputBin *bin );
-static void              total_add_diff_lines( ofaGuidedInputBin *bin, gint model_count );
+static void              add_total_diff_lines( ofaGuidedInputBin *bin, gint model_count );
 static void              total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff );
 static gboolean          do_validate( ofaGuidedInputBin *bin );
 static void              display_ok_message( ofaGuidedInputBin *bin, gint count );
@@ -328,7 +327,6 @@ ofa_guided_input_bin_init( ofaGuidedInputBin *self )
 	priv->dispose_has_run = FALSE;
 	my_date_clear( &priv->deffect_min );
 	priv->deffect_changed_while_focus = FALSE;
-	priv->entries_count = 0;
 	priv->currency_list = NULL;
 }
 
@@ -545,15 +543,15 @@ ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, const ofoOpeTempl
 		priv->check_allowed = FALSE;
 
 		/* remove previous entries if any */
-		for( i=1 ; i<=priv->entries_count ; ++i ){
-			remove_entry_row( bin, i );
+		for( i=priv->rows_count ; i>=1 ; --i ){
+			gtk_grid_remove_row( priv->entries_grid, i );
 		}
 		ofs_ope_free( priv->ope );
+		priv->rows_count = 0;
 
 		priv->model = template;
 		priv->ope = ofs_ope_new( template );
 
-		priv->entries_count = 0;
 		count = ofo_ope_template_get_detail_count( priv->model );
 		for( i=1 ; i<=count ; ++i ){
 			add_entry_row( bin, i );
@@ -592,16 +590,16 @@ init_model_data( ofaGuidedInputBin *bin )
 
 	/* ledger */
 	ofa_ledger_combo_set_selected( priv->ledger_combo, ofo_ope_template_get_ledger( priv->model ));
+	gtk_widget_set_sensitive(
+			priv->ledger_parent, !ofo_ope_template_get_ledger_locked( priv->model ));
 
 	/* piece ref */
 	cstr = ofo_ope_template_get_ref( priv->model );
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), cstr );
 	}
-	gtk_widget_set_sensitive( priv->ref_entry, !ofo_ope_template_get_ref_locked( priv->model ));
-
 	gtk_widget_set_sensitive(
-			priv->ledger_parent, !ofo_ope_template_get_ledger_locked( priv->model ));
+			priv->ref_entry, !ofo_ope_template_get_ref_locked( priv->model ));
 }
 
 /*
@@ -636,7 +634,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	add_entry_row_widget( bin, OPE_COL_CREDIT, row );
 	add_entry_row_widget( bin, OPE_COL_CURRENCY, row );
 
-	priv->entries_count += 1;
+	priv->rows_count += 1;
 }
 
 static void
@@ -762,23 +760,6 @@ row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 			G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), bin );
 
 	return( button );
-}
-
-static void
-remove_entry_row( ofaGuidedInputBin *bin, gint row )
-{
-	ofaGuidedInputBinPrivate *priv;
-	gint i;
-	GtkWidget *widget;
-
-	priv = bin->priv;
-
-	for( i=0 ; i<OPE_N_COLUMNS ; ++i ){
-		widget = gtk_grid_get_child_at( priv->entries_grid, i, row );
-		if( widget ){
-			gtk_widget_destroy( widget );
-		}
-	}
 }
 
 static void
@@ -1335,6 +1316,7 @@ set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 }
 
 /*
+ * display the currency iso code in front of each line
  * only display the currency if different from default currency
  */
 static void
@@ -1368,19 +1350,18 @@ display_currencies( ofaGuidedInputBin *bin )
 }
 
 /*
- * entries_count is the current count of entry rows added in the grid
- * (may be lesser than the count of entries in the model during the
- *  initialization)
- *
- * totals_count is the count of total and diff lines added in the grid
- * (may be zero the first time) - is usually equal to 2 x previous count
- * of currencies
+ * do not remove/re-create total/diff lines per currency as this make
+ * the display flickering
+ * instead:
+ * - the 'total xxx' label is reset to the currency value
+ * - at the end, the remaining lines are removed
  */
 static gboolean
 update_totals( ofaGuidedInputBin *bin )
 {
+	static const gchar *thisfn = "ofa_guided_input_bin_update_totals";
 	ofaGuidedInputBinPrivate *priv;
-	gint model_count, i;
+	gint model_count, i, needed;
 	GList *it;
 	ofsCurrency *sbal;
 	GtkWidget *label, *entry;
@@ -1397,27 +1378,36 @@ update_totals( ofaGuidedInputBin *bin )
 	ok = TRUE;
 	model_count = ofo_ope_template_get_detail_count( priv->model );
 
-	for( it=priv->currency_list, i=0 ; it ; it=it->next, i+=2 ){
+	g_debug( "%s: model_count=%d, rows_count=%d, currencies_length=%d",
+			thisfn, model_count, priv->rows_count, g_list_length( priv->currency_list ));
+
+	for( i=priv->rows_count ; i>=1+model_count ; --i ){
+		gtk_grid_remove_row( priv->entries_grid, i );
+	}
+	priv->rows_count = model_count;
+
+	/* i is the row position (starting at 0 with headers) */
+	for( it=priv->currency_list, i=1+model_count ; it ; it=it->next, i+=2 ){
 
 		/* insert total and diff lines */
-		if( priv->totals_count < i+2 ){
-			total_add_diff_lines( bin, model_count );
+		if( i > priv->rows_count ){
+			add_total_diff_lines( bin, i );
 		}
 
 		sbal = ( ofsCurrency * ) it->data;
 
 		/* setup currency, totals and diffs */
-		label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, model_count+i+1 );
+		label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
 		g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 		total_str = g_strdup_printf( _( "Total %s :"), sbal->currency );
 		gtk_label_set_text( GTK_LABEL( label ), total_str );
 		g_free( total_str );
 
-		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, model_count+i+1 );
+		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		my_editable_amount_set_amount( GTK_EDITABLE( entry ), sbal->debit );
 
-		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, model_count+i+1 );
+		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		my_editable_amount_set_amount( GTK_EDITABLE( entry ), sbal->credit );
 
@@ -1435,74 +1425,70 @@ update_totals( ofaGuidedInputBin *bin )
 			oki = TRUE;
 		}
 
-		total_display_diff( bin, sbal->currency, model_count+i+2, ddiff, cdiff );
+		total_display_diff( bin, sbal->currency, i+1, ddiff, cdiff );
 
 		ok &= oki;
 	}
 
-	/* at the end, remove the unneeded supplementary lines */
-	for( ; i<priv->totals_count ; ++i ){
-		remove_entry_row( bin, model_count+i+1 );
+	/* at the end, remove the remaining lines */
+	needed = model_count + 2*g_list_length( priv->currency_list );
+	for( i=priv->rows_count ; i>needed ; --i ){
+		gtk_grid_remove_row( priv->entries_grid, i );
 	}
-	priv->totals_count = 2*g_list_length( priv->currency_list );
 
 	return( ok );
 }
 
 /*
- * we insert two lines for total and diff when the entries_count is
- * equal to the count of the lines of the model (i.e. there is not
- * enough total/diff lines to hold the next currency)
+ * we insert two lines for total and diff for each used currency
  */
 static void
-total_add_diff_lines( ofaGuidedInputBin *bin, gint model_count )
+add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 {
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *entry;
-	gint row;
 
 	priv = bin->priv;
-	row = model_count + priv->totals_count;
 
 	label = gtk_label_new( NULL );
 	gtk_widget_set_margin_top( label, TOTAUX_TOP_MARGIN );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
-	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row+1, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
 	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_DEBIT, row+1, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_DEBIT, row, 1, 1 );
 
 	entry = gtk_entry_new();
 	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_CREDIT, row+1, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_CREDIT, row, 1, 1 );
 
 	label = gtk_label_new( _( "Diff :" ));
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
-	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row+2, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_widget_set_margin_right( label, 2 );
-	gtk_grid_attach( priv->entries_grid, label, OPE_COL_DEBIT, row+2, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, label, OPE_COL_DEBIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_widget_set_margin_right( label, 2 );
-	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CREDIT, row+2, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CREDIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
-	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CURRENCY, row+2, 1, 1 );
+	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CURRENCY, row+1, 1, 1 );
 
 	gtk_widget_show_all( GTK_WIDGET( priv->entries_grid ));
-	priv->totals_count += 2;
+	priv->rows_count += 2;
 }
 
 static void
@@ -1657,12 +1643,18 @@ static void
 do_reset_entries_rows( ofaGuidedInputBin *bin )
 {
 	ofaGuidedInputBinPrivate *priv;
-	gint i;
+	gint i, model_count;
 	GtkWidget *entry;
 
 	priv = bin->priv;
 
-	for( i=1 ; i<=priv->entries_count ; ++i ){
+	model_count = ofo_ope_template_get_detail_count( priv->model );
+	for( i=priv->rows_count ; i>=1+model_count ; --i ){
+		gtk_grid_remove_row( priv->entries_grid, i );
+	}
+	priv->rows_count = model_count;
+
+	for( i=1 ; i<=priv->rows_count ; ++i ){
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
 		if( entry && GTK_IS_ENTRY( entry )){
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
@@ -1721,11 +1713,11 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedIn
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		if( OFO_OPE_TEMPLATE( object ) == priv->model ){
 
-			for( i=0 ; i<priv->entries_count ; ++i ){
-				remove_entry_row( self, i );
+			for( i=1 ; i<=priv->rows_count ; ++i ){
+				gtk_grid_remove_row( priv->entries_grid, i );
 			}
 			priv->model = NULL;
-			priv->entries_count = 0;
+			priv->rows_count = 0;
 		}
 	}
 }

@@ -342,12 +342,6 @@
  629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
                 when the dialog is validable: why ??
 
- 630 2015- 2- 3 OpeTemplateProperties: when modifying an ope template
-                mnemo, also update the entries which were created from
-                this same mnemo
-
- 631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
-
  632
 
 -----------------------------------------------------------------------
@@ -2765,6 +2759,14 @@
                 reset (fine), check the check dialog sees them as empty
                 (wrong)
      2015- 2- 4 done - svn #4545 
+
+ 630 2015- 2- 3 OpeTemplateProperties: when modifying an ope template
+                mnemo, also update the entries which were created from
+                this same mnemo
+     2015- 2- 4 already done
+
+ 631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
+     2015- 2- 4 done - svn #4546
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
