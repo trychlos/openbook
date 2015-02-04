@@ -585,7 +585,10 @@ init_model_data( ofaGuidedInputBin *bin )
 
 	/* initialize the new operation data */
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
+	my_date_set_from_date( &priv->ope->dope, &st_last_dope );
+
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
+	my_date_set_from_date( &priv->ope->deffect, &st_last_deff );
 
 	/* ledger */
 	ofa_ledger_combo_set_selected( priv->ledger_combo, ofo_ope_template_get_ledger( priv->model ));

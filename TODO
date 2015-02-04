@@ -322,7 +322,33 @@
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
                 while keeping to react to user interactions
 
- 622
+ 623 2015- 2- 3 Accounts Chart: double-click expand/collapse the tree
+
+ 624 2015- 2- 3 GuidedInput: display the label of the account
+                (either in the comment zone, moving the comment as a
+                 tooltip of the row widgets, or elsewhere)
+
+ 625 2015- 2- 3 ViewEntries: modifying the account number of an entry
+                doesn't update the accounts balances
+
+ 626 2015- 2- 3 GuidedInputEx: Total and Diff should be reset (erased
+                and redisplayed) on new model
+
+ 627 2015- 2- 3 OpeTemplateProperties: locking ledger/ref shouldn't
+                make the widgets insensitive
+
+ 628 2015- 2- 3 OpeTemplateProperties: segfault when saving
+
+ 629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
+                when the dialog is validable: why ??
+
+ 630 2015- 2- 3 OpeTemplateProperties: when modifying an ope template
+                mnemo, also update the entries which were created from
+                this same mnemo
+
+ 631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
+
+ 632
 
 -----------------------------------------------------------------------
  DONE
@@ -2734,6 +2760,11 @@
  620 2015- 2- 2 guided input: the piece ref which comes from ope template
                 is ignored (but shouldn't)
      2015- 2- 2 fixed
+
+ 622 2015- 2- 3 GuidedInput: when setting a new model, the dates are not
+                reset (fine), check the check dialog sees them as empty
+                (wrong)
+     2015- 2- 3 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
