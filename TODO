@@ -331,12 +331,6 @@
  625 2015- 2- 3 ViewEntries: modifying the account number of an entry
                 doesn't update the accounts balances
 
- 626 2015- 2- 3 GuidedInputEx: Total and Diff should be reset (erased
-                and redisplayed) on new model
-
- 627 2015- 2- 3 OpeTemplateProperties: locking ledger/ref shouldn't
-                make the widgets insensitive
-
  628 2015- 2- 3 OpeTemplateProperties: segfault when saving
 
  632
@@ -2756,6 +2750,14 @@
                 reset (fine), check the check dialog sees them as empty
                 (wrong)
      2015- 2- 4 done - svn #4545 
+
+ 626 2015- 2- 3 GuidedInputEx: Total and Diff should be reset (erased
+                and redisplayed) on new model
+     2015- 2- 4 done
+
+ 627 2015- 2- 3 OpeTemplateProperties: locking ledger/ref shouldn't
+                make the widgets insensitive
+     2015- 2- 4 done - svn #4548
 
  629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
                 when the dialog is validable: why ??

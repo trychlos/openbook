@@ -1995,38 +1995,55 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 	gboolean visible, ok;
+	gchar *account, *ledger;
 	ofoEntry *entry;
 	ofaEntryStatus status;
 	GDate deffect;
 
 	priv = self->priv;
-	visible = FALSE;
+	visible = TRUE;
 
 	if( priv->entries_tview ){
-		gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
+		gtk_tree_model_get( tmodel, iter,
+				ENT_COL_LEDGER,  &ledger,
+				ENT_COL_ACCOUNT, &account,
+				ENT_COL_OBJECT,  &entry,
+				-1 );
 
 		if( entry && OFO_IS_ENTRY( entry )){
 			g_object_unref( entry );
 
-			status = get_row_status( self, tmodel, iter );
-			/*g_debug( "is_visible_row: label=%s", ofo_entry_get_label( entry ));*/
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
+				if( g_utf8_collate( priv->jou_mnemo, ledger )){
+					visible = FALSE;
+				}
+			} else if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
+				if( g_utf8_collate( priv->acc_number, account )){
+					visible = FALSE;
+				}
+			}
 
-			switch( status ){
-				case ENT_STATUS_PAST:
-					visible = priv->display_past;
-					break;
-				case ENT_STATUS_ROUGH:
-					visible = priv->display_rough;
-					break;
-				case ENT_STATUS_VALIDATED:
-					visible = priv->display_validated;
-					break;
-				case ENT_STATUS_DELETED:
-					visible = priv->display_deleted;
-					break;
-				case ENT_STATUS_FUTURE:
-					visible = priv->display_future;
-					break;
+			if( visible ){
+				status = get_row_status( self, tmodel, iter );
+				/*g_debug( "is_visible_row: label=%s", ofo_entry_get_label( entry ));*/
+
+				switch( status ){
+					case ENT_STATUS_PAST:
+						visible &= priv->display_past;
+						break;
+					case ENT_STATUS_ROUGH:
+						visible &= priv->display_rough;
+						break;
+					case ENT_STATUS_VALIDATED:
+						visible &= priv->display_validated;
+						break;
+					case ENT_STATUS_DELETED:
+						visible &= priv->display_deleted;
+						break;
+					case ENT_STATUS_FUTURE:
+						visible &= priv->display_future;
+						break;
+				}
 			}
 
 			get_row_deffect( self, tmodel, iter, &deffect );
@@ -2043,6 +2060,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 				visible &= ok;
 			}
 		}
+
+		g_free( account );
+		g_free( ledger );
 	}
 
 	return( visible );
@@ -2904,7 +2924,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	gint number;
 	ofoEntry *entry;
 	gboolean is_new, ok;
-	const gchar *prev_account, *prev_ledger;
+	gchar *prev_account, *prev_ledger;
 	ofxAmount prev_debit, prev_credit;
 
 	priv = self->priv;
@@ -2936,8 +2956,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	is_new = ofo_entry_get_number( entry ) == 0;
 
 	if( !is_new ){
-		prev_account = ofo_entry_get_account( entry );
-		prev_ledger = ofo_entry_get_ledger( entry );
+		prev_account = g_strdup( ofo_entry_get_account( entry ));
+		prev_ledger = g_strdup( ofo_entry_get_ledger( entry ));
 		prev_debit = ofo_entry_get_debit( entry );
 		prev_credit = ofo_entry_get_credit( entry );
 	}
@@ -2966,6 +2986,10 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		remediate_entry_ledger( self, entry, prev_ledger, prev_debit, prev_credit );
 	}
 
+	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+
+	g_free( prev_account );
+	g_free( prev_ledger );
 	g_free( currency );
 	g_free( scre );
 	g_free( sdeb );
@@ -2987,6 +3011,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 static void
 remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit )
 {
+	static const gchar *thisfn = "ofa_view_entries_remediate_entry_account";
 	ofaViewEntriesPrivate *priv;
 	const gchar *account;
 	ofxAmount amount, debit, credit;
@@ -2994,6 +3019,9 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 	ofoAccount *account_new, *account_prev;
 	gint cmp;
 	gboolean remediate;
+
+	g_debug( "%s: self=%p, entry=%p, prev_account=%s, prev_debit=%lf, prev_credit=%lf",
+			thisfn, ( void * ) self, ( void * ) entry, prev_account, prev_debit, prev_credit );
 
 	priv = self->priv;
 
@@ -3064,6 +3092,7 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 static void
 remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit )
 {
+	static const gchar *thisfn = "ofa_view_entries_remediate_entry_ledger";
 	ofaViewEntriesPrivate *priv;
 	const gchar *ledger, *currency;
 	ofxAmount amount, debit, credit;
@@ -3071,6 +3100,9 @@ remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev
 	ofoLedger *ledger_new, *ledger_prev;
 	gint cmp;
 	gboolean remediate;
+
+	g_debug( "%s: self=%p, entry=%p, prev_ledger=%s, prev_debit=%lf, prev_credit=%lf",
+			thisfn, ( void * ) self, ( void * ) entry, prev_ledger, prev_debit, prev_credit );
 
 	priv = self->priv;
 
