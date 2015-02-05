@@ -31,6 +31,8 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 /*
  * Both accounts book and operation templates are built the same way:
  * - a page which contains:
@@ -56,17 +58,50 @@ static const gchar *st_lines[] = {
 };
 
 static GtkWidget *
+create_page( void )
+{
+	GtkWidget *grid;
+
+	grid = gtk_grid_new();
+
+	return( grid );
+}
+
+static GtkWidget *
 find_page_for_title( GtkNotebook *book, const gchar *line )
 {
-	GtkWidget *page_w;
+	GtkWidget *page_w, *label;
 	gint i, pages_count;
 	const gchar *label_text;
+	gchar title[11];
 
 	pages_count = gtk_notebook_get_n_pages( book );
+	memset( title, '\0', sizeof( title ));
+	g_utf8_strncpy( title, line, 1 );
 	for( i=0 ; i<pages_count ; ++i ){
 		page_w = gtk_notebook_get_nth_page( book, i );
 		label_text = gtk_notebook_get_tab_label_text( book, page_w );
+		if( !g_utf8_collate( label_text, title )){
+			return( page_w );
+		}
 	}
+
+	/* not found ? then create it */
+	page_w = create_page();
+	label = gtk_label_new( title );
+	gtk_notebook_append_page( book, page_w, label );
+
+	return( page_w );
+}
+
+static void
+add_line_to_page( GtkWidget *page, const gchar *line )
+{
+	GtkWidget *label;
+
+	label = gtk_label_new( line );
+	gtk_grid_insert_row( GTK_GRID( page ), 0 );
+	gtk_grid_attach( GTK_GRID( page ), label, 0, 0, 1, 1 );
 }
 
 int
@@ -79,7 +114,7 @@ main( int argc, char *argv[] )
 	gtk_init( &argc, &argv );
 
 	window = GTK_WINDOW( gtk_window_new( GTK_WINDOW_TOPLEVEL ));
-	gtk_window_set_title( window, "Openbook [Test] non-modal dialogs" );
+	gtk_window_set_title( window, "Openbook [Test] Dynamic notebook" );
 	gtk_window_set_default_size( window, 600, 400 );
 	g_signal_connect_swapped( G_OBJECT( window ), "destroy", G_CALLBACK( gtk_main_quit ), NULL );
 	gtk_widget_show_all( GTK_WIDGET( window ));
@@ -87,12 +122,13 @@ main( int argc, char *argv[] )
 	/* Creates a notebook */
 	book = gtk_notebook_new();
 	gtk_container_add( GTK_CONTAINER( window ), book );
-	gtk_widget_show_all( GTK_WIDGET( window ));
 
 	for( i=0 ; st_lines[i] ; ++i ){
-		page_w = find_page_for_title( book, st_lines[i] );
+		page_w = find_page_for_title( GTK_NOTEBOOK( book ), st_lines[i] );
+		add_line_to_page( page_w, st_lines[i] );
 	}
 
+	gtk_widget_show_all( GTK_WIDGET( window ));
 	gtk_main();
 
 	return 0;
