@@ -283,11 +283,13 @@ v_init_dialog( myDialog *dialog )
 	const gchar *mnemo;
 	GtkWindow *toplevel;
 	GtkWidget *button;
+	gboolean is_current;
 
 	self = OFA_OPE_TEMPLATE_PROPERTIES( dialog );
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
 	init_dialog_title( self );
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
@@ -312,8 +314,7 @@ v_init_dialog( myDialog *dialog )
 
 	init_dialog_ref( self );
 
-	my_utils_init_notes_ex(
-			toplevel, ope_template, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( toplevel, ope_template, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
 	init_dialog_detail( self );
@@ -326,6 +327,11 @@ v_init_dialog( myDialog *dialog )
 	gtk_widget_grab_focus(
 			my_utils_container_get_child_by_name(
 						GTK_CONTAINER( toplevel ), "p1-mnemo" ));
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 static void

@@ -141,6 +141,14 @@ init_window( ofaOpeTemplateHelp *help )
 	g_signal_connect( toplevel, "response", G_CALLBACK( on_response ), help );
 
 	gtk_widget_show_all( GTK_WIDGET( toplevel ));
+
+	/*g_main_loop_new( NULL, TRUE );*/
+	/*
+	gtk_widget_grab_focus( GTK_WIDGET( toplevel ));
+	gboolean grabbed = gtk_widget_has_grab( GTK_WIDGET( toplevel ));
+	g_debug( "ofa_ope_template_help_init_window: grabbed=%s", grabbed ? "True":"False" );
+	*/
+	gtk_main();
 }
 
 /*

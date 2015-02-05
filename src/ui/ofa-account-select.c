@@ -280,7 +280,7 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		if( ofo_account_is_root( account ) && !priv->allow_root ){
-			set_message( self, _( "Not allowed to select a root account here" ));
+			ofa_accounts_frame_toggle_collapse( priv->accounts_frame );
 
 		} else {
 			ok = TRUE;

@@ -394,6 +394,26 @@ ofa_accounts_frame_set_selected( ofaAccountsFrame *frame, const gchar *number )
 }
 
 /**
+ * ofa_accounts_frame_toggle_collapse:
+ *
+ * Expand/Collapse the tree if a current selection has children
+ */
+void
+ofa_accounts_frame_toggle_collapse( ofaAccountsFrame *frame )
+{
+	ofaAccountsFramePrivate *priv;
+
+	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
+
+	priv = frame->priv;
+
+	if( !priv->dispose_has_run ){
+
+		ofa_accounts_book_toggle_collapse( priv->book );
+	}
+}
+
+/**
  * ofa_accounts_frame_get_top_focusable_widget:
  *
  * Returns: top focusable widget.

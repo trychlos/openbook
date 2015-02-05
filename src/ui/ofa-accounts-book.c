@@ -1439,6 +1439,43 @@ select_row_by_iter( ofaAccountsBook *book, GtkTreeView *tview, GtkTreeModel *tfi
 }
 
 /**
+ * ofa_accounts_book_toggle_collapse:
+ *
+ * Expand/Collapse the tree if a current selection has children
+ */
+void
+ofa_accounts_book_toggle_collapse( ofaAccountsBook *book )
+{
+	ofaAccountsBookPrivate *priv;
+	GtkTreeView *tview;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+
+	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
+
+	priv = book->priv;
+
+	if( !priv->dispose_has_run ){
+
+		tview = ( GtkTreeView * ) get_current_tree_view( book );
+		if( tview ){
+			select = gtk_tree_view_get_selection( tview );
+			if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &iter );
+				if( gtk_tree_view_row_expanded( tview, path )){
+					gtk_tree_view_collapse_row( tview, path );
+				} else {
+					gtk_tree_view_expand_row( tview, path, TRUE );
+				}
+				gtk_tree_path_free( path );
+			}
+		}
+	}
+}
+
+/**
  * ofa_accounts_book_get_top_focusable_widget:
  *
  * Returns the top focusable widget, here the treeview of the current

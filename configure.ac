@@ -111,6 +111,8 @@ AC_CONFIG_FILES([
 	misc/init_utf8_comma_pipe_fr/Makefile
 	misc/t_amounts/Makefile
 	misc/t_delete/Makefile
+	misc/t_dynbook/Makefile
+	misc/t_nonmodal/Makefile
 	misc/t_spawn/Makefile
 	misc/t_weakref/Makefile
 	po/Makefile.in

@@ -185,6 +185,7 @@ v_init_dialog( myDialog *dialog )
 	GtkEntry *entry;
 	gchar *str;
 	GtkWindow *toplevel;
+	gboolean is_current;
 
 	priv = OFA_CURRENCY_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
@@ -197,6 +198,8 @@ v_init_dialog( myDialog *dialog )
 		title = g_strdup_printf( _( "Updating « %s » currency" ), code );
 	}
 	gtk_window_set_title( toplevel, title );
+
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
 
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
@@ -234,11 +237,15 @@ v_init_dialog( myDialog *dialog )
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 
-	my_utils_init_notes_ex(
-			toplevel, currency, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( toplevel, currency, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, currency );
 
 	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 static void

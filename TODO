@@ -120,6 +120,10 @@
  
  256 2014- 6-23 editing rough entries: add an icon to advertise that 
                 the row has been modified
+     2015- 2- 5 the entry is saved as soon as the edition finishes
+                so there would be an added value if and only if we
+                would have a modification history and would be capable
+                of going back...
 
  259 2014- 6-23 editing rough entries: copy/paste a line
 
@@ -149,9 +153,6 @@
 
  314 2014- 9-26 have a preference to use millenary shortcut
                 (i.e. entering '14' gives '2014')
-
- 317 2014-10- 5 view_entries: let the user select an operation template
-     2015- 1-25 find a use case/rationale ?
 
  325 2014-10-12 DossierManage Properties: to be written
 
@@ -225,6 +226,7 @@
                 [A..Z,a..z,0..9,_] characters
 
  472 2014-11-29 set dialogs readonly if not current exercice
+     2015- 2- 5 done for properties
 
  477 2014-11-30 Dossier Open option should be insensitive when a dossier
                 is already opened
@@ -315,21 +317,10 @@
 
  617 2015- 2- 2 configure.ac: display built plugins
 
- 618 2015- 2- 2 display Bat lines
-
  621 2015- 2- 2 ope template: have an help dialog which lists the 
                 available macro and functions
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
                 while keeping to react to user interactions
-
- 623 2015- 2- 3 Accounts Chart: double-click expand/collapse the tree
-
- 624 2015- 2- 3 GuidedInput: display the label of the account
-                (either in the comment zone, moving the comment as a
-                 tooltip of the row widgets, or elsewhere)
-
- 625 2015- 2- 3 ViewEntries: modifying the account number of an entry
-                doesn't update the accounts balances
 
  628 2015- 2- 3 OpeTemplateProperties: segfault when saving
 
@@ -1561,6 +1552,10 @@
  316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
      2014-10- 5 done - svn #3883
 
+ 317 2014-10- 5 view_entries: let the user select an operation template
+     2015- 1-25 find a use case/rationale ?
+     2015- 2- 5 cancelled
+
  318 2014-10- 6 print the balance for a periode
      2014-11- 1 done - svn #4022
 
@@ -2738,6 +2733,9 @@
  612 2015- 1-30 BatProperties: view bat lines
      2015- 1-30 done - svn #4532
 
+ 618 2015- 2- 2 display Bat lines
+     2015- 2- 5 already done
+
  619 2015- 2- 2 ope template properties: locking the ledger makes the
                 piece ref insensitive (but shouldn't)
      2015- 2- 2 fixed
@@ -2750,6 +2748,24 @@
                 reset (fine), check the check dialog sees them as empty
                 (wrong)
      2015- 2- 4 done - svn #4545 
+
+ 623 2015- 2- 3 Accounts Chart: double-click expand/collapse the tree
+     2015- 2- 5 feature would only be available on selection when double-
+                clicking on a root account and root accounts are not 
+                permitted
+                -> in AccountsChart, double-clicking activates properties
+                -> in AccountSelection, double-clicking a detail account
+                   validates the selection
+     2015- 2- 5 done
+
+ 624 2015- 2- 3 GuidedInput: display the label of the account
+                (either in the comment zone, moving the comment as a
+                 tooltip of the row widgets, or elsewhere)
+     2015- 2- 5 done
+
+ 625 2015- 2- 3 ViewEntries: modifying the account number of an entry
+                doesn't update the accounts balances
+     2015- 2- 4 done - svn #4549
 
  626 2015- 2- 3 GuidedInputEx: Total and Diff should be reset (erased
                 and redisplayed) on new model

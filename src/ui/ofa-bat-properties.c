@@ -172,6 +172,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWindow *toplevel;
 	GtkWidget *container;
 	ofoDossier *dossier;
+	gboolean is_current;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
@@ -181,6 +182,7 @@ v_init_dialog( myDialog *dialog )
 	self = OFA_BAT_PROPERTIES( dialog );
 	priv = self->priv;
 	dossier = MY_WINDOW( dialog )->prot->dossier;
+	is_current = ofo_dossier_is_current( dossier );
 
 	container = my_utils_container_get_child_by_name(
 			GTK_CONTAINER( toplevel ), "containing-frame" );
@@ -188,10 +190,14 @@ v_init_dialog( myDialog *dialog )
 
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
-	ofa_bat_properties_bin_set_bat(
-			priv->bat_bin, priv->bat, dossier, ofo_dossier_is_current( dossier ));
+	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat, dossier, is_current );
 
 	check_for_enable_dlg( self );
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 static void

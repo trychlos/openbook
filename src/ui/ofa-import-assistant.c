@@ -817,7 +817,7 @@ p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 
 	count = ofa_dossier_misc_import_csv(
 			MY_WINDOW( self )->prot->dossier,
-			priv->p6_object, priv->p2_uri, priv->p4_import_settings, self, NULL );
+			priv->p6_object, priv->p2_uri, priv->p4_import_settings, self, errors );
 
 	return( count );
 }

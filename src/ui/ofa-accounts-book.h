@@ -97,6 +97,8 @@ gchar           *ofa_accounts_book_get_selected            ( ofaAccountsBook *bo
 void             ofa_accounts_book_set_selected            ( ofaAccountsBook *book,
 																	const gchar *number );
 
+void             ofa_accounts_book_toggle_collapse         ( ofaAccountsBook *book );
+
 void             ofa_accounts_book_button_clicked          ( ofaAccountsBook *book,
 																	gint button_id );
 

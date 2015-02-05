@@ -976,23 +976,25 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 	visible = FALSE;
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_object_unref( entry );
+	if( entry ){
+		g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
+		g_object_unref( entry );
 
-	entry_set_number = ofo_entry_get_settlement_number( entry );
+		entry_set_number = ofo_entry_get_settlement_number( entry );
 
-	switch( priv->settlement ){
-		case ENT_SETTLEMENT_YES:
-			visible = ( entry_set_number > 0 );
-			break;
-		case ENT_SETTLEMENT_NO:
-			visible = ( entry_set_number <= 0 );
-			break;
-		case ENT_SETTLEMENT_ALL:
-			visible = TRUE;
-			break;
-		default:
-			break;
+		switch( priv->settlement ){
+			case ENT_SETTLEMENT_YES:
+				visible = ( entry_set_number > 0 );
+				break;
+			case ENT_SETTLEMENT_NO:
+				visible = ( entry_set_number <= 0 );
+				break;
+			case ENT_SETTLEMENT_ALL:
+				visible = TRUE;
+				break;
+			default:
+				break;
+		}
 	}
 
 	return( visible );

@@ -3078,7 +3078,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	/* rough and future entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
-	precision = ( gdouble ) 1 / ( gdouble ) PRECISION;
+	/*precision = ( gdouble ) 1 / ( gdouble ) PRECISION;*/
+	precision = 0.001;
 	for( it=past ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
 		msg = g_strdup_printf( "PAST [%s] tot_debits=%'.5lf, tot_credits=%'.5lf",

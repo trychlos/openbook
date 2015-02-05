@@ -84,6 +84,8 @@ gchar            *ofa_accounts_frame_get_selected            ( ofaAccountsFrame 
 void              ofa_accounts_frame_set_selected            ( ofaAccountsFrame *frame,
 																		const gchar *number );
 
+void              ofa_accounts_frame_toggle_collapse         ( ofaAccountsFrame *frame );
+
 GtkWidget        *ofa_accounts_frame_get_top_focusable_widget( const ofaAccountsFrame *frame );
 
 G_END_DECLS

@@ -219,10 +219,13 @@ v_init_dialog( myDialog *dialog )
 	const gchar *mnemo;
 	GtkEntry *entry;
 	GtkContainer *container;
+	gboolean is_current;
 
 	self = OFA_RATE_PROPERTIES( dialog );
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
+
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
 
 	mnemo = ofo_rate_get_mnemo( priv->rate );
 	if( !mnemo ){
@@ -255,11 +258,15 @@ v_init_dialog( myDialog *dialog )
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex(
-			container, rate, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( container, rate, is_current );
 	my_utils_init_upd_user_stamp_ex( container, rate );
 
 	check_for_enable_dlg( self );
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 static void

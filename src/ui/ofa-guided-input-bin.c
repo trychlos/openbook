@@ -643,6 +643,7 @@ add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *widget;
 	const sColumnDef *col_def;
+	const gchar *comment;
 
 	priv = bin->priv;
 	col_def = find_column_def_from_col_id( bin, col_id );
@@ -669,6 +670,8 @@ add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 	}
 
 	if( widget ){
+		comment = ofo_ope_template_get_detail_comment( priv->model, row-1 );
+		gtk_widget_set_tooltip_text( widget, comment );
 		gtk_grid_attach( priv->entries_grid, widget, col_id, row, 1, 1 );
 	}
 }
@@ -1010,7 +1013,10 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_focus_in";
 	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
-	const gchar *comment;
+	const gchar *acc_number;
+	ofoAccount *account;
+	gchar *comment;
+	GtkWidget *widget;
 
 	priv = bin->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
@@ -1026,8 +1032,18 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	g_free( sdata->previous );
 	sdata->previous = g_strdup( gtk_entry_get_text( entry ));
 
-	comment = ofo_ope_template_get_detail_comment( priv->model, priv->focused_row-1 );
+	widget = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, sdata->row_id );
+	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), FALSE );
+	acc_number = gtk_entry_get_text( GTK_ENTRY( widget ));
+	comment = NULL;
+	if( acc_number ){
+		account = ofo_account_get_by_number( priv->dossier, acc_number );
+		if( account && OFO_IS_ACCOUNT( account )){
+			comment = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
+		}
+	}
 	set_comment( bin, comment ? comment : "" );
+	g_free( comment );
 
 	return( FALSE );
 }

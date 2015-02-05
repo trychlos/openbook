@@ -364,7 +364,7 @@ v_quit_on_code( myDialog *dialog, gint code )
 /**
  * my_dialog_set_readonly_buttons:
  *
- * Replace the OK/Cancal buttons with a Close one.
+ * Replace the OK/Cancel buttons with a Close one.
  */
 void
 my_dialog_set_readonly_buttons( myDialog *dialog )
@@ -389,6 +389,6 @@ my_dialog_set_readonly_buttons( myDialog *dialog )
 			gtk_widget_destroy( button );
 		}
 
-		gtk_dialog_add_button( GTK_DIALOG( toplevel ), _( "Close" ), GTK_RESPONSE_OK );
+		gtk_dialog_add_button( GTK_DIALOG( toplevel ), _( "Close" ), GTK_RESPONSE_CANCEL );
 	}
 }

@@ -225,6 +225,7 @@ v_init_dialog( myDialog *dialog )
 	ofaCurrencyCombo *combo;
 	GtkContainer *container;
 	GtkWidget *w_root, *w_detail, *parent;
+	gboolean is_current;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
@@ -241,6 +242,8 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
+
 	priv->has_entries = ofo_entry_use_account( MY_WINDOW( dialog )->prot->dossier, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 
@@ -251,7 +254,8 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect(
 			G_OBJECT( priv->w_number ), "changed", G_CALLBACK( on_number_changed ), dialog );
-
+	/* set insensitive though we would be able to remediate to all
+	 *  impacted records  */
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->w_number ), !priv->has_entries );
 
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
@@ -325,13 +329,17 @@ v_init_dialog( myDialog *dialog )
 		init_balances_page( self );
 	}
 
-	my_utils_init_notes_ex(
-			container, account, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( container, account, is_current );
 	my_utils_init_upd_user_stamp_ex( container, account );
 
 	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );
 
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 /*

@@ -198,6 +198,7 @@ v_init_dialog( myDialog *dialog )
 	GtkEntry *entry;
 	GtkContainer *container;
 	GtkWidget *label;
+	gboolean is_current;
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -210,6 +211,8 @@ v_init_dialog( myDialog *dialog )
 		title = g_strdup_printf( _( "Updating « %s » ledger" ), jou_mnemo );
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
+
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
 
 	priv->mnemo = g_strdup( jou_mnemo );
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo" ));
@@ -234,11 +237,15 @@ v_init_dialog( myDialog *dialog )
 
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
-	my_utils_init_notes_ex(
-			container, ledger, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( container, ledger, is_current );
 	my_utils_init_upd_user_stamp_ex( container, ledger );
 
 	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 /*

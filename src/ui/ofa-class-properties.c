@@ -180,6 +180,7 @@ v_init_dialog( myDialog *dialog )
 	GtkEntry *entry;
 	gchar *str;
 	GtkWindow *toplevel;
+	gboolean is_current;
 
 	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
@@ -192,6 +193,8 @@ v_init_dialog( myDialog *dialog )
 		title = g_strdup_printf( _( "Updating class « %d »" ), number );
 	}
 	gtk_window_set_title( toplevel, title );
+
+	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
 
 	priv->number = number;
 	entry = GTK_ENTRY(
@@ -215,11 +218,15 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	my_utils_init_notes_ex(
-			toplevel, class, ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier ));
+	my_utils_init_notes_ex( toplevel, class, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, class );
 
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !is_current ){
+		my_dialog_set_readonly_buttons( dialog );
+	}
 }
 
 static void
