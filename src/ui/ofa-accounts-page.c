@@ -142,6 +142,9 @@ v_setup_page( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_accounts_page_v_init_view";
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 }
 
 static GtkWidget *

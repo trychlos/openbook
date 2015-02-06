@@ -287,7 +287,6 @@ ui_files = \
 images_files = \
 	notes1.png											\
 	filler.png											\
-	blank.png											\
 	$(NULL)
 
 ui_data_DATA = \

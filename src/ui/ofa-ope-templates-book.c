@@ -320,6 +320,7 @@ create_notebook( ofaOpeTemplatesBook *self )
 
 	gtk_notebook_popup_enable( priv->book );
 	gtk_notebook_set_scrollable( priv->book, TRUE );
+	gtk_notebook_set_show_tabs( priv->book, TRUE );
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
@@ -394,6 +395,8 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 		ofa_ope_template_store_load_dataset( priv->ope_store );
 
 		dossier_signals_connect( book );
+
+		gtk_notebook_set_current_page( priv->book, 0 );
 	}
 }
 
