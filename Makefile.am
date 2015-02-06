@@ -25,6 +25,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = \
+	data								\
 	m4									\
 	maintainer							\
 	misc								\

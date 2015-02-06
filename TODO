@@ -236,12 +236,6 @@
                 have one entry per account
      2014-12- 7 maybe in a next version...
 
- 502 2014-12- 6 when entered in the command-line, accept an empty 
-                database (and defaults to the current)
-     2014-12- 7 idem for account and password (let the user enter them)
-                + has to with command-line management and maybe also
-                command language
-
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
 
@@ -2328,6 +2322,13 @@
  501 2014-12- 6 do not accept entry before the begin of the exercice
                 (or the last close of the ledger)
      2014-12- 7 OK - done
+
+ 502 2014-12- 6 when entered in the command-line, accept an empty 
+                database (and defaults to the current)
+     2014-12- 7 idem for account and password (let the user enter them)
+                + has to with command-line management and maybe also
+                command language
+     2015- 2- 6 done
 
  503 2014-12- 6 when entered in the command-line, accept empty account 
                 password, and let the user enter them

@@ -105,6 +105,9 @@ AC_DEFINE_UNQUOTED([OFA_CONFIG_OPTIONS],["$0 ${config_options}"],["Configure opt
 
 AC_CONFIG_FILES([
 	Makefile
+	data/Makefile
+	data/desktop/Makefile
+	data/icons/Makefile
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
