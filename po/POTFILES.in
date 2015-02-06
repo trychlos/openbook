@@ -1,3 +1,4 @@
+data/desktop/openbook.desktop.in
 src/core/ofa-admin-credentials-bin.ui
 src/core/ofa-dbms-root-bin.ui
 src/mysql/ofa-mysql-connect-display-piece.ui
@@ -28,6 +29,7 @@ src/ui/ofa-guided-input-bin.ui
 src/ui/ofa-import-assistant.ui
 src/ui/ofa-ledger-close.ui
 src/ui/ofa-ledger-properties.ui
+src/ui/ofa-ope-template-help.ui
 src/ui/ofa-ope-template-properties.ui
 src/ui/ofa-preferences.ui
 src/ui/ofa-print-balance.ui
