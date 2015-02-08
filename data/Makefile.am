@@ -25,4 +25,5 @@
 SUBDIRS = \
 	desktop								\
 	icons								\
+	init_utf8_comma_pipe_fr				\
 	$(NULL)

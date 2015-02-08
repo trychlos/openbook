@@ -23,7 +23,6 @@
 # $Id$
 
 SUBDIRS = \
-	init_utf8_comma_pipe_fr				\
 	t_amounts							\
 	t_delete							\
 	t_dynbook							\

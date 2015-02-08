@@ -318,7 +318,33 @@
 
  628 2015- 2- 3 OpeTemplateProperties: segfault when saving
 
- 632
+ 632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
+                than standard prefix=/usr
+
+ 633 2015- 2- 8 GuidedInputBin: when the ledger has not yet been closed
+                in the exercice, the begin of the exercice is an acceptable
+                effect date
+
+ 634 2015- 2- 8 be able to print a reconciliation summary from within 
+                the reconciliation page
+
+ 635 2015- 2- 8 Reconciliation: keep displaying the entries which have
+                been reconciliated during the session (have an auto
+                refresh toggle switch ?)
+                rationale: it is comfortable to keep seeing the recently
+                reconciliated entries - while no more seeing the entries
+                which have been reconciliated, say last month 
+
+ 636 2015- 2- 8 make the application have an icon
+
+ 637 2015- 2- 8 opened dialogs shouldn't appear as another icon in the
+                shell bar
+
+ 638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
+                clicking set the manual date, not the proposed one)
+                + keep displaying the accepted BAT line
+
+ 639
 
 -----------------------------------------------------------------------
  DONE

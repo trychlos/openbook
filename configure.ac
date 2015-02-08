@@ -108,10 +108,10 @@ AC_CONFIG_FILES([
 	data/Makefile
 	data/desktop/Makefile
 	data/icons/Makefile
+	data/init_utf8_comma_pipe_fr/Makefile
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
-	misc/init_utf8_comma_pipe_fr/Makefile
 	misc/t_amounts/Makefile
 	misc/t_delete/Makefile
 	misc/t_dynbook/Makefile
