@@ -741,7 +741,7 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
  * As some menu items are enabled or not depending of the current
  * status of one thing or another, then the following behavior is
  * coded :
- * - each time a thing which may have an impact o,n iten enable status
+ * - each time a thing which may have an impact on an item enable status
  *   occurs, then it is its responsability to send an appropriate
  *   signal
  * - we connect here to this signal, thus computing the new enabled
@@ -754,7 +754,7 @@ static void
 connect_window_for_enabled_updates( ofaMainWindow *window )
 {
 	/* connect to the signal which will be sent after each
-	 * indiviual update by the above functions, in order to actually
+	 * individual update by the above functions, in order to actually
 	 * update the enabled status of menu items
 	 */
 	g_signal_connect(
