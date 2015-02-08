@@ -2,7 +2,7 @@
  * Open Freelance Accounting
  * A double-entry accounting application for freelances.
  *
- * Copyright (C) 2014 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
  *
  * Open Freelance Accounting is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofo-base.h 3494 2014-05-24 18:50:40Z  $
+ * $Id: ofo-base.h 3494 2014,2015-05-24 18:50:40Z  $
  */
 
 #ifndef __OFO_BASE_DEF_H__

@@ -1,7 +1,7 @@
 # Open Freelance Accounting
 # A double-entry accounting application for freelances.
 #
-# Copyright (C) 2014 Pierre Wieser (see AUTHORS)
+# Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
 #
 # Open Freelance Accounting is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General Public License as
