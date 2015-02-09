@@ -332,6 +332,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	str = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_id ), str );
 	g_free( str );
+	gtk_widget_set_can_focus( priv->bat_id, editable );
 
 	cstr = ofo_bat_get_format( bat );
 	if( cstr ){
@@ -339,18 +340,22 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_format ), "" );
 	}
+	gtk_widget_set_can_focus( priv->bat_format, editable );
 
 	str = g_strdup_printf( "%u", ofo_bat_get_count( bat, dossier ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_count ), str );
 	g_free( str );
+	gtk_widget_set_can_focus( priv->bat_count, editable );
 
 	str = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
+	gtk_widget_set_can_focus( priv->bat_begin, editable );
 
 	str = my_date_to_str( ofo_bat_get_end( bat ), MY_DATE_DMYY );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
+	gtk_widget_set_can_focus( priv->bat_end, editable );
 
 	cstr = ofo_bat_get_rib( bat );
 	if( cstr ){
@@ -358,6 +363,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_rib ), "" );
 	}
+	gtk_widget_set_can_focus( priv->bat_rib, editable );
 
 	cstr = ofo_bat_get_currency( bat );
 	if( cstr ){
@@ -365,6 +371,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), "" );
 	}
+	gtk_widget_set_can_focus( priv->bat_currency, editable );
 
 	if( ofo_bat_get_solde_set( bat )){
 		str = my_double_to_str( ofo_bat_get_solde( bat ));
@@ -373,6 +380,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde ), "" );
 	}
+	gtk_widget_set_can_focus( priv->bat_solde, editable );
 
 	priv->bat = bat;
 	my_utils_init_notes_ex( bin, bat, editable );
