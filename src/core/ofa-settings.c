@@ -284,6 +284,29 @@ settings_new( void )
 	}
 }
 
+/**
+ * ofa_settings_get_key_file:
+ */
+const gchar *
+ofa_settings_get_key_file( ofaSettingsTarget target )
+{
+	const gchar *fname;
+
+	fname = NULL;
+	settings_new();
+
+	switch( target ){
+		case SETTINGS_TARGET_USER:
+			fname = st_user_settings->priv->kf_name;
+			break;
+		case SETTINGS_TARGET_DOSSIER:
+			fname = st_dossier_settings->priv->kf_name;
+			break;
+	}
+
+	return( fname );
+}
+
 static void
 load_key_file( ofaSettings *settings )
 {
@@ -770,6 +793,13 @@ ofa_settings_get_groups( ofaSettingsTarget target )
 {
 	GSList *slist;
 	gchar **array, **iter;
+
+	/* make sure the key file loaded in memory is a real-time image
+	 * of the corresponding configuration file
+	 * (so that ofaSettingsMonitor is able to do its stuff */
+	if( st_dossier_settings ){
+		g_clear_object( &st_dossier_settings );
+	}
 
 	settings_new();
 

@@ -75,7 +75,9 @@ typedef enum {
 #define SETTINGS_GROUP_DOSSIER          "Dossier"
 
 /* called on application dispose */
-void     ofa_settings_free                   ( void );
+void         ofa_settings_free               ( void );
+
+const gchar *ofa_settings_get_key_file       ( ofaSettingsTarget target );
 
 /* user preferences management */
 #define  ofa_settings_get_boolean(K)         ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))

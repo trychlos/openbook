@@ -93,19 +93,23 @@ struct _ofaMainWindowPrivate {
 	/* menu items enabled status
 	 */
 	gboolean       dossier_begin;		/* whether the exercice beginning date is valid */
+
+	GSimpleAction *action_guided_input;
+	GSimpleAction *action_settlement;
+	GSimpleAction *action_reconciliation;
+	GSimpleAction *action_close_ledger;
+	GSimpleAction *action_close_exercice;
+	GSimpleAction *action_import;
 };
 
 /* signals defined here
  */
 enum {
-	ENABLED_UPDATES = 0,
-	DOSSIER_OPEN,
+	DOSSIER_OPEN = 0,
 	DOSSIER_PROPERTIES,
+	OPENED_DOSSIER,
 	N_SIGNALS
 };
-
-/* an internal signal to update the sensitivity of the menu items */
-#define SIGNAL_ENABLED_UPDATES          "ofa-signal-enabled-updates"
 
 static void on_properties          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_backup              ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -288,10 +292,8 @@ static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void             connect_window_for_enabled_updates( ofaMainWindow *window );
 static void             set_window_title( const ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
-static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
 static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             warning_archived_dossier( const ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
@@ -302,6 +304,13 @@ static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_dossier_open_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo );
+static void             on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
+static void             enable_action_settlement( ofaMainWindow *window, gboolean enable );
+static void             enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
+static void             enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
+static void             enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
+static void             enable_action_import( ofaMainWindow *window, gboolean enable );
 static void             on_dossier_properties_cleanup_handler( ofaMainWindow *window );
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
@@ -310,7 +319,6 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
-static void             on_enabled_updates( ofaMainWindow *window, void *empty );
 
 static void
 main_window_finalize( GObject *instance )
@@ -353,11 +361,9 @@ main_window_dispose( GObject *instance )
 		}
 
 		/* unref object members here */
-
 		if( priv->menu ){
 			g_object_unref( priv->menu );
 		}
-
 		if( priv->dossier ){
 			g_object_unref( priv->dossier );
 		}
@@ -489,28 +495,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaMainWindowPrivate ));
 
 	/**
-	 * ofaMainWindow::ofa-signal-enabled-updates:
-	 *
-	 * This signal is sent by the main Window to the main window after
-	 * having updated one or another enabled status flags.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 * 						gpointer user_data );
-	 */
-	st_signals[ ENABLED_UPDATES ] = g_signal_new_class_handler(
-				SIGNAL_ENABLED_UPDATES,
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
 	 * ofaMainWindow::ofa-signal-dossier-open:
 	 *
 	 * This signal is to be sent to the main window when someone asks
@@ -563,6 +547,29 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				0 );
+
+	/**
+	 * ofaMainWindow::ofa-opened-dossier:
+	 *
+	 * This signal is sent on the main window when a dossier has been
+	 * opened.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 *                      ofoDossier  *dossier,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ OPENED_DOSSIER ] = g_signal_new_class_handler(
+				"ofa-opened-dossier",
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_OBJECT );
 }
 
 /**
@@ -588,7 +595,8 @@ ofa_main_window_new( const ofaApplication *application )
 			NULL );
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
-	connect_window_for_enabled_updates( window );
+
+	g_signal_connect( window, "ofa-opened-dossier", G_CALLBACK( on_opened_dossier ), NULL );
 
 	return( window );
 }
@@ -737,30 +745,6 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
 	}
 }
 
-/*
- * As some menu items are enabled or not depending of the current
- * status of one thing or another, then the following behavior is
- * coded :
- * - each time a thing which may have an impact on an item enable status
- *   occurs, then it is its responsability to send an appropriate
- *   signal
- * - we connect here to this signal, thus computing the new enabled
- *   status of items
- * - we send then to ourself a 'ENABLED_UPDATES' dedicated signal which
- *   we will use to actually updates the enabled status of all menu
- *   items
- */
-static void
-connect_window_for_enabled_updates( ofaMainWindow *window )
-{
-	/* connect to the signal which will be sent after each
-	 * individual update by the above functions, in order to actually
-	 * update the enabled status of menu items
-	 */
-	g_signal_connect(
-			G_OBJECT( window ), SIGNAL_ENABLED_UPDATES, G_CALLBACK( on_enabled_updates ), NULL );
-}
-
 /**
  * ofa_main_window_update_title:
  */
@@ -852,38 +836,15 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	set_menubar( window, priv->menu );
 	set_window_title( window );
-	connect_dossier_for_enabled_updates( window );
 
 	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
 	exe_end = ofo_dossier_get_exe_end( priv->dossier );
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
 		warning_exercice_unset( window );
 	}
-}
 
-/*
- * As some menu items are enabled or not depending of the current
- * status of one thing or another, then the following behavior is
- * coded :
- * - each time a thing which may have an impact o,n iten enable status
- *   occurs, then it is its responsability to send an appropriate
- *   signal
- * - we connect here to this signal, thus computing the new enabled
- *   status of items
- * - we send then to ourself a 'ENABLED_UPDATES' dedicated signal which
- *   we will use to actually updates the enabled status of all menu
- *   items
- */
-static void
-connect_dossier_for_enabled_updates( ofaMainWindow *window )
-{
-	/*ofaMainWindowPrivate *priv;
-
-	priv = window->priv;*/
-
-	/* connect to signals which are sent when an element which may
-	 * modify the enabled status of a menu item is itself updated
-	 */
+	g_signal_emit_by_name( window, "ofa-opened-dossier", g_object_ref( priv->dossier ));
+	g_object_unref( priv->dossier );
 }
 
 /*
@@ -1101,6 +1062,150 @@ on_dossier_open_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo )
 	g_free( sdo->account );
 	g_free( sdo->password );
 	g_free( sdo );
+}
+
+/*
+ * signal sent after the dossier has been successfully opened
+ */
+static void
+on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty )
+{
+	gboolean is_current;
+
+	is_current = ofo_dossier_is_current( dossier );
+
+	enable_action_guided_input( window, is_current );
+	enable_action_settlement( window, is_current );
+	enable_action_reconciliation( window, is_current );
+	enable_action_close_ledger( window, is_current );
+	enable_action_close_exercice( window, is_current );
+	enable_action_import( window, is_current );
+}
+
+static void
+enable_action_guided_input( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_guided_input";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_guided_input ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "guided" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_guided_input = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_guided_input, enable );
+}
+
+static void
+enable_action_settlement( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_settlement";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_settlement ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "settlement" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_settlement = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_settlement, enable );
+}
+
+static void
+enable_action_reconciliation( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_reconciliation";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_reconciliation ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "concil" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_reconciliation = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_reconciliation, enable );
+}
+
+static void
+enable_action_close_ledger( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_close_ledger";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_close_ledger ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "ledclosing" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_close_ledger = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_close_ledger, enable );
+}
+
+static void
+enable_action_close_exercice( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_close_exercice";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_close_exercice ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "execlosing" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_close_exercice = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_close_exercice, enable );
+}
+
+static void
+enable_action_import( ofaMainWindow *window, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_main_window_enable_action_import";
+	ofaMainWindowPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: window=%p, enable=%s",
+			thisfn, ( void * ) window, enable ? "True":"False" );
+
+	priv = window->priv;
+
+	if( !priv->action_import ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "import" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_import = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_import, enable );
 }
 
 static void
@@ -1760,15 +1865,4 @@ ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *mess
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
-}
-
-/*
- * when triggered, one of the flags which command the menu item enabled
- * status has changed
- * so take this into account and recompute all menu items enabled status
- */
-static void
-on_enabled_updates( ofaMainWindow *window, void *user_data )
-{
-
 }

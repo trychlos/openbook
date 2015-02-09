@@ -38,17 +38,9 @@
   23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
                 the executed SQL statements
 
-  35 2014- 5-10 DossierOpen should monitor the configuration, only
-                enabling the action when there is at least one defined
-                dossier
-     2014- 5-22 see also TODO #42
-
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
 
   41 2014- 5-12 ofaMainWindow: set menu tooltips
-
-  42 2014- 5-12 ofaMainWindow: set menu items sensitivities
-     2014- 5-22 See also TODO #35 and #36
 
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
                 a label instead of only a text
@@ -102,8 +94,6 @@
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
      2014-10- 6 this should be implemented as a plugin
-
- 229 2014- 6-16 Entry model: duplicate a line
 
  252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
                 library (not a dynamically loadabled plugin) of same
@@ -159,6 +149,7 @@
  332 2014-10-17 Reconciliation: should not accept Enter to annulate the
                 reconciliation on an entry, as it is too easy to make
                 an error
+     2015- 2- 9 idem when cancelling a settled entry
 
  333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
                 a GtkTreeView with debit/credit amount columns:
@@ -344,7 +335,16 @@
                 clicking set the manual date, not the proposed one)
                 + keep displaying the accepted BAT line
 
- 639
+ 639 2015- 2- 9 Reconciliation: when having selected an imported BAT
+                file, its references should be displayed somewhere with
+                a count of propositions
+
+ 640 2015- 2- 9 BAT: have been able to import twice the same BAT file 
+
+ 641 2015- 2- 9 BAT: properties are editable (even if not saved) while
+                notes are not (but should)
+
+ 642
 
 -----------------------------------------------------------------------
  DONE
@@ -455,6 +455,12 @@
                 (as ofa_settings_get_dossier)
      2014- 5-10 Done
 
+  35 2014- 5-10 DossierOpen should monitor the configuration, only
+                enabling the action when there is at least one defined
+                dossier
+     2014- 5-22 see also TODO #42
+     2015- 2- 9 done
+
   36 2014- 5-11 win.close action should only be enabled when a dossier 
                 is opened
      2014- 5-22 see also TODO #42
@@ -474,6 +480,10 @@
                 OFA_T_DOSSIER table to p1 page
      2014- 6-30 same fields than DossierProperties
      2014- 7-14 closed - cf. #280
+
+  42 2014- 5-12 ofaMainWindow: set menu items sensitivities
+     2014- 5-22 See also TODO #35 and #36
+     2015- 2- 9 done
 
   44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
                 the classes book (e.g. Alt+1, etc.); set the label of
@@ -1227,6 +1237,9 @@
  228 2014- 6-16 Entry model, after having clicked '+', set the focus
                 on the just inserted 'comment' field
      2014- 6-16 done - svn #3715
+
+ 229 2014- 6-16 Entry model: duplicate a line
+     2015- 2- 9 done
 
  230 2014- 6-16 Viewing entries: it is not worth to display the 
                 currency code on each line when displaying per account

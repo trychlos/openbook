@@ -36,6 +36,7 @@
 
 #include "core/ofa-plugin.h"
 #include "core/ofa-preferences.h"
+#include "core/ofa-settings-monitor.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
@@ -49,26 +50,31 @@
 /* private instance data
  */
 struct _ofaApplicationPrivate {
-	gboolean        dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry   *options;
-	gchar          *application_name;
-	gchar          *description;
-	gchar          *icon_name;
+	GOptionEntry       *options;
+	gchar              *application_name;
+	gchar              *description;
+	gchar              *icon_name;
 
 	/* command-line args
 	 */
-	ofsDossierOpen *sdo;
+	ofsDossierOpen     *sdo;
 
 	/* internals
 	 */
-	int             argc;
-	GStrv           argv;
-	int             code;
-	ofaMainWindow  *main_window;
-	GMenuModel     *menu;
+	int                 argc;
+	GStrv               argv;
+	int                 code;
+	ofaMainWindow      *main_window;
+	GMenuModel         *menu;
+	ofaSettingsMonitor *settings_monitor;
+
+	/* menu items
+	 */
+	GSimpleAction      *action_open;
 };
 
 /* class properties
@@ -80,20 +86,20 @@ enum {
 	OFA_PROP_ICON_NAME_ID,
 };
 
-static const gchar            *st_application_id     = "org.trychlos.openbook.ui";
+static const gchar       *st_application_id     = "org.trychlos.openbook.ui";
 
-static const gchar            *st_application_name   = N_( "Open Freelance Accounting" );
-static const gchar            *st_description        = N_( "Une comptabilité en partie-double orientée vers les freelances" );
-static const gchar            *st_icon_name          = N_( "openbook" );
+static const gchar       *st_application_name   = N_( "Open Freelance Accounting" );
+static const gchar       *st_description        = N_( "Une comptabilité en partie-double orientée vers les freelances" );
+static const gchar       *st_icon_name          = N_( "openbook" );
 
-static       gboolean          st_version_opt        = FALSE;
+static       gboolean     st_version_opt        = FALSE;
 
-static       gchar            *st_dossier_name_opt   = NULL;
-static       gchar            *st_dossier_dbname_opt = NULL;
-static       gchar            *st_dossier_user_opt   = NULL;
-static       gchar            *st_dossier_passwd_opt = NULL;
+static       gchar       *st_dossier_name_opt   = NULL;
+static       gchar       *st_dossier_dbname_opt = NULL;
+static       gchar       *st_dossier_user_opt   = NULL;
+static       gchar       *st_dossier_passwd_opt = NULL;
 
-static       GOptionEntry      st_option_entries[]  = {
+static       GOptionEntry st_option_entries[]   = {
 	{ "dossier",  'd', 0, G_OPTION_ARG_STRING, &st_dossier_name_opt,
 			N_( "open the specified dossier []" ), NULL },
 	{ "database", 'b', 0, G_OPTION_ARG_STRING, &st_dossier_dbname_opt,
@@ -115,9 +121,12 @@ static gboolean manage_options( ofaApplication *application );
 
 static void     application_startup( GApplication *application );
 static void     application_activate( GApplication *application );
-static void     test_regex( void );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
+static void     maintainer_test_function( void );
 
+static void     setup_settings_monitor( ofaApplication *application );
+static void     on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, gboolean empty, ofaApplication *application );
+static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -130,7 +139,7 @@ static void     on_version( ofaApplication *application );
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
-		{ "new",           on_new,          NULL, NULL, NULL },
+		{ "new",           on_new,           NULL, NULL, NULL },
 		{ "open",          on_open,          NULL, NULL, NULL },
 		{ "restore",       on_restore,       NULL, NULL, NULL },
 		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
@@ -139,8 +148,8 @@ static const GActionEntry st_app_entries[] = {
 		{ "about",         on_about,         NULL, NULL, NULL },
 };
 
-static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
-static const gchar  *st_appmenu_id  = "app-menu";
+static const gchar *st_appmenu_xml      = PKGUIDIR "/ofa-app-menubar.ui";
+static const gchar *st_appmenu_id       = "app-menu";
 
 static void
 application_finalize( GObject *instance )
@@ -175,7 +184,9 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
+		if( priv->settings_monitor ){
+			g_object_unref( priv->settings_monitor );
+		}
 		if( priv->menu ){
 			g_object_unref( priv->menu );
 		}
@@ -575,6 +586,9 @@ application_startup( GApplication *application )
 		g_error_free( error );
 	}
 	g_object_unref( builder );
+
+	/* setup the monitoring of action items */
+	setup_settings_monitor( OFA_APPLICATION( application ));
 }
 
 /*
@@ -619,7 +633,7 @@ application_activate( GApplication *application )
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
 	if( 0 ){
-		test_regex();
+		maintainer_test_function();
 	}
 
 	/* if present, command-line options have been dealt with before
@@ -628,29 +642,6 @@ application_activate( GApplication *application )
 	if( priv->sdo ){
 		g_signal_emit_by_name(
 				priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, priv->sdo );
-	}
-}
-
-static void
-test_regex( void )
-{
-	static const gchar *thisfn = "ofa_application_test_regex";
-
-	gchar *cstr = "GRANT ALL PRIVILEGES ON `ofat`.* TO 'ofat'@'localhost' WITH GRANT OPTION";
-	gchar *prev_dbname = "ofat";
-	gchar *dbname = "ofat_3";
-	GRegex *regex;
-	gchar *str = g_strdup_printf( " `%s`\\.\\* ", prev_dbname );
-	g_debug( "%s: str='%s'", thisfn, str );
-	regex = g_regex_new( str, 0, 0, NULL );
-	g_free( str );
-	/*str = g_strdup_printf( "\\1%s", dbname );*/
-	str = g_strdup_printf( " `%s`.* ", dbname );
-	g_debug( "%s: str=%s", thisfn, str );
-	if( g_regex_match( regex, cstr, 0, NULL )){
-		gchar *query = g_regex_replace( regex, cstr, -1, 0, str, 0, NULL );
-		g_debug( "%s: cstr=%s", thisfn, cstr );
-		g_debug( "%s: query=%s", thisfn, query );
 	}
 }
 
@@ -679,11 +670,83 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 	g_warning( "%s: application=%p, n_files=%d, hint=%s: unexpected run here",
 			thisfn, ( void * ) application, n_files, hint );
 }
+
+static void
+maintainer_test_function( void )
+{
+#if 0
+	static const gchar *thisfn = "ofa_application_maintainer_test_function";
+
+	gchar *cstr = "GRANT ALL PRIVILEGES ON `ofat`.* TO 'ofat'@'localhost' WITH GRANT OPTION";
+	gchar *prev_dbname = "ofat";
+	gchar *dbname = "ofat_3";
+	GRegex *regex;
+	gchar *str = g_strdup_printf( " `%s`\\.\\* ", prev_dbname );
+	g_debug( "%s: str='%s'", thisfn, str );
+	regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
+	/*str = g_strdup_printf( "\\1%s", dbname );*/
+	str = g_strdup_printf( " `%s`.* ", dbname );
+	g_debug( "%s: str=%s", thisfn, str );
+	if( g_regex_match( regex, cstr, 0, NULL )){
+		gchar *query = g_regex_replace( regex, cstr, -1, 0, str, 0, NULL );
+		g_debug( "%s: cstr=%s", thisfn, cstr );
+		g_debug( "%s: query=%s", thisfn, query );
+	}
+#endif
+}
+/*                                                                   */
 /*                                                                   */
 /******************* END OF APPLICATION STARTUP **********************/
 
 /***** Starting here with functions which handle the menu options ****/
 /*                                                                   */
+/*                                                                   */
+static void
+setup_settings_monitor( ofaApplication *application )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = application->priv;
+
+	priv->settings_monitor = ofa_settings_monitor_new( SETTINGS_TARGET_DOSSIER );
+
+	g_signal_connect(
+			priv->settings_monitor, "changed", G_CALLBACK( on_settings_changed ), application );
+
+	enable_action_open(
+			application, !ofa_settings_monitor_is_target_empty( priv->settings_monitor ));
+}
+
+static void
+on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, gboolean empty, ofaApplication *application )
+{
+	if( target == SETTINGS_TARGET_DOSSIER ){
+		enable_action_open( application, !empty );
+	}
+}
+
+static void
+enable_action_open( ofaApplication *application, gboolean enable )
+{
+	static const gchar *thisfn = "ofa_application_enable_action_open";
+	ofaApplicationPrivate *priv;
+	GAction *action;
+
+	g_debug( "%s: application=%p, enable=%s",
+			thisfn, ( void * ) application, enable ? "True":"False" );
+
+	priv = application->priv;
+
+	if( !priv->action_open ){
+		action = g_action_map_lookup_action( G_ACTION_MAP( application ), "open" );
+		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
+		priv->action_open = G_SIMPLE_ACTION( action );
+	}
+
+	g_simple_action_set_enabled( priv->action_open, enable );
+}
+
 static void
 on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
