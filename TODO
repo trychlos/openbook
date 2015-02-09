@@ -341,10 +341,14 @@
 
  640 2015- 2- 9 BAT: have been able to import twice the same BAT file 
 
- 641 2015- 2- 9 BAT: properties are editable (even if not saved) while
-                notes are not (but should)
+ 642 2015- 2- 9 implement BAT page, import button
 
- 642
+ 643 2015- 2- 9 when importing a BAT file, update the BAT store of the
+                page
+
+ 644 2015- 2- 9 import boursorama xls: doesn't have the right end date 
+
+ 645
 
 -----------------------------------------------------------------------
  DONE
@@ -2826,6 +2830,10 @@
 
  631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
      2015- 2- 4 done - svn #4546
+
+ 641 2015- 2- 9 BAT: properties are editable (even if not saved) while
+                notes are not (but should)
+     2015- 2- 9 done - svn #4570
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
