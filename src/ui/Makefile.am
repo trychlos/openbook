@@ -91,6 +91,8 @@ openbook_SOURCES = \
 	ofa-bat-properties-bin.h							\
 	ofa-bat-select.c									\
 	ofa-bat-select.h									\
+	ofa-bat-store.c										\
+	ofa-bat-store.h										\
 	ofa-bats-page.c										\
 	ofa-bats-page.h										\
 	ofa-buttons-box.c									\
