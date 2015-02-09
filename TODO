@@ -459,7 +459,7 @@
                 enabling the action when there is at least one defined
                 dossier
      2014- 5-22 see also TODO #42
-     2015- 2- 9 done
+     2015- 2- 9 done - svn #4568
 
   36 2014- 5-11 win.close action should only be enabled when a dossier 
                 is opened
@@ -483,7 +483,7 @@
 
   42 2014- 5-12 ofaMainWindow: set menu items sensitivities
      2014- 5-22 See also TODO #35 and #36
-     2015- 2- 9 done
+     2015- 2- 9 done - svn #4568
 
   44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
                 the classes book (e.g. Alt+1, etc.); set the label of

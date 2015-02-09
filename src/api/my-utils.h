@@ -121,6 +121,8 @@ gchar     *my_utils_filename_from_utf8     ( const gchar *filename );
 gboolean   my_utils_uri_exists             ( const gchar *uri );
 gboolean   my_utils_uri_is_readable_file   ( const gchar *uri );
 
+void       my_utils_action_enable          ( GActionMap *map, GSimpleAction **action, const gchar *name, gboolean enable );
+
 G_END_DECLS
 
 #endif /* __MY_UTILS_H__ */

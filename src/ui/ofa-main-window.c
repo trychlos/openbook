@@ -1085,127 +1085,61 @@ on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 static void
 enable_action_guided_input( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_guided_input";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_guided_input ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "guided" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_guided_input = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_guided_input, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_guided_input, "guided", enable );
 }
 
 static void
 enable_action_settlement( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_settlement";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_settlement ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "settlement" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_settlement = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_settlement, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_settlement, "settlement", enable );
 }
 
 static void
 enable_action_reconciliation( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_reconciliation";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_reconciliation ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "concil" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_reconciliation = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_reconciliation, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_reconciliation, "concil", enable );
 }
 
 static void
 enable_action_close_ledger( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_close_ledger";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_close_ledger ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "ledclosing" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_close_ledger = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_close_ledger, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_ledger, "ledclosing", enable );
 }
 
 static void
 enable_action_close_exercice( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_close_exercice";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_close_exercice ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "execlosing" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_close_exercice = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_close_exercice, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_exercice, "execlosing", enable );
 }
 
 static void
 enable_action_import( ofaMainWindow *window, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_main_window_enable_action_import";
 	ofaMainWindowPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: window=%p, enable=%s",
-			thisfn, ( void * ) window, enable ? "True":"False" );
 
 	priv = window->priv;
 
-	if( !priv->action_import ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( window ), "import" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_import = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_import, enable );
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_import, "import", enable );
 }
 
 static void

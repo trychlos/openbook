@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-settings.h"
 
@@ -729,22 +730,11 @@ on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, gboo
 static void
 enable_action_open( ofaApplication *application, gboolean enable )
 {
-	static const gchar *thisfn = "ofa_application_enable_action_open";
 	ofaApplicationPrivate *priv;
-	GAction *action;
-
-	g_debug( "%s: application=%p, enable=%s",
-			thisfn, ( void * ) application, enable ? "True":"False" );
 
 	priv = application->priv;
 
-	if( !priv->action_open ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( application ), "open" );
-		g_return_if_fail( action && G_IS_SIMPLE_ACTION( action ));
-		priv->action_open = G_SIMPLE_ACTION( action );
-	}
-
-	g_simple_action_set_enabled( priv->action_open, enable );
+	my_utils_action_enable( G_ACTION_MAP( application ), &priv->action_open, "open", enable );
 }
 
 static void

@@ -1111,3 +1111,39 @@ is_readable_gfile( GFile *file )
 
 	return( ok );
 }
+
+/**
+ * my_utils_action_enable:
+ * @map: the #GActionMap (main window or application)
+ * @action: [allow-none]: a pointer to a #GSimpleAction pointer which may
+ *  store the action to prevent the lookup next time the function is
+ *  called
+ * @name: [allow-none]: the action name, may be %NULL if @action is set
+ * @enable: whether enable the menu item
+ *
+ * Enable the menu item.
+ */
+void
+my_utils_action_enable( GActionMap *map, GSimpleAction **action, const gchar *name, gboolean enable )
+{
+	static const gchar *thisfn = "my_utils_action_enable";
+	GAction *local_action;
+
+	g_debug( "%s: map=%p, action=%p, name=%s, enable=%s",
+			thisfn, ( void * ) map, ( void * ) action, name, enable ? "True":"False" );
+
+	g_return_if_fail( map && G_IS_ACTION_MAP( map ));
+	g_return_if_fail( action || my_strlen( name ));
+
+	if( !action || !*action ){
+		local_action = g_action_map_lookup_action( map, name );
+		g_return_if_fail( local_action && G_IS_SIMPLE_ACTION( local_action ));
+		if( action ){
+			*action = G_SIMPLE_ACTION( local_action );
+		}
+	} else {
+		local_action = G_ACTION( *action );
+	}
+
+	g_simple_action_set_enabled( G_SIMPLE_ACTION( local_action ), enable );
+}
