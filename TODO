@@ -290,6 +290,7 @@
 
  613 2015- 1-30 have a BatStore+BatTreeview ?
                 would be used in BatSelect and BatPage
+     2015- 2- 9 ofaBatStore defined - svn #4574
 
  614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
                 the compilation of pdf-aware plugins
