@@ -115,8 +115,9 @@ typedef enum {
 	BAT_DISP_END_SOLDE     = 1 <<  7,
 	BAT_DISP_END_SOLDE_SET = 1 <<  8,
 	BAT_DISP_NOTES         = 1 <<  9,
-	BAT_DISP_UPD_USER      = 1 << 10,
-	BAT_DISP_UPD_STAMP     = 1 << 11
+	BAT_DISP_COUNT         = 1 << 10,
+	BAT_DISP_UPD_USER      = 1 << 11,
+	BAT_DISP_UPD_STAMP     = 1 << 12
 }
 	ofaBatColumns;
 

@@ -66,6 +66,7 @@ struct _ofoBatPrivate {
 G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
 static GList      *bat_load_dataset( ofoDossier *dossier );
+static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
@@ -74,6 +75,7 @@ static gboolean    bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gcha
 static gboolean    bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms );
+static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 
 OFA_IDATASET_LOAD( BAT, bat );
@@ -228,6 +230,38 @@ bat_load_dataset( ofoDossier *dossier )
 	}
 
 	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_bat_get_by_id:
+ *
+ * Returns: the searched BAT object, or %NULL.
+ *
+ * The returned object is owned by the #ofoBat class, and should
+ * not be unreffed by the caller.
+ */
+ofoBat *
+ofo_bat_get_by_id( ofoDossier *dossier, ofxCounter id )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( id > 0, NULL );
+
+	OFA_IDATASET_GET( dossier, BAT, bat );
+
+	return( bat_find_by_id( bat_dataset, id ));
+}
+
+static ofoBat *
+bat_find_by_id( GList *set, ofxCounter id )
+{
+	GList *found;
+
+	found = g_list_find_custom( set, ( gconstpointer ) id, ( GCompareFunc ) bat_cmp_by_id );
+	if( found ){
+		return( OFO_BAT( found->data ));
+	}
+
+	return( NULL );
 }
 
 /**
@@ -743,15 +777,10 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 
 		bat->priv->id = ofo_dossier_get_next_bat( dossier );
 
-		if( bat_do_insert(
+		return( bat_do_insert(
 					bat,
 					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_ADD( dossier, BAT, bat );
-
-			return( TRUE );
-		}
+					ofo_dossier_get_user( dossier )));
 	}
 
 	return( FALSE );
@@ -998,6 +1027,16 @@ bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms )
 }
 
 static gint
+bat_cmp_by_id( const ofoBat *a, ofxCounter id )
+{
+	ofxCounter a_id;
+
+	a_id = ofo_bat_get_id( a );
+
+	return( a_id < id ? -1 : ( a_id > id ? 1 : 0 ));
+}
+
+static gint
 bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
 {
 	gint id_a, id_b;
@@ -1059,6 +1098,10 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 			g_object_unref( bline );
 		}
+	}
+
+	if( ok ){
+		OFA_IDATASET_ADD( dossier, BAT, bat );
 	}
 
 	/* do not g_object_unref() the newly created BAT as the ownership

@@ -539,7 +539,7 @@ ofa_file_format_set( ofaFileFormat *settings,
 
 		/* save in user preferences */
 		g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
-		if( priv->prefs_name && g_utf8_strlen( priv->prefs_name, -1 )){
+		if( my_strlen( priv->prefs_name )){
 			ofa_settings_set_string_list( priv->prefs_name, prefs_list );
 		}
 

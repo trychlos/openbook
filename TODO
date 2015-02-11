@@ -288,10 +288,6 @@
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
 
- 613 2015- 1-30 have a BatStore+BatTreeview ?
-                would be used in BatSelect and BatPage
-     2015- 2- 9 ofaBatStore defined - svn #4574
-
  614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
                 the compilation of pdf-aware plugins
 
@@ -2775,6 +2771,11 @@
 
  612 2015- 1-30 BatProperties: view bat lines
      2015- 1-30 done - svn #4532
+
+ 613 2015- 1-30 have a BatStore+BatTreeview ?
+                would be used in BatSelect and BatPage
+     2015- 2- 9 ofaBatStore defined - svn #4574
+     2015- 2- 9 ofaBatTreeview defined - svn #4579
 
  618 2015- 2- 2 display Bat lines
      2015- 2- 5 already done

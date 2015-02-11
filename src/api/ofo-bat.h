@@ -48,6 +48,8 @@ ofoBat         *ofo_bat_new          ( void );
 
 GList          *ofo_bat_get_dataset  ( ofoDossier *dossier );
 
+ofoBat         *ofo_bat_get_by_id    ( ofoDossier *dossier, ofxCounter id );
+
 ofxCounter      ofo_bat_get_id       ( const ofoBat *bat );
 const gchar    *ofo_bat_get_uri      ( const ofoBat *bat );
 const gchar    *ofo_bat_get_format   ( const ofoBat *bat );

@@ -38,7 +38,9 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofo-dossier-def.h"
+#include "api/ofo-bat-def.h"
+
+#include "core/ofa-main-window-def.h"
 
 #include "ui/ofa-bat-store.h"
 
@@ -68,20 +70,28 @@ typedef struct {
 }
 	ofaBatTreeviewClass;
 
-GType           ofa_bat_treeview_get_type    ( void ) G_GNUC_CONST;
+GType           ofa_bat_treeview_get_type       ( void ) G_GNUC_CONST;
 
-ofaBatTreeview *ofa_bat_treeview_new         ( void );
+ofaBatTreeview *ofa_bat_treeview_new            ( void );
 
-void            ofa_bat_treeview_set_columns ( ofaBatTreeview *view,
-													ofaBatColumns columns );
+void            ofa_bat_treeview_set_columns    ( ofaBatTreeview *view,
+														ofaBatColumns columns );
 
-void            ofa_bat_treeview_set_dossier ( ofaBatTreeview *view,
-													ofoDossier *dossier );
+void            ofa_bat_treeview_set_delete     ( ofaBatTreeview *view,
+														gboolean authorize );
 
-ofxCounter      ofa_bat_treeview_get_selected( ofaBatTreeview *view );
+void            ofa_bat_treeview_set_main_window( ofaBatTreeview *view,
+														ofaMainWindow *main_window );
 
-void            ofa_bat_treeview_set_selected( ofaBatTreeview *view,
-													ofxCounter id );
+ofoBat         *ofa_bat_treeview_get_selected   ( const ofaBatTreeview *view );
+
+void            ofa_bat_treeview_set_selected   ( ofaBatTreeview *view,
+														ofxCounter id );
+
+GtkWidget      *ofa_bat_treeview_get_treeview   ( const ofaBatTreeview *view );
+
+void            ofa_bat_treeview_delete_bat     ( ofaBatTreeview *view,
+														ofoBat *bat );
 
 G_END_DECLS
 

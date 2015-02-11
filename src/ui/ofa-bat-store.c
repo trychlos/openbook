@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
@@ -65,6 +67,8 @@ static void     insert_row( ofaBatStore *store, ofoDossier *dossier, const ofoBa
 static void     set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter *iter );
 static void     setup_signaling_connect( ofaBatStore *store, ofoDossier *dossier );
 static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store );
+static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store );
+static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
 static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaBatStore *store );
 
 G_DEFINE_TYPE( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE )
@@ -184,16 +188,19 @@ ofa_bat_store_new( ofoDossier *dossier )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store )
 {
-	gchar *aid, *bid;
+	gchar *asid, *bsid;
+	ofxCounter aid, bid;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, BAT_COL_ID, &aid, -1 );
-	gtk_tree_model_get( tmodel, b, BAT_COL_ID, &bid, -1 );
+	gtk_tree_model_get( tmodel, a, BAT_COL_ID, &asid, -1 );
+	aid = atol( asid );
+	gtk_tree_model_get( tmodel, b, BAT_COL_ID, &bsid, -1 );
+	bid = atol( bsid );
 
-	cmp = g_utf8_collate( aid, bid );
+	cmp = ( aid < bid ? -1 : ( aid > bid ? 1 : 0 ));
 
-	g_free( aid );
-	g_free( bid );
+	g_free( asid );
+	g_free( bsid );
 
 	return( cmp );
 }
@@ -292,7 +299,11 @@ setup_signaling_connect( ofaBatStore *store, ofoDossier *dossier )
 			G_OBJECT( dossier ),
 			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), store );
 
-	/* a BAT file is never updated, nor deleted */
+	/* a BAT file is never updated */
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
+			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
 
 	g_signal_connect(
 			G_OBJECT( dossier ),
@@ -313,6 +324,50 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store )
 	if( OFO_IS_BAT( object )){
 		insert_row( store, dossier, OFO_BAT( object ));
 	}
+}
+
+static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store )
+{
+	static const gchar *thisfn = "ofa_bat_store_on_deleted_object";
+	GtkTreeIter iter;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) store );
+
+	if( OFO_IS_BAT( object )){
+		if( find_bat_by_id( store,
+				ofo_bat_get_id( OFO_BAT( object )), &iter )){
+
+			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
+		}
+	}
+}
+
+static gboolean
+find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
+{
+	gchar *sid;
+	ofxCounter row_id;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, BAT_COL_ID, &sid, -1 );
+			row_id = atol( sid );
+			g_free( sid );
+			if( row_id == id ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 static void

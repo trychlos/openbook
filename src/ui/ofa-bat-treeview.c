@@ -29,26 +29,31 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/ofa-settings.h"
+#include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-bat-treeview.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
 struct _ofaBatTreeviewPrivate {
-	gboolean      dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* UI
 	 */
-	GtkTreeView  *tview;
-	ofaBatStore  *store;
+	GtkTreeView   *tview;
+	ofaBatStore   *store;
 
 	/* runtime data
 	 */
-	ofaBatColumns columns;
-	ofoDossier   *dossier;
+	ofaBatColumns  columns;
+	gboolean       delete_authorized;
+	ofaMainWindow *main_window;
+	ofoDossier    *dossier;
 };
 
 /* signals defined here
@@ -63,10 +68,12 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void       attach_top_widget( ofaBatTreeview *self );
 static void       create_treeview_columns( ofaBatTreeview *view );
-static void       create_treeview_store( ofaBatTreeview *view );
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatTreeview *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatTreeview *self );
 static void       get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaBatTreeview *self );
+static void       try_to_delete_current_row( ofaBatTreeview *self );
+static gboolean   delete_confirmed( ofaBatTreeview *self, ofoBat *bat );
 
 G_DEFINE_TYPE( ofaBatTreeview, ofa_bat_treeview, GTK_TYPE_BIN );
 
@@ -143,7 +150,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaBatTreeview *view,
-	 * 						ofxCounter    id,
+	 * 						ofoBat       *bat,
 	 * 						gpointer      user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -156,7 +163,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_ULONG );
+				G_TYPE_OBJECT );
 
 	/**
 	 * ofaBatTreeview::activated:
@@ -168,7 +175,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaBatTreeview *view,
-	 * 						ofxCounter    id,
+	 * 						ofoBat       *bat,
 	 * 						gpointer      user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -181,7 +188,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_ULONG );
+				G_TYPE_OBJECT );
 }
 
 /**
@@ -229,6 +236,8 @@ attach_top_widget( ofaBatTreeview *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( priv->tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	g_signal_connect(
@@ -302,17 +311,19 @@ create_treeview_columns( ofaBatTreeview *view )
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
+	if( priv->columns & BAT_DISP_COUNT ){
+		cell = gtk_cell_renderer_text_new();
+		gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Count" ), cell, "text", BAT_COL_COUNT, NULL );
+		gtk_tree_view_column_set_alignment( column, 1.0 );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
 	if( priv->columns & BAT_DISP_RIB ){
 		cell = gtk_cell_renderer_text_new();
 		column = gtk_tree_view_column_new_with_attributes(
 						_( "RIB" ), cell, "text", BAT_COL_RIB, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_CURRENCY ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
@@ -322,6 +333,13 @@ create_treeview_columns( ofaBatTreeview *view )
 		column = gtk_tree_view_column_new_with_attributes(
 						_( "End solde" ), cell, "text", BAT_COL_END_SOLDE, NULL );
 		gtk_tree_view_column_set_alignment( column, 1.0 );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	if( priv->columns & BAT_DISP_CURRENCY ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
@@ -349,39 +367,11 @@ create_treeview_columns( ofaBatTreeview *view )
 	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 
-/*
- * create the store as soon as we add both the treeview and the columns
- * this will automatically load the dataset
- */
-static void
-create_treeview_store( ofaBatTreeview *view )
-{
-	ofaBatTreeviewPrivate *priv;
-
-	priv = view->priv;
-
-	if( !priv->store ){
-
-		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
-
-		priv->store = ofa_bat_store_new( priv->dossier );
-
-		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
-
-		/* unref the store so that it will be automatically unreffed
-		 * at the same time the treeview will be.
-		 */
-		g_object_unref( priv->store );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( view ));
-}
-
 /**
- * ofa_bat_treeview_set_dossier:
+ * ofa_bat_treeview_set_delete:
  */
 void
-ofa_bat_treeview_set_dossier( ofaBatTreeview *view, ofoDossier *dossier )
+ofa_bat_treeview_set_delete( ofaBatTreeview *view, gboolean authorized )
 {
 	ofaBatTreeviewPrivate *priv;
 
@@ -391,8 +381,29 @@ ofa_bat_treeview_set_dossier( ofaBatTreeview *view, ofoDossier *dossier )
 
 	if( !priv->dispose_has_run ){
 
-		priv->dossier = dossier;
-		create_treeview_store( view );
+		priv->delete_authorized = authorized;
+	}
+}
+
+/**
+ * ofa_bat_treeview_set_main_window:
+ */
+void
+ofa_bat_treeview_set_main_window( ofaBatTreeview *view, ofaMainWindow *main_window )
+{
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->main_window = main_window;
+		priv->dossier = ofa_main_window_get_dossier( main_window );
+		priv->store = ofa_bat_store_new( priv->dossier );
+		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 	}
 }
 
@@ -414,14 +425,89 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 static void
 get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
-	GtkTreeIter iter;
-	GtkTreeModel *model;
-	ofxCounter id;
+	ofoBat *bat;
 
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		gtk_tree_model_get( model, &iter, BAT_COL_ID, &id, -1 );
-		g_signal_emit_by_name( self, signal, id );
+	bat = ofa_bat_treeview_get_selected( self );
+	if( bat ){
+		g_signal_emit_by_name( self, signal, bat );
 	}
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaBatTreeview *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Delete ){
+			try_to_delete_current_row( self );
+		}
+	}
+
+	return( stop );
+}
+
+static void
+try_to_delete_current_row( ofaBatTreeview *self )
+{
+	ofaBatTreeviewPrivate *priv;
+	ofoBat *bat;
+
+	priv = self->priv;
+
+	if( priv->delete_authorized ){
+		bat = ofa_bat_treeview_get_selected( self );
+		if( bat && ofo_bat_is_deletable( bat )){
+			ofa_bat_treeview_delete_bat( self, bat );
+		}
+	}
+}
+
+/**
+ * ofa_bat_treeview_delete_bat:
+ */
+void
+ofa_bat_treeview_delete_bat( ofaBatTreeview *view, ofoBat *bat )
+{
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_BAT_TREEVIEW( view ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( delete_confirmed( view, bat )){
+			ofo_bat_delete( bat, priv->dossier );
+		}
+	}
+}
+
+static gboolean
+delete_confirmed( ofaBatTreeview *self, ofoBat *bat )
+{
+	ofaBatTreeviewPrivate *priv;
+	gchar *msg;
+	gboolean delete_ok;
+
+	priv = self->priv;
+
+	msg = g_strdup( _( "Are you sure you want delete this imported BAT file\n"
+			"(All the corresponding lines will be deleted too) ?" ));
+
+	delete_ok = ofa_main_window_confirm_deletion( priv->main_window, msg );
+
+	g_free( msg );
+
+	return( delete_ok );
 }
 
 /**
@@ -429,29 +515,30 @@ get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *si
  *
  * Return: the identifier of the currently selected BAT file, or 0.
  */
-ofxCounter
-ofa_bat_treeview_get_selected( ofaBatTreeview *view )
+ofoBat *
+ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
 {
 	ofaBatTreeviewPrivate *priv;
-	ofxCounter id;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
+	ofoBat *bat;
 
 	g_return_val_if_fail( view && OFA_IS_BAT_TREEVIEW( view ), NULL );
 
 	priv = view->priv;
-	id = 0;
+	bat = NULL;
 
 	if( !priv->dispose_has_run ){
 
 		select = gtk_tree_view_get_selection( priv->tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, BAT_COL_ID, &id, -1 );
+			gtk_tree_model_get( tmodel, &iter, BAT_COL_OBJECT, &bat, -1 );
+			g_object_unref( bat );
 		}
 	}
 
-	return( id );
+	return( bat );
 }
 
 /**
@@ -462,6 +549,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 {
 	ofaBatTreeviewPrivate *priv;
 	GtkTreeIter iter;
+	gchar *sid;
 	ofxCounter row_id;
 	GtkTreeSelection *select;
 	GtkTreePath *path;
@@ -475,7 +563,9 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
 			while( TRUE ){
 				gtk_tree_model_get(
-						GTK_TREE_MODEL( priv->store ), &iter, BAT_COL_ID, &row_id, -1 );
+						GTK_TREE_MODEL( priv->store ), &iter, BAT_COL_ID, &sid, -1 );
+				row_id = atol( sid );
+				g_free( sid );
 				if( row_id == id ){
 					select = gtk_tree_view_get_selection( priv->tview );
 					gtk_tree_selection_select_iter( select, &iter );
@@ -491,4 +581,24 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 			}
 		}
 	}
+}
+
+/**
+ * ofa_bat_treeview_get_treeview:
+ */
+GtkWidget *
+ofa_bat_treeview_get_treeview( const ofaBatTreeview *view )
+{
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_val_if_fail( view && OFA_IS_BAT_TREEVIEW( view ), NULL );
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( GTK_WIDGET( priv->tview ));
+	}
+
+	return( NULL );
 }
