@@ -128,6 +128,9 @@ typedef struct {
 	 * @instance: the #ofaIImportable provider.
 	 * @ref: the internal ref of the provider as returned from #is_willing_to().
 	 * @dossier: the #ofoDossier
+	 * @imported_id: [allow-none][out]: if non %NULL, then set to a
+	 *  newly allocated identifier of the imported object which should
+	 *  be g_free() by the caller.
 	 *
 	 * Import the specified @uri.
 	 *
@@ -137,7 +140,8 @@ typedef struct {
 												void *ref,
 												const gchar *uri,
 												const ofaFileFormat *settings,
-												ofoDossier *dossier );
+												ofoDossier *dossier,
+												void **imported_id );
 }
 	ofaIImportableInterface;
 
@@ -176,7 +180,8 @@ gint            ofa_iimportable_import            ( ofaIImportable *importable,
 
 guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,
 															ofoDossier *dossier,
-															void *caller );
+															void *caller,
+															void **imported_id );
 
 guint           ofa_iimportable_get_count         ( ofaIImportable *importable );
 

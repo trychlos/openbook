@@ -50,7 +50,6 @@ struct _ofaBatTreeviewPrivate {
 
 	/* runtime data
 	 */
-	ofaBatColumns  columns;
 	gboolean       delete_authorized;
 	ofaMainWindow *main_window;
 	ofoDossier    *dossier;
@@ -67,7 +66,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void       attach_top_widget( ofaBatTreeview *self );
-static void       create_treeview_columns( ofaBatTreeview *view );
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatTreeview *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatTreeview *self );
 static void       get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
@@ -248,123 +246,119 @@ attach_top_widget( ofaBatTreeview *self )
 
 /**
  * ofa_bat_treeview_set_columns:
+ * @view: this #ofaBatTreeview view.
+ * @columns: a zero-terminated array of the columns to be displayed.
  */
 void
-ofa_bat_treeview_set_columns( ofaBatTreeview *view, ofaBatColumns columns )
+ofa_bat_treeview_set_columns( ofaBatTreeview *view, ofaBatColumns *columns )
 {
 	ofaBatTreeviewPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+	gint i;
 
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
+	g_return_if_fail( columns );
 
 	priv = view->priv;
 
 	if( !priv->dispose_has_run ){
 
-		priv->columns = columns;
-		create_treeview_columns( view );
+		for( i=0 ; columns[i] ; ++i ){
+
+			if( columns[i] == BAT_DISP_ID ){
+				cell = gtk_cell_renderer_text_new();
+				gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Id." ), cell, "text", BAT_COL_ID, NULL );
+				gtk_tree_view_column_set_alignment( column, 1.0 );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_URI ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "URI" ), cell, "text", BAT_COL_URI, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_FORMAT ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Format" ), cell, "text", BAT_COL_FORMAT, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_BEGIN ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Begin" ), cell, "text", BAT_COL_BEGIN, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_END ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "End" ), cell, "text", BAT_COL_END, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_COUNT ){
+				cell = gtk_cell_renderer_text_new();
+				gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Count" ), cell, "text", BAT_COL_COUNT, NULL );
+				gtk_tree_view_column_set_alignment( column, 1.0 );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_RIB ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "RIB" ), cell, "text", BAT_COL_RIB, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_END_SOLDE ){
+				cell = gtk_cell_renderer_text_new();
+				gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "End solde" ), cell, "text", BAT_COL_END_SOLDE, NULL );
+				gtk_tree_view_column_set_alignment( column, 1.0 );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_CURRENCY ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_NOTES ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Notes" ), cell, "text", BAT_COL_NOTES, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_UPD_USER ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "User" ), cell, "text", BAT_COL_UPD_USER, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
+			if( columns[i] == BAT_DISP_UPD_STAMP ){
+				cell = gtk_cell_renderer_text_new();
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Timestamp" ), cell, "text", BAT_COL_UPD_STAMP, NULL );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+		}
+
+		gtk_widget_show_all( GTK_WIDGET( view ));
 	}
-}
-
-static void
-create_treeview_columns( ofaBatTreeview *view )
-{
-	ofaBatTreeviewPrivate *priv;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-
-	priv = view->priv;
-
-	if( priv->columns & BAT_DISP_ID ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Id." ), cell, "text", BAT_COL_ID, NULL );
-		gtk_tree_view_column_set_alignment( column, 1.0 );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_URI ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "URI" ), cell, "text", BAT_COL_URI, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_FORMAT ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Format" ), cell, "text", BAT_COL_FORMAT, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_BEGIN ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Begin" ), cell, "text", BAT_COL_BEGIN, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_END ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "End" ), cell, "text", BAT_COL_END, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_COUNT ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Count" ), cell, "text", BAT_COL_COUNT, NULL );
-		gtk_tree_view_column_set_alignment( column, 1.0 );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_RIB ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "RIB" ), cell, "text", BAT_COL_RIB, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_END_SOLDE ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "End solde" ), cell, "text", BAT_COL_END_SOLDE, NULL );
-		gtk_tree_view_column_set_alignment( column, 1.0 );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_CURRENCY ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_NOTES ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Notes" ), cell, "text", BAT_COL_NOTES, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_UPD_USER ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "User" ), cell, "text", BAT_COL_UPD_USER, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( priv->columns & BAT_DISP_UPD_STAMP ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Timestamp" ), cell, "text", BAT_COL_UPD_STAMP, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 
 /**
@@ -464,7 +458,7 @@ try_to_delete_current_row( ofaBatTreeview *self )
 
 	if( priv->delete_authorized ){
 		bat = ofa_bat_treeview_get_selected( self );
-		if( bat && ofo_bat_is_deletable( bat )){
+		if( bat && ofo_bat_is_deletable( bat, priv->dossier )){
 			ofa_bat_treeview_delete_bat( self, bat );
 		}
 	}
@@ -518,11 +512,14 @@ delete_confirmed( ofaBatTreeview *self, ofoBat *bat )
 ofoBat *
 ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
 {
+	static const gchar *thisfn = "ofa_bat_treeview_get_selected";
 	ofaBatTreeviewPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 	ofoBat *bat;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
 
 	g_return_val_if_fail( view && OFA_IS_BAT_TREEVIEW( view ), NULL );
 
@@ -534,7 +531,10 @@ ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
 		select = gtk_tree_view_get_selection( priv->tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, BAT_COL_OBJECT, &bat, -1 );
-			g_object_unref( bat );
+			g_debug( "%s: selected=%p", thisfn, ( void * ) bat );
+			if( bat ){
+				g_object_unref( bat );
+			}
 		}
 	}
 
@@ -547,12 +547,15 @@ ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
 void
 ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 {
+	static const gchar *thisfn = "ofa_bat_treeview_set_selected";
 	ofaBatTreeviewPrivate *priv;
 	GtkTreeIter iter;
 	gchar *sid;
 	ofxCounter row_id;
 	GtkTreeSelection *select;
 	GtkTreePath *path;
+
+	g_debug( "%s: view=%p, id=%ld", thisfn, ( void * ) view, id );
 
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
 

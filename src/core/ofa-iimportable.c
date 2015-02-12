@@ -455,7 +455,10 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  * ofa_iimportable_import_uri:
  * @importable: this #ofaIImportable instance.
  * @dossier: the current dossier.
- * @caller: the caller instance.
+ * @caller: [allow-none]: the caller instance.
+ * @imported_id: [allow-none][out]: if non %NULL, then set to a newly
+ *  allocated identifier of the imported object which should be g_free()
+ *  by the caller.
  *
  * Import the specified @uri.
  *
@@ -463,7 +466,7 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  */
 guint
 ofa_iimportable_import_uri( ofaIImportable *importable,
-									ofoDossier *dossier, void *caller )
+									ofoDossier *dossier, void *caller, void **imported_id )
 {
 	static const gchar *thisfn = "ofa_iimportable_import_uri";
 	sIImportable *sdata;
@@ -485,7 +488,7 @@ ofa_iimportable_import_uri( ofaIImportable *importable,
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri ){
 		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri(
-						importable, sdata->ref, sdata->uri, sdata->settings, dossier );
+						importable, sdata->ref, sdata->uri, sdata->settings, dossier, imported_id );
 	}
 
 	return( errors );

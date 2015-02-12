@@ -84,7 +84,7 @@
                     <child>
                       <object class="GtkEntry" id="p1-format">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="invisible_char">●</property>
                       </object>
                       <packing>
@@ -111,7 +111,7 @@
                     <child>
                       <object class="GtkEntry" id="p1-count">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="halign">start</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">6</property>
@@ -141,7 +141,7 @@
                     <child>
                       <object class="GtkEntry" id="p1-solde">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="halign">start</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">12</property>
@@ -176,7 +176,7 @@
                         <child>
                           <object class="GtkEntry" id="p1-currency">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">end</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">4</property>
@@ -191,7 +191,7 @@
                         <child>
                           <object class="GtkEntry" id="p1-rib">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">30</property>
                           </object>
@@ -227,7 +227,7 @@
                     <child>
                       <object class="GtkEntry" id="p1-begin">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="halign">start</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">10</property>
@@ -249,7 +249,7 @@
                         <child>
                           <object class="GtkEntry" id="p1-end">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="can_focus">False</property>
                             <property name="halign">end</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">10</property>
@@ -301,7 +301,7 @@
                     <child>
                       <object class="GtkEntry" id="p1-id">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="halign">start</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">6</property>

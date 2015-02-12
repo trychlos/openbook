@@ -66,7 +66,7 @@ const GTimeVal *ofo_bat_get_upd_stamp( const ofoBat *bat );
 
 gboolean        ofo_bat_exists       ( const ofoDossier *dossier,
 										const gchar *rib, const GDate *begin, const GDate *end );
-gboolean        ofo_bat_is_deletable ( const ofoBat *bat );
+gboolean        ofo_bat_is_deletable ( const ofoBat *bat, const ofoDossier *dossier );
 
 void            ofo_bat_set_uri      ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format   ( ofoBat *bat, const gchar *format );
@@ -82,7 +82,7 @@ gboolean        ofo_bat_insert       ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_update       ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_delete       ( ofoBat *bat, ofoDossier *dossier );
 
-gboolean        ofo_bat_import       ( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier );
+gboolean        ofo_bat_import       ( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, ofxCounter **id );
 
 G_END_DECLS
 

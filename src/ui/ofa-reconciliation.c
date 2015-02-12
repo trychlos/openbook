@@ -37,6 +37,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
+#include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -61,8 +62,10 @@ struct _ofaReconciliationPrivate {
 	GtkLabel          *account_debit;
 	GtkLabel          *account_credit;
 	GtkComboBox       *mode;
-	GtkButton         *clear;
 	GtkEntry          *date_concil;
+	GtkWidget         *file_chooser;
+	GtkWidget         *count_label;
+	GtkButton         *clear;
 	GtkTreeView       *tview;
 	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter of the tree view */
 	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked onto the TreeModelFilter */
@@ -120,6 +123,8 @@ static const sConcil st_concils[] = {
 };
 
 #define COLOR_ACCOUNT                   "#0000ff"	/* blue */
+#define COLOR_BAT_FONT                  "#008000"	/* green */
+#define COLOR_BAT_BACKGROUND            "#00ff00"	/* green */
 
 static const gchar *st_reconciliation   = "Reconciliation";
 
@@ -166,6 +171,7 @@ static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore,
 static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
+static gboolean     do_select_bat( ofaReconciliation *self, ofxCounter id );
 static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
 static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
 static void         setup_bat_lines( ofaReconciliation *self, gint bat_id );
@@ -442,7 +448,7 @@ setup_manual_rappro( ofaPage *page )
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( alignment ));
 
 	grid = GTK_GRID( gtk_grid_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( grid ), TRUE );
+	/*gtk_widget_set_hexpand( GTK_WIDGET( grid ), TRUE );*/
 	gtk_grid_set_column_spacing( grid, 4 );
 	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
 
@@ -482,19 +488,20 @@ setup_auto_rappro( ofaPage *page )
 	GtkFrame *frame;
 	GtkAlignment *alignment;
 	GtkGrid *grid;
-	GtkLabel *label;
+	GtkWidget *label;
 	gchar *markup;
 	GtkWidget *button, *image;
+	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
-	label = GTK_LABEL( gtk_label_new( NULL ));
+	label = gtk_label_new( NULL );
 	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Assisted reconciliation" ));
-	gtk_label_set_markup( label, markup );
-	gtk_frame_set_label_widget( frame, GTK_WIDGET( label ));
+	gtk_label_set_markup( GTK_LABEL( label ), markup );
+	gtk_frame_set_label_widget( frame, label );
 	g_free( markup );
 
 	alignment = GTK_ALIGNMENT( gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 ));
@@ -507,23 +514,30 @@ setup_auto_rappro( ofaPage *page )
 	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
 
 	button = gtk_button_new_with_mnemonic( _( "_Select..." ));
-	gtk_grid_attach( grid, GTK_WIDGET( button ), 1, 1, 1, 1 );
+	gtk_grid_attach( grid, button, 0, 0, 1, 1 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_bat ), page );
 	gtk_widget_set_tooltip_text(
 			button,
 			_( "Select a previously imported Bank Account Transactions list" ));
 
 	button = gtk_file_chooser_button_new( NULL, GTK_FILE_CHOOSER_ACTION_OPEN );
-	gtk_grid_attach( grid, GTK_WIDGET( button ), 2, 1, 1, 1 );
+	gtk_grid_attach( grid, button, 1, 0, 1, 1 );
 	g_signal_connect( G_OBJECT( button ), "file-set", G_CALLBACK( on_file_set ), page );
 	gtk_widget_set_tooltip_text(
 			button,
 			_( "Import an new Bank Account Transactions list to be used in the reconciliation" ));
+	priv->file_chooser = button;
+
+	label = gtk_label_new( NULL );
+	gdk_rgba_parse( &color, COLOR_BAT_FONT );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	gtk_grid_attach( grid, label, 2, 0, 1, 1 );
+	priv->count_label = label;
 
 	image = gtk_image_new_from_icon_name( "gtk-clear", GTK_ICON_SIZE_BUTTON );
 	priv->clear = GTK_BUTTON( gtk_button_new());
 	gtk_button_set_image( priv->clear, image );
-	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), 3, 1, 1, 1 );
+	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), 3, 0, 1, 1 );
 	gtk_widget_set_tooltip_text(
 			GTK_WIDGET( priv->clear ),
 			_( "Clear the displayed Bank Account Transaction lines" ));
@@ -893,9 +907,11 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 			date_b = OFO_IS_ENTRY( object_b ) ?
 						ofo_entry_get_dope( OFO_ENTRY( object_b )) :
 							ofo_bat_line_get_dope( OFO_BAT_LINE( object_b ));
-			g_return_val_if_fail( my_date_is_valid( date_a ), 0 );
-			g_return_val_if_fail( my_date_is_valid( date_b ), 0 );
-			cmp = my_date_compare( date_a, date_b );
+			if( !my_date_is_valid( date_a ) || !my_date_is_valid( date_b )){
+				cmp = 0;
+			} else {
+				cmp = my_date_compare( date_a, date_b );
+			}
 			break;
 		case COL_PIECE:
 			str_a = OFO_IS_ENTRY( object_a ) ?
@@ -1131,7 +1147,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	g_object_set( G_OBJECT( cell ),
 						"style-set",      FALSE,
-						"background-set", FALSE,
+						"foreground-set", FALSE,
 						NULL );
 
 	g_return_if_fail( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object ));
@@ -1150,8 +1166,8 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	}
 
 	if( paintable ){
-		gdk_rgba_parse( &color, "#ffffb0" );
-		g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+		gdk_rgba_parse( &color, COLOR_BAT_FONT );
+		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 	}
 }
@@ -1456,13 +1472,30 @@ on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
 static void
 on_select_bat( GtkButton *button, ofaReconciliation *self )
 {
+	do_select_bat( self, -1 );
+}
+
+/*
+ * select an already imported Bank Account Transaction list file
+ *
+ * @button is NULL when called from on_file_set().
+ */
+static gboolean
+do_select_bat( ofaReconciliation *self, ofxCounter id )
+{
+	gboolean ok;
 	gint bat_id;
 
-	bat_id = ofa_bat_select_run( ofa_page_get_main_window( OFA_PAGE( self )));
+	ok = FALSE;
+	clear_bat_lines( self );
 
+	bat_id = ofa_bat_select_run( ofa_page_get_main_window( OFA_PAGE( self )), id );
 	if( bat_id > 0 ){
 		setup_bat_lines( self, bat_id );
+		ok = TRUE;
 	}
+
+	return( ok );
 }
 
 /*
@@ -1471,11 +1504,15 @@ on_select_bat( GtkButton *button, ofaReconciliation *self )
 static void
 on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_on_file_set";
 	ofaReconciliationPrivate *priv;
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
+	ofxCounter *imported_id;
+	gboolean set;
 
 	priv = self->priv;
+	set = FALSE;
 
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 	ofa_file_format_set( settings,
@@ -1485,13 +1522,24 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 			gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )), settings );
 
 	if( importable ){
-		if( !ofa_iimportable_import_uri( importable, priv->dossier, NULL )){
-			on_select_bat( NULL, self );
+		g_debug( "%s: importable=%p (%s)", thisfn, ( void * ) importable, G_OBJECT_TYPE_NAME( importable ));
+
+		if( !ofa_iimportable_import_uri( importable, priv->dossier, NULL, ( void ** ) &imported_id )){
+			/*set = do_select_bat( self, *imported_id );*/
+			set = TRUE;
+			setup_bat_lines( self, *imported_id );
+			g_free( imported_id );
 		}
 		g_object_unref( importable );
 	}
 
 	g_object_unref( settings );
+
+	/* yes: here also, in order to reset the file URI if something goes
+	 * wrong */
+	if( !set ){
+		clear_bat_lines( self );
+	}
 }
 
 static void
@@ -1509,14 +1557,27 @@ on_clear_button_clicked( GtkButton *button, ofaReconciliation *self )
 static void
 setup_bat_lines( ofaReconciliation *self, gint bat_id )
 {
-	clear_bat_lines( self );
+	ofaReconciliationPrivate *priv;
+	ofoBat *bat;
+	gchar *str;
 
-	self->priv->batlines =
+	priv = self->priv;
+
+	priv->batlines =
 			ofo_bat_line_get_dataset(
 					ofa_page_get_dossier( OFA_PAGE( self )),
 					bat_id );
 
 	display_bat_lines( self );
+
+	bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
+	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), ofo_bat_get_uri( bat ));
+
+	str = g_markup_printf_escaped( "<i>(%u)</i>",
+			ofo_bat_get_count( bat, ofa_page_get_dossier( OFA_PAGE( self ))));
+	gtk_label_set_markup( GTK_LABEL( priv->count_label ), str );
+	g_free( str );
+
 	set_reconciliated_balance( self );
 }
 
@@ -1530,12 +1591,14 @@ setup_bat_lines( ofaReconciliation *self, gint bat_id )
 static void
 clear_bat_lines( ofaReconciliation *self )
 {
+	ofaReconciliationPrivate *priv;
 	GtkTreeModel *tmodel;
 	gboolean bvalid;
 	GObject *object;
 	GtkTreeIter iter, child_iter;
 
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
+	priv = self->priv;
+	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
@@ -1546,35 +1609,44 @@ clear_bat_lines( ofaReconciliation *self )
 					COL_VALID,  &bvalid,
 					COL_OBJECT, &object,
 					-1 );
-			g_object_unref( object );
 
-			if( OFO_IS_ENTRY( object )){
+			if( object ){
+				g_object_unref( object );
 
-				if( !bvalid ){
-					gtk_tree_store_set(
-							GTK_TREE_STORE( tmodel ),
-							&iter,
-							COL_DRECONCIL, "",
-							-1 );
-				}
+				if( OFO_IS_ENTRY( object )){
 
-				if( gtk_tree_model_iter_has_child( tmodel, &iter )){
-					gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
-					gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
-				}
+					if( !bvalid ){
+						gtk_tree_store_set(
+								GTK_TREE_STORE( tmodel ),
+								&iter,
+								COL_DRECONCIL, "",
+								-1 );
+					}
 
-				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+						gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
+						gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
+					}
+
+					if( !gtk_tree_model_iter_next( tmodel, &iter )){
+						break;
+					}
+
+				} else if( !gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter )){
 					break;
 				}
-
-			} else if( !gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter )){
-				break;
 			}
 		}
 	}
 
-	g_list_free_full( self->priv->batlines, ( GDestroyNotify ) g_object_unref );
-	self->priv->batlines = NULL;
+	if( priv->batlines ){
+		g_list_free_full( priv->batlines, ( GDestroyNotify ) g_object_unref );
+		priv->batlines = NULL;
+	}
+
+	/* also reinit the GtkFileChooserButton and the corresponding label */
+	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->count_label ), "" );
 }
 
 /*

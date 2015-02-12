@@ -39,6 +39,7 @@
 
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
+#include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -48,22 +49,13 @@ struct _ofaBatSelectPrivate {
 	/* UI
 	 */
 	GtkPaned            *paned;
-	GtkTreeView         *tview;
+	ofaBatTreeview      *tview;
 	ofaBatPropertiesBin *bat_bin;
 	guint                pane_pos;
 
-	/* returned value
+	/* preselected value/returned value
 	 */
 	gint                 bat_id;
-};
-
-/* column ordering in the treeview
- */
-enum {
-	COL_ID = 0,
-	COL_URI,
-	COL_OBJECT,
-	N_COLUMNS
 };
 
 static const gchar *st_settings         = "BatSelect-settings";
@@ -76,13 +68,9 @@ G_DEFINE_TYPE( ofaBatSelect, ofa_bat_select, MY_TYPE_DIALOG )
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_pane( ofaBatSelect *self, GtkContainer *parent );
 static void      setup_treeview( ofaBatSelect *self, GtkContainer *parent );
-static void      init_treeview( ofaBatSelect *self );
-static void      insert_new_row( ofaBatSelect *self, ofoBat *bat, gboolean with_selection );
-static void      setup_first_selection( ofaBatSelect *self );
 static void      setup_properties( ofaBatSelect *self, GtkContainer *parent );
-static void      on_selection_changed( GtkTreeSelection *selection, ofaBatSelect *self );
-static ofoBat   *get_selected_object( const ofaBatSelect *self, GtkTreeSelection *selection );
-static void      on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatSelect *self );
+static void      on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self );
+static void      on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self );
 static void      check_for_enable_dlg( ofaBatSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static void      get_settings( ofaBatSelect *self );
@@ -160,15 +148,16 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
  * or -1.
  */
 gint
-ofa_bat_select_run( ofaMainWindow *main_window )
+ofa_bat_select_run( ofaMainWindow *main_window, ofxCounter id )
 {
 	static const gchar *thisfn = "ofa_bat_select_run";
 	ofaBatSelect *self;
+	ofaBatSelectPrivate *priv;
 	gint bat_id;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+	g_debug( "%s: main_window=%p, id=%ld", thisfn, ( void * ) main_window, id );
 
 	self = g_object_new(
 			OFA_TYPE_BAT_SELECT,
@@ -178,9 +167,12 @@ ofa_bat_select_run( ofaMainWindow *main_window )
 			MY_PROP_WINDOW_NAME, st_ui_id,
 			NULL );
 
+	priv = self->priv;
+	priv->bat_id = id;
+
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	bat_id = self->priv->bat_id;
+	bat_id = priv->bat_id;
 
 	g_object_unref( self );
 
@@ -199,10 +191,9 @@ v_init_dialog( myDialog *dialog )
 
 	setup_pane( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
 	setup_properties( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
-
 	setup_treeview( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
-	init_treeview( OFA_BAT_SELECT( dialog ));
-	setup_first_selection( OFA_BAT_SELECT( dialog ));
+
+	gtk_widget_show_all( GTK_WIDGET( toplevel ));
 
 	check_for_enable_dlg( OFA_BAT_SELECT( dialog ));
 }
@@ -226,99 +217,23 @@ static void
 setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 {
 	ofaBatSelectPrivate *priv;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
+	static ofaBatColumns st_columns[] = { BAT_DISP_URI, 0 };
+	GtkWidget *widget;
 
 	priv = self->priv;
 
-	tview = my_utils_container_get_child_by_name( parent, "p0-treeview" );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	priv->tview = GTK_TREE_VIEW( tview );
+	widget = my_utils_container_get_child_by_name( parent, "treeview-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	g_signal_connect(
-			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated), self );
+	priv->tview = ofa_bat_treeview_new();
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( priv->tview, tmodel );
-	g_object_unref( tmodel );
+	ofa_bat_treeview_set_columns( priv->tview, st_columns );
+	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
+	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_START, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "URI" ),
-			text_cell, "text", COL_URI,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_selection_changed ), self );
-}
-
-static void
-init_treeview( ofaBatSelect *self )
-{
-	GList *dataset, *it;
-
-	dataset = ofo_bat_get_dataset( MY_WINDOW( self )->prot->dossier );
-
-	for( it=dataset ; it ; it=it->next ){
-		insert_new_row( self, OFO_BAT( it->data ), FALSE );
-	}
-}
-
-static void
-insert_new_row( ofaBatSelect *self, ofoBat *bat, gboolean with_selection )
-{
-	ofaBatSelectPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-
-	priv = self->priv;
-	tmodel = gtk_tree_view_get_model( priv->tview );
-
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			-1,
-			COL_URI,    ofo_bat_get_uri( bat ),
-			COL_OBJECT, bat,
-			-1 );
-
-	/* select the newly inserted row */
-	if( with_selection ){
-		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( GTK_TREE_VIEW( priv->tview ), path, NULL, FALSE );
-		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-	}
-}
-
-static void
-setup_first_selection( ofaBatSelect *self )
-{
-	ofaBatSelectPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-
-	priv = self->priv;
-	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->tview ));
-
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+	ofa_bat_treeview_set_main_window( priv->tview, MY_WINDOW( self )->prot->main_window );
+	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 }
 
 static void
@@ -337,15 +252,13 @@ setup_properties( ofaBatSelect *self, GtkContainer *parent )
 }
 
 static void
-on_selection_changed( GtkTreeSelection *selection, ofaBatSelect *self )
+on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	ofoBat *bat;
 
 	priv = self->priv;
 	priv->bat_id = -1;
 
-	bat = get_selected_object( self, selection );
 	if( bat ){
 		priv->bat_id = ofo_bat_get_id( bat );
 		ofa_bat_properties_bin_set_bat(
@@ -353,25 +266,8 @@ on_selection_changed( GtkTreeSelection *selection, ofaBatSelect *self )
 	}
 }
 
-static ofoBat *
-get_selected_object( const ofaBatSelect *self, GtkTreeSelection *selection )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoBat *bat;
-
-	bat = NULL;
-
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &bat, -1 );
-		g_object_unref( bat );
-	}
-
-	return( bat );
-}
-
 static void
-on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatSelect *self )
+on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
 	gtk_dialog_response(
 			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),

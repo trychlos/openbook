@@ -131,12 +131,15 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	ofaBatsPagePrivate *priv;
+	static ofaBatColumns st_columns [] = {
+			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END, BAT_DISP_COUNT,
+			BAT_DISP_FORMAT, BAT_DISP_RIB, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
+			0 };
 
 	priv = OFA_BATS_PAGE( page )->priv;
 
 	priv->tview = ofa_bat_treeview_new();
-	ofa_bat_treeview_set_columns( priv->tview,
-			BAT_DISP_BEGIN | BAT_DISP_END | BAT_DISP_COUNT | BAT_DISP_FORMAT | BAT_DISP_RIB | BAT_DISP_END_SOLDE | BAT_DISP_CURRENCY );
+	ofa_bat_treeview_set_columns( priv->tview, st_columns );
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), page );
@@ -198,7 +201,8 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page )
 
 	gtk_widget_set_sensitive(
 			priv->delete_btn,
-			bat && OFO_IS_BAT( bat ) && ofo_bat_is_deletable( bat ));
+			bat && OFO_IS_BAT( bat ) &&
+			ofo_bat_is_deletable( bat, ofa_page_get_dossier( OFA_PAGE( page ))));
 }
 
 static GtkWidget *
@@ -240,7 +244,7 @@ on_delete_clicked( GtkButton *button, ofaBatsPage *page )
 	priv = page->priv;
 	bat = ofa_bat_treeview_get_selected( priv->tview );
 	if( bat ){
-		g_return_if_fail( ofo_bat_is_deletable( bat ));
+		g_return_if_fail( ofo_bat_is_deletable( bat, ofa_page_get_dossier( OFA_PAGE( page ))));
 		ofa_bat_treeview_delete_bat( priv->tview, bat );
 		gtk_widget_grab_focus( ofa_bat_treeview_get_treeview( priv->tview ));
 	}

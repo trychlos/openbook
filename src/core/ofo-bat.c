@@ -568,18 +568,30 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 
 /**
  * ofo_bat_is_deletable:
+ *
+ * An imported BAT file may be removed from the database if none of its
+ * lines has been yet reconciliated.
  */
 gboolean
-ofo_bat_is_deletable( const ofoBat *bat )
+ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 {
+	gint count;
+	gchar *query;
+
 	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( TRUE );
+		count = 0;
+		query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu AND BAT_LINE_ENTRY IS NOT NULL",
+				ofo_bat_get_id( bat ));
+
+		if( ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE )){
+			return( count == 0 );
+		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -970,7 +982,7 @@ ofo_bat_delete( ofoBat *bat, ofoDossier *dossier )
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_bat_is_deletable( bat ), FALSE );
+	g_return_val_if_fail( ofo_bat_is_deletable( bat, dossier ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -1056,7 +1068,7 @@ bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
  * Import the provided #ofsBat structure.
  */
 gboolean
-ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
+ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, ofxCounter **id )
 {
 	gboolean ok;
 	ofoBat *bat;
@@ -1102,6 +1114,10 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 
 	if( ok ){
 		OFA_IDATASET_ADD( dossier, BAT, bat );
+		if( id ){
+			*id = g_new0( ofxCounter, 1 );
+			**id = ofo_bat_get_id( bat );
+		}
 	}
 
 	/* do not g_object_unref() the newly created BAT as the ownership

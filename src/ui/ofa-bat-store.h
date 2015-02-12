@@ -100,27 +100,6 @@ enum {
 	BAT_N_COLUMNS
 };
 
-/**
- * ofaBatColumns:
- * The columns displayed in the views.
- */
-typedef enum {
-	BAT_DISP_ID            = 1 <<  0,
-	BAT_DISP_URI           = 1 <<  1,
-	BAT_DISP_FORMAT        = 1 <<  2,
-	BAT_DISP_BEGIN         = 1 <<  3,
-	BAT_DISP_END           = 1 <<  4,
-	BAT_DISP_RIB           = 1 <<  5,
-	BAT_DISP_CURRENCY      = 1 <<  6,
-	BAT_DISP_END_SOLDE     = 1 <<  7,
-	BAT_DISP_END_SOLDE_SET = 1 <<  8,
-	BAT_DISP_NOTES         = 1 <<  9,
-	BAT_DISP_COUNT         = 1 << 10,
-	BAT_DISP_UPD_USER      = 1 << 11,
-	BAT_DISP_UPD_STAMP     = 1 << 12
-}
-	ofaBatColumns;
-
 GType        ofa_bat_store_get_type( void );
 
 ofaBatStore *ofa_bat_store_new     ( ofoDossier *dossier );
