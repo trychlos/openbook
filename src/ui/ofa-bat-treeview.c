@@ -531,10 +531,8 @@ ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
 		select = gtk_tree_view_get_selection( priv->tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, BAT_COL_OBJECT, &bat, -1 );
-			g_debug( "%s: selected=%p", thisfn, ( void * ) bat );
-			if( bat ){
-				g_object_unref( bat );
-			}
+			g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
+			g_object_unref( bat );
 		}
 	}
 

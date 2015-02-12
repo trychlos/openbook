@@ -389,12 +389,12 @@ bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar 
 		return( FALSE );
 	}
 	/* dd/mm/yyyy - dd/mm/yyyy */
-	if( !scan_date_dmyy( &date, found+9 )){
-		g_debug( "%s: date at found+9 not valid", thisfn );
+	if( !scan_date_dmyy( &date, found+8 )){
+		g_debug( "%s: date at found+8 not valid: %s", thisfn, found+8 );
 		return( FALSE );
 	}
-	if( !scan_date_dmyy( &date, found+22 )){
-		g_debug( "%s: date at found+22 not valid", thisfn );
+	if( !scan_date_dmyy( &date, found+21 )){
+		g_debug( "%s: date at found+21 not valid: %s", thisfn, found+21 );
 		return( FALSE );
 	}
 

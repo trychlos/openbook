@@ -1143,6 +1143,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			COL_VALID,  &validated,
 			COL_OBJECT, &object,
 			-1 );
+	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 	g_object_unref( object );
 
 	g_object_set( G_OBJECT( cell ),
@@ -1737,6 +1738,7 @@ search_for_entry_by_number( ofaReconciliation *self, gint number )
 					COL_NUMBER, &ecr_number,
 					COL_OBJECT, &object,
 					-1 );
+			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
 			g_object_unref( object );
 
 			/* search for the entry which has the specified number */
@@ -1782,6 +1784,7 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 					COL_CREDIT,  &scre,
 					COL_OBJECT,  &object,
 					-1 );
+			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
 			g_object_unref( object );
 
 			if( OFO_IS_ENTRY( object ) &&
@@ -1987,6 +1990,7 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 				COL_VALID,     &bvalid,
 				COL_OBJECT,    &object,
 				-1 );
+		g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
 		g_object_unref( object );
 
 		if( !OFO_IS_ENTRY( object )){
@@ -2066,6 +2070,7 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 				&store_bat_iter,
 				COL_OBJECT,  &batline,
 				-1 );
+		g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
 		g_object_unref( batline );
 
 		ofo_bat_line_set_entry( batline,
@@ -2147,6 +2152,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 		while( TRUE ){
 			gtk_tree_model_get(
 					self->priv->tsort, &iter, COL_VALID, &bvalid, COL_OBJECT, &object, -1 );
+			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 			g_object_unref( object );
 
 			if( !bvalid ){
