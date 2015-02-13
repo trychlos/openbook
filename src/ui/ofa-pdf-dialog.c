@@ -276,6 +276,11 @@ init_filechooser( ofaPDFDialog *self )
 	/* create the new tab, adding it at the end of the notebook */
 	if( book ){
 		priv->filechooser = gtk_file_chooser_widget_new( GTK_FILE_CHOOSER_ACTION_SAVE );
+		gtk_widget_set_margin_left( priv->filechooser, 4 );
+		gtk_widget_set_margin_top( priv->filechooser, 4 );
+		gtk_widget_set_margin_right( priv->filechooser, 4 );
+		gtk_widget_set_margin_bottom( priv->filechooser, 4 );
+
 		label = gtk_label_new( priv->label );
 		gtk_notebook_append_page( GTK_NOTEBOOK( book ), priv->filechooser, label );
 

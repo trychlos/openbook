@@ -722,9 +722,12 @@ p6_error_no_interface( const ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
 	gchar *str;
+	GtkWidget *label;
+	const gchar *cstr;
 
 	priv = self->priv;
 
+	/* display an error dialog */
 	if( priv->p6_object ){
 		str = g_strdup_printf(
 					_( "The requested type (%s) does not implement the IImportable interface" ),
@@ -736,6 +739,19 @@ p6_error_no_interface( const ofaImportAssistant *self )
 	my_utils_dialog_error( str );
 
 	g_free( str );
+
+	/* prepare the assistant to terminate */
+	label = my_utils_container_get_child_by_name(
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )) ), "p6-label" );
+
+	cstr = _( "Unfortunately, we have not been able to do anything for "
+			"import the specified file.\n"
+			"You should most probably open a feature request against the "
+			"Openbook maintainer." );
+
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
+
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, TRUE );
 }
 
 static gboolean

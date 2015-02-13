@@ -249,10 +249,11 @@ iprintable_get_interface_version( const ofaIPrintable *instance )
  * Print the reconciliation summary
  */
 gboolean
-ofa_pdf_reconcil_run( ofaMainWindow *main_window )
+ofa_pdf_reconcil_run( ofaMainWindow *main_window, const gchar *account )
 {
 	static const gchar *thisfn = "ofa_pdf_reconcil_run";
 	ofaPDFReconcil *self;
+	ofaPDFReconcilPrivate *priv;
 	gboolean printed;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -269,9 +270,12 @@ ofa_pdf_reconcil_run( ofaMainWindow *main_window )
 				PDF_PROP_PREF_NAME,  st_pref_uri,
 				NULL );
 
+	priv = self->priv;
+	priv->account_number = g_strdup( account );
+
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	printed = self->priv->printed;
+	printed = priv->printed;
 	g_object_unref( self );
 
 	return( printed );
@@ -791,7 +795,11 @@ get_settings( ofaPDFReconcil *self )
 	it = slist;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->account_number = g_strdup( cstr );
+		/* do not override an account number which would have been passed
+		 * on dialog run */
+		if( !priv->account_number ){
+			priv->account_number = g_strdup( cstr );
+		}
 	}
 
 	it = it ? it->next : NULL;

@@ -69,7 +69,7 @@ typedef struct {
 
 GType    ofa_pdf_reconcil_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_pdf_reconcil_run     ( ofaMainWindow *parent );
+gboolean ofa_pdf_reconcil_run     ( ofaMainWindow *parent, const gchar *account );
 
 G_END_DECLS
 

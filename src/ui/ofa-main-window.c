@@ -1400,7 +1400,7 @@ on_pdf_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_pdf_reconcil_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_pdf_reconcil_run( OFA_MAIN_WINDOW( user_data ), NULL );
 }
 
 static void

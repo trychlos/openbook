@@ -604,14 +604,18 @@ is_validable( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
-	gint iexport, ivalue;
+	gint iformat, ivalue;
 
 	priv = self->priv;
 
-	/* export format */
-	iexport = get_file_format( self );
-	if( iexport < 1 ){
+	/* import/export format */
+	iformat = get_file_format( self );
+	if( iformat < 1 ){
 		return( FALSE );
+	}
+	/* doesn't check configuration when the import/export is 'other' format */
+	if( iformat == OFA_FFTYPE_OTHER ){
+		return( TRUE );
 	}
 
 	/* charmap */
@@ -722,27 +726,36 @@ do_apply( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
-	gint iexport, ivalue, iheaders;
+	gint iformat, ivalue, iheaders;
 	ofaFFmode mode;
 
 	priv = self->priv;
+	charmap = NULL;
+	ivalue = -1;
+	iheaders = -1;
+	decimal_sep = g_strdup( "");
+	field_sep = g_strdup( "");
 
-	iexport = get_file_format( self );
-	charmap = get_charmap( self );
-	ivalue = my_date_combo_get_selected( priv->date_combo );
-	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
-	field_sep = my_field_combo_get_selected( priv->field_combo );
-
+	iformat = get_file_format( self );
 	mode = ofa_file_format_get_ffmode( priv->settings );
-	if( mode == OFA_FFMODE_EXPORT ){
-		iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
-	} else {
-		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
+
+	if( iformat != OFA_FFTYPE_OTHER ){
+		charmap = get_charmap( self );
+		ivalue = my_date_combo_get_selected( priv->date_combo );
+		decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
+		field_sep = my_field_combo_get_selected( priv->field_combo );
+
+		if( mode == OFA_FFMODE_EXPORT ){
+			iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
+		} else {
+			iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
+		}
 	}
 
 	ofa_file_format_set( priv->settings,
 								NULL,
-								iexport, mode, charmap, ivalue, decimal_sep[0], field_sep[0], iheaders );
+								iformat,
+								mode, charmap, ivalue, decimal_sep[0], field_sep[0], iheaders );
 
 	g_free( field_sep );
 	g_free( decimal_sep );

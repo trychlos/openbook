@@ -483,9 +483,6 @@ ofa_file_format_set( ofaFileFormat *settings,
 	gchar *sfile, *sdate, *sdecimal, *sfield, *sheaders;
 
 	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
-	g_return_if_fail( charmap && g_utf8_strlen( charmap, -1 ));
-	g_return_if_fail( decimal_sep );
-	g_return_if_fail( field_sep );
 
 	priv = settings->priv;
 	prefs_list = NULL;
@@ -507,12 +504,12 @@ ofa_file_format_set( ofaFileFormat *settings,
 		sfile = g_strdup_printf( "%d", mode );
 		prefs_list = g_list_append( prefs_list, sfile );
 
-		/* charmap */
+		/* charmap (may be %NULL) */
 		g_free( priv->charmap );
 		priv->charmap = g_strdup( charmap );
 		prefs_list = g_list_append( prefs_list, ( gpointer ) charmap );
 
-		/* date format */
+		/* date format  */
 		priv->date_format = date_format;
 		sdate = g_strdup_printf( "%d", date_format );
 		prefs_list = g_list_append( prefs_list, sdate );
