@@ -328,10 +328,6 @@
  637 2015- 2- 8 opened dialogs shouldn't appear as another icon in the
                 shell bar
 
- 638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
-                clicking set the manual date, not the proposed one)
-                + keep displaying the accepted BAT line
-
  642 2015- 2- 9 implement BAT page, import button
 
  645 2015- 2-12 when importing from reconciliation page, but no importer
@@ -350,7 +346,9 @@
                 line, moving it from an entry child to a level 0 bat line
                 (not kept, only used during reconciliation session)
 
- 649
+ 649 2015- 2-13 reconciliation: expand_view doesn't work
+
+ 650
 
 -----------------------------------------------------------------------
  DONE
@@ -2837,6 +2835,11 @@
 
  631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
      2015- 2- 4 done - svn #4546
+
+ 638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
+                clicking set the manual date, not the proposed one)
+                + keep displaying the accepted BAT line
+     2015- 2-13 done - svn #4592
 
  639 2015- 2- 9 Reconciliation: when having selected an imported BAT
                 file, its references should be displayed somewhere with
