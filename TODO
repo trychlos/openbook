@@ -304,7 +304,7 @@
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
                 while keeping to react to user interactions
 
- 628 2015- 2- 3 OpeTemplateProperties: segfault when saving
+ 628 2015- 2- 3 FATAL: OpeTemplateProperties: segfault when saving
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
@@ -312,9 +312,6 @@
  633 2015- 2- 8 GuidedInputBin: when the ledger has not yet been closed
                 in the exercice, the begin of the exercice is an acceptable
                 effect date
-
- 634 2015- 2- 8 be able to print a reconciliation summary from within 
-                the reconciliation page
 
  635 2015- 2- 8 Reconciliation: keep displaying the entries which have
                 been reconciliated during the session (have an auto
@@ -330,22 +327,11 @@
 
  642 2015- 2- 9 implement BAT page, import button
 
- 645 2015- 2-12 when importing from reconciliation page, but no importer
-                is willing to import, then fatal warning on g_object_unref
-                somewhere
+ 645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
+                importer is willing to import, then fatal warning on 
+                g_object_unref() somewhere
      2015- 2-13 this is only from reconciliation page: same situation
                 from import assistant doesn't break
-
- 646 2015- 2-13 import: do not check the settings when format is other
-     2015- 2-13 done
-
- 647 2015- 2-13 import: when unable to find a plugin, display an error
-                message and make the close button sensitive on the last
-                page
-     2015- 2-13 done
-
- 649 2015- 2-13 reconciliation: expand_view doesn't work
-     2015- 2-13 done
 
  650
 
@@ -2835,6 +2821,10 @@
  631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
      2015- 2- 4 done - svn #4546
 
+ 634 2015- 2- 8 be able to print a reconciliation summary from within 
+                the reconciliation page
+     2015- 2-13 done - svn #4594
+
  638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
                 clicking set the manual date, not the proposed one)
                 + keep displaying the accepted BAT line
@@ -2859,10 +2849,21 @@
  644 2015- 2- 9 import boursorama xls: doesn't have the right end date
      2015- 2- 9 done - svn #4571 
 
+ 646 2015- 2-13 import: do not check the settings when format is other
+     2015- 2-13 done - svn #4594
+
+ 647 2015- 2-13 import: when unable to find a plugin, display an error
+                message and make the close button sensitive on the last
+                page
+     2015- 2-13 done - svn #4594
+
  648 2015- 2-13 reconciliation: have a button to dismiss a proposed bat
                 line, moving it from an entry child to a level 0 bat line
                 (not kept, only used during reconciliation session)
      2015- 2-13 done - svn #4593
+
+ 649 2015- 2-13 reconciliation: expand_view doesn't work
+     2015- 2-13 done - svn #4594
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

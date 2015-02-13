@@ -278,11 +278,12 @@ static sTreeDef st_tree_defs[] = {
 /* A pointer to the handling ofaPage object is set against each page
  * ( the GtkGrid) of the main notebook
  */
-#define OFA_DATA_HANDLER                  "ofa-data-handler"
+#define OFA_DATA_HANDLER                "ofa-data-handler"
 
 static const gchar *st_main_window_name = "MainWindow";
 static const gchar *st_dosmenu_xml      = PKGUIDIR "/ofa-dos-menubar.ui";
 static const gchar *st_dosmenu_id       = "dos-menu";
+static const gchar *st_icon_fname       = ICONFNAME;
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
@@ -463,6 +464,14 @@ main_window_constructed( GObject *instance )
 				OFA_SIGNAL_DOSSIER_OPEN, G_CALLBACK( on_dossier_open ), NULL );
 		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
+
+		/* set the default icon for all windows of the application */
+		error = NULL;
+		gtk_window_set_default_icon_from_file( st_icon_fname, &error );
+		if( error ){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+		}
 	}
 }
 

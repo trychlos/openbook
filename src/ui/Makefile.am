@@ -22,6 +22,10 @@
 #
 # $Id$
 
+# these two next lines to be kept synchronized with data/icons/Makefile.am
+icondir = $(datadir)/icons/hicolor/48x48/apps
+icondata = openbook-48x48.png
+
 bin_PROGRAMS = \
 	openbook											\
 	$(NULL)
@@ -39,6 +43,7 @@ AM_CPPFLAGS += \
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
+	-DICONFNAME=\"$(icondir)/$(icondata)\"				\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
