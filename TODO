@@ -332,13 +332,25 @@
                 clicking set the manual date, not the proposed one)
                 + keep displaying the accepted BAT line
 
- 639 2015- 2- 9 Reconciliation: when having selected an imported BAT
-                file, its references should be displayed somewhere with
-                a count of propositions
-
  642 2015- 2- 9 implement BAT page, import button
 
- 645
+ 645 2015- 2-12 when importing from reconciliation page, but no importer
+                is willing to import, then fatal warning on g_object_unref
+                somewhere
+     2015- 2-13 this is only from reconciliation page: same situation
+                from import assistant doesn't break
+
+ 646 2015- 2-13 import: do not check the settings when format is other
+
+ 647 2015- 2-13 import: when unable to find a plugin, display an error
+                message and make the close button sensitive on the last
+                page
+
+ 648 2015- 2-13 reconciliation: have a button to dismiss a proposed bat
+                line, moving it from an entry child to a level 0 bat line
+                (not kept, only used during reconciliation session)
+
+ 649
 
 -----------------------------------------------------------------------
  DONE
@@ -2825,6 +2837,11 @@
 
  631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
      2015- 2- 4 done - svn #4546
+
+ 639 2015- 2- 9 Reconciliation: when having selected an imported BAT
+                file, its references should be displayed somewhere with
+                a count of propositions
+     2015- 2- 9 done - svn #4591
 
  640 2015- 2- 9 BAT: have been able to import twice the same BAT file
      2015- 2-11 nope 
