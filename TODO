@@ -320,11 +320,6 @@
                 reconciliated entries - while no more seeing the entries
                 which have been reconciliated, say last month 
 
- 636 2015- 2- 8 make the application have an icon
-
- 637 2015- 2- 8 opened dialogs shouldn't appear as another icon in the
-                shell bar
-
  642 2015- 2- 9 implement BAT page, import button
 
  645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
@@ -2824,6 +2819,17 @@
  634 2015- 2- 8 be able to print a reconciliation summary from within 
                 the reconciliation page
      2015- 2-13 done - svn #4594
+
+ 636 2015- 2- 8 make the application have an icon
+     2015- 2-13 done - svn #4595
+
+ 637 2015- 2- 8 opened dialogs shouldn't appear as another icon in the
+                shell bar
+     2015- 2-14 if the dialog is modal, only way seems to make the dialog
+                transient for its parent, which makes the two window 
+                strictly bound, which is not what we want
+     2015- 2-15 this is fine if the dialog is non modal
+                -> cancelled
 
  638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
                 clicking set the manual date, not the proposed one)
