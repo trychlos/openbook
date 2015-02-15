@@ -45,6 +45,18 @@
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-settlement.h"
 
+/*
+ * ofaEntrySettlement:
+ */
+typedef enum {
+	ENT_SETTLEMENT_FIRST = 0,
+	ENT_SETTLEMENT_YES,
+	ENT_SETTLEMENT_NO,
+	ENT_SETTLEMENT_ALL,
+	ENT_SETTLEMENT_LAST
+}
+	ofaEntrySettlement;
+
 /* priv instance data
  */
 struct _ofaSettlementPrivate {

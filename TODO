@@ -322,10 +322,6 @@
      2015- 2-13 this is only from reconciliation page: same situation
                 from import assistant doesn't break
 
- 649 2015- 2-13 reconciliation: expand_view doesn't work
-     2015- 2-13 done - svn #4594
-     2015- 2-15 reopened
-
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c
 
  651
@@ -2875,6 +2871,11 @@
                 line, moving it from an entry child to a level 0 bat line
                 (not kept, only used during reconciliation session)
      2015- 2-13 done - svn #4593
+
+ 649 2015- 2-13 reconciliation: expand_view doesn't work
+     2015- 2-13 done - svn #4594
+     2015- 2-15 reopened
+     2015- 2-15 fixed - svn #4601
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

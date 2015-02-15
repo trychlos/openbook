@@ -92,18 +92,6 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-/**
- * ofaEntrySettlement:
- */
-typedef enum {
-	ENT_SETTLEMENT_FIRST = 0,
-	ENT_SETTLEMENT_YES,
-	ENT_SETTLEMENT_NO,
-	ENT_SETTLEMENT_ALL,
-	ENT_SETTLEMENT_LAST
-}
-	ofaEntrySettlement;
-
 GType          ofo_entry_get_type             ( void ) G_GNUC_CONST;
 
 ofoEntry      *ofo_entry_new                  ( void );
