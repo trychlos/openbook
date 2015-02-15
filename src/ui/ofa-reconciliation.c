@@ -135,10 +135,24 @@ typedef struct {
 }
 	sConcil;
 
+/*
+ * ofaEntryConcil:
+ */
+typedef enum {
+	ENT_CONCILED_FIRST = 0,
+	ENT_CONCILED_YES,
+	ENT_CONCILED_NO,
+	ENT_CONCILED_ALL,
+	ENT_CONCILED_SESSION,
+	ENT_CONCILED_LAST
+}
+	ofaEntryConcil;
+
 static const sConcil st_concils[] = {
-		{ ENT_CONCILED_YES, N_( "Reconciliated" ) },
-		{ ENT_CONCILED_NO,  N_( "Not reconciliated" ) },
-		{ ENT_CONCILED_ALL, N_( "All" ) },
+		{ ENT_CONCILED_YES,     N_( "Reconciliated" ) },
+		{ ENT_CONCILED_NO,      N_( "Not reconciliated" ) },
+		{ ENT_CONCILED_SESSION, N_( "Reconciliation session" ) },
+		{ ENT_CONCILED_ALL,     N_( "All" ) },
 		{ 0 }
 };
 
@@ -177,6 +191,7 @@ static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliat
 static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
 static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
 static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
+static gboolean     is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
 static void         on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self );
 static void         on_account_select_clicked( GtkButton *button, ofaReconciliation *self );
@@ -1168,6 +1183,14 @@ is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *it
 				visible = !my_date_is_valid( dval );
 				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
 				break;
+			case ENT_CONCILED_SESSION:
+				if( my_date_is_valid( dval )){
+					visible = is_entry_session_conciliated( self, entry );
+				} else {
+					visible = TRUE;
+				}
+				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+				break;
 			default:
 				/* when display mode is not set */
 				visible = FALSE;
@@ -1185,9 +1208,14 @@ is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *it
 static gboolean
 is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 {
+	ofaReconciliationPrivate *priv;
 	gint mode, ecr_number;
 	gboolean visible;
+	GtkTreeIter *iter;
+	GtkTreeModel *tstore;
+	ofoEntry *entry;
 
+	priv = self->priv;
 	visible = FALSE;
 	mode = get_selected_concil_mode( self );
 	ecr_number = ofo_bat_line_get_entry( batline );
@@ -1205,12 +1233,43 @@ is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 			visible = ( ecr_number == 0 );
 			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
 			break;
+		case ENT_CONCILED_SESSION:
+			if( ecr_number == 0 ){
+				visible = TRUE;
+			} else {
+				iter = search_for_entry_by_number( self, ecr_number );
+				if( iter ){
+					tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+					gtk_tree_model_get( tstore, iter, COL_OBJECT, &entry, -1 );
+					g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+					g_object_unref( entry );
+					gtk_tree_iter_free( iter );
+					visible = is_entry_session_conciliated( self, entry );
+				}
+			}
+			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+			break;
 		default:
 			/* when display mode is not set */
 			break;
 	}
 
 	return( visible );
+}
+
+static gboolean
+is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry )
+{
+	gboolean is_session;
+	const GTimeVal *stamp;
+	GDate date, dnow;
+
+	stamp = ofo_entry_get_concil_stamp( entry );
+	my_date_set_from_stamp( &date, stamp );
+	my_date_set_now( &dnow );
+	is_session = my_date_compare( &date, &dnow ) == 0;
+
+	return( is_session );
 }
 
 /*
@@ -2371,6 +2430,14 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 
 	g_free( str );
 	/*gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));*/
+
+	/* expand the row if the conciliation has been cancelled,
+	 * collapsing it if it has been set */
+	if( is_valid_rappro ){
+		collapse_node( self, GTK_WIDGET( priv->tview ));
+	} else {
+		expand_node( self, GTK_WIDGET( priv->tview ));
+	}
 
 	return( TRUE );
 }

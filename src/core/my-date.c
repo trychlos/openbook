@@ -408,6 +408,34 @@ my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat form
 }
 
 /**
+ * my_date_set_from_stamp:
+ * @date: [out]: a not-null pointer to the destination GDate structure.
+ * @stamp: a valid #GTimeVal timestamp.
+ *
+ * Parse a string which should represent a date into a #GDate structure.
+ * The dest @date is set invalid if the @sql_string doesn't evaluate to
+ * a valid date.
+ *
+ * Returns: @date, in order to be able to chain the functions.
+ */
+GDate *
+my_date_set_from_stamp( GDate *date, const GTimeVal *stamp )
+{
+	GDateTime *dt;
+
+	g_return_val_if_fail( date, NULL);
+
+	dt = g_date_time_new_from_timeval_local( stamp );
+	g_date_set_day( date, g_date_time_get_day_of_month( dt ));
+	g_date_set_month( date, g_date_time_get_month( dt ));
+	g_date_set_year( date, g_date_time_get_year( dt ));
+
+	g_date_time_unref( dt );
+
+	return( date );
+}
+
+/**
  * my_date_to_str:
  * @date: [in]: the GDate to be represented as a string
  * @format: [in]: the required format.

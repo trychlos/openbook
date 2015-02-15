@@ -321,7 +321,7 @@
                 which have been reconciliated, say last month 
 
  642 2015- 2- 9 implement BAT page, import button
-     2015- 2-15 for now, just disable it
+     2015- 2-15 for now, just disable it - svn #4599
 
  645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
                 importer is willing to import, then fatal warning on 
@@ -329,7 +329,9 @@
      2015- 2-13 this is only from reconciliation page: same situation
                 from import assistant doesn't break
 
- 650
+ 650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c
+
+ 651
 
 -----------------------------------------------------------------------
  DONE

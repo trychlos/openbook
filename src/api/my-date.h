@@ -78,6 +78,7 @@ GDate       *my_date_set_from_date  ( GDate *date, const GDate *orig );
 GDate       *my_date_set_from_sql   ( GDate *date, const gchar *sql_string );
 GDate       *my_date_set_from_str   ( GDate *date, const gchar *fmt_string, myDateFormat format );
 GDate       *my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat format, gint *year );
+GDate       *my_date_set_from_stamp ( GDate *date, const GTimeVal *stamp );
 
 gchar       *my_date_to_str         ( const GDate *date, myDateFormat format );
 
