@@ -73,8 +73,6 @@
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present
 
- 162 2014- 6- 5 Reconciliation: remove/add a proposition
-
  187 2014- 6-10 TauxProperties - Validities page: should be sorted by
                 end date desc (most recent first)
      2014- 6-13 no: this should be left sorted as the user entered the
@@ -103,7 +101,7 @@
                 of the account number when editing an entry
 
  254 2014- 6-24 editing rough entries: have a 'select' button besides
-                of the journal mnemo when editing an entry
+                of the ledger mnemo when editing an entry
 
  255 2014- 6-23 editing rough entries: add a button to revert the 
                 modifications
@@ -145,11 +143,6 @@
                 (i.e. entering '14' gives '2014')
 
  325 2014-10-12 DossierManage Properties: to be written
-
- 332 2014-10-17 Reconciliation: should not accept Enter to annulate the
-                reconciliation on an entry, as it is too easy to make
-                an error
-     2015- 2- 9 idem when cancelling a settled entry
 
  333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
                 a GtkTreeView with debit/credit amount columns:
@@ -218,9 +211,6 @@
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
-
- 477 2014-11-30 Dossier Open option should be insensitive when a dossier
-                is already opened
 
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
@@ -308,10 +298,6 @@
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
-
- 633 2015- 2- 8 GuidedInputBin: when the ledger has not yet been closed
-                in the exercice, the begin of the exercice is an acceptable
-                effect date
 
  642 2015- 2- 9 implement BAT page, import button
      2015- 2-15 for now, just disable it - svn #4599
@@ -895,6 +881,10 @@
 
  160 2014- 6- 4 print a reconciliation page (as a pdf)
      2014- 6-21 done
+
+ 162 2014- 6- 5 Reconciliation: remove/add a proposition
+     2015- 2-15 removing a proposition: done
+                adding a proposition: no use case -> cancelled
 
  163 2014- 6- 5 move the table definition from ofo-dossier to the
                 corresponding classes
@@ -1639,6 +1629,12 @@
                 is it supposed to do ?
      2015- 2- 1 this is supposed to clear an erroneous loaded BAT!
 
+ 332 2014-10-17 Reconciliation: should not accept Enter to annulate the
+                reconciliation on an entry, as it is too easy to make
+                an error
+     2015- 2- 9 idem when cancelling a settled entry
+     2015- 2-15 that this would be easy is just the idea! so cancel that
+
  337 2014-10-19 ofaAccountsChart: should be a tree store
      2014-10-29 note that this may imply to define fake root accounts
                 and this - at least - implies to get the dataseset
@@ -2257,6 +2253,11 @@
                 Exercices treeview
      2015- 1- 5 done
 
+ 477 2014-11-30 Dossier Open option should be insensitive when a dossier
+                is already opened
+     2015- 2-15 no as DossierOpen is just a shortcut for DossierClose+
+                DossierOpen -> cancelled
+
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
 
@@ -2809,6 +2810,11 @@
 
  631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
      2015- 2- 4 done - svn #4546
+
+ 633 2015- 2- 8 GuidedInputBin: when the ledger has not yet been closed
+                in the exercice, the begin of the exercice is an acceptable
+                effect date
+     2015- 2-15 done - svn #4603
 
  634 2015- 2- 8 be able to print a reconciliation summary from within 
                 the reconciliation page
