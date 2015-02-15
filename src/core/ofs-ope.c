@@ -911,11 +911,11 @@ check_for_dates( sChecker *checker )
 		ofo_dossier_get_min_deffect( &dmin, checker->dossier, checker->ledger );
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
-			if( cmp >= 0 ){
+			if( cmp > 0 ){
 				str = my_date_to_str( &dmin, MY_DATE_DMYY );
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
-						_( "Effect date less or equal to minimum allowed on this ledger: %s" ), str );
+						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
 				g_free( str );
 
 			} else {
