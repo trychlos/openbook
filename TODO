@@ -321,6 +321,7 @@
                 which have been reconciliated, say last month 
 
  642 2015- 2- 9 implement BAT page, import button
+     2015- 2-15 for now, just disable it
 
  645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
                 importer is willing to import, then fatal warning on 

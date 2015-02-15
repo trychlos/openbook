@@ -167,7 +167,7 @@ v_setup_buttons( ofaPage *page )
 
 	ofa_buttons_box_add_spacer( buttons_box );
 	priv->import_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_IMPORT, TRUE, G_CALLBACK( on_import_clicked ), page );
+			buttons_box, BUTTON_IMPORT, FALSE, G_CALLBACK( on_import_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
