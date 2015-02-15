@@ -1886,17 +1886,16 @@ static void
 default_expand_view( ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
-	GtkTreeModel *tstore;
+	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	const GDate *date;
 	GObject *object;
 
 	priv = self->priv;
-	tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-
-	if( gtk_tree_model_get_iter_first( tstore, &iter )){
+	tmodel = gtk_tree_view_get_model( priv->tview );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( tstore, &iter, COL_OBJECT, &object, -1 );
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
 			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 			g_object_unref( object );
 
@@ -1906,12 +1905,12 @@ default_expand_view( ofaReconciliation *self )
 			if( OFO_IS_ENTRY( object )){
 				date = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
 				if( my_date_is_valid( date )){
-					collapse_node_by_iter( self, priv->tview, tstore, &iter );
+					collapse_node_by_iter( self, priv->tview, tmodel, &iter );
 				} else {
-					expand_node_by_iter( self, priv->tview, tstore, &iter );
+					expand_node_by_iter( self, priv->tview, tmodel, &iter );
 				}
 			}
-			if( !gtk_tree_model_iter_next( tstore, &iter )){
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
 				break;
 			}
 		}

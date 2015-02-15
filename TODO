@@ -313,13 +313,6 @@
                 in the exercice, the begin of the exercice is an acceptable
                 effect date
 
- 635 2015- 2- 8 Reconciliation: keep displaying the entries which have
-                been reconciliated during the session (have an auto
-                refresh toggle switch ?)
-                rationale: it is comfortable to keep seeing the recently
-                reconciliated entries - while no more seeing the entries
-                which have been reconciliated, say last month 
-
  642 2015- 2- 9 implement BAT page, import button
      2015- 2-15 for now, just disable it - svn #4599
 
@@ -328,6 +321,10 @@
                 g_object_unref() somewhere
      2015- 2-13 this is only from reconciliation page: same situation
                 from import assistant doesn't break
+
+ 649 2015- 2-13 reconciliation: expand_view doesn't work
+     2015- 2-13 done - svn #4594
+     2015- 2-15 reopened
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c
 
@@ -2823,6 +2820,14 @@
                 the reconciliation page
      2015- 2-13 done - svn #4594
 
+ 635 2015- 2- 8 Reconciliation: keep displaying the entries which have
+                been reconciliated during the session (have an auto
+                refresh toggle switch ?)
+                rationale: it is comfortable to keep seeing the recently
+                reconciliated entries - while no more seeing the entries
+                which have been reconciliated, say last month 
+     2015- 2-15 done - svn #4600
+
  636 2015- 2- 8 make the application have an icon
      2015- 2-13 done - svn #4595
 
@@ -2870,9 +2875,6 @@
                 line, moving it from an entry child to a level 0 bat line
                 (not kept, only used during reconciliation session)
      2015- 2-13 done - svn #4593
-
- 649 2015- 2-13 reconciliation: expand_view doesn't work
-     2015- 2-13 done - svn #4594
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
