@@ -273,8 +273,6 @@
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
 
- 604 2015- 1-26 Bat: solde becomes end_solde (dbms, methods, properties)
-
  607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
                 dossier_login in order to mutualize some code if possible
                 common behavior is: do not close current dossier if we
@@ -303,12 +301,6 @@
 
  642 2015- 2- 9 implement BAT page, import button
      2015- 2-15 for now, just disable it - svn #4599
-
- 645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
-                importer is willing to import, then fatal warning on 
-                g_object_unref() somewhere
-     2015- 2-13 this is only from reconciliation page: same situation
-                from import assistant doesn't break
 
  651 2015- 2-15 replace fixed date and amount configurations with user
                 user preferences (date display format, comma vs. dot)
@@ -2734,6 +2726,9 @@
  603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
      2015- 1-30 done - svn #4535
 
+ 604 2015- 1-26 Bat: solde becomes end_solde (dbms, methods, properties)
+     2015- 2-16 done - svn #4607
+
  605 2015- 1-28 add the dbname in the main window title
      2015- 1-29 done - svn #4523
 
@@ -2869,6 +2864,13 @@
 
  644 2015- 2- 9 import boursorama xls: doesn't have the right end date
      2015- 2- 9 done - svn #4571 
+
+ 645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
+                importer is willing to import, then fatal warning on 
+                g_object_unref() somewhere
+     2015- 2-13 this is only from reconciliation page: same situation
+                from import assistant doesn't break
+     2015- 2-16 done - svn #4607
 
  646 2015- 2-13 import: do not check the settings when format is other
      2015- 2-13 done - svn #4594
