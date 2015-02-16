@@ -1207,7 +1207,7 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_KEEP_BATS "
-					"SELECT BAT_ID FROM OFA_T_BAT_LINES WHERE BAT_LINE_ENTRY IS NULL" );
+					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES WHERE BAT_LINE_ENTRY IS NULL" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
@@ -1219,10 +1219,17 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 	}
 
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BATS "
-					"SELECT * FROM OFA_T_BAT a, OFA_T_BAT_LINES b WHERE "
-					"	a.BAT_ID=b.BAT_ID AND "
-					"	a.BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT "
+					"SELECT * FROM OFA_T_BAT "
+					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT_LINES "
+					"SELECT * FROM OFA_T_BAT_LINES "
+					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}

@@ -52,6 +52,7 @@ static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
 
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
+static gboolean    dbmodel_to_v21( const ofoDossier *dossier );
 static gboolean    insert_classes( ofoDossier *dossier );
 static gboolean    insert_currencies( ofoDossier *dossier );
 static gboolean    insert_ledgers( ofoDossier *dossier );
@@ -81,6 +82,9 @@ ofo_dossier_ddl_update( ofoDossier *dossier )
 	if( cur_version < THIS_DBMODEL_VERSION ){
 		if( cur_version < 20 ){
 			dbmodel_to_v20( dossier );
+		}
+		if( cur_version < 21 ){
+			dbmodel_to_v21( dossier );
 		}
 		insert_classes( dossier );
 		insert_currencies( dossier );
@@ -225,6 +229,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
+	/* anyway, BAT_LINE_UPD_STAMP comment is remediated in v21 */
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL      COMMENT 'Intern import identifier',"
@@ -237,7 +242,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			"	BAT_LINE_AMOUNT    DECIMAL(20,5)          COMMENT 'Signed amount of the line',"
 			"	BAT_LINE_ENTRY     BIGINT                 COMMENT 'Reciliated entry',"
 			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
-			"	BAT_LINE_UPD_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
+			"	BAT_LINE_UPD_STAMP TIMESTAMP"
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
@@ -361,7 +366,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
 			ofo_dossier_get_name( dossier ),
-			DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLSLD" );
+			DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLOSLD" );
 	if( !ofa_dbms_query( dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
@@ -533,6 +538,62 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			"	RAT_VAL_RATE      DECIMAL(20,5)                     COMMENT 'Rate value',"
 			"	UNIQUE (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
 			") CHARACTER SET utf8", TRUE )){
+		return( FALSE );
+	}
+
+	/* we do this only at the end of the model creation
+	 * as a mark that all has been successfully done
+	 */
+	query = g_strdup_printf(
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	return( TRUE );
+}
+
+/**
+ * ofo_dossier_dbmodel_to_v21:
+ * @dbms: an already opened #ofaDbms connection
+ * @dname: the name of the dossier from settings, will be used as
+ *  default label
+ * @account: the current connected account.
+ */
+static gboolean
+dbmodel_to_v21( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v20";
+	static guint this_version = 21;
+	const ofaDbms *dbms;
+	gchar *query;
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_VERSION "
+			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_BAT_LINES "
+			"	MODIFY COLUMN BAT_LINE_UPD_STAMP TIMESTAMP DEFAULT 0 "
+			"	COMMENT 'Reconciliation timestamp'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"UPDATE OFA_T_BAT_LINES "
+			"	SET BAT_LINE_UPD_STAMP=0 WHERE BAT_LINE_ENTRY IS NULL",
+			TRUE )){
 		return( FALSE );
 	}
 

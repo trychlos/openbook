@@ -1688,17 +1688,20 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
 	ofxCounter *imported_id;
-
-	clear_bat_lines( self );
+	gchar *uri;
 
 	priv = self->priv;
+
+	/* take the uri before clearing bat lines */
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
+
+	clear_bat_lines( self );
 
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 	ofa_file_format_set( settings,
 			NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', 0 );
 
-	importable = ofa_iimportable_find_willing_to(
-			gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )), settings );
+	importable = ofa_iimportable_find_willing_to( uri, settings );
 
 	if( importable ){
 		g_debug( "%s: importable=%p (%s)", thisfn, ( void * ) importable, G_OBJECT_TYPE_NAME( importable ));
@@ -1711,6 +1714,7 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 	}
 
 	g_object_unref( settings );
+	g_free( uri );
 }
 
 static void

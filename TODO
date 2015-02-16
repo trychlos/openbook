@@ -259,6 +259,8 @@
 
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
                 them with integers ?
+     2015- 2-16 ofsCurrency makes use of a work-around when checking
+                the accounts/entries/ledgers balances 
 
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement data groups if they are set in the object
@@ -308,7 +310,12 @@
      2015- 2-13 this is only from reconciliation page: same situation
                 from import assistant doesn't break
 
- 651
+ 651 2015- 2-15 replace fixed date and amount configurations with user
+                user preferences (date display format, comma vs. dot)
+
+ 652 2015- 2-15 let the user configure colors
+
+ 653
 
 -----------------------------------------------------------------------
  DONE

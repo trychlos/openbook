@@ -291,10 +291,12 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 
 		entry = OFO_ENTRY( it->data );
 		currency = ofo_entry_get_currency( entry );
-
 		sbal = get_balance_for_currency( bin, &priv->entries_list, currency );
-		sbal->debit += ofo_entry_get_debit( entry );
-		sbal->credit += ofo_entry_get_credit( entry );
+
+		sbal->ldebit += ofs_currency_amount_to_long( sbal, ofo_entry_get_debit( entry ));
+		sbal->lcredit += ofs_currency_amount_to_long( sbal, ofo_entry_get_credit( entry ));
+
+		ofs_currency_update_amounts( sbal );
 		g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		set_bar_progression( bar, count, i );
 	}
@@ -344,13 +346,15 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 		for( ic=currencies ; ic ; ic=ic->next ){
 			currency = ( const gchar * ) ic->data;
 			sbal = get_balance_for_currency( bin, &priv->ledgers_list, currency );
-			sbal->debit +=
-					ofo_ledger_get_val_debit( ledger, currency )
-					+ ofo_ledger_get_rough_debit( ledger, currency );
-			sbal->credit +=
-					ofo_ledger_get_val_credit( ledger, currency )
-					+ ofo_ledger_get_rough_credit( ledger, currency );
 
+			sbal->ldebit +=
+					ofs_currency_amount_to_long( sbal, ofo_ledger_get_val_debit( ledger, currency ))
+					+ ofs_currency_amount_to_long( sbal, ofo_ledger_get_rough_debit( ledger, currency ));
+			sbal->lcredit +=
+					ofs_currency_amount_to_long( sbal, ofo_ledger_get_val_credit( ledger, currency ))
+					+ ofs_currency_amount_to_long( sbal, ofo_ledger_get_rough_credit( ledger, currency ));
+
+			ofs_currency_update_amounts( sbal );
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
 		g_list_free( currencies );
@@ -392,15 +396,16 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 		account = OFO_ACCOUNT( it->data );
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-
 			sbal = get_balance_for_currency( bin, &priv->accounts_list, currency );
-			sbal->debit +=
-					ofo_account_get_val_debit( account )
-					+ ofo_account_get_rough_debit( account );
-			sbal->credit +=
-					ofo_account_get_val_credit( account )
-					+ ofo_account_get_rough_credit( account );
 
+			sbal->ldebit +=
+					ofs_currency_amount_to_long( sbal, ofo_account_get_val_debit( account ))
+					+ ofs_currency_amount_to_long( sbal, ofo_account_get_rough_debit( account ));
+			sbal->lcredit +=
+					ofs_currency_amount_to_long( sbal, ofo_account_get_val_credit( account ))
+					+ ofs_currency_amount_to_long( sbal, ofo_account_get_rough_credit( account ));
+
+			ofs_currency_update_amounts( sbal );
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
 
@@ -414,10 +419,13 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 static ofsCurrency *
 get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *currency )
 {
+	ofaCheckBalancesBinPrivate *priv;
 	GList *it;
 	ofsCurrency *sbal;
+	ofoCurrency *cur_object;
 	gboolean found;
 
+	priv = bin->priv;
 	found = FALSE;
 
 	for( it=*list ; it ; it=it->next ){
@@ -431,6 +439,9 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 	if( !found ){
 		sbal = g_new0( ofsCurrency, 1 );
 		sbal->currency = g_strdup( currency );
+		cur_object = ofo_currency_get_by_code( priv->dossier, currency );
+		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
+		sbal->digits = ofo_currency_get_digits( cur_object );
 		*list = g_list_prepend( *list, sbal );
 	}
 
@@ -440,27 +451,15 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 static gboolean
 check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances )
 {
-	ofaCheckBalancesBinPrivate *priv;
 	gboolean ok;
 	GList *it;
 	ofsCurrency *sbal;
-	ofoCurrency *currency;
-	gint digits;
-	gdouble precision;
 
-	priv = bin->priv;
 	ok = TRUE;
 
 	for( it=balances ; it ; it=it->next ){
 		sbal = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->dossier, sbal->currency );
-		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-
-		digits = ofo_currency_get_digits( currency );
-		precision = exp10(( gdouble ) digits );
-
-		sbal->debit = round( sbal->debit * precision ) / precision;
-		sbal->credit = round( sbal->credit * precision ) / precision;
+		g_debug( "check_balances_per_currency: debit=%lf, credit=%lf", sbal->debit, sbal->credit );
 		ok &= ( sbal->debit == sbal->credit );
 	}
 

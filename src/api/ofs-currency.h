@@ -33,6 +33,16 @@
  * @include: api/ofs-currency.h
  *
  * This structure is used when computing balances per currency.
+ *
+ * Two modes may be used:
+ *
+ * 1/ directly computing with flaoting point (gdouble) amounts: this
+ * may be slighty faster (as less code is run), but this is at the
+ * risk of some rounding errors
+ *
+ * 2/ computing after conversion to integers
+ * (#ofs_currency_amount_to_long() function), and checking the balances
+ * after floating point updates (#ofs_currency_update_amounts() function).
  */
 
 #include <glib.h>
@@ -44,19 +54,27 @@ G_BEGIN_DECLS
  */
 typedef struct {
 	gchar  *currency;
+	gint    digits;
 	gdouble debit;
 	gdouble credit;
+	glong   ldebit;
+	glong   lcredit;
 }
 	ofsCurrency;
 
-void ofs_currency_add_currency( GList **list,
+void  ofs_currency_add_currency  ( GList **list,
 										const gchar *currency,
 										gdouble debit,
 										gdouble credit );
 
-void ofs_currency_list_dump   ( GList *list );
+glong ofs_currency_amount_to_long( const ofsCurrency *currency,
+										gdouble amount );
 
-void ofs_currency_list_free   ( GList **list );
+void  ofs_currency_update_amounts( ofsCurrency *currency );
+
+void  ofs_currency_list_dump     ( GList *list );
+
+void  ofs_currency_list_free     ( GList **list );
 
 G_END_DECLS
 

@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "api/ofs-currency.h"
 
 static ofsCurrency *currency_get_by_code( GList **list, const gchar *currency );
@@ -65,6 +67,36 @@ static gint
 cmp_currency( const ofsCurrency *a, const ofsCurrency *b )
 {
 	return( g_utf8_collate( a->currency, b->currency ));
+}
+
+/**
+ * ofs_currency_amount_to_long:
+ */
+glong
+ofs_currency_amount_to_long( const ofsCurrency *currency, gdouble amount )
+{
+	glong result;
+	gdouble dbl;
+
+	dbl = amount * exp10( currency->digits );
+	dbl = round( dbl );
+	result = ( glong ) dbl;
+
+	return( result );
+}
+
+/**
+ * ofs_currency_update_amounts:
+ */
+void
+ofs_currency_update_amounts( ofsCurrency *currency )
+{
+	gdouble precision;
+
+	precision = exp10( currency->digits );
+
+	currency->debit = currency->ldebit / precision;
+	currency->credit = currency->lcredit / precision;
 }
 
 /**
