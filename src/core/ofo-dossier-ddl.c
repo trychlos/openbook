@@ -53,6 +53,7 @@ static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v21( const ofoDossier *dossier );
+static gboolean    dbmodel_to_v22( const ofoDossier *dossier );
 static gboolean    insert_classes( ofoDossier *dossier );
 static gboolean    insert_currencies( ofoDossier *dossier );
 static gboolean    insert_ledgers( ofoDossier *dossier );
@@ -86,6 +87,9 @@ ofo_dossier_ddl_update( ofoDossier *dossier )
 		if( cur_version < 21 ){
 			dbmodel_to_v21( dossier );
 		}
+		if( cur_version < 22 ){
+			dbmodel_to_v22( dossier );
+		}
 		insert_classes( dossier );
 		insert_currencies( dossier );
 		insert_ledgers( dossier );
@@ -112,7 +116,7 @@ dbmodel_get_version( const ofoDossier *dossier )
 	return( vmax );
 }
 
-/**
+/*
  * ofo_dossier_dbmodel_to_v20:
  * @dbms: an already opened #ofaDbms connection
  * @dname: the name of the dossier from settings, will be used as
@@ -212,6 +216,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 	}
 #endif
 
+	/* BAT_SOLDE is remediated in v22 */
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE COMMENT 'Intern import identifier',"
@@ -221,7 +226,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			"	BAT_END       DATE                        COMMENT 'End date of the transaction list',"
 			"	BAT_RIB       VARCHAR(80)                 COMMENT 'Bank provided RIB',"
 			"	BAT_CURRENCY  VARCHAR(3)                  COMMENT 'Account currency',"
-			"	BAT_SOLDE     DECIMAL(20,5)               COMMENT 'Signed balance of the account',"
+			"	BAT_SOLDE     DECIMAL(20,5),"
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
 			"	BAT_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
 			"	BAT_UPD_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
@@ -229,7 +234,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-	/* anyway, BAT_LINE_UPD_STAMP comment is remediated in v21 */
+	/* BAT_LINE_UPD_STAMP is remediated in v21 */
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL      COMMENT 'Intern import identifier',"
@@ -554,17 +559,14 @@ dbmodel_to_v20( const ofoDossier *dossier )
 	return( TRUE );
 }
 
-/**
+/*
  * ofo_dossier_dbmodel_to_v21:
- * @dbms: an already opened #ofaDbms connection
- * @dname: the name of the dossier from settings, will be used as
- *  default label
- * @account: the current connected account.
+ * have zero timestamp on unreconciliated batlines
  */
 static gboolean
 dbmodel_to_v21( const ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v20";
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v21";
 	static guint this_version = 21;
 	const ofaDbms *dbms;
 	gchar *query;
@@ -581,7 +583,6 @@ dbmodel_to_v21( const ofoDossier *dossier )
 	}
 	g_free( query );
 
-
 	if( !ofa_dbms_query( dbms,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"	MODIFY COLUMN BAT_LINE_UPD_STAMP TIMESTAMP DEFAULT 0 "
@@ -593,6 +594,59 @@ dbmodel_to_v21( const ofoDossier *dossier )
 	if( !ofa_dbms_query( dbms,
 			"UPDATE OFA_T_BAT_LINES "
 			"	SET BAT_LINE_UPD_STAMP=0 WHERE BAT_LINE_ENTRY IS NULL",
+			TRUE )){
+		return( FALSE );
+	}
+
+	/* we do this only at the end of the model creation
+	 * as a mark that all has been successfully done
+	 */
+	query = g_strdup_printf(
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	return( TRUE );
+}
+
+/*
+ * ofo_dossier_dbmodel_to_v22:
+ * have begin_solde and end_solde in bat
+ */
+static gboolean
+dbmodel_to_v22( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v22";
+	static guint this_version = 22;
+	const ofaDbms *dbms;
+	gchar *query;
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_VERSION "
+			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_BAT "
+			"	CHANGE COLUMN BAT_SOLDE BAT_SOLDE_END DECIMAL(20,5) "
+			"	COMMENT 'Signed end balance of the account'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_BAT "
+			"	ADD COLUMN BAT_SOLDE_BEGIN DECIMAL(20,5) "
+			"	COMMENT 'Signed begin balance of the account'",
 			TRUE )){
 		return( FALSE );
 	}

@@ -50,7 +50,8 @@ struct _ofaBatStorePrivate {
 static GType st_col_types[BAT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* id, uri, format */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, rib */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, end_solde, end_solde_set */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
+		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, count, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoBat itself */
@@ -231,7 +232,7 @@ insert_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat )
 static void
 set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter *iter )
 {
-	gchar *sid, *sbegin, *send, *sendsolde, *scount, *stamp;
+	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp;
 	const GDate *date;
 	const gchar *cscurrency;
 
@@ -248,8 +249,13 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
 	} else {
 		send = g_strdup( "" );
 	}
-	if( ofo_bat_get_solde_set( bat )){
-		sendsolde = my_double_to_str( ofo_bat_get_solde( bat ));
+	if( ofo_bat_get_solde_begin_set( bat )){
+		sbeginsolde = my_double_to_str( ofo_bat_get_solde_begin( bat ));
+	} else {
+		sbeginsolde = g_strdup( "" );
+	}
+	if( ofo_bat_get_solde_end_set( bat )){
+		sendsolde = my_double_to_str( ofo_bat_get_solde_end( bat ));
 	} else {
 		sendsolde = g_strdup( "" );
 	}
@@ -263,24 +269,27 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
-			BAT_COL_ID,            sid,
-			BAT_COL_URI,           ofo_bat_get_uri( bat ),
-			BAT_COL_FORMAT,        ofo_bat_get_format( bat ),
-			BAT_COL_BEGIN,         sbegin,
-			BAT_COL_END,           send,
-			BAT_COL_RIB,           ofo_bat_get_rib( bat ),
-			BAT_COL_CURRENCY,      cscurrency,
-			BAT_COL_END_SOLDE,     sendsolde,
-			BAT_COL_END_SOLDE_SET, ofo_bat_get_solde_set( bat ),
-			BAT_COL_NOTES,         ofo_bat_get_notes( bat ),
-			BAT_COL_COUNT,         scount,
-			BAT_COL_UPD_USER,      ofo_bat_get_upd_user( bat ),
-			BAT_COL_UPD_STAMP,     stamp,
-			BAT_COL_OBJECT,        bat,
+			BAT_COL_ID,              sid,
+			BAT_COL_URI,             ofo_bat_get_uri( bat ),
+			BAT_COL_FORMAT,          ofo_bat_get_format( bat ),
+			BAT_COL_BEGIN,           sbegin,
+			BAT_COL_END,             send,
+			BAT_COL_RIB,             ofo_bat_get_rib( bat ),
+			BAT_COL_CURRENCY,        cscurrency,
+			BAT_COL_BEGIN_SOLDE,     sbeginsolde,
+			BAT_COL_BEGIN_SOLDE_SET, ofo_bat_get_solde_begin_set( bat ),
+			BAT_COL_END_SOLDE,       sendsolde,
+			BAT_COL_END_SOLDE_SET,   ofo_bat_get_solde_end_set( bat ),
+			BAT_COL_NOTES,           ofo_bat_get_notes( bat ),
+			BAT_COL_COUNT,           scount,
+			BAT_COL_UPD_USER,        ofo_bat_get_upd_user( bat ),
+			BAT_COL_UPD_STAMP,       stamp,
+			BAT_COL_OBJECT,          bat,
 			-1 );
 
 	g_free( stamp );
 	g_free( scount );
+	g_free( sbeginsolde );
 	g_free( sendsolde );
 	g_free( send );
 	g_free( sbegin );

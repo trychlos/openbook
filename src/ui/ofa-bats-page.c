@@ -133,7 +133,8 @@ v_setup_view( ofaPage *page )
 	ofaBatsPagePrivate *priv;
 	static ofaBatColumns st_columns [] = {
 			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END, BAT_DISP_COUNT,
-			BAT_DISP_FORMAT, BAT_DISP_RIB, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
+			BAT_DISP_FORMAT, BAT_DISP_RIB,
+			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
 			0 };
 
 	priv = OFA_BATS_PAGE( page )->priv;

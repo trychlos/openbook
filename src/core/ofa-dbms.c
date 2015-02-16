@@ -463,12 +463,8 @@ ofa_dbms_query_ex( const ofaDbms *dbms, const gchar *query, GSList **result, gbo
 gboolean
 ofa_dbms_query_int( const ofaDbms *dbms, const gchar *query, gint *ivalue, gboolean display_error )
 {
-	static const gchar *thisfn = "ofa_dbms_query_int";
 	gboolean ok;
 	GSList *result, *icol;
-
-	g_debug( "%s: dbms=%p, query='%s', ivalue=%p, display_error=%s",
-			thisfn, ( void * ) dbms, query, ( void * ) ivalue, display_error ? "True":"False" );
 
 	*ivalue = 0;
 	ok = ofa_dbms_query_ex( dbms, query, &result, display_error );

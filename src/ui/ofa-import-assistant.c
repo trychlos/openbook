@@ -709,7 +709,7 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	} else {
 		priv->p6_plugin = ofa_iimportable_find_willing_to( priv->p2_uri, priv->p4_import_settings );
 	}
-	if( !OFA_IS_IIMPORTABLE( priv->p6_object ) && !priv->p6_plugin ){
+	if( !priv->p6_object && !priv->p6_plugin ){
 		p6_error_no_interface( self );
 		return;
 	}

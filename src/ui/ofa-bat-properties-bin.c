@@ -54,7 +54,8 @@ struct _ofaBatPropertiesBinPrivate {
 	GtkWidget    *bat_end;
 	GtkWidget    *bat_rib;
 	GtkWidget    *bat_currency;
-	GtkWidget    *bat_solde;
+	GtkWidget    *bat_solde_begin;
+	GtkWidget    *bat_solde_end;
 
 	GtkTreeView  *tview;
 
@@ -209,8 +210,11 @@ load_dialog( ofaBatPropertiesBin *bin )
 	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-currency" );
 	g_return_if_fail( priv->bat_currency && GTK_IS_ENTRY( priv->bat_currency ));
 
-	priv->bat_solde = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde" );
-	g_return_if_fail( priv->bat_solde && GTK_IS_ENTRY( priv->bat_solde ));
+	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-begin" );
+	g_return_if_fail( priv->bat_solde_begin && GTK_IS_ENTRY( priv->bat_solde_begin ));
+
+	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-end" );
+	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
 }
 
 static void
@@ -366,12 +370,20 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), "" );
 	}
 
-	if( ofo_bat_get_solde_set( bat )){
-		str = my_double_to_str( ofo_bat_get_solde( bat ));
-		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde ), str );
+	if( ofo_bat_get_solde_begin_set( bat )){
+		str = my_double_to_str( ofo_bat_get_solde_begin( bat ));
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), str );
 		g_free( str );
 	} else {
-		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde ), "" );
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), "" );
+	}
+
+	if( ofo_bat_get_solde_end_set( bat )){
+		str = my_double_to_str( ofo_bat_get_solde_end( bat ));
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), str );
+		g_free( str );
+	} else {
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), "" );
 	}
 
 	priv->bat = bat;

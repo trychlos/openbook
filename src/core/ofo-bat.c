@@ -56,6 +56,8 @@ struct _ofoBatPrivate {
 	GDate      end;
 	gchar     *rib;
 	gchar     *currency;
+	ofxAmount  begin_solde;
+	gboolean   begin_solde_set;
 	ofxAmount  end_solde;
 	gboolean   end_solde_set;
 	gchar     *notes;
@@ -174,7 +176,7 @@ bat_load_dataset( ofoDossier *dossier )
 
 	if( ofa_dbms_query_ex( dbms,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,"
-			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
+			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
 			"	FROM OFA_T_BAT "
 			"	ORDER BY BAT_UPD_STAMP ASC", &result, TRUE )){
@@ -207,11 +209,19 @@ bat_load_dataset( ofoDossier *dossier )
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_set_solde( bat,
+				ofo_bat_set_solde_begin( bat,
 						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_solde_set( bat, TRUE );
+				ofo_bat_set_solde_begin_set( bat, TRUE );
 			} else {
-				ofo_bat_set_solde_set( bat, FALSE );
+				ofo_bat_set_solde_begin_set( bat, FALSE );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_solde_end( bat,
+						my_double_set_from_sql(( const gchar * ) icol->data ));
+				ofo_bat_set_solde_end_set( bat, TRUE );
+			} else {
+				ofo_bat_set_solde_end_set( bat, FALSE );
 			}
 			icol = icol->next;
 			if( icol->data ){
@@ -410,10 +420,44 @@ ofo_bat_get_currency( const ofoBat *bat )
 }
 
 /**
- * ofo_bat_get_solde:
+ * ofo_bat_get_solde_begin:
  */
 ofxAmount
-ofo_bat_get_solde( const ofoBat *bat )
+ofo_bat_get_solde_begin( const ofoBat *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT( bat ), 0 );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( bat->priv->begin_solde );
+	}
+
+	g_assert_not_reached();
+	return( 0 );
+}
+
+/**
+ * ofo_bat_get_solde_begin_set:
+ */
+gboolean
+ofo_bat_get_solde_begin_set( const ofoBat *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( bat->priv->begin_solde_set );
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+/**
+ * ofo_bat_get_solde_end:
+ */
+ofxAmount
+ofo_bat_get_solde_end( const ofoBat *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT( bat ), 0 );
 
@@ -427,10 +471,10 @@ ofo_bat_get_solde( const ofoBat *bat )
 }
 
 /**
- * ofo_bat_get_solde_set:
+ * ofo_bat_get_solde_end_set:
  */
 gboolean
-ofo_bat_get_solde_set( const ofoBat *bat )
+ofo_bat_get_solde_end_set( const ofoBat *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
 
@@ -698,10 +742,38 @@ ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 }
 
 /**
- * ofo_bat_set_solde:
+ * ofo_bat_set_solde_begin:
  */
 void
-ofo_bat_set_solde( ofoBat *bat, ofxAmount solde )
+ofo_bat_set_solde_begin( ofoBat *bat, ofxAmount solde )
+{
+	g_return_if_fail( OFO_IS_BAT( bat ));
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		bat->priv->begin_solde = solde;
+	}
+}
+
+/**
+ * ofo_bat_set_solde_begin_set:
+ */
+void
+ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set )
+{
+	g_return_if_fail( OFO_IS_BAT( bat ));
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		bat->priv->begin_solde_set = set;
+	}
+}
+
+/**
+ * ofo_bat_set_solde_end:
+ */
+void
+ofo_bat_set_solde_end( ofoBat *bat, ofxAmount solde )
 {
 	g_return_if_fail( OFO_IS_BAT( bat ));
 
@@ -712,10 +784,10 @@ ofo_bat_set_solde( ofoBat *bat, ofxAmount solde )
 }
 
 /**
- * ofo_bat_set_solde_set:
+ * ofo_bat_set_solde_end_set:
  */
 void
-ofo_bat_set_solde_set( ofoBat *bat, gboolean set )
+ofo_bat_set_solde_end_set( ofoBat *bat, gboolean set )
 {
 	g_return_if_fail( OFO_IS_BAT( bat ));
 
@@ -823,7 +895,7 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
-			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
+			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
 			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
 					ofo_bat_get_id( bat ),
 					suri );
@@ -870,8 +942,16 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( ofo_bat_get_solde_set( bat )){
-		str = my_double_to_sql( ofo_bat_get_solde( bat ));
+	if( ofo_bat_get_solde_begin_set( bat )){
+		str = my_double_to_sql( ofo_bat_get_solde_begin( bat ));
+		g_string_append_printf( query, "%s,", str );
+		g_free( str );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( ofo_bat_get_solde_end_set( bat )){
+		str = my_double_to_sql( ofo_bat_get_solde_end( bat ));
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {
@@ -1090,8 +1170,10 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 	ofo_bat_set_end( bat, &sbat->end );
 	ofo_bat_set_rib( bat, sbat->rib );
 	ofo_bat_set_currency( bat, sbat->currency );
-	ofo_bat_set_solde( bat, sbat->end_solde );
-	ofo_bat_set_solde_set( bat, sbat->end_solde_set );
+	ofo_bat_set_solde_begin( bat, sbat->begin_solde );
+	ofo_bat_set_solde_begin_set( bat, sbat->begin_solde_set );
+	ofo_bat_set_solde_end( bat, sbat->end_solde );
+	ofo_bat_set_solde_end_set( bat, sbat->end_solde_set );
 
 	ok = ofo_bat_insert( bat, dossier );
 	if( ok ){

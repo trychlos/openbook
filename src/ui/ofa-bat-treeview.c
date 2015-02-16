@@ -319,6 +319,15 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, ofaBatColumns *columns )
 				gtk_tree_view_append_column( priv->tview, column );
 			}
 
+			if( columns[i] == BAT_DISP_BEGIN_SOLDE ){
+				cell = gtk_cell_renderer_text_new();
+				gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+				column = gtk_tree_view_column_new_with_attributes(
+								_( "Begin solde" ), cell, "text", BAT_COL_BEGIN_SOLDE, NULL );
+				gtk_tree_view_column_set_alignment( column, 1.0 );
+				gtk_tree_view_append_column( priv->tview, column );
+			}
+
 			if( columns[i] == BAT_DISP_END_SOLDE ){
 				cell = gtk_cell_renderer_text_new();
 				gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );

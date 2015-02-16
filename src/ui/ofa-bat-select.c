@@ -55,7 +55,7 @@ struct _ofaBatSelectPrivate {
 
 	/* preselected value/returned value
 	 */
-	gint                 bat_id;
+	ofxCounter           bat_id;
 };
 
 static const gchar *st_settings         = "BatSelect-settings";
@@ -147,13 +147,13 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
  * Returns the selected Bank Account Transaction list (BAT) identifier,
  * or -1.
  */
-gint
+ofxCounter
 ofa_bat_select_run( ofaMainWindow *main_window, ofxCounter id )
 {
 	static const gchar *thisfn = "ofa_bat_select_run";
 	ofaBatSelect *self;
 	ofaBatSelectPrivate *priv;
-	gint bat_id;
+	ofxCounter bat_id;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 

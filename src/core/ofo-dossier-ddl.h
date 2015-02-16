@@ -42,7 +42,7 @@ G_BEGIN_DECLS
 
 /* the last DB model version
  */
-#define THIS_DBMODEL_VERSION            21
+#define THIS_DBMODEL_VERSION            22
 
 /* the identifier of the dossier row
  */

@@ -348,7 +348,9 @@ ofa_iimportable_pulse( ofaIImportable *importable,
 	sdata = get_iimportable_data( importable );
 	g_return_if_fail( sdata );
 
-	g_signal_emit_by_name( sdata->caller, "pulse", phase );
+	if( sdata->caller ){
+		g_signal_emit_by_name( sdata->caller, "pulse", phase );
+	}
 }
 
 /**

@@ -64,9 +64,9 @@ typedef struct {
 }
 	ofaBatSelectClass;
 
-GType  ofa_bat_select_get_type( void ) G_GNUC_CONST;
+GType      ofa_bat_select_get_type( void ) G_GNUC_CONST;
 
-gint   ofa_bat_select_run     ( ofaMainWindow *main_window, ofxCounter id );
+ofxCounter ofa_bat_select_run     ( ofaMainWindow *main_window, ofxCounter id );
 
 G_END_DECLS
 

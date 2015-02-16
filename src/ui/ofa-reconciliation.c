@@ -97,9 +97,9 @@ struct _ofaReconciliationPrivate {
 	/* internals
 	 */
 	GDate              dconcil;
-	GList             *batlines;				/* loaded bank account transaction lines */
 	ofoDossier        *dossier;
 	GList             *handlers;
+	GList             *batlines;
 };
 
 /* column ordering in the main entries listview
@@ -210,7 +210,7 @@ static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static gboolean     do_select_bat( ofaReconciliation *self, ofxCounter id );
 static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
 static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
-static void         setup_bat_lines( ofaReconciliation *self, gint bat_id );
+static void         setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id );
 static void         clear_bat_lines( ofaReconciliation *self );
 static void         display_bat_lines( ofaReconciliation *self );
 static void         default_expand_view( ofaReconciliation *self );
@@ -268,7 +268,9 @@ reconciliation_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ( OFA_RECONCILIATION( instance ))->priv;
 
-		ofo_bat_line_free_dataset( priv->batlines );
+		if( priv->batlines ){
+			ofo_bat_line_free_dataset( priv->batlines );
+		}
 
 		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( it=priv->handlers ; it ; it=it->next ){
@@ -1660,7 +1662,7 @@ static gboolean
 do_select_bat( ofaReconciliation *self, ofxCounter id )
 {
 	gboolean ok;
-	gint bat_id;
+	ofxCounter bat_id;
 
 	ok = FALSE;
 	bat_id = ofa_bat_select_run( ofa_page_get_main_window( OFA_PAGE( self )), id );
@@ -1692,29 +1694,29 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 
 	priv = self->priv;
 
-	/* take the uri before clearing bat lines */
-	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
-
-	clear_bat_lines( self );
-
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 	ofa_file_format_set( settings,
 			NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', 0 );
 
+	/* take the uri before clearing bat lines */
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
+
+	clear_bat_lines( self );
 	importable = ofa_iimportable_find_willing_to( uri, settings );
 
 	if( importable ){
-		g_debug( "%s: importable=%p (%s)", thisfn, ( void * ) importable, G_OBJECT_TYPE_NAME( importable ));
-
 		if( !ofa_iimportable_import_uri( importable, priv->dossier, NULL, ( void ** ) &imported_id )){
 			setup_bat_lines( self, *imported_id );
 			g_free( imported_id );
 		}
+		g_debug( "%s: importable=%p (%s) ref_count=%d",
+				thisfn, ( void * ) importable,
+				G_OBJECT_TYPE_NAME( importable ), G_OBJECT( importable )->ref_count );
 		g_object_unref( importable );
 	}
 
-	g_object_unref( settings );
 	g_free( uri );
+	g_object_unref( settings );
 }
 
 static void
@@ -1730,7 +1732,7 @@ on_clear_button_clicked( GtkButton *button, ofaReconciliation *self )
  * only lines which have not yet been used for reconciliation are read
  */
 static void
-setup_bat_lines( ofaReconciliation *self, gint bat_id )
+setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 {
 	ofaReconciliationPrivate *priv;
 	ofoBat *bat;
@@ -1738,12 +1740,9 @@ setup_bat_lines( ofaReconciliation *self, gint bat_id )
 
 	priv = self->priv;
 
-	priv->batlines =
-			ofo_bat_line_get_dataset(
-					ofa_page_get_dossier( OFA_PAGE( self )),
-					bat_id );
-
+	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	display_bat_lines( self );
+
 	default_expand_view( self );
 
 	bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
@@ -1788,8 +1787,9 @@ clear_bat_lines( ofaReconciliation *self )
 					gtk_tree_store_set( GTK_TREE_STORE( tmodel ), &iter, COL_DRECONCIL, "", -1 );
 				}
 
-				if( gtk_tree_model_iter_has_child( tmodel, &iter )){
-					gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
+				if( gtk_tree_model_iter_has_child( tmodel, &iter ) &&
+						 gtk_tree_model_iter_children( tmodel, &child_iter, &iter )){
+
 					gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
 				}
 
@@ -1797,19 +1797,20 @@ clear_bat_lines( ofaReconciliation *self )
 					break;
 				}
 
-			} else if( !gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter )){
-				break;
+			} else {
+				g_return_if_fail( OFO_IS_BAT_LINE( object ));
+				if( !gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter )){
+					break;
+				}
 			}
 		}
 	}
 
-	if( priv->batlines ){
-		g_list_free_full( priv->batlines, ( GDestroyNotify ) g_object_unref );
-		priv->batlines = NULL;
-	}
+	ofo_bat_line_free_dataset( priv->batlines );
+	priv->batlines = NULL;
 
 	/* also reinit the GtkFileChooserButton and the corresponding label */
-	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), "" );
+	gtk_file_chooser_unselect_all( GTK_FILE_CHOOSER( priv->file_chooser ));
 	gtk_label_set_text( GTK_LABEL( priv->count_label ), "" );
 
 	/* and update the bank reconciliated balance */
@@ -1830,6 +1831,7 @@ clear_bat_lines( ofaReconciliation *self )
 static void
 display_bat_lines( ofaReconciliation *self )
 {
+	ofaReconciliationPrivate *priv;
 	GList *line;
 	ofoBatLine *batline;
 	gboolean done;
@@ -1838,7 +1840,9 @@ display_bat_lines( ofaReconciliation *self )
 	gchar *sbat_deb, *sbat_cre;
 	GtkTreeIter *entry_iter;
 
-	for( line=self->priv->batlines ; line ; line=line->next ){
+	priv = self->priv;
+
+	for( line=priv->batlines ; line ; line=line->next ){
 
 		batline = OFO_BAT_LINE( line->data );
 		done = FALSE;
