@@ -398,10 +398,6 @@
                 then impossible to display the newly imported accounts,
                 even if close and reopen the page
 
- 674 2015- 2-18 ExerciceClosing: set reconciliation date on forward 
-                entries on reconciliable account to first day of the
-                exercice
-
  676
 
 -----------------------------------------------------------------------
@@ -2993,6 +2989,11 @@
                 (cf. CSVExports/ofaModels_bad.csv, which actually is 
                 fine)
      2015- 2-18 nope: this was a bad settings configuration
+
+ 674 2015- 2-18 ExerciceClosing: set reconciliation date on forward 
+                entries on reconciliable account to first day of the
+                exercice
+     2015- 2-18 done - svn #4612
 
  675 2015- 2-18 Reconciliation: bank reconciliated balance is wrong
      2015- 2-18 done - svn #4611

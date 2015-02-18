@@ -47,7 +47,6 @@ struct _ofaAccountStorePrivate {
 
 	/* runtime data
 	 */
-	gboolean    dataset_loaded;
 };
 
 /* a structure used when moving a subtree to another place
@@ -75,15 +74,6 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
  * store
  */
 #define STORE_DATA_DOSSIER                   "ofa-account-store"
-
-/* signals defined here
- */
-enum {
-	INSERTED = 0,
-	N_SIGNALS
-};
-
-static guint        st_signals[ N_SIGNALS ]  = { 0 };
 
 static const gchar *st_filler_png            = PKGUIDIR "/filler.png";
 static const gchar *st_notes_png             = PKGUIDIR "/notes1.png";
@@ -168,35 +158,6 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = account_store_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaAccountStorePrivate ));
-
-	/**
-	 * ofaAccountStore::ofa-row-inserted:
-	 *
-	 * This signal is sent on the store when we are trying to load the
-	 * dataset after the first time.
-	 * Rationale: the AccountsBook takes advantage of the 'row-inserted'
-	 * signal sent by the GtkTreeStore when loading the dataset the first
-	 * time. After that, we have yet to iter through the accounts in
-	 * order to populate the treeviews.
-	 *
-	 * Argument is the account number.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaAccountStore *store,
-	 * 						gint           class_num,
-	 * 						gpointer       user_data );
-	 */
-	st_signals[ INSERTED ] = g_signal_new_class_handler(
-				"ofa-row-inserted",
-				OFA_TYPE_ACCOUNT_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_INT );
 }
 
 /**
@@ -297,24 +258,15 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountS
 static void
 load_dataset( ofaAccountStore *store, ofoDossier *dossier )
 {
-	ofaAccountStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoAccount *account;
-
-	priv = store->priv;
 
 	dataset = ofo_account_get_dataset( dossier );
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		if( !priv->dataset_loaded ){
-			insert_row( store, dossier, account );
-		} else {
-			g_signal_emit_by_name( store, "ofa-row-inserted", ofo_account_get_class( account ));
-		}
+		insert_row( store, dossier, account );
 	}
-
-	priv->dataset_loaded = TRUE;
 }
 
 static void

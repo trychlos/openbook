@@ -101,7 +101,6 @@ static void       create_notebook( ofaAccountsBook *book );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsBook *self );
 static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book );
-static void       on_ofa_row_inserted( ofaAccountStore *store, gint class_num, ofaAccountsBook *book );
 static GtkWidget *book_get_page_by_class( ofaAccountsBook *self, gint class_num, gboolean create );
 static GtkWidget *book_create_page( ofaAccountsBook *self, gint class );
 static GtkWidget *book_create_scrolled_window( ofaAccountsBook *book, gint class_num );
@@ -441,10 +440,6 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 				priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
 		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
 
-		handler = g_signal_connect(
-				priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
-
 		ofa_account_store_load_dataset( priv->store );
 
 		dossier_signals_connect( book );
@@ -461,25 +456,15 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 static void
 on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book )
 {
+	ofaAccountsBookPrivate *priv;
 	gchar *number;
 	gint class_num;
+
+	priv = book->priv;
 
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &number, -1 );
 	class_num = ofo_account_get_class_from_number( number );
 	g_free( number );
-
-	on_ofa_row_inserted( NULL, class_num, book );
-}
-
-/*
- * store is %NULL when called from above on_row_inserted()
- */
-static void
-on_ofa_row_inserted( ofaAccountStore *store, gint class_num, ofaAccountsBook *book )
-{
-	ofaAccountsBookPrivate *priv;
-
-	priv = book->priv;
 
 	if( class_num != priv->prev_class ){
 		book_get_page_by_class( book, class_num, TRUE );
@@ -1284,6 +1269,8 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *book )
 
 	g_debug( "%s: dossier=%p, type=%lu, book=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) book );
+
+	ofa_accounts_book_expand_all( book );
 }
 
 static GtkWidget *
