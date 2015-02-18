@@ -398,11 +398,6 @@
                 then impossible to display the newly imported accounts,
                 even if close and reopen the page
 
- 673 2015- 2-18 when importing a freshly exporting ope templates file,
-                have error message: "empty operation template mnemonic"
-                (cf. CSVExports/ofaModels_bad.csv, which actually is 
-                fine)
-
  674 2015- 2-18 ExerciceClosing: set reconciliation date on forward 
                 entries on reconciliable account to first day of the
                 exercice
@@ -2994,6 +2989,12 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 673 2015- 2-18 when importing a freshly exporting ope templates file,
+                have error message: "empty operation template mnemonic"
+                (cf. CSVExports/ofaModels_bad.csv, which actually is 
+                fine)
+     2015- 2-18 nope: this was a bad settings configuration
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

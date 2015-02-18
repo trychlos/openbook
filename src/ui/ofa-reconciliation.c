@@ -2497,11 +2497,11 @@ set_reconciliated_balance( ofaReconciliation *self )
 			if( OFO_IS_ENTRY( object )){
 				dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
 				if( !my_date_is_valid( dval )){
-					credit += ofo_entry_get_debit( OFO_ENTRY( object ));
-					debit += ofo_entry_get_credit( OFO_ENTRY( object ));
+					debit += ofo_entry_get_debit( OFO_ENTRY( object ));
+					credit += ofo_entry_get_credit( OFO_ENTRY( object ));
 				}
 
-			} else {
+			} else if( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
 				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 				if( amount < 0 ){
 					debit += -amount;
