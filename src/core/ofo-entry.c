@@ -1101,7 +1101,8 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
  * @dossier: the current dossier.
  * @status: the requested status
  *
- * Returns the dataset of rough remaining entries on the exercice.
+ * Returns the dataset of entries on the exercice of the specified
+ * status.
  *
  * The returned dataset is ordered by dope/deffect/number, and should
  * be #ofo_entry_free_dataset() by the caller.

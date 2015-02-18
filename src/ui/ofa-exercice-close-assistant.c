@@ -925,12 +925,16 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			}
 
 			/* all entries have been prepared
+			 *
 			 * -> set a settlement number on those which are to be
-			 *    written on a settleable account - set the same
-			 *    counter on the solde and the forward entries to have
-			 *    an audit track
-			 * -> set a reconciliation date on those which are to be
-			 *    written on a reconciliable account */
+			 *    written on a settleable account
+			 *    + take care of setting the same counter on the solde
+			 *    and the forward entries to have an audit track
+			 *
+			 * -> set a reconciliation date on the solde entries which
+			 *    are to be written on a reconciliable account, so that
+			 *    they will not be reported on the next exercice
+			 */
 			for( ite=sld_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
 				ofo_entry_insert( entry, dossier );
@@ -981,9 +985,9 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 }
 
 /*
- * set the specified settlement number on the entry for the specified
- * account - as there should only be one entry per account, we just stop
- * as soon as we have found it
+ * set the specified settlement number on the forward entry for the
+ * specified account - as there should only be one entry per account,
+ * we just stop as soon as we have found it
  */
 static void
 p7_set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter )
@@ -1283,6 +1287,9 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 
 /*
  * apply generated carried forward entries
+ *
+ * they are inserted with 'rough' status, and the settlement number is
+ * set if it has been previously set when generating the entry
  */
 static gboolean
 p7_forward( ofaExerciceCloseAssistant *self )
@@ -1335,6 +1342,10 @@ p7_forward( ofaExerciceCloseAssistant *self )
 
 /*
  * archive begin of exercice accounts balance
+ *
+ * open=rough+validated, but at this time we only have:
+ * - past entries (unreconciliated or unsettled from previous exercice)
+ * - forward entries (which are in 'rough' status)
  */
 static gboolean
 p7_open( ofaExerciceCloseAssistant *self )
