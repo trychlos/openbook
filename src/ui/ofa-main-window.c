@@ -48,6 +48,7 @@
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-classes-page.h"
 #include "ui/ofa-currencies-page.h"
+#include "ui/ofa-dossier-display-notes.h"
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-exercice-close-assistant.h"
@@ -803,6 +804,7 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
 	ofaMainWindowPrivate *priv;
 	const GDate *exe_begin, *exe_end;
+	const gchar *main_notes, *exe_notes;
 
 	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s, user_data=%p",
 			thisfn, ( void * ) window,
@@ -846,10 +848,18 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	set_menubar( window, priv->menu );
 	set_window_title( window );
 
+	/* warns if begin or end of exercice is not set */
 	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
 	exe_end = ofo_dossier_get_exe_end( priv->dossier );
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
 		warning_exercice_unset( window );
+	}
+
+	/* display dossier notes if not empty */
+	main_notes = ofo_dossier_get_notes( priv->dossier );
+	exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
+	if( my_strlen( main_notes ) || my_strlen( exe_notes )){
+		ofa_dossier_display_notes_run( window, main_notes, exe_notes );
 	}
 
 	g_signal_emit_by_name( window, "ofa-opened-dossier", g_object_ref( priv->dossier ));

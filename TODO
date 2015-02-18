@@ -390,9 +390,6 @@
 
  670 2015- 2-17 when opening a dossier, display notes if not empty
 
- 671 2015- 2-18 ...it appears that some distorsion has happened among
-                them.
-
  677
 
 -----------------------------------------------------------------------
@@ -2978,6 +2975,10 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 671 2015- 2-18 ...it appears that some distorsion has happened among
+                them.
+     2015- 2-18 done - svn #4615
 
  672 2015- 2-18 when importing a new chart of accounts in a new dossier,
                 the displayed page (if opened) is not updated - it is
