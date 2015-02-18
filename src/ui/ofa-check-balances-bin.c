@@ -569,7 +569,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "\nThough each book is individually balanced, it appears "
-						"that some distorsion has happended among them.\n"
+						"that some distorsion has happened among them.\n"
 						"In this current state, we are unable to close this exercice "
 						"until you fix your balances." ));
 		}
