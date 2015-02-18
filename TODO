@@ -402,8 +402,6 @@
                 entries on reconciliable account to first day of the
                 exercice
 
- 675 2015- 2-18 Reconciliation: bank reconciliated balance is wrong
-
  676
 
 -----------------------------------------------------------------------
@@ -2995,6 +2993,9 @@
                 (cf. CSVExports/ofaModels_bad.csv, which actually is 
                 fine)
      2015- 2-18 nope: this was a bad settings configuration
+
+ 675 2015- 2-18 Reconciliation: bank reconciliated balance is wrong
+     2015- 2-18 done - svn #4611
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

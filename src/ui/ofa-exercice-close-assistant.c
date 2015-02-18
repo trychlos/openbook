@@ -800,7 +800,7 @@ p7_solde_accounts( ofaExerciceCloseAssistant *self )
  * care of that here.
  *
  * Note: forward entries on setlleable accounts are automatically set
- * as settled, being balanced with the corresponding solde entry.
+ * as settled, being balanced with the corresponding solde entry
  */
 static gint
 p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
@@ -1290,6 +1290,10 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
  *
  * they are inserted with 'rough' status, and the settlement number is
  * set if it has been previously set when generating the entry
+ *
+ * + entries on reconciliable accounts are set reconciliated
+ *   on the first day of the exercice (which is also the operation date
+ *   and the effect date)
  */
 static gboolean
 p7_forward( ofaExerciceCloseAssistant *self )
@@ -1301,12 +1305,15 @@ p7_forward( ofaExerciceCloseAssistant *self )
 	GList *it;
 	ofoEntry *entry;
 	ofoDossier *dossier;
+	ofoAccount *account;
 	ofxCounter counter;
 	gdouble progress;
 	gchar *text;
+	const GDate *dbegin;
 
 	priv = self->priv;
 	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+	dbegin = ofo_dossier_get_exe_begin( dossier );
 
 	bar = get_new_bar( self, "p7-forward" );
 	gtk_widget_show_all( priv->current_page_widget );
@@ -1319,6 +1326,14 @@ p7_forward( ofaExerciceCloseAssistant *self )
 		counter = ofo_entry_get_settlement_number( entry );
 		if( counter ){
 			ofo_entry_update_settlement( entry, dossier, counter );
+		}
+
+		/* set reconciliation on reconciliable account */
+		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+		if( ofo_account_is_reconciliable( account )){
+			ofo_entry_set_concil_dval( entry, dbegin );
+			ofo_entry_update_concil( entry, dossier, dbegin );
 		}
 
 		progress = ( gdouble ) i / ( gdouble ) count;
