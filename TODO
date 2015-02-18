@@ -393,12 +393,7 @@
  671 2015- 2-18 ...it appears that some distorsion has happened among
                 them.
 
- 672 2015- 2-18 when importing a new chart of accounts in a new dossier,
-                the displayed page (if opened) is not updated - it is
-                then impossible to display the newly imported accounts,
-                even if close and reopen the page
-
- 676
+ 677
 
 -----------------------------------------------------------------------
  DONE
@@ -2984,6 +2979,12 @@
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
 
+ 672 2015- 2-18 when importing a new chart of accounts in a new dossier,
+                the displayed page (if opened) is not updated - it is
+                then impossible to display the newly imported accounts,
+                even if close and reopen the page
+     2015- 2-18 done - svn #4613
+
  673 2015- 2-18 when importing a freshly exporting ope templates file,
                 have error message: "empty operation template mnemonic"
                 (cf. CSVExports/ofaModels_bad.csv, which actually is 
@@ -2997,6 +2998,14 @@
 
  675 2015- 2-18 Reconciliation: bank reconciliated balance is wrong
      2015- 2-18 done - svn #4611
+
+ 676 2015- 2-18 check loading new collection on opened pages for all
+                reference tables (but accounts which is already fixed)
+                - classes: ok
+                - currencies: ok
+                - ledgers: ok
+                - ope_templates: ok
+                - rates: ok
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

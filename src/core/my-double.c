@@ -140,6 +140,10 @@ my_double_set_from_csv( const gchar *sql_string, gchar decimal_sep )
 	gint i;
 	gdouble amount;
 
+	if( !my_strlen( sql_string )){
+		return( 0.0 );
+	}
+
 	str = g_strdup( sql_string );
 
 	if( decimal_sep != '.' ){
