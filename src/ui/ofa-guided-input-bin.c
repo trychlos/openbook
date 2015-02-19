@@ -1355,7 +1355,7 @@ display_currencies( ofaGuidedInputBin *bin )
 			account = ofo_account_get_by_number( priv->dossier, detail->account );
 			if( account ){
 				currency = ofo_account_get_currency( account );
-				if( g_utf8_collate( currency, priv->def_currency )){
+				if( currency && g_utf8_collate( currency, priv->def_currency )){
 					display_cur = currency;
 				}
 			}

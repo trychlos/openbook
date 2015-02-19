@@ -970,7 +970,9 @@ check_for_all_entries( sChecker *checker )
 }
 
 /*
- * empty account is not an error if both debit and credit are zero
+ * empty account or empty label is not error
+ *  debit and credit of such a line will not be counted in the currency
+ *  balance
  */
 static gboolean
 check_for_entry( sChecker *checker, ofsOpeDetail *detail )
@@ -982,15 +984,8 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 	ok = FALSE;
 	currency = NULL;
 
-	if( !my_strlen( detail->account )){
-		if( detail->debit || detail->credit ){
-			g_free( checker->message );
-			checker->message = g_strdup( _( "Empty account" ));
-		} else {
-			/* entry is not generated */
-			ok = TRUE;
-		}
-	} else {
+	if( my_strlen( detail->account ) && my_strlen( detail->label )){
+
 		account = ofo_account_get_by_number( checker->dossier, detail->account );
 		if( !account || !OFO_IS_ACCOUNT( account )){
 			g_free( checker->message );
@@ -1000,21 +995,14 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Account is root: %s" ), detail->account );
 
+		} else if(( detail->debit && detail->credit ) || ( !detail->debit && !detail->credit )){
+			g_free( checker->message );
+			checker->message = g_strdup( _( "Invalid amounts (both set or both empty)" ));
+
 		} else {
 			currency = ofo_account_get_currency( account );
 			ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
-
-			if( detail->debit && detail->credit ){
-				g_free( checker->message );
-				checker->message = g_strdup( _( "Invalid amounts" ));
-
-			} else if( !detail->label || !g_utf8_strlen( detail->label, -1 )){
-				g_free( checker->message );
-				checker->message = g_strdup( _( "Empty label" ));
-
-			} else {
-				ok = TRUE;
-			}
+			ok = TRUE;
 		}
 	}
 
@@ -1071,12 +1059,14 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-		if( detail->account && ( detail->debit || detail->credit )){
+		if( my_strlen( detail->account ) &&
+				my_strlen( detail->label ) &&
+				( detail->debit || detail->credit )){
+
 			account = ofo_account_get_by_number( dossier, detail->account );
 			if( account ){
 				currency = ofo_account_get_currency( account );
-				entries = g_list_append(
-						entries,
+				entries = g_list_append( entries,
 						ofo_entry_new_with_data(
 								dossier,
 								&ope->deffect, &ope->dope, detail->label,

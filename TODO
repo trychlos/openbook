@@ -340,56 +340,9 @@
                 (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
                 (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
 
- 660 2015- 2-17 FATAL: Reconciliation: segfault on double-click on a
-                newly created entry
-                #0  0x0000003d04a32758 in g_date_time_new_from_timeval_local () from /lib64/libglib-2.0.so.0
-                #1  0x00007ffff7da2b57 in my_date_set_from_stamp (date=date@entry=0x7fffffffc4f0, stamp=<optimized out>) at my-date.c:428
-                #2  0x000000000047cd02 in is_entry_session_conciliated (entry=entry@entry=0x7fffcc005a00, self=<optimized out>) at ofa-reconciliation.c:1270
-                #3  0x000000000047d013 in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0x7fffcc005a00, self=0x74a520) at ofa-reconciliation.c:1190
-                work-around is to change the account, then come back to 
-                the first one
-     2015- 2-19 done
-
- 661 2015- 2-17 three entries deleted, but have not remediated the 
-                accounts and ledger balances
-                | ENT_DEFFECT | ENT_NUMBER | ENT_DOPE   | ENT_LABEL                                       | ENT_REF | ENT_ACCOUNT | ENT_CURRENCY | ENT_DEBIT | ENT_CREDIT | ENT_LEDGER | ENT_OPE_TEMPLATE | ENT_STATUS | ENT_UPD_USER | ENT_UPD_STAMP       | ENT_CONCIL_DVAL | ENT_CONCIL_USER | ENT_CONCIL_STAMP    | ENT_STLMT_NUMBER | ENT_STLMT_USER | ENT_STLMT_STAMP     |
-                | 2014-01-03  |        210 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 66411       | EUR          |  18.25000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:35 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
-                | 2014-01-03  |        211 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 445673      | EUR          |   3.65000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:41 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
-                | 2014-01-03  |        212 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 51241       | EUR          |   0.00000 |   21.90000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:46 | 2014-01-03      | wieser          | 2015-02-08 12:51:39 |             NULL | NULL           | 0000-00-00 00:00:00 |
-     2015- 2-17 idem for two entries 45,15 (remboursement mutuelle)
-     2015- 2-17 idem for:
-                | 2014-02-05  |        379 | 2014-02-05 | Toner Brother            | CP      | 6621        | EUR          | 200.26000 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:44 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
-                | 2014-02-05  |        380 | 2014-02-05 | Toner Brother            | CP      | 445673      | EUR          |  40.04999 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
-                | 2014-02-05  |        381 | 2014-02-05 | Toner Brother            | CP      | 51241       | EUR          |   0.00000 |  240.31000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
-     2015- 2-19 done
-
- 662 2015- 2-17 when modifying an account in ViewEntries, accounts are
-                remediated, but entry doesn't appear in reconciliation
-                view (which actually targets the new account)
-     2015- 2-19 reacting to on_updated_object signal on entry, as we do
-                not know if the account has been actually modified, just
-                re-fetch the entries
-                Unfortunatly, this doesn't remediate to the Gtk bug 
-                which only displays the actual value of a cell when the
-                mouse is moving over it (todo #679)
-     2015- 2-19 done
-
  663 2015- 2-17 OpeTemplate properties: when reordering a line, the 
                 line number should stay fixed, and not follow the line
                 being reordered
-
- 664 2015- 2-17 have a calculation line (checkbox) which let the user
-                have intermediate computations - or improve the formula
-                analyser to be able to compute TTC/(1+TVAN)
-
- 665 2015- 2-17 Reconciliation: keep uri besides of batlines in order
-                to reset it when re-fetching entries
-     2015- 2-19 not needed as the BAT lines data are not really cleared
-                when a new account is fetched
-
- 666 2015- 2-17 Reconciliation: when a new entry is created, reset
-                batlines propositions
-     2015- 2-19 done by searching for an ad-hoc batline to be proposed
 
  667 2015- 2-17 remove traversing call, replacing them with a get_object(),
                 plus a direct use of the object api 
@@ -408,13 +361,16 @@
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 679 2015- 2-19 ofsOpe: actually do not having an account or a label
+ 679 2015- 2-19 ofsOpe: actually do not have an account or a label
                 is not an error: the entry will just not be generated,
                 and the amounts are not taken into account when
                 computing the ope balance
                 The only error is so: valid lines are not balanced.
 
- 680
+ 680  679 2015 GuidedInputBin: have a green coche when an entry will be
+               generated
+
+ 681
 
 -----------------------------------------------------------------------
  DONE
@@ -2999,6 +2955,55 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 660 2015- 2-17 FATAL: Reconciliation: segfault on double-click on a
+                newly created entry
+                #0  0x0000003d04a32758 in g_date_time_new_from_timeval_local () from /lib64/libglib-2.0.so.0
+                #1  0x00007ffff7da2b57 in my_date_set_from_stamp (date=date@entry=0x7fffffffc4f0, stamp=<optimized out>) at my-date.c:428
+                #2  0x000000000047cd02 in is_entry_session_conciliated (entry=entry@entry=0x7fffcc005a00, self=<optimized out>) at ofa-reconciliation.c:1270
+                #3  0x000000000047d013 in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0x7fffcc005a00, self=0x74a520) at ofa-reconciliation.c:1190
+                work-around is to change the account, then come back to 
+                the first one
+     2015- 2-19 done - svn#4620
+
+ 661 2015- 2-17 three entries deleted, but have not remediated the 
+                accounts and ledger balances
+                | ENT_DEFFECT | ENT_NUMBER | ENT_DOPE   | ENT_LABEL                                       | ENT_REF | ENT_ACCOUNT | ENT_CURRENCY | ENT_DEBIT | ENT_CREDIT | ENT_LEDGER | ENT_OPE_TEMPLATE | ENT_STATUS | ENT_UPD_USER | ENT_UPD_STAMP       | ENT_CONCIL_DVAL | ENT_CONCIL_USER | ENT_CONCIL_STAMP    | ENT_STLMT_NUMBER | ENT_STLMT_USER | ENT_STLMT_STAMP     |
+                | 2014-01-03  |        210 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 66411       | EUR          |  18.25000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:35 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-01-03  |        211 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 445673      | EUR          |   3.65000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:41 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-01-03  |        212 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 51241       | EUR          |   0.00000 |   21.90000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:46 | 2014-01-03      | wieser          | 2015-02-08 12:51:39 |             NULL | NULL           | 0000-00-00 00:00:00 |
+     2015- 2-17 idem for two entries 45,15 (remboursement mutuelle)
+     2015- 2-17 idem for:
+                | 2014-02-05  |        379 | 2014-02-05 | Toner Brother            | CP      | 6621        | EUR          | 200.26000 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:44 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-02-05  |        380 | 2014-02-05 | Toner Brother            | CP      | 445673      | EUR          |  40.04999 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-02-05  |        381 | 2014-02-05 | Toner Brother            | CP      | 51241       | EUR          |   0.00000 |  240.31000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+     2015- 2-19 done - svn #4620
+
+ 662 2015- 2-17 when modifying an account in ViewEntries, accounts are
+                remediated, but entry doesn't appear in reconciliation
+                view (which actually targets the new account)
+     2015- 2-19 reacting to on_updated_object signal on entry, as we do
+                not know if the account has been actually modified, just
+                re-fetch the entries
+                Unfortunatly, this doesn't remediate to the Gtk bug 
+                which only displays the actual value of a cell when the
+                mouse is moving over it (todo #679)
+     2015- 2-19 done - svn #4620
+
+ 664 2015- 2-17 have a calculation line (checkbox) which let the user
+                have intermediate computations - or improve the formula
+                analyser to be able to compute TTC/(1+TVAN)
+     2015- 2-19 done - svn #4620
+
+ 665 2015- 2-17 Reconciliation: keep uri besides of batlines in order
+                to reset it when re-fetching entries
+     2015- 2-19 not needed as the BAT lines data are not really cleared
+                when a new account is fetched
+
+ 666 2015- 2-17 Reconciliation: when a new entry is created, reset
+                batlines propositions
+     2015- 2-19 done by searching for an ad-hoc batline to be proposed
+                svn #4620
 
  670 2015- 2-17 when opening a dossier, display notes if not empty
      2015- 2-19 done - svn #4619
