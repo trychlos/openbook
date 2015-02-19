@@ -203,7 +203,7 @@ static gboolean     check_for_enable_view( ofaReconciliation *self, ofoAccount *
 static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
 static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_fetch_entries( ofaReconciliation *self );
-static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry );
+static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *iter );
 static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
@@ -235,6 +235,7 @@ static void         set_settings( ofaReconciliation *self );
 static void         dossier_signaling_connect( ofaReconciliation *self );
 static void         on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *self );
 static void         on_new_entry( ofaReconciliation *self, ofoEntry *entry );
+static void         remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter );
 static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self );
 static void         on_updated_entry( ofaReconciliation *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconciliation *self );
@@ -1162,41 +1163,54 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 static gboolean
 is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
+	ofaReconciliationPrivate *priv;
 	gboolean visible;
 	const GDate *dval;
 	gint mode;
+	const gchar *selected_account, *entry_account;
 
-	visible = FALSE;
+	priv = self->priv;
 
-	if( ofo_entry_get_status( entry ) != ENT_STATUS_DELETED ){
-		dval = ofo_entry_get_concil_dval( entry );
-		mode = get_selected_concil_mode( self );
-		visible = TRUE;
+	/* do not display deleted entries */
+	if( ofo_entry_get_status( entry ) == ENT_STATUS_DELETED ){
+		return( FALSE );
+	}
 
-		switch( mode ){
-			case ENT_CONCILED_ALL:
-				/*g_debug( "%s: mode=%d, visible=True", thisfn, mode );*/
-				break;
-			case ENT_CONCILED_YES:
-				visible = my_date_is_valid( dval );
-				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
-				break;
-			case ENT_CONCILED_NO:
-				visible = !my_date_is_valid( dval );
-				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
-				break;
-			case ENT_CONCILED_SESSION:
-				if( my_date_is_valid( dval )){
-					visible = is_entry_session_conciliated( self, entry );
-				} else {
-					visible = TRUE;
-				}
-				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
-				break;
-			default:
-				/* when display mode is not set */
-				visible = FALSE;
-		}
+	/* check account is right
+	 * do not rely on the initial dataset query, as this may change */
+	selected_account = gtk_entry_get_text( priv->account );
+	entry_account = ofo_entry_get_account( entry );
+	if( g_utf8_collate( selected_account, entry_account )){
+		return( FALSE );
+	}
+
+	dval = ofo_entry_get_concil_dval( entry );
+	mode = get_selected_concil_mode( self );
+	visible = TRUE;
+
+	switch( mode ){
+		case ENT_CONCILED_ALL:
+			/*g_debug( "%s: mode=%d, visible=True", thisfn, mode );*/
+			break;
+		case ENT_CONCILED_YES:
+			visible = my_date_is_valid( dval );
+			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+			break;
+		case ENT_CONCILED_NO:
+			visible = !my_date_is_valid( dval );
+			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+			break;
+		case ENT_CONCILED_SESSION:
+			if( my_date_is_valid( dval )){
+				visible = is_entry_session_conciliated( self, entry );
+			} else {
+				visible = TRUE;
+			}
+			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+			break;
+		default:
+			/* when display mode is not set */
+			visible = FALSE;
 	}
 
 	return( visible );
@@ -1559,6 +1573,7 @@ do_fetch_entries( ofaReconciliation *self )
 	ofoAccount *account;
 	GList *entries, *it;
 	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
 
 	check_for_enable_view( self, &account, NULL );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -1573,19 +1588,20 @@ do_fetch_entries( ofaReconciliation *self )
 					ofo_account_get_number( account ));
 
 	for( it=entries ; it ; it=it->next ){
-		insert_entry( self, tmodel, OFO_ENTRY( it->data ));
+		insert_entry( self, tmodel, OFO_ENTRY( it->data ), &iter );
 	}
 
 	ofo_entry_free_dataset( entries );
 }
 
+/*
+ * @iter: [out]: set to the newly inserted row
+ */
 static void
-insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry )
+insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *iter )
 {
-	GtkTreeIter iter;
-
-	gtk_tree_store_insert( GTK_TREE_STORE( tstore ), &iter, NULL, -1 );
-	set_row_entry( self, tstore, &iter, entry );
+	gtk_tree_store_insert( GTK_TREE_STORE( tstore ), iter, NULL, -1 );
+	set_row_entry( self, tstore, iter, entry );
 }
 
 static void
@@ -2638,6 +2654,7 @@ on_new_entry( ofaReconciliation *self, ofoEntry *entry )
 	ofaReconciliationPrivate *priv;
 	const gchar *selected_account, *entry_account;
 	GtkTreeModel *tstore;
+	GtkTreeIter iter;
 
 	priv = self->priv;
 
@@ -2646,8 +2663,64 @@ on_new_entry( ofaReconciliation *self, ofoEntry *entry )
 
 	if( !g_utf8_collate( selected_account, entry_account )){
 		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		insert_entry( self, tstore, entry );
+		insert_entry( self, tstore, entry, &iter );
+		remediate_bat_lines( self, tstore, entry, &iter );
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+	}
+}
+
+/*
+ * search for a BAT line at level 0 (not yet member of a proposal nor
+ * reconciliated) which would be suitable for the given entry
+ */
+static void
+remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter )
+{
+	static const gchar *thisfn = "ofa_reconciliation_remediate_bat_lines";
+	ofxAmount ent_debit, ent_credit, bat_amount;
+	GtkTreeIter iter;
+	ofoBase *object;
+	gchar *bat_sdeb, *bat_scre;
+
+	ent_debit = ofo_entry_get_debit( entry );
+	ent_credit = -1*ofo_entry_get_credit( entry );
+
+	if( gtk_tree_model_get_iter_first( tstore, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tstore, &iter, COL_OBJECT, &object, -1 );
+			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+			g_object_unref( object );
+
+			/* search for a batline at level 0, not yet reconciliated,
+			 * with the right amounts */
+			if( OFO_IS_BAT_LINE( object ) && ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
+				bat_amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
+				if(( bat_amount > 0 && bat_amount == ent_debit ) ||
+						( bat_amount < 0 && bat_amount == ent_credit )){
+
+					g_object_ref( object );
+					gtk_tree_store_remove( GTK_TREE_STORE( tstore ), &iter );
+					if( bat_amount < 0 ){
+						bat_sdeb = my_double_to_str( -bat_amount );
+						bat_scre = g_strdup( "" );
+					} else {
+						bat_sdeb = g_strdup( "" );
+						bat_scre = my_double_to_str( bat_amount );
+					}
+					g_debug( "%s: entry found for bat_sdeb=%s, bat_scre=%s", thisfn, bat_sdeb, bat_scre );
+					insert_bat_line( self, OFO_BAT_LINE( object ), entry_iter, bat_sdeb, bat_scre );
+					update_candidate_entry( self, OFO_BAT_LINE( object ), entry_iter );
+					g_object_unref( object );
+					g_free( bat_sdeb );
+					g_free( bat_scre );
+					break;
+				}
+			}
+
+			if( !gtk_tree_model_iter_next( tstore, &iter )){
+				break;
+			}
+		}
 	}
 }
 
@@ -2671,6 +2744,12 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 	}
 }
 
+/*
+ * we are doing our maximum to just requiring a store update
+ * by comparing the stored data vs. the new entry data
+ * After its modification, the entry may appear in - or disappear from -
+ * the treeview...
+ */
 static void
 on_updated_entry( ofaReconciliation *self, ofoEntry *entry )
 {
@@ -2680,17 +2759,21 @@ on_updated_entry( ofaReconciliation *self, ofoEntry *entry )
 	GtkTreeIter *iter;
 
 	priv = self->priv;
+	iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
 
-	selected_account = gtk_entry_get_text( priv->account );
-	entry_account = ofo_entry_get_account( entry );
+	/* if the entry was present in the store, it is easy to remediate it */
+	if( iter ){
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		set_row_entry( self, tstore, iter, entry );
+		gtk_tree_iter_free( iter );
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
-	if( !g_utf8_collate( selected_account, entry_account )){
-		iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
-		if( iter ){
-			tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-			set_row_entry( self, tstore, iter, entry );
-			gtk_tree_iter_free( iter );
-			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+	/* else, should it be present now ? */
+	} else {
+		selected_account = gtk_entry_get_text( priv->account );
+		entry_account = ofo_entry_get_account( entry );
+		if( !g_utf8_collate( selected_account, entry_account )){
+			on_fetch_button_clicked( NULL, self );
 		}
 	}
 }

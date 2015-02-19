@@ -318,7 +318,7 @@
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
  657 2015- 2-17 GuidedInput: weird behavior when entering an operation:
-                amonts blink (and more time when validating the dialog)
+                amounts blink (and more time when validating the dialog)
 
  658 2015- 2-17 AccountSelect: replace OK label with Select
 
@@ -348,6 +348,7 @@
                 #3  0x000000000047d013 in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0x7fffcc005a00, self=0x74a520) at ofa-reconciliation.c:1190
                 work-around is to change the account, then come back to 
                 the first one
+     2015- 2-19 done
 
  661 2015- 2-17 three entries deleted, but have not remediated the 
                 accounts and ledger balances
@@ -360,10 +361,18 @@
                 | 2014-02-05  |        379 | 2014-02-05 | Toner Brother            | CP      | 6621        | EUR          | 200.26000 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:44 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
                 | 2014-02-05  |        380 | 2014-02-05 | Toner Brother            | CP      | 445673      | EUR          |  40.04999 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
                 | 2014-02-05  |        381 | 2014-02-05 | Toner Brother            | CP      | 51241       | EUR          |   0.00000 |  240.31000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+     2015- 2-19 done
 
  662 2015- 2-17 when modifying an account in ViewEntries, accounts are
                 remediated, but entry doesn't appear in reconciliation
                 view (which actually targets the new account)
+     2015- 2-19 reacting to on_updated_object signal on entry, as we do
+                not know if the account has been actually modified, just
+                re-fetch the entries
+                Unfortunatly, this doesn't remediate to the Gtk bug 
+                which only displays the actual value of a cell when the
+                mouse is moving over it (todo #679)
+     2015- 2-19 done
 
  663 2015- 2-17 OpeTemplate properties: when reordering a line, the 
                 line number should stay fixed, and not follow the line
@@ -375,9 +384,12 @@
 
  665 2015- 2-17 Reconciliation: keep uri besides of batlines in order
                 to reset it when re-fetching entries
+     2015- 2-19 not needed as the BAT lines data are not really cleared
+                when a new account is fetched
 
  666 2015- 2-17 Reconciliation: when a new entry is created, reset
                 batlines propositions
+     2015- 2-19 done by searching for an ad-hoc batline to be proposed
 
  667 2015- 2-17 remove traversing call, replacing them with a get_object(),
                 plus a direct use of the object api 
@@ -388,9 +400,21 @@
  669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
                 color, a logo, etc.)
 
- 670 2015- 2-17 when opening a dossier, display notes if not empty
+ 677 2015- 2-19 preferences for the dossier should be set in the dbms
+                (e.g. order of ope_templates pages)
 
- 677
+ 678 2015- 2-19 visual bug which seems to come from GTK+: updating a
+                tree store only update the display when moving the
+                mouse over the row (not necessarily the updated cell)
+                -> gtk_tree_model_filter_refilter doesn't help
+
+ 679 2015- 2-19 ofsOpe: actually do not having an account or a label
+                is not an error: the entry will just not be generated,
+                and the amounts are not taken into account when
+                computing the ope balance
+                The only error is so: valid lines are not balanced.
+
+ 680
 
 -----------------------------------------------------------------------
  DONE
@@ -2975,6 +2999,9 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 670 2015- 2-17 when opening a dossier, display notes if not empty
+     2015- 2-19 done - svn #4619
 
  671 2015- 2-18 ...it appears that some distorsion has happened among
                 them.

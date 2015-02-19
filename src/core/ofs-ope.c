@@ -44,15 +44,6 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
-/* operators in formula
- */
-enum {
-	OPE_MINUS = 1,
-	OPE_PLUS,
-	OPE_PROD,
-	OPE_DIV
-};
-
 /* an helper structure when computing formulas
  */
 typedef struct {
@@ -99,7 +90,7 @@ static gboolean     is_function( const gchar *token, sHelper *helper, gchar **st
 static const gchar *get_account_label( sHelper *helper, const gchar *content );
 static const gchar *get_account_currency( sHelper *helper, const gchar *content );
 static gdouble      eval( sHelper *helper, const gchar *content );
-static gint         eval_parse_operator( const gchar *token );
+static gchar      **eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
 static gdouble      rate( sHelper *helper, const gchar *content );
 static gchar       *get_closing_account( sHelper *helper, const gchar *content );
 static gboolean     check_for_ledger( sChecker *checker );
@@ -678,82 +669,104 @@ get_account_currency( sHelper *helper, const gchar *content )
 	return( currency );
 }
 
+/*
+ * %EVAL(...) recursively evaluates the (..) between parenthesis content
+ */
 static gdouble
 eval( sHelper *helper, const gchar *content )
 {
 	static const gchar *thisfn = "ofs_ope_eval";
 	gchar **tokens, **iter;
-	gdouble amount, amount_iter;
-	gboolean first_iter, expect_operator;
-	gint operator;
+	gdouble amount;
 
-	tokens = g_regex_split_simple( "([-+*/])", content, 0, 0 );
+	DEBUG( "%s: content=%s", thisfn, content );
+	if( g_str_has_prefix( content, "%EVAL(" )){
+		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content+5, 0, 0 );
+	} else {
+		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content, 0, 0 );
+	}
 	iter = tokens;
-	amount = 0;
+	eval_rec( content, iter, &amount, 1 );
+	g_strfreev( tokens );
+	DEBUG( "%s: amount=%lf", thisfn, amount );
+
+	return( amount );
+}
+
+/*
+ * this is used to evaluate the content between two parenthesis:
+ * the first time, we enter here even if not parenthesis is found (count=1)
+ * then, we re-enter for each opening parenthesis
+ *  and we return from here for each closing parenthesis, returning
+ *   the new iter position, with the computed amount
+ */
+static gchar **
+eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
+{
+	static const gchar *thisfn = "ofs_ope_eval_rec";
+	gdouble amount_iter;
+	gboolean first_iter, expect_operator;
+	const gchar *oper;
+
+	DEBUG( "%s: count=%d", thisfn, count );
+	*amount = 0;
 	first_iter = TRUE;
 	expect_operator = TRUE;
-	operator = 0;
+	oper = NULL;
 
 	while( *iter ){
-		if( expect_operator ){
-			operator = eval_parse_operator( *iter );
-			if( !operator ){
-				if( first_iter ){
-					operator = OPE_PLUS;
+		if( my_strlen( *iter )){
+			DEBUG( "%s: *iter=%s", thisfn, *iter );
+			if( expect_operator ){
+				if( !g_utf8_collate( *iter, "-" )){
+					oper = "-";
+				} else if( !g_utf8_collate( *iter, "+" )){
+					oper = "+";
+				} else if( !g_utf8_collate( *iter, "*" )){
+					oper = "*";
+				} else if( !g_utf8_collate( *iter, "/" )){
+					oper = "/";
+				} else if( first_iter ){
+					oper = "+";
 					expect_operator = FALSE;
+				} else if( !g_utf8_collate( *iter, ")" )){
+					iter++;
+					return( iter );
 				} else {
 					g_warning( "%s: formula='%s': found token='%s' while an operator was expected",
 							thisfn, content, *iter );
 					break;
 				}
 			}
-		}
-		if( !expect_operator ){
-			amount_iter = my_double_set_from_str( *iter );
-			switch( operator ){
-				case OPE_MINUS:
-					amount -= amount_iter;
-					break;
-				case OPE_PLUS:
-					amount += amount_iter;
-					break;
-				case OPE_PROD:
-					amount *= amount_iter;
-					break;
-				case OPE_DIV:
-					amount /= amount_iter;
-					break;
+			if( !expect_operator ){
+				if( !g_utf8_collate( *iter, "(" )){
+					iter++;
+					iter = eval_rec( content, iter, &amount_iter, 1+count );
+					DEBUG( "%s: count=%d, amount=%lf, oper=%s, amount_iter=%lf", thisfn, count, *amount, oper, amount_iter );
+				} else {
+					amount_iter = my_double_set_from_str( *iter );
+				}
+				if( !g_utf8_collate( oper, "-" )){
+					*amount -= amount_iter;
+				} else if( !g_utf8_collate( oper, "+" )){
+					*amount += amount_iter;
+				} else if( !g_utf8_collate( oper, "*" )){
+					*amount *= amount_iter;
+				} else if( !g_utf8_collate( oper, "/" )){
+					*amount /= amount_iter;
+				}
+				amount_iter = 0;
+				DEBUG( "%s: count=%d, amount=%lf", thisfn, count, *amount );
 			}
-			amount_iter = 0;
+			first_iter = FALSE;
+			expect_operator = !expect_operator;
 		}
-		first_iter = FALSE;
-		expect_operator = !expect_operator;
-		iter++;
+		if( *iter ){
+			iter++;
+		}
 	}
 
-	g_strfreev( tokens );
-
-	return( amount );
-}
-
-static gint
-eval_parse_operator( const gchar *token )
-{
-	gint oper;
-
-	oper = 0;
-
-	if( !g_utf8_collate( token, "-" )){
-		oper = OPE_MINUS;
-	} else if( !g_utf8_collate( token, "+" )){
-		oper = OPE_PLUS;
-	} else if( !g_utf8_collate( token, "*" )){
-		oper = OPE_PROD;
-	} else if( !g_utf8_collate( token, "/" )){
-		oper = OPE_DIV;
-	}
-
-	return( oper );
+	return( iter );
 }
 
 static gdouble

@@ -3529,6 +3529,7 @@ delete_row( ofaViewEntries *self )
 				ENT_COL_LABEL,    &label,
 				ENT_COL_OBJECT,   &entry,
 				-1 );
+		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
 		if( get_row_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
 			msg = g_strdup_printf(
@@ -3541,18 +3542,13 @@ delete_row( ofaViewEntries *self )
 						GTK_TREE_MODEL_FILTER( priv->tfilter ), &iter, &filter_iter );
 				tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-				if( entry ){
-					ofo_entry_delete( entry, priv->dossier );
-				}
+				ofo_entry_delete( entry, priv->dossier );
 				compute_balances( self );
 			}
 			g_free( msg );
 		}
 		g_free( label );
-		if( entry && OFO_IS_ENTRY( entry )){
-			/*g_debug( "delete_row: ref_count=%d", G_OBJECT( entry )->ref_count );*/
-			g_object_unref( entry );
-		}
+		g_object_unref( entry );
 	}
 }
 

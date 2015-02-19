@@ -212,6 +212,10 @@ ofa_account_store_new( ofoDossier *dossier )
  * @store: this #ofaAccountStore instance.
  *
  * Load the dataset into the store.
+ *
+ * This is distinct of #ofa_account_store_new() in order to let the
+ * user connect to object signals (e.g. "row-inserted") before trying
+ * to load the dataset.
  */
 void
 ofa_account_store_load_dataset( ofaAccountStore *store )

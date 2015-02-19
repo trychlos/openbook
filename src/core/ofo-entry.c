@@ -2633,9 +2633,11 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			g_signal_emit_by_name(
-						G_OBJECT( dossier ),
+			g_signal_emit_by_name( G_OBJECT( dossier ),
 						SIGNAL_DOSSIER_DELETED_OBJECT, g_object_ref( entry ));
+
+			g_signal_emit_by_name( G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
 
 			return( TRUE );
 		}

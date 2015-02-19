@@ -983,14 +983,29 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 	gboolean visible;
 	ofoEntry *entry;
 	gint entry_set_number;
+	const gchar *ent_account;
 
 	priv = self->priv;
 	visible = FALSE;
+
+	/* make sure an account is selected */
+	if( !my_strlen( priv->account_number )){
+		return( FALSE );
+	}
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
 	if( entry ){
 		g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
 		g_object_unref( entry );
+
+		if( ofo_entry_get_status( entry ) == ENT_STATUS_DELETED ){
+			return( FALSE );
+		}
+
+		ent_account = ofo_entry_get_account( entry );
+		if( g_utf8_collate( ent_account, priv->account_number )){
+			return( FALSE );
+		}
 
 		entry_set_number = ofo_entry_get_settlement_number( entry );
 
@@ -1486,6 +1501,11 @@ on_updated_entry( ofaSettlement *self, ofoEntry *entry )
 		if( find_entry_by_number( self, tstore, ofo_entry_get_number( entry ), &iter )){
 			set_row_entry( self, tstore, &iter, entry );
 			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( tfilter ));
+
+		/* the entry was not present, but may appear depending of the
+		 * actual modification */
+		} else {
+			try_display_entries( self );
 		}
 	}
 }
