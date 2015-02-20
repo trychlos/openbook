@@ -322,6 +322,7 @@
 
  667 2015- 2-17 remove traversing calls, replacing them with a get_object(),
                 plus a direct use of the object api 
+     2015- 2-20 ope_templates: ok - svn #4626
 
  668 2015- 2-17 have main notebook pages detachable ? getting so non-
                 modal dialogs
@@ -340,8 +341,6 @@
  681 2015- 2-20 Have a 'allow entries' on detail accounts, which would
                 be active by default (use case: forbid new entries on
                 closed accounts)
-
- 682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
 
  683
 
@@ -3051,6 +3050,9 @@
  680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
                 generated
      2015- 2-20 done - svn #4622
+
+ 682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
+     2015- 2-20 done - svn #4626
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

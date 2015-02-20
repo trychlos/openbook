@@ -43,7 +43,7 @@
 /* private instance data
  */
 struct _ofaAccountStorePrivate {
-	gboolean    dispose_has_run;
+	gboolean dispose_has_run;
 
 	/* runtime data
 	 */
@@ -79,7 +79,7 @@ static const gchar *st_filler_png            = PKGUIDIR "/filler.png";
 static const gchar *st_notes_png             = PKGUIDIR "/notes1.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
-static void     load_dataset( ofaAccountStore *store, ofoDossier *dossier );
+static void     tree_store_load_dataset( ofaTreeStore *store );
 static void     insert_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account );
 static void     set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter );
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
@@ -157,6 +157,8 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_store_finalize;
 
+	OFA_TREE_STORE_CLASS( klass )->load_dataset = tree_store_load_dataset;
+
 	g_type_class_add_private( klass, sizeof( ofaAccountStorePrivate ));
 }
 
@@ -207,35 +209,6 @@ ofa_account_store_new( ofoDossier *dossier )
 	return( store );
 }
 
-/**
- * ofa_account_store_load_dataset:
- * @store: this #ofaAccountStore instance.
- *
- * Load the dataset into the store.
- *
- * This is distinct of #ofa_account_store_new() in order to let the
- * user connect to object signals (e.g. "row-inserted") before trying
- * to load the dataset.
- */
-void
-ofa_account_store_load_dataset( ofaAccountStore *store )
-{
-	ofaAccountStorePrivate *priv;
-	ofoDossier *dossier;
-
-	g_return_if_fail( store && OFA_IS_ACCOUNT_STORE( store ));
-
-	priv = store->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_object_get( store, OFA_PROP_DOSSIER, &dossier, NULL );
-		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-		load_dataset( store, dossier );
-	}
-}
-
 /*
  * sorting the store per account number
  */
@@ -260,16 +233,20 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountS
  * load the dataset when columns and dossier have been both set
  */
 static void
-load_dataset( ofaAccountStore *store, ofoDossier *dossier )
+tree_store_load_dataset( ofaTreeStore *store )
 {
 	const GList *dataset, *it;
 	ofoAccount *account;
+	ofoDossier *dossier;
 
+	g_object_get( G_OBJECT( store ), OFA_PROP_DOSSIER, &dossier, NULL );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	dataset = ofo_account_get_dataset( dossier );
+	g_object_unref( dossier );
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		insert_row( store, dossier, account );
+		insert_row( OFA_ACCOUNT_STORE( store ), dossier, account );
 	}
 }
 
@@ -732,7 +709,7 @@ on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountStore *store )
 
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_tree_store_clear( GTK_TREE_STORE( store ));
-		load_dataset( store, dossier );
+		tree_store_load_dataset( OFA_TREE_STORE( store ));
 	}
 }
 

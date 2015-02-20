@@ -36,6 +36,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-accounts-book.h"
 #include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-main-window.h"
 
@@ -60,7 +61,6 @@ struct _ofaAccountSelectPrivate {
 
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
 static const gchar      *st_ui_id       = "AccountSelectDlg";
-
 static ofaAccountSelect *st_this        = NULL;
 static GtkWindow        *st_toplevel    = NULL;
 
@@ -88,6 +88,7 @@ account_select_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_ACCOUNT_SELECT( instance )->priv;
+
 	g_free( priv->account_number );
 
 	/* chain up to the parent class */
@@ -161,6 +162,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
+	ofaAccountsBook *book;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
@@ -173,7 +175,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 		st_this = g_object_new(
 				OFA_TYPE_ACCOUNT_SELECT,
 				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_DOSSIER,       dossier,
+				MY_PROP_DOSSIER,       ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,    st_ui_xml,
 				MY_PROP_WINDOW_NAME,   st_ui_id,
 				MY_PROP_SIZE_POSITION, FALSE,
@@ -189,12 +191,13 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 	priv = st_this->priv;
 
+	book = ofa_accounts_frame_get_book( priv->accounts_frame );
+	ofa_accounts_book_set_selected( book, asked_number );
+	check_for_enable_dlg( st_this );
+
 	g_free( priv->account_number );
 	priv->account_number = NULL;
 	priv->allow_root = allow_root;
-
-	ofa_accounts_frame_set_selected( priv->accounts_frame, asked_number );
-	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
@@ -209,18 +212,15 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
 	ofaAccountSelectPrivate *priv;
-	GtkContainer *container;
 	GtkWidget *parent;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this )));
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "btn-ok" );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
-
-	parent = my_utils_container_get_child_by_name( container, "piece-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->accounts_frame = ofa_accounts_frame_new();
@@ -252,12 +252,14 @@ static void
 check_for_enable_dlg( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
+	ofaAccountsBook *book;
 	gchar *account;
 	gboolean ok;
 
 	priv = self->priv;
 
-	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
+	book = ofa_accounts_frame_get_book( priv->accounts_frame );
+	account = ofa_accounts_book_get_selected( book );
 	ok = is_selection_valid( self, account );
 	g_free( account );
 
@@ -268,6 +270,7 @@ static gboolean
 is_selection_valid( ofaAccountSelect *self, const gchar *number )
 {
 	ofaAccountSelectPrivate *priv;
+	ofaAccountsBook *book;
 	gboolean ok;
 	ofoAccount *account;
 
@@ -280,7 +283,8 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		if( ofo_account_is_root( account ) && !priv->allow_root ){
-			ofa_accounts_frame_toggle_collapse( priv->accounts_frame );
+			book = ofa_accounts_frame_get_book( priv->accounts_frame );
+			ofa_accounts_book_toggle_collapse( book );
 
 		} else {
 			ok = TRUE;
@@ -300,12 +304,14 @@ static gboolean
 do_select( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
+	ofaAccountsBook *book;
 	gchar *account;
 	gboolean ok;
 
 	priv = self->priv;
 
-	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
+	book = ofa_accounts_frame_get_book( priv->accounts_frame );
+	account = ofa_accounts_book_get_selected( book );
 	ok = is_selection_valid( self, account );
 	if( ok ){
 		priv->account_number = g_strdup( account );

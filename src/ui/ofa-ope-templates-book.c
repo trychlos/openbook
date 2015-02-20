@@ -388,11 +388,11 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 		}
 		ofa_settings_free_string_list( strlist );
 
-		handler = g_signal_connect(
-				priv->ope_store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
+		handler = g_signal_connect( priv->ope_store,
+				"ofa-row-inserted", G_CALLBACK( on_row_inserted ), book );
 		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
 
-		ofa_ope_template_store_load_dataset( priv->ope_store );
+		ofa_list_store_load_dataset( OFA_LIST_STORE( priv->ope_store ));
 
 		dossier_signals_connect( book );
 

@@ -97,8 +97,6 @@ GType                ofa_ope_template_store_get_type    ( void );
 
 ofaOpeTemplateStore *ofa_ope_template_store_new         ( ofoDossier *dossier );
 
-void                 ofa_ope_template_store_load_dataset( ofaOpeTemplateStore *store );
-
 gboolean             ofa_ope_template_store_get_by_mnemo( ofaOpeTemplateStore *store,
 																	const gchar *mnemo,
 																	GtkTreeIter *iter );

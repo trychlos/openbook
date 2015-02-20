@@ -42,6 +42,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofo-dossier-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_LIST_STORE                ( ofa_list_store_get_type())
@@ -68,6 +70,19 @@ typedef struct {
 typedef struct {
 	/*< public members >*/
 	GtkListStoreClass    parent;
+
+	/*< protected virtual functions >*/
+	/**
+	 * load_dataset:
+	 * @store:
+	 *
+	 * Load the dataset.
+	 *
+	 * The base class doesn't do anything the first time.
+	 * It then tries to simulate a reload, thus re-triggering
+	 * "ofa-row-inserted" signal for each row.
+	 */
+	void ( *load_dataset )( ofaListStore *store );
 }
 	ofaListStoreClass;
 
@@ -78,7 +93,9 @@ typedef struct {
  */
 #define OFA_PROP_DOSSIER                "ofa-store-prop-dossier"
 
-GType ofa_list_store_get_type( void ) G_GNUC_CONST;
+GType ofa_list_store_get_type    ( void ) G_GNUC_CONST;
+
+void  ofa_list_store_load_dataset( ofaListStore *store );
 
 G_END_DECLS
 

@@ -347,92 +347,28 @@ ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries )
 }
 
 /**
- * ofa_accounts_frame_get_selected:
+ * ofa_accounts_frame_get_book:
  * @frame:
  *
- * Returns: the currently selected account number, as a newly allocated
- * string which should be g_free() by the caller.
+ * Returns: the #ofaAccountsBook book.
  */
-gchar *
-ofa_accounts_frame_get_selected( ofaAccountsFrame *frame )
+ofaAccountsBook *
+ofa_accounts_frame_get_book( const ofaAccountsFrame *frame )
 {
 	ofaAccountsFramePrivate *priv;
-	gchar *account;
+	ofaAccountsBook *book;
 
 	g_return_val_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ), NULL );
 
 	priv = frame->priv;
-	account = NULL;
+	book = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		account = ofa_accounts_book_get_selected( priv->book );
+		book = priv->book;
 	}
 
-	return( account );
-}
-
-/**
- * ofa_accounts_frame_set_selected:
- *
- * Let the user reset the selection after the end of setup and
- * initialization phases
- */
-void
-ofa_accounts_frame_set_selected( ofaAccountsFrame *frame, const gchar *number )
-{
-	ofaAccountsFramePrivate *priv;
-
-	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		ofa_accounts_book_set_selected( priv->book, number );
-	}
-}
-
-/**
- * ofa_accounts_frame_toggle_collapse:
- *
- * Expand/Collapse the tree if a current selection has children
- */
-void
-ofa_accounts_frame_toggle_collapse( ofaAccountsFrame *frame )
-{
-	ofaAccountsFramePrivate *priv;
-
-	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		ofa_accounts_book_toggle_collapse( priv->book );
-	}
-}
-
-/**
- * ofa_accounts_frame_get_top_focusable_widget:
- *
- * Returns: top focusable widget.
- */
-GtkWidget *
-ofa_accounts_frame_get_top_focusable_widget( const ofaAccountsFrame *frame )
-{
-	ofaAccountsFramePrivate *priv;
-
-	g_return_val_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ), NULL );
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		return( ofa_accounts_book_get_top_focusable_widget( priv->book ));
-	}
-
-	return( NULL );
+	return( book );
 }
 
 static void

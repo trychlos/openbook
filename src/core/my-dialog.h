@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myWindowClass parent;
+	myWindowClass      parent;
 
 	/*< protected virtual functions >*/
 	/**

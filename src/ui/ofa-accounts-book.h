@@ -42,15 +42,6 @@
  * This convenience class also manages the update buttons (new, update,
  * delete and view entries). So that all the AccountsPage features are
  * also available in AccountSelect dialog.
- *
- * The #GtkNotebook is created when attaching to the parent widget.
- * The underlying tree store is created (if not already done) when
- * setting the main window. The dataset is so loaded, and inserted
- * in the store.
- * The #GtkTreeViews are created when a row is inserted for a new class
- * number.
- * So attaching to the parent widget should be called before setting
- * the main window, so that the treeviews are rightly created.
  */
 
 #include <gtk/gtk.h>
@@ -83,26 +74,26 @@ typedef struct {
 }
 	ofaAccountsBookClass;
 
-GType            ofa_accounts_book_get_type                ( void ) G_GNUC_CONST;
+GType            ofa_accounts_book_get_type            ( void ) G_GNUC_CONST;
 
-ofaAccountsBook *ofa_accounts_book_new                     ( void );
+ofaAccountsBook *ofa_accounts_book_new                 ( void );
 
-void             ofa_accounts_book_set_main_window         ( ofaAccountsBook *book,
-																	ofaMainWindow *main_window );
+void             ofa_accounts_book_set_main_window     ( ofaAccountsBook *book,
+																ofaMainWindow *main_window );
 
-void             ofa_accounts_book_expand_all              ( ofaAccountsBook *book );
+void             ofa_accounts_book_expand_all          ( ofaAccountsBook *book );
 
-gchar           *ofa_accounts_book_get_selected            ( ofaAccountsBook *book );
+gchar           *ofa_accounts_book_get_selected        ( ofaAccountsBook *book );
 
-void             ofa_accounts_book_set_selected            ( ofaAccountsBook *book,
-																	const gchar *number );
+void             ofa_accounts_book_set_selected        ( ofaAccountsBook *book,
+																const gchar *number );
 
-void             ofa_accounts_book_toggle_collapse         ( ofaAccountsBook *book );
+void             ofa_accounts_book_toggle_collapse     ( ofaAccountsBook *book );
 
-void             ofa_accounts_book_button_clicked          ( ofaAccountsBook *book,
-																	gint button_id );
+void             ofa_accounts_book_button_clicked      ( ofaAccountsBook *book,
+																gint button_id );
 
-GtkWidget       *ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *book );
+GtkWidget       *ofa_accounts_book_get_current_treeview( const ofaAccountsBook *book );
 
 G_END_DECLS
 

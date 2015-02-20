@@ -112,8 +112,6 @@ GType            ofa_account_store_get_type     ( void );
 
 ofaAccountStore *ofa_account_store_new          ( ofoDossier *dossier );
 
-void             ofa_account_store_load_dataset ( ofaAccountStore *store );
-
 gboolean         ofa_account_store_get_by_number( ofaAccountStore *store,
 															const gchar *number,
 															GtkTreeIter *iter );

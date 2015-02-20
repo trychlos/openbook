@@ -150,10 +150,17 @@ v_init_view( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaAccountsPagePrivate *priv;
+	ofaAccountsBook *book;
+	GtkWidget *top_widget;
+
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
-	return( ofa_accounts_frame_get_top_focusable_widget(
-					OFA_ACCOUNTS_PAGE( page )->priv->accounts_frame ));
+	priv = OFA_ACCOUNTS_PAGE( page )->priv;
+	book = ofa_accounts_frame_get_book( priv->accounts_frame );
+	top_widget = ofa_accounts_book_get_current_treeview( book );
+
+	return( top_widget );
 }
 
 static void

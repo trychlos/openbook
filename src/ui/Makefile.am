@@ -171,6 +171,8 @@ openbook_SOURCES = \
 	ofa-ipreferences.c									\
 	ofa-iprintable.c									\
 	ofa-iprintable.h									\
+	ofa-istore.c										\
+	ofa-istore.h										\
 	ofa-ledger-close.c									\
 	ofa-ledger-close.h									\
 	ofa-ledger-combo.c									\

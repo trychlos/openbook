@@ -41,7 +41,6 @@ struct _ofaOpeTemplateStorePrivate {
 
 	/* runtime data
 	 */
-	gboolean dataset_loaded;
 };
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
@@ -56,7 +55,7 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 #define STORE_DATA_DOSSIER                   "ofa-ope-template-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *store );
-static void     load_dataset( ofaOpeTemplateStore *store, ofoDossier *dossier );
+static void     list_store_load_dataset( ofaListStore *store );
 static void     insert_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope );
 static void     set_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
@@ -128,6 +127,8 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_store_finalize;
 
+	OFA_LIST_STORE_CLASS( klass )->load_dataset = list_store_load_dataset;
+
 	g_type_class_add_private( klass, sizeof( ofaOpeTemplateStorePrivate ));
 }
 
@@ -179,37 +180,6 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 	return( store );
 }
 
-/**
- * ofa_ope_template_store_load_dataset:
- * @store: this #ofaOpeTemplateStore instance.
- *
- * Load the dataset into the store.
- */
-void
-ofa_ope_template_store_load_dataset( ofaOpeTemplateStore *store )
-{
-	static const gchar *thisfn = "ofa_ope_template_store_load_dataset";
-	ofaOpeTemplateStorePrivate *priv;
-	ofoDossier *dossier;
-
-	g_return_if_fail( store && OFA_IS_OPE_TEMPLATE_STORE( store ));
-
-	g_debug( "%s: store=%p", thisfn, ( void * ) store );
-
-	priv = store->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_object_get( store, OFA_PROP_DOSSIER, &dossier, NULL );
-		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-		if( !priv->dataset_loaded ){
-			load_dataset( store, dossier );
-			priv->dataset_loaded = TRUE;
-		}
-	}
-}
-
 /*
  * sorting the store per account number
  */
@@ -234,16 +204,20 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
  * load the dataset when columns and dossier have been both set
  */
 static void
-load_dataset( ofaOpeTemplateStore *store, ofoDossier *dossier )
+list_store_load_dataset( ofaListStore *store )
 {
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
+	ofoDossier *dossier;
 
+	g_object_get( G_OBJECT( store ), OFA_PROP_DOSSIER, &dossier, NULL );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	dataset = ofo_ope_template_get_dataset( dossier );
+	g_object_unref( dossier );
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
-		insert_row( store, dossier, ope );
+		insert_row( OFA_OPE_TEMPLATE_STORE( store ), dossier, ope );
 	}
 }
 
@@ -445,7 +419,7 @@ on_reload_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateStore *store )
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store, dossier );
+		list_store_load_dataset( OFA_LIST_STORE( store ));
 	}
 }
 

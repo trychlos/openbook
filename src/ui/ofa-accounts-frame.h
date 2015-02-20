@@ -43,6 +43,8 @@
 
 #include "core/ofa-main-window-def.h"
 
+#include "ui/ofa-accounts-book.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ACCOUNTS_FRAME                ( ofa_accounts_frame_get_type())
@@ -69,24 +71,17 @@ typedef struct {
 }
 	ofaAccountsFrameClass;
 
-GType             ofa_accounts_frame_get_type                ( void ) G_GNUC_CONST;
+GType             ofa_accounts_frame_get_type       ( void ) G_GNUC_CONST;
 
-ofaAccountsFrame *ofa_accounts_frame_new                     ( void );
+ofaAccountsFrame *ofa_accounts_frame_new            ( void );
 
-void              ofa_accounts_frame_set_main_window         ( ofaAccountsFrame *frame,
-																		ofaMainWindow *main_window );
+void              ofa_accounts_frame_set_main_window( ofaAccountsFrame *frame,
+															ofaMainWindow *main_window );
 
-void              ofa_accounts_frame_set_buttons             ( ofaAccountsFrame *frame,
-																		gboolean view_entries );
+void              ofa_accounts_frame_set_buttons    ( ofaAccountsFrame *frame,
+															gboolean view_entries );
 
-gchar            *ofa_accounts_frame_get_selected            ( ofaAccountsFrame *frame );
-
-void              ofa_accounts_frame_set_selected            ( ofaAccountsFrame *frame,
-																		const gchar *number );
-
-void              ofa_accounts_frame_toggle_collapse         ( ofaAccountsFrame *frame );
-
-GtkWidget        *ofa_accounts_frame_get_top_focusable_widget( const ofaAccountsFrame *frame );
+ofaAccountsBook  *ofa_accounts_frame_get_book       ( const ofaAccountsFrame *frame );
 
 G_END_DECLS
 

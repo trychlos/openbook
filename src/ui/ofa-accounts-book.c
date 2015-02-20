@@ -437,10 +437,10 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 		priv->store = ofa_account_store_new( priv->dossier );
 
 		handler = g_signal_connect(
-				priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
+				priv->store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), book );
 		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
 
-		ofa_account_store_load_dataset( priv->store );
+		ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
 
 		dossier_signals_connect( book );
 
@@ -1032,7 +1032,7 @@ do_update_account( ofaAccountsBook *self )
 	}
 	g_free( number );
 
-	tview = ofa_accounts_book_get_top_focusable_widget( self );
+	tview = get_current_tree_view( self );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -1070,7 +1070,7 @@ do_delete_account( ofaAccountsBook *self )
 	}
 	g_free( number );
 
-	tview = ofa_accounts_book_get_top_focusable_widget( self );
+	tview = get_current_tree_view( self );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -1136,7 +1136,7 @@ do_view_entries( ofaAccountsBook *self )
 	ofa_view_entries_display_entries( OFA_VIEW_ENTRIES( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
 	g_free( number );
 
-	tview = ofa_accounts_book_get_top_focusable_widget( self );
+	tview = get_current_tree_view( self );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -1276,7 +1276,6 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *book )
 static GtkWidget *
 get_current_tree_view( const ofaAccountsBook *self )
 {
-	static const gchar *thisfn = "ofa_accounts_book_get_current_tree_view";
 	ofaAccountsBookPrivate *priv;
 	gint page_n;
 	GtkWidget *page_w;
@@ -1284,12 +1283,9 @@ get_current_tree_view( const ofaAccountsBook *self )
 
 	priv = self->priv;
 	tview = NULL;
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
 	page_n = gtk_notebook_get_current_page( priv->book );
-	if( page_n >= 0 ){
 
+	if( page_n >= 0 ){
 		page_w = gtk_notebook_get_nth_page( priv->book, page_n );
 		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
 
@@ -1488,15 +1484,14 @@ ofa_accounts_book_toggle_collapse( ofaAccountsBook *book )
 }
 
 /**
- * ofa_accounts_book_get_top_focusable_widget:
+ * ofa_accounts_book_get_current_treeview:
  *
- * Returns the top focusable widget, here the treeview of the current
- * page.
+ * Returns the treeview associated to the current page
  */
 GtkWidget *
-ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *book )
+ofa_accounts_book_get_current_treeview( const ofaAccountsBook *book )
 {
-	static const gchar *thisfn = "ofa_accounts_book_get_top_focusable_widget";
+	static const gchar *thisfn = "ofa_accounts_book_get_current_treeview";
 	ofaAccountsBookPrivate *priv;
 	GtkWidget *tview;
 
@@ -1505,15 +1500,14 @@ ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *book )
 	g_return_val_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ), NULL );
 
 	priv = book->priv;
+	tview = NULL;
 
 	if( !priv->dispose_has_run ){
 
 		tview = get_current_tree_view( book );
-
-		return( tview );
 	}
 
-	return( NULL );
+	return( tview );
 }
 
 #if 0

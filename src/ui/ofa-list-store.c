@@ -30,17 +30,18 @@
 
 #include "api/ofo-dossier-def.h"
 
+#include "ui/ofa-istore.h"
 #include "ui/ofa-list-store.h"
 
 /* private instance data
  */
 struct _ofaListStorePrivate {
 	gboolean    dispose_has_run;
-	gboolean    from_dossier_finalized;
 
 	/* properties
 	 */
 	ofoDossier *dossier;
+	gboolean    dataset_loaded;
 };
 
 /* class properties
@@ -49,9 +50,20 @@ enum {
 	OFA_PROP_DOSSIER_ID = 1,
 };
 
-G_DEFINE_TYPE( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE )
+/* signals defined here
+ */
+enum {
+	ROW_INSERTED = 0,
+	N_SIGNALS
+};
 
-static void on_dossier_finalized( ofaListStore *store, gpointer finalized_dossier );
+static gint st_signals[ N_SIGNALS ] = { 0 };
+
+static void   istore_iface_init( ofaIStoreInterface *iface );
+static guint  istore_get_interface_version( const ofaIStore *instance );
+
+G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ));
 
 static void
 list_store_finalize( GObject *instance )
@@ -83,10 +95,6 @@ list_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_dossier_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->dossier ), ( GWeakNotify ) on_dossier_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -106,7 +114,7 @@ list_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 
 		switch( property_id ){
 			case OFA_PROP_DOSSIER_ID:
-				g_value_set_pointer( value, priv->dossier );
+				g_value_set_object( value, priv->dossier );
 				break;
 
 			default:
@@ -129,7 +137,7 @@ list_store_set_property( GObject *object, guint property_id, const GValue *value
 
 		switch( property_id ){
 			case OFA_PROP_DOSSIER_ID:
-				priv->dossier = g_value_get_pointer( value );
+				priv->dossier = g_value_get_object( value );
 				break;
 
 			default:
@@ -156,7 +164,7 @@ list_store_constructed( GObject *instance )
 	priv = OFA_LIST_STORE( instance )->priv;
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
-	g_object_weak_ref( G_OBJECT( priv->dossier ), ( GWeakNotify ) on_dossier_finalized, instance );
+	ofa_istore_init( OFA_ISTORE( instance ), priv->dossier );
 }
 
 static void
@@ -190,28 +198,94 @@ ofa_list_store_class_init( ofaListStoreClass *klass )
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
 			OFA_PROP_DOSSIER_ID,
-			g_param_spec_pointer(
+			g_param_spec_object(
 					OFA_PROP_DOSSIER,
 					"Dossier",
 					"The currently opened dossier",
+					OFO_TYPE_DOSSIER,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	/**
+	 * ofaListStore::ofa-row-inserted:
+	 *
+	 * The signal is emitted either because a new row has been
+	 * inserted into the #GtkTreeModel implementor, or when we are
+	 * trying to load an already previously loaded dataset.
+	 * This later is typically useful when the build of the display
+	 * is event-based.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofaListStore *store,
+	 * 								GtkTreePath *path,
+	 * 								GtkTreeIter *iter
+	 * 								gpointer     user_data );
+	 *
+	 * It appears that an interface <I> is only able to send a message
+	 * defined in this same interface <I> to an instance of <I> if the
+	 * client <A> class directly implements the interface <I>.
+	 * In other terms, a class <B> which derives from <A>, is not a
+	 * valid dest for a message defined in <I>.
+	 *
+	 * As only #ofaListStore implements #ofaIStore interface, and not
+	 * its derived class, #ofaIStore would be unable to send this
+	 * message when defined to, e.g. #ofaOpeTemplateStore, if this
+	 * definition had stayed in interface itself.
+	 */
+	st_signals[ ROW_INSERTED ] = g_signal_new_class_handler(
+				"ofa-row-inserted",
+				OFA_TYPE_LIST_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
+/*
+ * ofaIStore interface management
+ */
 static void
-on_dossier_finalized( ofaListStore *store, gpointer finalized_dossier )
+istore_iface_init( ofaIStoreInterface *iface )
 {
-	static const gchar *thisfn = "ofa_list_store_on_dossier_finalized";
-	ofaListStorePrivate *priv;
+	static const gchar *thisfn = "ofo_list_store_istore_iface_init";
 
-	g_debug( "%s: store=%p (%s), ref_count=%d, finalized_dossier=%p",
-			thisfn,
-			( void * ) store, G_OBJECT_TYPE_NAME( store ), G_OBJECT( store )->ref_count,
-			( void * ) finalized_dossier );
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = istore_get_interface_version;
+}
+
+static guint
+istore_get_interface_version( const ofaIStore *instance )
+{
+	return( 1 );
+}
+
+/**
+ * ofa_list_store_load_dataset:
+ * @store:
+ */
+void
+ofa_list_store_load_dataset( ofaListStore *store )
+{
+	ofaListStorePrivate *priv;
 
 	g_return_if_fail( store && OFA_IS_LIST_STORE( store ));
 
 	priv = store->priv;
-	priv->from_dossier_finalized = TRUE;
 
-	g_object_unref( store );
+	if( !priv->dispose_has_run ){
+
+		if( !priv->dataset_loaded ){
+			if( OFA_LIST_STORE_GET_CLASS( store )->load_dataset ){
+				OFA_LIST_STORE_GET_CLASS( store )->load_dataset( store );
+			}
+			priv->dataset_loaded = TRUE;
+
+		} else {
+			ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
+		}
+	}
 }

@@ -65,6 +65,19 @@ typedef struct {
 typedef struct {
 	/*< public members >*/
 	GtkTreeStoreClass    parent;
+
+	/*< protected virtual functions >*/
+	/**
+	 * load_dataset:
+	 * @store:
+	 *
+	 * Load the dataset.
+	 *
+	 * The base class doesn't do anything the first time.
+	 * It then tries to simulate a reload, thus re-triggering
+	 * "ofa-row-inserted" signal for each row.
+	 */
+	void ( *load_dataset )( ofaTreeStore *store );
 }
 	ofaTreeStoreClass;
 
@@ -75,7 +88,9 @@ typedef struct {
  */
 #define OFA_PROP_DOSSIER                "ofa-store-prop-dossier"
 
-GType ofa_tree_store_get_type( void ) G_GNUC_CONST;
+GType ofa_tree_store_get_type    ( void ) G_GNUC_CONST;
+
+void  ofa_tree_store_load_dataset( ofaTreeStore *store );
 
 G_END_DECLS
 
