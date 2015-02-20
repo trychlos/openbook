@@ -1306,6 +1306,7 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 	}
 
 	ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
+	g_debug( "%s: ofs_ope_is_valid() returns ok=%s", thisfn, ok ? "True":"False" );
 
 	/* update the bin dialog with the new content of operation */
 	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){

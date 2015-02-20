@@ -976,6 +976,9 @@ check_for_all_entries( sChecker *checker )
  *  balance
  *
  * @num is counted from 1 and refers to the row of GuidedInput grid.
+ *
+ * OK here means that the operation may be validated, generating valid
+ * entries - this doesn't mean that all rows will generate an entry.
  */
 static gboolean
 check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
@@ -984,7 +987,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	const gchar *currency;
 	gboolean ok;
 
-	ok = FALSE;
+	ok = TRUE;
 	account = NULL;
 	currency = NULL;
 	detail->account_is_valid = FALSE;
@@ -1001,11 +1004,13 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 			g_free( checker->message );
 			checker->message = g_strdup_printf(
 					_( "(row %d) unknown account: %s" ), num, detail->account );
+			ok = FALSE;
 
 		} else if( ofo_account_is_root( account )){
 			g_free( checker->message );
 			checker->message = g_strdup_printf(
 					_( "(row %d) account is root: %s" ), num, detail->account );
+			ok = FALSE;
 
 		} else {
 			currency = ofo_account_get_currency( account );
@@ -1013,6 +1018,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
 						_( "(row %d) empty currency for %s account" ), num, detail->account );
+				ok = FALSE;
 
 			} else {
 				detail->account_is_valid = TRUE;
@@ -1028,11 +1034,11 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 		g_free( checker->message );
 		checker->message = g_strdup_printf(
 				_( "(row %d) invalid amounts" ), num );
+		ok = FALSE;
 	}
 
 	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
 		ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
-		ok = TRUE;
 	}
 
 	return( ok );
