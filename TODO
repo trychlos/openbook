@@ -310,9 +310,6 @@
  653 2015- 2-17 GuidedInput dialog should be non-modal
                 (use case: consult rates)
 
- 654 2015- 2-17 GuidedInput: account label should be updated on account
-                change
-
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
  657 2015- 2-17 GuidedInput: weird behavior when entering an operation:
@@ -2921,6 +2918,10 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 654 2015- 2-17 GuidedInput: account label should be updated on account
+                change
+     2015- 2-20 done - svn #4633
 
  655 2015- 2-17 GuidedInput: Alt+O shortcut should be reserved for OK
      2015- 2-20 done - svn #4632

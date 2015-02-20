@@ -193,6 +193,10 @@ setup_treeview( ofaDossierManager *self )
 	ofaDossierManagerPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
+	static ofaDossierColumns st_columns[] = {
+			DOSSIER_DISP_DNAME, DOSSIER_DISP_BEGIN, DOSSIER_DISP_END,
+			DOSSIER_DISP_STATUS, DOSSIER_DISP_DBNAME, DOSSIER_DISP_DBMS,
+			0 };
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -202,8 +206,9 @@ setup_treeview( ofaDossierManager *self )
 
 	priv->tview = ofa_dossier_treeview_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_dossier_treeview_set_columns( priv->tview, DOSSIER_DISP_DNAME | DOSSIER_DISP_DBMS );
+	ofa_dossier_treeview_set_columns( priv->tview, st_columns );
 	ofa_dossier_treeview_set_headers( priv->tview, TRUE );
+	ofa_dossier_treeview_set_show( priv->tview, DOSSIER_SHOW_ALL );
 
 	g_signal_connect(
 			G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_tview_changed ), self );

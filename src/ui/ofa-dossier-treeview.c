@@ -31,22 +31,25 @@
 #include <glib/gi18n.h>
 
 #include "api/ofa-settings.h"
+#include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-treeview.h"
 
 /* private instance data
  */
 struct _ofaDossierTreeviewPrivate {
-	gboolean          dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* UI
 	 */
-	GtkTreeView      *tview;
-	ofaDossierStore  *store;
+	GtkTreeView     *tview;
+	ofaDossierStore *store;
 
 	/* runtime data
 	 */
-	ofaDossierColumns columns;
+	gboolean         show_headers;
+	ofaDossierShow   show_mode;
+	GtkTreeModel    *tfilter;
 };
 
 /* signals defined here
@@ -59,12 +62,13 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       attach_top_widget( ofaDossierTreeview *self );
-static void       create_treeview_columns( ofaDossierTreeview *view );
-static void       create_treeview_store( ofaDossierTreeview *view );
-static void       on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
-static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
-static void       get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static void     attach_top_widget( ofaDossierTreeview *self );
+static void     create_treeview_columns( ofaDossierTreeview *view, ofaDossierColumns *columns );
+static void     create_treeview_store( ofaDossierTreeview *view );
+static gboolean is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaDossierTreeview *tview );
+static void     on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
+static void     on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
+static void     get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 
 G_DEFINE_TYPE( ofaDossierTreeview, ofa_dossier_treeview, GTK_TYPE_BIN );
 
@@ -238,9 +242,11 @@ attach_top_widget( ofaDossierTreeview *self )
 
 /**
  * ofa_dossier_treeview_set_columns:
+ * @view:
+ * @columns: a zero-terminated list of columns id.
  */
 void
-ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierColumns columns )
+ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierColumns *columns )
 {
 	ofaDossierTreeviewPrivate *priv;
 
@@ -250,8 +256,7 @@ ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierColumns co
 
 	if( !priv->dispose_has_run ){
 
-		priv->columns = columns;
-		create_treeview_columns( view );
+		create_treeview_columns( view, columns );
 	}
 }
 
@@ -269,31 +274,91 @@ ofa_dossier_treeview_set_headers( ofaDossierTreeview *view, gboolean visible )
 
 	if( !priv->dispose_has_run ){
 
+		priv->show_headers = visible;
 		gtk_tree_view_set_headers_visible( priv->tview, visible );
 	}
 }
 
+/**
+ * ofa_dossier_treeview_set_show:
+ */
+void
+ofa_dossier_treeview_set_show( ofaDossierTreeview *view, ofaDossierShow show )
+{
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->show_mode = show;
+		if( priv->tfilter ){
+			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		}
+	}
+}
+
 static void
-create_treeview_columns( ofaDossierTreeview *view )
+create_treeview_columns( ofaDossierTreeview *view, ofaDossierColumns *columns )
 {
 	ofaDossierTreeviewPrivate *priv;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
+	gint i;
 
 	priv = view->priv;
 
-	if( priv->columns & DOSSIER_DISP_DNAME ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Dossier" ), cell, "text", DOSSIER_COL_DNAME, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
+	for( i=0 ; columns[i] ; ++i ){
+		if( columns[i] == DOSSIER_DISP_DNAME ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "Dossier" ), cell, "text", DOSSIER_COL_DNAME, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
 
-	if( priv->columns & DOSSIER_DISP_DBMS ){
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Provider" ), cell, "text", DOSSIER_COL_DBMS, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
+		if( columns[i] == DOSSIER_DISP_DBMS ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "Provider" ), cell, "text", DOSSIER_COL_DBMS, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == DOSSIER_DISP_BEGIN ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "Begin" ), cell, "text", DOSSIER_COL_BEGIN, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == DOSSIER_DISP_END ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "End" ), cell, "text", DOSSIER_COL_END, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == DOSSIER_DISP_STATUS ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "Status" ), cell, "text", DOSSIER_COL_STATUS, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == DOSSIER_DISP_DBNAME ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "DB name" ), cell, "text", DOSSIER_COL_DBNAME, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == DOSSIER_DISP_CODE ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "St." ), cell, "text", DOSSIER_COL_CODE, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( view ));
@@ -315,16 +380,51 @@ create_treeview_store( ofaDossierTreeview *view )
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
 		priv->store = ofa_dossier_store_new();
-
-		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
-
+		priv->tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->store ), NULL );
 		/* unref the store so that it will be automatically unreffed
-		 * at the same time the treeview will be.
-		 */
+		 * at the same time the treeview will be. */
 		g_object_unref( priv->store );
+
+		gtk_tree_model_filter_set_visible_func(
+				GTK_TREE_MODEL_FILTER( priv->tfilter ),
+				( GtkTreeModelFilterVisibleFunc ) is_visible_row, view, NULL );
+
+		gtk_tree_view_set_model( priv->tview, priv->tfilter );
+		g_object_unref( priv->tfilter );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( view ));
+}
+
+static gboolean
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tview )
+{
+	ofaDossierTreeviewPrivate *priv;
+	gboolean visible;
+	gchar *code;
+
+	priv = tview->priv;
+	visible = FALSE;
+	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_CODE, &code, -1 );
+
+	switch( priv->show_mode ){
+		case DOSSIER_SHOW_ALL:
+			visible = TRUE;
+			break;
+		case DOSSIER_SHOW_CURRENT:
+			visible = ( g_utf8_collate( code, DOS_STATUS_OPENED ) == 0 );
+			break;
+		case DOSSIER_SHOW_ARCHIVED:
+			visible = ( g_utf8_collate( code, DOS_STATUS_CLOSED ) == 0 );
+			break;
+	}
+	/*
+	g_debug( "is_visible_row: show_mode=%u, code=%s, visible=%s",
+			priv->show_mode, code, visible ? "True":"False" );
+	*/
+	g_free( code );
+
+	return( visible );
 }
 
 static void

@@ -72,11 +72,16 @@ typedef struct {
 	ofaDossierStoreClass;
 
 /**
- * The columns stored in the subjacent #GtkDossierStore.
+ * The columns stored in the subjacent #GtkListStore.
  */
 enum {
 	DOSSIER_COL_DNAME = 0,
 	DOSSIER_COL_DBMS,
+	DOSSIER_COL_DBNAME,
+	DOSSIER_COL_END,
+	DOSSIER_COL_BEGIN,
+	DOSSIER_COL_STATUS,					/* the displayable status */
+	DOSSIER_COL_CODE,					/* the status as a single-char code */
 	DOSSIER_N_COLUMNS
 };
 
@@ -85,8 +90,13 @@ enum {
  * The columns displayed in the views.
  */
 typedef enum {
-	DOSSIER_DISP_DNAME = 1 << 0,
-	DOSSIER_DISP_DBMS  = 1 << 1,
+	DOSSIER_DISP_DNAME = 1,
+	DOSSIER_DISP_DBMS,
+	DOSSIER_DISP_DBNAME,
+	DOSSIER_DISP_END,
+	DOSSIER_DISP_BEGIN,
+	DOSSIER_DISP_STATUS,
+	DOSSIER_DISP_CODE
 }
 	ofaDossierColumns;
 

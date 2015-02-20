@@ -68,15 +68,28 @@ typedef struct {
 }
 	ofaDossierTreeviewClass;
 
+/**
+ *
+ */
+typedef enum {
+	DOSSIER_SHOW_ALL = 1,
+	DOSSIER_SHOW_CURRENT,
+	DOSSIER_SHOW_ARCHIVED,
+}
+	ofaDossierShow;
+
 GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
 
 ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
 
 void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
-																ofaDossierColumns columns );
+																ofaDossierColumns *columns );
 
 void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
 																gboolean visible );
+
+void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
+																ofaDossierShow show );
 
 void                ofa_dossier_treeview_add_row     ( ofaDossierTreeview *view,
 																const gchar *dname );

@@ -392,6 +392,9 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent, *label;
+	static ofaDossierColumns st_columns[] = {
+			DOSSIER_DISP_DNAME,
+			0 };
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -409,7 +412,8 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dossier_treeview ));
-	ofa_dossier_treeview_set_columns( priv->p3_dossier_treeview, DOSSIER_DISP_DNAME );
+	ofa_dossier_treeview_set_columns( priv->p3_dossier_treeview, st_columns );
+	ofa_dossier_treeview_set_show( priv->p3_dossier_treeview, DOSSIER_SHOW_CURRENT );
 
 	g_signal_connect( priv->p3_dossier_treeview, "changed", G_CALLBACK( p3_on_dossier_changed ), self );
 	g_signal_connect( priv->p3_dossier_treeview, "activated", G_CALLBACK( p3_on_dossier_activated ), self );

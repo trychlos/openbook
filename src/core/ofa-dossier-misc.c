@@ -36,6 +36,7 @@
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-dossier.h"
 
 static gchar  *exercice_get_description( const gchar *dname, const gchar *key );
 static GSList *get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings );
@@ -102,7 +103,8 @@ ofa_dossier_misc_get_dossiers( void )
  * - the database name
  * - the exercice begin date as a sql-formatted string yyyy-mm-dd
  * - the exercice end date as a sql-formatted string yyyy-mm-dd
- * - the status of the exercice.
+ * - the status of the exercice as a displayable string
+ * - the status code of the exercice (from ofa-dossier-def.h).
  *
  * The strings are semi-colon separated.
  */
@@ -211,7 +213,8 @@ exercice_get_description( const gchar *dname, const gchar *key )
 
 	label = ofa_dossier_misc_get_exercice_label( &begin, &end, is_current );
 
-	svalue = g_strdup_printf( "%s;%s;%s;%s;%s;", label, sdb, sdbegin, sdend, status );
+	svalue = g_strdup_printf( "%s;%s;%s;%s;%s;%s;",
+			label, sdb, sdbegin, sdend, status, is_current ? DOS_STATUS_OPENED : DOS_STATUS_CLOSED );
 
 	g_free( label );
 	g_free( send );

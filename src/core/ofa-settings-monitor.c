@@ -183,7 +183,8 @@ ofa_settings_monitor_new( ofaSettingsTarget target )
 }
 
 /*
- * for now, only scans dossier content
+ * for now, only sends a message to say that the list of dossier is
+ * empty or not empty
  */
 static void
 on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, ofaSettingsMonitor *self )

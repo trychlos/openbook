@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofo-dossier.h"
@@ -46,13 +47,15 @@ struct _ofaDossierStorePrivate {
 };
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING					/* dname, dbms */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dname, dbms, dbname */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* end, begin, disp status */
+		G_TYPE_STRING									/* code status */
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
 static void     load_dataset( ofaDossierStore *store );
-static void     insert_row( ofaDossierStore *store, const gchar *dname );
-static void     set_row( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter );
+static void     insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist );
+static void     set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter );
 static gboolean get_iter_from_dname( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
@@ -170,42 +173,77 @@ static void
 load_dataset( ofaDossierStore *store )
 {
 	GSList *dataset, *it;
+	gchar **array;
+	const gchar *dname, *provider;
+	GSList *exeset, *ite;
 
 	dataset = ofa_dossier_misc_get_dossiers();
 
 	for( it=dataset ; it ; it=it->next ){
-		insert_row( store, ( const gchar * ) it->data );
+		array = g_strsplit(( const gchar * ) it->data, ";", -1 );
+		dname = ( const gchar * ) *array;
+		provider = ( const gchar * ) *( array+1 );
+
+		exeset = ofa_dossier_misc_get_exercices( dname );
+		for( ite=exeset ; ite ; ite=ite->next ){
+			insert_row( store, dname, provider, ( const gchar * ) ite->data );
+		}
+		ofa_dossier_misc_free_exercices( exeset );
+
+		g_strfreev( array );
 	}
 
 	ofa_dossier_misc_free_dossiers( dataset );
 }
 
 static void
-insert_row( ofaDossierStore *store, const gchar *strlist )
+insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist )
 {
 	static const gchar *thisfn = "ofa_dossier_store_insert_row";
 	GtkTreeIter iter;
 
-	g_debug( "%s: store=%p, strlist=%s", thisfn, ( void * ) store, strlist );
+	g_debug( "%s: store=%p, dname=%s, provider=%s, strlist=%s",
+			thisfn, ( void * ) store, dname, provider, strlist );
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, strlist, &iter );
+	set_row( store, dname, provider, strlist, &iter );
 }
 
 static void
-set_row( ofaDossierStore *store, const gchar *strlist, GtkTreeIter *iter )
+set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter )
 {
 	gchar **array;
+	const gchar *dbname, *sbegin, *send, *status, *code;
+	gchar *sdbegin, *sdend;
+	GDate dbegin, dend;
 
 	array = g_strsplit( strlist, ";", -1 );
+	dbname = ( const gchar * ) *( array+1 );
+	sbegin = ( const gchar * ) *( array+2 );
+	send = ( const gchar * ) *( array+3 );
+	status = ( const gchar * ) *( array+4 );
+	code = ( const gchar * ) *( array+5 );
+
+	my_date_set_from_str( &dbegin, sbegin, MY_DATE_SQL );
+	my_date_set_from_str( &dend, send, MY_DATE_SQL );
+
+	sdbegin = my_date_to_str( &dbegin, MY_DATE_DMYY );
+	sdend = my_date_to_str( &dend, MY_DATE_DMYY );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
-			DOSSIER_COL_DNAME, *array,
-			DOSSIER_COL_DBMS, *(array+1),
+			DOSSIER_COL_DNAME,  dname,
+			DOSSIER_COL_DBMS,   provider,
+			DOSSIER_COL_DBNAME, dbname,
+			DOSSIER_COL_BEGIN,  sdbegin,
+			DOSSIER_COL_END,    sdend,
+			DOSSIER_COL_STATUS, status,
+			DOSSIER_COL_CODE,   code,
 			-1 );
 
+	g_free( sdbegin );
+	g_free( sdend );
 	g_strfreev( array );
 }
 
