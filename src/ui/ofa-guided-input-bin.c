@@ -244,6 +244,7 @@ static void              check_for_account( ofaGuidedInputBin *bin, GtkEntry *en
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
 static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
 static void              on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
+static void              setup_account_label_in_comment( ofaGuidedInputBin *bin, gint row_id );
 static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputBin *bin, gint col_id );
 static void              check_for_enable_dlg( ofaGuidedInputBin *bin );
 static gboolean          is_dialog_validable( ofaGuidedInputBin *bin );
@@ -1049,10 +1050,6 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_focus_in";
 	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
-	const gchar *acc_number;
-	ofoAccount *account;
-	gchar *comment;
-	GtkWidget *widget;
 
 	priv = bin->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
@@ -1072,19 +1069,8 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 		sdata->initial = g_strdup( gtk_entry_get_text( entry ));
 	}
 
-	/* setup the comment label for the row */
-	widget = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, sdata->row_id );
-	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), FALSE );
-	acc_number = gtk_entry_get_text( GTK_ENTRY( widget ));
-	comment = NULL;
-	if( acc_number ){
-		account = ofo_account_get_by_number( priv->dossier, acc_number );
-		if( account && OFO_IS_ACCOUNT( account )){
-			comment = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
-		}
-	}
-	set_comment( bin, comment ? comment : "" );
-	g_free( comment );
+	/* update the account label when changing the row */
+	setup_account_label_in_comment( bin, sdata->row_id );
 
 	return( FALSE );
 }
@@ -1163,6 +1149,7 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->account_user_set = TRUE;
 				}
+				setup_account_label_in_comment( bin, sdata->row_id );
 				break;
 			case OPE_COL_LABEL:
 				detail->label = g_strdup( cstr );
@@ -1195,6 +1182,33 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 	}
 
 	priv->on_changed_count -= 1;
+}
+
+static void
+setup_account_label_in_comment( ofaGuidedInputBin *bin, gint row_id )
+{
+	ofaGuidedInputBinPrivate *priv;
+	GtkWidget *entry;
+	const gchar *acc_number;
+	gchar *comment;
+	ofoAccount *account;
+
+	priv = bin->priv;
+	comment = NULL;
+
+	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row_id );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
+	if( acc_number ){
+		account = ofo_account_get_by_number( priv->dossier, acc_number );
+		if( account && OFO_IS_ACCOUNT( account )){
+			comment = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
+		} else {
+			comment = g_strdup_printf( "%s", acc_number );
+		}
+	}
+	set_comment( bin, comment ? comment : "" );
+	g_free( comment );
 }
 
 static const sColumnDef *
