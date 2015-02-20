@@ -59,6 +59,7 @@ typedef struct {
 #define ACCOUNT_SETTLEABLE              "S"
 #define ACCOUNT_RECONCILIABLE           "R"
 #define ACCOUNT_FORWARDABLE             "F"
+#define ACCOUNT_CLOSED                  "C"
 
 void            ofo_account_free_balances        ( GList *balances );
 
@@ -77,6 +78,7 @@ ofoAccount     *ofo_account_new                  ( void );
 gint            ofo_account_get_class            ( const ofoAccount *account );
 const gchar    *ofo_account_get_number           ( const ofoAccount *account );
 const gchar    *ofo_account_get_label            ( const ofoAccount *account );
+const gchar    *ofo_account_get_closed           ( const ofoAccount *account );
 const gchar    *ofo_account_get_currency         ( const ofoAccount *account );
 const gchar    *ofo_account_get_notes            ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account     ( const ofoAccount *account );
@@ -93,6 +95,7 @@ ofxAmount       ofo_account_get_futur_credit     ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );
+gboolean        ofo_account_is_closed            ( const ofoAccount *account );
 gboolean        ofo_account_is_settleable        ( const ofoAccount *account );
 gboolean        ofo_account_is_reconciliable     ( const ofoAccount *account );
 gboolean        ofo_account_is_forward           ( const ofoAccount *account );
@@ -116,6 +119,7 @@ void            ofo_account_set_type_account     ( ofoAccount *account, const gc
 void            ofo_account_set_settleable       ( ofoAccount *account, gboolean settleable );
 void            ofo_account_set_reconciliable    ( ofoAccount *account, gboolean reconciliable );
 void            ofo_account_set_forward          ( ofoAccount *account, gboolean forward );
+void            ofo_account_set_closed           ( ofoAccount *account, gboolean closed );
 void            ofo_account_set_val_debit        ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_val_credit       ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_rough_debit      ( ofoAccount *account, ofxAmount amount );

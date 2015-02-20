@@ -244,8 +244,6 @@
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
- 558 2015- 1- 8 DossierManager: display databases used by a dossier
-
  559 2015- 1- 8 have a macro language to automate dossier creation,
                 import of files
 
@@ -317,6 +315,7 @@
 
  668 2015- 2-17 have main notebook pages detachable ? getting so non-
                 modal dialogs
+     2015- 2-20 this requires to implement DnD on some non-modal windows
 
  669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
                 color, a logo, etc.)
@@ -2581,6 +2580,9 @@
                 count of headers to be removed from the file (rather
                 than with_headers)
      2015- 1-17 done - svn #4466
+
+ 558 2015- 1- 8 DossierManager: display databases used by a dossier
+     2015- 2-20 done - svn #4634
 
  560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
                 a field separator!

@@ -54,6 +54,7 @@ static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v21( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v22( const ofoDossier *dossier );
+static gboolean    dbmodel_to_v23( const ofoDossier *dossier );
 static gboolean    insert_classes( ofoDossier *dossier );
 static gboolean    insert_currencies( ofoDossier *dossier );
 static gboolean    insert_ledgers( ofoDossier *dossier );
@@ -89,6 +90,9 @@ ofo_dossier_ddl_update( ofoDossier *dossier )
 		}
 		if( cur_version < 22 ){
 			dbmodel_to_v22( dossier );
+		}
+		if( cur_version < 23 ){
+			dbmodel_to_v23( dossier );
 		}
 		insert_classes( dossier );
 		insert_currencies( dossier );
@@ -647,6 +651,51 @@ dbmodel_to_v22( const ofoDossier *dossier )
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD COLUMN BAT_SOLDE_BEGIN DECIMAL(20,5) "
 			"	COMMENT 'Signed begin balance of the account'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	/* we do this only at the end of the model creation
+	 * as a mark that all has been successfully done
+	 */
+	query = g_strdup_printf(
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	return( TRUE );
+}
+
+/*
+ * ofo_dossier_dbmodel_to_v23:
+ * closed accounts
+ */
+static gboolean
+dbmodel_to_v23( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v23";
+	static guint this_version = 23;
+	const ofaDbms *dbms;
+	gchar *query;
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_VERSION "
+			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	ADD COLUMN ACC_CLOSED CHAR(1) "
+			"	COMMENT 'Whether the account is closed'",
 			TRUE )){
 		return( FALSE );
 	}

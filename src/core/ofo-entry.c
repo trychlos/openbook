@@ -2951,6 +2951,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			errors += 1;
 			continue;
 		}
+		if( ofo_account_is_closed( account )){
+			msg = g_strdup_printf( _( "entry account is closed: %s" ), cstr );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
 		ofo_entry_set_account( entry, cstr );
 
 		cstr = ofo_account_get_currency( account );

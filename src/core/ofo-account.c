@@ -61,6 +61,7 @@ enum {
 	ACC_SETTLEABLE,
 	ACC_RECONCILIABLE,
 	ACC_FORWARD,
+	ACC_CLOSED,
 	ACC_NOTES,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
@@ -107,6 +108,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_FORWARD ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_CLOSED ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -834,6 +839,18 @@ ofo_account_get_label( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_get_closed:
+ * @account: the #ofoAccount account
+ *
+ * Returns: the 'Closed' code or %NULL.
+ */
+const gchar *
+ofo_account_get_closed( const ofoAccount *account )
+{
+	account_get_string( ACC_CLOSED );
+}
+
+/**
  * ofo_account_get_currency:
  * @account: the #ofoAccount account
  *
@@ -1126,6 +1143,24 @@ ofo_account_is_forward( const ofoAccount *account )
 	is_forward = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_FORWARDABLE );
 
 	return( is_forward );
+}
+
+/**
+ * ofo_account_is_closed:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is closed.
+ */
+gboolean
+ofo_account_is_closed( const ofoAccount *account )
+{
+	gboolean is_closed;
+	const gchar *str;
+
+	str = account_get_string_ex( account, ACC_CLOSED );
+	is_closed = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_CLOSED );
+
+	return( is_closed );
 }
 
 static const gchar *
@@ -1546,6 +1581,17 @@ ofo_account_set_forward( ofoAccount *account, gboolean forward )
 	account_set_string( ACC_FORWARD, forward ? ACCOUNT_FORWARDABLE : NULL );
 }
 
+/**
+ * ofo_account_set_closed:
+ * @account: the #ofoAccount account
+ * @closed: %TRUE if the account is closed
+ */
+void
+ofo_account_set_closed( ofoAccount *account, gboolean closed )
+{
+	account_set_string( ACC_CLOSED, closed ? ACCOUNT_CLOSED : NULL );
+}
+
 /*
  * ofo_account_set_upd_user:
  * @account: the #ofoAccount account
@@ -1705,7 +1751,7 @@ account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
 	g_string_append_printf( query,
 			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,"
 			"	ACC_TYPE,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARD,"
-			"	ACC_UPD_USER, ACC_UPD_STAMP)"
+			"	ACC_CLOSED,ACC_UPD_USER, ACC_UPD_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
 					label );
@@ -1738,6 +1784,12 @@ account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
 
 	if( ofo_account_is_forward( account )){
 		g_string_append_printf( query, "'%s',", ACCOUNT_FORWARDABLE );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( ofo_account_is_closed( account )){
+		g_string_append_printf( query, "'%s',", ACCOUNT_CLOSED );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -1851,6 +1903,12 @@ account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, 
 		g_string_append_printf( query, "ACC_FORWARD='%s',", ACCOUNT_FORWARDABLE );
 	} else {
 		query = g_string_append( query, "ACC_FORWARD=NULL," );
+	}
+
+	if( ofo_account_is_closed( account )){
+		g_string_append_printf( query, "ACC_CLOSED='%s',", ACCOUNT_CLOSED );
+	} else {
+		query = g_string_append( query, "ACC_CLOSED=NULL," );
 	}
 
 	g_string_append_printf( query,

@@ -669,6 +669,14 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
+				_( "C" ), cell, "text", ACCOUNT_COL_CLOSED, NULL );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_CLOSED ));
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+
+	cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
 				_( "S" ), cell, "text", ACCOUNT_COL_SETTLEABLE, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_SETTLEABLE ));
 	gtk_tree_view_append_column( tview, column );

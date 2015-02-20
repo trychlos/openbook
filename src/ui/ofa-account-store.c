@@ -66,7 +66,7 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* rough_debit, rough_credit, open_debit */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
-		G_TYPE_STRING, G_TYPE_STRING, 					/* exe_debit, exe_credit */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
 		G_TYPE_OBJECT									/* the #ofoAccount itself */
 };
 
@@ -350,6 +350,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE : "",
 			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE : "",
 			ACCOUNT_COL_FORWARD,       ofo_account_is_forward( account ) ? ACCOUNT_FORWARDABLE : "",
+			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED : "",
 			ACCOUNT_COL_EXE_DEBIT,     sedeb,
 			ACCOUNT_COL_EXE_CREDIT,    secre,
 			-1 );

@@ -1012,6 +1012,12 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 					_( "(row %d) account is root: %s" ), num, detail->account );
 			ok = FALSE;
 
+		} else if( ofo_account_is_closed( account )){
+			g_free( checker->message );
+			checker->message = g_strdup_printf(
+					_( "(row %d) account is closed: %s" ), num, detail->account );
+			ok = FALSE;
+
 		} else {
 			currency = ofo_account_get_currency( account );
 			if( !my_strlen( currency )){

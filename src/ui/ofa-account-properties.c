@@ -61,6 +61,7 @@ struct _ofaAccountPropertiesPrivate {
 	/* UI
 	 */
 	GtkEntry        *w_number;
+	GtkWidget       *closed_btn;
 	GtkWidget       *type_frame;
 	GtkWidget       *p1_exe_frame;
 	GtkToggleButton *settleable_btn;
@@ -247,6 +248,7 @@ v_init_dialog( myDialog *dialog )
 	priv->has_entries = ofo_entry_use_account( MY_WINDOW( dialog )->prot->dossier, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 
+	/* account number */
 	priv->number = g_strdup( acc_number );
 	priv->w_number = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-number" ));
 	if( priv->number ){
@@ -257,7 +259,9 @@ v_init_dialog( myDialog *dialog )
 	/* set insensitive though we would be able to remediate to all
 	 *  impacted records  */
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->w_number ), !priv->has_entries );
+	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
 
+	/* account label */
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
@@ -265,9 +269,16 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
 
+	/* whether the account is closed */
+	priv->closed_btn = my_utils_container_get_child_by_name( container, "p1-closed" );
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->closed_btn ), ofo_account_is_closed( priv->account ));
+	gtk_widget_set_can_focus( priv->closed_btn, is_current );
+
+	/* account currency */
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
-
 	combo = ofa_currency_combo_new();
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -278,7 +289,9 @@ v_init_dialog( myDialog *dialog )
 	if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
 		ofa_currency_combo_set_selected( combo, priv->currency );
 	}
+	gtk_widget_set_sensitive( GTK_WIDGET( combo ), is_current );
 
+	/* type of account */
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );
 
@@ -310,15 +323,19 @@ v_init_dialog( myDialog *dialog )
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 	}
+	gtk_widget_set_sensitive( priv->type_frame, is_current );
 
 	priv->settleable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-settleable" ));
 	gtk_toggle_button_set_active( priv->settleable_btn, ofo_account_is_settleable( priv->account ));
+	gtk_widget_set_can_focus( GTK_WIDGET( priv->settleable_btn ), is_current );
 
 	priv->reconciliable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-reconciliable" ));
 	gtk_toggle_button_set_active( priv->reconciliable_btn, ofo_account_is_reconciliable( priv->account ));
+	gtk_widget_set_can_focus( GTK_WIDGET( priv->reconciliable_btn ), is_current );
 
 	priv->forward_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-forward" ));
 	gtk_toggle_button_set_active( priv->forward_btn, ofo_account_is_forward( priv->account ));
+	gtk_widget_set_can_focus( GTK_WIDGET( priv->forward_btn ), is_current );
 
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
 	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
@@ -510,26 +527,33 @@ static void
 check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	gboolean is_root;
+	gboolean is_root, is_current;
 	gboolean ok_enabled;
 
 	priv = self->priv;
 
-	is_root = ( priv->type && !g_utf8_collate( priv->type, ACCOUNT_TYPE_ROOT ));
+	is_current = ofo_dossier_is_current( MY_WINDOW( self )->prot->dossier );
+	if( is_current ){
+		ok_enabled = TRUE;
 
-	if( priv->type_frame ){
-		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
-		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
-	}
-	if( priv->p1_exe_frame ){
-		gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
-	}
-	if( priv->currency_combo ){
-		gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_combo ), !is_root && !priv->has_entries );
+	} else {
+		is_root = ( priv->type && !g_utf8_collate( priv->type, ACCOUNT_TYPE_ROOT ));
+
+		if( priv->type_frame ){
+			gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
+			/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
+		}
+		if( priv->p1_exe_frame ){
+			gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
+		}
+		if( priv->currency_combo ){
+			gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
+			gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_combo ), !is_root && !priv->has_entries );
+		}
+
+		ok_enabled = is_dialog_validable( self );
 	}
 
-	ok_enabled = is_dialog_validable( self );
 	if( priv->btn_ok ){
 		gtk_widget_set_sensitive( priv->btn_ok, ok_enabled );
 	}
@@ -590,9 +614,14 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
 	ofo_account_set_type_account( priv->account, priv->type );
-	ofo_account_set_settleable( priv->account, gtk_toggle_button_get_active( priv->settleable_btn ));
-	ofo_account_set_reconciliable( priv->account, gtk_toggle_button_get_active( priv->reconciliable_btn ));
-	ofo_account_set_forward( priv->account, gtk_toggle_button_get_active( priv->forward_btn ));
+	ofo_account_set_settleable(
+			priv->account, gtk_toggle_button_get_active( priv->settleable_btn ));
+	ofo_account_set_reconciliable(
+			priv->account, gtk_toggle_button_get_active( priv->reconciliable_btn ));
+	ofo_account_set_forward(
+			priv->account, gtk_toggle_button_get_active( priv->forward_btn ));
+	ofo_account_set_closed(
+			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));
 	ofo_account_set_currency( priv->account, priv->currency );
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
 

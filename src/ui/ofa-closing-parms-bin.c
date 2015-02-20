@@ -779,6 +779,15 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 				break;
 			}
 
+			if( ofo_account_is_closed( account )){
+				if( msg ){
+					*msg = g_strdup_printf(
+								_( "%s: unauthorized closed account: %s" ), code, acc_number );
+				}
+				ok = FALSE;
+				break;
+			}
+
 			acc_currency = ofo_account_get_currency( account );
 			if( g_utf8_collate( code, acc_currency )){
 				if( msg ){
