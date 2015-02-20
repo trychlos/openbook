@@ -154,6 +154,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplatesBook *book;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
@@ -185,7 +186,9 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 	g_free( priv->ope_mnemo );
 	priv->ope_mnemo = NULL;
 
-	ofa_ope_templates_frame_set_selected( priv->ope_templates_frame, asked_mnemo );
+	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	ofa_ope_templates_book_set_selected( book, asked_mnemo );
+
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
@@ -244,13 +247,15 @@ static void
 check_for_enable_dlg( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplatesBook *book;
 	gchar *mnemo;
 	gboolean ok;
 
 	priv = self->priv;
 
-	mnemo = ofa_ope_templates_frame_get_selected( priv->ope_templates_frame );
-	ok = mnemo && g_utf8_strlen( mnemo, -1 );
+	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	mnemo = ofa_ope_templates_book_get_selected( book );
+	ok = my_strlen( mnemo );
 	g_free( mnemo );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
@@ -266,12 +271,15 @@ static gboolean
 do_select( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplatesBook *book;
 	gchar *mnemo;
 
 	priv = self->priv;
 
-	mnemo = ofa_ope_templates_frame_get_selected( priv->ope_templates_frame );
-	if( mnemo && g_utf8_strlen( mnemo, -1 )){
+	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	mnemo = ofa_ope_templates_book_get_selected( book );
+	if( my_strlen( mnemo )){
+		g_free( priv->ope_mnemo );
 		priv->ope_mnemo = g_strdup( mnemo );
 	}
 	g_free( mnemo );

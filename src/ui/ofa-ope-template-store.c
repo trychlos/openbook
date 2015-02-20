@@ -37,10 +37,11 @@
 /* private instance data
  */
 struct _ofaOpeTemplateStorePrivate {
-	gboolean    dispose_has_run;
+	gboolean dispose_has_run;
 
 	/* runtime data
 	 */
+	gboolean dataset_loaded;
 };
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
@@ -144,6 +145,7 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
 ofaOpeTemplateStore *
 ofa_ope_template_store_new( ofoDossier *dossier )
 {
+	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
@@ -152,6 +154,7 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_OPE_TEMPLATE_STORE( store ), NULL );
+		g_debug( "%s: returning existing store=%p", thisfn, ( void * ) store );
 
 	} else {
 		store = g_object_new(
@@ -169,8 +172,8 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
-
 		setup_signaling_connect( store, dossier );
+		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 	}
 
 	return( store );
@@ -185,10 +188,13 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 void
 ofa_ope_template_store_load_dataset( ofaOpeTemplateStore *store )
 {
+	static const gchar *thisfn = "ofa_ope_template_store_load_dataset";
 	ofaOpeTemplateStorePrivate *priv;
 	ofoDossier *dossier;
 
 	g_return_if_fail( store && OFA_IS_OPE_TEMPLATE_STORE( store ));
+
+	g_debug( "%s: store=%p", thisfn, ( void * ) store );
 
 	priv = store->priv;
 
@@ -197,7 +203,10 @@ ofa_ope_template_store_load_dataset( ofaOpeTemplateStore *store )
 		g_object_get( store, OFA_PROP_DOSSIER, &dossier, NULL );
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-		load_dataset( store, dossier );
+		if( !priv->dataset_loaded ){
+			load_dataset( store, dossier );
+			priv->dataset_loaded = TRUE;
+		}
 	}
 }
 

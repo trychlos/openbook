@@ -43,6 +43,8 @@
 
 #include "core/ofa-main-window-def.h"
 
+#include "ui/ofa-ope-templates-book.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_OPE_TEMPLATES_FRAME                ( ofa_ope_templates_frame_get_type())
@@ -69,22 +71,17 @@ typedef struct {
 }
 	ofaOpeTemplatesFrameClass;
 
-GType                 ofa_ope_templates_frame_get_type                ( void ) G_GNUC_CONST;
+GType                 ofa_ope_templates_frame_get_type       ( void ) G_GNUC_CONST;
 
-ofaOpeTemplatesFrame *ofa_ope_templates_frame_new                     ( void );
+ofaOpeTemplatesFrame *ofa_ope_templates_frame_new            ( void );
 
-void                  ofa_ope_templates_frame_set_main_window         ( ofaOpeTemplatesFrame *frame,
-																			ofaMainWindow *main_window );
+void                  ofa_ope_templates_frame_set_main_window( ofaOpeTemplatesFrame *frame,
+																		ofaMainWindow *main_window );
 
-void                  ofa_ope_templates_frame_set_buttons             ( ofaOpeTemplatesFrame *frame,
-																			gboolean guided_input );
+void                  ofa_ope_templates_frame_set_buttons    ( ofaOpeTemplatesFrame *frame,
+																		gboolean guided_input );
 
-gchar                *ofa_ope_templates_frame_get_selected            ( ofaOpeTemplatesFrame *frame );
-
-void                  ofa_ope_templates_frame_set_selected            ( ofaOpeTemplatesFrame *frame,
-																			const gchar *mnemo );
-
-GtkWidget            *ofa_ope_templates_frame_get_top_focusable_widget( const ofaOpeTemplatesFrame *frame );
+ofaOpeTemplatesBook  *ofa_ope_templates_frame_get_book       ( ofaOpeTemplatesFrame *frame );
 
 G_END_DECLS
 

@@ -33,7 +33,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "ui/ofa-ope-templates-book.h"
 #include "ui/ofa-ope-templates-frame.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
@@ -297,7 +296,6 @@ ofa_ope_templates_frame_set_main_window( ofaOpeTemplatesFrame *frame, ofaMainWin
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
-
 		ofa_ope_templates_book_set_main_window( priv->book, main_window );
 	}
 }
@@ -384,72 +382,28 @@ ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guide
 }
 
 /**
- * ofa_ope_templates_frame_get_selected:
+ * ofa_ope_templates_frame_get_book:
  * @frame:
  *
- * Returns: the currently selected account mnemo, as a newly allocated
- * string which should be g_free() by the caller.
+ * Returns: the embedded #ofaOpeTemplatesBook book.
  */
-gchar *
-ofa_ope_templates_frame_get_selected( ofaOpeTemplatesFrame *frame )
+ofaOpeTemplatesBook *
+ofa_ope_templates_frame_get_book( ofaOpeTemplatesFrame *frame )
 {
 	ofaOpeTemplatesFramePrivate *priv;
-	gchar *account;
+	ofaOpeTemplatesBook *book;
 
 	g_return_val_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ), NULL );
 
 	priv = frame->priv;
-	account = NULL;
+	book = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		account = ofa_ope_templates_book_get_selected( priv->book );
+		book = priv->book;
 	}
 
-	return( account );
-}
-
-/**
- * ofa_ope_templates_frame_set_selected:
- *
- * Let the user reset the selection after the end of setup and
- * initialization phases
- */
-void
-ofa_ope_templates_frame_set_selected( ofaOpeTemplatesFrame *frame, const gchar *mnemo )
-{
-	ofaOpeTemplatesFramePrivate *priv;
-
-	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ));
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		ofa_ope_templates_book_set_selected( priv->book, mnemo );
-	}
-}
-
-/**
- * ofa_ope_templates_frame_get_top_focusable_widget:
- *
- * Returns: top focusable widget.
- */
-GtkWidget *
-ofa_ope_templates_frame_get_top_focusable_widget( const ofaOpeTemplatesFrame *frame )
-{
-	ofaOpeTemplatesFramePrivate *priv;
-
-	g_return_val_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ), NULL );
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		return( ofa_ope_templates_book_get_top_focusable_widget( priv->book ));
-	}
-
-	return( NULL );
+	return( book );
 }
 
 static void

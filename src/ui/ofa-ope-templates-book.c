@@ -817,7 +817,7 @@ do_update_ope_template( ofaOpeTemplatesBook *self )
 	}
 	g_free( mnemo );
 
-	tview = ofa_ope_templates_book_get_top_focusable_widget( self );
+	tview = get_current_tree_view( self );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -894,7 +894,7 @@ do_delete_ope_template( ofaOpeTemplatesBook *self )
 	}
 	g_free( mnemo );
 
-	tview = ofa_ope_templates_book_get_top_focusable_widget( self );
+	tview = get_current_tree_view( self );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -1244,13 +1244,12 @@ select_row_by_iter( ofaOpeTemplatesBook *book, GtkTreeView *tview, GtkTreeModel 
 }
 
 /**
- * ofa_ope_templates_book_get_top_focusable_widget:
+ * ofa_ope_templates_book_get_current_treeview:
  *
- * Returns the top focusable widget, here the treeview of the current
- * page.
+ * Returns the treeview of the current page.
  */
 GtkWidget *
-ofa_ope_templates_book_get_top_focusable_widget( const ofaOpeTemplatesBook *book )
+ofa_ope_templates_book_get_current_treeview( const ofaOpeTemplatesBook *book )
 {
 	ofaOpeTemplatesBookPrivate *priv;
 	GtkWidget *tview;
@@ -1258,15 +1257,14 @@ ofa_ope_templates_book_get_top_focusable_widget( const ofaOpeTemplatesBook *book
 	g_return_val_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ), NULL );
 
 	priv = book->priv;
+	tview = NULL;
 
 	if( !priv->dispose_has_run ){
 
 		tview = get_current_tree_view( book );
-
-		return( tview );
 	}
 
-	return( NULL );
+	return( tview );
 }
 
 /**

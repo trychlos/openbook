@@ -77,24 +77,24 @@ typedef struct {
 }
 	ofaOpeTemplatesBookClass;
 
-GType               ofa_ope_templates_book_get_type                ( void ) G_GNUC_CONST;
+GType               ofa_ope_templates_book_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplatesBook *ofa_ope_templates_book_new                     ( void );
+ofaOpeTemplatesBook *ofa_ope_templates_book_new                ( void );
 
-void                ofa_ope_templates_book_set_main_window         ( ofaOpeTemplatesBook *book,
-																			ofaMainWindow *main_window );
+void                ofa_ope_templates_book_set_main_window     ( ofaOpeTemplatesBook *book,
+																		ofaMainWindow *main_window );
 
-void                ofa_ope_templates_book_expand_all              ( ofaOpeTemplatesBook *book );
+void                ofa_ope_templates_book_expand_all          ( ofaOpeTemplatesBook *book );
 
-gchar              *ofa_ope_templates_book_get_selected            ( ofaOpeTemplatesBook *book );
+gchar              *ofa_ope_templates_book_get_selected        ( ofaOpeTemplatesBook *book );
 
-void                ofa_ope_templates_book_set_selected            ( ofaOpeTemplatesBook *book,
-																			const gchar *mnemo );
+void                ofa_ope_templates_book_set_selected        ( ofaOpeTemplatesBook *book,
+																		const gchar *mnemo );
 
-void                ofa_ope_templates_book_button_clicked          ( ofaOpeTemplatesBook *book,
-																			gint button_id );
+void                ofa_ope_templates_book_button_clicked      ( ofaOpeTemplatesBook *book,
+																		gint button_id );
 
-GtkWidget          *ofa_ope_templates_book_get_top_focusable_widget( const ofaOpeTemplatesBook *book );
+GtkWidget          *ofa_ope_templates_book_get_current_treeview( const ofaOpeTemplatesBook *book );
 
 G_END_DECLS
 

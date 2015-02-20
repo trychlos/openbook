@@ -155,14 +155,21 @@ v_init_view( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaOpeTemplatesPagePrivate *priv;
+	ofaOpeTemplatesBook *book;
+	GtkWidget *top_widget;
+
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATES_PAGE( page ), NULL );
 
-	return( ofa_ope_templates_frame_get_top_focusable_widget(
-					OFA_OPE_TEMPLATES_PAGE( page )->priv->ope_frame ));
+	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
+	book = ofa_ope_templates_frame_get_book( priv->ope_frame );
+	top_widget = ofa_ope_templates_book_get_current_treeview( book );
+
+	return( top_widget );
 }
 
 /*
- * double click on a row opens the rate properties
+ * double click on a row opens the ope_template properties
  */
 static void
 on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatesPage *page )
