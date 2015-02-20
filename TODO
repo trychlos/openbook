@@ -322,24 +322,6 @@
 
  658 2015- 2-17 AccountSelect: replace OK label with Select
 
- 659 2015- 2-17 Reconciliation using a manual date:
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
-                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
-                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
-                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
-
  667 2015- 2-17 remove traversing calls, replacing them with a get_object(),
                 plus a direct use of the object api 
 
@@ -357,7 +339,13 @@
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 681
+ 681 2015- 2-20 Have a 'allow entries' on detail accounts, which would
+                be active by default (use case: forbid new entries on
+                closed accounts)
+
+ 682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
+
+ 683
 
 -----------------------------------------------------------------------
  DONE
@@ -2942,6 +2930,25 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 659 2015- 2-17 Reconciliation using a manual date:
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
+                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
+                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
+     2015- 2-20 done - svn #4624
 
  660 2015- 2-17 FATAL: Reconciliation: segfault on double-click on a
                 newly created entry
