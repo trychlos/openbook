@@ -232,9 +232,6 @@ openbook_SOURCES = \
 	ofa-settlement.h									\
 	ofa-tree-store.c									\
 	ofa-tree-store.h									\
-	ofa-treeview.c										\
-	ofa-treeview.h										\
-	ofa-treeview-prot.h									\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)
