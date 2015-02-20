@@ -297,8 +297,9 @@ ui_files = \
 	$(NULL)
 
 images_files = \
-	notes1.png											\
 	filler.png											\
+	green-checkmark.png									\
+	notes1.png											\
 	$(NULL)
 
 ui_data_DATA = \

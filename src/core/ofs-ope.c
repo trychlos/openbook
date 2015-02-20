@@ -96,7 +96,7 @@ static gchar       *get_closing_account( sHelper *helper, const gchar *content )
 static gboolean     check_for_ledger( sChecker *checker );
 static gboolean     check_for_dates( sChecker *checker );
 static gboolean     check_for_all_entries( sChecker *checker );
-static gboolean     check_for_entry( sChecker *checker, ofsOpeDetail *detail );
+static gboolean     check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num );
 static gboolean     check_for_currencies( sChecker *checker );
 static void         ope_dump_detail( ofsOpeDetail *detail, void *empty );
 
@@ -957,13 +957,14 @@ check_for_all_entries( sChecker *checker )
 	ofsOpeDetail *detail;
 	gboolean ok;
 	GList *it;
+	gint num;
 
 	ok = TRUE;
 	ope = checker->ope;
 
-	for( it=ope->detail ; it ; it=it->next ){
+	for( it=ope->detail, num=1 ; it ; it=it->next, ++num ){
 		detail = ( ofsOpeDetail * ) it->data;
-		ok &= check_for_entry( checker, detail );
+		ok &= check_for_entry( checker, detail, num );
 	}
 
 	return( ok );
@@ -973,37 +974,65 @@ check_for_all_entries( sChecker *checker )
  * empty account or empty label is not error
  *  debit and credit of such a line will not be counted in the currency
  *  balance
+ *
+ * @num is counted from 1 and refers to the row of GuidedInput grid.
  */
 static gboolean
-check_for_entry( sChecker *checker, ofsOpeDetail *detail )
+check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 {
 	ofoAccount *account;
 	const gchar *currency;
 	gboolean ok;
 
 	ok = FALSE;
+	account = NULL;
 	currency = NULL;
+	detail->account_is_valid = FALSE;
+	detail->label_is_valid = FALSE;
+	detail->amounts_are_valid = FALSE;
 
-	if( my_strlen( detail->account ) && my_strlen( detail->label )){
+	if( my_strlen( detail->label )){
+		detail->label_is_valid = TRUE;
+	}
 
+	if( my_strlen( detail->account )){
 		account = ofo_account_get_by_number( checker->dossier, detail->account );
 		if( !account || !OFO_IS_ACCOUNT( account )){
 			g_free( checker->message );
-			checker->message = g_strdup_printf( _( "Unknown account: %s" ), detail->account );
+			checker->message = g_strdup_printf(
+					_( "(row %d) unknown account: %s" ), num, detail->account );
 
 		} else if( ofo_account_is_root( account )){
 			g_free( checker->message );
-			checker->message = g_strdup_printf( _( "Account is root: %s" ), detail->account );
-
-		} else if(( detail->debit && detail->credit ) || ( !detail->debit && !detail->credit )){
-			g_free( checker->message );
-			checker->message = g_strdup( _( "Invalid amounts (both set or both empty)" ));
+			checker->message = g_strdup_printf(
+					_( "(row %d) account is root: %s" ), num, detail->account );
 
 		} else {
 			currency = ofo_account_get_currency( account );
-			ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
-			ok = TRUE;
+			if( !my_strlen( currency )){
+				g_free( checker->message );
+				checker->message = g_strdup_printf(
+						_( "(row %d) empty currency for %s account" ), num, detail->account );
+
+			} else {
+				detail->account_is_valid = TRUE;
+			}
 		}
+	}
+
+	if(( detail->debit && !detail->credit ) || ( !detail->debit && detail->credit )){
+		detail->amounts_are_valid = TRUE;
+
+	/* only an error if both amounts are set */
+	} else if( detail->debit && detail->credit ){
+		g_free( checker->message );
+		checker->message = g_strdup_printf(
+				_( "(row %d) invalid amounts" ), num );
+	}
+
+	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
+		ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
+		ok = TRUE;
 	}
 
 	return( ok );
@@ -1044,38 +1073,54 @@ check_for_currencies( sChecker *checker )
 
 /**
  * ofs_ope_generate_entries:
+ *
+ * This generate valid entries.
+ * The function heavily relies on the result of the #ofs_ope_is_valid()
+ * one, which is so called before trying to do the actual generation
+ * (this prevent us to have to check that is has been actually called
+ *  before this one by the caller).
  */
 GList *
 ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 {
+	static const gchar *thisfn = "ofs_ope_generate_entries";
 	GList *entries;
 	ofsOpeDetail *detail;
 	gint i, count;
 	ofoAccount *account;
 	const gchar *currency;
+	gchar *message;
+
+	if( !ofs_ope_is_valid( ope, dossier, &message, NULL )){
+		g_warning( "%s: %s", thisfn, message );
+		g_free( message );
+		return( NULL );
+	}
 
 	entries = NULL;
 	count = g_list_length( ope->detail );
 
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-		if( my_strlen( detail->account ) &&
-				my_strlen( detail->label ) &&
-				( detail->debit || detail->credit )){
+		if( detail->account_is_valid &&
+				detail->label_is_valid &&
+				detail->amounts_are_valid ){
 
 			account = ofo_account_get_by_number( dossier, detail->account );
-			if( account ){
-				currency = ofo_account_get_currency( account );
-				entries = g_list_append( entries,
-						ofo_entry_new_with_data(
-								dossier,
-								&ope->deffect, &ope->dope, detail->label,
-								ope->ref, detail->account,
-								currency,
-								ope->ledger,
-								ofo_ope_template_get_mnemo( ope->ope_template ),
-								detail->debit, detail->credit ));
-			}
+			g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+
+			currency = ofo_account_get_currency( account );
+			g_return_val_if_fail( my_strlen( currency ), NULL );
+
+			entries = g_list_append( entries,
+					ofo_entry_new_with_data(
+							dossier,
+							&ope->deffect, &ope->dope, detail->label,
+							ope->ref, detail->account,
+							currency,
+							ope->ledger,
+							ofo_ope_template_get_mnemo( ope->ope_template ),
+							detail->debit, detail->credit ));
 		}
 	}
 
@@ -1114,13 +1159,17 @@ ope_dump_detail( ofsOpeDetail *detail, void *empty )
 {
 	static const gchar *thisfn = "ofs_ope_dump";
 
-	g_debug( "%s: detail=%p, account=%s, account_user_set=%s,"
-			" label=%s, label_user_set=%s, debit=%.5lf, debit_user_set=%s, credit=%.5lf, credit_user_set=%s",
+	g_debug( "%s: detail=%p, "
+			"account=%s, account_user_set=%s, account_is_valid=%s, "
+			"label=%s, label_user_set=%s, label_is_valid=%s, "
+			"debit=%.5lf, debit_user_set=%s, credit=%.5lf, credit_user_set=%s, "
+			"amounts_are_valid=%s",
 				thisfn, ( void * ) detail,
-				detail->account, detail->account_user_set ? "True":"False",
-				detail->label, detail->label_user_set ? "True":"False",
+				detail->account, detail->account_user_set ? "True":"False", detail->account_is_valid ? "True":"False",
+				detail->label, detail->label_user_set ? "True":"False", detail->label_is_valid ? "True":"False",
 				detail->debit, detail->debit_user_set ? "True":"False",
-				detail->credit, detail->credit_user_set ? "True":"False" );
+				detail->credit, detail->credit_user_set ? "True":"False",
+				detail->amounts_are_valid ? "True":"False" );
 }
 
 /**

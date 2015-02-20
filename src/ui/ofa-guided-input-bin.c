@@ -118,7 +118,8 @@ enum {
 	TYPE_NONE = 0,
 	TYPE_ENTRY,
 	TYPE_LABEL,
-	TYPE_BUTTON
+	TYPE_BUTTON,
+	TYPE_IMAGE
 };
 
 /* definition of the columns
@@ -176,17 +177,23 @@ static sColumnDef st_col_defs[] = {
 				NULL,
 				CURRENCY_WIDTH, FALSE, 0, FALSE, NULL
 		},
+		{ OPE_COL_VALID,
+				TYPE_IMAGE,
+				NULL,
+				NULL,
+				0, FALSE, 0.5, FALSE, NULL
+		},
 		{ 0 }
 };
 
 /* a structure attached to each dynamically created entry field
  */
 typedef struct {
-	gint              row_id;		/* counted from 1 */
+	gint              row_id;			/* counted from 1 */
 	const sColumnDef *col_def;
 	gboolean          locked;
-	gchar            *previous;		/* initial content when focusing in */
-	gboolean          modified;		/* whether an automatic field has been manually modified */
+	gchar            *initial;			/* initial content when focusing into the entry */
+	gboolean          modified;			/* whether the entry has been manually modified */
 }
 	sEntryData;
 
@@ -206,8 +213,10 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static GDate st_last_dope               = { 0 };
 static GDate st_last_deff               = { 0 };
 
-static const gchar *st_bin_xml        = PKGUIDIR "/ofa-guided-input-bin.ui";
-static const gchar *st_bin_id         = "GuidedInputBin";
+static const gchar *st_image_empty      = PKGUIDIR "/filler.png";
+static const gchar *st_image_check      = PKGUIDIR "/green-checkmark.png";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-guided-input-bin.ui";
+static const gchar *st_bin_id           = "GuidedInputBin";
 
 G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
 
@@ -219,6 +228,7 @@ static void              add_entry_row_widget( ofaGuidedInputBin *bin, gint col_
 static GtkWidget        *row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
+static GtkWidget        *row_widget_image( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
 static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *bin );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
@@ -229,6 +239,7 @@ static void              on_piece_changed( GtkEditable *editable, ofaGuidedInput
 static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin );
 static void              on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin );
 static void              on_account_selection( ofaGuidedInputBin *bin, gint row );
+static void              do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row );
 static void              check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row );
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
 static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
@@ -237,9 +248,10 @@ static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputBin *b
 static void              check_for_enable_dlg( ofaGuidedInputBin *bin );
 static gboolean          is_dialog_validable( ofaGuidedInputBin *bin );
 static void              set_ope_to_ui( const ofaGuidedInputBin *bin, gint row, gint col_id, const gchar *content );
+static void              display_currency( ofaGuidedInputBin *bin, gint row, ofsOpeDetail *detail );
+static void              draw_valid_coche( ofaGuidedInputBin *bin, gint row, gboolean bvalid );
 static void              set_comment( ofaGuidedInputBin *bin, const gchar *comment );
 static void              set_message( ofaGuidedInputBin *bin, const gchar *errmsg );
-static void              display_currencies( ofaGuidedInputBin *bin );
 static gboolean          update_totals( ofaGuidedInputBin *bin );
 static void              add_total_diff_lines( ofaGuidedInputBin *bin, gint model_count );
 static void              total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff );
@@ -633,6 +645,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	add_entry_row_widget( bin, OPE_COL_DEBIT, row );
 	add_entry_row_widget( bin, OPE_COL_CREDIT, row );
 	add_entry_row_widget( bin, OPE_COL_CURRENCY, row );
+	add_entry_row_widget( bin, OPE_COL_VALID, row );
 
 	priv->rows_count += 1;
 }
@@ -663,6 +676,10 @@ add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 
 		case TYPE_BUTTON:
 			widget = row_widget_button( bin, col_def, row );
+			break;
+
+		case TYPE_IMAGE:
+			widget = row_widget_image( bin, col_def, row );
 			break;
 
 		default:
@@ -715,7 +732,7 @@ row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 		sdata->row_id = row;
 		sdata->col_def = col_def;
 		sdata->locked = locked;
-		sdata->previous = NULL;
+		sdata->initial = NULL;
 		sdata->modified = FALSE;
 
 		g_object_set_data( G_OBJECT( widget ), DATA_ENTRY_DATA, sdata );
@@ -742,7 +759,7 @@ row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	GtkWidget *widget;
 
 	widget = gtk_label_new( "" );
-
+	gtk_misc_set_alignment( GTK_MISC( widget ), col_def->xalign, 0.5 );
 	if( col_def->width ){
 		gtk_label_set_width_chars( GTK_LABEL( widget ), col_def->width );
 	}
@@ -765,6 +782,16 @@ row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	return( button );
 }
 
+static GtkWidget *
+row_widget_image( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
+{
+	GtkWidget *image;
+
+	image = gtk_image_new_from_file( st_image_empty );
+
+	return( image );
+}
+
 static void
 on_entry_finalized( sEntryData *sdata, GObject *finalized_entry )
 {
@@ -772,7 +799,7 @@ on_entry_finalized( sEntryData *sdata, GObject *finalized_entry )
 
 	g_debug( "%s: sdata=%p, finalized_entry=%p", thisfn, ( void * ) sdata, ( void * ) finalized_entry );
 
-	g_free( sdata->previous );
+	g_free( sdata->initial );
 	g_free( sdata );
 }
 
@@ -947,19 +974,35 @@ on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin )
 
 /*
  * we have clicked on the 'Account selection' button
+ * unconditionnally open the selection account dialog box
  */
 static void
 on_account_selection( ofaGuidedInputBin *bin, gint row )
 {
 	ofaGuidedInputBinPrivate *priv;
-	GtkEntry *entry;
+	GtkWidget *entry;
+
+	priv = bin->priv;
+
+	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+
+	do_account_selection( bin, GTK_ENTRY( entry ), row );
+}
+
+/*
+ * unconditionnally open the selection account dialog box
+ */
+static void
+do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row )
+{
+	ofaGuidedInputBinPrivate *priv;
 	gchar *number;
 
 	priv = bin->priv;
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row ));
 	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ), FALSE );
-	if( number && g_utf8_strlen( number, -1 )){
+	if( my_strlen( number )){
 		priv->focused_row = row;
 		priv->focused_column = OPE_COL_ACCOUNT;
 		gtk_entry_set_text( entry, number );
@@ -978,20 +1021,13 @@ check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row  )
 	ofaGuidedInputBinPrivate *priv;
 	ofoAccount *account;
 	const gchar *asked_account;
-	gchar *number;
 
 	priv = bin->priv;
 
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number( priv->dossier, asked_account );
 	if( !account || ofo_account_is_root( account )){
-		number = ofa_account_select_run( priv->main_window, asked_account, FALSE );
-		if( number ){
-			priv->focused_row = row;
-			priv->focused_column = OPE_COL_ACCOUNT;
-			gtk_entry_set_text( entry, number );
-			g_free( number );
-		}
+		do_account_selection( bin, entry, row );
 	}
 }
 
@@ -1028,10 +1064,15 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	g_debug( "%s: entry=%p, row=%u, column=%u",
 			thisfn, ( void * ) entry, priv->focused_row, priv->focused_column );
 
-	/* get a copy of the current content */
-	g_free( sdata->previous );
-	sdata->previous = g_strdup( gtk_entry_get_text( entry ));
+	/* get a copy of the initial content */
+	g_free( sdata->initial );
+	if( sdata->col_def->is_double ){
+		sdata->initial = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+	} else {
+		sdata->initial = g_strdup( gtk_entry_get_text( entry ));
+	}
 
+	/* setup the comment label for the row */
 	widget = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, sdata->row_id );
 	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), FALSE );
 	acc_number = gtk_entry_get_text( GTK_ENTRY( widget ));
@@ -1069,7 +1110,7 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 
 	/* compare the current content with the saved copy of the initial one */
 	current = gtk_entry_get_text( entry );
-	sdata->modified = ( g_utf8_collate( sdata->previous, current ) != 0 );
+	sdata->modified = ( g_utf8_collate( sdata->initial, current ) != 0 );
 
 	/* reset focus and recursivity indicators */
 	priv->on_changed_count = 0;
@@ -1266,7 +1307,15 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 
 	ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
 
-	display_currencies( bin );
+	/* update the bin dialog with the new content of operation */
+	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
+		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+		display_currency( bin, i+1,
+				detail );
+		draw_valid_coche( bin, i+1,
+				detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid );
+	}
+
 	update_totals( bin );
 	set_message( bin, message );
 
@@ -1280,29 +1329,90 @@ set_ope_to_ui( const ofaGuidedInputBin *bin, gint row, gint col_id, const gchar 
 {
 	ofaGuidedInputBinPrivate *priv;
 	const sColumnDef *def;
-	GtkWidget *entry;
+	GtkWidget *entry, *label;
 
 	priv = bin->priv;
 	def = find_column_def_from_col_id( bin, col_id );
 	g_return_if_fail( def );
 
-	if( def->column_type == TYPE_ENTRY && content ){
-		entry = gtk_grid_get_child_at( priv->entries_grid, col_id, row );
-		/*g_debug( "set_ope_to_ui: row=%d, col_id=%d, content=%s, entry=%p", row, col_id, content, ( void * ) entry );*/
+	if( content ){
+		if( def->column_type == TYPE_ENTRY ){
+			entry = gtk_grid_get_child_at( priv->entries_grid, col_id, row );
+			if( entry ){
+				g_return_if_fail( GTK_IS_ENTRY( entry ));
 
-		if( entry ){
-			g_return_if_fail( GTK_IS_ENTRY( entry ));
+				if( def->is_double ){
+					g_signal_handlers_block_by_func( entry, on_entry_changed, ( gpointer ) bin );
+					my_editable_amount_set_string( GTK_EDITABLE( entry ), content );
+					g_signal_handlers_unblock_by_func( entry, on_entry_changed, ( gpointer ) bin );
 
-			if( def->is_double ){
-				g_signal_handlers_block_by_func( entry, on_entry_changed, ( gpointer ) bin );
-				my_editable_amount_set_string( GTK_EDITABLE( entry ), content );
-				g_signal_handlers_unblock_by_func( entry, on_entry_changed, ( gpointer ) bin );
+				} else {
+					gtk_entry_set_text( GTK_ENTRY( entry ), content );
+				}
+			}
 
-			} else {
-				gtk_entry_set_text( GTK_ENTRY( entry ), content );
+		} else if( def->column_type == TYPE_LABEL ){
+			label = gtk_grid_get_child_at( priv->entries_grid, col_id, row );
+
+			if( label ){
+				g_return_if_fail( GTK_IS_LABEL( label ));
+				gtk_label_set_text( GTK_LABEL( label ), content );
 			}
 		}
 	}
+}
+
+/*
+ * display the currency iso code in front of each line
+ * only display the currency if different from default currency
+ */
+static void
+display_currency( ofaGuidedInputBin *bin, gint row, ofsOpeDetail *detail )
+{
+	ofaGuidedInputBinPrivate *priv;
+	ofoAccount *account;
+	const gchar *currency, *display_cur;
+	GtkWidget *label;
+
+	priv = bin->priv;
+	display_cur = "";
+
+	if( detail->account ){
+		account = ofo_account_get_by_number( priv->dossier, detail->account );
+		if( account ){
+			currency = ofo_account_get_currency( account );
+			if( currency && g_utf8_collate( currency, priv->def_currency )){
+				display_cur = currency;
+			}
+		}
+	}
+	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CURRENCY, row );
+	gtk_label_set_text( GTK_LABEL( label ), display_cur );
+}
+
+static void
+draw_valid_coche( ofaGuidedInputBin *bin, gint row, gboolean bvalid )
+{
+	ofaGuidedInputBinPrivate *priv;
+	const sColumnDef *def;
+	GtkWidget *image;
+
+	g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
+
+	priv = bin->priv;
+	def = find_column_def_from_col_id( bin, OPE_COL_VALID );
+	g_return_if_fail( def && def->column_type == TYPE_IMAGE );
+
+	image = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_VALID, row );
+	g_return_if_fail( image && GTK_IS_IMAGE( image ));
+
+	if( bvalid ){
+		gtk_image_set_from_file( GTK_IMAGE( image ), st_image_check );
+	} else {
+		gtk_image_set_from_file( GTK_IMAGE( image ), st_image_empty );
+	}
+
+	gtk_widget_queue_draw( image );
 }
 
 static void
@@ -1328,40 +1438,6 @@ set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 	if( gdk_rgba_parse(
 			&color, errmsg && g_utf8_strlen( errmsg, -1 ) ? "#ff0000":"#000000" )){
 		gtk_widget_override_color( priv->message, GTK_STATE_FLAG_NORMAL, &color );
-	}
-}
-
-/*
- * display the currency iso code in front of each line
- * only display the currency if different from default currency
- */
-static void
-display_currencies( ofaGuidedInputBin *bin )
-{
-	ofaGuidedInputBinPrivate *priv;
-	ofsOpeDetail *detail;
-	ofoAccount *account;
-	gint i, count;
-	const gchar *currency, *display_cur;
-	GtkWidget *label;
-
-	priv = bin->priv;
-	count = g_list_length( priv->ope->detail );
-
-	for( i=0 ; i<count ; ++i ){
-		detail = ( ofsOpeDetail * ) g_list_nth_data( priv->ope->detail, i );
-		display_cur = "";
-		if( detail->account ){
-			account = ofo_account_get_by_number( priv->dossier, detail->account );
-			if( account ){
-				currency = ofo_account_get_currency( account );
-				if( currency && g_utf8_collate( currency, priv->def_currency )){
-					display_cur = currency;
-				}
-			}
-		}
-		label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CURRENCY, i+1 );
-		gtk_label_set_text( GTK_LABEL( label ), display_cur );
 	}
 }
 

@@ -361,14 +361,8 @@
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 679 2015- 2-19 ofsOpe: actually do not have an account or a label
-                is not an error: the entry will just not be generated,
-                and the amounts are not taken into account when
-                computing the ope balance
-                The only error is so: valid lines are not balanced.
-
- 680  679 2015 GuidedInputBin: have a green coche when an entry will be
-               generated
+ 680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
+                generated
 
  681
 
@@ -3039,6 +3033,13 @@
                 - ledgers: ok
                 - ope_templates: ok
                 - rates: ok
+
+ 679 2015- 2-19 ofsOpe: actually do not have an account or a label
+                is not an error: the entry will just not be generated,
+                and the amounts are not taken into account when
+                computing the ope balance
+                The only error is so: valid lines are not balanced.
+     2015- 2-19 done - svn #4621
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

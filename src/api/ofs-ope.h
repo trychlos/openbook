@@ -75,12 +75,15 @@ typedef struct {
 typedef struct {
 	gchar                *account;
 	gboolean              account_user_set;
+	gboolean              account_is_valid;
 	gchar                *label;
 	gboolean              label_user_set;
+	gboolean              label_is_valid;
 	gdouble               debit;
 	gboolean              debit_user_set;
 	gdouble               credit;
 	gboolean              credit_user_set;
+	gboolean              amounts_are_valid;
 }
 	ofsOpeDetail;
 
@@ -96,6 +99,7 @@ enum {
 	OPE_COL_DEBIT,
 	OPE_COL_CREDIT,
 	OPE_COL_CURRENCY,
+	OPE_COL_VALID,
 	OPE_N_COLUMNS
 };
 
