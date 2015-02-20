@@ -725,7 +725,8 @@ exchange_rows( ofaOpeTemplateProperties *self, gint row_a, gint row_b )
 	gint i;
 	GtkWidget *w_a, *w_b;
 
-	for( i=0 ; i<DET_N_COLUMNS ; ++i ){
+	/* do not move the row number */
+	for( i=1 ; i<DET_N_COLUMNS ; ++i ){
 
 		w_a = gtk_grid_get_child_at( self->priv->grid, i, row_a );
 		g_object_ref( w_a );

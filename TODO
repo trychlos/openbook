@@ -361,9 +361,6 @@
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
-                generated
-
  681
 
 -----------------------------------------------------------------------
@@ -3040,6 +3037,10 @@
                 computing the ope balance
                 The only error is so: valid lines are not balanced.
      2015- 2-19 done - svn #4621
+
+ 680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
+                generated
+     2015- 2-20 done - svn #4622
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
