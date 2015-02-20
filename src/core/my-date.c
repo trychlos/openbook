@@ -189,10 +189,11 @@ my_date_set_now( GDate *date )
 	g_return_val_if_fail( date, NULL );
 
 	dt = g_date_time_new_now_local();
-	g_date_time_get_ymd( dt, &year, &month, &day );
-	g_date_time_unref( dt );
-
-	g_date_set_dmy( date, day, month, year );
+	if( dt ){
+		g_date_time_get_ymd( dt, &year, &month, &day );
+		g_date_time_unref( dt );
+		g_date_set_dmy( date, day, month, year );
+	}
 
 	return( date );
 }
@@ -424,10 +425,12 @@ my_date_set_from_stamp( GDate *date, const GTimeVal *stamp )
 	my_date_clear( date );
 	if( stamp && stamp->tv_sec ){
 		dt = g_date_time_new_from_timeval_local( stamp );
-		g_date_set_day( date, g_date_time_get_day_of_month( dt ));
-		g_date_set_month( date, g_date_time_get_month( dt ));
-		g_date_set_year( date, g_date_time_get_year( dt ));
-		g_date_time_unref( dt );
+		if( dt ){
+			g_date_set_day( date, g_date_time_get_day_of_month( dt ));
+			g_date_set_month( date, g_date_time_get_month( dt ));
+			g_date_set_year( date, g_date_time_get_year( dt ));
+			g_date_time_unref( dt );
+		}
 	}
 
 	return( date );
