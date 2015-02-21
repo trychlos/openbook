@@ -305,8 +305,8 @@
 
  652 2015- 2-15 let the user configure colors
 
- 653 2015- 2-17 GuidedInput dialog should be non-modal
-                (use case: consult rates)
+ 653 2015- 2-17 GuidedInputBin/OpeTemplateProperties dialogs should be
+                non-modal (use case: consult rates)
 
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
@@ -322,17 +322,17 @@
 
  677 2015- 2-19 preferences for the dossier should be set in the dbms
                 (e.g. order of ope_templates pages)
+     2015- 2-20 why ? to save them in backups and restore them 
 
  678 2015- 2-19 visual bug which seems to come from GTK+: updating a
                 tree store only update the display when moving the
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 681 2015- 2-20 Have a 'allow entries' on detail accounts, which would
-                be active by default (use case: forbid new entries on
-                closed accounts)
+ 683 2015- 2-20 when deleting a dossier, should update the store for all
+                lines of the dossier
 
- 683
+ 684
 
 -----------------------------------------------------------------------
  DONE
@@ -3055,6 +3055,11 @@
  680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
                 generated
      2015- 2-20 done - svn #4622
+
+ 681 2015- 2-20 Have a 'allow entries' on detail accounts, which would
+                be active by default (use case: forbid new entries on
+                closed accounts)
+     2015- 2-20 done - svn #4635
 
  682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
      2015- 2-20 done - svn #4626

@@ -17,6 +17,7 @@ src/ui/ofa-currency-properties.ui
 src/ui/ofa-dos-menubar.ui
 src/ui/ofa-dossier-delete-prefs.piece.ui
 src/ui/ofa-dossier-delete.ui
+src/ui/ofa-dossier-display-notes.ui
 src/ui/ofa-dossier-login.ui
 src/ui/ofa-dossier-new-bin.ui
 src/ui/ofa-dossier-new.ui
