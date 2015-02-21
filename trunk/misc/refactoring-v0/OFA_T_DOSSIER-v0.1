@@ -1,0 +1,15 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER CHANGE DOS_DUREE_EXE DOS_EXE_LENGTH   INTEGER                      COMMENT 'Exercice length in months';
+ALTER TABLE OFA_T_DOSSIER CHANGE DOS_DEV_CODE  DOS_DEF_CURRENCY VARCHAR(3)                   COMMENT 'Default currency identifier';
+ALTER TABLE OFA_T_DOSSIER CHANGE DOS_MAJ_USER  DOS_UPD_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update';
+ALTER TABLE OFA_T_DOSSIER CHANGE DOS_MAJ_STAMP DOS_UPD_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp';
+
+DESCRIBE OFA_T_DOSSIER;
+
+ALTER TABLE OFA_T_DOSSIER_EXE CHANGE DOS_EXE_DEB      DOS_EXE_BEGIN      DATE                         COMMENT 'Exercice beginning date';
+ALTER TABLE OFA_T_DOSSIER_EXE CHANGE DOS_EXE_FIN      DOS_EXE_END        DATE                         COMMENT 'Exercice ending date';
+ALTER TABLE OFA_T_DOSSIER_EXE CHANGE DOS_EXE_LAST_ECR DOS_EXE_LAST_ENTRY INTEGER                      COMMENT 'Last entry number used';
+
+DESCRIBE OFA_T_DOSSIER_EXE;
+

@@ -1,0 +1,8 @@
+1|Mnemo|Label|Journal|JournalLocked|Ref|RefLocked|Notes|MajUser|MajStamp
+2|Mnemo|Comment|Account|AccountLocked|Label|LabelLocked|Debit|DebitLocked|Credit|CreditLocked
+1|CLORAN|Report à nouveau|RAN|False||||ofat|2015-01-07 23:52:25
+2|CLORAN|||False|Report à Nouveau|False||False||False
+2|CLORAN||%ACCL(%A1)|False|Report à Nouveau %A1 - %ACLA(%A1)|True|%C1|True|%D1|True
+1|CLOSLD|Solde de clôture|RAN|False||||ofat|2015-01-07 23:52:10
+2|CLOSLD|||False|Solde Compte|False||False||False
+2|CLOSLD||%ACCL(%C1)|False|Solde Compte %A1 - %ACLA(%A1)|True|%C1|True|%D1|True

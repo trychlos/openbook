@@ -1,0 +1,16 @@
+1|LedMnemo|LedLabel|LedNotes|LedUpdUser|LedUpdStamp|LedLastClo
+2|LedMnemo|LedCurrency|LedCurValDebit|LedCurValCredit|LedCurRoughDebit|LedCurRoughCredit|LedCurFutureDebit|LedCurFutureCredit
+1|ACH|Journal des achats||wieser|2015-02-03 21:32:20|
+2|ACH|EUR|0|0|15065,649380000001|15065,649799999999|0|0
+1|BQ|Journal de banque||wieser|2015-02-17 22:42:43|
+2|BQ|EUR|0|0|21639,949960000002|21639,949960000002|0|0
+1|EXP|Journal de l'exploitant||wieser|2015-02-03 21:32:09|
+2|EXP|EUR|0|0|16078,069960000001|16078,069960000001|0|0
+1|IMPORT|Imports||wieser|2015-02-02 05:19:08|
+1|LMNP|Location meublée non professionnelle||wieser|2015-02-03 21:57:08|
+2|LMNP|EUR|0|0|39641,499920000002|39641,499960000001|0|0
+1|OD|Journal des opérations diverses||wieser|2015-02-02 05:19:08|
+1|RAN|Reports à nouveaux||wieser|2015-02-02 05:19:08|
+2|RAN|EUR|0|0|621095,55992999999|621095,55995999998|0|0
+1|VEN|Journal des ventes||wieser|2015-02-02 05:19:08|
+2|VEN|EUR|0|0|43254|43254|0|0

@@ -1,0 +1,7 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER ADD COLUMN DOS_FORW_ACCOUNT    VARCHAR(20)               COMMENT 'Account for carried forward entries';
+ALTER TABLE OFA_T_DOSSIER ADD COLUMN DOS_FORW_LEDGER     VARCHAR(6)                COMMENT 'Ledger for carried forward entries';
+ALTER TABLE OFA_T_DOSSIER ADD COLUMN DOS_FORW_TEMPLATE   VARCHAR(80)               COMMENT 'Label template for carried forward entries';
+
+DESCRIBE OFA_T_DOSSIER;

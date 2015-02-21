@@ -1,0 +1,7 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER ADD COLUMN DOS_LAST_EXE_ID  INTEGER                      COMMENT 'Last exercice identifier opened for the dossier';
+
+UPDATE OFA_T_DOSSIER SET DOS_LAST_EXE_ID=1;
+
+DESCRIBE OFA_T_DOSSIER;

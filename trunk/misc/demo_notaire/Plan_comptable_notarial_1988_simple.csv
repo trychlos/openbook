@@ -1,0 +1,133 @@
+Number;Label;Currency;Type;Notes
+101;Capital (social ou individuel);EUR;D;
+108;Compte du notaire;EUR;D;
+12;Résultat de l'exercice;EUR;D;
+16;Emprunts et dettes assimilées;EUR;D;
+20;Immobilisations incorporelles;EUR;D;
+207;Droit de présentation;EUR;D;
+21;Immobilisations corporelles;EUR;D;
+218;Autres immobililsations corporelles;;R;
+2181;Installations, agencements, aménagements divers;EUR;D;Dans les constructions dont l'entreprise n'est pas propriétaire
+2182;Matériel de transport;EUR;D;
+2183;Matériel de bureau et matériel informatique;EUR;D;
+2184;Mobilier de bureau;EUR;D;
+27;Autres immobililsations financières;EUR;D;
+275;Dépôts et cautionnements versés;EUR;D;
+28;Amortissements des immobilisations;EUR;D;
+281;Amortissements des immobilisations corporelles;EUR;D;
+2818;Autres immobililsations corporelles;;R;
+28181;Installations générales, agencements, aménagements divers;EUR;D;Dans les constructions dont l'entreprise n'est pas propriétaire
+28182;Matériel de transport;EUR;D;
+28183;Matériel de bureau et matériel informatique;EUR;D;
+28184;Mobilier de bureau;EUR;D;
+40;Fournisseurs et comptes rattachés;;R;
+400;Fournisseurs et comptes rattachés;EUR;D;
+41;Clients et comptes rattachés;;R;
+411;Clients;EUR;D;
+414;Clients à régulariser;EUR;D;
+4141;Clients – Comptes à régulariser;EUR;D;
+4142;Clients – Intérêts CDC à répartir sur comptes consignés;EUR;D;
+42;Personnel et comptes rattachés;EUR;D;
+421;Personnel – Rémunérations dues;EUR;D;
+43;Sécurité sociale et autres organismes sociaux;EUR;D;
+431;Sécurité sociale – URSSAF;EUR;D;
+435;Sécurité sociale – CRPCEN;EUR;D;
+4351;Cotisations sur appointements;EUR;D;
+436;Organismes sociaux et de retraite des notaires;EUR;D;
+437;Autres organismes sociaux;EUR;D;
+4372;SMCEN;EUR;D;
+4374;ASSEDIC;EUR;D;
+44;Etat et autres collectivités publiques;;R;
+442;Etat – Impôts et taxes recouvrables sur des tiers;;R;
+4421;Enregistrement – Recette des impôts;EUR;D;
+44211;Enregistrement;EUR;D;
+44212;Enregistrement sur états;EUR;D;
+4422;Conservations des hypothèques;EUR;D;
+4423;Timbres;EUR;D;
+44231;Timbres mobiles et papier timbré;EUR;D;
+44232;Timbres par machine;EUR;D;
+44233;Timbres sur états périodiques;EUR;D;
+4426;Prélèvement libératoire;EUR;D;
+4428;Autres droits;EUR;D;
+445;Etat – Taxe sur la valeur ajoutée;EUR;D;
+4455;TVA à décaisser;EUR;D;
+4456;TVA déductible;EUR;D;
+4457;TVA collectée par l'entreprise;EUR;D;
+447;Autres impôts, taxes et versements assimilés;EUR;D;
+4471;Impôts directs;EUR;D;
+4478;Autres impôts, taxes et versements assimilés;EUR;D;
+46;Débiteurs divers et créditeurs divers;EUR;D;
+461;Notaires en concours et en participation;EUR;D;
+466;Organismes professionnels;EUR;D;
+467;Autres comptes débiteurs et créditeurs;EUR;D;
+51;Banques, établissements financiers et assimilés;;R;
+512;Banques diverses;EUR;D;
+53;Caisse;;R;
+530;Caisse;EUR;D;
+54;Etablissements dépositaires autorisés;EUR;D;Décret du 19.12.45
+541;Valeurs à l'encaissement;EUR;D;
+5412;Chèques à encaisser;EUR;D;
+542;Banques;;R;
+5421;CDC – Compte ordinaire;EUR;D;
+5422;CDC – Compte consignation;EUR;D;Article 15
+5423;Crédit agricole;EUR;D;
+544;Chèques postaux;EUR;D;
+60;Achats;;R;
+606;Achats non stockés de matières et fournitures;EUR;D;
+61;Services extérieurs;;R;
+613;Locations;EUR;D;
+615;Entretiens et réparations;EUR;D;
+616;Primes d'assurances;EUR;D;
+6162;Responsabilité civile professionnelle;EUR;D;
+618;Divers;EUR;D;
+62;Autres services extérieurs;EUR;D;
+625;Déplacements, missions et réceptions;EUR;D;
+626;Frais postaux et frais de télécommunications;EUR;D;
+628;Divers;EUR;D;
+6281;Cotisations professionnelles obligatoires;EUR;D;
+62811;De Chambre;EUR;D;
+62812;Au Conseil régional;EUR;D;
+62813;Au conseil supérieur du notariat;EUR;D;
+62814;De garantie collective;EUR;D;
+62818;Autres cotisations;EUR;D;
+6282;Cotisations professionnelles volontaires;EUR;D;
+63;Impôts, taxes et versements assimilés;;R;
+631;Impôts, taxes et versements assimilés sur rémunérations;EUR;D;Administration des impôts
+633;Impôts, taxes et versements assimilés sur rémunérations;EUR;D;Autres organismes
+635;Autres impôts, taxes et versements assimilés;EUR;D;Administration des impôts
+64;Charges de personnel;;R;
+641;Rémunérations du personnel;EUR;D;
+645;Charges de sécurité sociale et de prévoyance du personnel;EUR;D;
+6451;Cotisations à l'URSSAF;EUR;D;
+6452;Cotisations aux mutuelles;EUR;D;
+6453;Cotisations aux caisses de retraite;EUR;D;
+6454;Cotisations aux ASSEDIC;EUR;D;
+6455;Cotisations à la CRPCEN;;R;
+64551;Sur appointements;EUR;D;
+64552;Sur émoluments et honoraires;EUR;D;
+64558;Sur émoluments et honoraires acquis des confrères;EUR;D;
+64559;Sur émoluments et honoraires acquis aux confrères;EUR;D;
+646;Cotisations sociales personnelles du notaire et des notaires associés;;R;
+6461;De retraite;EUR;D;
+6462;De maladie;EUR;D;
+6463;D'allocations familiales;EUR;D;
+6468;Autres;EUR;D;
+647;Autres charges sociales;EUR;D;
+66;Charges financières;EUR;D;
+67;Charges exceptionnelles;EUR;D;
+68;Dotations aux amortissements et aux provisions;EUR;D;
+70;Prestations de services;;R;
+706;Emoluments et honoraires;EUR;D;
+7061;Emoluments fixes, gradués et de formalités;EUR;D;A subdiviser selon les besoins
+70611;Actes;EUR;D;
+70612;Formalités;EUR;D;
+70618;Autres;EUR;D;
+7062;Emoluments proportionnels;EUR;D;A subdiviser selon les besoins
+7064;Honoraires;EUR;D;A subdiviser selon les besoins
+7068;Emoluments et honoraires acquis des confrères;EUR;D;A subdiviser selon les besoins
+7069;Emoluments et honoraires acquis aux confrères;EUR;D;A subdiviser selon les besoins
+708;Produits des activités annexes;EUR;D;
+709;Remises accordées par l'entreprise;EUR;D;
+76;Produits financiers;EUR;D;
+77;Produits exceptionnels;EUR;D;
+78;Reprises sur amortissements et provisions;EUR;D;

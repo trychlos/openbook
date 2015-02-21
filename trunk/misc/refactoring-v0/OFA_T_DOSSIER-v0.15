@@ -1,0 +1,15 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER DROP COLUMN DOS_SLD_ACCOUNT;
+			
+DESCRIBE OFA_T_DOSSIER;
+
+CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR (
+	DOS_ID               INTEGER   NOT NULL        COMMENT 'Row identifier',
+	DOS_CURRENCY         VARCHAR(3)                COMMENT 'Currency identifier',
+	DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice',
+	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_CURRENCY)
+) CHARACTER SET utf8;
+			
+DESCRIBE OFA_T_DOSSIER_CUR;
+			

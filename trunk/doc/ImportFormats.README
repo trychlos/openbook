@@ -1,0 +1,109 @@
+ Open Freelance Accounting
+ $Id$
+
+ Summary
+ =======
+
+   Accounts
+   Classes
+   Currencies
+   Entries
+   Ledgers
+   Rates
+
+-----------------------------------------------------------------------
+ Accounts
+ ========
+
+ Mode: Replace
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Number       Strings 20 chars       yes
+  2  Label        String 80 chars        yes
+  3  Currency     String 3 chars         no, defaults to dossier default
+  4  Type         String 1 char          no, defaults to 'D'
+  5  Notes        String 4096 chars      no
+
+-----------------------------------------------------------------------
+ Classes
+ =======
+
+ Mode: Replace
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Number       Digit between 1 and 9  yes
+  2  Label        String 80 chars        yes
+  3  Notes        String 4096 chars      no
+
+-----------------------------------------------------------------------
+ Currencies
+ ==========
+
+ Mode: Replace
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Code ISO 3A  String 3 chars         yes
+  2  Label        String 80 chars        yes
+  3  Symbol       String 3 chars         yes
+  4  Digits       Integer                no, defaults to 2
+  5  Notes        String 4096 chars      no
+
+-----------------------------------------------------------------------
+ Entries
+ =======
+
+ Mode: Add
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Operation    Date yyyy-mm-dd        yes
+  2  Effect       Date yyyy-mm-dd        yes
+  3  Label        String 80 chars        yes
+  4  Piece ref.   String 20 chars        no
+  5  Currency     String 3 chars         no
+  6  Ledger       String 6 chars         no
+  7  Operation    String 6 chars         no
+  8  Account      String 20 chars        yes
+  9  Debit        Double                 no
+ 10  Credit       Double                 no
+
+-----------------------------------------------------------------------
+ Ledgers
+ =======
+
+ Mode: Replace
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Mnemo        String 6 chars         yes
+  2  Label        String 80 chars        yes
+  3  Notes        String 4096 chars      no
+
+-----------------------------------------------------------------------
+ Rates
+ =====
+
+ Mode: Replace
+
+ No  Field        Format                 Mandatory
+ --  -----------  ---------------------  ------------------------------
+  1  Type         Numeric                yes, 1=rate, 2=values
+
+ Type  No  Field        Format                 Mandatory
+ ----  --  -----------  ---------------------  ------------------------
+    1   2  Mnemo        String 6 chars         yes
+    1   3  Label        String 80 chars        yes
+    1   4  Notes        String 4096 chars      no
+
+ Type  No  Field        Format                 Mandatory
+ ----  --  -----------  ---------------------  ------------------------
+    2   2  Mnemo        String 6 chars         yes
+    2   3  Begin        Date yyyy-mm-dd        no 
+    2   4  End          Date yyyy-mm-dd        no
+    2   5  Value        Float                  no
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, dec. 5th

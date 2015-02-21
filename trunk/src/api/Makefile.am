@@ -1,0 +1,72 @@
+# Open Freelance Accounting
+# A double-entry accounting application for freelances.
+#
+# Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
+#
+# Open Freelance Accounting is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# Open Freelance Accounting is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Open Freelance Accounting; see the file COPYING. If not,
+# see <http://www.gnu.org/licenses/>.
+#
+# Authors:
+#   Pierre Wieser <pwieser@trychlos.org>
+#
+# $Id$
+
+api_includedir = $(pkgincludedir)
+
+api_include_HEADERS = \
+	ofa-extension.h										\
+	\
+	ofa-file-format.h									\
+	ofa-idataset.h										\
+	ofa-idbms.h											\
+	ofa-iexportable.h									\
+	ofa-iimportable.h									\
+	ofa-iimporter.h										\
+	ofa-ipreferences.h									\
+	\
+	my-date.h											\
+	my-double.h											\
+	my-utils.h											\
+	ofa-box.h											\
+	ofa-dbms.h											\
+	ofa-dbms-def.h										\
+	ofa-dossier-misc.h									\
+	ofa-settings.h										\
+	\
+	ofo-account.h										\
+	ofo-account-def.h									\
+	ofo-base.h											\
+	ofo-base-def.h										\
+	ofo-base-prot.h										\
+	ofo-bat.h											\
+	ofo-bat-def.h										\
+	ofo-bat-line.h										\
+	ofo-class.h											\
+	ofo-class-def.h										\
+	ofo-currency.h										\
+	ofo-currency-def.h									\
+	ofo-dossier.h										\
+	ofo-dossier-def.h									\
+	ofo-entry.h											\
+	ofo-ledger.h										\
+	ofo-ledger-def.h									\
+	ofo-ope-template.h									\
+	ofo-ope-template-def.h								\
+	ofo-rate.h											\
+	ofo-rate-def.h										\
+	\
+	ofs-bat.h											\
+	ofs-currency.h										\
+	ofs-ope.h											\
+	$(NULL)

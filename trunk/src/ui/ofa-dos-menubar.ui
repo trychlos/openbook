@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id$ -->
+<interface>
+  <menu id="dos-menu">
+    <submenu>
+      <attribute name="label" translatable="yes">_Dossier</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_New...</attribute>
+          <attribute name="action">app.new</attribute>
+          <attribute name="accel">&lt;Control&gt;n</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Open...</attribute>
+          <attribute name="action">app.open</attribute>
+          <attribute name="accel">&lt;Control&gt;o</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">P_roperties...</attribute>
+          <attribute name="action">win.properties</attribute>
+          <attribute name="accel">&lt;Control&gt;r</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Backup...</attribute>
+          <attribute name="action">win.backup</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Close</attribute>
+          <attribute name="action">win.close</attribute>
+          <attribute name="accel">&lt;Control&gt;w</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Manage...</attribute>
+          <attribute name="action">app.manage</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">R_estore...</attribute>
+          <attribute name="action">app.restore</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_User preferences...</attribute>
+          <attribute name="action">app.user_prefs</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Quit</attribute>
+          <attribute name="action">app.quit</attribute>
+          <attribute name="accel">&lt;Control&gt;q</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_Operations</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Guided input...</attribute>
+          <attribute name="action">win.guided</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_View entries...</attribute>
+          <attribute name="action">win.entries</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Account _settlement...</attribute>
+          <attribute name="action">win.settlement</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Account _reconciliation...</attribute>
+          <attribute name="action">win.concil</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Provisional _ledger closing...</attribute>
+          <attribute name="action">win.ledclosing</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">E_xercice closing...</attribute>
+          <attribute name="action">win.execlosing</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Import...</attribute>
+          <attribute name="action">win.import</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Export...</attribute>
+          <attribute name="action">win.export</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_Printings</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Accounts _balance...</attribute>
+          <attribute name="action">win.pdf-balance</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Reconciliation...</attribute>
+          <attribute name="action">win.pdf-reconcil</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">General b_ooks...</attribute>
+          <attribute name="action">win.pdf-books</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Ledgers...</attribute>
+          <attribute name="action">win.pdf-ledgers</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_References</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Chart of _Accounts...</attribute>
+          <attribute name="action">win.accounts</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Ledgers...</attribute>
+          <attribute name="action">win.ledgers</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Operation templates...</attribute>
+          <attribute name="action">win.ope-templates</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Currencies...</attribute>
+          <attribute name="action">win.currencies</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Rates...</attribute>
+          <attribute name="action">win.rates</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Account c_lasses...</attribute>
+          <attribute name="action">win.classes</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">I_mported transaction files...</attribute>
+          <attribute name="action">win.batfiles</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_Miscellaneous</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Plugins...</attribute>
+          <attribute name="action">app.plugin_manage</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Check _balances...</attribute>
+          <attribute name="action">win.chkbal</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Check DBMS _integrity...</attribute>
+          <attribute name="action">win.integrity</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">Help</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_About Openbook...</attribute>
+          <attribute name="action">app.about</attribute>
+        </item>
+      </section>
+    </submenu>
+  </menu>
+</interface>

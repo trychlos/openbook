@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+_Name=OpenBook
+_Comment=Double entry, multi currencies, open booking and accounting application
+Exec=openbook
+Icon=openbook-48x48
+Categories=Office;
+StartupNotify=true
