@@ -44,6 +44,7 @@
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-properties.h"
+#include "ui/ofa-dossier-store.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
 
@@ -71,7 +72,7 @@ static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
 static void      open_dossier( ofaDossierManager *self, const gchar *dname );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
-static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname );
+static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -258,7 +259,7 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 	gchar *dname;
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview );
+	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DNAME );
 	open_dossier( self, dname );
 	g_free( dname );
 }
@@ -284,72 +285,37 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
-	gchar *dname;
+	ofaDossierStore *store;
+	gchar *dname, *dbname;
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview );
+	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DNAME );
+	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
 
-	if( confirm_delete( self, dname )){
-		ofa_settings_remove_dossier( dname );
-		ofa_dossier_treeview_remove_row( priv->tview, dname );
+	if( confirm_delete( self, dname, dbname )){
+		ofa_settings_remove_exercice( dname, dbname );
+		store = ofa_dossier_treeview_get_store( priv->tview );
+		ofa_dossier_store_remove_exercice( store, dname, dbname );
 	}
 
 	g_free( dname );
-#if 0
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
-	GtkTreeModel *tmodel;
-	gchar *name, *provider, *host, *dbname;
-	gboolean deleted;
-
-	select = gtk_tree_view_get_selection( self->priv->tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get(
-				tmodel,
-				&iter,
-				COL_NAME,     &name,
-				COL_PROVIDER, &provider,
-				COL_HOST,     &host,
-				COL_DBNAME,   &dbname,
-				-1 );
-
-		if( confirm_delete( self, name, provider, dbname )){
-			deleted = ofa_dossier_delete_run(
-							MY_WINDOW( self )->prot->main_window,
-							name, provider, host, dbname );
-			g_debug( "%s: deleted=%s", thisfn, deleted ? "True":"False" );
-			if( deleted ){
-				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-			}
-		}
-
-		g_free( dbname );
-		g_free( host );
-		g_free( provider );
-		g_free( name );
-
-	} else {
-		g_warning( "%s: no current selection", thisfn );
-	}
-#endif
 }
 
 static gboolean
-confirm_delete( ofaDossierManager *self, const gchar *dname )
+confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
 {
 	GtkWidget *dialog;
 	gint response;
 	gchar *str;
 
 	str = g_strdup_printf(
-			_( "You are about to delete the '%s' dossier.\n"
-				"This operation will remove the dossier from the settings, "
-				"letting the database(s) unchanged.\n"
+			_( "You are about to remove the '%s' database from the '%s' dossier.\n"
+				"This operation will remove the referenced exercice from the settings, "
+				"while letting the database itself unchanged.\n"
 				"Are your sure ?" ),
-					dname );
+					dbname, dname );
 
 	dialog = gtk_message_dialog_new(
 			my_window_get_toplevel( MY_WINDOW( self )),

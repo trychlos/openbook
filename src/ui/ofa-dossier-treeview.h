@@ -94,12 +94,12 @@ void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_add_row     ( ofaDossierTreeview *view,
 																const gchar *dname );
 
-void                ofa_dossier_treeview_remove_row  ( ofaDossierTreeview *view,
-																const gchar *dname );
+ofaDossierStore    *ofa_dossier_treeview_get_store   ( const ofaDossierTreeview *view );
 
-gchar              *ofa_dossier_treeview_get_selected( ofaDossierTreeview *view );
+gchar              *ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,
+																gint column_id );
 
-void                ofa_dossier_treeview_set_selected( ofaDossierTreeview *view,
+void                ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view,
 																const gchar *dname );
 
 G_END_DECLS

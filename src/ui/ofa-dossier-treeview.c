@@ -478,34 +478,40 @@ ofa_dossier_treeview_add_row( ofaDossierTreeview *view, const gchar *dname )
 }
 
 /**
- * ofa_dossier_treeview_remove_row:
+ * ofa_dossier_treeview_get_store:
  */
-void
-ofa_dossier_treeview_remove_row( ofaDossierTreeview *view, const gchar *dname )
+ofaDossierStore *
+ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )
 {
 	ofaDossierTreeviewPrivate *priv;
+	ofaDossierStore *store;
 
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
 
 	priv = view->priv;
+	store = NULL;
 
 	if( !priv->dispose_has_run ){
-
-		ofa_dossier_store_remove_row( priv->store, dname );
+		store = priv->store;
 	}
+
+	return( store );
 }
 
 /**
  * ofa_dossier_treeview_get_selected:
+ * @view:
+ * @column_id:
  *
- * Return: the name of the currently selected dossier, as a newly
- * allocated string which should be g_free() by the caller, or %NULL.
+ * Return: the content of the specified @column_id for the currently
+ * selected dossier, as a newly allocated string which should be g_free()
+ * by the caller, or %NULL.
  */
 gchar *
-ofa_dossier_treeview_get_selected( ofaDossierTreeview *view )
+ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, gint column_id )
 {
 	ofaDossierTreeviewPrivate *priv;
-	gchar *dname;
+	gchar *content;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
@@ -513,24 +519,24 @@ ofa_dossier_treeview_get_selected( ofaDossierTreeview *view )
 	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
 
 	priv = view->priv;
-	dname = NULL;
+	content = NULL;
 
 	if( !priv->dispose_has_run ){
 
 		select = gtk_tree_view_get_selection( priv->tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, DOSSIER_COL_DNAME, &dname, -1 );
+			gtk_tree_model_get( tmodel, &iter, column_id, &content, -1 );
 		}
 	}
 
-	return( dname );
+	return( content );
 }
 
 /**
  * ofa_dossier_treeview_set_selected:
  */
 void
-ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname )
+ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *dname )
 {
 	ofaDossierTreeviewPrivate *priv;
 	GtkTreeIter iter;

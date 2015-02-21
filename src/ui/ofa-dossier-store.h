@@ -100,16 +100,17 @@ typedef enum {
 }
 	ofaDossierColumns;
 
-GType            ofa_dossier_store_get_type  ( void );
+GType            ofa_dossier_store_get_type       ( void );
 
-ofaDossierStore *ofa_dossier_store_new       ( void );
+ofaDossierStore *ofa_dossier_store_new            ( void );
 
-void             ofa_dossier_store_add_row   ( ofaDossierStore *store,
+void             ofa_dossier_store_add_row        ( ofaDossierStore *store,
 														const gchar *dname,
 														const gchar *dbms );
 
-void             ofa_dossier_store_remove_row( ofaDossierStore *store,
-														const gchar *dname );
+void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
+														const gchar *dname,
+														const gchar *dbname );
 
 G_END_DECLS
 

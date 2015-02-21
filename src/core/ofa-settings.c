@@ -872,6 +872,58 @@ ofa_settings_remove_dossier( const gchar *dname )
 }
 
 /**
+ * ofa_settings_remove_exercice:
+ */
+void
+ofa_settings_remove_exercice( const gchar *dname, const gchar *dbname )
+{
+	static const gchar *thisfn = "ofa_settings_remove_exercice";
+	gchar *group;
+	GSList *keylist, *it;
+	const gchar *key, *keydb;
+	gchar *strlist;
+	gchar **array;
+	gboolean found;
+	gint count;
+
+	g_debug( "%s: name=%s, dbname=%s", thisfn, dname, dbname );
+
+	settings_new();
+	found = FALSE;
+	count = 0;
+	keylist = ofa_settings_dossier_get_keys( dname );
+
+	for( it=keylist ; it ; it=it->next ){
+		key = ( const gchar * ) it->data;
+		if( g_str_has_prefix( key, SETTINGS_DBMS_DATABASE )){
+			count += 1;
+			if( !found ){
+				strlist = ofa_settings_dossier_get_string( dname, key );
+				array = g_strsplit( strlist, ";", -1 );
+				keydb = ( const gchar * ) *array;
+				found = g_utf8_collate( dbname, keydb ) == 0;
+				g_strfreev( array );
+				g_free( strlist );
+				if( found ){
+					group = get_dossier_group_from_name( dname );
+					g_key_file_remove_key( st_dossier_settings->priv->keyfile, group, key, NULL );
+					g_free( group );
+					write_key_file( st_dossier_settings );
+				}
+			}
+		}
+	}
+
+	ofa_settings_dossier_free_keys( keylist );
+
+	/* at the end, if the searched key was found, and was the only
+	 * database key, then remove the all dossier group */
+	if( found && count == 1 ){
+		ofa_settings_remove_dossier( dname );
+	}
+}
+
+/**
  * ofa_settings_has_dossier:
  * @dname: the name of the dossier
  *

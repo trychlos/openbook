@@ -470,8 +470,9 @@ p3_check_for_complete( ofaRestoreAssistant *self )
 	priv = self->priv;
 
 	g_free( priv->p3_dossier );
-	priv->p3_dossier = ofa_dossier_treeview_get_selected( priv->p3_dossier_treeview );
-	ok = priv->p3_dossier && g_utf8_strlen( priv->p3_dossier, -1 );
+	priv->p3_dossier =
+			ofa_dossier_treeview_get_selected( priv->p3_dossier_treeview, DOSSIER_COL_DNAME );
+	ok = my_strlen( priv->p3_dossier ) > 0;
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }

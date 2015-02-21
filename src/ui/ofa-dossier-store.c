@@ -56,7 +56,7 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaDossierStore *store );
 static void     insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist );
 static void     set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter );
-static gboolean get_iter_from_dname( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter );
+static gboolean get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
 
@@ -273,10 +273,15 @@ ofa_dossier_store_add_row( ofaDossierStore *store, const gchar *dname, const gch
 }
 
 /**
- * ofa_dossier_store_remove_row:
+ * ofa_dossier_store_remove_exercice:
+ * @store:
+ * @dname:
+ * @dbname:
+ *
+ * Remove the row which corresponds to the given specs.
  */
 void
-ofa_dossier_store_remove_row( ofaDossierStore *store, const gchar *dname )
+ofa_dossier_store_remove_exercice( ofaDossierStore *store, const gchar *dname, const gchar *dbname )
 {
 	ofaDossierStorePrivate *priv;
 	GtkTreeIter iter;
@@ -287,24 +292,28 @@ ofa_dossier_store_remove_row( ofaDossierStore *store, const gchar *dname )
 
 	if( !priv->dispose_has_run ){
 
-		if( get_iter_from_dname( store, dname, &iter )){
+		if( get_iter_from_dbname( store, dname, dbname, &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
 		}
 	}
 }
 
 static gboolean
-get_iter_from_dname( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter )
+get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter )
 {
-	gchar *row_dname;
-	gint cmp;
+	gchar *row_dname, *row_dbname;
+	gboolean found;
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, DOSSIER_COL_DNAME, &row_dname, -1 );
-			cmp = g_utf8_collate( row_dname, dname );
+			gtk_tree_model_get(
+					GTK_TREE_MODEL( store ), iter,
+					DOSSIER_COL_DNAME, &row_dname, DOSSIER_COL_DBNAME, &row_dbname, -1 );
+			found = g_utf8_collate( row_dname, dname ) == 0 &&
+					g_utf8_collate( row_dbname, dbname ) == 0;
 			g_free( row_dname );
-			if( cmp == 0 ){
+			g_free( row_dbname );
+			if( found ){
 				return( TRUE );
 			}
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){

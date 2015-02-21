@@ -322,7 +322,8 @@
 
  677 2015- 2-19 preferences for the dossier should be set in the dbms
                 (e.g. order of ope_templates pages)
-     2015- 2-20 why ? to save them in backups and restore them 
+     2015- 2-20 why ? to save them in backups and be able to restore 
+                them 
 
  678 2015- 2-19 visual bug which seems to come from GTK+: updating a
                 tree store only update the display when moving the
@@ -331,6 +332,8 @@
 
  683 2015- 2-20 when deleting a dossier, should update the store for all
                 lines of the dossier
+     2015- 2-21 actually DossierManager only deletes the currently 
+                selected exercice
 
  684
 

@@ -138,6 +138,7 @@ GSList  *ofa_settings_dossier_get_keys       ( const gchar *dname );
 
 gboolean ofa_settings_create_dossier         ( const gchar *dname, ... );
 void     ofa_settings_remove_dossier         ( const gchar *dname );
+void     ofa_settings_remove_exercice        ( const gchar *dname, const gchar *dbname );
 gchar   *ofa_settings_get_dossier_provider   ( const gchar *dname );
 
 gboolean ofa_settings_has_dossier            ( const gchar *dname );
