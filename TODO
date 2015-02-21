@@ -150,7 +150,7 @@
                 updating the right decalage as far as columns are 
                 displayed
 
- 334 2014-10-18 honomgeneize styles:
+ 334 2014-10-18 homogeneize styles:
                 e.g. displaying validated entries in ofaViewEntries or
                 validated balances if AccountProperties should have the
                 same font/background
@@ -326,16 +326,14 @@
                 them 
 
  678 2015- 2-19 visual bug which seems to come from GTK+: updating a
-                tree store only update the display when moving the
+                list/tree store only update the display when moving the
                 mouse over the row (not necessarily the updated cell)
                 -> gtk_tree_model_filter_refilter doesn't help
 
- 683 2015- 2-20 when deleting a dossier, should update the store for all
-                lines of the dossier
-     2015- 2-21 actually DossierManager only deletes the currently 
-                selected exercice
+ 684 2015- 2-21 MainWindow left pane: these are shortcuts which should
+                be choosable by the user among the defined features
 
- 684
+ 685
 
 -----------------------------------------------------------------------
  DONE
@@ -3066,6 +3064,12 @@
 
  682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
      2015- 2-20 done - svn #4626
+
+ 683 2015- 2-20 when deleting a dossier, should update the store for all
+                lines of the dossier
+     2015- 2-21 actually DossierManager only deletes the currently 
+                selected exercice
+     2015- 2-21 done - svn #4640
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
