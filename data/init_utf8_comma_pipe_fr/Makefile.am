@@ -19,7 +19,6 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
 init_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
 

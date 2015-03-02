@@ -19,7 +19,6 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
 plugin_id = ofa-mysql
 

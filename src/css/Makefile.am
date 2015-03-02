@@ -19,7 +19,6 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
 css_datadir = $(pkgdatadir)/css
 

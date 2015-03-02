@@ -19,7 +19,6 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
 pkglib_LTLIBRARIES = libofa-core.la
 

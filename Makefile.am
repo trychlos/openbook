@@ -19,7 +19,6 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
 ACLOCAL_AMFLAGS = -I m4
 
