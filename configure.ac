@@ -64,7 +64,8 @@ AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["${GETTEXT_PACKAGE}"],[gettext package])
 AM_GLIB_GNU_GETTEXT
 
 # a counter of fatal warnings emitted
-let ofa_fatal_count=0
+let pwi_fatal_count=0
+pwi_fatal_list=""
 
 # we are using pkgconfig for all development libraries we need
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
@@ -74,16 +75,16 @@ fi
 
 # Oldest supported distribution as of May 2014: ?
 glib_required=2.28
-gtk_required=3.4
-OFA_CHECK_FOR_GTK
-OFA_CHECK_MODULE([GLIB],         [glib-2.0 >= ${glib_required}])
-OFA_CHECK_MODULE([GMODULE],      [gmodule-2.0 >= ${glib_required}])
-OFA_CHECK_MODULE([POPPLER],      [poppler >= 0.24])
-OFA_CHECK_MODULE([POPPLER_GLIB], [poppler-glib >= 0.24])
+gtk3_required=3.4
+PWI_CHECK_MODULE([GTK3],        [gtk+-3.0],    [${gtk3_required}])
+PWI_CHECK_MODULE([GLIB],        [glib-2.0],    [${glib_required}])
+PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0], [${glib_required}])
+PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24])
+PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24])
 
 MYSQL_CLIENT([5.5.0])
-OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS}"
-OPENBOOK_LIBS="${OPENBOOK_LIBS} ${MYSQL_CLIENT_LIBS}"
+OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS} ${PWI_CFLAGS}"
+OPENBOOK_LIBS="${OPENBOOK_LIBS} ${MYSQL_CLIENT_LIBS} ${PWI_LIBS}"
 
 # GLib marshaling
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal, no)

@@ -1,4 +1,4 @@
-# pwi-compiler.m4
+# pwi-maintainer.m4
 #
 # Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
 #
