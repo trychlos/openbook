@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifndef __MY_CELL_RENDERER_DATE_H__

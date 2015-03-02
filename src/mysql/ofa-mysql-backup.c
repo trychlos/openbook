@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  *
  * Most of this code is taken from:
  * http://scentric.net/tmp/spawn-async-with-pipes-gtk.c

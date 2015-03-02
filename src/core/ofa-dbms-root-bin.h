@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifndef __OFA_DBMS_ROOT_BIN_H__

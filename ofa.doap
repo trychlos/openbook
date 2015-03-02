@@ -4,7 +4,6 @@
          xmlns:gnome="http://api.gnome.org/doap-extensions#"
          xmlns="http://usefulinc.com/ns/doap#">
 
-  <!-- $Id$ -->
 
   <name xml:lang="en">Open Freelance Accounting</name>
 

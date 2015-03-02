@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifndef __OFA_OPE_TEMPLATE_STORE_H__

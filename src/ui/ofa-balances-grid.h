@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifndef __OFA_BALANCES_GRID_H__

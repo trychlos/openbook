@@ -20,7 +20,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 
 icondir = $(datadir)/icons/hicolor/48x48/apps
 

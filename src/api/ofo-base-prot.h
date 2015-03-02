@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifndef __OFO_BASE_PROT_H__

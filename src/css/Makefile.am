@@ -20,7 +20,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 
 css_datadir = $(pkgdatadir)/css
 

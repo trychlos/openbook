@@ -20,7 +20,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 
 # these two next lines to be kept synchronized with data/icons/Makefile.am
 icondir = $(datadir)/icons/hicolor/48x48/apps

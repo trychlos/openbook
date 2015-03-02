@@ -21,7 +21,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  *
  * To display debug messages, run the command:
  *   $ G_MESSAGES_DEBUG=OFA _install/bin/openbook

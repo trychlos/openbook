@@ -20,7 +20,6 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id$
  */
 
 #ifdef HAVE_CONFIG_H

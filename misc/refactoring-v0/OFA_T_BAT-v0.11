@@ -1,4 +1,3 @@
-# $Id$
 
 ALTER TABLE OFA_T_BAT CHANGE COLUMN BAT_URI       BAT_URI       VARCHAR(256)                COMMENT 'Imported URI';
 

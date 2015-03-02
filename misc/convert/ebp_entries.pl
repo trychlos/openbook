@@ -107,7 +107,6 @@ sub msgprint
 }
 
 my $my_brief = "Converts Entries from EBP to Openbook csv format";
-my $my_version = '$Id$';
 
 my $debug;
 

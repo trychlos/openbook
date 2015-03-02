@@ -1,4 +1,3 @@
-# $Id$
 
 ALTER TABLE OFA_T_OPE_TEMPLATES_DET ADD COLUMN OTE_DET_REF            VARCHAR(20)             COMMENT 'Line reference';
 ALTER TABLE OFA_T_OPE_TEMPLATES_DET ADD COLUMN OTE_DET_REF_LOCKED     INTEGER                 COMMENT 'Line reference is locked';

@@ -20,7 +20,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 
 bin_PROGRAMS = \
 	t_spawn											\

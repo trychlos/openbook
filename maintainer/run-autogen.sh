@@ -21,7 +21,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 #
 # pwi 2014- 5- 2
 # The goal is to have a single source tree, being able to be easily

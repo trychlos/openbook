@@ -20,7 +20,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 #
-# $Id$
 
 # serial 1 creation
 #          OFA_CHECK_FOR_GTK
