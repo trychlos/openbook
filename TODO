@@ -332,9 +332,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 685 2015- 2-21 due to git migration to Githib, remove "$Id$" svn tag
-                from source files
-
  686
 
 -----------------------------------------------------------------------
@@ -3072,6 +3069,10 @@
      2015- 2-21 actually DossierManager only deletes the currently 
                 selected exercice
      2015- 2-21 done - svn #4640
+
+ 685 2015- 2-21 due to git migration to Githib, remove "$Id$" svn tag
+                from source files
+     2015- 3- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
