@@ -1,5 +1,7 @@
 2015-03-02 Pierre Wieser <pwieser@trychlos.org>
 
+	* configure.ac: update the web site URL.
+
 	* All files: remove '$Id$' svn tag (todo #685)
 
 2015-02-21 Pierre Wieser <pwieser@trychlos.org>
