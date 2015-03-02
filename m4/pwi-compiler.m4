@@ -1,38 +1,36 @@
-# Open Freelance Accounting
-# A double-entry accounting application for freelances.
+# pwi-compiler.m4
 #
 # Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
 #
-# Open Freelance Accounting is free software; you can redistribute it
-# and/or modify it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 2 of the
-# License, or (at your option) any later version.
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at 
+# your option) any later version.
 #
-# Open Freelance Accounting is distributed in the hope that it will be
-# useful, but WITHOUT ANY WARRANTY; without even the implied warranty
-# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# This code is distributed in the hope that it will be useful, but 
+# WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Open Freelance Accounting; see the file COPYING. If not,
-# see <http://www.gnu.org/licenses/>.
+# along with this code; see the file COPYING. If not, see
+# <http://www.gnu.org/licenses/>.
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-#
 
-# serial 1 creation
-#          OFA_COMPILER_WARNINGS
-#          OFA_COMPILER_LINK_AS_NEEDED
+# serial 2 creation
+#          PWI_COMPILER_WARNINGS
+#          PWI_COMPILER_LINK_AS_NEEDED
 
-dnl OFA_COMPILER_WARNINGS
+dnl PWI_COMPILER_WARNINGS
 dnl Turn on many useful compiler warnings
 dnl For now, only works on GCC
 dnl
 dnl pwi 2009-05-15 shamelessly copied from gnome-compiler-flags.m4
 dnl two patch have been submitted (see gnome-common #582860)
 
-AC_DEFUN([OFA_COMPILER_WARNINGS],[
+AC_DEFUN([PWI_COMPILER_WARNINGS],[
 
 	_ac_warning_def=m4_default([$1],[yes])
 	_ac_compliant_def=m4_default(["$2"],[no])
@@ -179,11 +177,11 @@ AC_DEFUN([GNOME_CXX_WARNINGS],[
   AC_SUBST(WARN_CXXFLAGS)
 ])
 
-dnl Bug #637797 
+dnl Bug Nautilus-Actions #637797 on Gnome Bugzilla 
 dnl see also http://www.gentoo.org/proj/en/qa/asneeded.xml
 dnl the '-Wl,--as-needed' link option is forced in make distcheck
 
-AC_DEFUN([OFA_COMPILER_LINK_AS_NEEDED],[
+AC_DEFUN([PWI_COMPILER_LINK_AS_NEEDED],[
 	AC_ARG_ENABLE(
 		[as-needed],
 		AC_HELP_STRING(

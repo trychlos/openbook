@@ -1,6 +1,8 @@
 2015-03-02 Pierre Wieser <pwieser@trychlos.org>
 
-	* configure.ac: update the web site URL.
+	* configure.ac: update the web site URL
+
+	* m4/ofa-compiler.m4: renamed as pwi-compiler.m4
 
 	* All files: remove '$Id$' svn tag (todo #685)
 

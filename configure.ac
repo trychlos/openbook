@@ -40,8 +40,8 @@ AC_STDC_HEADERS
 AM_DISABLE_STATIC
 
 # define specific compilation options
-OFA_COMPILER_WARNINGS([],[-ansi -Wno-overlength-strings -Wformat=2])
-OFA_COMPILER_LINK_AS_NEEDED
+PWI_COMPILER_WARNINGS([],[-ansi -Wno-overlength-strings -Wformat=2])
+PWI_COMPILER_LINK_AS_NEEDED
 AC_SUBST([AM_CFLAGS],["${AM_CFLAGS} ${WARN_CFLAGS}"])
 
 # other traditional tools
