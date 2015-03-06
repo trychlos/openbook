@@ -356,67 +356,11 @@
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
 
- 697 2015- 3- 4 when printing general books for existing accounts:
-                (openbook:4652): OFA-CRITICAL **: ofo_account_get_label: assertion 'OFO_IS_ACCOUNT(account)' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                ...
-                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
-                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
-                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
-                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
-                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
-                + accounts limits have not been taken into account
-
  698 2015- 3- 4 general book is wrong as soon as there are entries 
                 before the RAN
+     2015- 3- 6 no, but we are computing the solde of displayed entries
+                instead of the solde of the account (which is not the
+                purpose of the GeneralBooks print)
 
  699
 
@@ -3183,6 +3127,18 @@
  696 2015- 3- 4 when printing from an account to an account, the
                 accounts may not exist (they are just limits)
      2015- 3- 6 done - git #544baa4
+
+ 697 2015- 3- 4 when printing general books for existing accounts:
+                (openbook:4652): OFA-CRITICAL **: ofo_account_get_label: assertion 'OFO_IS_ACCOUNT(account)' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                ...
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                + accounts limits have not been taken into account
+     2015- 3- 6 done - git #3250021
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

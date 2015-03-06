@@ -787,7 +787,7 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation 
 
 	ofa_iprintable_set_text( instance, context,
 			priv->body_solde_sens_rtab, y,
-			_( "Solde" ), PANGO_ALIGN_RIGHT );
+			_( "Entries solde" ), PANGO_ALIGN_RIGHT );
 
 	/* this set the 'y' height just after the column headers */
 	y += ofa_iprintable_get_current_line_height( instance );
