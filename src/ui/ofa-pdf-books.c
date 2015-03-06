@@ -186,7 +186,7 @@ static void     on_from_account_changed( GtkEntry *entry, ofaPDFBooks *self );
 static void     on_from_account_select( GtkButton *button, ofaPDFBooks *self );
 static void     on_to_account_changed( GtkEntry *entry, ofaPDFBooks *self );
 static void     on_to_account_select( GtkButton *button, ofaPDFBooks *self );
-static void     on_account_changed( GtkEntry *entry, ofaPDFBooks *self, GtkWidget *label );
+static void     on_account_changed( GtkEntry *entry, ofaPDFBooks *self, gchar **account, GtkWidget *label );
 static void     on_account_select( GtkButton *button, ofaPDFBooks *self, GtkWidget *entry );
 static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBooks *self );
 static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFBooks *self );
@@ -466,7 +466,7 @@ init_date_selection( ofaPDFBooks *self )
 static void
 on_from_account_changed( GtkEntry *entry, ofaPDFBooks *self )
 {
-	on_account_changed( entry, self, self->priv->from_account_label );
+	on_account_changed( entry, self, &self->priv->from_account, self->priv->from_account_label );
 }
 
 static void
@@ -478,7 +478,7 @@ on_from_account_select( GtkButton *button, ofaPDFBooks *self )
 static void
 on_to_account_changed( GtkEntry *entry, ofaPDFBooks *self )
 {
-	on_account_changed( entry, self, self->priv->to_account_label );
+	on_account_changed( entry, self, &self->priv->to_account, self->priv->to_account_label );
 }
 
 static void
@@ -488,18 +488,20 @@ on_to_account_select( GtkButton *button, ofaPDFBooks *self )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaPDFBooks *self, GtkWidget *label )
+on_account_changed( GtkEntry *entry, ofaPDFBooks *self, gchar **number, GtkWidget *label )
 {
-	const gchar *str;
+	const gchar *cstr;
 	ofoAccount *account;
 
-	str = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, str );
+	cstr = gtk_entry_get_text( entry );
+	account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, cstr );
 	if( account ){
 		gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account ));
 	} else {
 		gtk_label_set_text( GTK_LABEL( label ), "" );
 	}
+	g_free( *number );
+	*number = g_strdup( cstr );
 }
 
 static void
