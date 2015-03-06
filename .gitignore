@@ -1,5 +1,7 @@
 .autotools
+.cproject
 .project
+.settings
 Makefile.in
 _build/
 _install/
