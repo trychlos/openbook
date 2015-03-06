@@ -332,17 +332,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 687 2015- 3- 2 0.34: segfault: when reconciliating with a manual date
-                (but reconciliation has been taken into account)
-                file my-date.c: line 100 (my_date_compare): should not be reached
-                #2  0x00007ffff7da254c in my_date_compare (a=0x7fffffffc500, b=0x7fffffffc510) at my-date.c:103
-                #3  0x000000000047e885 in is_entry_session_conciliated (entry=entry@entry=0xc4d1b0, self=<optimized out>) at ofa-reconciliation.c:1286
-                #4  0x000000000047eb3d in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0xc4d1b0, self=0x74c520) at ofa-reconciliation.c:1205
-                Mode is "Reconciliation session"
-
- 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
-                while it appears again only once after program re-run
-
  689 2015- 3- 4 new: be able to point out bat lines corresponding to
                 already reconciliated entries (use case: importing a
                 bat file for completeness after having reconciliated
@@ -3179,6 +3168,19 @@
  686 2015- 3- 2 regression in v0.34: account properties is validable
                 while the currency is not set (for a detail account)
      2015- 3- 6 done - git #9ce381c
+
+ 687 2015- 3- 2 0.34: segfault: when reconciliating with a manual date
+                (but reconciliation has been taken into account)
+                file my-date.c: line 100 (my_date_compare): should not be reached
+                #2  0x00007ffff7da254c in my_date_compare (a=0x7fffffffc500, b=0x7fffffffc510) at my-date.c:103
+                #3  0x000000000047e885 in is_entry_session_conciliated (entry=entry@entry=0xc4d1b0, self=<optimized out>) at ofa-reconciliation.c:1286
+                #4  0x000000000047eb3d in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0xc4d1b0, self=0x74c520) at ofa-reconciliation.c:1205
+                Mode is "Reconciliation session"
+     2015- 3- 6 done - git #188d32c
+
+ 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
+                while it appears again only once after program re-run
+     2015- 3- 6 closed as unable to reproduce
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

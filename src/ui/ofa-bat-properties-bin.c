@@ -315,7 +315,7 @@ setup_treeview( ofaBatPropertiesBin *bin )
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Timestamp" ),
-			cell, "text", COL_REF,
+			cell, "text", COL_STAMP,
 			NULL );
 	gtk_tree_view_append_column( priv->tview, column );
 
