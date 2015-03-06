@@ -332,7 +332,112 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 686
+ 686 2015- 3- 2 regression in v0.34: account properties is validable
+                while the currency is not set (for a detail account)
+
+ 687 2015- 3- 2 0.34: segfault: when reconciliating with a manual date
+                (but reconciliation has been taken into account)
+                file my-date.c: line 100 (my_date_compare): should not be reached
+                #2  0x00007ffff7da254c in my_date_compare (a=0x7fffffffc500, b=0x7fffffffc510) at my-date.c:103
+                #3  0x000000000047e885 in is_entry_session_conciliated (entry=entry@entry=0xc4d1b0, self=<optimized out>) at ofa-reconciliation.c:1286
+                #4  0x000000000047eb3d in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0xc4d1b0, self=0x74c520) at ofa-reconciliation.c:1205
+                Mode is "Reconciliation session"
+
+ 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
+                while it appears again only once after program re-run
+
+ 689 2015- 3- 4 new: be able to point out bat lines corresponding to
+                already reconciliated entries (use case: importing a
+                bat file for completeness after having reconciliated
+                manually the entries)
+
+ 690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
+
+ 691 2015- 3- 4 Reconciliation: when loading a bat file, a proposition
+                is made even if the entry is already reconciliated, the
+                value date from bat line visually overriding the 
+                reconciliation date already set in the entry (no update
+                in sgbd)
+
+ 692 2015- 3- 4 it may happen that the bat line is before the entry to
+                be reconciliated and thus the proposition is not made;
+                let the user force the appariement
+
+ 693 2015- 3- 4 Chart of accounts: add the solde of the account
+
+ 694 2015- 3- 4 It is definitively required to be able to recompute the
+                solde of the account at the end of the period when 
+                editing a balance
+
+ 695 2015- 3- 4 all printings should be first viewable in Openbook
+                (to be printed only after user visual validation)
+
+ 696 2015- 3- 4 when printing from an account to an account, the
+                accounts may not exist (they are just limits)
+
+ 697 2015- 3- 4 when printing general books for existing accounts:
+                (openbook:4652): OFA-CRITICAL **: ofo_account_get_label: assertion 'OFO_IS_ACCOUNT(account)' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                ...
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                + accounts limits have not been taken into account
+
+ 698 2015- 3- 4 general book is wrong as soon as there are entries 
+                before the RAN
+
+ 699
 
 -----------------------------------------------------------------------
  DONE

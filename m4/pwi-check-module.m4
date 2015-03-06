@@ -44,8 +44,10 @@ AC_DEFUN([PWI_CHECK_MODULE],[
 		PWI_CFLAGS="${PWI_CFLAGS} ${$1_CFLAGS}"
 		PWI_LIBS="${PWI_LIBS} ${$1_LIBS}"
 	else
-		_OFA_CHECK_MODULE_MSG([$4],[$1: condition ${_ac_cond} not satisfied])
+		_PWI_CHECK_MODULE_MSG([$4],[$1: condition ${_ac_cond} not satisfied])
 	fi
+
+	AM_CONDITIONAL([HAVE_$1], [test "${have_$1}" = "yes"])
 ])
 
 AC_DEFUN([_PWI_CHECK_MODULE_MSG],[

@@ -79,8 +79,8 @@ gtk3_required=3.4
 PWI_CHECK_MODULE([GTK3],        [gtk+-3.0],    [${gtk3_required}])
 PWI_CHECK_MODULE([GLIB],        [glib-2.0],    [${glib_required}])
 PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0], [${glib_required}])
-PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24])
-PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24])
+PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24],            [no])
+PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24],            [no])
 
 MYSQL_CLIENT([5.5.0])
 OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS} ${PWI_CFLAGS}"
@@ -97,6 +97,21 @@ AC_SUBST([OPENBOOK_CFLAGS])
 AC_SUBST([OPENBOOK_LIBS])
 
 AC_DEFINE([OPENBOOK_DEBUG],["OPENBOOK_DEBUG"],[Debug environment variable])
+
+# documentation
+PWI_MAINTAINER_CHECK_FOR_DEPRECATED
+
+# built plugins
+have_IMPORT_BOURSO="yes"				# always built
+have_IMPORT_LCL="yes"					# always built
+# IMPORT_LCL_PDF requires Poppler libraries
+have_IMPORT_LCL_PDF="no"
+if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
+	have_IMPORT_LCL_PDF="yes"
+fi
+AM_CONDITIONAL([HAVE_IMPORT_LCL_PDF], [test "${have_IMPORT_LCL_PDF}" = "yes"])
+have_MYSQL="yes"						# requires MySQL-Client libs
+have_POSTGRE="no"
 
 # display and keep configuration informations
 config_options="`$as_echo "$ac_configure_args" | sed 's/^ //; s/[\\""\`\$]/\\\\&/g'`" 
@@ -132,14 +147,28 @@ AC_CONFIG_FILES([
 
 AC_OUTPUT
 
-if test ${ofa_fatal_count} -gt 0; then
-	AC_MSG_ERROR([${ofa_fatal_count} missing libraries or other errors detected])
-fi
-
 $as_echo "
 	${PACKAGE_STRING} configuration summary:
 
 	Installation prefix             ${prefix}
 	Build system type               ${ac_cv_build}
+	Gtk+ version                    ${GTK3_msg_version}
+	GLib version                    ${GLIB_msg_version}
 	Maintainer mode                 ${msg_maintainer_mode}
+	Enable deprecated functions     ${enable_deprecated}
+	Built plugins:
+	  Import_Boursorama             ${have_IMPORT_BOURSO}
+	  Import_LCL                    ${have_IMPORT_LCL}"
+if test "${have_IMPORT_LCL_PDF}" = "yes"; then
+	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF} (with Poppler ${POPPLER_msg_version})"
+else
+	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF}"
+fi
+	$as_echo "	  MySQL                         ${have_MYSQL}
+	  PostgreSQL                    ${have_POSTGRE}
 "
+if test ${pwi_fatal_count} -gt 0; then
+	$as_echo "${pwi_fatal_list}
+"
+	exit 1
+fi
