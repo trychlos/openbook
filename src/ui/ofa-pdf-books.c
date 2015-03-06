@@ -1070,34 +1070,36 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 
 	y = ofa_iprintable_get_last_y( instance );
 
-	/* label */
-	str = g_strdup_printf( _( "Balance for account %s - %s" ),
-			priv->account_number,
-			ofo_account_get_label( priv->account_object ));
-	ofa_iprintable_ellipsize_text( instance, context,
-			priv->page_margin, y, str, priv->body_acflabel_max_size );
-	g_free( str );
+	if( priv->account_number ){
+		/* label */
+		str = g_strdup_printf( _( "Balance for account %s - %s" ),
+				priv->account_number,
+				ofo_account_get_label( priv->account_object ));
+		ofa_iprintable_ellipsize_text( instance, context,
+				priv->page_margin, y, str, priv->body_acflabel_max_size );
+		g_free( str );
 
-	/* solde debit */
-	str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
-	ofa_iprintable_set_text( instance, context,
-			priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		/* solde debit */
+		str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
 
-	/* solde credit */
-	str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
-	ofa_iprintable_set_text( instance, context,
-			priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		/* solde credit */
+		str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
 
-	/* current account solde */
-	draw_account_solde_debit_credit( OFA_PDF_BOOKS( instance ), context, y );
+		/* current account solde */
+		draw_account_solde_debit_credit( OFA_PDF_BOOKS( instance ), context, y );
 
-	/* add the account balance to the total per currency */
-	ofs_currency_add_currency( &priv->totals,
-			priv->currency_code,
-			context ? priv->account_debit : 0,
-			context ? priv->account_credit : 0 );
+		/* add the account balance to the total per currency */
+		ofs_currency_add_currency( &priv->totals,
+				priv->currency_code,
+				context ? priv->account_debit : 0,
+				context ? priv->account_credit : 0 );
+	}
 
 	y += ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );
