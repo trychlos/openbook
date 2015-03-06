@@ -176,7 +176,6 @@ void           ofo_entry_set_ledger           ( ofoEntry *entry, const gchar *jo
 void           ofo_entry_set_ope_template     ( ofoEntry *entry, const gchar *model );
 void           ofo_entry_set_debit            ( ofoEntry *entry, ofxAmount amount );
 void           ofo_entry_set_credit           ( ofoEntry *entry, ofxAmount amount );
-void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter counter );
 
 gboolean       ofo_entry_is_valid             ( ofoDossier *dossier,

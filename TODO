@@ -332,9 +332,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 686 2015- 3- 2 regression in v0.34: account properties is validable
-                while the currency is not set (for a detail account)
-
  687 2015- 3- 2 0.34: segfault: when reconciliating with a manual date
                 (but reconciliation has been taken into account)
                 file my-date.c: line 100 (my_date_compare): should not be reached
@@ -3178,6 +3175,10 @@
  685 2015- 2-21 due to git migration to Githib, remove "$Id$" svn tag
                 from source files
      2015- 3- 2 done
+
+ 686 2015- 3- 2 regression in v0.34: account properties is validable
+                while the currency is not set (for a detail account)
+     2015- 3- 6 done - git #9ce381c
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

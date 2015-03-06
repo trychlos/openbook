@@ -215,6 +215,9 @@ static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
+static void         entry_set_concil_dval( ofoEntry *entry, const GDate *date );
+static void         entry_set_concil_user( ofoEntry *entry, const gchar *user );
+static void         entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
@@ -1892,15 +1895,33 @@ entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_UPD_STAMP, upd_stamp );
 }
 
-/**
+/*
  * ofo_entry_set_concil_dval:
  *
  * The reconciliation may be unset by setting @drappro to %NULL.
  */
-void
-ofo_entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
+static void
+entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
 {
 	ofo_base_setter( ENTRY, entry, date, ENT_CONCIL_DVAL, drappro );
+}
+
+/*
+ * ofo_entry_set_concil_user:
+ */
+static void
+entry_set_concil_user( ofoEntry *entry, const gchar *user )
+{
+	ofo_base_setter( ENTRY, entry, string, ENT_CONCIL_USER, user );
+}
+
+/*
+ * ofo_entry_set_concil_stamp:
+ */
+static void
+entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
+{
+	ofo_base_setter( ENTRY, entry, timestamp, ENT_CONCIL_STAMP, stamp );
 }
 
 /**
@@ -2416,6 +2437,12 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 
 /**
  * ofo_entry_update_concil:
+ * @entry:
+ * @dossier:
+ * @date: the reconciliation date to be set, either valid or %NULL.
+ *
+ * Update the entry in SGBD with the specified @date.
+ * Set the #ofoEntry accordingly.
  */
 gboolean
 ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier, const GDate *date )
@@ -2464,10 +2491,18 @@ do_update_concil( ofoEntry *entry, const GDate *date, const gchar *user, const o
 		g_free( stamp_str );
 		g_free( sdrappro );
 
+		entry_set_concil_dval( entry, date );
+		entry_set_concil_user( entry, user );
+		entry_set_concil_stamp( entry, &stamp );
+
 	} else {
 		query = g_string_append(
 						query,
 						"ENT_CONCIL_DVAL=NULL,ENT_CONCIL_USER=NULL,ENT_CONCIL_STAMP=NULL" );
+
+		entry_set_concil_dval( entry, NULL );
+		entry_set_concil_user( entry, NULL );
+		entry_set_concil_stamp( entry, NULL );
 	}
 
 	g_string_append_printf( query, " %s", where );
@@ -2781,8 +2816,8 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - ignored (settlement user on export)
  * - ignored (settlement timestamp on export)
  * - reconciliation date: yyyy-mm-dd
- * - ignored (reconciliation user on export)
- * - ignored (reconciliation timestamp on export)
+ * - exported reconciliation user (defaults to current user)
+ * - exported reconciliation timestamp (defaults to now)
  *
  * Note that amounts must not include thousand separator.
  *
@@ -2828,6 +2863,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	ofoCurrency *cur_object;
 	ofxCounter counter;
 	const GDate *cdate;
+	GTimeVal stamp;
 
 	dataset = NULL;
 	line = 0;
@@ -3034,14 +3070,26 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		my_date_set_from_sql( &date, cstr );
 		if( my_date_is_valid( &date )){
-			ofo_entry_set_concil_dval( entry, &date );
+			entry_set_concil_dval( entry, &date );
 		}
 
-		/* ignored (reconciliation user from export) */
+		/* exported reconciliation user (defaults to current user) */
 		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			cstr = ofo_dossier_get_user( dossier );
+		}
+		entry_set_concil_user( entry, cstr );
 
-		/* ignored (reconciliation timestamp from export) */
+		/* exported reconciliation timestamp (defaults to now) */
 		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			my_utils_stamp_set_now( &stamp );
+		} else {
+			my_utils_stamp_set_from_str( &stamp, cstr );
+		}
+		entry_set_concil_stamp( entry, &stamp );
 
 		/* what to do regarding the effect date ? */
 		if( !entry_compute_status( entry, dossier )){

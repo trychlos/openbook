@@ -2385,9 +2385,6 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	is_valid_rappro = my_date_is_valid( drappro );
 	batline = NULL;
 
-	/* set the reconciliation date in the entry */
-	ofo_entry_set_concil_dval( entry, is_valid_rappro ? drappro : NULL );
-
 	/* update the child bat line if it exists
 	 * we work on child model because 'gtk_tree_model_iter_has_child'
 	 * actually says if we have a *visible* child
@@ -2420,7 +2417,7 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	ofo_entry_update_concil(
 			entry,
 			ofa_page_get_dossier( OFA_PAGE( self )),
-			ofo_entry_get_concil_dval( entry ));
+			is_valid_rappro ? drappro : NULL );
 
 	if( batline ){
 		ofo_bat_line_update(

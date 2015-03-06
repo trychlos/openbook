@@ -1331,7 +1331,6 @@ p7_forward( ofaExerciceCloseAssistant *self )
 		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 		if( ofo_account_is_reconciliable( account )){
-			ofo_entry_set_concil_dval( entry, dbegin );
 			ofo_entry_update_concil( entry, dossier, dbegin );
 		}
 
