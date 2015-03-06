@@ -309,9 +309,6 @@
 
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
- 657 2015- 2-17 GuidedInput: weird behavior when entering an operation:
-                amounts blink (and more time when validating the dialog)
-
  668 2015- 2-17 have main notebook pages detachable ? getting so non-
                 modal dialogs
      2015- 2-20 this requires to implement DnD on some non-modal windows
@@ -337,17 +334,9 @@
                 bat file for completeness after having reconciliated
                 manually the entries)
 
- 691 2015- 3- 4 Reconciliation: when loading a bat file, a proposition
-                is made even if the entry is already reconciliated, the
-                value date from bat line visually overriding the 
-                reconciliation date already set in the entry (no update
-                in sgbd)
-
  692 2015- 3- 4 it may happen that the bat line is before the entry to
                 be reconciliated and thus the proposition is not made;
                 let the user force the appariement
-
- 693 2015- 3- 4 Chart of accounts: add the solde of the account
 
  694 2015- 3- 4 It is definitively required to be able to recompute the
                 solde of the account at the end of the period when 
@@ -2952,6 +2941,10 @@
  655 2015- 2-17 GuidedInput: Alt+O shortcut should be reserved for OK
      2015- 2-20 done - svn #4632
 
+ 657 2015- 2-17 GuidedInput: weird behavior when entering an operation:
+                amounts blink (and more time when validating the dialog)
+     2015- 3- 6 fixed
+
  658 2015- 2-17 AccountSelect: replace OK label with Select
      2015- 2-20 idem for OpeTemplateSelect and BatSelect
                 done - svn #4625
@@ -3117,6 +3110,16 @@
 
  690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
      2015- 3- 6 done - git #b7459c9
+
+ 691 2015- 3- 4 Reconciliation: when loading a bat file, a proposition
+                is made even if the entry is already reconciliated, the
+                value date from bat line visually overriding the 
+                reconciliation date already set in the entry (no update
+                in sgbd)
+     2015- 3- 6 closed as non reproducible
+
+ 693 2015- 3- 4 Chart of accounts: add the solde of the account
+     2015- 3- 6 done - git #617d1c8
 
  696 2015- 3- 4 when printing from an account to an account, the
                 accounts may not exist (they are just limits)
