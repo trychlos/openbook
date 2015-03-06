@@ -28,6 +28,7 @@
 #endif
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include <glib/gi18n.h>
 
 #include "api/my-double.h"
 #include "api/my-utils.h"
@@ -66,6 +67,7 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
+		G_TYPE_STRING,  								/* exe_solde */
 		G_TYPE_OBJECT									/* the #ofoAccount itself */
 };
 
@@ -278,8 +280,9 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 	gint digits;
 	ofoCurrency *currency_obj;
 	gchar *stamp;
-	gchar *svdeb, *svcre, *srdeb, *srcre, *sodeb, *socre, *sfdeb, *sfcre, *sedeb, *secre;
-	ofxAmount val_debit, val_credit, rough_debit, rough_credit;
+	gchar *svdeb, *svcre, *srdeb, *srcre, *sodeb, *socre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
+	gchar *str;
+	ofxAmount val_debit, val_credit, rough_debit, rough_credit, exe_solde;
 	GdkPixbuf *notes_png;
 	GError *error;
 
@@ -305,6 +308,15 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 		sfcre = my_double_to_str_ex( ofo_account_get_futur_credit( account ), digits );
 		sedeb = my_double_to_str_ex( val_debit+rough_debit, digits );
 		secre = my_double_to_str_ex( val_credit+rough_credit, digits );
+		exe_solde = val_debit+rough_debit-val_credit-rough_credit;
+		if( exe_solde >= 0 ){
+			str = my_double_to_str_ex( exe_solde, digits );
+			sesol = g_strdup_printf( _( "%s DB" ), str );
+		} else {
+			str = my_double_to_str_ex( -exe_solde, digits );
+			sesol = g_strdup_printf( _( "%s CR" ), str );
+		}
+		g_free( str );
 
 	} else {
 		svdeb = g_strdup( "" );
@@ -317,6 +329,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 		sfcre = g_strdup( "" );
 		sedeb = g_strdup( "" );
 		secre = g_strdup( "" );
+		sesol = g_strdup( "" );
 	}
 
 	stamp = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
@@ -352,6 +365,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED : "",
 			ACCOUNT_COL_EXE_DEBIT,     sedeb,
 			ACCOUNT_COL_EXE_CREDIT,    secre,
+			ACCOUNT_COL_EXE_SOLDE,     sesol,
 			-1 );
 
 	g_free( svdeb );
@@ -364,6 +378,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 	g_free( sfcre );
 	g_free( sedeb );
 	g_free( secre );
+	g_free( sesol );
 	g_free( stamp );
 }
 

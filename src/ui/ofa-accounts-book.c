@@ -725,6 +725,19 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
 
 	cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
+	column = gtk_tree_view_column_new();
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_EXE_SOLDE ));
+	gtk_tree_view_column_pack_end( column, cell, TRUE );
+	gtk_tree_view_column_set_title( column, _( "Solde" ));
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_column_add_attribute( column, cell, "text", ACCOUNT_COL_EXE_SOLDE );
+	gtk_tree_view_column_set_min_width( column, 100 );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+
+	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 0.0, 0.5 );
 	column = gtk_tree_view_column_new();
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_CURRENCY ));
