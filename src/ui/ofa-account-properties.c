@@ -285,10 +285,10 @@ v_init_dialog( myDialog *dialog )
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( dialog )->prot->main_window );
 	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
-	if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
+	if( my_strlen( priv->currency )){
 		ofa_currency_combo_set_selected( combo, priv->currency );
 	}
-	gtk_widget_set_sensitive( GTK_WIDGET( combo ), is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( combo ), is_current && !priv->has_entries );
 
 	/* type of account */
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
@@ -532,7 +532,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	priv = self->priv;
 
 	is_current = ofo_dossier_is_current( MY_WINDOW( self )->prot->dossier );
-	if( is_current ){
+	if( !is_current ){
 		ok_enabled = TRUE;
 
 	} else {

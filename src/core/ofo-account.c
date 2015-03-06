@@ -1174,9 +1174,14 @@ account_get_string_ex( const ofoAccount *account, gint data_id )
 gboolean
 ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, const gchar *type )
 {
+	static const gchar *thisfn = "ofo_account_is_valid_data";
 	gunichar code;
 	gint value;
 	gboolean is_root;
+
+	if( 0 ){
+		g_debug( "%s: number=%s, label=%s, currency=%s, type=%s", thisfn, number, label, currency, type );
+	}
 
 	/* is account number valid ?
 	 * must begin with a digit, and be at least two chars
