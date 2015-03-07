@@ -61,6 +61,7 @@
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-pdf-balance.h"
+#include "ui/ofa-pdf-accounts-balance.h"
 #include "ui/ofa-pdf-books.h"
 #include "ui/ofa-pdf-ledgers.h"
 #include "ui/ofa-pdf-reconcil.h"
@@ -122,7 +123,8 @@ static void on_ope_ledger_close    ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_exercice_close  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_pdf_balance         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_entries_balance ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_accounts_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_books           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_reconcil        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -137,30 +139,31 @@ static void on_check_balances      ( GSimpleAction *action, GVariant *parameter,
 static void on_check_integrity     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
-		{ "properties",    on_properties,           NULL, NULL, NULL },
-		{ "backup",        on_backup,               NULL, NULL, NULL },
-		{ "close",         on_close,                NULL, NULL, NULL },
-		{ "guided",        on_ope_guided,           NULL, NULL, NULL },
-		{ "entries",       on_ope_view_entries,     NULL, NULL, NULL },
-		{ "concil",        on_ope_concil,           NULL, NULL, NULL },
-		{ "settlement",    on_ope_settlement,       NULL, NULL, NULL },
-		{ "ledclosing",    on_ope_ledger_close,     NULL, NULL, NULL },
-		{ "execlosing",    on_ope_exercice_close,   NULL, NULL, NULL },
-		{ "import",        on_ope_import,           NULL, NULL, NULL },
-		{ "export",        on_ope_export,           NULL, NULL, NULL },
-		{ "pdf-balance",   on_pdf_balance,          NULL, NULL, NULL },
-		{ "pdf-books",     on_pdf_books,            NULL, NULL, NULL },
-		{ "pdf-ledgers",   on_pdf_ledgers,          NULL, NULL, NULL },
-		{ "pdf-reconcil",  on_pdf_reconcil,         NULL, NULL, NULL },
-		{ "accounts",      on_ref_accounts,         NULL, NULL, NULL },
-		{ "ledgers",       on_ref_ledgers,          NULL, NULL, NULL },
-		{ "ope-templates", on_ref_ope_templates,    NULL, NULL, NULL },
-		{ "currencies",    on_ref_currencies,       NULL, NULL, NULL },
-		{ "rates",         on_ref_rates,            NULL, NULL, NULL },
-		{ "classes",       on_ref_classes,          NULL, NULL, NULL },
-		{ "batfiles",      on_ref_batfiles,         NULL, NULL, NULL },
-		{ "chkbal",        on_check_balances,       NULL, NULL, NULL },
-		{ "integrity",     on_check_integrity,      NULL, NULL, NULL },
+		{ "properties",       on_properties,           NULL, NULL, NULL },
+		{ "backup",           on_backup,               NULL, NULL, NULL },
+		{ "close",            on_close,                NULL, NULL, NULL },
+		{ "guided",           on_ope_guided,           NULL, NULL, NULL },
+		{ "entries",          on_ope_view_entries,     NULL, NULL, NULL },
+		{ "concil",           on_ope_concil,           NULL, NULL, NULL },
+		{ "settlement",       on_ope_settlement,       NULL, NULL, NULL },
+		{ "ledclosing",       on_ope_ledger_close,     NULL, NULL, NULL },
+		{ "execlosing",       on_ope_exercice_close,   NULL, NULL, NULL },
+		{ "import",           on_ope_import,           NULL, NULL, NULL },
+		{ "export",           on_ope_export,           NULL, NULL, NULL },
+		{ "entries-balance",  on_pdf_entries_balance,  NULL, NULL, NULL },
+		{ "accounts-balance", on_pdf_accounts_balance, NULL, NULL, NULL },
+		{ "pdf-books",        on_pdf_books,            NULL, NULL, NULL },
+		{ "pdf-ledgers",      on_pdf_ledgers,          NULL, NULL, NULL },
+		{ "pdf-reconcil",     on_pdf_reconcil,         NULL, NULL, NULL },
+		{ "accounts",         on_ref_accounts,         NULL, NULL, NULL },
+		{ "ledgers",          on_ref_ledgers,          NULL, NULL, NULL },
+		{ "ope-templates",    on_ref_ope_templates,    NULL, NULL, NULL },
+		{ "currencies",       on_ref_currencies,       NULL, NULL, NULL },
+		{ "rates",            on_ref_rates,            NULL, NULL, NULL },
+		{ "classes",          on_ref_classes,          NULL, NULL, NULL },
+		{ "batfiles",         on_ref_batfiles,         NULL, NULL, NULL },
+		{ "chkbal",           on_check_balances,       NULL, NULL, NULL },
+		{ "integrity",        on_check_integrity,      NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -1370,7 +1373,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
-on_pdf_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_pdf_entries_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_print_balance";
 
@@ -1380,6 +1383,19 @@ on_pdf_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_pdf_balance_run( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+on_pdf_accounts_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_print_balance";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_pdf_accounts_balance_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
