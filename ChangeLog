@@ -1,3 +1,73 @@
+2015-03-07 Pierre Wieser <pwieser@trychlos.org>
+
+	'Balances' option item is renamed as 'Entries balance'
+	New option item: 'Accounts balance'.
+
+	* src/ui/ofa-iprintable.c,
+	* src/ui/ofa-iprintable.h:
+	- define new draw_page_header_column() virtual method
+	- add @page_num argument to draw_page_header_columns() virtual
+
+	* ofa-print-balance.ui: renamed as ofa-print-entries-balance.ui
+
+	* src/ui/ofa-pdf-balance.h,
+	* src/ui/ofa-pdf-balance.c:
+	- renamed as ofa-pdf-entries-balance.{c,h}
+	- add a note to make sure this is understood as an entries balance.
+
+	* src/api/ofs-account-balance.h,
+	* src/core/ofs-account-balance.c: new files.
+
+	* src/ui/ofa-pdf-accounts-balance.h,
+	* src/ui/ofa-pdf-accounts-balance.c,
+	* src/ui/ofa-print-accounts-balance.ui: new files.
+
+	* src/api/ofo-account.h,
+	* src/api/Makefile.am,
+	* src/core/ofo-account.c,
+	* src/core/ofo-entry.c,
+	* src/core/Makefile.am,
+	* src/ui/ofa-main-window.c,
+	* src/ui/ofa-pdf-books.c,
+	* src/ui/ofa-pdf-ledgers.c,
+	* src/ui/ofa-pdf-reconcil.c,
+	* src/ui/ofa-dos-menubar.ui,
+	* src/ui/Makefile.am: updated accordingly.
+
+	* src/api/ofs-currency.h: fix typo.
+
+2015-03-06 Pierre Wieser <pwieser@trychlos.org>
+
+	* .gitignore: add build files.
+
+	* configure.ac: make POPPLER missing library non fatal.
+
+	* m4/pwi-check-module.m4: always define an ad-hoc conditional.
+
+	* src/ui/ofa-account-properties.c: fix again the account validation
+	rules (todo #686).
+
+	* src/api/ofo-entry.h,
+	* src/core/ofo-entry.c:
+	- ofo_entry_set_concil_dval() is no more a public method
+	- entry_set_concil_user(), entry_set_concil_stamp(): new static methods
+	- ofo_entry_update_concil() now updates both the DBMS and the object
+	  which fixes todo #687
+	- iimportable_import() now imports user and timestamp.
+
+	* src/ui/ofa-exercice-close-assistant.c,
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
+	* src/ui/ofa-bat-properties-bin.c: display timestamp (todo #690).
+
+	* src/ui/ofa-pdf-books.c:
+	- accept any account as low and high limits (todo #696)
+	- make sure general books are understood as an entries list.
+
+	* src/ui/ofa-account-store.h,
+	* src/ui/ofa-account-store.c,
+	* src/ui/ofa-accounts-book.c: display account solde (todo #693).
+
 2015-03-02 Pierre Wieser <pwieser@trychlos.org>
 
 	* configure.ac: update the web site URL
