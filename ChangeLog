@@ -1,11 +1,11 @@
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
-	'Balances' option item is renamed as 'Entries balance'
+	'Balances' option item is renamed as 'Entries balance'.
 	New option item: 'Accounts balance'.
 
 	* src/ui/ofa-iprintable.c,
 	* src/ui/ofa-iprintable.h:
-	- define new draw_page_header_column() virtual method
+	- define new draw_page_header_notes() virtual method
 	- add @page_num argument to draw_page_header_columns() virtual
 
 	* ofa-print-balance.ui: renamed as ofa-print-entries-balance.ui

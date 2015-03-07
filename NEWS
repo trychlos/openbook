@@ -3,11 +3,33 @@
  Summary
  =======
  
-   Version 1.0
+   Version 0.35
 
 -----------------------------------------------------------------------
- Version 1.0
- ===========
+ Version 0.35
+ ============
+
+ Release on 2015-03-07
+
+ New features:
+
+   - 'Balances' option item is renamed as 'Entries balance'.
+   - New option item: 'Accounts balance'.
+
+ Bug fixes:
+
+   - todo #686: fix (again) ofaAccountProperties validation rules.
+   - todo #687: improve ofo_entry_update_concil() method.
+   - todo #688: fix import of first BAT file.
+   - todo #690: ofaBatProperties: display reconciliation timestamp.
+   - todo #693: ofaAccountsChart: display account solde.
+   - todo #698: ofaPDFBooks: accept any account as low or high limits.
+   - todo #700: fix ofaBatSelect cancellation.
+
+ Other changes:
+
+   - ofaIPrintable::draw_page_header_columns(): add 'page_num' argument.
+   - ofaIPrintable::draw_page_header_notes(): new virtual method.
 
 -----------------------------------------------------------------------
- P. Wieser - Last updated on 2014, may 2nd
+ P. Wieser - Last updated on 2015, mar, 7th.
