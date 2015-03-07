@@ -47,6 +47,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
+#include "api/ofs-account-balance.h"
 #include "api/ofs-currency.h"
 
 /* priv instance data
@@ -832,7 +833,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
  * Returns the dataset of non-deleted entries for the given accounts,
  * between the specified effect dates, as a GList of newly allocated
  * #ofsAccountBalance structures, that the user should
- * ofo_account_free_balances().
+ * #ofs_account_balance_list_free().
  *
  * The returned dataset is ordered by ascending account.
  */

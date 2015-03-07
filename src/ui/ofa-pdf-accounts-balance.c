@@ -37,6 +37,7 @@
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofs-account-balance.h"
 
 #include "core/my-window-prot.h"
 
@@ -136,9 +137,6 @@ static void     on_print_zero_toggled( GtkToggleButton *button, ofaPDFAccountsBa
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFAccountsBalance *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
-static gboolean is_account_in_dataset( const GList *dataset, const gchar *number );
-static GList   *add_account_to_dataset( GList *dataset, ofoAccount *account, const gchar *number );
-static gint     cmp_account_balance( const ofsAccountBalance *a, const ofsAccountBalance *b );
 static void     iprintable_free_dataset( GList *elements );
 static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
@@ -453,8 +451,8 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 			account = OFO_ACCOUNT( it->data );
 			if( !ofo_account_is_root( account )){
 				number = ofo_account_get_number( account );
-				if( !is_account_in_dataset( dataset, number )){
-					dataset = add_account_to_dataset( dataset, account, number );
+				if( !ofs_account_balance_list_find( dataset, number )){
+					ofs_account_balance_list_add( &dataset, account );
 				}
 			}
 		}
@@ -465,54 +463,10 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 	return( dataset );
 }
 
-static gboolean
-is_account_in_dataset( const GList *dataset, const gchar *number )
-{
-	const GList *it;
-	ofsAccountBalance *balance;
-	gint cmp;
-
-	for( it=dataset ; it ; it=it->next ){
-		balance = ( ofsAccountBalance * ) it->data;
-		cmp = g_utf8_collate( number, balance->account );
-		if( cmp == 0 ){
-			return( TRUE );
-		}
-		if( cmp < 0 ){
-			return( FALSE );
-		}
-	}
-
-	return( FALSE );
-}
-
-static GList *
-add_account_to_dataset( GList *dataset, ofoAccount *account, const gchar *number )
-{
-	ofsAccountBalance *balance;
-	GList *list;
-
-	balance = g_new0( ofsAccountBalance, 1 );
-	balance->account = g_strdup( number );
-	balance->debit = 0;
-	balance->credit = 0;
-	balance->currency = g_strdup( ofo_account_get_currency( account ));
-
-	list = g_list_insert_sorted( dataset, balance, ( GCompareFunc ) cmp_account_balance );
-
-	return( list );
-}
-
-static gint
-cmp_account_balance( const ofsAccountBalance *a, const ofsAccountBalance *b )
-{
-	return( g_utf8_collate( a->account, b->account ));
-}
-
 static void
 iprintable_free_dataset( GList *elements )
 {
-	ofo_account_free_balances( elements );
+	ofs_account_balance_list_free( &elements );
 }
 
 static void

@@ -40,17 +40,6 @@
 
 G_BEGIN_DECLS
 
-/**
- * ofsAccountBalance
- */
-typedef struct {
-	gchar     *account;
-	ofxAmount  debit;
-	ofxAmount  credit;
-	gchar     *currency;
-}
-	ofsAccountBalance;
-
 /* This is needed by ofoEntry
  */
 #define ACCOUNT_TYPE_ROOT               "R"
@@ -59,8 +48,6 @@ typedef struct {
 #define ACCOUNT_RECONCILIABLE           "R"
 #define ACCOUNT_FORWARDABLE             "F"
 #define ACCOUNT_CLOSED                  "C"
-
-void            ofo_account_free_balances        ( GList *balances );
 
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 

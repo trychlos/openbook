@@ -37,6 +37,7 @@
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofs-account-balance.h"
 
 #include "core/my-window-prot.h"
 
@@ -645,7 +646,7 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 static void
 iprintable_free_dataset( GList *elements )
 {
-	ofo_account_free_balances( elements );
+	ofs_account_balance_list_free( &elements );
 }
 
 static void
@@ -1005,9 +1006,8 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 		str = my_double_to_str( -1*solde );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-	}
 
-	if( solde > 0 ){
+	} else {
 		str = my_double_to_str( solde );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
