@@ -36,6 +36,8 @@
 
 	* src/api/ofs-currency.h: fix typo.
 
+	* src/core/ofo-bat.c: fix import of first BAT file (todo #688).
+
 2015-03-06 Pierre Wieser <pwieser@trychlos.org>
 
 	* .gitignore: add build files.

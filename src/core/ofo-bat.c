@@ -1154,12 +1154,13 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 	ofoBatLine *bline;
 	ofsBatDetail *sdet;
 	GList *it;
+	guint count;
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
 	g_return_val_if_fail( sbat, FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	OFA_IDATASET_GET( dossier, BAT, bat );
+	count = g_list_length( ofo_bat_get_dataset( dossier ));
 
 	bat = ofo_bat_new();
 
@@ -1194,7 +1195,14 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 	}
 
 	if( ok ){
-		OFA_IDATASET_ADD( dossier, BAT, bat );
+		if( count > 0 ){
+			OFA_IDATASET_ADD( dossier, BAT, bat );
+		} else {
+			OFA_IDATASET_GET( dossier, BAT, bat );
+			if( ofa_idataset_is_signal_new_allowed( dossier, OFO_TYPE_BAT )){
+				g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( bat ));
+			}
+		}
 		if( id ){
 			*id = g_new0( ofxCounter, 1 );
 			**id = ofo_bat_get_id( bat );

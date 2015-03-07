@@ -329,19 +329,23 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
+ 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
+                while it appears again only once after program re-run
+     2015- 3- 6 closed as unable to reproduce
+     2015- 3- 7 this happened only on the first imported BAT
+
  689 2015- 3- 4 new: be able to point out bat lines corresponding to
                 already reconciliated entries (use case: importing a
                 bat file for completeness after having reconciliated
                 manually the entries)
 
- 692 2015- 3- 4 it may happen that the bat line is before the entry to
-                be reconciliated and thus the proposition is not made;
-                let the user force the appariement
-
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
 
- 700
+ 700 2015- 3- 7 Reconciliation: open the bat selection and cancel:
+                the bat will be wrongly selected
+
+ 701
 
 -----------------------------------------------------------------------
  DONE
@@ -3100,10 +3104,6 @@
                 Mode is "Reconciliation session"
      2015- 3- 6 done - git #188d32c
 
- 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
-                while it appears again only once after program re-run
-     2015- 3- 6 closed as unable to reproduce
-
  690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
      2015- 3- 6 done - git #b7459c9
 
@@ -3113,6 +3113,11 @@
                 reconciliation date already set in the entry (no update
                 in sgbd)
      2015- 3- 6 closed as non reproducible
+
+ 692 2015- 3- 4 it may happen that the bat line is before the entry to
+                be reconciliated and thus the proposition is not made;
+                let the user force the appariement
+     2015- 3- 7 closed as non reproducible
 
  693 2015- 3- 4 Chart of accounts: add the solde of the account
      2015- 3- 6 done - git #617d1c8
