@@ -22,7 +22,7 @@
 
 AC_PREREQ([2.53])
 
-AC_INIT([OpenBook],[0.35],[openbook@trychlos.org],,[https://github.com/pwieser/openbook])
+AC_INIT([OpenBook],[0.36],[openbook@trychlos.org],,[https://github.com/pwieser/openbook])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CANONICAL_TARGET
