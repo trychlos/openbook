@@ -338,10 +338,6 @@
                 be reconciliated and thus the proposition is not made;
                 let the user force the appariement
 
- 694 2015- 3- 4 It would definitively be useful to be able to recompute 
-                the solde of the account at the end of the period when 
-                editing a balance
-
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
 
@@ -3122,6 +3118,11 @@
 
  693 2015- 3- 4 Chart of accounts: add the solde of the account
      2015- 3- 6 done - git #617d1c8
+
+ 694 2015- 3- 4 It would definitively be useful to be able to recompute 
+                the solde of the account at the end of the period when 
+                editing a balance
+     2015- 3- 7 done with AccountsBalance - git #81264e2
 
  696 2015- 3- 4 when printing from an account to an account, the
                 accounts may not exist (they are just limits)

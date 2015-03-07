@@ -207,8 +207,8 @@ openbook_SOURCES = \
 	ofa-page-prot.h										\
 	ofa-pdf-accounts-balance.c							\
 	ofa-pdf-accounts-balance.h							\
-	ofa-pdf-balance.c									\
-	ofa-pdf-balance.h									\
+	ofa-pdf-entries-balance.c							\
+	ofa-pdf-entries-balance.h							\
 	ofa-pdf-books.c										\
 	ofa-pdf-books.h										\
 	ofa-pdf-dialog.c									\
@@ -286,7 +286,7 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-accounts-balance.ui						\
-	ofa-print-balance.ui								\
+	ofa-print-entries-balance.ui						\
 	ofa-print-books.ui									\
 	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\

@@ -34,7 +34,8 @@ src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ope-template-help.ui
 src/ui/ofa-ope-template-properties.ui
 src/ui/ofa-preferences.ui
-src/ui/ofa-print-balance.ui
+src/ui/ofa-print-accounts-balance.ui
+src/ui/ofa-print-entries-balance.ui
 src/ui/ofa-print-books.ui
 src/ui/ofa-print-ledgers.ui
 src/ui/ofa-print-reconcil.ui

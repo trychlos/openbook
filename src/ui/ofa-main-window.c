@@ -60,7 +60,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
-#include "ui/ofa-pdf-balance.h"
+#include "ui/ofa-pdf-entries-balance.h"
 #include "ui/ofa-pdf-accounts-balance.h"
 #include "ui/ofa-pdf-books.h"
 #include "ui/ofa-pdf-ledgers.h"
@@ -1382,7 +1382,7 @@ on_pdf_entries_balance( GSimpleAction *action, GVariant *parameter, gpointer use
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_pdf_balance_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_pdf_entries_balance_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
