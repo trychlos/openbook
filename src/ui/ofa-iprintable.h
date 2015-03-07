@@ -233,12 +233,38 @@ typedef struct {
 	gchar *  ( *get_page_header_subtitle )( const ofaIPrintable *instance );
 
 	/**
+	 * draw_page_header_notes:
+	 * @instance: the #ofaIPrintable provider.
+	 * @operation: the #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: the #GtkPrintContext context, %NULL while pagination
+	 *  phase.
+	 * @page_num: the current page number, counted from zero.
+	 *
+	 * If implemented, let us insert some notes between the subtitle and
+	 * the columns headers.
+	 *
+	 * This method is called as part of the default implementation of
+	 * the "draw_header" virtual. When called, the cairo context is
+	 * setup with normal font, color and background.
+	 *
+	 * The application must take care of updating the 'last_y' ordonate
+	 * according to the count of lines it has been printed, and of the
+	 * vertical space it may have added between these rows.
+	 */
+	void     ( *draw_page_header_notes )  ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context,
+												gint page_num );
+
+	/**
 	 * draw_page_header_columns:
 	 * @instance: the #ofaIPrintable provider.
 	 * @operation: the #GtkPrintOperation operation, %NULL while
 	 *  pagination phase.
 	 * @context: the #GtkPrintContext context, %NULL while pagination
 	 *  phase.
+	 * @page_num: the current page number, counted from zero.
 	 *
 	 * If implemented, should write the column headers.
 	 *
@@ -253,7 +279,8 @@ typedef struct {
 	 */
 	void     ( *draw_page_header_columns )( ofaIPrintable *instance,
 												GtkPrintOperation *operation,
-												GtkPrintContext *context );
+												GtkPrintContext *context,
+												gint page_num );
 
 	/**
 	 * draw_top_summary:

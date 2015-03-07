@@ -139,7 +139,7 @@ static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
-static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static void     iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
@@ -551,7 +551,8 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 }
 
 static void
-iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_draw_page_header_columns( ofaIPrintable *instance,
+		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
 	ofaPDFReconcilPrivate *priv;
 	gdouble y, vspace;

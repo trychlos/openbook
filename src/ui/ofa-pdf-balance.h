@@ -31,9 +31,10 @@
  * @short_description: #ofaPDFBalance class definition.
  * @include: ui/ofa-print-reconcil.h
  *
- * Print the reconciliation summary.
+ * Print the balances of entries between two dates.
  *
- * This is a convenience class around a GtkPrintOperation.
+ * The print displays the balance of entries whose effect date is
+ * included in the specified period.
  */
 
 #include "core/ofa-main-window-def.h"

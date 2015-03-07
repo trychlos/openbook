@@ -153,7 +153,7 @@ static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
-static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static gboolean iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev );
 static void     iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
 static void     iprintable_draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
@@ -655,7 +655,8 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 }
 
 static void
-iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_draw_page_header_columns( ofaIPrintable *instance,
+		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
 	ofaPDFLedgersPrivate *priv;
 	gdouble y, vspace;

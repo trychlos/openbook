@@ -117,7 +117,7 @@ static const gchar *st_pref_uri          = "PDFBalanceURI";
 static const gchar *st_pref_settings     = "PDFBalanceSettings";
 
 static const gchar *st_def_fname         = "AccountsBalance.pdf";
-static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
+static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 
 /* these are parms which describe the page layout
  */
@@ -140,6 +140,7 @@ static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
 70 chars = 432 => 1'X' ~ 6.17 px
 */
 
+#define COLOR_BLACK                 0,      0,      0
 #define COLOR_WHITE                 1,      1,      1
 
 static void     iprintable_iface_init( ofaIPrintableInterface *iface );
@@ -165,7 +166,8 @@ static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
-static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     iprintable_draw_page_header_notes( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static gboolean iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev );
 static void     iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
 static void     iprintable_draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
@@ -275,6 +277,7 @@ iprintable_iface_init( ofaIPrintableInterface *iface )
 	iface->on_begin_print = iprintable_on_begin_print;
 	iface->get_page_header_title = iprintable_get_page_header_title;
 	iface->get_page_header_subtitle = iprintable_get_page_header_subtitle;
+	iface->draw_page_header_notes = iprintable_draw_page_header_notes;
 	iface->draw_page_header_columns = iprintable_draw_page_header_columns;
 	iface->is_new_group = iprintable_is_new_group;
 	iface->draw_group_header = iprintable_draw_group_header;
@@ -757,7 +760,39 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 }
 
 static void
-iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_draw_page_header_notes( ofaIPrintable *instance,
+		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+{
+	ofaPDFBalancePrivate *priv;
+	gdouble y, width, line_height;
+
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	if( page_num == 0 ){
+
+		priv = OFA_PDF_BALANCE( instance )->priv;
+
+		y = ofa_iprintable_get_last_y( instance );
+		line_height = ofa_iprintable_get_current_line_height( instance );
+		width = context ? gtk_print_context_get_width( context ) : 0;
+
+		ofa_iprintable_set_wrapped_text( instance, context,
+					priv->page_margin, y,
+					(width-priv->page_margin)*PANGO_SCALE,
+					_( "Please note that this entries balance printing only "
+						"displays the balance of the entries whose effect "
+						"date is between the above date limits.\n"
+						"As such, it is not intended to reflect the balances "
+						"of the accounts." ), PANGO_ALIGN_LEFT );
+
+		y += 2*line_height;
+		ofa_iprintable_set_last_y( instance, y );
+	}
+}
+
+static void
+iprintable_draw_page_header_columns( ofaIPrintable *instance,
+		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
 	ofaPDFBalancePrivate *priv;
 	cairo_t *cr;
@@ -835,7 +870,7 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation 
 }
 
 /*
- * test if the current account balance is on the same class than the
+ * test if the current entry account is on the same class than the
  * previous one
  */
 static gboolean
@@ -1009,7 +1044,7 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
-	str = g_strdup_printf( _( "Class %d balance : "), priv->class_num );
+	str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
 	draw_subtotals_balance( instance, operation, context, str );
 	g_free( str );
 }

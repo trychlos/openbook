@@ -170,6 +170,7 @@ static gchar             *iprintable_get_page_header_title( const ofaIPrintable 
 static void               draw_page_header_subtitle( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
 static gchar             *v_get_page_header_subtitle( const ofaIPrintable *instance );
 static gchar             *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
+static void               v_draw_page_header_notes( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
 static void               draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
 static gdouble            get_page_header_columns_height( const ofaIPrintable *instance, sIPrintable *sdata );
 static void               draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
@@ -719,6 +720,7 @@ iprintable_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operati
 	draw_page_header_dossier( instance, operation, context, page_num, sdata );
 	draw_page_header_title( instance, operation, context, page_num, sdata );
 	draw_page_header_subtitle( instance, operation, context, page_num, sdata );
+	v_draw_page_header_notes( instance, operation, context, page_num, sdata );
 	draw_page_header_columns( instance, operation, context, page_num, sdata );
 
 	/* test font size */
@@ -839,6 +841,17 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 	return( _( "Report subtitle" ));
 }
 
+static void
+v_draw_page_header_notes( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
+{
+	ofa_iprintable_set_color( instance, context, COLOR_BLACK );
+	ofa_iprintable_set_font( instance, "", ofa_iprintable_get_default_font_size( instance ));
+
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_notes ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_notes( instance, operation, context, page_num );
+	}
+}
+
 /*
  * default implementation of #draw_page_header() virtual
  * - columns header
@@ -866,7 +879,7 @@ draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation,
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size-1 );
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
-		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, operation, context );
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, operation, context, page_num );
 	}
 
 	sdata->last_y += st_page_header_columns_vspace_after;
