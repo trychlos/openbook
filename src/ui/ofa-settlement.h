@@ -20,7 +20,6 @@
  *
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
- *
  */
 
 #ifndef __OFA_SETTLEMENT_H__

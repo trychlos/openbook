@@ -20,7 +20,6 @@
  *
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
- *
  */
 
 #ifndef __OFA_LEDGER_TREEVIEW_H__

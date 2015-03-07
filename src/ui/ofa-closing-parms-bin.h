@@ -20,7 +20,6 @@
  *
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
- *
  */
 
 #ifndef __OFA_CLOSING_PARMS_BIN_H__

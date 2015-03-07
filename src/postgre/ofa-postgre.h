@@ -20,7 +20,6 @@
  *
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
- *
  */
 
 #ifndef __OFA_POSTGRE_H__

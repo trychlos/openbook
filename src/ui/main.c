@@ -21,9 +21,8 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- *
  * To display debug messages, run the command:
- *   $ G_MESSAGES_DEBUG=OFA _install/bin/openbook
+ *   $ G_DEBUG=fatal_warnings G_MESSAGES_DEBUG=OFA _install/bin/openbook
  */
 
 #ifdef HAVE_CONFIG_H

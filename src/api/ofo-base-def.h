@@ -20,8 +20,6 @@
  *
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
- *
- * $Id: ofo-base.h 3494 2014,2015-05-24 18:50:40Z  $
  */
 
 #ifndef __OFO_BASE_DEF_H__
