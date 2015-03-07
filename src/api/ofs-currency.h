@@ -35,7 +35,7 @@
  *
  * Two modes may be used:
  *
- * 1/ directly computing with flaoting point (gdouble) amounts: this
+ * 1/ directly computing with floating point (gdouble) amounts: this
  * may be slighty faster (as less code is run), but this is at the
  * risk of some rounding errors
  *
