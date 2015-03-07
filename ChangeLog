@@ -38,6 +38,8 @@
 
 	* src/core/ofo-bat.c: fix import of first BAT file (todo #688).
 
+	* src/ui/ofa-bat-select.c: fix ofaBatSelect cancel (todo #700).
+
 2015-03-06 Pierre Wieser <pwieser@trychlos.org>
 
 	* .gitignore: add build files.

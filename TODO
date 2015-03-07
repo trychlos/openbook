@@ -329,11 +329,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
-                while it appears again only once after program re-run
-     2015- 3- 6 closed as unable to reproduce
-     2015- 3- 7 this happened only on the first imported BAT
-
  689 2015- 3- 4 new: be able to point out bat lines corresponding to
                 already reconciliated entries (use case: importing a
                 bat file for completeness after having reconciliated
@@ -3103,6 +3098,12 @@
                 #4  0x000000000047eb3d in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0xc4d1b0, self=0x74c520) at ofa-reconciliation.c:1205
                 Mode is "Reconciliation session"
      2015- 3- 6 done - git #188d32c
+
+ 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
+                while it appears again only once after program re-run
+     2015- 3- 6 closed as unable to reproduce
+     2015- 3- 7 this happened only on the first imported BAT
+                fixed - git #5c4ecec
 
  690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
      2015- 3- 6 done - git #b7459c9

@@ -168,10 +168,11 @@ ofa_bat_select_run( ofaMainWindow *main_window, ofxCounter id )
 
 	priv = self->priv;
 	priv->bat_id = id;
+	bat_id = -1;
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	bat_id = priv->bat_id;
+	if( my_dialog_run_dialog( MY_DIALOG( self )) == GTK_RESPONSE_OK ){
+		bat_id = priv->bat_id;
+	}
 
 	g_object_unref( self );
 
