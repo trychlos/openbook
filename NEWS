@@ -3,13 +3,32 @@
  Summary
  =======
  
+   Version 0.36
    Version 0.35
+
+-----------------------------------------------------------------------
+ Version 0.36
+ ============
+
+ Released on 
+
+ New features:
+
+   - 
+
+ Bug fixes:
+
+   - todo #614: do not build PDF-aware plugins if poppler libs are missing.
+
+ Other changes:
+
+   - 
 
 -----------------------------------------------------------------------
  Version 0.35
  ============
 
- Release on 2015-03-07
+ Released on 2015-03-07
 
  New features:
 

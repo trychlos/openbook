@@ -1,3 +1,8 @@
+2015-03-08 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/import-lcl-pdf/Makefile.am: Poppler libraries are optional 
+	and determine the built of pdf-aware plugins (todo #614).
+
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
 	'Balances' option item is renamed as 'Entries balance'.
