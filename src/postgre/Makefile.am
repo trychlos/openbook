@@ -20,6 +20,8 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
+if HAVE_POSTGRE
+
 plugin_id = ofa-postgre
 
 pkglib_LTLIBRARIES = libofa-postgre.la
@@ -61,3 +63,5 @@ plugin_data_DATA = \
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
 	$(NULL)
+
+endif

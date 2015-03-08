@@ -275,9 +275,6 @@
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
 
- 615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
-                the compilation of mysql plugin
-
  616 2015- 2- 1 configure.ac: have a warning if no sgbd plugin is compiled
                 (only a warning as a plugin may be provided from elsewhere)
 
@@ -2792,6 +2789,10 @@
  614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
                 the compilation of pdf-aware plugins
      2015- 3- 8 done - git #772dfc000f
+
+ 615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
+                the compilation of mysql plugin
+     2015- 3- 8 done - git #aa2522f
 
  618 2015- 2- 2 display Bat lines
      2015- 2- 5 already done

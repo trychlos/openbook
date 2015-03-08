@@ -110,6 +110,7 @@ if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_LCL_PDF="yes"
 fi
 have_POSTGRE="no"
+AM_CONDITIONAL([HAVE_POSTGRE], [test "${have_POSTGRE}" = "yes"])
 
 # display and keep configuration informations
 config_options="`$as_echo "$ac_configure_args" | sed 's/^ //; s/[\\""\`\$]/\\\\&/g'`" 
@@ -167,7 +168,12 @@ if test "${have_MYSQL}" = "yes"; then
 else
 	$as_echo "	  MySQL                         ${have_MYSQL}"
 fi
-	$as_echo "	  PostgreSQL                    ${have_POSTGRE}
+if test "${have_POSTGRE}" = "yes"; then
+	$as_echo "	  PostgreSQL                    ${have_POSTGRE} (with PostgreSQL ${POSTGRE_msg_version})"
+else
+	$as_echo "	  PostgreSQL                    ${have_POSTGRE}"
+fi
+	$as_echo "
 "
 if test ${pwi_fatal_count} -gt 0; then
 	$as_echo "${pwi_fatal_list}

@@ -5,6 +5,9 @@
 
 	* src/mysql/Makefile.am: make optional the MySQL plugin (todo #615).
 
+	* src/postgre/Makefile.am: conditionally compile the PostgreSQL 
+	plugin.
+
 	* src/m4/pwi-check-mysql.m4: new file
 
 	* configure.ac: updated accordingly
