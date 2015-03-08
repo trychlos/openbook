@@ -173,8 +173,13 @@ if test "${have_POSTGRE}" = "yes"; then
 else
 	$as_echo "	  PostgreSQL                    ${have_POSTGRE}"
 fi
-	$as_echo "
+	$as_echo " "
+
+if test "${have_MYSQL}" = "no" && test "${have_POSTGRE}" = "no"; then
+	$as_echo "	Warning: no built DBMS plugin
 "
+fi
+
 if test ${pwi_fatal_count} -gt 0; then
 	$as_echo "${pwi_fatal_list}
 "

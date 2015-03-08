@@ -278,8 +278,6 @@
  616 2015- 2- 1 configure.ac: have a warning if no sgbd plugin is compiled
                 (only a warning as a plugin may be provided from elsewhere)
 
- 617 2015- 2- 2 configure.ac: display built plugins
-
  621 2015- 2- 2 ope template: have an help dialog which lists the 
                 available macro and functions
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
@@ -2793,6 +2791,9 @@
  615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
                 the compilation of mysql plugin
      2015- 3- 8 done - git #aa2522f
+
+ 617 2015- 2- 2 configure.ac: display built plugins
+     2015- 3- 8 done
 
  618 2015- 2- 2 display Bat lines
      2015- 2- 5 already done
