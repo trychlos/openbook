@@ -19,9 +19,10 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-# serial 2 creation
-#          PWI_COMPILER_WARNINGS
-#          PWI_COMPILER_LINK_AS_NEEDED
+# serial 3 accept '//' C++-style comments
+#
+# PWI_COMPILER_WARNINGS
+# PWI_COMPILER_LINK_AS_NEEDED
 
 dnl PWI_COMPILER_WARNINGS
 dnl Turn on many useful compiler warnings
