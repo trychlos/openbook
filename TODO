@@ -13,11 +13,7 @@
    1 2014- 5- 2 define a dns domain for the application
                 (e.g. open-freelance-accounting.org)
 
-   2 2014- 5- 2 ofa.doap & configure.ac: have a web site
-
    3 2014- 5- 2 ofa.doap: have a download page
-
-   4 2014- 5- 2 ofa.doap: have a bug system
 
    5 2014- 5- 2 ofa.doap: have a mailing list
 
@@ -326,11 +322,21 @@
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
 
- 701
+ 701 2015- 3- 8 be able to open a current dossier as read-only
+                (use case: when user wants to make sure he will not
+                modify it inadvertently)
+
+ 702
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+   2 2014- 5- 2 ofa.doap & configure.ac: have a web site
+     2015- 3- 8 done - git #d48d6bf
+
+   4 2014- 5- 2 ofa.doap: have a bug system
+     2015- 3- 8 use Github issues page at https://github.com/pwieser/openbook/issues
 
    9 2014- 5- 3 ofa_application_on_new: to be written
      2014- 5-10 Done

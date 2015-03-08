@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <math.h>
 
 #include "api/ofs-currency.h"
