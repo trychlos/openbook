@@ -11,7 +11,7 @@
 	* src/m4/pwi-check-mysql.m4: new file
 
 	* ofa.doap,
-	* configure.ac: use Github website URL
+	* configure.ac: use Github website URL (todo #2)
 
 	* src/core/my-double.c,
 	* src/core/ofs-currency.c: fix exp10 implicit declaration error
@@ -19,6 +19,19 @@
 
 	* Makefile.am,
 	* maintainer/run-autogen.sh: compile with ISO C (todo #702)
+
+	Be able to import a bank account transaction list, accepting
+	individually any or all lines to match already reconciliated entries
+	(todo #689)
+
+	* src/api/ofo-bat.h,
+	* src/core/ofo-bat.c: new ofo_bat_get_unused_count() method.
+
+	* src/ui/ofa-buttons-box.c,
+	* src/ui/ofa-buttons-box.h: add 'Accept', 'Decline', 'Accept all' 
+	buttons
+
+	* src/ui/ofa-reconciliation.c: updated accordingly
 
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 

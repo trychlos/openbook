@@ -45,6 +45,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-pdf-reconcil.h"
@@ -74,7 +75,9 @@ struct _ofaReconciliationPrivate {
 	GtkWidget         *file_chooser;
 	GtkWidget         *count_label;
 	GtkButton         *clear;
+	GtkWidget         *accept_btn;
 	GtkWidget         *decline_btn;
+	GtkWidget         *accept_all_btn;
 
 	/* UI - actions
 	 */
@@ -92,11 +95,15 @@ struct _ofaReconciliationPrivate {
 	GtkLabel          *bal_debit;			/* balance of the account  */
 	GtkLabel          *bal_credit;			/*  ... deducting unreconciliated entries */
 
+	/* UI - Buttons box
+	 */
+	ofaButtonsBox     *box;
 	/* internals
 	 */
 	GDate              dconcil;
 	ofoDossier        *dossier;
 	GList             *handlers;
+	ofxCounter         bat_id;
 	GList             *batlines;
 };
 
@@ -177,9 +184,9 @@ static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_account_selection( ofaPage *page );
 static GtkWidget   *setup_manual_rappro( ofaPage *page );
 static GtkWidget   *setup_auto_rappro( ofaPage *page );
-static GtkWidget   *setup_actions( ofaPage *page );
 static GtkWidget   *setup_account_display( ofaPage *page );
 static GtkWidget   *setup_treeview( ofaPage *page );
+static GtkWidget   *setup_buttons( ofaPage *page );
 static GtkWidget   *setup_balance( ofaPage *page );
 static GtkWidget   *v_setup_buttons( ofaPage *page );
 static void         v_init_view( ofaPage *page );
@@ -212,7 +219,9 @@ static void         setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id 
 static void         clear_bat_lines( ofaReconciliation *self );
 static void         display_bat_lines( ofaReconciliation *self );
 static void         default_expand_view( ofaReconciliation *self );
+static void         on_accept_clicked( GtkButton *button, ofaReconciliation *self );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
+static void         on_accept_all_clicked( GtkButton *button, ofaReconciliation *self );
 static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
 static GtkTreeIter *search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre );
 static void         update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter );
@@ -321,7 +330,7 @@ v_setup_view( ofaPage *page )
 {
 	GtkFrame *frame;
 	GtkGrid *grid;
-	GtkWidget *account, *rappro, *actions, *tview, *soldes;
+	GtkWidget *account, *rappro, *tview, *buttons, *soldes;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 
@@ -343,16 +352,18 @@ v_setup_view( ofaPage *page )
 	rappro = setup_auto_rappro( page );
 	gtk_grid_attach( grid, rappro, 2, 0, 1, 1 );
 
-	/* actions */
-	actions = setup_actions( page );
-	gtk_grid_attach( grid, actions, 3, 0, 1, 1 );
-
+	/* account label and balance header display */
 	account = setup_account_display( page );
 	gtk_grid_attach( grid, account, 0, 1, 3, 1 );
 
 	tview = setup_treeview( page );
 	gtk_grid_attach( grid, tview, 0, 2, 3, 1 );
 
+	/* buttons box */
+	buttons = setup_buttons( page );
+	gtk_grid_attach( grid, buttons, 3, 2, 1, 1 );
+
+	/* computed bank balance */
 	soldes = setup_balance( page );
 	gtk_grid_attach( grid, soldes, 0, 3, 3, 1 );
 
@@ -598,48 +609,7 @@ setup_auto_rappro( ofaPage *page )
 			G_OBJECT( priv->clear ),
 			"clicked", G_CALLBACK( on_clear_button_clicked ), page );
 
-	button = gtk_button_new_with_mnemonic( _( "Decline" ));
-	gtk_grid_attach( grid, button, 4, 0, 1, 1 );
-	g_signal_connect( button, "clicked", G_CALLBACK( on_decline_clicked ), page );
-	priv->decline_btn = button;
-
 	return( GTK_WIDGET( frame ));
-}
-
-static GtkWidget *
-setup_actions( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-	GtkWidget *frame, *alignment, *grid, *label;
-	gchar *markup;
-	GtkWidget *button;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-
-	label = gtk_label_new( NULL );
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Actions" ));
-	gtk_label_set_markup( GTK_LABEL( label ), markup );
-	gtk_frame_set_label_widget( GTK_FRAME( frame ), label );
-	g_free( markup );
-
-	alignment = gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 12, 4 );
-	gtk_container_add( GTK_CONTAINER( frame ), alignment );
-
-	grid = gtk_grid_new();
-	gtk_widget_set_hexpand( grid, TRUE );
-	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
-	gtk_container_add( GTK_CONTAINER( alignment ), grid );
-
-	button = gtk_button_new_with_mnemonic( _( "_Print..." ));
-	gtk_grid_attach( GTK_GRID( grid ), button, 0, 0, 1, 1 );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), page );
-	priv->print_btn = button;
-
-	return( frame );
 }
 
 static GtkWidget *
@@ -932,6 +902,30 @@ setup_balance( ofaPage *page )
 	gtk_box_pack_end( box, GTK_WIDGET( label ), TRUE, TRUE, 0 );
 
 	return( GTK_WIDGET( box ));
+}
+
+static GtkWidget *
+setup_buttons( ofaPage *page )
+{
+	ofaReconciliationPrivate *priv;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+	priv->box = ofa_buttons_box_new();
+
+	ofa_buttons_box_add_spacer( priv->box );		/* account header */
+	ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
+	priv->accept_btn = ofa_buttons_box_add_button( priv->box,
+			BUTTON_ACCEPT, TRUE, G_CALLBACK( on_accept_clicked ), page );
+	priv->decline_btn = ofa_buttons_box_add_button( priv->box,
+			BUTTON_DECLINE, FALSE, G_CALLBACK( on_decline_clicked ), page );
+	priv->accept_all_btn = ofa_buttons_box_add_button( priv->box,
+			BUTTON_ACCEPT_ALL, FALSE, G_CALLBACK( on_accept_all_clicked ), page );
+
+	ofa_buttons_box_add_spacer( priv->box );
+	priv->print_btn = ofa_buttons_box_add_button( priv->box,
+			BUTTON_PRINT, TRUE, G_CALLBACK( on_print_clicked ), page );
+
+	return( GTK_WIDGET( priv->box ));
 }
 
 static GtkWidget *
@@ -1517,8 +1511,12 @@ check_for_enable_view( ofaReconciliation *self, ofoAccount **account, gint *mode
 		*mode = my_mode;
 	}
 
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), enabled );
-	gtk_widget_set_sensitive( priv->print_btn, enabled );
+	if( priv->tview ){
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), enabled );
+	}
+	if( priv->print_btn ){
+		gtk_widget_set_sensitive( priv->print_btn, enabled );
+	}
 
 	return( enabled );
 }
@@ -1751,9 +1749,10 @@ setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 	ofaReconciliationPrivate *priv;
 	ofoBat *bat;
 	gchar *str;
+	guint unused;
 
 	priv = self->priv;
-
+	priv->bat_id = bat_id;
 	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	display_bat_lines( self );
 
@@ -1766,6 +1765,10 @@ setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 			ofo_bat_get_count( bat, ofa_page_get_dossier( OFA_PAGE( self ))));
 	gtk_label_set_markup( GTK_LABEL( priv->count_label ), str );
 	g_free( str );
+
+	/* enable (or not) the 'Accept all' button */
+	unused = ofo_bat_get_unused_count( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
+	gtk_widget_set_sensitive( priv->accept_all_btn, unused > 0 );
 
 	set_reconciliated_balance( self );
 }
@@ -1822,10 +1825,14 @@ clear_bat_lines( ofaReconciliation *self )
 
 	ofo_bat_line_free_dataset( priv->batlines );
 	priv->batlines = NULL;
+	priv->bat_id = 0;
 
 	/* also reinit the GtkFileChooserButton and the corresponding label */
 	gtk_file_chooser_unselect_all( GTK_FILE_CHOOSER( priv->file_chooser ));
 	gtk_label_set_text( GTK_LABEL( priv->count_label ), "" );
+
+	/* disabled the 'Accept all' button */
+	gtk_widget_set_sensitive( priv->accept_all_btn, FALSE );
 
 	/* and update the bank reconciliated balance */
 	set_reconciliated_balance( self );
@@ -1909,9 +1916,11 @@ default_expand_view( ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GtkTreeIter iter, child_iter;
 	const GDate *date;
-	GObject *object;
+	GObject *object, *batline;
+	gboolean has_child;
+	ofxCounter bat_entry;
 
 	priv = self->priv;
 	tmodel = gtk_tree_view_get_model( priv->tview );
@@ -1922,11 +1931,20 @@ default_expand_view( ofaReconciliation *self )
 			g_object_unref( object );
 
 			/* if an entry which has a child:
-			 * - collapse if reconciliated
+			 * - collapse if entry reconciliated and batline points to this same entry
 			 * - else expand */
 			if( OFO_IS_ENTRY( object )){
 				date = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
-				if( my_date_is_valid( date )){
+				bat_entry = 0;
+				has_child = gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
+				if( has_child ){
+					gtk_tree_model_get( tmodel, &child_iter, COL_OBJECT, &batline, -1 );
+					g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
+					g_object_unref( batline );
+					bat_entry = ofo_bat_line_get_entry( OFO_BAT_LINE( batline ));
+				}
+				if( my_date_is_valid( date ) &&
+						bat_entry == ofo_entry_get_number( OFO_ENTRY( object ))){
 					collapse_node_by_iter( self, priv->tview, tmodel, &iter );
 				} else {
 					expand_node_by_iter( self, priv->tview, tmodel, &iter );
@@ -1936,6 +1954,49 @@ default_expand_view( ofaReconciliation *self )
 				break;
 			}
 		}
+	}
+}
+
+/*
+ * accept a proposition:
+ * this is when an unreconciliated batline is set under an already
+ * reconciliated entry: only update the batline
+ */
+static void
+on_accept_clicked( GtkButton *button, ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeModel *sort_model, *filter_model, *store_model;
+	GtkTreeIter sort_iter, filter_iter, store_iter, parent_iter;
+	ofoBase *object, *entry;
+	gboolean has_parent;
+
+	priv = self->priv;
+	g_return_if_fail( priv->bat_id > 0 );
+
+	select = gtk_tree_view_get_selection( priv->tview );
+
+	if( gtk_tree_selection_get_selected( select, &sort_model, &sort_iter )){
+		filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+		gtk_tree_model_sort_convert_iter_to_child_iter( GTK_TREE_MODEL_SORT( sort_model ), &filter_iter, &sort_iter );
+		store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( filter_model ));
+		gtk_tree_model_filter_convert_iter_to_child_iter( GTK_TREE_MODEL_FILTER( filter_model ), &store_iter, &filter_iter );
+
+		gtk_tree_model_get( store_model, &store_iter, COL_OBJECT, &object, -1 );
+		g_return_if_fail( object && OFO_IS_BAT_LINE( object ));
+		g_object_unref( object );
+		has_parent = gtk_tree_model_iter_parent( store_model, &parent_iter, &store_iter );
+		g_return_if_fail( has_parent );
+		g_return_if_fail( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 );
+		gtk_tree_model_get( store_model, &parent_iter, COL_OBJECT, &entry, -1 );
+		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+		g_object_unref( entry );
+
+		ofo_bat_line_set_entry( OFO_BAT_LINE( object ), ofo_entry_get_number( OFO_ENTRY( entry )));
+		ofo_bat_line_update( OFO_BAT_LINE( object ), ofa_page_get_dossier( OFA_PAGE( self )));
+
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
 	}
 }
 
@@ -1956,6 +2017,8 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 	ofxAmount amount;
 
 	priv = self->priv;
+	g_return_if_fail( priv->bat_id > 0 );
+
 	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &sort_model, &sort_iter )){
@@ -1987,6 +2050,69 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 		g_free( sdeb );
 		g_free( scre );
 	}
+}
+
+/*
+ * accept all pending propositions:
+ * this is when unreconciliated batlines are set under already
+ * reconciliated entries: only update the batlines
+ */
+static void
+on_accept_all_clicked( GtkButton *button, ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeModel *sort_model, *filter_model, *store_model;
+	GtkTreeIter sort_iter, filter_iter, store_iter, child_iter;
+	ofoBase *object, *batline;
+	gboolean has_child;
+	gint unused;
+	const GDate *dval;
+	ofxCounter bat_entry;
+
+	priv = self->priv;
+	g_return_if_fail( priv->bat_id > 0 );
+
+	sort_model = gtk_tree_view_get_model( priv->tview );
+	filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( filter_model ));
+
+	if( gtk_tree_model_get_iter_first( sort_model, &sort_iter )){
+		while( TRUE ){
+			gtk_tree_model_get( sort_model, &sort_iter, COL_OBJECT, &object, -1 );
+			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+			g_object_unref( object );
+
+			if( OFO_IS_ENTRY( object )){
+				gtk_tree_model_sort_convert_iter_to_child_iter( GTK_TREE_MODEL_SORT( sort_model ), &filter_iter, &sort_iter );
+				gtk_tree_model_filter_convert_iter_to_child_iter( GTK_TREE_MODEL_FILTER( filter_model ), &store_iter, &filter_iter );
+				has_child = gtk_tree_model_iter_children( store_model, &child_iter, &store_iter );
+
+				if( has_child ){
+					gtk_tree_model_get( store_model, &child_iter, COL_OBJECT, &batline, -1 );
+					g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
+					g_object_unref( batline );
+
+					dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
+					bat_entry = ofo_bat_line_get_entry( OFO_BAT_LINE( batline ));
+
+					if( my_date_is_valid( dval ) && bat_entry == 0 ){
+						ofo_bat_line_set_entry(
+								OFO_BAT_LINE( batline ), ofo_entry_get_number( OFO_ENTRY( object )));
+						ofo_bat_line_update(
+								OFO_BAT_LINE( batline ), ofa_page_get_dossier( OFA_PAGE( self )));
+					}
+				}
+			}
+			if( !gtk_tree_model_iter_next( sort_model, &sort_iter )){
+				break;
+			}
+		}
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+	}
+
+	unused = ofo_bat_get_unused_count( ofa_page_get_dossier( OFA_PAGE( self )), priv->bat_id );
+	g_return_if_fail( unused == 0 );
+	gtk_widget_set_sensitive( priv->accept_all_btn, unused > 0 );
 }
 
 /*
@@ -2251,8 +2377,11 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 	ofaReconciliationPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, parent_iter;
-	ofoBase *object;
-	gboolean decline_enabled;
+	ofoBase *object, *parent_object;
+	gboolean has_parent;
+	gboolean accept_enabled, decline_enabled;
+	ofxCounter line_entry;
+	const GDate *entry_dval;
 
 	priv = self->priv;
 
@@ -2261,10 +2390,34 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 		g_object_unref( object );
 
-		decline_enabled = OFO_IS_BAT_LINE( object ) &&
-				ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 &&
-				gtk_tree_model_iter_parent( tmodel, &parent_iter, &iter );
+		/* the entry number that the bat line has reconciliated */
+		line_entry = OFO_IS_BAT_LINE( object ) ?
+				ofo_bat_line_get_entry( OFO_BAT_LINE( object )) : 0;
 
+		has_parent = OFO_IS_BAT_LINE( object ) ?
+				gtk_tree_model_iter_parent( tmodel, &parent_iter, &iter ) : FALSE;
+
+		entry_dval = NULL;
+
+		if( has_parent ){
+			gtk_tree_model_get( tmodel, &parent_iter, COL_OBJECT, &parent_object, -1 );
+			g_return_if_fail( parent_object && ( OFO_IS_ENTRY( parent_object )));
+			g_object_unref( parent_object );
+			entry_dval = ofo_entry_get_concil_dval( OFO_ENTRY( parent_object ));
+		}
+
+		/* accept to use a bat line against an already manually
+		 *  reconciliated entry  */
+		accept_enabled = OFO_IS_BAT_LINE( object ) &&
+				line_entry == 0 &&
+				my_date_is_valid( entry_dval );
+		gtk_widget_set_sensitive( priv->accept_btn, accept_enabled );
+
+		/* decline to use a bat line against a non-yet reconciliated
+		 *  entry */
+		decline_enabled = OFO_IS_BAT_LINE( object ) &&
+				line_entry == 0 &&
+				has_parent;
 		gtk_widget_set_sensitive( priv->decline_btn, decline_enabled );
 	}
 }
@@ -2780,8 +2933,6 @@ on_print_clicked( GtkButton *button, ofaReconciliation *self )
 	const gchar *acc_number;
 
 	priv = self->priv;
-
 	acc_number = gtk_entry_get_text( priv->account );
-
 	ofa_pdf_reconcil_run( ofa_page_get_main_window( OFA_PAGE( self )), acc_number );
 }

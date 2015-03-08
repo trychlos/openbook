@@ -637,6 +637,30 @@ ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 	return( FALSE );
 }
 
+/**
+ * ofo_bat_get_unused_count:
+ *
+ * Returns the count of unused lines from this BAT file.
+ */
+gint
+ofo_bat_get_unused_count( const ofoDossier *dossier, ofxCounter id )
+{
+	gint count;
+	gchar *query;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
+	g_return_val_if_fail( id > 0, -1 );
+
+	count = 0;
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu AND BAT_LINE_ENTRY IS NULL",
+			id );
+
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+
+	return( count );
+}
+
 /*
  * bat_set_id:
  */

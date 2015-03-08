@@ -318,6 +318,12 @@
                 already reconciliated entries (use case: importing a
                 bat file for completeness after having reconciliated
                 manually the entries)
+     2015- 3- 8 the imported BAT lines are rightly inserted under the
+                corresponding entry, though are displayed in italic
+                as not associated to a reconciliated entry
+                -> have an Accept button to individually set a bat line
+                -> have a check button to make the bat file all 
+                   reconciliated
 
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
@@ -326,9 +332,10 @@
                 (use case: when user wants to make sure he will not
                 modify it inadvertently)
 
- 702 2015- 3- 8 maintainer and distcheck: enable ISO C
+ 703 2015- 3- 8 have a Boursorama-pdf plugin
 
- 703
+ 704 2015- 3- 8 bat properties: display the count of unreconciliated
+                bat lines
 
 -----------------------------------------------------------------------
  DONE
@@ -3166,6 +3173,9 @@
  700 2015- 3- 7 Reconciliation: open the bat selection and cancel:
                 the bat will be wrongly selected
      2015- 3- 7 done - git #f18a9c0
+
+ 702 2015- 3- 8 maintainer and distcheck: enable ISO C
+     2015- 3- 8 done - git #5a3bdba
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

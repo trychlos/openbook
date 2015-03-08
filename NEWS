@@ -14,7 +14,9 @@
 
  New features:
 
-   - 
+   - Is now able to import a bank account transaction list, accepting
+     individually any or all lines to match already reconciliated entries
+     (todo #689).
 
  Bug fixes:
 
@@ -22,11 +24,13 @@
    - todo #614: do not build PDF-aware plugins if poppler libs are missing.
    - todo #615: make the MySQL plugin optional.
    - todo #616: warns if no DBMS plugin is built.
+   - todo #689: new reconciliation feature for imported BAT lines.
    - todo #702: compile with ISO C.
 
  Other changes:
 
    - Compiler options now includes '-std=gnu99'.
+   - ofoBat::ofo_bat_get_unused_count(): new method.
 
 -----------------------------------------------------------------------
  Version 0.35
@@ -37,7 +41,7 @@
  New features:
 
    - 'Balances' option item is renamed as 'Entries balance'.
-   - New option item: 'Accounts balance'.
+   - New printing: 'Accounts balance'.
 
  Bug fixes:
 

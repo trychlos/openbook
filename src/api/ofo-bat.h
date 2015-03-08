@@ -42,9 +42,9 @@
 
 G_BEGIN_DECLS
 
-ofoBat         *ofo_bat_new              ( void );
+ofoBat         *ofo_bat_new                ( void );
 
-GList          *ofo_bat_get_dataset      ( ofoDossier *dossier );
+GList          *ofo_bat_get_dataset        ( ofoDossier *dossier );
 
 ofoBat         *ofo_bat_get_by_id          ( ofoDossier *dossier, ofxCounter id );
 
@@ -70,6 +70,8 @@ gboolean        ofo_bat_exists             ( const ofoDossier *dossier,
 													const GDate *end );
 gboolean        ofo_bat_is_deletable       ( const ofoBat *bat,
 													const ofoDossier *dossier );
+
+gint            ofo_bat_get_unused_count   ( const ofoDossier *dossier, ofxCounter id );
 
 void            ofo_bat_set_uri            ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format         ( ofoBat *bat, const gchar *format );
