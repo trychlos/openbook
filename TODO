@@ -314,17 +314,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 689 2015- 3- 4 new: be able to point out bat lines corresponding to
-                already reconciliated entries (use case: importing a
-                bat file for completeness after having reconciliated
-                manually the entries)
-     2015- 3- 8 the imported BAT lines are rightly inserted under the
-                corresponding entry, though are displayed in italic
-                as not associated to a reconciliated entry
-                -> have an Accept button to individually set a bat line
-                -> have a check button to make the bat file all 
-                   reconciliated
-
  695 2015- 3- 4 all printings should be first viewable in Openbook
                 (to be printed only after user visual validation)
 
@@ -3120,6 +3109,18 @@
      2015- 3- 6 closed as unable to reproduce
      2015- 3- 7 this happened only on the first imported BAT
                 fixed - git #5c4ecec
+
+ 689 2015- 3- 4 new: be able to point out bat lines corresponding to
+                already reconciliated entries (use case: importing a
+                bat file for completeness after having reconciliated
+                manually the entries)
+     2015- 3- 8 the imported BAT lines are rightly inserted under the
+                corresponding entry, though are displayed in italic
+                as not associated to a reconciliated entry
+                -> have an Accept button to individually set a bat line
+                -> have a check button to make the bat file all 
+                   reconciliated
+     2015- 3- 8 done - git #ca9a60e
 
  690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
      2015- 3- 6 done - git #b7459c9

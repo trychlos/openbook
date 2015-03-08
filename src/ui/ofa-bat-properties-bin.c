@@ -48,6 +48,7 @@ struct _ofaBatPropertiesBinPrivate {
 	GtkWidget    *bat_id;
 	GtkWidget    *bat_format;
 	GtkWidget    *bat_count;
+	GtkWidget    *bat_unused;
 	GtkWidget    *bat_begin;
 	GtkWidget    *bat_end;
 	GtkWidget    *bat_rib;
@@ -196,6 +197,9 @@ load_dialog( ofaBatPropertiesBin *bin )
 	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
 
+	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-unused" );
+	g_return_if_fail( priv->bat_unused && GTK_IS_ENTRY( priv->bat_unused ));
+
 	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-begin" );
 	g_return_if_fail( priv->bat_begin && GTK_IS_ENTRY( priv->bat_begin ));
 
@@ -326,12 +330,14 @@ static void
 display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable )
 {
 	ofaBatPropertiesBinPrivate *priv;
+	ofxCounter bat_id;
 	const gchar *cstr;
 	gchar *str;
 
 	priv = bin->priv;
 
-	str = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
+	bat_id = ofo_bat_get_id( bat );
+	str = g_strdup_printf( "%lu", bat_id );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_id ), str );
 	g_free( str );
 
@@ -344,6 +350,10 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 
 	str = g_strdup_printf( "%u", ofo_bat_get_count( bat, dossier ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_count ), str );
+	g_free( str );
+
+	str = g_strdup_printf( "%u", ofo_bat_get_unused_count( dossier, bat_id ));
+	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
 	str = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );

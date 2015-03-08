@@ -8,17 +8,17 @@
 	* src/postgre/Makefile.am: conditionally compile the PostgreSQL 
 	plugin.
 
-	* src/m4/pwi-check-mysql.m4: new file
+	* src/m4/pwi-check-mysql.m4: new file.
 
 	* ofa.doap,
-	* configure.ac: use Github website URL (todo #2)
+	* configure.ac: use Github website URL (todo #2).
 
 	* src/core/my-double.c,
 	* src/core/ofs-currency.c: fix exp10 implicit declaration error
-	(most probably a side effect of -std=gnu99)
+	(most probably a side effect of -std=gnu99).
 
 	* Makefile.am,
-	* maintainer/run-autogen.sh: compile with ISO C (todo #702)
+	* maintainer/run-autogen.sh: compile with ISO C (todo #702).
 
 	Be able to import a bank account transaction list, accepting
 	individually any or all lines to match already reconciliated entries
@@ -29,9 +29,14 @@
 
 	* src/ui/ofa-buttons-box.c,
 	* src/ui/ofa-buttons-box.h: add 'Accept', 'Decline', 'Accept all' 
-	buttons
+	buttons.
 
-	* src/ui/ofa-reconciliation.c: updated accordingly
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
+	Display the count of yet unused BAT lines (todo #704)
+
+	* src/ui/ofa-bat-properties-bin.c,
+	* src/ui/ofa-bat-properties-bin.ui: updated accordingly.
 
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
