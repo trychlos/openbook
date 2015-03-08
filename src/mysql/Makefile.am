@@ -20,6 +20,9 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
+# HAVE_MYSQL is set in PWI_CHECK_MYSQL m4 macro
+if HAVE_MYSQL
+
 plugin_id = ofa-mysql
 
 pkglib_LTLIBRARIES = libofa-mysql.la
@@ -83,3 +86,5 @@ plugin_data_DATA = \
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
 	$(NULL)
+
+endif

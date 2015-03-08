@@ -81,10 +81,10 @@ PWI_CHECK_MODULE([GLIB],        [glib-2.0],    [${glib_required}])
 PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0], [${glib_required}])
 PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24],            [no])
 PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24],            [no])
+PWI_CHECK_MYSQL([5.5],[no])
 
-MYSQL_CLIENT([5.5.0])
-OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS} ${PWI_CFLAGS}"
-OPENBOOK_LIBS="${OPENBOOK_LIBS} ${MYSQL_CLIENT_LIBS} ${PWI_LIBS}"
+OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${PWI_CFLAGS}"
+OPENBOOK_LIBS="${OPENBOOK_LIBS} ${PWI_LIBS}"
 
 # GLib marshaling
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal, no)
@@ -109,7 +109,6 @@ have_IMPORT_LCL_PDF="no"
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_LCL_PDF="yes"
 fi
-have_MYSQL="yes"						# requires MySQL-Client libs
 have_POSTGRE="no"
 
 # display and keep configuration informations
@@ -163,8 +162,12 @@ if test "${have_IMPORT_LCL_PDF}" = "yes"; then
 else
 	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF}"
 fi
-	$as_echo "	  MySQL                         ${have_MYSQL}
-	  PostgreSQL                    ${have_POSTGRE}
+if test "${have_MYSQL}" = "yes"; then
+	$as_echo "	  MySQL                         ${have_MYSQL} (with MySQL ${MYSQL_msg_version})"
+else
+	$as_echo "	  MySQL                         ${have_MYSQL}"
+fi
+	$as_echo "	  PostgreSQL                    ${have_POSTGRE}
 "
 if test ${pwi_fatal_count} -gt 0; then
 	$as_echo "${pwi_fatal_list}

@@ -3,6 +3,12 @@
 	* src/import-lcl-pdf/Makefile.am: Poppler libraries are optional 
 	and determine the built of pdf-aware plugins (todo #614).
 
+	* src/mysql/Makefile.am: make optional the MySQL plugin (todo #615).
+
+	* src/m4/pwi-check-mysql.m4: new file
+
+	* configure.ac: updated accordingly
+
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
 	'Balances' option item is renamed as 'Entries balance'.

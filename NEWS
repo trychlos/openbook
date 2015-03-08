@@ -19,6 +19,7 @@
  Bug fixes:
 
    - todo #614: do not build PDF-aware plugins if poppler libs are missing.
+   - todo #615: make the MySQL plugin optional.
 
  Other changes:
 
