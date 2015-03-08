@@ -33,6 +33,7 @@ SUBDIRS = \
 
 DISTCHECK_CONFIGURE_FLAGS = \
 	--enable-silent-rules				\
+	--enable-iso-c						\
 	--enable-as-needed					\
 	--disable-scrollkeeper				\
 	$(NULL)

@@ -17,6 +17,9 @@
 	* src/core/ofs-currency.c: fix exp10 implicit declaration error
 	(most probably a side effect of -std=gnu99)
 
+	* Makefile.am,
+	* maintainer/run-autogen.sh: compile with ISO C (todo #702)
+
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
 	'Balances' option item is renamed as 'Entries balance'.

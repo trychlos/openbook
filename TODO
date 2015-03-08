@@ -326,7 +326,9 @@
                 (use case: when user wants to make sure he will not
                 modify it inadvertently)
 
- 702
+ 702 2015- 3- 8 maintainer and distcheck: enable ISO C
+
+ 703
 
 -----------------------------------------------------------------------
  DONE

@@ -114,7 +114,7 @@ cd \${heredir}/_build
 conf_cmd="../configure"
 conf_args="${conf_args}"
 conf_args="\${conf_args} --prefix=\${heredir}/_install"
-conf_args="\${conf_args} --enable-maintainer-mode"
+conf_args="\${conf_args} --enable-maintainer-mode --enable-iso-c --disable-as-needed"
 conf_args="\${conf_args} $*"
 conf_args="\${conf_args} \$*"
 
