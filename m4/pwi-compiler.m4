@@ -114,6 +114,11 @@ AC_DEFUN([PWI_COMPILER_WARNINGS],[
 			else
 				complCFLAGS="$complCFLAGS ${_ac_compliant_def}"
 			fi
+			# accept '//' C++-style comments
+			case " $complCFLAGS " in
+			    *[\ \	]-std=gnu99[\ \	]*) ;;
+			    *) complCFLAGS="$complCFLAGS -std=gnu99" ;;
+			esac
 		fi
     fi
     AC_MSG_RESULT($complCFLAGS)

@@ -275,9 +275,6 @@
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
 
- 614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
-                the compilation of pdf-aware plugins
-
  615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
                 the compilation of mysql plugin
 
@@ -2791,6 +2788,10 @@
                 would be used in BatSelect and BatPage
      2015- 2- 9 ofaBatStore defined - svn #4574
      2015- 2- 9 ofaBatTreeview defined - svn #4579
+
+ 614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
+                the compilation of pdf-aware plugins
+     2015- 3- 8 done - git #772dfc000f
 
  618 2015- 2- 2 display Bat lines
      2015- 2- 5 already done

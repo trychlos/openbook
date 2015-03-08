@@ -109,7 +109,6 @@ have_IMPORT_LCL_PDF="no"
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_LCL_PDF="yes"
 fi
-AM_CONDITIONAL([HAVE_IMPORT_LCL_PDF], [test "${have_IMPORT_LCL_PDF}" = "yes"])
 have_MYSQL="yes"						# requires MySQL-Client libs
 have_POSTGRE="no"
 

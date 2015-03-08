@@ -19,8 +19,13 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-# serial 2 creation
-#          PWI_CHECK_MODULE
+# serial 3 missing is fatal if CFLAGS or LIBS are set
+#
+# PWI_CHECK_MODULE:
+# $1: mnemo
+# $2: pkg-config library name
+# $3: minimal required version (opt)
+# $4: missing is fatal (yes|no, default to yes)
 
 dnl usage: PWI_CHECK_MODULE(var,module[,version[,fatal]])
 dnl if 'fatal' != 'no', then a missing library will emit a warning and
@@ -31,6 +36,16 @@ dnl terminate the process.
 AC_DEFUN([PWI_CHECK_MODULE],[
 	_ac_cond="$2"
 	if test "$3" != ""; then _ac_cond="$2 >= $3"; fi
+	_ac_fatal="yes"
+	if test "$4" = "no"; then _ac_fatal="no"; fi
+
+	# if CFLAGS or LIBS are set, then missing library is fatal
+	#echo "$1_CFLAGS='${$1_CFLAGS}'"
+	#echo "$1_LIBS='${$1_LIBS}'"
+	if ! test -z "${$1_CFLAGS}${$1_LIBS}"; then
+		_ac_fatal="yes"
+	fi
+
 	PKG_CHECK_MODULES([$1],[${_ac_cond}],[have_$1="yes"],[have_$1="no"])
 
 	#echo "have_gtk2=$have_gtk2 have_gtk3=$have_gtk3"
@@ -44,7 +59,7 @@ AC_DEFUN([PWI_CHECK_MODULE],[
 		PWI_CFLAGS="${PWI_CFLAGS} ${$1_CFLAGS}"
 		PWI_LIBS="${PWI_LIBS} ${$1_LIBS}"
 	else
-		_PWI_CHECK_MODULE_MSG([$4],[$1: condition ${_ac_cond} not satisfied])
+		_PWI_CHECK_MODULE_MSG([${_ac_fatal}],[$1: condition ${_ac_cond} not satisfied])
 	fi
 
 	AM_CONDITIONAL([HAVE_$1], [test "${have_$1}" = "yes"])

@@ -20,10 +20,11 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-# HAVE_IMPORT_LCL_PDF is set in configure.ac if have Poppler libs
-# when unset, the librar y is not built (nor installed), but sources
+# HAVE_POPPLER is set in configure.ac if have Poppler libs
+# when unset, the library is not built (nor installed), but sources
 # are still distributed in the 'distcheck' tarball
-if HAVE_IMPORT_LCL_PDF
+if HAVE_POPPLER
+if HAVE_POPPLER_GLIB
 
 plugin_id = ofa-import-lcl-pdf
 
@@ -67,4 +68,5 @@ EXTRA_DIST = \
 	$(plugin_data_DATA)								\
 	$(NULL)
 
+endif
 endif
