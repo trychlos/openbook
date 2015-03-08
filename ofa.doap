@@ -15,7 +15,8 @@
     which first targets french freelance workers. 
   </description>
 
-  <!-- <homepage rdf:resource="http://www.nautilus-actions.org" /> -->
+  <homepage rdf:resource="http://pwieser.github.io/openbook/" />
+
   <!-- <download-page rdf:resource="http://www.nautilus-actions.org/downloads" /> -->
   <!-- <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=nautilus-actions" /> -->
   <!-- <mailing-list rdf:resource="http://mailman.nautilus-actions.org/listinfo" /> -->

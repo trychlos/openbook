@@ -10,7 +10,8 @@
 
 	* src/m4/pwi-check-mysql.m4: new file
 
-	* configure.ac: updated accordingly
+	* ofa.doap,
+	* configure.ac: use Github website URL
 
 2015-03-07 Pierre Wieser <pwieser@trychlos.org>
 
