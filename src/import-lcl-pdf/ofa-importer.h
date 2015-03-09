@@ -28,10 +28,9 @@
 /**
  * SECTION: ofa_lcl_pdf_importer
  * @short_description: #ofaLclPdfImporter class definition.
- * @include: import-lcl/ofa-importer.h
+ * @include: import-lcl-pdf/ofa-importer.h
  *
- * LCL Import Bank Account Transaction (BAT) files in tabulated text
- * format.
+ * LCL Import Bank Account Transaction (BAT) files in PDF format.
  */
 
 #include <glib-object.h>

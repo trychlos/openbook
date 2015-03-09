@@ -60,7 +60,7 @@ static gchar *double_decorate( const gchar *text );
  * of a double, returning so a 'brut' double string, without the locale
  * thousand separator and with a dot as the decimal point
  *
- * This is a "prefs to brut editable" transformation"
+ * This is a "prefs to brut editable" transformation
  */
 gchar *
 my_double_undecorate( const gchar *text )

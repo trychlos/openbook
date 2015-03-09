@@ -320,6 +320,7 @@
                       <object class="GtkEntry" id="p1-end">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="halign">start</property>
                         <property name="max_length">10</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">10</property>

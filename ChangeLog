@@ -1,3 +1,20 @@
+2015-03-09 Pierre Wieser <pwieser@trychlos.org>
+
+	New Boursorama-PDF import plugin (todo #703)
+
+	* src/import-bourso-pdf/Makefile.am,
+	* src/import-bourso-pdf/ofa-importer.c,
+	* src/import-bourso-pdf/ofa-importer.h,
+	* src/import-bourso-pdf/ofa-module.c: new files.
+
+	* configure.ac,
+	* src/Makefile.am: updated accordingly.
+
+	* src/ui/ofa-bat-properties-bin.ui: fix end date entry layout.
+
+	* src/core/my-double.c,
+	* src/import-lcl-pdf/ofa-importer.h: fix typos.
+
 2015-03-08 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/import-lcl-pdf/Makefile.am: Poppler libraries are optional 

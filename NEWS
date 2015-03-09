@@ -18,6 +18,7 @@
      individually any or all lines to match already reconciliated entries
      (todo #689).
    - Now display the count of yet unused BAT lines (todo #704).
+   - New Boursorama-PDF import plugin (todo #703).
 
  Bug fixes:
 

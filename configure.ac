@@ -103,13 +103,16 @@ PWI_MAINTAINER_CHECK_FOR_DEPRECATED
 
 # built plugins
 have_IMPORT_BOURSO="yes"				# always built
+have_IMPORT_BOURSO_PDF="no"				# requires Poppler libraries
+if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
+	have_IMPORT_BOURSO_PDF="yes"
+fi
 have_IMPORT_LCL="yes"					# always built
-# IMPORT_LCL_PDF requires Poppler libraries
-have_IMPORT_LCL_PDF="no"
+have_IMPORT_LCL_PDF="no"				# requires Poppler libraries
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_LCL_PDF="yes"
 fi
-have_POSTGRE="no"
+have_POSTGRE="no"						# not built as of 0.35
 AM_CONDITIONAL([HAVE_POSTGRE], [test "${have_POSTGRE}" = "yes"])
 
 # display and keep configuration informations
@@ -137,6 +140,7 @@ AC_CONFIG_FILES([
 	src/core/Makefile
 	src/css/Makefile
 	src/import-bourso/Makefile
+	src/import-bourso-pdf/Makefile
 	src/import-lcl/Makefile
 	src/import-lcl-pdf/Makefile
 	src/mysql/Makefile
@@ -156,8 +160,13 @@ $as_echo "
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
 	Built plugins:
-	  Import_Boursorama             ${have_IMPORT_BOURSO}
-	  Import_LCL                    ${have_IMPORT_LCL}"
+	  Import_Boursorama             ${have_IMPORT_BOURSO}"
+if test "${have_IMPORT_BOURSO_PDF}" = "yes"; then
+	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF} (with Poppler ${POPPLER_msg_version})"
+else
+	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF}"
+fi
+	$as_echo "	  Import_LCL                    ${have_IMPORT_LCL}"
 if test "${have_IMPORT_LCL_PDF}" = "yes"; then
 	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF} (with Poppler ${POPPLER_msg_version})"
 else
