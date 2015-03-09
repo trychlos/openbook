@@ -328,18 +328,14 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	GtkFrame *frame;
 	GtkGrid *grid;
 	GtkWidget *account, *rappro, *tview, *buttons, *soldes;
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
 
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( grid ), 4 );
 	gtk_widget_set_margin_right( GTK_WIDGET( grid ), 4 );
 	gtk_grid_set_column_spacing( grid, 4 );
 	gtk_grid_set_row_spacing( grid, 3 );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( grid ));
 
 	account = setup_account_selection( page );
 	gtk_grid_attach( grid, account, 0, 0, 1, 1 );
@@ -370,7 +366,7 @@ v_setup_view( ofaPage *page )
 	get_settings( OFA_RECONCILIATION( page ));
 	dossier_signaling_connect( OFA_RECONCILIATION( page ));
 
-	return( GTK_WIDGET( frame ));
+	return( GTK_WIDGET( grid ));
 }
 
 /*
