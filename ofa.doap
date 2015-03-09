@@ -8,14 +8,14 @@
 
   <category rdf:resource="http://api.gnome.org/doap-extensions#desktop" />
 
-  <shortdesc xml:lang="en">A double-entry accounting application first dedicated to freelances</shortdesc>
+  <shortdesc xml:lang="en">Open-source, double-entry, multi-currencies, accounting application</shortdesc>
 
   <description xml:lang="en">
-    Open Freelance Accounting is a double-entry accounting application
-    which first targets french freelance workers. 
+    Open Freelance Accounting is a double-entry multi-currencies accounting 
+    application which first targets freelance workers or small companies. 
   </description>
 
-  <homepage rdf:resource="http://pwieser.github.io/openbook/" />
+  <homepage rdf:resource="http://trychlos.github.io/openbook/" />
 
   <!-- <download-page rdf:resource="http://www.nautilus-actions.org/downloads" /> -->
   <!-- <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=nautilus-actions" /> -->
