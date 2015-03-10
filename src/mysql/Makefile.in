@@ -102,7 +102,17 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/import-lcl
+@HAVE_MYSQL_TRUE@am__append_1 = \
+@HAVE_MYSQL_TRUE@	-I $(top_srcdir)								\
+@HAVE_MYSQL_TRUE@	-I $(top_srcdir)/src							\
+@HAVE_MYSQL_TRUE@	$(OPENBOOK_CFLAGS)								\
+@HAVE_MYSQL_TRUE@	-DG_LOG_DOMAIN=\"OFA\"							\
+@HAVE_MYSQL_TRUE@	-DPROVIDER_ID=\"$(plugin_id)\"					\
+@HAVE_MYSQL_TRUE@	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+@HAVE_MYSQL_TRUE@	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+subdir = src/mysql
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -151,17 +161,31 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" \
 	"$(DESTDIR)$(plugin_datadir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libofa_import_lcl_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libofa_import_lcl_la_OBJECTS = ofa-importer.lo ofa-module.lo
-libofa_import_lcl_la_OBJECTS = $(am_libofa_import_lcl_la_OBJECTS)
+@HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
+	ofa-mysql-backup.c ofa-mysql-backup.h \
+	ofa-mysql-connect-display-piece.c \
+	ofa-mysql-connect-display-piece.h \
+	ofa-mysql-connect-enter-piece.c \
+	ofa-mysql-connect-enter-piece.h ofa-mysql-idbms.c \
+	ofa-mysql-idbms.h ofa-mysql-ipreferences.c \
+	ofa-mysql-ipreferences.h ofa-module.c
+@HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-backup.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbms.lo ofa-mysql-ipreferences.lo \
+@HAVE_MYSQL_TRUE@	ofa-module.lo
+libofa_mysql_la_OBJECTS = $(am_libofa_mysql_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libofa_import_lcl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+libofa_mysql_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libofa_import_lcl_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(AM_CFLAGS) $(CFLAGS) $(libofa_mysql_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
+@HAVE_MYSQL_TRUE@am_libofa_mysql_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -196,8 +220,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libofa_import_lcl_la_SOURCES)
-DIST_SOURCES = $(libofa_import_lcl_la_SOURCES)
+SOURCES = $(libofa_mysql_la_SOURCES)
+DIST_SOURCES = $(am__libofa_mysql_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -229,10 +253,7 @@ ACLOCAL_AMFLAGS = @ACLOCAL_AMFLAGS@
 ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
 AM_CFLAGS = @AM_CFLAGS@
-AM_CPPFLAGS = @AM_CPPFLAGS@ -I $(top_srcdir) -I $(top_srcdir)/src \
-	$(OPENBOOK_CFLAGS) -DG_LOG_DOMAIN=\"OFA\" \
-	-DPROVIDER_ID=\"$(plugin_id)\" \
-	-DPROVIDER_DATADIR=\"$(plugin_datadir)\" $(NULL)
+AM_CPPFLAGS = @AM_CPPFLAGS@ $(am__append_1)
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
@@ -397,35 +418,58 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-plugin_id = ofa-import-lcl
-pkglib_LTLIBRARIES = libofa-import-lcl.la
-plugin_datadir = $(pkgdatadir)/$(plugin_id)
-libofa_import_lcl_la_SOURCES = \
-	ofa-importer.c									\
-	ofa-importer.h									\
-	ofa-module.c									\
-	$(NULL)
 
-libofa_import_lcl_la_LIBADD = \
-	$(OPENBOOK_LIBS)								\
-	$(NULL)
+# HAVE_MYSQL is set in PWI_CHECK_MYSQL m4 macro
+@HAVE_MYSQL_TRUE@plugin_id = ofa-mysql
+@HAVE_MYSQL_TRUE@pkglib_LTLIBRARIES = libofa-mysql.la
+@HAVE_MYSQL_TRUE@plugin_datadir = $(pkgdatadir)/$(plugin_id)
+@HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
+@HAVE_MYSQL_TRUE@	ofa-mysql.c										\
+@HAVE_MYSQL_TRUE@	ofa-mysql.h										\
+@HAVE_MYSQL_TRUE@	ofa-mysql-backup.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-backup.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.c				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.h				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.c					\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.h					\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbms.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbms.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.c						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.h						\
+@HAVE_MYSQL_TRUE@	ofa-module.c									\
+@HAVE_MYSQL_TRUE@	$(NULL)
 
-libofa_import_lcl_la_LDFLAGS = \
-	-module 										\
-	-no-undefined									\
-	-avoid-version									\
-	$(NULL)
+@HAVE_MYSQL_TRUE@libofa_mysql_la_LIBADD = \
+@HAVE_MYSQL_TRUE@	$(OPENBOOK_LIBS)								\
+@HAVE_MYSQL_TRUE@	$(NULL)
 
-images_files = \
-	$(NULL)
+@HAVE_MYSQL_TRUE@libofa_mysql_la_LDFLAGS = \
+@HAVE_MYSQL_TRUE@	-module 										\
+@HAVE_MYSQL_TRUE@	-no-undefined									\
+@HAVE_MYSQL_TRUE@	-avoid-version									\
+@HAVE_MYSQL_TRUE@	$(NULL)
 
-plugin_data_DATA = \
-	$(images_files)									\
-	$(NULL)
+@HAVE_MYSQL_TRUE@ui_files = \
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.ui				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.ui				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs.piece.ui						\
+@HAVE_MYSQL_TRUE@	$(NULL)
 
-EXTRA_DIST = \
-	$(plugin_data_DATA)								\
-	$(NULL)
+@HAVE_MYSQL_TRUE@images_files = \
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+@HAVE_MYSQL_TRUE@plugin_data_DATA = \
+@HAVE_MYSQL_TRUE@	$(ui_files)										\
+@HAVE_MYSQL_TRUE@	$(images_files)									\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+
+#pkglibexec_SCRIPTS = \
+#	ofa-mysql-clone.sh								\
+#	$(NULL)
+@HAVE_MYSQL_TRUE@EXTRA_DIST = \
+@HAVE_MYSQL_TRUE@	$(plugin_data_DATA)								\
+@HAVE_MYSQL_TRUE@	$(NULL)
 
 all: all-am
 
@@ -440,9 +484,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/import-lcl/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/mysql/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/import-lcl/Makefile
+	  $(AUTOMAKE) --gnu src/mysql/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -497,8 +541,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libofa-import-lcl.la: $(libofa_import_lcl_la_OBJECTS) $(libofa_import_lcl_la_DEPENDENCIES) $(EXTRA_libofa_import_lcl_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libofa_import_lcl_la_LINK) -rpath $(pkglibdir) $(libofa_import_lcl_la_OBJECTS) $(libofa_import_lcl_la_LIBADD) $(LIBS)
+libofa-mysql.la: $(libofa_mysql_la_OBJECTS) $(libofa_mysql_la_DEPENDENCIES) $(EXTRA_libofa_mysql_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libofa_mysql_la_LINK) $(am_libofa_mysql_la_rpath) $(libofa_mysql_la_OBJECTS) $(libofa_mysql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -506,8 +550,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-backup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-display-piece.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-enter-piece.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbms.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ipreferences.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

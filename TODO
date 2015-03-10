@@ -325,7 +325,29 @@
  705 2015- 3- 8 have an interface to add an item to the menubar
                 (use case: plugins)
 
- 706
+ 706 2015- 3- 9 be able to configure some user shortcuts (in particular,
+                it would be easier that row-activate on templates page
+                opens the guided input rather that the properties)
+
+ 707 2015- 3- 9 it would be easier to be directly in overwrite mode
+                (and to better manage it) when entering a date: this
+                would prevent the user to have to first select the digits
+                to be changed
+
+ 708 2015- 3- 9 when selecting an account for reconciliation (resp.
+                settlement), display in gray those who are not 
+                reconciliable (resp. settleable), and refuse the 
+                selection
+
+ 709 2015- 3-10 reconciliation: computing bank reconciliated balance is
+                wrong (see screen print)
+
+ 710 2015- 3-10 as Github directly provides link to download a tarball,
+                it will easier for users to directly provides auto-built
+                files (as configure, Makefile.in and so on) - so add
+                them to git (remove the ignore) 
+
+ 711
 
 -----------------------------------------------------------------------
  DONE
