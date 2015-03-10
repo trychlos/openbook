@@ -3,6 +3,9 @@
 	Add all auto-generated files required to compile the application 
 	(todo #710).
 
+	* src/ui/ofa-reconciliation.c: doesn't take into account deleted
+	entries (todo #709).
+
 2015-03-09 Pierre Wieser <pwieser@trychlos.org>
 
 	New Boursorama-PDF import plugin (todo #703)

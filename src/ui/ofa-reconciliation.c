@@ -2645,6 +2645,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 	account_credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
 	debit = account_credit;
 	credit = account_debit;
+	g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
 
 	tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
@@ -2655,10 +2656,13 @@ set_reconciliated_balance( ofaReconciliation *self )
 			g_object_unref( object );
 
 			if( OFO_IS_ENTRY( object )){
-				dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
-				if( !my_date_is_valid( dval )){
-					debit += ofo_entry_get_debit( OFO_ENTRY( object ));
-					credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+				if( ofo_entry_get_status( OFO_ENTRY( object )) != ENT_STATUS_DELETED ){
+					dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
+					if( !my_date_is_valid( dval )){
+						debit += ofo_entry_get_debit( OFO_ENTRY( object ));
+						credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+						g_debug( "debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
+					}
 				}
 
 			} else if( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
@@ -2675,6 +2679,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 		}
 	}
 
+	g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
 	if( debit > credit ){
 		str = my_double_to_str( debit-credit );
 		sdeb = g_strdup_printf( _( "%s DB" ), str );

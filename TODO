@@ -342,12 +342,9 @@
  709 2015- 3-10 reconciliation: computing bank reconciliated balance is
                 wrong (see screen print)
 
- 710 2015- 3-10 as Github directly provides link to download a tarball,
-                it will easier for users to directly provides auto-built
-                files (as configure, Makefile.in and so on) - so add
-                them to git (remove the ignore) 
+ 711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
 
- 711
+ 712
 
 -----------------------------------------------------------------------
  DONE
@@ -3207,6 +3204,12 @@
  704 2015- 3- 8 bat properties: display the count of unreconciliated
                 bat lines
      2015- 3- 8 done - git #ae4a022
+
+ 710 2015- 3-10 as Github directly provides link to download a tarball,
+                it will easier for users to directly provides auto-built
+                files (as configure, Makefile.in and so on) - so add
+                them to git (remove the ignore)
+     2015- 3-10 done - git #0a0c523
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

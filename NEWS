@@ -27,6 +27,8 @@
    - todo #615: make the MySQL plugin optional.
    - todo #616: warns if no DBMS plugin is built.
    - todo #702: compile with ISO C.
+   - todo #709: fix bank account balance computing in reconciliation.
+   - todo #710: put under git all files required to compile the application.
 
  Other changes:
 
