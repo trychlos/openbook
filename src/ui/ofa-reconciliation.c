@@ -1599,12 +1599,23 @@ insert_entry( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, Gt
 static void
 set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
 {
+	ofxAmount amount;
 	gchar *sdope, *sdeb, *scre, *sdrap;
 	const GDate *dconcil;
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-	sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
-	scre = my_double_to_str( ofo_entry_get_credit( entry ));
+	amount = ofo_entry_get_debit( entry );
+	if( amount ){
+		sdeb = my_double_to_str( amount );
+	} else {
+		sdeb = g_strdup( "" );
+	}
+	amount = ofo_entry_get_credit( entry );
+	if( amount ){
+		scre = my_double_to_str( amount );
+	} else {
+		scre = g_strdup( "" );
+	}
 	dconcil = ofo_entry_get_concil_dval( entry );
 	sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
 

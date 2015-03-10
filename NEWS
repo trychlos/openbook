@@ -29,6 +29,7 @@
    - todo #702: compile with ISO C.
    - todo #709: fix bank account balance computing in reconciliation.
    - todo #710: put under git all files required to compile the application.
+   - todo #711: reconciliation doesn't display '0,00' amounts.
 
  Other changes:
 

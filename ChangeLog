@@ -3,8 +3,9 @@
 	Add all auto-generated files required to compile the application 
 	(todo #710).
 
-	* src/ui/ofa-reconciliation.c: doesn't take into account deleted
-	entries (todo #709).
+	* src/ui/ofa-reconciliation.c:
+	- doesn't take into account deleted entries (todo #709)
+	- doesn't print '0,00' amounts (todo #711).
 
 2015-03-09 Pierre Wieser <pwieser@trychlos.org>
 
