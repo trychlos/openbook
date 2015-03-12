@@ -292,6 +292,10 @@
                 preferences (date display format, comma vs. dot)
 
  652 2015- 2-15 let the user configure colors
+     2015- 3-13 (branch colors) doesn't know how to go back from custom 
+                in GtkColorChooserWidget (this is bad)
+                + have to decide whether dossier color is a user pref
+                or a dossier pref (for all users of this dossier)
 
  653 2015- 2-17 GuidedInputBin/OpeTemplateProperties dialogs should be
                 non-modal (use case: consult rates)
