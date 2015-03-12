@@ -1762,7 +1762,6 @@ setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 	priv->bat_id = bat_id;
 	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	display_bat_lines( self );
-
 	default_expand_view( self );
 
 	bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
@@ -1885,6 +1884,7 @@ display_bat_lines( ofaReconciliation *self )
 		}
 
 		bat_ecr = ofo_bat_line_get_entry( batline );
+		/*g_debug( "batline: sdeb=%s, scre=%s, bat_ecr=%ld", sbat_deb, sbat_cre, bat_ecr );*/
 		if( bat_ecr > 0 ){
 			entry_iter = search_for_entry_by_number( self, bat_ecr );
 			if( entry_iter ){
@@ -2182,10 +2182,10 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 	found = FALSE;
 	entry_iter = NULL;
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
+	/*g_debug( "search_for_entry_by_amount: sbat_deb=%s, sbat_cre=%s", sbat_deb, sbat_cre );*/
 
 	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
 		while( TRUE ){
-
 			gtk_tree_model_get( child_tmodel,
 					&iter,
 					COL_DEBIT,   &sdeb,
@@ -2201,8 +2201,10 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 				/* are the amounts compatible ?
 				 * a positive bat_amount implies that the entry should be a debit */
 				g_return_val_if_fail( g_utf8_strlen( sdeb, -1 ) || g_utf8_strlen( scre, -1 ), NULL );
+				g_debug( "examining entry: sdeb=%s, scre=%s", sdeb, scre );
 
-				if( !g_utf8_collate( scre, sbat_deb ) || !g_utf8_collate( sdeb, sbat_cre )){
+				if(( my_strlen( scre ) && my_strlen( sbat_deb ) && !g_utf8_collate( scre, sbat_deb )) ||
+						( my_strlen( sdeb ) && my_strlen( sbat_cre ) && !g_utf8_collate( sdeb, sbat_cre ))){
 					found = TRUE;
 				}
 			}
@@ -2220,6 +2222,7 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 		}
 	}
 
+	g_debug( "returning entry_iter=%p", ( void * ) entry_iter );
 	return( entry_iter );
 }
 
@@ -2656,7 +2659,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 	account_credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
 	debit = account_credit;
 	credit = account_debit;
-	g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
+	/*g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 
 	tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
@@ -2672,7 +2675,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 					if( !my_date_is_valid( dval )){
 						debit += ofo_entry_get_debit( OFO_ENTRY( object ));
 						credit += ofo_entry_get_credit( OFO_ENTRY( object ));
-						g_debug( "debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
+						/*g_debug( "debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 					}
 				}
 
@@ -2690,7 +2693,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 		}
 	}
 
-	g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );
+	/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 	if( debit > credit ){
 		str = my_double_to_str( debit-credit );
 		sdeb = g_strdup_printf( _( "%s DB" ), str );

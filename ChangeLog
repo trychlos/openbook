@@ -1,3 +1,7 @@
+2015-03-12 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #718).
+
 2015-03-10 Pierre Wieser <pwieser@trychlos.org>
 
 	Add all auto-generated files required to compile the application 

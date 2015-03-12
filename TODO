@@ -254,7 +254,10 @@
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
                 them with integers ?
      2015- 2-16 ofsCurrency makes use of a work-around when checking
-                the accounts/entries/ledgers balances 
+                the accounts/entries/ledgers balances
+     2015- 3-11 or move the currency to an arbitrary unit per account,
+                the currency being only a sort of unit (but may also
+                be a day count, etc.) 
 
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement data groups if they are set in the object
@@ -339,9 +342,26 @@
                 reconciliable (resp. settleable), and refuse the 
                 selection
 
- 711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
+ 712 2015- 3-11 accept comma as well as dot as decimal separator
+                (is a user pref ?)
 
- 712
+ 713 2015- 3-11 segfault when deleting the row n°2 from an operation
+                template
+                GLib-GObject-WARNING **: invalid cast from 'GtkLabel' to 'GtkEntry'
+                in remove_row (row=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-ope-template-properties.c:807
+                in on_button_clicked (button=<optimized out>, self=0x74c510) at ../../../src/ui/ofa-ope-template-properties.c:775
+
+ 714 2015- 3-11 associate an account with a piece ref (e.g. ESP -> 531)
+
+ 715 2015- 3-11 ViewEntries: display balance in orange if not balanced
+
+ 716 2015- 3-11 ViewEntries: doesn't display '0,00'
+
+ 717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
+
+ 718 2015- 3-12 Reconciliation: wrong propositions
+
+ 719
 
 -----------------------------------------------------------------------
  DONE
@@ -3211,6 +3231,9 @@
                 files (as configure, Makefile.in and so on) - so add
                 them to git (remove the ignore)
      2015- 3-10 done - git #0a0c523
+
+ 711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
+     2013- 3-10 done - git #76b495e
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
