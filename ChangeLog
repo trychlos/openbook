@@ -2,6 +2,8 @@
 
 	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #718).
 
+	* src/ui/ofa-view-entries.c: doesn't display zero amounts (todo #716).
+
 2015-03-10 Pierre Wieser <pwieser@trychlos.org>
 
 	Add all auto-generated files required to compile the application 

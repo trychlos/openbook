@@ -1784,21 +1784,20 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *ssettle;
 	ofxCounter counter;
 	const GDate *d;
+	ofxAmount amount;
 
 	priv = self->priv;
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
-	sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
-	scre = my_double_to_str( ofo_entry_get_credit( entry ));
+	amount = ofo_entry_get_debit( entry );
+	sdeb = amount ? my_double_to_str( amount ) : g_strdup( "" );
+	amount = ofo_entry_get_credit( entry );
+	scre = amount ? my_double_to_str( amount ) : g_strdup( "" );
 	d = ofo_entry_get_concil_dval( entry );
 	srappro = my_date_to_str( d, MY_DATE_DMYY );
 	counter = ofo_entry_get_settlement_number( entry );
-	if( counter ){
-		ssettle = g_strdup_printf( "%lu", counter );
-	} else {
-		ssettle = g_strdup( "" );
-	}
+	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
 	gtk_list_store_set(
 				GTK_LIST_STORE( priv->tstore ),

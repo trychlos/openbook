@@ -359,8 +359,6 @@
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
 
- 718 2015- 3-12 Reconciliation: wrong propositions
-
  719
 
 -----------------------------------------------------------------------
@@ -3234,6 +3232,9 @@
 
  711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
      2013- 3-10 done - git #76b495e
+
+ 718 2015- 3-12 Reconciliation: wrong propositions
+     2015- 3-12 fixed - git #fc690bd
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
