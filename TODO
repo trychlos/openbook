@@ -353,8 +353,6 @@
 
  714 2015- 3-11 associate an account with a piece ref (e.g. ESP -> 531)
 
- 715 2015- 3-11 ViewEntries: display balance in orange if not balanced
-
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?
 
@@ -3231,6 +3229,9 @@
 
  711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
      2013- 3-10 done - git #76b495e
+
+ 715 2015- 3-11 ViewEntries: display balance in orange if not balanced
+     2015- 3-12 done - git #aabdbf7
 
  716 2015- 3-11 ViewEntries: doesn't display '0,00'
      2015- 3-12 done - git #e975abb

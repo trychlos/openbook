@@ -30,6 +30,7 @@
    - todo #709: fix bank account balance computing in reconciliation.
    - todo #710: put under git all files required to compile the application.
    - todo #711: reconciliation doesn't display '0,00' amounts.
+   - todo #713: fix operation template detail row deletion.
    - todo #715: view entries displays unbalanced solde in orange.
    - todo #716: view entries doesn't display '0,00' amounts.
    - todo #718: fix automatic appariement between entries and bat lines.

@@ -781,8 +781,7 @@ static void
 remove_row( ofaOpeTemplateProperties *self, gint row )
 {
 	gint i, line;
-	GtkWidget *widget;
-	GtkEntry *entry;
+	GtkWidget *widget, *label;
 	gchar *str;
 
 	/* first remove the line */
@@ -804,9 +803,10 @@ remove_row( ofaOpeTemplateProperties *self, gint row )
 		}
 		if( line <= self->priv->count ){
 			/* update the rang number on each moved line */
-			entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_ROW, line-1 ));
+			label = gtk_grid_get_child_at( self->priv->grid, DET_COL_ROW, line-1 );
+			g_return_if_fail( label && GTK_IS_LABEL( label ));
 			str = g_strdup_printf( "%d", line-1 );
-			gtk_entry_set_text( entry, str );
+			gtk_label_set_text( GTK_LABEL( label ), str );
 			g_free( str );
 		}
 	}
