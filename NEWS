@@ -19,6 +19,8 @@
      (todo #689).
    - Now display the count of yet unused BAT lines (todo #704).
    - New Boursorama-PDF import plugin (todo #703).
+   - New user preferences: whether to accept dot and/or comma as decimal
+     separator (todo #712).
 
  Bug fixes:
 
@@ -39,6 +41,7 @@
 
    - Compiler options now includes '-std=gnu99'.
    - ofoBat::ofo_bat_get_unused_count(): new method.
+   - ofaPreferences is now set as a public API.
 
 -----------------------------------------------------------------------
  Version 0.35

@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-ipreferences.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
 #include "core/my-window-prot.h"
@@ -42,13 +43,13 @@
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-main-window.h"
-#include "core/ofa-preferences.h"
 
 /* private instance data
  */
 struct _ofaPreferencesPrivate {
 
 	GtkWidget             *book;			/* main notebook of the dialog */
+	GtkWidget             *btn_ok;
 
 	/* whether the dialog has been validated
 	 */
@@ -76,6 +77,8 @@ struct _ofaPreferencesPrivate {
 	myDateCombo           *p3_check_combo;
 	myDecimalCombo        *p3_decimal_sep;
 	GtkWidget             *p3_thousand_sep;
+	GtkWidget             *p3_accept_dot;
+	GtkWidget             *p3_accept_comma;
 
 	/* Export settings
 	 */
@@ -91,15 +94,19 @@ struct _ofaPreferencesPrivate {
 	GList                 *plugs;
 };
 
-#define SETTINGS_AMOUNT                 "UserAmount"
-#define SETTINGS_DATE                   "UserDate"
+#define SETTINGS_AMOUNT                    "UserAmount"
+#define SETTINGS_DATE                      "UserDate"
 
 /* a cache for some often used preferences
  */
-static myDateFormat st_date_display     = 0;
-static myDateFormat st_date_check       = 0;
-static gchar       *st_amount_decimal   = NULL;
-static gchar       *st_amount_thousand  = NULL;
+static gboolean     st_date_prefs_set      = FALSE;
+static myDateFormat st_date_display        = 0;
+static myDateFormat st_date_check          = 0;
+static gboolean     st_amount_prefs_set    = FALSE;
+static gchar       *st_amount_decimal      = NULL;
+static gchar       *st_amount_thousand     = NULL;
+static gboolean     st_amount_accept_dot   = FALSE;
+static gboolean     st_amount_accept_comma = FALSE;
 
 static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
 static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscape";
@@ -137,6 +144,12 @@ static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       activate_first_page( ofaPreferences *self );
 static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void       on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void       on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
+static void       on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void       on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void       check_for_activable_dlg( ofaPreferences *self );
 static gboolean   v_quit_on_ok( myDialog *dialog );
 static gboolean   do_update( ofaPreferences *self );
 static void       do_update_quitting_page( ofaPreferences *self );
@@ -268,8 +281,7 @@ v_init_dialog( myDialog *dialog )
 
 	priv = OFA_PREFERENCES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	priv->book =
-			my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
+	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
 
 	init_quitting_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
@@ -366,8 +378,7 @@ static void
 init_locales_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	GtkContainer *container;
-	GtkWidget *parent, *label;
+	GtkWidget *parent, *label, *check;
 
 	priv = self->priv;
 
@@ -375,24 +386,42 @@ init_locales_page( ofaPreferences *self )
 
 	init_locale_date( self,
 			&priv->p3_display_combo, "l-display", "p3-alignment-display", ofa_prefs_date_display());
+	g_signal_connect( priv->p3_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
+	on_display_date_changed( GTK_COMBO_BOX( priv->p3_display_combo ), self );
+
 	init_locale_date( self,
 			&priv->p3_check_combo,   "l-visual",  "p3-alignment-check",   ofa_prefs_date_check());
+	g_signal_connect( priv->p3_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
+	on_check_date_changed( GTK_COMBO_BOX( priv->p3_check_combo ), self );
 
 	/* decimal display */
 	priv->p3_decimal_sep = my_decimal_combo_new();
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-
-	parent = my_utils_container_get_child_by_name( container, "p3-decimal-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_decimal_sep ));
 	my_decimal_combo_set_selected( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
 
-	label = my_utils_container_get_child_by_name( container, "l-decimal" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "l-decimal" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p3_decimal_sep ));
+
+	/* accept dot decimal separator */
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-accept-dot" );
+	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
+	priv->p3_accept_dot = check;
+	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_dot_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_dot());
+	on_accept_dot_toggled( GTK_TOGGLE_BUTTON( check ), self );
+
+	/* accept comma decimal separator */
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-accept-comma" );
+	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
+	priv->p3_accept_comma = check;
+	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_comma_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_comma());
+	on_accept_comma_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* thousand separator */
 	init_locale_sep( self,
@@ -440,20 +469,19 @@ get_locales( void )
 static void
 init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label_name, const gchar *parent, myDateFormat ivalue )
 {
-	GtkContainer *container;
+	ofaPreferencesPrivate *priv;
 	GtkWidget *parent_widget, *label;
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	priv = self->priv;
 
-	parent_widget = my_utils_container_get_child_by_name( container, parent );
+	parent_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), parent );
 	g_return_if_fail( parent_widget && GTK_IS_CONTAINER( parent_widget ));
 
 	*wcombo = my_date_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent_widget ), GTK_WIDGET( *wcombo ));
 	my_date_combo_set_selected( *wcombo, ivalue );
 
-	label = my_utils_container_get_child_by_name( container, label_name );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wcombo ));
 }
@@ -461,18 +489,17 @@ init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label
 static void
 init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label_name, const gchar *wname, const gchar *svalue )
 {
-	GtkContainer *container;
+	ofaPreferencesPrivate *priv;
 	GtkWidget *label;
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	priv = self->priv;
 
-	*wentry = my_utils_container_get_child_by_name( container, wname );
+	*wentry = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), wname );
 	g_return_if_fail( *wentry && GTK_IS_ENTRY( *wentry ));
 
 	gtk_entry_set_text( GTK_ENTRY( *wentry ), svalue );
 
-	label = my_utils_container_get_child_by_name( container, label_name );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wentry ));
 }
@@ -622,6 +649,88 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 			gtk_toggle_button_get_active( button ));
 }
 
+static void
+on_display_date_changed( GtkComboBox *box, ofaPreferences *self )
+{
+	on_date_changed( self, box, "p3-display-sample" );
+}
+
+static void
+on_check_date_changed( GtkComboBox *box, ofaPreferences *self )
+{
+	on_date_changed( self, box, "p3-check-sample" );
+}
+
+static void
+on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name )
+{
+	gint format;
+	static GDate *date = NULL;
+	gchar *str, *str2;
+	GtkContainer *container;
+	GtkWidget *label;
+
+	format = my_date_combo_get_selected( MY_DATE_COMBO( box ));
+	if( !date ){
+		date = g_date_new_dmy( 31, 8, 2015 );
+	}
+	str = my_date_to_str( date, format );
+	str2 = g_strdup_printf( "<i>%s</i>", str );
+
+	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+
+	label = my_utils_container_get_child_by_name( container, sample_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_markup( GTK_LABEL( label ), str2 );
+
+	g_free( str2 );
+	g_free( str );
+}
+
+static void
+on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self )
+{
+	check_for_activable_dlg( self );
+}
+
+static void
+on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self )
+{
+	check_for_activable_dlg( self );
+}
+
+/*
+ * refuse to validate the dialog if:
+ * - the user doesn't accept dot decimal separator, nor comma
+ */
+static void
+check_for_activable_dlg( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	gboolean accept_dot, accept_comma;
+	gboolean activable;
+
+	priv = self->priv;
+	activable = TRUE;
+
+	if( !priv->p3_accept_dot || !priv->p3_accept_comma ){
+		activable = FALSE;
+	} else {
+		accept_dot = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_dot ));
+		accept_comma = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_comma ));
+		activable &= ( accept_dot || accept_comma );
+	}
+
+	if( !priv->btn_ok ){
+		priv->btn_ok = my_utils_container_get_child_by_name(
+				GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+		g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
+	}
+
+	gtk_widget_set_sensitive( priv->btn_ok, activable );
+}
+
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
@@ -764,6 +873,7 @@ do_update_locales_page( ofaPreferences *self )
 	GList *list;
 	const gchar *cstr;
 	gchar *decimal_sep;
+	gchar *str;
 
 	priv = self->priv;
 
@@ -777,16 +887,21 @@ do_update_locales_page( ofaPreferences *self )
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p3_thousand_sep ));
 	list = g_list_append( list, g_strdup( cstr ));
+
+	str = g_strdup_printf( "%s",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_dot )) ? "True" : "False" );
+	list = g_list_append( list, str );
+
+	str = g_strdup_printf( "%s",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_comma )) ? "True" : "False" );
+	list = g_list_append( list, str );
+
 	ofa_settings_set_string_list( SETTINGS_AMOUNT, list );
 	ofa_settings_free_string_list( list );
 
 	/* reinitialize the cache */
-	st_date_display = 0;
-	st_date_check = 0;
-	g_free( st_amount_decimal );
-	st_amount_decimal = NULL;
-	g_free( st_amount_thousand );
-	st_amount_thousand = NULL;
+	st_date_prefs_set = FALSE;
+	st_amount_prefs_set = FALSE;
 
 	return( TRUE );
 }
@@ -799,7 +914,7 @@ do_update_locales_page( ofaPreferences *self )
 myDateFormat
 ofa_prefs_date_display( void )
 {
-	if( !st_date_display ){
+	if( !st_date_prefs_set ){
 		setup_date_formats();
 	}
 
@@ -814,13 +929,16 @@ ofa_prefs_date_display( void )
 myDateFormat
 ofa_prefs_date_check( void )
 {
-	if( !st_date_check ){
+	if( !st_date_prefs_set ){
 		setup_date_formats();
 	}
 
 	return( st_date_check );
 }
 
+/*
+ * settings = display_format;check_format;
+ */
 static void
 setup_date_formats( void )
 {
@@ -841,6 +959,7 @@ setup_date_formats( void )
 		}
 	}
 	ofa_settings_free_int_list( list );
+	st_date_prefs_set = TRUE;
 }
 
 /**
@@ -853,7 +972,7 @@ setup_date_formats( void )
 const gchar *
 ofa_prefs_amount_decimal_sep( void )
 {
-	if( !st_amount_decimal ){
+	if( !st_amount_prefs_set ){
 		setup_amount_formats();
 	}
 
@@ -861,7 +980,7 @@ ofa_prefs_amount_decimal_sep( void )
 }
 
 /**
- * ofa_prefs_amount_thounsand_sep:
+ * ofa_prefs_amount_thousand_sep:
  *
  * Returns: the prefered thousand separator (for display)
  *
@@ -870,21 +989,57 @@ ofa_prefs_amount_decimal_sep( void )
 const gchar *
 ofa_prefs_amount_thousand_sep( void )
 {
-	if( !st_amount_thousand ){
+	if( !st_amount_prefs_set ){
 		setup_amount_formats();
 	}
 
 	return( st_amount_thousand );
 }
 
+/**
+ * ofa_prefs_amount_accept_dot:
+ *
+ * Returns: whether the user accepts dot as a decimal separator
+ */
+gboolean
+ofa_prefs_amount_accept_dot( void )
+{
+	if( !st_amount_prefs_set ){
+		setup_amount_formats();
+	}
+
+	return( st_amount_accept_dot );
+}
+
+/**
+ * ofa_prefs_amount_accept_comma:
+ *
+ * Returns: whether the user accepts comma as a decimal separator
+ */
+gboolean
+ofa_prefs_amount_accept_comma( void )
+{
+	if( !st_amount_prefs_set ){
+		setup_amount_formats();
+	}
+
+	return( st_amount_accept_comma );
+}
+
+/*
+ * settings = decimal_char;thousand_char;accept_dot;accept_comma;
+ */
 static void
 setup_amount_formats( void )
 {
 	GList *list, *it;
+	const gchar *cstr;
 
 	/* have a suitable default value (fr locale) */
 	st_amount_decimal = g_strdup( "," );
 	st_amount_thousand = g_strdup( " " );
+	st_amount_accept_dot = TRUE;
+	st_amount_accept_comma = TRUE;
 
 	list = ofa_settings_get_string_list( SETTINGS_AMOUNT );
 	if( list ){
@@ -893,15 +1048,32 @@ setup_amount_formats( void )
 		g_free( st_amount_thousand );
 		st_amount_thousand = NULL;
 
-		if( list->data ){
-			st_amount_decimal = g_strdup(( const gchar * ) list->data );
+		it = list;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			st_amount_decimal = g_strdup( cstr );
 		}
-		it = list->next;
-		if( it && it->data ){
-			st_amount_thousand = g_strdup(( const gchar * ) it->data );
+
+		it = it ? it->next : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			st_amount_thousand = g_strdup( cstr );
+		}
+
+		it = it ? it->next : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			st_amount_accept_dot = my_utils_boolean_from_str( cstr );
+		}
+
+		it = it ? it->next : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			st_amount_accept_comma = my_utils_boolean_from_str( cstr );
 		}
 	}
 	ofa_settings_free_string_list( list );
+	st_amount_prefs_set = TRUE;
 }
 
 static void

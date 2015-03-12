@@ -1,6 +1,8 @@
 data/desktop/openbook.desktop.in
 src/core/ofa-admin-credentials-bin.ui
 src/core/ofa-dbms-root-bin.ui
+src/core/ofa-dossier-delete-prefs.piece.ui
+src/core/ofa-preferences.ui
 src/mysql/ofa-mysql-connect-display-piece.ui
 src/mysql/ofa-mysql-connect-enter-piece.ui
 src/mysql/ofa-mysql-prefs.piece.ui
@@ -15,7 +17,6 @@ src/ui/ofa-class-properties.ui
 src/ui/ofa-closing-parms-bin.ui
 src/ui/ofa-currency-properties.ui
 src/ui/ofa-dos-menubar.ui
-src/ui/ofa-dossier-delete-prefs.piece.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui
 src/ui/ofa-dossier-login.ui
@@ -32,7 +33,6 @@ src/ui/ofa-ledger-close.ui
 src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ope-template-help.ui
 src/ui/ofa-ope-template-properties.ui
-src/ui/ofa-preferences.ui
 src/ui/ofa-print-accounts-balance.ui
 src/ui/ofa-print-entries-balance.ui
 src/ui/ofa-print-books.ui

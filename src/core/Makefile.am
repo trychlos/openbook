@@ -74,7 +74,7 @@ libofa_core_la_SOURCES = \
 	ofa-main-window-def.h								\
 	ofa-plugin.c										\
 	ofa-plugin.h										\
-	ofa-preferences.h									\
+	ofa-preferences.c									\
 	ofa-settings.c										\
 	ofa-settings-monitor.c								\
 	ofa-settings-monitor.h								\
@@ -119,6 +119,8 @@ libofa_core_la_LDFLAGS = \
 ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-dbms-root-bin.ui								\
+	ofa-dossier-delete-prefs.piece.ui					\
+	ofa-preferences.ui									\
 	$(NULL)
 
 core_data_DATA = \

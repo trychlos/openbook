@@ -31,7 +31,7 @@
 #include "api/ofa-dossier-misc.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/ofa-dossier-store.h"
 

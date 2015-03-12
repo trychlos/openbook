@@ -34,7 +34,7 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-book.h"

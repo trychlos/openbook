@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PREFERENCES_H__
-#define __OFA_PREFERENCES_H__
+#ifndef __OPENBOOK_API_OFA_PREFERENCES_H__
+#define __OPENBOOK_API_OFA_PREFERENCES_H__
 
 /**
  * SECTION: ofa_preferences
  * @short_description: #ofaPreferences class definition.
- * @include: core/ofa-preferences.h
+ * @include: api/ofa-preferences.h
  *
  * Manage the general user preferences,
  * i.e. user preferences which are not attached to any dossier.
@@ -86,7 +86,9 @@ myDateFormat ofa_prefs_date_check                       ( void );
 
 const gchar *ofa_prefs_amount_decimal_sep               ( void );
 const gchar *ofa_prefs_amount_thousand_sep              ( void );
+gboolean     ofa_prefs_amount_accept_dot                ( void );
+gboolean     ofa_prefs_amount_accept_comma              ( void );
 
 G_END_DECLS
 
-#endif /* __OFA_PREFERENCES_H__ */
+#endif /* __OPENBOOK_API_OFA_PREFERENCES_H__ */

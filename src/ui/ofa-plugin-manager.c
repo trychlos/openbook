@@ -40,7 +40,7 @@
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 /* private instance data
  */

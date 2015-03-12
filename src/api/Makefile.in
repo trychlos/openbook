@@ -376,6 +376,7 @@ api_include_HEADERS = \
 	ofa-dbms.h											\
 	ofa-dbms-def.h										\
 	ofa-dossier-misc.h									\
+	ofa-preferences.h									\
 	ofa-settings.h										\
 	\
 	ofo-account.h										\

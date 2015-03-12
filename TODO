@@ -345,12 +345,6 @@
  712 2015- 3-11 accept comma as well as dot as decimal separator
                 (is a user pref ?)
 
- 713 2015- 3-11 segfault when deleting the row n°2 from an operation
-                template
-                GLib-GObject-WARNING **: invalid cast from 'GtkLabel' to 'GtkEntry'
-                in remove_row (row=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-ope-template-properties.c:807
-                in on_button_clicked (button=<optimized out>, self=0x74c510) at ../../../src/ui/ofa-ope-template-properties.c:775
-
  714 2015- 3-11 associate an account with a piece ref (e.g. ESP -> 531)
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
@@ -3229,6 +3223,13 @@
 
  711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
      2013- 3-10 done - git #76b495e
+
+ 713 2015- 3-11 segfault when deleting the row n°2 from an operation
+                template
+                GLib-GObject-WARNING **: invalid cast from 'GtkLabel' to 'GtkEntry'
+                in remove_row (row=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-ope-template-properties.c:807
+                in on_button_clicked (button=<optimized out>, self=0x74c510) at ../../../src/ui/ofa-ope-template-properties.c:775
+     2015- 3-12 fixed - git #5b59941
 
  715 2015- 3-11 ViewEntries: display balance in orange if not balanced
      2015- 3-12 done - git #aabdbf7

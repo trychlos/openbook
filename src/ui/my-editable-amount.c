@@ -28,6 +28,7 @@
 
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/my-editable-amount.h"
 
@@ -192,10 +193,8 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 	gboolean is_ok;
 	gunichar ithchar;
 	gchar *ithpos;
-	gint decimal_dot;
 
 	is_ok = TRUE;
-	decimal_dot = 0;
 
 	if( !data->setting_text ){
 		for( i=0 ; i<new_text_length && is_ok ; ++i ){
@@ -221,8 +220,12 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 				is_ok = FALSE;
 				continue;
 			}
-			if( ithchar == '.' && decimal_dot == 0 ){
-				decimal_dot += 1;
+			if( ithchar == '.' && ofa_prefs_amount_accept_dot()){
+				data->has_decimal = TRUE;
+				continue;
+			}
+			if( ithchar == ',' && ofa_prefs_amount_accept_comma()){
+				data->has_decimal = TRUE;
 				continue;
 			}
 
@@ -232,9 +235,6 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 	}
 
 	if( is_ok ){
-		if( decimal_dot > 0 ){
-			data->has_decimal = TRUE;
-		}
 		g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_inserted, data );
 		gtk_editable_insert_text( editable, new_text, new_text_length, position );
 		g_signal_handlers_unblock_by_func( editable, ( gpointer ) on_text_inserted, data );

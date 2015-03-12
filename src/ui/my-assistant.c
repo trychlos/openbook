@@ -33,7 +33,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/my-assistant.h"
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 /* private instance data
  */

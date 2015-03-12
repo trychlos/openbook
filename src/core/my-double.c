@@ -36,7 +36,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 /* we have to deal with:
  * - from locale to prefs display (this is needed so that we do not

@@ -70,7 +70,7 @@ struct _ofaDossierDeletePrivate {
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-delete.ui";
 static const gchar *st_ui_id            = "DossierDeleteDlg";
 
-static const gchar *st_delete_prefs_xml = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
+static const gchar *st_delete_prefs_xml = PKGCOREDIR "/ofa-dossier-delete-prefs.piece.ui";
 static const gchar *st_delete_prefs_ui  = "DossierDeleteWindow";
 
 /* keep the dbserver admin password */

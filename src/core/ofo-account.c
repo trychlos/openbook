@@ -47,7 +47,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 /* priv instance data
  */

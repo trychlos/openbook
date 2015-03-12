@@ -173,10 +173,10 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-pdf-entries-balance.$(OBJEXT) ofa-pdf-books.$(OBJEXT) \
 	ofa-pdf-dialog.$(OBJEXT) ofa-pdf-ledgers.$(OBJEXT) \
 	ofa-pdf-reconcil.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
-	ofa-preferences.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rates-page.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
-	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
-	ofa-tree-store.$(OBJEXT) ofa-view-entries.$(OBJEXT)
+	ofa-rate-properties.$(OBJEXT) ofa-rates-page.$(OBJEXT) \
+	ofa-reconciliation.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
+	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
+	ofa-view-entries.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -282,6 +282,7 @@ AM_CFLAGS = @AM_CFLAGS@
 AM_CPPFLAGS = @AM_CPPFLAGS@ -I $(top_srcdir) -I $(top_srcdir)/src \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\" \
 	-DG_LOG_DOMAIN=\"OFA\" -DPKGUIDIR=\"$(ui_datadir)\" \
+	-DPKGCOREDIR=\"$(core_datadir)\" \
 	-DPKGCSSDIR=\"$(css_datadir)\" -DPKGLIBDIR=\""$(pkglibdir)"\" \
 	-DSYSCONFDIR=\"$(sysconfdir)\" \
 	-DICONFNAME=\"$(icondir)/$(icondata)\" $(OPENBOOK_CFLAGS) \
@@ -454,6 +455,7 @@ top_srcdir = @top_srcdir@
 # these two next lines to be kept synchronized with data/icons/Makefile.am
 icondir = $(datadir)/icons/hicolor/48x48/apps
 icondata = openbook-48x48.png
+core_datadir = $(pkgdatadir)/core
 ui_datadir = $(pkgdatadir)/ui
 css_datadir = $(pkgdatadir)/css
 BUILT_SOURCES = \
@@ -630,7 +632,6 @@ openbook_SOURCES = \
 	ofa-pdf-reconcil.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
-	ofa-preferences.c									\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
 	ofa-rates-page.c									\
@@ -675,7 +676,6 @@ ui_files = \
 	ofa-currency-properties.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
-	ofa-dossier-delete-prefs.piece.ui					\
 	ofa-dossier-display-notes.ui						\
 	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
@@ -695,7 +695,6 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
-	ofa-preferences.ui									\
 	ofa-print-accounts-balance.ui						\
 	ofa-print-entries-balance.ui						\
 	ofa-print-books.ui									\
@@ -922,7 +921,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-ledgers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-reconcil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rates-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconciliation.Po@am__quote@

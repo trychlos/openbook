@@ -46,7 +46,7 @@
 
 #include "core/my-window-prot.h"
 #include "core/ofa-dbms-root-bin.h"
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"

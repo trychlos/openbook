@@ -35,7 +35,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-preferences.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/my-tab-label.h"
 #include "ui/ofa-accounts-page.h"

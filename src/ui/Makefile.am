@@ -28,6 +28,8 @@ bin_PROGRAMS = \
 	openbook											\
 	$(NULL)
 
+core_datadir = $(pkgdatadir)/core
+
 ui_datadir = $(pkgdatadir)/ui
 
 css_datadir = $(pkgdatadir)/css
@@ -38,6 +40,7 @@ AM_CPPFLAGS += \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
+	-DPKGCOREDIR=\"$(core_datadir)\"					\
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
@@ -219,7 +222,6 @@ openbook_SOURCES = \
 	ofa-pdf-reconcil.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
-	ofa-preferences.c									\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
 	ofa-rates-page.c									\
@@ -264,7 +266,6 @@ ui_files = \
 	ofa-currency-properties.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
-	ofa-dossier-delete-prefs.piece.ui					\
 	ofa-dossier-display-notes.ui						\
 	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
@@ -284,7 +285,6 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
-	ofa-preferences.ui									\
 	ofa-print-accounts-balance.ui						\
 	ofa-print-entries-balance.ui						\
 	ofa-print-books.ui									\

@@ -8,6 +8,33 @@
 
 	* src/ui/ofa-ope-template-properties.c: fix row deletion (todo #713).
 
+	New user preferences: whether to accept dot and/or comma as amount
+	decimal separator (todo #712)
+
+	* src/core/ofa-preferences.h: moves to src/api/ofa-preferences.h
+	* src/ui/ofa-preferences.c: moved to src/core/ofa-preferences.c
+	* src/ui/ofa-preferences.ui: moved to src/core/ofa-preferences.ui
+
+	* src/ui/my-editable-amount.c: accept decimal separator from user 
+	prefs.
+
+	* src/ui/ofa-dossier-delete-prefs.piece.ui,
+	* po/POTFILES.in
+	* src/api/Makefile.am
+	* src/core/Makefile.am
+	* src/core/my-double.c
+	* src/core/ofo-account.c
+	* src/ui/Makefile.am
+	* src/ui/my-assistant.c
+	* src/ui/ofa-account-store.c
+	* src/ui/ofa-accounts-book.c
+	* src/ui/ofa-application.c
+	* src/ui/ofa-dossier-delete.c
+	* src/ui/ofa-dossier-store.c
+	* src/ui/ofa-exercice-close-assistant.c
+	* src/ui/ofa-main-window.c
+	* src/ui/ofa-plugin-manager.c: updated accordingly.
+
 2015-03-10 Pierre Wieser <pwieser@trychlos.org>
 
 	Add all auto-generated files required to compile the application 
