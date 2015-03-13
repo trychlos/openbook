@@ -1,5 +1,7 @@
 2015-03-13 Pierre Wieser <pwieser@trychlos.org>
 
+	* configure.ac: post-release version bump.
+
 	* src/ui/ofa-reconciliation.c:
 	- let the user manually reconciliate an entry with a bat line (todo #721)
 	- fix BAT line proposition (todo #722)
