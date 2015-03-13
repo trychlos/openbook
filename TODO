@@ -359,7 +359,7 @@
                 expanded
 
  720 2015- 3-13 Reconciliation: when declining a proposition, should
-                search for the next 
+                search for the next
 
  723 2015- 3-13 Reconciliation: add footer lines
                 'left unreconciliated batlines' &
@@ -369,8 +369,6 @@
 
  725 2015- 3-13 Bat files list: order by descending id to get the most
                 recent on top of the list
-
- 726 2015- 3-13 Reconciliation: display count+unused batlines on top
 
  727
 
@@ -3278,6 +3276,9 @@
                 the batlines
                 fix: propose against un-reconciliated entry
      2015- 3-13 fixed - git #30d4d29
+
+ 726 2015- 3-13 Reconciliation: display count+unused batlines on top
+     2015- 3-13 done - git #f17be6c
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -5,6 +5,10 @@
 	- fix BAT line proposition (todo #722)
 	- display count+unused batlines (todo #726).
 
+	* src/ui/ofa-bat-store.c: sort per descending identifier (todo #725).
+
+	* src/ui/ofa-bat-treeview.c: add padding around the frame.
+
 2015-03-12 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #718).

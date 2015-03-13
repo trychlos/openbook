@@ -210,19 +210,23 @@ static void
 attach_top_widget( ofaBatTreeview *self )
 {
 	ofaBatTreeviewPrivate *priv;
-	GtkWidget *top_widget;
+	GtkWidget *top_widget, *frame;
 	GtkTreeSelection *select;
 	GtkWidget *scrolled;
 
 	priv = self->priv;
 
-	top_widget = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
+	top_widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( top_widget ), 4, 4, 4, 4 );
+
+	frame = gtk_frame_new( NULL );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+	gtk_container_add( GTK_CONTAINER( top_widget ), frame );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
 	gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( top_widget ), scrolled );
+	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
 
 	priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );

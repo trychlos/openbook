@@ -182,7 +182,8 @@ ofa_bat_store_new( ofoDossier *dossier )
 }
 
 /*
- * sorting the store per identifier
+ * sorting the store per descending identifier to get the most recent
+ * in the top of the list
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store )
@@ -201,7 +202,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore
 	g_free( asid );
 	g_free( bsid );
 
-	return( cmp );
+	return( -cmp );
 }
 
 static void
