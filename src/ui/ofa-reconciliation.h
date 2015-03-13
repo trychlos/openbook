@@ -32,6 +32,54 @@
  *
  * Display both entries from an account and a Bank Account Transaction
  * list, letting user reconciliate balanced lines.
+ *
+ * This is displayed as a tree view where:
+ * - entries (if any) are always at the level zero
+ * - bat lines may be:
+ *   . as the child of an entry if they are reconciliated with this same
+ *     entry, or proposed to
+ *   . at the level zero if they are not reconciliated nor may be
+ *     proposed to be reconciliated against any entry.
+ *
+ * An entry may have zero or one bat line child.
+ *
+ * Bat lines are inserted:
+ * - preferentially as the child of an entry:
+ *   . whether the entry against which the bat line has been previously
+ *     reconciliated
+ *   . or a proposed compatible entry:
+ *     > without yet any child
+ *     > not yet reconciliated
+ *     > with compatible amounts
+ * - or at level zero if no proposition can be made.
+ *
+ * Activating an entry row toggles the reconciliation state:
+ * - if the entry was reconciliated, then the reconciliation is undone
+ *   . if this entry had a reconciliated child, then the corresponding
+ *     bat line is set unreconciliated
+ * - if the entry was not reconciliated, then the reconciliation date
+ *   is taken from:
+ *   . the child bat line effect date if any
+ *   . the manual reconciliation date if set
+ *   . else (no reconciliation date) nothing happens.
+ *
+ * Activating a bat line row has no effect
+ *
+ * Selection can be multiple.
+ * Multiple selection is allowed if and only if it concerns one entry
+ * and one bat line, both compatible together.
+ * So selection count is zero, one or two (with the above condition).
+ *
+ * It is possible to import a bat file which concerns already manually
+ * reconciliated entries.
+ *
+ * Imported bat lines will not be proposed against the right entry as
+ * this later is already reconciliated. It is so possible to manually
+ * select the already reconciliated entry with the to-be reconciliated
+ * bat line and to 'Accept' the reconciliation.
+ *
+ * The automatic proposal may be wrong, and may thus be declined. The
+ * corresponding bat line is moved at tree view level zero.
  */
 
 #include "ui/ofa-page-def.h"

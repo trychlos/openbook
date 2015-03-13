@@ -1,6 +1,8 @@
 2015-03-13 Pierre Wieser <pwieser@trychlos.org>
 
-	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #722).
+	* src/ui/ofa-reconciliation.c:
+	- let the user manually reconciliate an entry with a bat line (todo #721)
+	- fix BAT line proposition (todo #722).
 
 2015-03-12 Pierre Wieser <pwieser@trychlos.org>
 

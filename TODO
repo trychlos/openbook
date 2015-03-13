@@ -366,21 +366,18 @@
                 (as we do not want a batline be marked used without a
                 corresponding entry)
 
- 722 2015- 3-13 Reconciliation: some bat lines are rightly imported but
-                not displayed (see lcl-201406, backup 20140630_1)
-                reason: proposition is evaluated first by amount;
-                these batlines are so proposed against entries of 
-                previous months whith the same amount which happen to
-                be already reconciliated; the filter so doesn't display
-                these entries (or only in 'All' mode), and thus nor
-                the batlines
-                fix: propose against un-reconciliated entry
-
  723 2015- 3-13 Reconciliation: add footer lines
                 'left unreconciliated batlines' &
                 'left unreconciliated entries'
 
- 724
+ 724 2015- 3-13 Reconciliation: add effect date filter
+
+ 725 2015- 3-13 Bat files list: order by descending id to get the most
+                recent on top of the list
+
+ 726 2015- 3-13 Reconciliation: display count+unused batlines on top
+
+ 727
 
 -----------------------------------------------------------------------
  DONE
@@ -3269,6 +3266,17 @@
 
  718 2015- 3-12 Reconciliation: wrong propositions
      2015- 3-12 fixed - git #fc690bd
+
+ 722 2015- 3-13 Reconciliation: some bat lines are rightly imported but
+                not displayed (see lcl-201406, backup 20140630_1)
+                reason: proposition is evaluated first by amount;
+                these batlines are so proposed against entries of 
+                previous months whith the same amount which happen to
+                be already reconciliated; the filter so doesn't display
+                these entries (or only in 'All' mode), and thus nor
+                the batlines
+                fix: propose against un-reconciliated entry
+     2015- 3-13 fixed - git #30d4d29
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
