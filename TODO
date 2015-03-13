@@ -354,7 +354,33 @@
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?
 
- 719
+ 719 2015- 3-13 Reconciliation: when new entries are added after having
+                already set a BAT file, new propositions are not 
+                expanded
+
+ 720 2015- 3-13 Reconciliation: when declining a proposition, should
+                search for the next 
+
+ 721 2015- 3-13 Reconciliation: be able to associate an entry with a
+                bat line - this makes the 'Accept' button useless
+                (as we do not want a batline be marked used without a
+                corresponding entry)
+
+ 722 2015- 3-13 Reconciliation: some bat lines are rightly imported but
+                not displayed (see lcl-201406, backup 20140630_1)
+                reason: proposition is evaluated first by amount;
+                these batlines are so proposed against entries of 
+                previous months whith the same amount which happen to
+                be already reconciliated; the filter so doesn't display
+                these entries (or only in 'All' mode), and thus nor
+                the batlines
+                fix: propose against un-reconciliated entry
+
+ 723 2015- 3-13 Reconciliation: add footer lines
+                'left unreconciliated batlines' &
+                'left unreconciliated entries'
+
+ 724
 
 -----------------------------------------------------------------------
  DONE

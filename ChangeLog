@@ -1,3 +1,7 @@
+2015-03-13 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #722).
+
 2015-03-12 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-reconciliation.c: fix BAT line proposition (todo #718).

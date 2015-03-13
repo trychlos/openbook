@@ -1762,6 +1762,7 @@ setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 	priv->bat_id = bat_id;
 	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	display_bat_lines( self );
+	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	default_expand_view( self );
 
 	bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
@@ -1858,13 +1859,14 @@ clear_bat_lines( ofaReconciliation *self )
 static void
 display_bat_lines( ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_display_bat_lines";
 	ofaReconciliationPrivate *priv;
 	GList *line;
 	ofoBatLine *batline;
 	gboolean done;
 	ofxCounter bat_ecr;
 	gdouble bat_amount;
-	gchar *sbat_deb, *sbat_cre;
+	gchar *sbat_deb, *sbat_cre, *bat_sdval;
 	GtkTreeIter *entry_iter;
 
 	priv = self->priv;
@@ -1884,7 +1886,15 @@ display_bat_lines( ofaReconciliation *self )
 		}
 
 		bat_ecr = ofo_bat_line_get_entry( batline );
-		/*g_debug( "batline: sdeb=%s, scre=%s, bat_ecr=%ld", sbat_deb, sbat_cre, bat_ecr );*/
+
+		if( 1 ){
+			bat_sdval = my_date_to_str( ofo_bat_line_get_deffect( batline ), MY_DATE_DMYY );
+			g_debug( "%s: batline: label=%s, dval=%s, sdeb=%s, scre=%s, bat_ecr=%ld",
+					thisfn, ofo_bat_line_get_label( batline ),
+					bat_sdval, sbat_deb, sbat_cre, bat_ecr );
+			g_free( bat_sdval );
+		}
+
 		if( bat_ecr > 0 ){
 			entry_iter = search_for_entry_by_number( self, bat_ecr );
 			if( entry_iter ){
@@ -1938,7 +1948,8 @@ default_expand_view( ofaReconciliation *self )
 			g_object_unref( object );
 
 			/* if an entry which has a child:
-			 * - collapse if entry reconciliated and batline points to this same entry
+			 * - collapse if entry is reconciliated and batline points
+			 *   to this same entry
 			 * - else expand */
 			if( OFO_IS_ENTRY( object )){
 				date = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
@@ -2172,10 +2183,11 @@ search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
 static GtkTreeIter *
 search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre )
 {
+	static const gchar *thisfn = "ofa_reconcilitation_search_for_entry_by_amount";
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter iter;
 	GtkTreeIter *entry_iter;
-	gchar *sdeb, *scre;
+	gchar *sdeb, *scre, *sdval;
 	GObject *object;
 	gboolean found;
 
@@ -2188,20 +2200,22 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 		while( TRUE ){
 			gtk_tree_model_get( child_tmodel,
 					&iter,
-					COL_DEBIT,   &sdeb,
-					COL_CREDIT,  &scre,
-					COL_OBJECT,  &object,
+					COL_DEBIT,     &sdeb,
+					COL_CREDIT,    &scre,
+					COL_DRECONCIL, &sdval,
+					COL_OBJECT,    &object,
 					-1 );
 			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
 			g_object_unref( object );
 
 			if( OFO_IS_ENTRY( object ) &&
+					!my_strlen( sdval ) &&
 					!gtk_tree_model_iter_has_child( child_tmodel, &iter )){
 
 				/* are the amounts compatible ?
 				 * a positive bat_amount implies that the entry should be a debit */
 				g_return_val_if_fail( g_utf8_strlen( sdeb, -1 ) || g_utf8_strlen( scre, -1 ), NULL );
-				g_debug( "examining entry: sdeb=%s, scre=%s", sdeb, scre );
+				/*g_debug( "examining entry: sdeb=%s, scre=%s", sdeb, scre );*/
 
 				if(( my_strlen( scre ) && my_strlen( sbat_deb ) && !g_utf8_collate( scre, sbat_deb )) ||
 						( my_strlen( sdeb ) && my_strlen( sbat_cre ) && !g_utf8_collate( sdeb, sbat_cre ))){
@@ -2221,8 +2235,9 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 			}
 		}
 	}
-
-	g_debug( "returning entry_iter=%p", ( void * ) entry_iter );
+	if( 1 ){
+		g_debug( "%s: returning entry_iter=%p", thisfn, ( void * ) entry_iter );
+	}
 	return( entry_iter );
 }
 
@@ -2233,8 +2248,9 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 static void
 update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter )
 {
+	static const gchar *thisfn = "ofa_reconciliation_update_candidate_entry";
 	GtkTreeModel *child_tmodel;
-	gchar *sdvaleur;
+	gchar *sdvaleur, *slabel;
 
 	g_return_if_fail( entry_iter );
 
@@ -2249,6 +2265,17 @@ update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIte
 			COL_DRECONCIL, sdvaleur,
 			-1 );
 
+	/* check the updated line */
+	if( 0 ){
+		gtk_tree_model_get(
+				child_tmodel,
+				entry_iter,
+				COL_LABEL, &slabel,
+				-1 );
+		g_debug( "%s: label=%s", thisfn, slabel );
+		g_free( slabel );
+	}
+
 	g_free( sdvaleur );
 }
 
@@ -2259,9 +2286,11 @@ static void
 insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 							GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre )
 {
+	static const gchar *thisfn = "ofa_reconciliation_insert_bat_line";
 	GtkTreeModel *child_tmodel;
 	const GDate *dope;
-	gchar *sdope;
+	gchar *sdope, *slabel;
+	ofxCounter line_id;
 	GtkTreeIter new_iter;
 
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
@@ -2285,6 +2314,13 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 				-1 );
 
 	g_free( sdope );
+
+	/* check for insertion */
+	if( 0 ){
+		gtk_tree_model_get( child_tmodel, &new_iter, COL_NUMBER, &line_id, COL_LABEL, &slabel, -1 );
+		g_debug( "%s: line=%ld, label=%s", thisfn, line_id, slabel );
+		g_free( slabel );
+	}
 }
 
 static const GDate *
