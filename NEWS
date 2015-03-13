@@ -15,9 +15,10 @@
 
  New features:
 
-	- Reconciliation: let the user manually associate an entry with a 
-	  bat line (todo #721)
-	- Reconciliation: remove the 'Accept all' button 
+	- Reconciliation: 
+	  . let the user manually associate an entry with a bat line (todo #721)
+	  . remove the 'Accept all' button 
+	  . display count+unused batlines (todo #726)
 
  Bug fixes:
 

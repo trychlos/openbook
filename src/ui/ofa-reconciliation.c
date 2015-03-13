@@ -102,7 +102,7 @@ struct _ofaReconciliationPrivate {
 	GDate              dconcil;
 	ofoDossier        *dossier;
 	GList             *handlers;
-	ofxCounter         bat_id;
+	ofoBat            *bat;
 	GList             *batlines;
 };
 
@@ -218,6 +218,7 @@ static void         on_clear_button_clicked( GtkButton *button, ofaReconciliatio
 static void         setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id );
 static void         clear_bat_lines( ofaReconciliation *self );
 static void         display_bat_lines( ofaReconciliation *self );
+static void         display_bat_count( ofaReconciliation *self );
 static void         default_expand_view( ofaReconciliation *self );
 static void         on_accept_clicked( GtkButton *button, ofaReconciliation *self );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
@@ -1814,24 +1815,34 @@ static void
 setup_bat_lines( ofaReconciliation *self, ofxCounter bat_id )
 {
 	ofaReconciliationPrivate *priv;
-	ofoBat *bat;
-	gchar *str;
 
 	priv = self->priv;
-	priv->bat_id = bat_id;
+	priv->bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
 	display_bat_lines( self );
 	default_expand_view( self );
 
-	bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
-	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), ofo_bat_get_uri( bat ));
-
-	str = g_markup_printf_escaped( "<i>(%u)</i>",
-			ofo_bat_get_count( bat, ofa_page_get_dossier( OFA_PAGE( self ))));
-	gtk_label_set_markup( GTK_LABEL( priv->count_label ), str );
-	g_free( str );
+	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), ofo_bat_get_uri( priv->bat ));
+	display_bat_count( self );
 
 	set_reconciliated_balance( self );
+}
+
+static void
+display_bat_count( ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	gchar *str;
+
+	priv = self->priv;
+
+	str = g_markup_printf_escaped( "(%u-<i>%u</i>)",
+			ofo_bat_get_count( priv->bat, ofa_page_get_dossier( OFA_PAGE( self ))),
+			ofo_bat_get_unused_count(
+					ofa_page_get_dossier( OFA_PAGE( self )), ofo_bat_get_id( priv->bat )));
+	gtk_label_set_markup( GTK_LABEL( priv->count_label ), str );
+
+	g_free( str );
 }
 
 /*
@@ -1886,7 +1897,7 @@ clear_bat_lines( ofaReconciliation *self )
 
 	ofo_bat_line_free_dataset( priv->batlines );
 	priv->batlines = NULL;
-	priv->bat_id = 0;
+	priv->bat = NULL;
 
 	/* also reinit the GtkFileChooserButton and the corresponding label */
 	gtk_file_chooser_unselect_all( GTK_FILE_CHOOSER( priv->file_chooser ));
@@ -2053,7 +2064,7 @@ on_accept_clicked( GtkButton *button, ofaReconciliation *self )
 	GtkTreePath *ent_path;
 
 	priv = self->priv;
-	g_return_if_fail( priv->bat_id > 0 );
+	g_return_if_fail( priv->bat && OFO_IS_BAT( priv->bat ));
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	selected = gtk_tree_selection_get_selected_rows( select, &sort_model );
@@ -2095,6 +2106,7 @@ on_accept_clicked( GtkButton *button, ofaReconciliation *self )
 
 	ofo_bat_line_set_entry( OFO_BAT_LINE( batline ), ofo_entry_get_number( OFO_ENTRY( entry )));
 	ofo_bat_line_update( OFO_BAT_LINE( batline ), ofa_page_get_dossier( OFA_PAGE( self )));
+	display_bat_count( self );
 	g_object_ref( batline );
 
 	gtk_tree_store_remove( GTK_TREE_STORE( store_model ), bat_iter );
@@ -2139,7 +2151,7 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 	ofxAmount amount;
 
 	priv = self->priv;
-	g_return_if_fail( priv->bat_id > 0 );
+	g_return_if_fail( priv->bat && OFO_IS_BAT( priv->bat ));
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	selected = gtk_tree_selection_get_selected_rows( select, &sort_model );
@@ -2527,16 +2539,19 @@ static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconciliation_on_row_activated";
+	ofaReconciliation *self;
 	ofaReconciliationPrivate *priv;
 
 	g_debug( "%s: view=%p, path=%p, column=%p, page=%p",
 			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) page );
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	self = OFA_RECONCILIATION( page );
+	priv = self->priv;
 
-	if( toggle_rappro( OFA_RECONCILIATION( page ), path )){
+	if( toggle_rappro( self, path )){
+		display_bat_count( self );
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		set_reconciliated_balance( OFA_RECONCILIATION( page ));
+		set_reconciliated_balance( self );
 	}
 }
 

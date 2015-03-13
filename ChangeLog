@@ -2,7 +2,8 @@
 
 	* src/ui/ofa-reconciliation.c:
 	- let the user manually reconciliate an entry with a bat line (todo #721)
-	- fix BAT line proposition (todo #722).
+	- fix BAT line proposition (todo #722)
+	- display count+unused batlines (todo #726).
 
 2015-03-12 Pierre Wieser <pwieser@trychlos.org>
 

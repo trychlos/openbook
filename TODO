@@ -361,11 +361,6 @@
  720 2015- 3-13 Reconciliation: when declining a proposition, should
                 search for the next 
 
- 721 2015- 3-13 Reconciliation: be able to associate an entry with a
-                bat line - this makes the 'Accept' button useless
-                (as we do not want a batline be marked used without a
-                corresponding entry)
-
  723 2015- 3-13 Reconciliation: add footer lines
                 'left unreconciliated batlines' &
                 'left unreconciliated entries'
@@ -3266,6 +3261,12 @@
 
  718 2015- 3-12 Reconciliation: wrong propositions
      2015- 3-12 fixed - git #fc690bd
+
+ 721 2015- 3-13 Reconciliation: be able to associate an entry with a
+                bat line - this makes the 'Accept' button useless
+                (as we do not want a batline be marked used without a
+                corresponding entry)
+     2015- 3-13 done - git #27f95bc
 
  722 2015- 3-13 Reconciliation: some bat lines are rightly imported but
                 not displayed (see lcl-201406, backup 20140630_1)
