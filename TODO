@@ -365,11 +365,6 @@
                 'left unreconciliated batlines' &
                 'left unreconciliated entries'
 
- 724 2015- 3-13 Reconciliation: add effect date filter
-
- 727 2015- 3-14 ViewEntries: doesn't show all entries for an account
-                (eg TVA collectée)
-
  728
 
 -----------------------------------------------------------------------
@@ -3277,12 +3272,19 @@
                 fix: propose against un-reconciliated entry
      2015- 3-13 fixed - git #30d4d29
 
+ 724 2015- 3-13 Reconciliation: add effect date filter
+     2015- 3-14 done - git #c886e4e
+
  725 2015- 3-13 Bat files list: order by descending id to get the most
                 recent on top of the list
      2015- 3-13 done - git #c4d7aa4
 
  726 2015- 3-13 Reconciliation: display count+unused batlines on top
      2015- 3-13 done - git #f17be6c
+
+ 727 2015- 3-14 ViewEntries: doesn't show all entries for an account
+                (eg TVA collectée)
+     2015- 3-14 this seems to be fixed when adding effect dates filter
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

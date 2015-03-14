@@ -549,8 +549,8 @@ set_checks_result( ofaCheckBalancesBin *bin )
 	if( !priv->result ){
 		my_utils_dialog_error(
 				_( "We have detected losses of balance in your books.\n\n"
-					"In this current state, we are unable to close this exercice\n"
-					"until you fix your balances." ));
+					"In this current state, we will be unable to close this "
+					"exercice until you fix your balances." ));
 
 	} else {
 		priv->result &= cmp_lists( bin, priv->entries_list, priv->ledgers_list );
@@ -568,8 +568,8 @@ set_checks_result( ofaCheckBalancesBin *bin )
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "\nThough each book is individually balanced, it appears "
 						"that some distorsion has happened among them.\n"
-						"In this current state, we are unable to close this exercice "
-						"until you fix your balances." ));
+						"In this current state, we will be unable to close this "
+						"exercice until you fix your balances." ));
 		}
 	}
 }
