@@ -45,6 +45,7 @@
 #include "ui/my-cell-renderer-date.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -87,8 +88,6 @@ struct _ofaViewEntriesPrivate {
 	 */
 	ofoDossier        *dossier;			/* dossier */
 	const GDate       *dossier_opening;
-	GDate              d_from;
-	GDate              d_to;
 	GList             *handlers;
 	gboolean           initializing;
 
@@ -113,10 +112,7 @@ struct _ofaViewEntriesPrivate {
 
 	/* frame 2: effect dates layout
 	 */
-	GtkEntry          *we_from;
-	GtkLabel          *wl_from;
-	GtkEntry          *we_to;
-	GtkLabel          *wl_to;
+	ofaDateFilterBin  *effect_filter;
 
 	/* frame 3: entry status
 	 */
@@ -217,8 +213,7 @@ static const gchar *st_ui_id            = "ViewEntriesWindow";
 static const gchar *st_pref_selection   = "ViewEntriesSelection";
 static const gchar *st_pref_ledger      = "ViewEntriesLedger";
 static const gchar *st_pref_account     = "ViewEntriesAccount";
-static const gchar *st_pref_d_from      = "ViewEntriesDFrom";
-static const gchar *st_pref_d_to        = "ViewEntriesDTo";
+static const gchar *st_pref_effect      = "ViewEntriesEffectDates";
 static const gchar *st_pref_status      = "ViewEntriesStatus";
 static const gchar *st_pref_columns     = "ViewEntriesColumns";
 static const gchar *st_pref_sort_c      = "ViewEntriesSortC";
@@ -258,9 +253,7 @@ static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self 
 static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static void           display_entries_from_account( ofaViewEntries *self );
-static gboolean       on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static gboolean       on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date, const gchar *pref );
+static void           on_effect_filter_changed( ofaDateFilterBin *bin, gint who, const GDate *date, ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
@@ -375,9 +368,6 @@ ofa_view_entries_init( ofaViewEntries *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_VIEW_ENTRIES, ofaViewEntriesPrivate );
 	priv = self->priv;
-
-	my_date_clear( &priv->d_from );
-	my_date_clear( &priv->d_to );
 
 	/* default visible columns */
 	priv->initializing = TRUE;
@@ -573,47 +563,16 @@ static void
 setup_dates_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *text;
+	GtkWidget *container;
 
 	priv = self->priv;
 
-	priv->we_from = GTK_ENTRY( my_utils_container_get_child_by_name( priv->top_box, "f2-from" ));
-	priv->wl_from = GTK_LABEL( my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" ));
+	priv->effect_filter = ofa_date_filter_bin_new( st_pref_effect );
+	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_filter_changed ), self );
 
-	my_editable_date_init( GTK_EDITABLE( priv->we_from ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->we_from ), MY_DATE_DMYY );
-	my_editable_date_set_label( GTK_EDITABLE( priv->we_from ), GTK_WIDGET( priv->wl_from ), MY_DATE_DMMM );
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_from ), FALSE );
-
-	g_signal_connect(
-			G_OBJECT( priv->we_from ),
-			"focus-out-event", G_CALLBACK( on_d_from_focus_out ), self );
-
-	text = ofa_settings_get_string( st_pref_d_from );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &priv->d_from, text );
-	}
-	g_free( text );
-	my_editable_date_set_date( GTK_EDITABLE( priv->we_from ), &priv->d_from );
-
-	priv->we_to = GTK_ENTRY( my_utils_container_get_child_by_name( priv->top_box, "f2-to" ));
-	priv->wl_to = GTK_LABEL( my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" ));
-
-	my_editable_date_init( GTK_EDITABLE( priv->we_to ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->we_to ), MY_DATE_DMYY );
-	my_editable_date_set_label( GTK_EDITABLE( priv->we_to ), GTK_WIDGET( priv->wl_to ), MY_DATE_DMMM );
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_to ), FALSE );
-
-	g_signal_connect(
-			G_OBJECT( priv->we_to ),
-			"focus-out-event", G_CALLBACK( on_d_to_focus_out ), self );
-
-	text = ofa_settings_get_string( st_pref_d_to );
-	if( text && g_utf8_strlen( text, -1 )){
-		my_date_set_from_sql( &priv->d_to, text );
-	}
-	g_free( text );
-	my_editable_date_set_date( GTK_EDITABLE( priv->we_to ), &priv->d_to );
+	container = my_utils_container_get_child_by_name( priv->top_box, "effect-dates-filter" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->effect_filter ));
 }
 
 static void
@@ -1694,43 +1653,10 @@ display_entries_from_account( ofaViewEntries *self )
 	}
 }
 
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
+static void
+on_effect_filter_changed( ofaDateFilterBin *bin, gint who, const GDate *date, ofaViewEntries *self )
 {
-	return( on_date_focus_out( self, entry, &self->priv->d_from, st_pref_d_from ));
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
-{
-	return( on_date_focus_out( self, entry, &self->priv->d_to, st_pref_d_to ));
-}
-
-static gboolean
-on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date, const gchar *pref )
-{
-	gchar *sdate;
-
-	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
 	refresh_display( self );
-
-	if( my_editable_date_is_empty( GTK_EDITABLE( entry )) || my_date_is_valid( date )){
-		sdate = my_date_to_str( date, MY_DATE_SQL );
-		ofa_settings_set_string( pref, sdate );
-		g_free( sdate );
-	}
-
-	return( FALSE );
 }
 
 static void
@@ -1996,6 +1922,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 	ofoEntry *entry;
 	ofaEntryStatus status;
 	GDate deffect;
+	const GDate *effect_filter;
 
 	priv = self->priv;
 	visible = TRUE;
@@ -2045,15 +1972,17 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 
 			get_row_deffect( self, tmodel, iter, &deffect );
 			if( visible ){
-				ok = !my_date_is_valid( &priv->d_from ) ||
+				effect_filter = ofa_date_filter_bin_get_from( priv->effect_filter );
+				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
-						my_date_compare( &priv->d_from, &deffect ) <= 0;
+						my_date_compare( effect_filter, &deffect ) <= 0;
 				visible &= ok;
 			}
 			if( visible ){
-				ok = !my_date_is_valid( &priv->d_to ) ||
+				effect_filter = ofa_date_filter_bin_get_to( priv->effect_filter );
+				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
-						my_date_compare( &priv->d_to, &deffect ) >= 0;
+						my_date_compare( effect_filter, &deffect ) >= 0;
 				visible &= ok;
 			}
 		}
@@ -2150,7 +2079,6 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 {
 	static const gchar *thisfn = "ofa_view_entries_display_entries";
 	ofaViewEntriesPrivate *priv;
-	gchar *str;
 
 	g_return_if_fail( self && OFA_IS_VIEW_ENTRIES( self ));
 	g_return_if_fail( id && g_utf8_strlen( id, -1 ));
@@ -2164,23 +2092,16 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
-		str = my_date_to_str( begin, MY_DATE_DMYY );
-		gtk_entry_set_text( priv->we_from, str );
-		g_free( str );
-
-		str = my_date_to_str( end, MY_DATE_DMYY );
-		gtk_entry_set_text( priv->we_to, str );
-		g_free( str );
+		ofa_date_filter_bin_set_from( priv->effect_filter, begin );
+		ofa_date_filter_bin_set_to( priv->effect_filter, end );
 
 		/* then setup the general selection: changes on theses entries
 		 * will automativally trigger a display refresh */
 		if( type == OFO_TYPE_ACCOUNT ){
-
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
 			gtk_entry_set_text( priv->account_entry, id );
 
 		} else if( type == OFO_TYPE_LEDGER ){
-
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
 			ofa_ledger_combo_set_selected( priv->ledger_combo, id );
 		}

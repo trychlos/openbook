@@ -144,7 +144,7 @@ ofa_date_filter_bin_class_init( ofaDateFilterBinClass *klass )
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"date-changed",
+				"changed",
 				OFA_TYPE_DATE_FILTER_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -263,7 +263,7 @@ on_date_focus_out( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date
 		set_settings( bin );
 	}
 
-	g_signal_emit_by_name( bin, "date-changed", who, date );
+	g_signal_emit_by_name( bin, "changed", who, date );
 
 	return( FALSE );
 }
