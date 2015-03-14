@@ -110,13 +110,13 @@ typedef struct {
 }
 	sCurrency;
 
-static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-balance.ui";
+static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-entries-balance.ui";
 static const gchar *st_ui_id             = "PrintBalanceDlg";
 
 static const gchar *st_pref_uri          = "PDFEntriesBalanceURI";
 static const gchar *st_pref_settings     = "PDFEntriesBalanceSettings";
 
-static const gchar *st_def_fname         = "AccountsBalance.pdf";
+static const gchar *st_def_fname         = "EntriesBalance.pdf";
 static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 
 /* these are parms which describe the page layout
