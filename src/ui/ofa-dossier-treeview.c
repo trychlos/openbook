@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -405,16 +406,22 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 	visible = FALSE;
 	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_CODE, &code, -1 );
 
-	switch( priv->show_mode ){
-		case DOSSIER_SHOW_ALL:
-			visible = TRUE;
-			break;
-		case DOSSIER_SHOW_CURRENT:
-			visible = ( g_utf8_collate( code, DOS_STATUS_OPENED ) == 0 );
-			break;
-		case DOSSIER_SHOW_ARCHIVED:
-			visible = ( g_utf8_collate( code, DOS_STATUS_CLOSED ) == 0 );
-			break;
+	/* code may not be set when coming from DossierNewMini */
+	if( !my_strlen( code )){
+		visible = TRUE;
+
+	} else {
+		switch( priv->show_mode ){
+			case DOSSIER_SHOW_ALL:
+				visible = TRUE;
+				break;
+			case DOSSIER_SHOW_CURRENT:
+				visible = ( g_utf8_collate( code, DOS_STATUS_OPENED ) == 0 );
+				break;
+			case DOSSIER_SHOW_ARCHIVED:
+				visible = ( g_utf8_collate( code, DOS_STATUS_CLOSED ) == 0 );
+				break;
+		}
 	}
 	/*
 	g_debug( "is_visible_row: show_mode=%u, code=%s, visible=%s",
@@ -557,9 +564,9 @@ ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *
 				g_free( str );
 				if( !cmp ){
 					select = gtk_tree_view_get_selection( priv->tview );
-					gtk_tree_selection_select_iter( select, &iter );
-					/* move the cursor so that it is visible */
 					path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->store ), &iter );
+					gtk_tree_selection_select_path( select, path );
+					/* move the cursor so that it is visible */
 					gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
 					gtk_tree_path_free( path );
 					break;

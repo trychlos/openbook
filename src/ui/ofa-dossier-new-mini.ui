@@ -64,7 +64,7 @@
                 <property name="can_focus">False</property>
                 <property name="row_spacing">3</property>
                 <child>
-                  <object class="GtkAlignment" id="new-piece-parent">
+                  <object class="GtkAlignment" id="new-bin-parent">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
@@ -77,9 +77,6 @@
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
             </child>

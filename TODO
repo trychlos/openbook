@@ -365,7 +365,12 @@
                 'left unreconciliated batlines' &
                 'left unreconciliated entries'
 
- 728
+ 728 2015- 3-14 PrintLedgers: entries should be ordered by ascending
+                operation date
+
+ 729 2015- 3-14 PrintLedgers: have an option to print a summary
+
+ 730
 
 -----------------------------------------------------------------------
  DONE
