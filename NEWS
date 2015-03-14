@@ -17,17 +17,20 @@
 
 	- Reconciliation: 
 	  . let the user manually associate an entry with a bat line (todo #721)
-	  . remove the 'Accept all' button 
+	  . remove the 'Accept all' button
+	  . have an effect dates filter (todo #724).
 	  . display count+unused batlines (todo #726).
 	- BAT files: now defaults to order the list by descending identifier,
 	  in order to get the most recent in the top of the list (todo #725).
 
  Bug fixes:
 
+   - fix EntriesBalance labels.
    - todo #722: fix proposition of reconciliation.
 
  Other changes:
 
+   - new ofaDateFilterBin composite widget.
 
 -----------------------------------------------------------------------
  Version 0.36

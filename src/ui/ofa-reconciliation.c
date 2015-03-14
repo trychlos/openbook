@@ -46,6 +46,7 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-buttons-box.h"
+#include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-pdf-reconcil.h"
@@ -65,6 +66,7 @@ struct _ofaReconciliationPrivate {
 	/* UI - filtering mode
 	 */
 	GtkComboBox       *mode;
+	ofaDateFilterBin  *effect_filter;
 
 	/* UI - manual conciliation
 	 */
@@ -165,6 +167,7 @@ static const sConcil st_concils[] = {
 #define COLOR_BAT_BACKGROUND            "#80ff80"	/* green */
 
 static const gchar *st_reconciliation   = "Reconciliation";
+static const gchar *st_effect_dates     = "ReconciliationEffects";
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
@@ -181,6 +184,7 @@ G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_PAGE )
 
 static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_account_selection( ofaPage *page );
+static GtkWidget   *setup_effect_dates( ofaPage *page );
 static GtkWidget   *setup_manual_rappro( ofaPage *page );
 static GtkWidget   *setup_auto_rappro( ofaPage *page );
 static GtkWidget   *setup_account_display( ofaPage *page );
@@ -190,6 +194,7 @@ static GtkWidget   *setup_balance( ofaPage *page );
 static GtkWidget   *v_setup_buttons( ofaPage *page );
 static void         v_init_view( ofaPage *page );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
+static void         on_effect_dates_changed( ofaDateFilterBin *filter, gint who, const GDate *date, ofaReconciliation *self );
 static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
 static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self );
 static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
@@ -329,7 +334,7 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	GtkGrid *grid;
-	GtkWidget *account, *rappro, *tview, *buttons, *soldes;
+	GtkWidget *account, *effect, *rappro, *tview, *buttons, *soldes;
 
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( grid ), 4 );
@@ -340,13 +345,17 @@ v_setup_view( ofaPage *page )
 	account = setup_account_selection( page );
 	gtk_grid_attach( grid, account, 0, 0, 1, 1 );
 
+	/* effect dates filter */
+	effect = setup_effect_dates( page );
+	gtk_grid_attach( grid, effect, 1, 0, 1, 1 );
+
 	/* manual reconciliation (enter a date) */
 	rappro = setup_manual_rappro( page );
-	gtk_grid_attach( grid, rappro, 1, 0, 1, 1 );
+	gtk_grid_attach( grid, rappro, 2, 0, 1, 1 );
 
 	/* auto reconciliation from imported BAT file */
 	rappro = setup_auto_rappro( page );
-	gtk_grid_attach( grid, rappro, 2, 0, 1, 1 );
+	gtk_grid_attach( grid, rappro, 3, 0, 1, 1 );
 
 	/* account label and balance header display */
 	account = setup_account_display( page );
@@ -482,6 +491,19 @@ setup_account_selection( ofaPage *page )
 			"changed", G_CALLBACK( on_filter_entries_changed ), page );
 
 	return( GTK_WIDGET( frame ));
+}
+
+static GtkWidget *
+setup_effect_dates( ofaPage *page )
+{
+	ofaReconciliationPrivate *priv;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	priv->effect_filter = ofa_date_filter_bin_new( st_effect_dates );
+	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_dates_changed ), page );
+
+	return( GTK_WIDGET( priv->effect_filter ));
 }
 
 static GtkWidget *
@@ -944,6 +966,18 @@ v_get_top_focusable_widget( const ofaPage *page )
 	return( GTK_WIDGET( OFA_RECONCILIATION( page )->priv->tview ));
 }
 
+static void
+on_effect_dates_changed( ofaDateFilterBin *filter, gint who, const GDate *date, ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+
+	priv = self->priv;
+
+	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+
+	set_reconciliated_balance( self );
+}
+
 /*
  * sorting the treeview
  *
@@ -1128,9 +1162,12 @@ on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self )
 static gboolean
 is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self )
 {
-	gboolean visible;
+	ofaReconciliationPrivate *priv;
+	gboolean visible, ok;
 	GObject *object;
+	const GDate *deffect, *filter;
 
+	priv = self->priv;
 	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &object, -1 );
 
 	/* as we insert the row before populating it, it may happen that
@@ -1144,6 +1181,23 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 	visible = OFO_IS_ENTRY( object ) ?
 			is_visible_entry( self, tmodel, iter, OFO_ENTRY( object )) :
 			is_visible_batline( self, OFO_BAT_LINE( object ));
+
+	if( visible ){
+		deffect = OFO_IS_ENTRY( object ) ?
+				ofo_entry_get_deffect( OFO_ENTRY( object )) :
+				ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
+		g_return_val_if_fail( my_date_is_valid( deffect ), FALSE );
+		/* check against lower limit */
+		filter = ofa_date_filter_bin_get_from( priv->effect_filter );
+		ok = !my_date_is_valid( filter ) ||
+				my_date_compare( filter, deffect ) <= 0;
+		visible &= ok;
+		/* check against upper limit */
+		filter = ofa_date_filter_bin_get_to( priv->effect_filter );
+		ok = !my_date_is_valid( filter ) ||
+				my_date_compare( filter, deffect ) >= 0;
+		visible &= ok;
+	}
 
 	return( visible );
 }

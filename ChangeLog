@@ -10,6 +10,11 @@
 	* src/ui/Makefile.am,
 	* src/ui/Makefile.in: updated accordingly.
 
+	* src/ui/ofa-view-entries.c: makes use of ofaDateFilterBin widget.
+
+	* src/ui/ofa-reconciliation.c: makes use of ofaDateFilterBin widget
+	 (todo #724).
+
 	* src/ui/ofa-pdf-entries-balance.c,
 	* src/ui/ofa-print-entries-balance.ui: fix 'Entries Balance' labels.
 
