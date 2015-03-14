@@ -1,3 +1,18 @@
+2015-03-14 Pierre Wieser <pwieser@trychlos.org>
+
+	Define a new date filter composite widget ofaDateFilterBin
+
+	* src/ui/ofa-date-filter-bin.c,
+	* src/ui/ofa-date-filter-bin.h:
+	src/ui/ofa-date-filter-bin.ui: new files.
+
+	* po/POTFILES.in,
+	* src/ui/Makefile.am,
+	* src/ui/Makefile.in: updated accordingly.
+
+	* src/ui/ofa-pdf-entries-balance.c,
+	* src/ui/ofa-print-entries-balance.ui: fix 'Entries Balance' labels.
+
 2015-03-13 Pierre Wieser <pwieser@trychlos.org>
 
 	* configure.ac: post-release version bump.

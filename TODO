@@ -367,7 +367,10 @@
 
  724 2015- 3-13 Reconciliation: add effect date filter
 
- 727
+ 727 2015- 3-14 ViewEntries: doesn't show all entries for an account
+                (eg TVA collectée)
+
+ 728
 
 -----------------------------------------------------------------------
  DONE
