@@ -31,6 +31,9 @@
 
 	* src/core/ofo-ope-template.c: updated accordingly.
 
+	* src/core/ofo-entry.c: doesn't reverse order when printing ledgers
+	(todo #728)
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin

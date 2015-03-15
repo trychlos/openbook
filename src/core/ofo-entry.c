@@ -1054,7 +1054,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
 
 	g_string_free( query, TRUE );
 
-	return( g_list_reverse( dataset ));
+	return( dataset );
 }
 
 /**
