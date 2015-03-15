@@ -338,10 +338,8 @@
                 reconciliable (resp. settleable), and refuse the 
                 selection
 
- 712 2015- 3-11 accept comma as well as dot as decimal separator
-                (is a user pref ?)
-
- 714 2015- 3-11 associate an account with a piece ref (e.g. ESP -> 531)
+ 714 2015- 3-11 associate an account with a piece ref
+                (e.g. ESP->531, CCP->51441, and so on)
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?
@@ -356,9 +354,6 @@
  723 2015- 3-13 Reconciliation: add footer lines
                 'left unreconciliated batlines' &
                 'left unreconciliated entries'
-
- 728 2015- 3-14 PrintLedgers: entries should be ordered by ascending
-                operation date
 
  729 2015- 3-14 PrintLedgers: have an option to print a summary
 
@@ -3252,6 +3247,10 @@
  711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
      2013- 3-10 done - git #76b495e
 
+ 712 2015- 3-11 accept comma as well as dot as decimal separator
+                (is a user pref ?)
+     2015- 3-15 this has been included in v0.36
+
  713 2015- 3-11 segfault when deleting the row n°2 from an operation
                 template
                 GLib-GObject-WARNING **: invalid cast from 'GtkLabel' to 'GtkEntry'
@@ -3298,6 +3297,10 @@
  727 2015- 3-14 ViewEntries: doesn't show all entries for an account
                 (eg TVA collectée)
      2015- 3-14 this seems to be fixed when adding effect dates filter
+
+ 728 2015- 3-14 PrintLedgers: entries should be ordered by ascending
+                operation date
+     2015- 3-15 fixed - git #c3d9088
 
  730 2015- 3-15 Reconciliation: bank reconciliated account should not
                 depend of the filters

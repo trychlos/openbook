@@ -47,17 +47,19 @@
 /* private instance data
  */
 struct _ofaAccountsBookPrivate {
-	gboolean         dispose_has_run;
+	gboolean            dispose_has_run;
 
-	ofaMainWindow   *main_window;
-	ofoDossier      *dossier;
-	GList           *dos_handlers;
+	ofaMainWindow      *main_window;
+	ofoDossier         *dossier;
+	GList              *dos_handlers;
 
-	ofaAccountStore *store;
-	GList           *sto_handlers;
-	GtkNotebook     *book;
+	ofaAccountStore    *store;
+	GList              *sto_handlers;
+	GtkNotebook        *book;
+	GtkTreeCellDataFunc cell_fn;
+	void               *cell_data;
 
-	gint             prev_class;
+	gint                prev_class;
 };
 
 /* these are only default labels in the case where we were not able to
@@ -406,6 +408,28 @@ on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *sel
 }
 
 /**
+ * ofa_accounts_book_set_cell_data_func:
+ *
+ * Must be called before #ofa_accounts_book_set_main_window() in order
+ * to be taken into account.
+ */
+void
+ofa_accounts_book_set_cell_data_func( ofaAccountsBook *book, GtkTreeCellDataFunc fn_cell, void *user_data )
+{
+	ofaAccountsBookPrivate *priv;
+
+	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
+
+	priv = book->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->cell_fn = fn_cell;
+		priv->cell_data = user_data;
+	}
+}
+
+/**
  * ofa_accounts_book_set_main_window:
  *
  * This is required in order to get the dossier which will permit to
@@ -637,16 +661,22 @@ book_create_treeview( ofaAccountsBook *book, gint class_num, GtkContainer *paren
 static void
 book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 {
+	ofaAccountsBookPrivate *priv;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
+	GtkTreeCellDataFunc fn_cell;
+	void *fn_data;
+
+	priv = book->priv;
+	fn_cell = priv->cell_fn ? priv->cell_fn : ( GtkTreeCellDataFunc ) on_tview_cell_data_func;
+	fn_data = priv->cell_fn ? priv->cell_data : book;
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Number" ), cell, "text", ACCOUNT_COL_NUMBER, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_NUMBER ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -654,48 +684,42 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_LABEL ));
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_pixbuf_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				"", cell, "pixbuf", ACCOUNT_COL_NOTES_PNG, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_NOTES_PNG ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				_( "C" ), cell, "text", ACCOUNT_COL_CLOSED, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_CLOSED ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				_( "S" ), cell, "text", ACCOUNT_COL_SETTLEABLE, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_SETTLEABLE ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func(  column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				_( "R" ), cell, "text", ACCOUNT_COL_RECONCILIABLE, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_RECONCILIABLE ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				_( "F" ), cell, "text", ACCOUNT_COL_FORWARD, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_FORWARD ));
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
@@ -707,8 +731,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 	gtk_tree_view_column_add_attribute( column, cell, "text", ACCOUNT_COL_EXE_DEBIT );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
@@ -720,8 +743,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 	gtk_tree_view_column_add_attribute( column, cell, "text", ACCOUNT_COL_EXE_CREDIT );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
@@ -733,8 +755,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 	gtk_tree_view_column_add_attribute( column, cell, "text", ACCOUNT_COL_EXE_SOLDE );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 0.0, 0.5 );
@@ -745,8 +766,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 	gtk_tree_view_column_add_attribute( column, cell, "text", ACCOUNT_COL_CURRENCY );
 	gtk_tree_view_column_set_min_width( column, 40 );
 	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+	gtk_tree_view_column_set_cell_data_func( column, cell, fn_cell, fn_data, NULL );
 }
 
 /*
@@ -911,7 +931,9 @@ on_tview_delete( ofaAccountsBook *self )
 	}
 }
 
-/*
+/**
+ * ofa_accounts_book_cell_data_renderer:
+ *
  * level 1: not displayed (should not appear)
  * level 2 and root: bold, colored background
  * level 3 and root: colored background
@@ -919,6 +941,26 @@ on_tview_delete( ofaAccountsBook *self )
  *
  * detail accounts who have no currency are red written.
  */
+void
+ofa_accounts_book_cell_data_renderer( ofaAccountsBook *book,
+							GtkTreeViewColumn *tcolumn,
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	ofaAccountsBookPrivate *priv;
+
+	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
+	g_return_if_fail( tcolumn && GTK_IS_TREE_VIEW_COLUMN( tcolumn ));
+	g_return_if_fail( cell && GTK_IS_CELL_RENDERER( cell ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+
+	priv = book->priv;
+
+	if( !priv->dispose_has_run ){
+
+		on_tview_cell_data_func( tcolumn, cell, tmodel, iter, book );
+	}
+}
+
 static void
 on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,

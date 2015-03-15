@@ -710,7 +710,7 @@ on_account_selection( ofaOpeTemplateProperties *self, gint row )
 	number = ofa_account_select_run(
 					MY_WINDOW( self )->prot->main_window,
 					gtk_entry_get_text( entry ),
-					FALSE );
+					OFA_ALLOW_DETAIL );
 	if( my_strlen( number )){
 		gtk_entry_set_text( entry, number );
 	}

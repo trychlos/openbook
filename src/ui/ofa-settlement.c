@@ -773,7 +773,7 @@ on_account_select( GtkButton *button, ofaSettlement *self )
 	account_number = ofa_account_select_run(
 							ofa_page_get_main_window( OFA_PAGE( self )),
 							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
-							FALSE );
+							OFA_ALLOW_SETTLEABLE );
 	if( account_number ){
 		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account_number );
 		g_free( account_number );

@@ -34,6 +34,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-account-store.h"
 #include "ui/ofa-accounts-book.h"
 #include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-main-window.h"
@@ -44,11 +45,12 @@ struct _ofaAccountSelectPrivate {
 
 	/* input data
 	 */
-	gboolean          allow_root;
+	gint              allowed;
 
 	/* UI
 	 */
 	ofaAccountsFrame *accounts_frame;
+	ofaAccountsBook  *accounts_book;
 	GtkWidget        *ok_btn;
 	GtkWidget        *msg_label;
 
@@ -65,10 +67,12 @@ static GtkWindow        *st_toplevel    = NULL;
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
+static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
 static void      on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
+static gboolean  is_selection_valid_by_account( ofaAccountSelect *self, const ofoAccount *account );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
 static void      set_message( ofaAccountSelect *self, const gchar *str );
@@ -156,7 +160,7 @@ on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
  * that must be g_free() by the caller
  */
 gchar *
-ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gboolean allow_root )
+ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
@@ -195,7 +199,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 	g_free( priv->account_number );
 	priv->account_number = NULL;
-	priv->allow_root = allow_root;
+	priv->allowed = allowed;
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
@@ -223,6 +227,9 @@ v_init_dialog( myDialog *dialog )
 
 	priv->accounts_frame = ofa_accounts_frame_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->accounts_frame ));
+	priv->accounts_book = ofa_accounts_frame_get_book( priv->accounts_frame );
+	ofa_accounts_book_set_cell_data_func(
+			priv->accounts_book, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
 	ofa_accounts_frame_set_main_window( priv->accounts_frame, MY_WINDOW( dialog )->prot->main_window );
 	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE );
 
@@ -230,6 +237,38 @@ v_init_dialog( myDialog *dialog )
 			G_OBJECT( priv->accounts_frame ), "changed", G_CALLBACK( on_account_changed ), dialog );
 	g_signal_connect(
 			G_OBJECT( priv->accounts_frame ), "activated", G_CALLBACK( on_account_activated ), dialog );
+}
+
+/*
+ * level 1: not displayed (should not appear)
+ * level 2 and root: bold, colored background
+ * level 3 and root: colored background
+ * other root: italic
+ *
+ * detail accounts who have no currency are red written.
+ */
+static void
+on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaAccountSelect *self )
+{
+	ofaAccountSelectPrivate *priv;
+	ofoAccount *account;
+	GdkRGBA color;
+
+	priv = self->priv;
+
+	ofa_accounts_book_cell_data_renderer( priv->accounts_book, tcolumn, cell, tmodel, iter );
+
+	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+	g_object_unref( account );
+
+	if( GTK_IS_CELL_RENDERER_TEXT( cell ) && !is_selection_valid_by_account( self, account )){
+		gdk_rgba_parse( &color, "#b0b0b0" );
+		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+	}
 }
 
 static void
@@ -250,14 +289,12 @@ static void
 check_for_enable_dlg( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
-	ofaAccountsBook *book;
 	gchar *account;
 	gboolean ok;
 
 	priv = self->priv;
 
-	book = ofa_accounts_frame_get_book( priv->accounts_frame );
-	account = ofa_accounts_book_get_selected( book );
+	account = ofa_accounts_book_get_selected( priv->accounts_book );
 	ok = is_selection_valid( self, account );
 	g_free( account );
 
@@ -267,12 +304,9 @@ check_for_enable_dlg( ofaAccountSelect *self )
 static gboolean
 is_selection_valid( ofaAccountSelect *self, const gchar *number )
 {
-	ofaAccountSelectPrivate *priv;
-	ofaAccountsBook *book;
 	gboolean ok;
 	ofoAccount *account;
 
-	priv = self->priv;
 	ok = FALSE;
 	set_message( self, "" );
 
@@ -280,14 +314,49 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 		account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-		if( ofo_account_is_root( account ) && !priv->allow_root ){
-			book = ofa_accounts_frame_get_book( priv->accounts_frame );
-			ofa_accounts_book_toggle_collapse( book );
+		ok = is_selection_valid_by_account( self, account );
+	}
 
-		} else {
+	return( ok );
+}
+
+static gboolean
+is_selection_valid_by_account( ofaAccountSelect *self, const ofoAccount *account )
+{
+	ofaAccountSelectPrivate *priv;
+	gboolean ok;
+
+	priv = self->priv;
+	ok = FALSE;
+
+	if( !ok && ( priv->allowed & OFA_ALLOW_ALL )){
+		ok = TRUE;
+	}
+	if( !ok && ( priv->allowed & OFA_ALLOW_ROOT )){
+		if( ofo_account_is_root( account )){
 			ok = TRUE;
 		}
 	}
+	if( !ok && ( priv->allowed & OFA_ALLOW_DETAIL )){
+		if( !ofo_account_is_root( account )){
+			ok = TRUE;
+		}
+	}
+	if( !ok && ( priv->allowed & OFA_ALLOW_SETTLEABLE )){
+		if( ofo_account_is_settleable( account )){
+			ok = TRUE;
+		}
+	}
+	if( !ok && ( priv->allowed & OFA_ALLOW_RECONCILIABLE )){
+		if( ofo_account_is_reconciliable( account )){
+			ok = TRUE;
+		}
+	}
+
+	/*
+	g_debug( "is_selection_valid_by_account: allowed=%u, number=%s, ok=%s",
+			priv->allowed, ofo_account_get_number( account ), ok ? "True":"False" );
+	*/
 
 	return( ok );
 }

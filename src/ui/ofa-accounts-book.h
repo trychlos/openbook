@@ -76,6 +76,10 @@ GType            ofa_accounts_book_get_type            ( void ) G_GNUC_CONST;
 
 ofaAccountsBook *ofa_accounts_book_new                 ( void );
 
+void             ofa_accounts_book_set_cell_data_func  ( ofaAccountsBook *book,
+																GtkTreeCellDataFunc fn_cell,
+																void *user_data );
+
 void             ofa_accounts_book_set_main_window     ( ofaAccountsBook *book,
 																ofaMainWindow *main_window );
 
@@ -92,6 +96,12 @@ void             ofa_accounts_book_button_clicked      ( ofaAccountsBook *book,
 																gint button_id );
 
 GtkWidget       *ofa_accounts_book_get_current_treeview( const ofaAccountsBook *book );
+
+void             ofa_accounts_book_cell_data_renderer  ( ofaAccountsBook *book,
+																GtkTreeViewColumn *tcolumn,
+																GtkCellRenderer *cell,
+																GtkTreeModel *tmodel,
+																GtkTreeIter *iter );
 
 G_END_DECLS
 

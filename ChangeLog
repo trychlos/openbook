@@ -34,6 +34,27 @@
 	* src/core/ofo-entry.c: doesn't reverse order when printing ledgers
 	(todo #728)
 
+	Doesn't allow the selection of non-desired account, and draw them as
+	gray (todo #708)
+
+	* src/ui/ofa-account-select.h,
+	* src/ui/ofa-account-select.c: new enum selectable characteristics.
+
+	* src/ui/ofa-accounts-book.c,
+	* src/ui/ofa-accounts-book.h:
+	- new ofa_accounts_book_set_cell_data_func() method
+	- new ofa_accounts_book_cell_data_renderer() method.
+
+	* src/ui/ofa-closing-parms-bin.c,
+	* src/ui/ofa-guided-input-bin.c,
+	* src/ui/ofa-ope-template-properties.c,
+	* src/ui/ofa-pdf-books.c,
+	* src/ui/ofa-pdf-entries-balance.c,
+	* src/ui/ofa-pdf-reconcil.c,
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-settlement.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin

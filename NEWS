@@ -15,6 +15,7 @@
 
  New features:
 
+	- Account selection: draw in gray un-selectable account (todo #708).
 	- Reconciliation: 
 	  . let the user manually associate an entry with a bat line (todo #721)
 	  . remove the 'Accept all' button
