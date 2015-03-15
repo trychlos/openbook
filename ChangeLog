@@ -1,3 +1,12 @@
+2015-03-15 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-dossier-new-mini.ui: fix widget name.
+
+	* src/ui/ofa-dossier-treeview.c: fix code not set.
+
+	* src/ui/ofa-reconciliation.c: doesn't try to display the lines 
+	count if not BAT file is loaded. 
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin

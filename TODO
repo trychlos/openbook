@@ -370,7 +370,27 @@
 
  729 2015- 3-14 PrintLedgers: have an option to print a summary
 
- 730
+ 730 2015- 3-15 Reconciliation: bank reconciliated account should not
+                depend of the filters
+
+ 731 2015- 3-15 Reconciliation: when selecting two rows, make sure the
+                candidate entry doesn't already have a batline child
+
+ 732 2015- 3-15 have a misc option to consult the audit log
+
+ 733 2015- 3-15 be able to search for an entry
+
+ 734 2015- 3-15 when sorting entries, makes sure they are always in the
+                same order (add ent_number as last discriminant)
+
+ 735 2015- 3-15 closing ledger ui: center date label
+
+ 736 2015- 3-15 DMS integrity ui: make the textview fill vertically
+
+ 737 2015- 3-15 Exporting: entry models becomes ope templates
+                 + take into account the export settings
+
+ 738
 
 -----------------------------------------------------------------------
  DONE

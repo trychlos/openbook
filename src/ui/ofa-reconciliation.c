@@ -1895,7 +1895,6 @@ display_bat_count( ofaReconciliation *self )
 			ofo_bat_get_unused_count(
 					ofa_page_get_dossier( OFA_PAGE( self )), ofo_bat_get_id( priv->bat )));
 	gtk_label_set_markup( GTK_LABEL( priv->count_label ), str );
-
 	g_free( str );
 }
 
@@ -2603,7 +2602,9 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 	priv = self->priv;
 
 	if( toggle_rappro( self, path )){
-		display_bat_count( self );
+		if( priv->bat ){
+			display_bat_count( self );
+		}
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 		set_reconciliated_balance( self );
 	}
