@@ -2791,11 +2791,19 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
  *
  * Note that we have to iterate on the store model in order to count
  * all rows
+ *
+ * NB: quitting the application while the focus is in one of the two
+ * entries of the ofaDateFilterBin composite widget will trigger the
+ * finalization of the dossier (which is right) and a focus-out event
+ * for the entries. This event will so ask for an update of the
+ * reconciliated bank balance.
+ * As a result, this function may be called after the dossier is finalized.
  */
 static void
 set_reconciliated_balance( ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
+	ofoDossier *dossier;
 	gdouble debit, credit;
 	const gchar *account_number;
 	ofoAccount *account;
@@ -2807,70 +2815,74 @@ set_reconciliated_balance( ofaReconciliation *self )
 	gdouble amount;
 	gchar *str, *sdeb, *scre;
 
-	priv = self->priv;
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+	if( dossier && !ofo_dossier_has_dispose_run( dossier )){
+		priv = self->priv;
 
-	account_number = gtk_entry_get_text( priv->account );
-	g_return_if_fail( my_strlen( account_number ));
+		account_number = gtk_entry_get_text( priv->account );
+		g_return_if_fail( my_strlen( account_number ));
 
-	account = ofo_account_get_by_number(
-						ofa_page_get_dossier( OFA_PAGE( self )), account_number );
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+		account = ofo_account_get_by_number(
+							ofa_page_get_dossier( OFA_PAGE( self )), account_number );
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-	account_debit = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
-	account_credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
-	debit = account_credit;
-	credit = account_debit;
-	/*g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
+		account_debit = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
+		account_credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
+		debit = account_credit;
+		credit = account_debit;
+		/*g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 
-	tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
-	if( gtk_tree_model_get_iter_first( tstore, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tstore, &iter, COL_OBJECT, &object, -1 );
-			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
-			g_object_unref( object );
+		if( gtk_tree_model_get_iter_first( tstore, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tstore, &iter, COL_OBJECT, &object, -1 );
+				g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+				g_object_unref( object );
 
-			if( OFO_IS_ENTRY( object )){
-				if( ofo_entry_get_status( OFO_ENTRY( object )) != ENT_STATUS_DELETED ){
-					dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
-					if( !my_date_is_valid( dval )){
-						debit += ofo_entry_get_debit( OFO_ENTRY( object ));
-						credit += ofo_entry_get_credit( OFO_ENTRY( object ));
-						/*g_debug( "debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
+				if( OFO_IS_ENTRY( object )){
+					if( ofo_entry_get_status( OFO_ENTRY( object )) != ENT_STATUS_DELETED ){
+						dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
+						if( !my_date_is_valid( dval )){
+							debit += ofo_entry_get_debit( OFO_ENTRY( object ));
+							credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+							/*g_debug( "label=%s, debit=%lf, credit=%lf, solde=%lf",
+									ofo_entry_get_label( OFO_ENTRY( object )), debit, credit, debit-credit );*/
+						}
+					}
+
+				} else if( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
+					amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
+					if( amount < 0 ){
+						debit += -amount;
+					} else {
+						credit += amount;
 					}
 				}
-
-			} else if( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
-				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
-				if( amount < 0 ){
-					debit += -amount;
-				} else {
-					credit += amount;
+				if( !gtk_tree_model_iter_next( tstore, &iter )){
+					break;
 				}
 			}
-			if( !gtk_tree_model_iter_next( tstore, &iter )){
-				break;
-			}
 		}
+
+		/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
+		if( debit > credit ){
+			str = my_double_to_str( debit-credit );
+			sdeb = g_strdup_printf( _( "%s DB" ), str );
+			scre = g_strdup( "" );
+		} else {
+			sdeb = g_strdup( "" );
+			str = my_double_to_str( credit-debit );
+			scre = g_strdup_printf( _( "%s CR" ), str );
+		}
+
+		gtk_label_set_text( priv->bal_debit, sdeb );
+		gtk_label_set_text( priv->bal_credit, scre );
+
+		g_free( str );
+		g_free( sdeb );
+		g_free( scre );
 	}
-
-	/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
-	if( debit > credit ){
-		str = my_double_to_str( debit-credit );
-		sdeb = g_strdup_printf( _( "%s DB" ), str );
-		scre = g_strdup( "" );
-	} else {
-		sdeb = g_strdup( "" );
-		str = my_double_to_str( credit-debit );
-		scre = g_strdup_printf( _( "%s CR" ), str );
-	}
-
-	gtk_label_set_text( priv->bal_debit, sdeb );
-	gtk_label_set_text( priv->bal_credit, scre );
-
-	g_free( str );
-	g_free( sdeb );
-	g_free( scre );
 }
 
 /*

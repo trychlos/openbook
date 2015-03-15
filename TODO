@@ -189,14 +189,6 @@
                 so it is not urgent
      2015- 1- 8 nonetheless required to correctly implement field sep
 
- 466 2014-11-26 move ofoOpeTemplate to ofaBoxed
-     2015- 1- 5 really only required when ofoDossier will implement the
-                ofaIExportable interface *and* if exports any amounts -
-                so it is not urgent
-     2015- 1- 8 nonetheless required to correctly implement field sep
-     2015- 1-17 field sep is currently (and rightly) taken into account
-                by ImportAssistant 
-
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
                 among predefined values
@@ -369,12 +361,6 @@
                 operation date
 
  729 2015- 3-14 PrintLedgers: have an option to print a summary
-
- 730 2015- 3-15 Reconciliation: bank reconciliated account should not
-                depend of the filters
-
- 731 2015- 3-15 Reconciliation: when selecting two rows, make sure the
-                candidate entry doesn't already have a batline child
 
  732 2015- 3-15 have a misc option to consult the audit log
 
@@ -2301,6 +2287,15 @@
  465 2014-11-26 move ofoEntry to ofaBoxed
      2015- 1- 5 duplicate of #552
 
+ 466 2014-11-26 move ofoOpeTemplate to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+     2015- 1-17 field sep is currently (and rightly) taken into account
+                by ImportAssistant
+     2015- 3-15 done - git #2ca8762
+
  467 2014-11-26 move ofoRate to ofaBoxed
      2014-11-19 done - svn #4344
 
@@ -3303,6 +3298,27 @@
  727 2015- 3-14 ViewEntries: doesn't show all entries for an account
                 (eg TVA collectée)
      2015- 3-14 this seems to be fixed when adding effect dates filter
+
+ 730 2015- 3-15 Reconciliation: bank reconciliated account should not
+                depend of the filters
+     2015- 3-15 and it doesn't.
+
+ 731 2015- 3-15 Reconciliation: when selecting two rows, make sure the
+                candidate entry doesn't already have a batline child
+     2015- 3-15 this would mean:
+                - either the entry has no child
+                - or the entry has a child, and this child is the selected
+                  bat line
+                As an alternative, doing nothing means that the entry 
+                will be rightly reconciliated with the selected bat
+                line, and thus will have two children:
+                - the reconciliated bat line (right)
+                - the initially wrongly proposed bat line.
+                It is then enough to decline the initial bat line and
+                all is ok
+                -> so do nothing as this is not a bug and the user has
+                visually all the informations to decline the wrongly
+                proposed line
 
  735 2015- 3-15 closing ledger ui: center date label
      2015- 3-15 done - git #6798321
