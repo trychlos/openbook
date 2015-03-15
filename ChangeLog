@@ -14,6 +14,8 @@
 	* src/ui/ofa-check-integrity-bin.ui: the detail textview expands
 	vertically (todo #736).
 
+	* src/ui/ofa-ledger-close.ui: center the date label (todo #735).
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin
