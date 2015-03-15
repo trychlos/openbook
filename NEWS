@@ -29,6 +29,7 @@
    - todo #722: fix proposition of reconciliation.
    - fix widget name in DossierNewMini window.
    - fix DossierTreeview code not set when inserted from DossierNewMini.
+   - todo #736: DBMS integrity: the textview expands vertically.
    - todo #737: exporting entry models as operation templates. 
 
  Other changes:

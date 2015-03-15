@@ -387,8 +387,6 @@
 
  736 2015- 3-15 DMS integrity ui: make the textview fill vertically
 
- 737 2015- 3-15 Exporting: entry models becomes ope templates
-
  738
 
 -----------------------------------------------------------------------
@@ -3309,6 +3307,9 @@
  727 2015- 3-14 ViewEntries: doesn't show all entries for an account
                 (eg TVA collectée)
      2015- 3-14 this seems to be fixed when adding effect dates filter
+
+ 737 2015- 3-15 Exporting: entry models becomes ope templates
+     2015- 3-15 done - git #e3e3803
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

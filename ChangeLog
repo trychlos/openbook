@@ -11,6 +11,9 @@
 	* src/ui/ofa-export-assistant.ui: Entry models is renamed as
 	 OpeTemplates (todo #737).
 
+	* src/ui/ofa-check-integrity-bin.ui: the detail textview expands
+	vertically (todo #736).
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin
