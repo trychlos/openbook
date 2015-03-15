@@ -5,7 +5,11 @@
 	* src/ui/ofa-dossier-treeview.c: fix code not set.
 
 	* src/ui/ofa-reconciliation.c: doesn't try to display the lines 
-	count if not BAT file is loaded. 
+	count if no BAT file is loaded. 
+
+	* src/ui/ofa-export-assistant.c,
+	* src/ui/ofa-export-assistant.ui: Entry models is renamed as
+	 OpeTemplates (todo #737).
 
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 

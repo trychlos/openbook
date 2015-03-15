@@ -145,7 +145,7 @@ Press Continue.</property>
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="p2-model">
-                    <property name="label" translatable="yes">Reference : entry _models</property>
+                    <property name="label" translatable="yes">Reference : operation _templates</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>

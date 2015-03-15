@@ -142,14 +142,14 @@ typedef struct {
 	sTypes;
 
 static sTypes st_types[] = {
-		{ DATA_ACCOUNT,  "p2-account",  N_( "ofaAccounts.csv" ),   ofo_account_get_type },
-		{ DATA_CLASS,    "p2-class",    N_( "ofaClasses.csv" ),    ofo_class_get_type },
-		{ DATA_CURRENCY, "p2-currency", N_( "ofaCurrencies.csv" ), ofo_currency_get_type },
-		{ DATA_ENTRY,    "p2-entries",  N_( "ofaEntries.csv" ),    ofo_entry_get_type },
-		{ DATA_LEDGER,   "p2-ledger",   N_( "ofaLedgers.csv" ),    ofo_ledger_get_type },
-		{ DATA_MODEL,    "p2-model",    N_( "ofaModels.csv" ),     ofo_ope_template_get_type },
-		{ DATA_RATE,     "p2-rate",     N_( "ofaRates.csv" ),      ofo_rate_get_type },
-		{ DATA_DOSSIER,  "p2-dossier",  N_( "ofaDossier.csv" ),    ofo_dossier_get_type },
+		{ DATA_ACCOUNT,  "p2-account",  N_( "ofaAccounts.csv" ),     ofo_account_get_type },
+		{ DATA_CLASS,    "p2-class",    N_( "ofaClasses.csv" ),      ofo_class_get_type },
+		{ DATA_CURRENCY, "p2-currency", N_( "ofaCurrencies.csv" ),   ofo_currency_get_type },
+		{ DATA_ENTRY,    "p2-entries",  N_( "ofaEntries.csv" ),      ofo_entry_get_type },
+		{ DATA_LEDGER,   "p2-ledger",   N_( "ofaLedgers.csv" ),      ofo_ledger_get_type },
+		{ DATA_MODEL,    "p2-model",    N_( "ofaOpeTemplates.csv" ), ofo_ope_template_get_type },
+		{ DATA_RATE,     "p2-rate",     N_( "ofaRates.csv" ),        ofo_rate_get_type },
+		{ DATA_DOSSIER,  "p2-dossier",  N_( "ofaDossier.csv" ),      ofo_dossier_get_type },
 		{ 0 }
 };
 

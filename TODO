@@ -388,7 +388,6 @@
  736 2015- 3-15 DMS integrity ui: make the textview fill vertically
 
  737 2015- 3-15 Exporting: entry models becomes ope templates
-                 + take into account the export settings
 
  738
 

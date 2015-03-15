@@ -28,7 +28,8 @@
    - fix EntriesBalance labels.
    - todo #722: fix proposition of reconciliation.
    - fix widget name in DossierNewMini window.
-   - fix DossierTreeview code not set when inserted from DossierNewMini. 
+   - fix DossierTreeview code not set when inserted from DossierNewMini.
+   - todo #737: exporting entry models as operation templates. 
 
  Other changes:
 
