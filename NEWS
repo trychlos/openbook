@@ -26,6 +26,7 @@
  Bug fixes:
 
    - fix EntriesBalance labels.
+   - todo #466: move ofoOpeTemplate to ofaBox.
    - todo #722: fix proposition of reconciliation.
    - fix widget name in DossierNewMini window.
    - fix DossierTreeview code not set when inserted from DossierNewMini.
@@ -36,6 +37,8 @@
  Other changes:
 
    - new ofaDateFilterBin composite widget.
+   - new my_utils_char_replace() function.
+   - new ofa_box_get_csv_line_ex() function.
 
 -----------------------------------------------------------------------
  Version 0.36

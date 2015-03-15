@@ -16,6 +16,18 @@
 
 	* src/ui/ofa-ledger-close.ui: center the date label (todo #735).
 
+	* src/core/ofo-rate.c: fix export field separator.
+
+	Move ofoOpeTemplate to ofaBox (todo #466)
+
+	* src/api/my-utils.h,
+	* src/core/my-utils.c: new function my_utils_char_replace().
+
+	* src/api/ofa-box.h,
+	* src/core/ofa-box.c: new function ofa_box_get_csv_line_ex().
+
+	* src/core/ofo-ope-template.c: updated accordingly.
+
 2015-03-14 Pierre Wieser <pwieser@trychlos.org>
 
 	Define a new date filter composite widget ofaDateFilterBin

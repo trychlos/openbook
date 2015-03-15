@@ -390,6 +390,31 @@ my_utils_dialog_error( const gchar *msg )
 }
 
 /**
+ * my_utils_char_replace:
+ *
+ * Replace @old_ch char with @new_ch in string, returning a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+my_utils_char_replace( const gchar *string, gchar old_ch, gchar new_ch )
+{
+	gchar *str;
+	gint i;
+
+	str = g_strdup( string );
+
+	if( my_strlen( str ) && g_utf8_validate( str, -1, NULL )){
+		for( i=0 ; str[i] ; ++i ){
+			if( str[i] == old_ch ){
+				str[i] = new_ch;
+			}
+		}
+	}
+
+	return( str );
+}
+
+/**
  * my_utils_str_remove_suffix:
  * @string: source string.
  * @suffix: suffix to be removed from @string.

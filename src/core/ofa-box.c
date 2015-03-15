@@ -55,6 +55,7 @@ typedef struct {
 
 static gchar *get_csv_name( const ofsBoxDef *def );
 static gchar *compute_csv_name( const gchar *dbms_name );
+static void   set_decimal_point( gchar *str, gchar decimal_sep );
 
 /*
  * box_new:
@@ -703,8 +704,6 @@ compute_csv_name( const gchar *dbms_name )
  * Returns the line of a CSV-type export, with a semi-colon separator,
  * as a newly allocated string which should be g_free() by the caller.
  */
-static void set_decimal_point( gchar *str, gchar decimal_sep );
-
 gchar *
 ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_sep )
 {
@@ -734,6 +733,53 @@ ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_s
 		}
 
 		g_string_append_printf( line, "%s", str );
+		g_free( str );
+	}
+
+	return( g_string_free( line, FALSE ));
+}
+
+/**
+ * ofa_box_get_csv_line_ex:
+ */
+gchar *
+ofa_box_get_csv_line_ex( const GList *fields_list,
+		gchar field_sep, gchar decimal_sep, CSVExportFunc cb, void *user_data )
+{
+	GString *line;
+	const GList *it;
+	const ofsBoxDef *def;
+	const sBoxHelpers *ihelper;
+	gchar *str, *str2;
+
+	line = g_string_new( "" );
+
+	for( it=fields_list ; it ; it=it->next ){
+
+		def = (( sBoxData * ) it->data )->def;
+		g_return_val_if_fail( def, NULL );
+
+		ihelper = box_get_helper_for_type( def->type );
+		g_return_val_if_fail( ihelper, NULL );
+
+		str = ihelper->to_csv_str_fn( it->data );
+		if( ihelper->type == OFA_TYPE_AMOUNT ){
+			set_decimal_point( str, decimal_sep );
+		}
+
+		if( cb ){
+			str2 = cb( def, ihelper->type, str, user_data );
+		} else {
+			str2 = g_strdup( str );
+		}
+
+		if( line->len ){
+			line = g_string_append_c( line, field_sep );
+		}
+
+		g_string_append_printf( line, "%s", str2 );
+
+		g_free( str2 );
 		g_free( str );
 	}
 

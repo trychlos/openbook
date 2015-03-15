@@ -383,8 +383,6 @@
  734 2015- 3-15 when sorting entries, makes sure they are always in the
                 same order (add ent_number as last discriminant)
 
- 735 2015- 3-15 closing ledger ui: center date label
-
  738
 
 -----------------------------------------------------------------------
@@ -3305,6 +3303,9 @@
  727 2015- 3-14 ViewEntries: doesn't show all entries for an account
                 (eg TVA collectée)
      2015- 3-14 this seems to be fixed when adding effect dates filter
+
+ 735 2015- 3-15 closing ledger ui: center date label
+     2015- 3-15 done - git #6798321
 
  736 2015- 3-15 DMS integrity ui: make the textview fill vertically
      2015- 3-15 fixed - git #ed300ed

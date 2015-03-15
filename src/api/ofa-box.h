@@ -95,6 +95,11 @@ typedef struct {
  */
 #define OFA_BOX_CSV(N)                  OFA_BOX_DBMS(N), NULL
 
+/**
+ * a callback function which may be called on CSV exporting
+ */
+typedef gchar * ( *CSVExportFunc )( const ofsBoxDef *def, eBoxType type, const gchar *text, void *user_data );
+
 /* because DBMS keeps 5 digits after the decimal dot */
 #define PRECISION                       100000
 #define GPOINTER_TO_AMOUNT(P)           (((ofxAmount)(glong)(P))/PRECISION)
@@ -115,7 +120,12 @@ GList        *ofa_box_parse_dbms_result    ( const ofsBoxDef *defs, GSList *row 
 
 gchar        *ofa_box_get_csv_header       ( const ofsBoxDef *defs, gchar field_sep );
 
-gchar        *ofa_box_get_csv_line         ( const GList *fields_list, gchar field_sep, gchar decimal_sep );
+gchar        *ofa_box_get_csv_line         ( const GList *fields_list,
+													gchar field_sep, gchar decimal_sep );
+
+gchar        *ofa_box_get_csv_line_ex      ( const GList *fields_list,
+													gchar field_sep, gchar decimal_sep,
+													CSVExportFunc cb, void *user_data );
 
 gconstpointer ofa_box_get_value            ( const GList *fields_list, gint id );
 
