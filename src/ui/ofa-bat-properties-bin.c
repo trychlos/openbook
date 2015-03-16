@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -356,11 +357,11 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_bat_get_begin( bat ), ofa_prefs_date_display());
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_end( bat ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_bat_get_end( bat ), ofa_prefs_date_display());
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
 
@@ -427,8 +428,8 @@ display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
 	GtkTreeIter iter;
 
 	sid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
-	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), MY_DATE_DMYY );
-	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), MY_DATE_DMYY );
+	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
+	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
 	samount = my_double_to_str( ofo_bat_line_get_amount( line ));
 	number = ofo_bat_line_get_entry( line );
 	if( number ){

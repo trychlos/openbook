@@ -33,6 +33,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -145,13 +146,13 @@ ofa_dossier_misc_get_exercice_label( const GDate *begin, const GDate *end, gbool
 	svalue = g_string_new( is_current ? _( "Current exercice" ) : _( "Archived exercice" ));
 
 	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin , MY_DATE_DMYY );
+		sdate = my_date_to_str( begin , ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
 	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, MY_DATE_DMYY );
+		sdate = my_date_to_str( end, ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
 		g_free( sdate );
 	}

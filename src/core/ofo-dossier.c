@@ -35,6 +35,7 @@
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -1537,7 +1538,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 		}
 	}
 
-	str = my_date_to_str( dmax, MY_DATE_DMYY );
+	str = my_date_to_str( dmax, ofa_prefs_date_display());
 	g_debug( "%s: last_closed_exercice=%s", thisfn, str );
 	g_free( str );
 

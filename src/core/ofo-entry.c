@@ -38,6 +38,7 @@
 #include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -2016,8 +2017,8 @@ entry_compute_status( ofoEntry *entry, ofoDossier *dossier )
 			g_free( min_deffect );
 
 			if( !is_valid ){
-				sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
-				sdmin = my_date_to_str( min_deffect, MY_DATE_DMYY );
+				sdeffect = my_date_to_str( deffect, ofa_prefs_date_display());
+				sdmin = my_date_to_str( min_deffect, ofa_prefs_date_display());
 				g_warning(
 						"%s: entry effect date %s is lesser than minimal allowed %s",
 						thisfn, sdeffect, sdmin );
@@ -3093,7 +3094,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		/* what to do regarding the effect date ? */
 		if( !entry_compute_status( entry, dossier )){
-			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
 			msg = g_strdup_printf(
 					_( "entry effect date %s invalid regarding exercice beginning and ledger last closing dates" ),
 					sdeffect );

@@ -29,9 +29,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
-#include "api/ofo-dossier.h"
-
 #include "api/ofa-preferences.h"
+#include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-store.h"
 
@@ -225,8 +224,8 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 	my_date_set_from_str( &dbegin, sbegin, MY_DATE_SQL );
 	my_date_set_from_str( &dend, send, MY_DATE_SQL );
 
-	sdbegin = my_date_to_str( &dbegin, MY_DATE_DMYY );
-	sdend = my_date_to_str( &dend, MY_DATE_DMYY );
+	sdbegin = my_date_to_str( &dbegin, ofa_prefs_date_display());
+	sdend = my_date_to_str( &dend, ofa_prefs_date_display());
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),

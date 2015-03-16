@@ -39,6 +39,7 @@
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -569,9 +570,9 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 		for( it=rate->priv->validities ; it ; it=it->next ){
 			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
 			val_end = ofa_box_get_date( it->data, RAT_END );
-			sdate = my_date_to_str( date, MY_DATE_DMYY );
-			sbegin = my_date_to_str( val_begin, MY_DATE_DMYY );
-			send = my_date_to_str( val_end, MY_DATE_DMYY );
+			sdate = my_date_to_str( date, ofa_prefs_date_display());
+			sbegin = my_date_to_str( val_begin, ofa_prefs_date_display());
+			send = my_date_to_str( val_end, ofa_prefs_date_display());
 			g_debug( "ofo_rate_get_rate_at_date: date=%s, begin=%s, end=%s", sdate, sbegin, send );
 			g_free( sdate );
 			g_free( sbegin );

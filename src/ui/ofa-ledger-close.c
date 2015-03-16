@@ -30,6 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -231,10 +232,10 @@ v_init_dialog( myDialog *dialog )
 
 	priv->closing_entry = my_utils_container_get_child_by_name( container, "p1-date" );
 	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), MY_DATE_DMYY );
+	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
 	my_editable_date_set_date( GTK_EDITABLE( priv->closing_entry ), &priv->closing );
 	priv->date_label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p1-label" ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), GTK_WIDGET( priv->date_label ), MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), GTK_WIDGET( priv->date_label ), ofa_prefs_date_check());
 
 	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
 

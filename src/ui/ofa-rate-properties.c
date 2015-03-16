@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
@@ -316,7 +317,7 @@ add_empty_row( ofaRateProperties *self )
 	gtk_grid_attach( priv->grid, entry, COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	gtk_widget_set_hexpand( label, TRUE );
@@ -331,7 +332,7 @@ add_empty_row( ofaRateProperties *self )
 	gtk_grid_attach( priv->grid, entry, COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	gtk_widget_set_hexpand( label, TRUE );

@@ -30,6 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
 
@@ -444,7 +445,7 @@ get_min_val_date( ofoRate *rate )
 	dmin = ofo_rate_get_min_valid( rate );
 
 	if( my_date_is_valid( dmin )){
-		str = my_date_to_str( dmin, MY_DATE_DMMM );
+		str = my_date_to_str( dmin, ofa_prefs_date_check());
 		sbegin = g_strdup_printf( _( "from %s" ), str );
 		g_free( str );
 
@@ -464,7 +465,7 @@ get_max_val_date( ofoRate *rate )
 	dmax = ofo_rate_get_max_valid( rate );
 
 	if( my_date_is_valid( dmax )){
-		str = my_date_to_str( dmax, MY_DATE_DMMM );
+		str = my_date_to_str( dmax, ofa_prefs_date_check());
 		send = g_strdup_printf( _( "to %s" ), str );
 		g_free( str );
 

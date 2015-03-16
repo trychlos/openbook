@@ -33,6 +33,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -543,9 +544,9 @@ setup_manual_rappro( ofaPage *page )
 	label = GTK_LABEL( gtk_label_new( "" ));
 
 	my_editable_date_init( GTK_EDITABLE( priv->date_concil ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), MY_DATE_DMYY );
+	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
 	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
-	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), GTK_WIDGET( label ), MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), GTK_WIDGET( label ), ofa_prefs_date_check());
 
 	gtk_entry_set_width_chars( priv->date_concil, 10 );
 	gtk_label_set_mnemonic_widget( label, GTK_WIDGET( priv->date_concil ));
@@ -1718,7 +1719,7 @@ set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter,
 	gchar *sdope, *sdeb, *scre, *sdrap;
 	const GDate *dconcil;
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
 		sdeb = my_double_to_str( amount );
@@ -1732,7 +1733,7 @@ set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter,
 		scre = g_strdup( "" );
 	}
 	dconcil = ofo_entry_get_concil_dval( entry );
-	sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
+	sdrap = my_date_to_str( dconcil, ofa_prefs_date_display());
 
 	gtk_tree_store_set(
 			GTK_TREE_STORE( tstore ),
@@ -2003,7 +2004,7 @@ display_bat_lines( ofaReconciliation *self )
 		bat_ecr = ofo_bat_line_get_entry( batline );
 
 		if( 0 ){
-			bat_sdval = my_date_to_str( ofo_bat_line_get_deffect( batline ), MY_DATE_DMYY );
+			bat_sdval = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display());
 			g_debug( "%s: batline: label=%s, dval=%s, sdeb=%s, scre=%s, bat_ecr=%ld",
 					thisfn, ofo_bat_line_get_label( batline ),
 					bat_sdval, sbat_deb, sbat_cre, bat_ecr );
@@ -2367,7 +2368,7 @@ set_store_entry_dval( ofaReconciliation *self, GtkTreeIter *entry_store_iter, co
 
 	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
 
-	sdvaleur = my_date_to_str( dval, MY_DATE_DMYY );
+	sdvaleur = my_date_to_str( dval, ofa_prefs_date_display());
 
 	/* set the proposed reconciliation date in the entry */
 	gtk_tree_store_set(
@@ -2408,7 +2409,7 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
 
 	dope = get_bat_line_dope( self, batline );
-	sdope = my_date_to_str( dope, MY_DATE_DMYY );
+	sdope = my_date_to_str( dope, ofa_prefs_date_display());
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(
@@ -2657,7 +2658,7 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 			 * BAT */
 			} else {
 				/* if a proposed date has been set from a bat line */
-				my_date_set_from_str( &date, srappro, MY_DATE_DMYY );
+				my_date_set_from_str( &date, srappro, ofa_prefs_date_display());
 				if( my_date_is_valid( &date )){
 					g_debug( "toggle_rappro: srappro is valid" );
 					updated = reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
@@ -2754,11 +2755,11 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 			thisfn, is_valid_rappro ? "True":"False", ( void * ) batline );
 
 	if( is_valid_rappro ){
-		str = my_date_to_str( drappro, MY_DATE_DMYY );
+		str = my_date_to_str( drappro, ofa_prefs_date_display());
 
 	} else if( batline ){
 		dope = get_bat_line_dope( self, batline );
-		str = my_date_to_str( dope, MY_DATE_DMYY );
+		str = my_date_to_str( dope, ofa_prefs_date_display());
 
 	} else {
 		str = g_strdup( "" );

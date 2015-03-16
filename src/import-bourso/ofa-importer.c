@@ -36,6 +36,7 @@
 #include <api/my-date.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
+#include "api/ofa-preferences.h"
 #include <api/ofo-bat.h>
 
 #include "ofa-importer.h"
@@ -466,8 +467,8 @@ bourso_tabulated_text_v1_import( ofaBoursoImporter *bourso_importer, const gchar
 	sbat->currency = g_strndup( found+2, 3 );
 
 	if( ofo_bat_exists( priv->dossier, sbat->rib, &sbat->begin, &sbat->end )){
-		sbegin = my_date_to_str( &sbat->begin, MY_DATE_DMYY );
-		send = my_date_to_str( &sbat->end, MY_DATE_DMYY );
+		sbegin = my_date_to_str( &sbat->begin, ofa_prefs_date_display());
+		send = my_date_to_str( &sbat->end, ofa_prefs_date_display());
 		msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
 				sbat->rib, sbegin, send );
 		ofa_iimportable_set_message( OFA_IIMPORTABLE( bourso_importer ), 2, IMPORTABLE_MSG_ERROR, msg );

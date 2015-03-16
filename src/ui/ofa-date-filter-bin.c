@@ -28,6 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
@@ -204,8 +205,8 @@ setup_dialog( ofaDateFilterBin *bin )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), bin );
@@ -221,8 +222,8 @@ setup_dialog( ofaDateFilterBin *bin )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), bin );

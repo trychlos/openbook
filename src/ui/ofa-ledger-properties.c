@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -229,7 +230,7 @@ v_init_dialog( myDialog *dialog )
 	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
 	label = my_utils_container_get_child_by_name( container, "p1-last-close" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_date_to_str( &priv->closing, MY_DATE_DMYY );
+	str = my_date_to_str( &priv->closing, ofa_prefs_date_display());
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

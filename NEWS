@@ -28,6 +28,7 @@
 
    - fix EntriesBalance labels.
    - todo #466: move ofoOpeTemplate to ofaBox.
+   - todo #651: use date user preferences.
    - todo #722: fix proposition of reconciliation.
    - fix widget name in DossierNewMini window.
    - fix DossierTreeview code not set when inserted from DossierNewMini.

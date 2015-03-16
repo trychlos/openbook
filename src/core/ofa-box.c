@@ -33,6 +33,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
+#include "api/ofa-preferences.h"
 
 /**
  * sBoxData:
@@ -232,7 +233,7 @@ date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	if( str && g_utf8_strlen( str, -1 )){
 		box->is_null = FALSE;
 		my_date_set_from_sql( &box->date, str );
-		/*g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, MY_DATE_DMYY ));*/
+		/*g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, ofa_prefs_date_display()));*/
 	}
 
 	return( box );

@@ -28,6 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/ofa-preferences.h"
 #include "api/ofs-bat.h"
 
 static void bat_dump_detail( ofsBatDetail *detail, const gchar *thisfn );
@@ -46,10 +47,10 @@ ofs_bat_dump( const ofsBat *bat )
 	g_debug( "%s:     version=%u", thisfn, bat->version );
 	g_debug( "%s:         uri=%s", thisfn, bat->uri );
 	g_debug( "%s:      format=%s", thisfn, bat->format );
-	sbegin = my_date_to_str( &bat->begin, MY_DATE_DMYY );
+	sbegin = my_date_to_str( &bat->begin, ofa_prefs_date_display());
 	g_debug( "%s:       begin=%s", thisfn, sbegin );
 	g_free( sbegin );
-	send = my_date_to_str( &bat->end, MY_DATE_DMYY );
+	send = my_date_to_str( &bat->end, ofa_prefs_date_display());
 	g_debug( "%s:         end=%s", thisfn, send );
 	g_free( send );
 	g_debug( "%s:    currency=%s", thisfn, bat->currency );
@@ -68,8 +69,8 @@ bat_dump_detail( ofsBatDetail *detail, const gchar *thisfn )
 {
 	gchar *sdope, *sdeffect, *samount;
 
-	sdope = my_date_to_str( &detail->dope, MY_DATE_DMYY );
-	sdeffect = my_date_to_str( &detail->deffect, MY_DATE_DMYY );
+	sdope = my_date_to_str( &detail->dope, ofa_prefs_date_display());
+	sdeffect = my_date_to_str( &detail->deffect, ofa_prefs_date_display());
 	samount = my_double_to_str( detail->amount );
 
 	g_debug( "%s: version=%u, dope=%s, deffect=%s, ref=%s, label=%s, amount=%s, currency=%s",

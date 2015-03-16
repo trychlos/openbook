@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -427,13 +428,13 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 			*str = g_strdup( get_ledger_label( helper ));
 
 		} else if( !g_utf8_collate( field, "DOPE" )){
-			*str = my_date_to_str( &helper->ope->dope, MY_DATE_DMYY );
+			*str = my_date_to_str( &helper->ope->dope, ofa_prefs_date_display());
 
 		} else if( !g_utf8_collate( field, "DOMY" )){
 			*str = my_date_to_str( &helper->ope->dope, MY_DATE_MMYY );
 
 		} else if( !g_utf8_collate( field, "DEFFECT" )){
-			*str = my_date_to_str( &helper->ope->deffect, MY_DATE_DMYY );
+			*str = my_date_to_str( &helper->ope->deffect, ofa_prefs_date_display());
 
 		} else if( !g_utf8_collate( field, "REF" )){
 			*str = g_strdup( helper->ope->ref );
@@ -923,7 +924,7 @@ check_for_dates( sChecker *checker )
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
-				str = my_date_to_str( &dmin, MY_DATE_DMYY );
+				str = my_date_to_str( &dmin, ofa_prefs_date_display());
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
 						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
@@ -1146,8 +1147,8 @@ ofs_ope_dump( const ofsOpe *ope )
 	static const gchar *thisfn = "ofs_ope_dump";
 	gchar *sdope, *sdeffect;
 
-	sdope = my_date_to_str( &ope->dope, MY_DATE_DMYY );
-	sdeffect = my_date_to_str( &ope->deffect, MY_DATE_DMYY );
+	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display());
+	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display());
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
 			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s,"

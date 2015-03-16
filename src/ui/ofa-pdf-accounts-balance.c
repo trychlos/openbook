@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
@@ -321,13 +322,13 @@ init_date_selection( ofaPDFAccountsBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	my_editable_date_init( GTK_EDITABLE( widget ));
-	my_editable_date_set_format( GTK_EDITABLE( widget ), MY_DATE_DMYY );
+	my_editable_date_set_format( GTK_EDITABLE( widget ), ofa_prefs_date_display());
 	my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
 	priv->to_date_entry = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, ofa_prefs_date_check());
 	if( my_date_is_valid( &priv->to_date )){
 		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &priv->to_date );
 	}
@@ -545,7 +546,7 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 	stitle = g_string_new( "" );
 
 	if( my_date_is_valid( &priv->to_date )){
-		sto_date = my_date_to_str( &priv->to_date, MY_DATE_DMYY );
+		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display());
 		g_string_append_printf( stitle, _( "At %s" ), sto_date );
 		g_free( sto_date );
 

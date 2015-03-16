@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -847,10 +848,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 
 	switch( priv->sort_column_id ){
 		case ENT_COL_DOPE:
-			cmp = my_date_compare_by_str( sdopea, sdopeb, MY_DATE_DMYY );
+			cmp = my_date_compare_by_str( sdopea, sdopeb, ofa_prefs_date_display());
 			break;
 		case ENT_COL_DEFF:
-			cmp = my_date_compare_by_str( sdeffa, sdeffb, MY_DATE_DMYY );
+			cmp = my_date_compare_by_str( sdeffa, sdeffb, ofa_prefs_date_display());
 			break;
 		case ENT_COL_REF:
 			cmp = cmp_strings( self, srefa, srefb );
@@ -1130,8 +1131,8 @@ set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofo
 	gdouble amount;
 	gint set_number;
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
 		sdeb = my_double_to_str( amount );

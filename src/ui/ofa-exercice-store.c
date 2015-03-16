@@ -29,6 +29,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/ofa-exercice-store.h"
 
@@ -151,8 +152,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 	gtk_tree_model_get( tmodel, a, EXERCICE_COL_BEGIN, &abegin, -1 );
 	gtk_tree_model_get( tmodel, b, EXERCICE_COL_BEGIN, &bbegin, -1 );
 
-	my_date_set_from_str( &ad, abegin, MY_DATE_DMYY );
-	my_date_set_from_str( &bd, bbegin, MY_DATE_DMYY );
+	my_date_set_from_str( &ad, abegin, ofa_prefs_date_display());
+	my_date_set_from_str( &bd, bbegin, ofa_prefs_date_display());
 
 	if( my_date_is_valid( &ad )){
 		if( my_date_is_valid( &bd )){
@@ -198,10 +199,10 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, const gchar *dname )
 			array = g_strsplit(( const gchar * ) it->data, ";", -1 );
 
 			my_date_set_from_sql( &date, *(array+2));
-			sdbegin = my_date_to_str( &date, MY_DATE_DMYY );
+			sdbegin = my_date_to_str( &date, ofa_prefs_date_display());
 
 			my_date_set_from_sql( &date, *(array+3));
-			sdend = my_date_to_str( &date, MY_DATE_DMYY );
+			sdend = my_date_to_str( &date, ofa_prefs_date_display());
 
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( store ),

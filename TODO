@@ -333,11 +333,6 @@
                 would prevent the user to have to first select the digits
                 to be changed
 
- 708 2015- 3- 9 when selecting an account for reconciliation (resp.
-                settlement), display in gray those who are not 
-                reconciliable (resp. settleable), and refuse the 
-                selection
-
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
 
@@ -3233,6 +3228,12 @@
  704 2015- 3- 8 bat properties: display the count of unreconciliated
                 bat lines
      2015- 3- 8 done - git #ae4a022
+
+ 708 2015- 3- 9 when selecting an account for reconciliation (resp.
+                settlement), display in gray those who are not 
+                reconciliable (resp. settleable), and refuse the 
+                selection
+     2015- 3-15 done - git #522f283
 
  709 2015- 3-10 reconciliation: computing bank reconciliated balance is
                 wrong (see screen print)

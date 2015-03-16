@@ -39,6 +39,7 @@
 #include <api/my-utils.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
+#include "api/ofa-preferences.h"
 #include <api/ofo-bat.h>
 
 #include "ofa-importer.h"
@@ -389,8 +390,8 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 		if( page_i == 0 ){
 			bat = read_header( importer, page, rc_list );
 
-			sbegin = my_date_to_str( &bat->begin, MY_DATE_DMYY );
-			send = my_date_to_str( &bat->end, MY_DATE_DMYY );
+			sbegin = my_date_to_str( &bat->begin, ofa_prefs_date_display());
+			send = my_date_to_str( &bat->end, ofa_prefs_date_display());
 
 			if( ofo_bat_exists( priv->dossier, bat->rib, &bat->begin, &bat->end )){
 				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
@@ -520,7 +521,7 @@ read_header( ofaBoursoPdfImporter *importer, PopplerPage *page, GList *rc_list )
 			if( !g_utf8_collate( src->text, "du" )){
 				it = it->next;
 				src = ( sRC * ) it->data;
-				my_date_set_from_str( &bat->begin, src->text, MY_DATE_DMYY );
+				my_date_set_from_str( &bat->begin, src->text, ofa_prefs_date_display());
 				begin_found = TRUE;
 			}
 		}
@@ -529,7 +530,7 @@ read_header( ofaBoursoPdfImporter *importer, PopplerPage *page, GList *rc_list )
 			if( !g_utf8_collate( src->text, "au" )){
 				it = it->next;
 				src = ( sRC * ) it->data;
-				my_date_set_from_str( &bat->end, src->text, MY_DATE_DMYY );
+				my_date_set_from_str( &bat->end, src->text, ofa_prefs_date_display());
 				end_found = TRUE;
 			}
 		}
@@ -672,8 +673,8 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 		if( line->sdate ){
 			detail = g_new0( ofsBatDetail, 1 );
 			detail->version = 1;
-			my_date_set_from_str( &detail->dope, line->sdate, MY_DATE_DMYY );
-			my_date_set_from_str( &detail->deffect, line->svaleur, MY_DATE_DMYY );
+			my_date_set_from_str( &detail->dope, line->sdate, ofa_prefs_date_display());
+			my_date_set_from_str( &detail->deffect, line->svaleur, ofa_prefs_date_display());
 			detail->label = g_strdup( line->slabel );
 			debit = get_double_from_str( line->sdebit );
 			credit = get_double_from_str( line->scredit );

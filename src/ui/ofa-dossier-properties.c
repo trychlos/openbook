@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -592,7 +593,7 @@ is_dialog_valid( ofaDossierProperties *self )
 			return( FALSE );
 
 		} else if( my_date_is_valid( &priv->min_end ) && my_date_compare( &priv->min_end, &priv->end ) >=0 ){
-			sdate = my_date_to_str( &priv->min_end, MY_DATE_DMYY );
+			sdate = my_date_to_str( &priv->min_end, ofa_prefs_date_display());
 			msg = g_strdup_printf( _( "Invalid end of the exercice before or equal to the ledger last closure %s" ), sdate );
 			set_msgerr( self, msg, MSG_ERROR );
 			g_free( msg );

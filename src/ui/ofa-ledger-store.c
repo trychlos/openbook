@@ -28,6 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
@@ -226,9 +227,9 @@ set_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger, Gt
 	const GDate *dclose, *dentry;
 
 	dentry = ofo_ledger_get_last_entry( ledger, dossier );
-	sdentry = my_date_to_str( dentry, MY_DATE_DMYY );
+	sdentry = my_date_to_str( dentry, ofa_prefs_date_display());
 	dclose = ofo_ledger_get_last_close( ledger );
-	sdclose = my_date_to_str( dclose, MY_DATE_DMYY );
+	sdclose = my_date_to_str( dclose, ofa_prefs_date_display());
 	stamp  = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	gtk_list_store_set(

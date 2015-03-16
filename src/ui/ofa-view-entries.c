@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
@@ -1200,10 +1201,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 
 	switch( sort_column_id ){
 		case ENT_COL_DOPE:
-			cmp = my_date_compare_by_str( sdopea, sdopeb, MY_DATE_DMYY );
+			cmp = my_date_compare_by_str( sdopea, sdopeb, ofa_prefs_date_display());
 			break;
 		case ENT_COL_DEFF:
-			cmp = my_date_compare_by_str( sdeffa, sdeffb, MY_DATE_DMYY );
+			cmp = my_date_compare_by_str( sdeffa, sdeffb, ofa_prefs_date_display());
 			break;
 		case ENT_COL_NUMBER:
 			cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
@@ -1233,7 +1234,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 			cmp = cmp_counters( self, sstlmta, sstlmtb );
 			break;
 		case ENT_COL_DRECONCIL:
-			cmp = my_date_compare_by_str( sdcona, sdconb, MY_DATE_DMYY );
+			cmp = my_date_compare_by_str( sdcona, sdconb, ofa_prefs_date_display());
 			break;
 		case ENT_COL_STATUS:
 			cmp = cmp_strings( self, sstaa, sstab );
@@ -1714,14 +1715,14 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 
 	priv = self->priv;
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
 	sdeb = amount ? my_double_to_str( amount ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
 	scre = amount ? my_double_to_str( amount ) : g_strdup( "" );
 	d = ofo_entry_get_concil_dval( entry );
-	srappro = my_date_to_str( d, MY_DATE_DMYY );
+	srappro = my_date_to_str( d, ofa_prefs_date_display());
 	counter = ofo_entry_get_settlement_number( entry );
 	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
@@ -2375,7 +2376,7 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DOPE, &sdope, -1 );
 
 	if( sdope && g_utf8_strlen( sdope, -1 )){
-		my_date_set_from_str( &date, sdope, MY_DATE_DMYY );
+		my_date_set_from_str( &date, sdope, ofa_prefs_date_display());
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 
@@ -2412,7 +2413,7 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEFF, &sdeffect, -1 );
 
 	if( sdeffect && g_utf8_strlen( sdeffect, -1 )){
-		my_date_set_from_str( &deff, sdeffect, MY_DATE_DMYY );
+		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
 		if( my_date_is_valid( &deff )){
 			is_valid = TRUE;
 
@@ -2621,10 +2622,10 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 				ENT_COL_LEDGER, &mnemo,
 				-1 );
 
-	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
 	g_return_if_fail( my_date_is_valid( &dope ));
 
-	my_date_set_from_str( &deff, sdeffect, MY_DATE_DMYY );
+	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
 	g_return_if_fail( my_date_is_valid( &deff ));
 
 	g_return_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ));
@@ -2640,8 +2641,8 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	 * the row, then it is valid and will normally apply to account and
 	 * ledger */
 	if( my_date_compare( &deff, &deff_min ) < 0 ){
-		sdmin = my_date_to_str( &deff_min, MY_DATE_DMYY );
-		sdeff = my_date_to_str( &deff, MY_DATE_DMYY );
+		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display());
+		sdeff = my_date_to_str( &deff, ofa_prefs_date_display());
 		msg = g_strdup_printf(
 				_( "Effect date %s is less than the min effect date %s" ),
 				sdeff, sdmin );
@@ -2684,7 +2685,7 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 					ENT_COL_LEDGER, &mnemo,
 					-1 );
 
-		my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
 		g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), FALSE );
@@ -2696,7 +2697,7 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 			my_date_set_from_date( &deff_min, &dope );
 		}
 
-		sdeff = my_date_to_str( &deff_min, MY_DATE_DMYY );
+		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display());
 		gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_DEFF, sdeff, -1 );
 		g_free( sdeff );
 
@@ -2880,11 +2881,11 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		prev_credit = ofo_entry_get_credit( entry );
 	}
 
-	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
 	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 	ofo_entry_set_dope( entry, &dope );
 
-	my_date_set_from_str( &deff, sdeff, MY_DATE_DMYY );
+	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display());
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 	ofo_entry_set_deffect( entry, &deff );
 
@@ -3341,7 +3342,7 @@ get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, 
 	gchar *sdate;
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEFF, &sdate, -1 );
-	my_date_set_from_str( date, sdate, MY_DATE_DMYY );
+	my_date_set_from_str( date, sdate, ofa_prefs_date_display());
 	g_free( sdate );
 
 	return( date );

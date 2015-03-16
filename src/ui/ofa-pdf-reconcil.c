@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -327,13 +328,13 @@ init_date_selection( ofaPDFReconcil *self )
 
 	priv->date_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-entry" );
 	my_editable_date_init( GTK_EDITABLE( priv->date_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->date_entry ), MY_DATE_DMYY );
+	my_editable_date_set_format( GTK_EDITABLE( priv->date_entry ), ofa_prefs_date_display());
 	if( my_date_is_valid( &priv->date )){
 		my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &priv->date );
 	}
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-label" );
-	my_editable_date_set_label( GTK_EDITABLE( priv->date_entry ), widget, MY_DATE_DMMM );
+	my_editable_date_set_label( GTK_EDITABLE( priv->date_entry ), widget, ofa_prefs_date_check());
 }
 
 static void
@@ -610,7 +611,7 @@ iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operati
 	if( !my_date_is_valid( &date )){
 		my_date_set_from_date( &date, &priv->date );
 	}
-	sdate = my_date_to_str( &date, MY_DATE_DMYY );
+	sdate = my_date_to_str( &date, ofa_prefs_date_display());
 
 	priv->account_solde = ofo_account_get_global_solde( priv->account );
 	str_solde = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
@@ -654,7 +655,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	y = ofa_iprintable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
 
-	str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
 	ofa_iprintable_set_text( instance, context,
 			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
@@ -727,7 +728,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	if( !my_date_is_valid( &date ) || my_date_compare( &date, &priv->date ) < 0 ){
 		my_date_set_from_date( &date, &priv->date );
 	}
-	sdate = my_date_to_str( &date, MY_DATE_DMYY );
+	sdate = my_date_to_str( &date, ofa_prefs_date_display());
 
 	str_amount = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );

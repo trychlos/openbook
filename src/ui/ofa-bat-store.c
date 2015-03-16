@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
@@ -238,13 +239,13 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
 	sid = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
 	date = ofo_bat_get_begin( bat );
 	if( my_date_is_valid( date )){
-		sbegin = my_date_to_str( date, MY_DATE_DMYY );
+		sbegin = my_date_to_str( date, ofa_prefs_date_display());
 	} else {
 		sbegin = g_strdup( "" );
 	}
 	date = ofo_bat_get_end( bat );
 	if( my_date_is_valid( date )){
-		send = my_date_to_str( date, MY_DATE_DMYY );
+		send = my_date_to_str( date, ofa_prefs_date_display());
 	} else {
 		send = g_strdup( "" );
 	}

@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -484,7 +485,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, MY_DATE_DMYY );
+	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_display());
 
 	g_signal_connect(
 			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), bin );
@@ -495,7 +496,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, MY_DATE_DMYY );
+	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_display());
 
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), bin );

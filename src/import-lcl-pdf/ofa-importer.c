@@ -39,6 +39,7 @@
 #include <api/my-utils.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
+#include "api/ofa-preferences.h"
 #include <api/ofo-bat.h>
 
 #include "ofa-importer.h"
@@ -386,8 +387,8 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 		if( page_i == 0 ){
 			bat = read_header( importer, page, rc_list );
 
-			sbegin = my_date_to_str( &bat->begin, MY_DATE_DMYY );
-			send = my_date_to_str( &bat->end, MY_DATE_DMYY );
+			sbegin = my_date_to_str( &bat->begin, ofa_prefs_date_display());
+			send = my_date_to_str( &bat->end, ofa_prefs_date_display());
 
 			if( ofo_bat_exists( priv->dossier, bat->rib, &bat->begin, &bat->end )){
 				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
