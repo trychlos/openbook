@@ -23,6 +23,7 @@
 	  . display count+unused batlines (todo #726).
 	- BAT files: now defaults to order the list by descending identifier,
 	  in order to get the most recent in the top of the list (todo #725).
+	- BATs page: now able to import BAT file from there (todo #642).
 
  Bug fixes:
 

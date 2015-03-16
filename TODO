@@ -280,9 +280,6 @@
  642 2015- 2- 9 implement BAT page, import button
      2015- 2-15 for now, just disable it - svn #4599
 
- 651 2015- 2-15 replace fixed date and amount configurations with user
-                preferences (date display format, comma vs. dot)
-
  652 2015- 2-15 let the user configure colors
      2015- 3-13 (branch colors) doesn't know how to go back from custom 
                 in GtkColorChooserWidget (this is bad)
@@ -359,7 +356,9 @@
  734 2015- 3-15 when sorting entries, makes sure they are always in the
                 same order (add ent_number as last discriminant)
 
- 738
+ 738 2015- 3-16 ViewEntries: have a Delete button
+
+ 739
 
 -----------------------------------------------------------------------
  DONE
@@ -2977,6 +2976,11 @@
 
  650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
      2015- 2-15 done - svn #4602
+
+ 651 2015- 2-15 replace fixed date and amount configurations with user
+                preferences (date display format, comma vs. dot)
+     2015- 3-16 was already ok for amounts
+                done for dates - git #08a93b8
 
  654 2015- 2-17 GuidedInput: account label should be updated on account
                 change

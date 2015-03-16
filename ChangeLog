@@ -1,5 +1,7 @@
 2015-03-16 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-bats-page.c: import BAT file (todo #642).
+
 	Use date user preferences (todo #651)
 
 	* src/core/ofa-box.c,
