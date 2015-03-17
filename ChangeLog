@@ -1,5 +1,18 @@
 2015-03-17 Pierre Wieser <pwieser@trychlos.org>
 
+	Define new 'recurrent' plugin (todo #213)
+
+	* src/recurrent/Makefile.am,
+	* src/recurrent/Makefile.in,
+	* src/recurrent/ofa-module.c,
+	* src/recurrent/ofa-recurrent.c,
+	* src/recurrent/ofa-recurrent.h: new files.
+
+	* configure,
+	* configure.ac,
+	* src/Makefile.am,
+	* src/Makefile.in: updated accordingly.
+
 	Let the plugins access to the application menu (todo #705)
 
 	* src/api/ofa-extension.h: ofa_extension_startup() now takes a

@@ -145,6 +145,7 @@ AC_CONFIG_FILES([
 	src/import-lcl-pdf/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile
+	src/recurrent/Makefile
 	src/ui/Makefile
 ])
 
@@ -182,6 +183,7 @@ if test "${have_POSTGRE}" = "yes"; then
 else
 	$as_echo "	  PostgreSQL                    ${have_POSTGRE}"
 fi
+	$as_echo "	  Recurrent                     yes"
 	$as_echo " "
 
 if test "${have_MYSQL}" = "no" && test "${have_POSTGRE}" = "no"; then

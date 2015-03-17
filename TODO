@@ -318,9 +318,6 @@
                 (use case: when user wants to make sure he will not
                 modify it inadvertently)
 
- 705 2015- 3- 8 have an interface to add an item to the menubar
-                (use case: plugins)
-
  706 2015- 3- 9 be able to configure some user shortcuts (in particular,
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
@@ -3232,6 +3229,10 @@
  704 2015- 3- 8 bat properties: display the count of unreconciliated
                 bat lines
      2015- 3- 8 done - git #ae4a022
+
+ 705 2015- 3- 8 have an interface to add an item to the menubar
+                (use case: plugins)
+     2015- 3-17 done via 'main-window-created' signal - git #4dcb4e1
 
  708 2015- 3- 9 when selecting an account for reconciliation (resp.
                 settlement), display in gray those who are not 
