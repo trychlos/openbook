@@ -44,7 +44,8 @@ struct _ofaPluginPrivate {
 
 	/* api                                                             v1
 	 */
-	gboolean     ( *startup )           ( GTypeModule *module );	/* mandatory */
+	gboolean     ( *startup )           ( GTypeModule *module, GApplication *application );
+																	/* mandatory */
 	guint        ( *get_api_version )   ( void );					/* opt. */
 	const gchar *( *get_name )          ( void );					/* opt. */
 	const gchar *( *get_version_number )( void );					/* opt. */
@@ -59,9 +60,9 @@ static GList *st_modules = NULL;
 
 G_DEFINE_TYPE( ofaPlugin, ofa_plugin, G_TYPE_TYPE_MODULE )
 
-static ofaPlugin *plugin_new( const gchar *filename );
+static ofaPlugin *plugin_new( const gchar *filename, GApplication *application );
 static gboolean   v_plugin_load( GTypeModule *gmodule );
-static gboolean   is_an_ofa_plugin( ofaPlugin *plugin );
+static gboolean   is_an_ofa_plugin( ofaPlugin *plugin, GApplication *application );
 static gboolean   plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn );
 static void       register_module_types( ofaPlugin *plugin );
 static void       add_module_type( ofaPlugin *plugin, GType type );
@@ -176,7 +177,7 @@ ofa_plugin_dump( const ofaPlugin *plugin )
  * being managed by an #ofaPlugin instance.
  */
 gint
-ofa_plugin_load_modules( void )
+ofa_plugin_load_modules( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_plugin_load_modules";
 	const gchar *dirname = PKGLIBDIR;
@@ -202,7 +203,7 @@ ofa_plugin_load_modules( void )
 		while(( entry = g_dir_read_name( api_dir )) != NULL ){
 			if( g_str_has_suffix( entry, suffix )){
 				fname = g_build_filename( dirname, entry, NULL );
-				plugin = plugin_new( fname );
+				plugin = plugin_new( fname, application );
 				if( plugin ){
 					plugin->priv->name = my_utils_str_remove_suffix( entry, suffix );
 					st_modules = g_list_append( st_modules, plugin );
@@ -269,14 +270,14 @@ ofa_plugin_release_modules( void )
  * @fname: full pathname of the being-loaded dynamic library.
  */
 static ofaPlugin *
-plugin_new( const gchar *fname )
+plugin_new( const gchar *fname, GApplication *application )
 {
 	ofaPlugin *plugin;
 
 	plugin = g_object_new( OFA_TYPE_PLUGIN, NULL );
 	plugin->priv->path = g_strdup( fname );
 
-	if( !g_type_module_use( G_TYPE_MODULE( plugin )) || !is_an_ofa_plugin( plugin )){
+	if( !g_type_module_use( G_TYPE_MODULE( plugin )) || !is_an_ofa_plugin( plugin, application )){
 		g_object_unref( plugin );
 		return( NULL );
 	}
@@ -326,15 +327,16 @@ v_plugin_load( GTypeModule *gmodule )
  * if ok, we ask the plugin to initialize itself
  *
  * As of API v 1:
- * - only ofa_extension_list_types() is mandatory, and MUST be
- *   implemented by the plugin
- * - ofa_extension_startup() and ofa_extension_shutdown() are optional,
- *   and will be called on plugin startup (resp. shutdown) if they exist.
+ * - ofa_extension_startup() and ofa_extension_list_types() are
+ *   mandatory and MUST be implemented by the plugin; they are
+ *   successively called for each plugin
+ * - ofa_extension_shutdown() is optional and will be called on plugin
+ *   shutdown if it exists.
  * - ofa_extension_get_api_version is optional, and defaults to 1.
  * - ofa_extension_get_version_number is optional, and defaults to NULL.
  */
 static gboolean
-is_an_ofa_plugin( ofaPlugin *plugin )
+is_an_ofa_plugin( ofaPlugin *plugin, GApplication *application )
 {
 	static const gchar *thisfn = "ofa_plugin_is_an_ofa_plugin";
 	gboolean ok;
@@ -342,7 +344,7 @@ is_an_ofa_plugin( ofaPlugin *plugin )
 	ok =
 		plugin_check( plugin, "ofa_extension_startup" , ( gpointer * ) &plugin->priv->startup ) &&
 		plugin_check( plugin, "ofa_extension_list_types" , ( gpointer * ) &plugin->priv->list_types ) &&
-		plugin->priv->startup( G_TYPE_MODULE( plugin ));
+		plugin->priv->startup( G_TYPE_MODULE( plugin ), application );
 
 	if( ok ){
 		g_debug( "%s: %s: ok", thisfn, plugin->priv->path );

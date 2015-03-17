@@ -39,6 +39,7 @@
  * extension API.
  */
 
+#include <gio/gio.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -46,6 +47,7 @@ G_BEGIN_DECLS
 /**
  * ofa_extension_startup:
  * @module: the #GTypeModule of the plugin library being loaded.
+ * @application: [allow-none]: the calling #GApplication.
  *
  * This function is called by the plugin manager when
  * the plugin library is first loaded in memory. The library may so take
@@ -60,7 +62,7 @@ G_BEGIN_DECLS
  *     static GType st_module_type = 0;
  *
  *     gboolean
- *     ofa_extension_startup( GTypeModule *plugin )
+ *     ofa_extension_startup( GTypeModule *plugin, GApplication *application )
  *     {
  *         static GTypeInfo info = {
  *             sizeof( NadpDesktopProviderClass ),
@@ -92,7 +94,7 @@ G_BEGIN_DECLS
  * Returns: %TRUE if the initialization is successful, %FALSE else.
  * In this later case, the library is unloaded and no more considered.
  */
-gboolean     ofa_extension_startup           ( GTypeModule *module );
+gboolean     ofa_extension_startup           ( GTypeModule *module, GApplication *application );
 
 /**
  * ofa_extension_get_api_version:

@@ -43,11 +43,11 @@
  * mandatory starting with API v. 1.
  */
 gboolean
-ofa_extension_startup( GTypeModule *module )
+ofa_extension_startup( GTypeModule *module, GApplication *application )
 {
 	static const gchar *thisfn = "import-lcl/ofa_module_ofa_extension_startup";
 
-	g_debug( "%s: module=%p", thisfn, ( void * ) module );
+	g_debug( "%s: module=%p, application=%p", thisfn, ( void * ) module, ( void * ) application  );
 
 	ofa_lcl_importer_register_type( module );
 

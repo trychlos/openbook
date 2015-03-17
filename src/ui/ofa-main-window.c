@@ -600,6 +600,7 @@ ofa_main_window_new( const ofaApplication *application )
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
+	g_signal_emit_by_name(( gpointer ) application, "main-window-created", window );
 
 	g_object_get( G_OBJECT( application ),
 			OFA_PROP_APPLICATION_NAME, &window->priv->orig_title,

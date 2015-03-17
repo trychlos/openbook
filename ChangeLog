@@ -1,3 +1,23 @@
+2015-03-17 Pierre Wieser <pwieser@trychlos.org>
+
+	Let the plugins access to the application menu (todo #705)
+
+	* src/api/ofa-extension.h: ofa_extension_startup() now takes a
+	pointer to the GApplication.
+
+	* src/core/ofa-plugin.c,
+	* src/core/ofa-plugin.h,
+	* src/import-bourso-pdf/ofa-module.c,
+	* src/import-bourso/ofa-module.c,
+	* src/import-lcl-pdf/ofa-module.c,
+	* src/import-lcl/ofa-module.c,
+	* src/mysql/ofa-module.c,
+	* src/postgre/ofa-module.c: updated accordingly.
+
+	* src/ui/ofa-application.c: new "main-window-created" signal.
+
+	* src/ui/ofa-main-window.c: updated accordingly.
+
 2015-03-16 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-bats-page.c: import BAT file (todo #642).

@@ -85,6 +85,15 @@ enum {
 	OFA_PROP_ICON_NAME_ID,
 };
 
+/* signals defined here
+ */
+enum {
+	MAIN_WINDOW_CREATED = 0,
+	N_SIGNALS
+};
+
+static guint             st_signals[ N_SIGNALS ] = { 0 };
+
 static const gchar       *st_application_id     = "org.trychlos.openbook.ui";
 
 static const gchar       *st_application_name   = N_( "Open Freelance Accounting" );
@@ -342,6 +351,29 @@ ofa_application_class_init( ofaApplicationClass *klass )
 					"The name of the icon of the application",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	/**
+	 * ofaApplication::main-window-created:
+	 *
+	 * This signal is sent on the application when the main window has
+	 * been created.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaApplication  *application,
+	 * 						ofaMainWindow *main_window,
+	 * 						gpointer user_data );
+	 */
+	st_signals[ MAIN_WINDOW_CREATED ] = g_signal_new_class_handler(
+				"main-window-created",
+				OFA_TYPE_APPLICATION,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
 }
 
 /**
@@ -368,7 +400,7 @@ ofa_application_new( void )
 			NULL );
 
 	ofa_box_register_types();
-	ofa_plugin_load_modules();
+	ofa_plugin_load_modules( G_APPLICATION( application ));
 
 	return( application );
 }

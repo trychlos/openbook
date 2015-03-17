@@ -94,7 +94,7 @@ GType        ofa_plugin_get_type               ( void );
 void         ofa_plugin_dump                   ( const ofaPlugin *plugin );
 
 /* start/end of the application */
-gint         ofa_plugin_load_modules           ( void );
+gint         ofa_plugin_load_modules           ( GApplication *application );
 void         ofa_plugin_release_modules        ( void );
 
 /* each time we are searching for a given interface */
