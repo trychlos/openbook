@@ -10,6 +10,9 @@
 
 	* src/ui/ofa-main-window.c: define "my-dialog-init" new signal.
 
+	* src/import-lcl-pdf/ofa-importer.c: ignore lines whose label
+	begin at the 'date' column (fix #746).
+
 2015-03-17 Pierre Wieser <pwieser@trychlos.org>
 
 	Define new 'recurrent' plugin (todo #213)

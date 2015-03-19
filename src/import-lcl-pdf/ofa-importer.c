@@ -572,6 +572,7 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	gboolean next_is_last;
 	gchar *str;
 	gboolean dbg1;
+	GDate date;
 
 	g_debug( "%s: importer=%p, bat=%p, page=%p, page_i=%u, rc_list=%p",
 			thisfn, ( void * ) importer, ( void * ) bat, ( void * ) page, page_i, ( void * ) rc_list );
@@ -581,7 +582,7 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	lines = NULL;
 	next_is_last = FALSE;
 	prev_detail = NULL;
-	dbg1 = FALSE;
+	dbg1 = TRUE;
 
 	for( i=0, it=rc_list ; it ; ++i, it=it->next ){
 		src = ( sRC * ) it->data;
@@ -614,10 +615,15 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 				}
 
 				if( src->rc->x1 < st_label_min_x ){
-					g_free( line->sdate );
-					line->sdate = g_strdup( src->text );
-					if( dbg1 ){
-						g_debug( "%s: setting as date", thisfn );
+					get_dope_from_str( &date, bat, src->text );
+					if( my_date_is_valid( &date )){
+						g_free( line->sdate );
+						line->sdate = g_strdup( src->text );
+						if( dbg1 ){
+							g_debug( "%s: setting as date", thisfn );
+						}
+					} else if( dbg1 ){
+						g_debug( "%s: ignored", thisfn );
 					}
 
 				} else if( src->rc->x1 < st_valeur_min_x ){
@@ -667,6 +673,11 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	 *  its place - but we have yet to filter some useless lines */
 	for( it=lines ; it ; it=it->next ){
 		line = ( sLine * ) it->data;
+
+		/* ignore empty label */
+		if( !my_strlen( line->slabel )){
+			continue;
+		}
 
 		/* intermediate balance at the end of month - not taken into account */
 		if( !line->sdate &&
@@ -807,6 +818,9 @@ get_dot_dmyy( GDate *date, const gchar *sdate )
 	return( ok );
 }
 
+/*
+ * parse a dd.mm date
+ */
 static void
 get_dope_from_str( GDate *date, ofsBat *bat, const gchar *sdate )
 {

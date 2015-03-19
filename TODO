@@ -357,11 +357,42 @@
  738 2015- 3-16 ViewEntries: have a Delete button
 
  739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
+                cf. also #747
 
  740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
                 case of a rounding error
 
- 741
+ 741 2015- 3-19 we have an example of unbalanced entries/ledgers/accounts
+                appeared between PWIConsultants-20140731_1.gz (kept) and
+                PWIConsultants-20140731_1.gz (in TODO/741)
+                -> to be analyzed
+                -> ledgers are not correctly updated when modifying an
+                amount in ViewEntries
+
+ 742 2015- 3-19 RestoreAssistant: have a filter on *.gz
+
+ 743 2015- 3-19 Reconciliation: when onky displaying non reconciliated,
+                reconciliating a couple entry+batline makes this entry
+                disappear (normal), but the focus go to the next line
+                which becomes wrongly collapsed
+
+ 744 2015- 3-19 have an option to automatically check the balances when
+               opening the dossier
+
+ 745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
+                selected account is displayed
+
+ 746 2015- 3-19 when importing lcl-201408.pdf
+                GLib-CRITICAL **: g_str_has_prefix: assertion 'str != NULL' failed
+                in read_lines (rc_list=0xb8f200 = {...}, page_i=3, page=0x10afe80, bat=<optimized out>, importer=0x6e2d20) at ../../../src/import-lcl-pdf/ofa-importer.c:689
+#4  lcl_pdf_v1_import (importer=0x6e2d20, uri=uri@entry=0x9d4b40 "file:///home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/PWI-Consultants/2014/documents/lcl-201408.pdf")
+    at ../../../src/import-lcl-pdf/ofa-importer.c:416
+
+ 747 2015- 3-19 Reconciliation: accept multi-lines (1 debit+2 credits)
+                where sum(debit)=sum(credit)
+                use case: two peage tickets which are debited together
+
+ 748
 
 -----------------------------------------------------------------------
  DONE

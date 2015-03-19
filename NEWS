@@ -66,18 +66,19 @@
 
  Bug fixes:
 
-   - todo #2: use Github website URL
-   - todo #614: do not build PDF-aware plugins if poppler libs are missing.
-   - todo #615: make the MySQL plugin optional.
-   - todo #616: warns if no DBMS plugin is built.
-   - todo #702: compile with ISO C.
-   - todo #709: fix bank account balance computing in reconciliation.
-   - todo #710: put under git all files required to compile the application.
-   - todo #711: reconciliation doesn't display '0,00' amounts.
-   - todo #713: fix operation template detail row deletion.
-   - todo #715: view entries displays unbalanced solde in orange.
-   - todo #716: view entries doesn't display '0,00' amounts.
-   - todo #718: fix automatic appariement between entries and bat lines.
+   - #2: use Github website URL
+   - #614: do not build PDF-aware plugins if poppler libs are missing.
+   - #615: make the MySQL plugin optional.
+   - #616: warns if no DBMS plugin is built.
+   - #702: compile with ISO C.
+   - #709: fix bank account balance computing in reconciliation.
+   - #710: put under git all files required to compile the application.
+   - #711: reconciliation doesn't display '0,00' amounts.
+   - #713: fix operation template detail row deletion.
+   - #715: view entries displays unbalanced solde in orange.
+   - #716: view entries doesn't display '0,00' amounts.
+   - #718: fix automatic appariement between entries and bat lines.
+   - #746: ignore lines whose label begin at 'date' column.
 
  Other changes:
 
