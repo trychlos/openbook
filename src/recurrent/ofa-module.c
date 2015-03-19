@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <gtk/gtk.h>
+
 #include <api/ofa-extension.h>
 
 #include "ofa-recurrent.h"
@@ -36,6 +38,8 @@
  * - be addressed in ofa_extension_list_types().
  */
 #define OFA_TYPES_COUNT	1
+
+static void on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty );
 
 /*
  * ofa_extension_startup:
@@ -50,6 +54,8 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
 	g_debug( "%s: module=%p, application=%p", thisfn, ( void * ) module, ( void * ) application );
 
 	ofa_recurrent_register_type( module );
+
+	g_signal_connect( application, "main-window-created", G_CALLBACK( on_main_window_created ), NULL );
 
 	return( TRUE );
 }
@@ -126,4 +132,27 @@ ofa_extension_shutdown( void )
 	static const gchar *thisfn = "recurrent/ofa_module_ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
+}
+
+/*
+ * sequence:
+(openbook:12644): OFA-DEBUG: my_utils_action_enable: map=0x6d7180, action=0x6d70b0, name=open, enable=True
+(openbook:12644): OFA-DEBUG: ofa_application_activate: application=0x6d7180
+(openbook:12644): OFA-DEBUG: ofa_main_window_new: application=0x6d7180
+(openbook:12644): OFA-DEBUG: ofa_main_window_class_init: klass=0x803600
+(openbook:12644): OFA-DEBUG: ofa_main_window_init: self=0x884340 (ofaMainWindow)
+(openbook:12644): OFA-DEBUG: ofa_main_instance_constructed: instance=0x884340 (ofaMainWindow)
+(openbook:12644): OFA-DEBUG: my_utils_window_restore_position: name=MainWindow, x=14, y=31, width=1350, height=590
+(openbook:12644): OFA-DEBUG: recurrent/ofa-module/on_main_window_created: application=0x6d7180, window=0x884340, empty=(nil)
+(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x765ac0: found accel at i=0: <Control>n
+(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x765ac0: found accel at i=1: <Control>o
+(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x839980: found accel at i=0: <Control>q
+(openbook:12644): OFA-DEBUG: set_menubar: model=0x764d60 (GMenu), menubar=0x915200, grid=0x724490 (GtkGrid)
+(openbook:12644): OFA-DEBUG: ofa_application_activate: main window instanciated at 0x884340
+ */
+static void
+on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty )
+{
+	g_debug( "recurrent/ofa-module/on_main_window_created: application=%p, window=%p, empty=%p",
+			( void * ) application, ( void * ) window, empty );
 }

@@ -80,6 +80,7 @@
 
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
+     2015- 3-17 define new 'recurrent' plugin - git #4affe14
 
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
@@ -355,7 +356,12 @@
 
  738 2015- 3-16 ViewEntries: have a Delete button
 
- 739
+ 739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
+
+ 740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
+                case of a rounding error
+
+ 741
 
 -----------------------------------------------------------------------
  DONE

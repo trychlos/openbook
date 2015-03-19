@@ -108,6 +108,7 @@ enum {
 	DOSSIER_OPEN = 0,
 	DOSSIER_PROPERTIES,
 	OPENED_DOSSIER,
+	DIALOG_INIT,
 	N_SIGNALS
 };
 
@@ -581,6 +582,30 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_OBJECT );
+
+	/**
+	 * ofaMainWindow::my-dialog-init:
+	 *
+	 * This signal is sent on the main window at the end of the
+	 * initialization of a MyDialog
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 *                      const gchar *dialog_name,
+	 *                      GtkWindow   *toplevel,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ DIALOG_INIT ] = g_signal_new_class_handler(
+				"my-dialog-init",
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_STRING, G_TYPE_POINTER );
 }
 
 /**

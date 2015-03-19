@@ -338,6 +338,22 @@ my_window_get_main_window( const myWindow *self )
 }
 
 /**
+ * my_window_get_name:
+ */
+const gchar *
+my_window_get_name( const myWindow *self )
+{
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
+
+	if( !self->prot->dispose_has_run ){
+
+		return( self->priv->window_name );
+	}
+
+	return( NULL );
+}
+
+/**
  * my_window_get_toplevel:
  */
 GtkWindow *

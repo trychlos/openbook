@@ -82,8 +82,10 @@
  Other changes:
 
    - Compiler options now includes '-std=gnu99'.
-   - ofoBat::ofo_bat_get_unused_count(): new method.
+   - new ofoBat::ofo_bat_get_unused_count() method.
    - ofaPreferences is now set as a public API.
+   - new ofaMainWindow::my-dialog-init signal.
+   - new myWindow::my_window_get_name() method.
 
 -----------------------------------------------------------------------
  Version 0.35

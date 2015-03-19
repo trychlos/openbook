@@ -28,6 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
+
 #include "core/my-dialog.h"
 #include "core/my-window-prot.h"
 
@@ -118,6 +120,9 @@ my_dialog_class_init( myDialogClass *klass )
 gboolean
 my_dialog_init_dialog( myDialog *self )
 {
+	GtkWindow *window;
+	const gchar *name;
+
 	g_return_val_if_fail( self && MY_IS_DIALOG( self ), FALSE );
 
 	if( !MY_WINDOW( self )->prot->dispose_has_run ){
@@ -126,6 +131,13 @@ my_dialog_init_dialog( myDialog *self )
 				!self->priv->init_has_run ){
 
 			do_init_dialog( self );
+
+			window = ( GtkWindow * ) my_window_get_main_window( MY_WINDOW( self ));
+			name = my_window_get_name( MY_WINDOW( self ));
+
+			if( window && GTK_IS_WINDOW( window ) && my_strlen( name )){
+				g_signal_emit_by_name( window, "my-dialog-init", name, window );
+			}
 
 			gtk_widget_show_all( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( self ))));
 

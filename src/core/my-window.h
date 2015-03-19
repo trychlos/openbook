@@ -95,6 +95,8 @@ ofoDossier    *my_window_get_dossier       ( const myWindow *window );
 
 ofaMainWindow *my_window_get_main_window   ( const myWindow *window );
 
+const gchar   *my_window_get_name          ( const myWindow *window );
+
 GtkWindow     *my_window_get_toplevel      ( const myWindow *window );
 
 gboolean       my_window_has_valid_toplevel( const myWindow *window );

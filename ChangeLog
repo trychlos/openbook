@@ -1,3 +1,15 @@
+2015-03-19 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/core/my-dialog.c: send a "my-dialog-init" message after return
+	of virtual method.
+
+	* src/core/my-window.c,
+	* src/core/my-window.h: new my_window_get_name() method.
+
+	* src/recurrent/ofa-module.c: connect to "main-window-created" signal.
+
+	* src/ui/ofa-main-window.c: define "my-dialog-init" new signal.
+
 2015-03-17 Pierre Wieser <pwieser@trychlos.org>
 
 	Define new 'recurrent' plugin (todo #213)
