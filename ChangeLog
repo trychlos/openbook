@@ -1,5 +1,8 @@
 2015-03-21 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-account-select.c,
+	* src/ui/ofa-account-select.h: defaults to not allow closed accounts.
+
 	Have a 1 batline vs. n entries reconciliation scheme (todo #747)
 
 	* src/api/my-utils.h,

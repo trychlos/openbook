@@ -382,11 +382,6 @@
  745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
                 selected account is displayed
 
- 747 2015- 3-19 Reconciliation: accept multi-lines (1 debit+2 credits)
-                where sum(debit)=sum(credit)
-                use case: two peage tickets which are debited together
-                + remediate lcl-201408.pdf imported bat file
-
  748 2015- 3-19 Reconciliation
                 OFA-CRITICAL **: set_reconciliated_balance: assertion 'my_strlen( account_number )' failed
                 set_reconciliated_balance (self=self@entry=0x1112b10) at ../../../src/ui/ofa-reconciliation.c:2824
@@ -3411,6 +3406,12 @@
                 #4  lcl_pdf_v1_import (importer=0x6e2d20, uri=uri@entry=0x9d4b40 "file:///home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/PWI-Consultants/2014/documents/lcl-201408.pdf")
                 at ../../../src/import-lcl-pdf/ofa-importer.c:416
      2015- 3-19 fixed - git #0eb6bef
+
+ 747 2015- 3-19 Reconciliation: accept multi-lines (1 debit+2 credits)
+                where sum(debit)=sum(credit)
+                use case: two peage tickets which are debited together
+                + remediate lcl-201408.pdf imported bat file
+     2015- 3-21 done - git #a6bfe8a
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

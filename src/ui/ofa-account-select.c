@@ -329,27 +329,30 @@ is_selection_valid_by_account( ofaAccountSelect *self, const ofoAccount *account
 	priv = self->priv;
 	ok = FALSE;
 
-	if( !ok && ( priv->allowed & OFA_ALLOW_ALL )){
-		ok = TRUE;
-	}
-	if( !ok && ( priv->allowed & OFA_ALLOW_ROOT )){
-		if( ofo_account_is_root( account )){
+	if( !ofo_account_is_closed( account ) || ( priv->allowed & OFA_ALLOW_CLOSED )){
+
+		if( !ok && ( priv->allowed & OFA_ALLOW_ALL )){
 			ok = TRUE;
 		}
-	}
-	if( !ok && ( priv->allowed & OFA_ALLOW_DETAIL )){
-		if( !ofo_account_is_root( account )){
-			ok = TRUE;
+		if( !ok && ( priv->allowed & OFA_ALLOW_ROOT )){
+			if( ofo_account_is_root( account )){
+				ok = TRUE;
+			}
 		}
-	}
-	if( !ok && ( priv->allowed & OFA_ALLOW_SETTLEABLE )){
-		if( ofo_account_is_settleable( account )){
-			ok = TRUE;
+		if( !ok && ( priv->allowed & OFA_ALLOW_DETAIL )){
+			if( !ofo_account_is_root( account )){
+				ok = TRUE;
+			}
 		}
-	}
-	if( !ok && ( priv->allowed & OFA_ALLOW_RECONCILIABLE )){
-		if( ofo_account_is_reconciliable( account )){
-			ok = TRUE;
+		if( !ok && ( priv->allowed & OFA_ALLOW_SETTLEABLE )){
+			if( ofo_account_is_settleable( account )){
+				ok = TRUE;
+			}
+		}
+		if( !ok && ( priv->allowed & OFA_ALLOW_RECONCILIABLE )){
+			if( ofo_account_is_reconciliable( account )){
+				ok = TRUE;
+			}
 		}
 	}
 
