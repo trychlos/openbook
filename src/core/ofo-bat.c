@@ -67,6 +67,8 @@ G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
 static GList      *bat_load_dataset( ofoDossier *dossier );
 static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
+static gint        bat_get_count( const ofoDossier *dossier, ofxCounter bat_id );
+static gint        bat_get_used_count( const ofoDossier *dossier, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
@@ -327,26 +329,35 @@ ofo_bat_get_format( const ofoBat *bat )
  * ofo_bat_get_count:
  */
 gint
-ofo_bat_get_count( const ofoBat *bat, ofoDossier *dossier )
+ofo_bat_get_count( const ofoBat *bat, const ofoDossier *dossier )
 {
-	gchar *query;
-	gint count;
-
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), -1 );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu",
-						ofo_bat_get_id( bat ));
-		ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
-		g_free( query );
-
-		return( count );
+		return( bat_get_count( dossier, ofo_bat_get_id( bat )));
 	}
 
 	g_assert_not_reached();
 	return( -1 );
+}
+
+/*
+ * bat_get_count:
+ */
+static gint
+bat_get_count( const ofoDossier *dossier, ofxCounter bat_id )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu",
+					bat_id );
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+	g_free( query );
+
+	return( count );
 }
 
 /**
@@ -618,23 +629,39 @@ gboolean
 ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 {
 	gint count;
-	gchar *query;
 
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		count = 0;
-		query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu AND BAT_LINE_ENTRY IS NOT NULL",
-				ofo_bat_get_id( bat ));
-
-		if( ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE )){
-			return( count == 0 );
-		}
+		count = bat_get_used_count( dossier, ofo_bat_get_id( bat ));
+		return( count == 0 );
 	}
 
 	return( FALSE );
+}
+
+/*
+ * bat_get_used_count:
+ *
+ * Returns the count of used lines from this BAT file.
+ */
+static gint
+bat_get_used_count( const ofoDossier *dossier, ofxCounter id )
+{
+	gint count;
+	gchar *query;
+
+	count = 0;
+	query = g_strdup_printf(
+			"SELECT COUNT(DISTINCT(BAT_LINE_ID)) FROM OFA_T_BAT_CONCIL WHERE "
+			"	BAT_LINE_ID IN (SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld)",
+			id );
+
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+
+	return( count );
 }
 
 /**
@@ -645,20 +672,10 @@ ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 gint
 ofo_bat_get_unused_count( const ofoDossier *dossier, ofxCounter id )
 {
-	gint count;
-	gchar *query;
-
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 	g_return_val_if_fail( id > 0, -1 );
 
-	count = 0;
-	query = g_strdup_printf(
-			"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu AND BAT_LINE_ENTRY IS NULL",
-			id );
-
-	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
-
-	return( count );
+	return( bat_get_count( dossier, id )-bat_get_used_count( dossier, id ));
 }
 
 /*

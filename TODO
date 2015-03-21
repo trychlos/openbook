@@ -382,17 +382,47 @@
  745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
                 selected account is displayed
 
- 746 2015- 3-19 when importing lcl-201408.pdf
-                GLib-CRITICAL **: g_str_has_prefix: assertion 'str != NULL' failed
-                in read_lines (rc_list=0xb8f200 = {...}, page_i=3, page=0x10afe80, bat=<optimized out>, importer=0x6e2d20) at ../../../src/import-lcl-pdf/ofa-importer.c:689
-#4  lcl_pdf_v1_import (importer=0x6e2d20, uri=uri@entry=0x9d4b40 "file:///home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/PWI-Consultants/2014/documents/lcl-201408.pdf")
-    at ../../../src/import-lcl-pdf/ofa-importer.c:416
-
  747 2015- 3-19 Reconciliation: accept multi-lines (1 debit+2 credits)
                 where sum(debit)=sum(credit)
                 use case: two peage tickets which are debited together
+                + remediate lcl-201408.pdf imported bat file
 
- 748
+ 748 2015- 3-19 Reconciliation
+                OFA-CRITICAL **: set_reconciliated_balance: assertion 'my_strlen( account_number )' failed
+                set_reconciliated_balance (self=self@entry=0x1112b10) at ../../../src/ui/ofa-reconciliation.c:2824
+                after having cleared the account number, trying to clear
+                the bat lines
+
+ 749 2015- 3-19 Have a summary of non-reconciliated bat lines
+                because the corresponding bat files will not be purged
+                at the closing of the exercice
+
+ 750 2015- 3-20 Reconciliation: when opening the page, the last seen
+                account is displayed (normal), no line is selected,
+                but the Accept button is enabled
+
+ 751 2015- 3-20 Reconciliation: associate the bat file with the openbook
+                account as soon as we reconciliate one line thus refusing
+                the selection for another account
+                + add this account number to treeview from bat page
+                + add this account number to bat properties
+
+ 752 2015- 3-20 Reconciliation: when selecting a bat file, only allow
+                those which are associated with the current account
+                number (if any) - of those which are not yet associated
+
+ 753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
+                using ofoBat object instead of bat_id
+
+ 754 2015- 3-21 add unused count to bat page
+
+ 755 2015- 3-21 add DBMS version to dossier properties
+
+ 756 2015- 3-21 use my_utils_dialog_yesno() function
+
+ 757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
+
+ 758
 
 -----------------------------------------------------------------------
  DONE
@@ -3374,6 +3404,13 @@
 
  737 2015- 3-15 Exporting: entry models becomes ope templates
      2015- 3-15 done - git #e3e3803
+
+ 746 2015- 3-19 when importing lcl-201408.pdf
+                GLib-CRITICAL **: g_str_has_prefix: assertion 'str != NULL' failed
+                in read_lines (rc_list=0xb8f200 = {...}, page_i=3, page=0x10afe80, bat=<optimized out>, importer=0x6e2d20) at ../../../src/import-lcl-pdf/ofa-importer.c:689
+                #4  lcl_pdf_v1_import (importer=0x6e2d20, uri=uri@entry=0x9d4b40 "file:///home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/PWI-Consultants/2014/documents/lcl-201408.pdf")
+                at ../../../src/import-lcl-pdf/ofa-importer.c:416
+     2015- 3-19 fixed - git #0eb6bef
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

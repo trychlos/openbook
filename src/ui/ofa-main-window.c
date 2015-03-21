@@ -670,26 +670,8 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 gboolean
 ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 {
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( window ),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			_( "Are you sure you want to quit the application ?" ));
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "_Quit" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( my_utils_dialog_yesno(
+			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
 }
 
 static void

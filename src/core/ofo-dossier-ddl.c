@@ -48,18 +48,38 @@ static const gchar *st_ledgers          = INIT1DIR "/ledgers-h1.csv";
 static const gchar *st_ope_templates    = INIT1DIR "/ope-templates-h2.csv";
 static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
 
-static gint        dbmodel_get_version( const ofoDossier *dossier );
-static gboolean    dbmodel_to_v20( const ofoDossier *dossier );
-static gboolean    dbmodel_to_v21( const ofoDossier *dossier );
-static gboolean    dbmodel_to_v22( const ofoDossier *dossier );
-static gboolean    dbmodel_to_v23( const ofoDossier *dossier );
-static gboolean    insert_classes( ofoDossier *dossier );
-static gboolean    insert_currencies( ofoDossier *dossier );
-static gboolean    insert_ledgers( ofoDossier *dossier );
-static gboolean    insert_ope_templates( ofoDossier *dossier );
-static gboolean    insert_rates( ofoDossier *dossier );
-static gboolean    import_utf8_comma_pipe_file( ofoDossier *dossier, const gchar *table, const gchar *fname, gint headers, fnType fn );
-static gint        count_rows( const ofoDossier *dossier, const gchar *table );
+static gint     dbmodel_get_version( const ofoDossier *dossier );
+static gboolean version_begin( const ofoDossier *dossier, gint version );
+static gboolean version_end( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v20( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v21( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v22( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v23( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v24( const ofoDossier *dossier, gint version );
+static gboolean insert_classes( ofoDossier *dossier );
+static gboolean insert_currencies( ofoDossier *dossier );
+static gboolean insert_ledgers( ofoDossier *dossier );
+static gboolean insert_ope_templates( ofoDossier *dossier );
+static gboolean insert_rates( ofoDossier *dossier );
+static gboolean import_utf8_comma_pipe_file( ofoDossier *dossier, const gchar *table, const gchar *fname, gint headers, fnType fn );
+static gint     count_rows( const ofoDossier *dossier, const gchar *table );
+
+/* the functions which update the DB model
+ */
+typedef struct {
+	gint        ver_target;
+	gboolean ( *fn )( const ofoDossier *dossier, gint version );
+}
+	sMigration;
+
+static sMigration st_migrates[] = {
+		{ 20, dbmodel_to_v20 },
+		{ 21, dbmodel_to_v21 },
+		{ 22, dbmodel_to_v22 },
+		{ 23, dbmodel_to_v23 },
+		{ 24, dbmodel_to_v24 },
+		{ 0 }
+};
 
 /**
  * ofo_dossier_ddl_update:
@@ -72,34 +92,37 @@ gboolean
 ofo_dossier_ddl_update( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_ddl_update";
-	gint cur_version;
+	gint i, cur_version;
+	gboolean ok;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
+	ok = TRUE;
 	cur_version = dbmodel_get_version( dossier );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
-		if( cur_version < 20 ){
-			dbmodel_to_v20( dossier );
+		for( i=0 ; st_migrates[i].ver_target ; ++i ){
+			if( cur_version < st_migrates[i].ver_target ){
+				if( !version_begin( dossier, st_migrates[i].ver_target ) ||
+						!st_migrates[i].fn( dossier, st_migrates[i].ver_target ) ||
+						!version_end( dossier, st_migrates[i].ver_target )){
+					g_warning( "%s: current DBMS model is version %d, unable to update it to v %d", thisfn, cur_version, st_migrates[i].ver_target );
+					ok = FALSE;
+					break;
+				}
+			}
 		}
-		if( cur_version < 21 ){
-			dbmodel_to_v21( dossier );
+		if( ok ){
+			insert_classes( dossier );
+			insert_currencies( dossier );
+			insert_ledgers( dossier );
+			insert_ope_templates( dossier );
+			insert_rates( dossier );
 		}
-		if( cur_version < 22 ){
-			dbmodel_to_v22( dossier );
-		}
-		if( cur_version < 23 ){
-			dbmodel_to_v23( dossier );
-		}
-		insert_classes( dossier );
-		insert_currencies( dossier );
-		insert_ledgers( dossier );
-		insert_ope_templates( dossier );
-		insert_rates( dossier );
 	}
 
-	return( TRUE );
+	return( ok );
 }
 
 /*
@@ -118,6 +141,56 @@ dbmodel_get_version( const ofoDossier *dossier )
 	return( vmax );
 }
 
+static gboolean
+version_begin( const ofoDossier *dossier, gint version )
+{
+	const ofaDbms *dbms;
+	gchar *query;
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	/* default value for timestamp cannot be null */
+	if( !ofa_dbms_query( dbms,
+			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
+			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB model version number',"
+			"	VER_DATE   TIMESTAMP                 DEFAULT 0 COMMENT 'Version application timestamp') "
+			"CHARACTER SET utf8",
+			TRUE)){
+		return( FALSE );
+	}
+
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_VERSION "
+			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	return( TRUE );
+}
+
+static gboolean
+version_end( const ofoDossier *dossier, gint version )
+{
+	const ofaDbms *dbms;
+	gchar *query;
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	/* we do this only at the end of the DB model udpate
+	 * as a mark that all has been successfully done
+	 */
+	query = g_strdup_printf(
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", version );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	return( TRUE );
+}
+
 /*
  * ofo_dossier_dbmodel_to_v20:
  * @dbms: an already opened #ofaDbms connection
@@ -126,34 +199,15 @@ dbmodel_get_version( const ofoDossier *dossier )
  * @account: the current connected account.
  */
 static gboolean
-dbmodel_to_v20( const ofoDossier *dossier )
+dbmodel_to_v20( const ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v20";
-	static guint this_version = 20;
 	const ofaDbms *dbms;
 	gchar *query;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	dbms = ofo_dossier_get_dbms( dossier );
-
-	/* default value for timestamp cannot be null */
-	if( !ofa_dbms_query( dbms,
-			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
-			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0     COMMENT 'DB model version number',"
-			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp') "
-			"CHARACTER SET utf8",
-			TRUE)){
-		return( FALSE );
-	}
-
-	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_VERSION "
-			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
 
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
@@ -237,6 +291,7 @@ dbmodel_to_v20( const ofoDossier *dossier )
 	}
 
 	/* BAT_LINE_UPD_STAMP is remediated in v21 */
+	/* BAT_LINE_ENTRY and BAT_LINE_UPD_USER are remediated in v24 */
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL      COMMENT 'Intern import identifier',"
@@ -247,8 +302,8 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			"	BAT_LINE_LABEL     VARCHAR(80)            COMMENT 'Line label',"
 			"	BAT_LINE_CURRENCY  VARCHAR(3)             COMMENT 'Line currency',"
 			"	BAT_LINE_AMOUNT    DECIMAL(20,5)          COMMENT 'Signed amount of the line',"
-			"	BAT_LINE_ENTRY     BIGINT                 COMMENT 'Reciliated entry',"
-			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
+			"	BAT_LINE_ENTRY     BIGINT,"
+			"	BAT_LINE_UPD_USER  VARCHAR(20),"
 			"	BAT_LINE_UPD_STAMP TIMESTAMP"
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
@@ -265,62 +320,6 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-#if 0
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (1,'Comptes de capitaux')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (2,'Comptes d\\'immobilisations')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (3,'Comptes de stocks et en-cours')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (4,'Comptes de tiers')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (5,'Comptes financiers')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (6,'Comptes de charges')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (7,'Comptes de produits')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (8,'Comptes spéciaux')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')", TRUE )){
-		return( FALSE );
-	}
-#endif
-
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
@@ -333,14 +332,6 @@ dbmodel_to_v20( const ofoDossier *dossier )
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
-
-#if 0
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_CURRENCIES "
-			"	(CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS) VALUES ('EUR','Euro','€',2)", TRUE )){
-		return( FALSE );
-	}
-#endif
 
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
@@ -443,38 +434,6 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-#if 0
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
-			"	VALUES ('ACH','Journal des achats','Default')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
-			"	VALUES ('VEN','Journal des ventes','Default')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
-			"	VALUES ('EXP','Journal de l\\'exploitant','Default')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
-			"	VALUES ('OD','Journal des opérations diverses','Default')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_dbms_query( dbms,
-			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
-			"	VALUES ('BQ','Journal de banque','Default')", TRUE )){
-		return( FALSE );
-	}
-#endif
-
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE COMMENT 'Operation template mnemonic',"
@@ -548,16 +507,6 @@ dbmodel_to_v20( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-	/* we do this only at the end of the model creation
-	 * as a mark that all has been successfully done
-	 */
-	query = g_strdup_printf(
-			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
-
 	return( TRUE );
 }
 
@@ -566,24 +515,14 @@ dbmodel_to_v20( const ofoDossier *dossier )
  * have zero timestamp on unreconciliated batlines
  */
 static gboolean
-dbmodel_to_v21( const ofoDossier *dossier )
+dbmodel_to_v21( const ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v21";
-	static guint this_version = 21;
 	const ofaDbms *dbms;
-	gchar *query;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	dbms = ofo_dossier_get_dbms( dossier );
-
-	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_VERSION "
-			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
 
 	if( !ofa_dbms_query( dbms,
 			"ALTER TABLE OFA_T_BAT_LINES "
@@ -600,16 +539,6 @@ dbmodel_to_v21( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-	/* we do this only at the end of the model creation
-	 * as a mark that all has been successfully done
-	 */
-	query = g_strdup_printf(
-			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
-
 	return( TRUE );
 }
 
@@ -618,24 +547,14 @@ dbmodel_to_v21( const ofoDossier *dossier )
  * have begin_solde and end_solde in bat
  */
 static gboolean
-dbmodel_to_v22( const ofoDossier *dossier )
+dbmodel_to_v22( const ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v22";
-	static guint this_version = 22;
 	const ofaDbms *dbms;
-	gchar *query;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	dbms = ofo_dossier_get_dbms( dossier );
-
-	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_VERSION "
-			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
 
 	if( !ofa_dbms_query( dbms,
 			"ALTER TABLE OFA_T_BAT "
@@ -653,16 +572,6 @@ dbmodel_to_v22( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-	/* we do this only at the end of the model creation
-	 * as a mark that all has been successfully done
-	 */
-	query = g_strdup_printf(
-			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
-
 	return( TRUE );
 }
 
@@ -671,24 +580,14 @@ dbmodel_to_v22( const ofoDossier *dossier )
  * closed accounts
  */
 static gboolean
-dbmodel_to_v23( const ofoDossier *dossier )
+dbmodel_to_v23( const ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v23";
-	static guint this_version = 23;
 	const ofaDbms *dbms;
-	gchar *query;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	dbms = ofo_dossier_get_dbms( dossier );
-
-	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_VERSION "
-			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
-		return( FALSE );
-	}
-	g_free( query );
 
 	if( !ofa_dbms_query( dbms,
 			"ALTER TABLE OFA_T_ACCOUNTS "
@@ -698,15 +597,55 @@ dbmodel_to_v23( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
-	/* we do this only at the end of the model creation
-	 * as a mark that all has been successfully done
-	 */
-	query = g_strdup_printf(
-			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", this_version );
-	if( !ofa_dbms_query( dbms, query, TRUE )){
+	return( TRUE );
+}
+
+/*
+ * ofo_dossier_dbmodel_to_v24:
+ * a bat line may be reconciliated against several entries
+ * -> create new OFA_T_BAT_CONCIL table
+ */
+static gboolean
+dbmodel_to_v24( const ofoDossier *dossier, gint version )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v24";
+	const ofaDbms *dbms;
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	if( !ofa_dbms_query( dbms,
+			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_CONCIL ("
+			"	BAT_LINE_ID       BIGINT      NOT NULL COMMENT 'BAT line identifier',"
+			"	BAT_REC_ENTRY     BIGINT      NOT NULL COMMENT 'Entry the BAT line was reconciliated against',"
+			"	BAT_REC_UPD_USER  VARCHAR(20)          COMMENT 'User responsible of the reconciliation',"
+			"	BAT_REC_UPD_STAMP TIMESTAMP            COMMENT 'Reconciliation timestamp',"
+			"	UNIQUE (BAT_LINE_ID,BAT_REC_ENTRY)"
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
-	g_free( query );
+
+	if( !ofa_dbms_query( dbms,
+			"INSERT INTO OFA_T_BAT_CONCIL "
+			"	(BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
+			"	SELECT BAT_LINE_ID,BAT_LINE_ENTRY,BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
+			"	  FROM OFA_T_BAT_LINES "
+			"	    WHERE BAT_LINE_ENTRY IS NOT NULL "
+			"	    AND BAT_LINE_UPD_USER IS NOT NULL "
+			"	    AND BAT_LINE_UPD_STAMP!=0",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_BAT_LINES "
+			"	DROP COLUMN BAT_LINE_ENTRY,"
+			"	DROP COLUMN BAT_LINE_UPD_USER,"
+			"	DROP COLUMN BAT_LINE_UPD_STAMP",
+			TRUE )){
+		return( FALSE );
+	}
 
 	return( TRUE );
 }

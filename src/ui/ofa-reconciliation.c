@@ -202,7 +202,6 @@ static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofa
 static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
 static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
 static gboolean     is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry );
-static gboolean     is_tview_select_toggable( GtkTreeSelection *select, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
 static void         on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self );
 static void         on_account_select_clicked( GtkButton *button, ofaReconciliation *self );
@@ -241,7 +240,10 @@ static void         expand_node_by_iter( ofaReconciliation *self, GtkTreeView *t
 static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreePath *path );
+static gboolean     unreconciliate_accepted( ofaReconciliation *self, ofoEntry *entry, GList **entries );
+static gboolean     unreconciliate_entries( ofaReconciliation *self, ofoEntry *entry, GList *entries );
 static gboolean     reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
+static gboolean     reconciliate_entry_by_store_iter( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *store_iter );
 static void         set_reconciliated_balance( ofaReconciliation *self );
 static void         get_settings( ofaReconciliation *self );
 static void         set_settings( ofaReconciliation *self );
@@ -871,8 +873,6 @@ setup_treeview( ofaPage *page )
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
-	gtk_tree_selection_set_select_function(
-			select, ( GtkTreeSelectionFunc ) is_tview_select_toggable, page, NULL );
 	g_signal_connect( select, "changed", G_CALLBACK( on_tview_selection_changed ), page );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( tview ), FALSE );
@@ -1184,16 +1184,17 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 			is_visible_batline( self, OFO_BAT_LINE( object ));
 
 	if( visible ){
+		/* check against effect dates filter */
 		deffect = OFO_IS_ENTRY( object ) ?
 				ofo_entry_get_deffect( OFO_ENTRY( object )) :
 				ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 		g_return_val_if_fail( my_date_is_valid( deffect ), FALSE );
-		/* check against lower limit */
+		/* ... against lower limit */
 		filter = ofa_date_filter_bin_get_from( priv->effect_filter );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) <= 0;
 		visible &= ok;
-		/* check against upper limit */
+		/* ... against upper limit */
 		filter = ofa_date_filter_bin_get_to( priv->effect_filter );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) >= 0;
@@ -1268,8 +1269,9 @@ static gboolean
 is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 {
 	ofaReconciliationPrivate *priv;
-	gint mode, ecr_number;
-	gboolean visible;
+	gint mode;
+	gboolean visible, used;
+	GList *entries;
 	GtkTreeIter *iter;
 	GtkTreeModel *tstore;
 	ofoEntry *entry;
@@ -1277,7 +1279,8 @@ is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 	priv = self->priv;
 	visible = FALSE;
 	mode = get_selected_concil_mode( self );
-	ecr_number = ofo_bat_line_get_entry( batline );
+	entries = ofo_bat_line_get_entries( batline );
+	used = g_list_length( entries ) > 0;
 
 	switch( mode ){
 		case ENT_CONCILED_ALL:
@@ -1285,18 +1288,18 @@ is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 			visible = TRUE;
 			break;
 		case ENT_CONCILED_YES:
-			visible = ( ecr_number > 0 );
+			visible = used;
 			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
 			break;
 		case ENT_CONCILED_NO:
-			visible = ( ecr_number == 0 );
+			visible = !used;
 			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
 			break;
 		case ENT_CONCILED_SESSION:
-			if( ecr_number == 0 ){
+			if( !used ){
 				visible = TRUE;
 			} else {
-				iter = search_for_entry_by_number( self, ecr_number );
+				iter = search_for_entry_by_number( self, ( ofxCounter ) entries->data );
 				if( iter ){
 					tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 					gtk_tree_model_get( tstore, iter, COL_OBJECT, &entry, -1 );
@@ -1332,66 +1335,6 @@ is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry )
 }
 
 /*
- * accept any single selection
- * accept only multiple selection if one entry + one batline, both
- * compatible together
- */
-static gboolean
-is_tview_select_toggable( GtkTreeSelection *select,
-		GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_currently_selected, ofaReconciliation *self )
-{
-	gboolean toggable, ok;
-	GList *selected;
-	gint count;
-	GtkTreeIter iter, sel_iter;
-	ofoBase *object, *sel_object;
-	gchar *obj_sdeb, *obj_scre, *sel_sdeb, *sel_scre;
-
-	/* unselect is always ok */
-	if( is_currently_selected ){
-		return( TRUE );
-	}
-
-	toggable = FALSE;
-	ok = gtk_tree_model_get_iter( tmodel, &iter, path );
-	g_return_val_if_fail( ok, FALSE );
-	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
-	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), FALSE );
-
-	selected = gtk_tree_selection_get_selected_rows( select, NULL );
-	count = g_list_length( selected );
-
-	if( count == 0 ){
-		toggable = TRUE;
-
-	} else if( count == 1 ){
-		ok = gtk_tree_model_get_iter( tmodel, &sel_iter, ( GtkTreePath * ) selected->data );
-		g_return_val_if_fail( ok, FALSE );
-		gtk_tree_model_get( tmodel, &sel_iter, COL_OBJECT, &sel_object, -1 );
-		g_return_val_if_fail( sel_object && ( OFO_IS_ENTRY( sel_object ) || OFO_IS_BAT_LINE( sel_object )), FALSE );
-
-		if(( OFO_IS_ENTRY( object ) && OFO_IS_BAT_LINE( sel_object )) ||
-				( OFO_IS_BAT_LINE( object ) && OFO_IS_ENTRY( sel_object ))){
-			gtk_tree_model_get( tmodel, &iter, COL_DEBIT, &obj_sdeb, COL_CREDIT, &obj_scre, -1 );
-			gtk_tree_model_get( tmodel, &sel_iter, COL_DEBIT, &sel_sdeb, COL_CREDIT, &sel_scre, -1 );
-
-			if(( my_strlen( obj_scre ) && my_strlen( sel_sdeb ) && !g_utf8_collate( obj_scre, sel_sdeb )) ||
-					( my_strlen( obj_sdeb ) && my_strlen( sel_scre ) && !g_utf8_collate( obj_sdeb, sel_scre ))){
-				toggable = TRUE;
-			}
-
-			g_free( sel_sdeb );
-			g_free( sel_scre );
-			g_free( obj_sdeb );
-			g_free( obj_scre );
-		}
-	}
-
-	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
-	return( toggable );
-}
-
-/*
  * row       foreground  style   background
  * --------  ----------  ------  ----------
  * entry     normal      normal  normal
@@ -1409,7 +1352,6 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	GdkRGBA color;
 	gint id;
 	const GDate *dval;
-	ofxCounter ecr_number;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 
@@ -1441,8 +1383,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	} else {
 		gdk_rgba_parse( &color, COLOR_BAT_FONT );
 		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-		ecr_number = ofo_bat_line_get_entry( OFO_BAT_LINE( object ));
-		if( ecr_number == 0 ){
+		if( !ofo_bat_line_is_used( OFO_BAT_LINE( object ))){
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 		}
 	}
@@ -1980,7 +1921,7 @@ display_bat_lines( ofaReconciliation *self )
 	GList *line;
 	ofoBatLine *batline;
 	gboolean done;
-	ofxCounter bat_ecr;
+	GList *entries;
 	gdouble bat_amount;
 	gchar *sbat_deb, *sbat_cre, *bat_sdval;
 	GtkTreeIter *entry_iter;
@@ -2001,24 +1942,27 @@ display_bat_lines( ofaReconciliation *self )
 			sbat_cre = my_double_to_str( bat_amount );
 		}
 
-		bat_ecr = ofo_bat_line_get_entry( batline );
+		entries = ofo_bat_line_get_entries( batline );
 
 		if( 0 ){
 			bat_sdval = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display());
-			g_debug( "%s: batline: label=%s, dval=%s, sdeb=%s, scre=%s, bat_ecr=%ld",
+			g_debug( "%s: batline: label=%s, dval=%s, sdeb=%s, scre=%s",
 					thisfn, ofo_bat_line_get_label( batline ),
-					bat_sdval, sbat_deb, sbat_cre, bat_ecr );
+					bat_sdval, sbat_deb, sbat_cre );
 			g_free( bat_sdval );
 		}
 
-		if( bat_ecr > 0 ){
-			entry_iter = search_for_entry_by_number( self, bat_ecr );
+		if( entries ){
+			entry_iter = search_for_entry_by_number( self, ( ofxCounter ) entries->data );
 			if( entry_iter ){
 				insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre );
 				gtk_tree_iter_free( entry_iter );
 				done = TRUE;
+			} else {
+				g_debug( "%s: entry %ld not found by number", thisfn, ( ofxCounter ) entries->data );
 			}
 		}
+		g_list_free( entries );
 
 		if( !done ){
 			entry_iter = search_for_entry_by_amount( self, sbat_deb, sbat_cre );
@@ -2053,7 +1997,6 @@ default_expand_view( ofaReconciliation *self )
 	const GDate *date;
 	GObject *object, *batline;
 	gboolean has_child;
-	ofxCounter bat_entry;
 
 	priv = self->priv;
 	tmodel = gtk_tree_view_get_model( priv->tview );
@@ -2069,16 +2012,13 @@ default_expand_view( ofaReconciliation *self )
 			 * - else expand */
 			if( OFO_IS_ENTRY( object )){
 				date = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
-				bat_entry = 0;
 				has_child = gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
 				if( has_child ){
 					gtk_tree_model_get( tmodel, &child_iter, COL_OBJECT, &batline, -1 );
 					g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
 					g_object_unref( batline );
-					bat_entry = ofo_bat_line_get_entry( OFO_BAT_LINE( batline ));
 				}
-				if( my_date_is_valid( date ) &&
-						bat_entry == ofo_entry_get_number( OFO_ENTRY( object ))){
+				if( my_date_is_valid( date )){
 					collapse_node_by_iter( self, priv->tview, tmodel, &iter );
 				} else {
 					expand_node_by_iter( self, priv->tview, tmodel, &iter );
@@ -2092,12 +2032,15 @@ default_expand_view( ofaReconciliation *self )
 }
 
 /*
- * two use cases:
+ * use cases:
  * - importing a bat file while the corresponding entries have already
  *   been manually reconciliated: accept bat line
  * - the code is not able to automatically propose the bat line against
  *   the right entry
- * In these two cases, entry and bat line must be manually selected
+ * - two entries are presented together to the bank, thus having only
+ *   one batline for these
+ *
+ * In all these cases, entry(ies) and bat line must be manually selected
  * together, so that accept may be enabled
  */
 static void
@@ -2105,65 +2048,83 @@ on_accept_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 	GtkTreeSelection *select;
-	GList *selected;
+	GList *selected, *it;
 	GtkTreeModel *sort_model, *filter_model, *store_model;
-	GtkTreeIter first_sort_iter, first_filter_iter, first_store_iter;
-	GtkTreeIter second_sort_iter, second_filter_iter, second_store_iter;
-	GtkTreeIter *entry_iter, *bat_iter, *ent_sort_iter;
-	ofoBase *first, *entry, *second, *batline;
-	gboolean ok;
+	GtkTreeIter sort_iter, filter_iter, ent_store_iter, bat_store_iter;
+	ofoBase *batline, *entry;
 	const GDate *dval;
 	gchar *bat_sdeb, *bat_scre;
 	ofxAmount bat_amount;
-	GtkTreePath *ent_path;
+	GtkTreePath *path;
+	GtkTreeRowReference *row;
+	GList *row_refs;
 
 	priv = self->priv;
 	g_return_if_fail( priv->bat && OFO_IS_BAT( priv->bat ));
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	selected = gtk_tree_selection_get_selected_rows( select, &sort_model );
-	g_return_if_fail( g_list_length( selected ) == 2 );
+	g_return_if_fail( g_list_length( selected ) >= 2 );
 
+	dval = NULL;
+	batline = NULL;
+	entry = NULL;
+	row_refs = NULL;
 	filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
 	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( filter_model ));
 
-	ok = gtk_tree_model_get_iter( sort_model, &first_sort_iter, ( GtkTreePath * ) selected->data );
-	g_return_if_fail( ok );
-	gtk_tree_model_sort_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_SORT( sort_model ), &first_filter_iter, &first_sort_iter );
-	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( filter_model ), &first_store_iter, &first_filter_iter );
-	gtk_tree_model_get( store_model, &first_store_iter, COL_OBJECT, &first, -1 );
-	g_return_if_fail( first && ( OFO_IS_ENTRY( first ) || OFO_IS_BAT_LINE( first )));
-	g_object_unref( first );
+	/* search for the batline among the selection */
+	for( it=selected ; it ; it=it->next ){
+		if( gtk_tree_model_get_iter( sort_model, &sort_iter, ( GtkTreePath * ) it->data )){
+			gtk_tree_model_get( sort_model, &sort_iter, COL_OBJECT, &batline, -1 );
+			g_return_if_fail( batline && ( OFO_IS_ENTRY( batline ) || OFO_IS_BAT_LINE( batline )));
+			g_object_unref( batline );
+			if( OFO_IS_BAT_LINE( batline )){
+				gtk_tree_model_sort_convert_iter_to_child_iter(
+						GTK_TREE_MODEL_SORT( sort_model ), &filter_iter, &sort_iter );
+				gtk_tree_model_filter_convert_iter_to_child_iter(
+						GTK_TREE_MODEL_FILTER( filter_model ), &bat_store_iter, &filter_iter );
+				dval = ofo_bat_line_get_deffect( OFO_BAT_LINE( batline ));
+				break;
+			} else {
+				row = gtk_tree_row_reference_new( sort_model, ( GtkTreePath * ) it->data );
+				row_refs = g_list_prepend( row_refs, row );
+			}
+		}
+	}
+	g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
 
-	ok = gtk_tree_model_get_iter( sort_model, &second_sort_iter, ( GtkTreePath * ) selected->next->data );
-	g_return_if_fail( ok );
-	gtk_tree_model_sort_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_SORT( sort_model ), &second_filter_iter, &second_sort_iter );
-	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( filter_model ), &second_store_iter, &second_filter_iter );
-	gtk_tree_model_get( store_model, &second_store_iter, COL_OBJECT, &second, -1 );
-	g_return_if_fail( second && ( OFO_IS_ENTRY( second ) || OFO_IS_BAT_LINE( second )));
-	g_object_unref( second );
+	/* other selected rows are entries to be reconciliated against this
+	 * batline */
+	for( it=row_refs ; it ; it=it->next ){
+		path = gtk_tree_row_reference_get_path(( GtkTreeRowReference * ) it->data );
+		g_return_if_fail( path );
+		if( gtk_tree_model_get_iter( sort_model, &sort_iter, path )){
+			gtk_tree_model_get( sort_model, &sort_iter, COL_OBJECT, &entry, -1 );
+			g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+			g_object_unref( entry );
+			if( OFO_IS_ENTRY( entry )){
+				g_debug( "entry=%s", ofo_entry_get_label( OFO_ENTRY( entry )));
+				gtk_tree_model_sort_convert_iter_to_child_iter(
+						GTK_TREE_MODEL_SORT( sort_model ), &filter_iter, &sort_iter );
+				gtk_tree_model_filter_convert_iter_to_child_iter(
+						GTK_TREE_MODEL_FILTER( filter_model ), &ent_store_iter, &filter_iter );
+				ofo_entry_update_concil(
+						OFO_ENTRY( entry ), ofa_page_get_dossier( OFA_PAGE( self )), dval );
+				set_store_entry_dval( self, &ent_store_iter, dval );
+				ofo_bat_line_add_entry(
+						OFO_BAT_LINE( batline ),
+						ofa_page_get_dossier( OFA_PAGE( self )),
+						ofo_entry_get_number( OFO_ENTRY( entry )));
+			}
+		}
+		gtk_tree_path_free( path );
+	}
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
-	entry = OFO_IS_ENTRY( first ) ? first : second;
-	entry_iter = OFO_IS_ENTRY( first ) ? &first_store_iter : &second_store_iter;
-	ent_sort_iter = OFO_IS_ENTRY( first ) ? &first_sort_iter : &second_sort_iter;
-	ent_path = gtk_tree_model_get_path( sort_model, ent_sort_iter );
-	batline = OFO_IS_BAT_LINE( first ) ? first : second;
-	bat_iter = OFO_IS_BAT_LINE( first ) ? &first_store_iter : &second_store_iter;
-
-	dval = ofo_bat_line_get_deffect( OFO_BAT_LINE( batline ));
-	ofo_entry_update_concil( OFO_ENTRY( entry ), ofa_page_get_dossier( OFA_PAGE( self )), dval );
-	set_store_entry_dval( self, entry_iter, dval );
-
-	ofo_bat_line_set_entry( OFO_BAT_LINE( batline ), ofo_entry_get_number( OFO_ENTRY( entry )));
-	ofo_bat_line_update( OFO_BAT_LINE( batline ), ofa_page_get_dossier( OFA_PAGE( self )));
 	display_bat_count( self );
-	g_object_ref( batline );
 
-	gtk_tree_store_remove( GTK_TREE_STORE( store_model ), bat_iter );
+	gtk_tree_store_remove( GTK_TREE_STORE( store_model ), &bat_store_iter );
 	bat_amount = ofo_bat_line_get_amount( OFO_BAT_LINE( batline ));
 	if( bat_amount < 0 ){
 		bat_sdeb = my_double_to_str( -bat_amount );
@@ -2172,18 +2133,18 @@ on_accept_clicked( GtkButton *button, ofaReconciliation *self )
 		bat_sdeb = g_strdup( "" );
 		bat_scre = my_double_to_str( bat_amount );
 	}
-	insert_bat_line( self, OFO_BAT_LINE( batline ), entry_iter, bat_sdeb, bat_scre );
+	insert_bat_line( self, OFO_BAT_LINE( batline ), &ent_store_iter, bat_sdeb, bat_scre );
 	g_free( bat_sdeb );
 	g_free( bat_scre );
 
-	g_object_unref( batline );
-
 	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+	g_list_free_full( row_refs, ( GDestroyNotify ) gtk_tree_row_reference_free );
 
 	gtk_tree_selection_unselect_all( select );
-	gtk_tree_view_set_cursor( priv->tview, ent_path, NULL, FALSE );
-	gtk_tree_path_free( ent_path );
+	path = gtk_tree_model_get_path( store_model, &ent_store_iter );
+	gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
+	gtk_tree_path_free( path );
 	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
@@ -2223,7 +2184,7 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 	g_return_if_fail( object && OFO_IS_BAT_LINE( object ));
 	has_parent = gtk_tree_model_iter_parent( store_model, &parent_iter, &store_iter );
 	g_return_if_fail( has_parent );
-	g_return_if_fail( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 );
+	g_return_if_fail( !ofo_bat_line_is_used( OFO_BAT_LINE( object )));
 
 	gtk_tree_store_remove( GTK_TREE_STORE( store_model ), &store_iter );
 	gtk_tree_store_set( GTK_TREE_STORE( store_model ), &parent_iter, COL_DRECONCIL, "", -1 );
@@ -2246,7 +2207,7 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 }
 
 /*
- * returns an iter of the store model, or NULL
+ * returns an iter on the store model, or NULL
  *
  * if not %NULL, the returned iter should be gtk_tree_iter_free() by
  * the caller
@@ -2265,7 +2226,6 @@ search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
 
 	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
 		while( TRUE ){
-
 			gtk_tree_model_get( child_tmodel,
 					&iter,
 					COL_NUMBER, &ecr_number,
@@ -2539,22 +2499,26 @@ expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *
 }
 
 /*
- * - accept is enabled if we have two selected lines (whether they are
- *   really reconciliable together is left to the select function)
+ * - accept is enabled if selected lines are compatible:
+ *   because one batline is reconciliable with one or more entries
+ *   as soon as sum(debit)=sum(credit)
+ *
  * - decline is enabled if we have only one batline
  */
 static void
 on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
-	GList *selected;
+	GList *selected, *it;
 	GtkTreeModel *tmodel;
 	gint count;
 	GtkTreeIter iter, parent_iter;
 	ofoBase *object;
 	gboolean has_parent;
 	gboolean accept_enabled, decline_enabled;
-	ofxCounter line_entry;
+	gboolean used;
+	gint entries_count, batlines_count;
+	ofxAmount tot_debit, tot_credit, amount;
 
 	priv = self->priv;
 	accept_enabled = FALSE;
@@ -2570,17 +2534,44 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 
 			if( OFO_IS_BAT_LINE( object )){
 				/* the entry number that the bat line has reconciliated */
-				line_entry = ofo_bat_line_get_entry( OFO_BAT_LINE( object ));
+				used = ofo_bat_line_is_used( OFO_BAT_LINE( object ));
 				has_parent = gtk_tree_model_iter_parent( tmodel, &parent_iter, &iter );
 
 				/* decline to use a bat line against a non-yet reconciliated
 				 *  entry */
-				decline_enabled = ( line_entry == 0 && has_parent );
+				decline_enabled = ( !used && has_parent );
 			}
 		}
 
-	} else if( count == 2 ){
-		accept_enabled = TRUE;
+	} else if( count > 1 ){
+		entries_count = 0;
+		batlines_count = 0;
+		tot_debit = 0;
+		tot_credit = 0;
+		for( it=selected ; it ; it=it->next ){
+			if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data )){
+				gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+				g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+				g_object_unref( object );
+
+				if( OFO_IS_ENTRY( object )){
+					entries_count += 1;
+					tot_debit += ofo_entry_get_debit( OFO_ENTRY( object ));
+					tot_credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+				} else {
+					batlines_count += 1;
+					amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
+					if( amount < 0 ){
+						tot_debit += -1*amount;
+					} else {
+						tot_credit += amount;
+					}
+				}
+			}
+		}
+		if( batlines_count == 1 && tot_debit == tot_credit ){
+			accept_enabled = TRUE;
+		}
 	}
 
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
@@ -2607,6 +2598,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 			display_bat_count( self );
 		}
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+		default_expand_view( self );
 		set_reconciliated_balance( self );
 	}
 }
@@ -2630,9 +2622,11 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 	GObject *object;
 	GDate date;
 	gboolean updated;
+	GList *entries;
 
 	priv = self->priv;
 	updated = FALSE;
+	entries = NULL;
 
 	if( gtk_tree_model_get_iter( priv->tsort, &iter, path )){
 		gtk_tree_model_get(
@@ -2651,7 +2645,10 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 			 * bat_line (if exists): set reconciliated entry to null */
 			dval = ofo_entry_get_concil_dval( OFO_ENTRY( object ));
 			if( my_date_is_valid( dval )){
-				updated = reconciliate_entry( self, OFO_ENTRY( object ), NULL, &iter );
+				if( unreconciliate_accepted( self, OFO_ENTRY( object ), &entries )){
+					updated = unreconciliate_entries( self, OFO_ENTRY( object ), entries );
+				}
+				g_list_free_full( entries, ( GDestroyNotify ) g_free );
 
 			/* reconciliation is not set yet, so set it if proposed date is
 			 * valid or if we have a proposed reconciliation from imported
@@ -2660,7 +2657,6 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 				/* if a proposed date has been set from a bat line */
 				my_date_set_from_str( &date, srappro, ofa_prefs_date_display());
 				if( my_date_is_valid( &date )){
-					g_debug( "toggle_rappro: srappro is valid" );
 					updated = reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
 
 				/* else try with the manually provided date */
@@ -2675,6 +2671,83 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 	}
 
 	return( updated );
+}
+
+/*
+ * An entry is about to be unreconciliated
+ *
+ * Ask for a confirmation if this entry belongs to a reconciliation group
+ * (has been reconciliated together another entry against a batline) as
+ * all entries of the group are unreconciliated together
+ */
+static gboolean
+unreconciliate_accepted( ofaReconciliation *self, ofoEntry *entry, GList **pentries )
+{
+	gboolean ok;
+	GList *entries;
+	gint count;
+
+	entries = ofo_bat_line_get_entries_group(
+				ofa_page_get_dossier( OFA_PAGE( self )), ofo_entry_get_number( entry ));
+	count = g_list_length( entries );
+	g_return_val_if_fail( count > 0, FALSE );
+
+	if( count == 1 ){
+		ok = TRUE;
+
+	} else {
+		ok = my_utils_dialog_yesno(
+					_( "You are about to unreconciliate an entry which belongs "
+						"to a reconciliation group.\n"
+						"This implies that all entries of this reconciliation "
+						"group will be unreconciliated together.\n"
+						"Are you sure ?" ),
+					_( "_OK" ));
+	}
+
+	if( pentries ){
+		*pentries = entries;
+	} else {
+		g_list_free_full( entries, ( GDestroyNotify ) g_free );
+	}
+
+	return( ok );
+}
+
+/*
+ * unreconciliate all entries belonging to the same reconciliation group
+ * that the given entry
+ *
+ * Returns: %TRUE if ok
+ */
+static gboolean
+unreconciliate_entries( ofaReconciliation *self, ofoEntry *entry, GList *entries )
+{
+	ofaReconciliationPrivate *priv;
+	gboolean ok;
+	GList *it;
+	ofxCounter *number;
+	GtkTreeModel *store_model;
+	GtkTreeIter *store_iter;
+	ofoEntry *entry_object;
+
+	priv = self->priv;
+	ok = TRUE;
+	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+
+	for( it=entries ; ok && it ; it=it->next ){
+		number = ( ofxCounter * ) it->data;
+		store_iter = search_for_entry_by_number( self, *number );
+		if( store_iter ){
+			gtk_tree_model_get( store_model, store_iter, COL_OBJECT, &entry_object, -1 );
+			g_return_val_if_fail( entry_object && OFO_IS_ENTRY( entry_object ), FALSE );
+			g_object_unref( entry_object );
+			ok &= reconciliate_entry_by_store_iter( self, entry_object, NULL, store_iter );
+			gtk_tree_iter_free( store_iter );
+		}
+	}
+
+	return( ok );
 }
 
 /*
@@ -2696,33 +2769,52 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 static gboolean
 reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *sort_iter )
 {
-	static const gchar *thisfn = "ofa_reconciliation_reconciliate_entry";
 	ofaReconciliationPrivate *priv;
-	GtkTreeModel *store_tmodel;
-	GtkTreeIter filter_iter, store_iter, store_bat_iter;
-	ofoBatLine *batline;
-	gboolean is_valid_rappro;
-	gchar *str;
-	const GDate *dope;
+	GtkTreeIter filter_iter, store_iter;
+	gboolean done;
 
 	priv = self->priv;
-	is_valid_rappro = my_date_is_valid( drappro );
-	batline = NULL;
-
-	/* update the child bat line if it exists
-	 * we work on child model because 'gtk_tree_model_iter_has_child'
-	 * actually says if we have a *visible* child
-	 * but a possible batline is not visible when we are clearing
-	 * the reconciliation date */
-	store_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
 	gtk_tree_model_sort_convert_iter_to_child_iter(
 			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, sort_iter );
 	gtk_tree_model_filter_convert_iter_to_child_iter(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
 
-	if( gtk_tree_model_iter_has_child( store_tmodel, &store_iter ) &&
-		gtk_tree_model_iter_children( store_tmodel, &store_bat_iter, &store_iter )){
+	done = reconciliate_entry_by_store_iter( self, entry, drappro, &store_iter );
+
+	return( done );
+}
+
+/*
+ * @drappro: may be NULL for clearing a previously set reconciliation
+ * @store_iter: the iter on the entry row in the store model
+ */
+static gboolean
+reconciliate_entry_by_store_iter( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *store_iter )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeModel *store_tmodel;
+	GtkTreeIter store_bat_iter;
+	ofoBatLine *batline;
+	gboolean is_valid_rappro;
+	gchar *str;
+	const GDate *dope;
+	ofxCounter ent_number;
+
+	priv = self->priv;
+	is_valid_rappro = my_date_is_valid( drappro );
+	batline = NULL;
+	ent_number = ofo_entry_get_number( entry );
+
+	/* update the child bat line if it exists
+	 * we work on child model because 'gtk_tree_model_iter_has_child'
+	 * actually says if we have a *visible* child
+	 * but a batline may be not visible when we are clearing
+	 * the reconciliation date */
+	store_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+
+	if( gtk_tree_model_iter_has_child( store_tmodel, store_iter ) &&
+		gtk_tree_model_iter_children( store_tmodel, &store_bat_iter, store_iter )){
 
 		gtk_tree_model_get(
 				store_tmodel,
@@ -2732,8 +2824,13 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 		g_return_val_if_fail( batline && OFO_IS_BAT_LINE( batline ), FALSE );
 		g_object_unref( batline );
 
-		ofo_bat_line_set_entry( batline,
-				is_valid_rappro ? ofo_entry_get_number( entry ) : 0 );
+		if( is_valid_rappro ){
+			ofo_bat_line_add_entry( batline,
+					ofa_page_get_dossier( OFA_PAGE( self )), ent_number );
+		} else {
+			ofo_bat_line_remove_entries( batline,
+					ofa_page_get_dossier( OFA_PAGE( self )), ent_number );
+		}
 	}
 
 	/* update the sgbd, before resetting the new conciliation date
@@ -2743,17 +2840,8 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 			ofa_page_get_dossier( OFA_PAGE( self )),
 			is_valid_rappro ? drappro : NULL );
 
-	if( batline ){
-		ofo_bat_line_update(
-				batline,
-				ofa_page_get_dossier( OFA_PAGE( self )));
-	}
-
 	/* update the entry in the tree model with the new reconciliation
 	 * date either the actual or back to the proposal if any */
-	g_debug( "%s: is_valid_rappro=%s, batline=%p",
-			thisfn, is_valid_rappro ? "True":"False", ( void * ) batline );
-
 	if( is_valid_rappro ){
 		str = my_date_to_str( drappro, ofa_prefs_date_display());
 
@@ -2767,20 +2855,11 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 
 	gtk_tree_store_set(
 			GTK_TREE_STORE( store_tmodel ),
-			&store_iter,
+			store_iter,
 			COL_DRECONCIL, str,
 			-1 );
 
 	g_free( str );
-	/*gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));*/
-
-	/* expand the row if the conciliation has been cancelled,
-	 * collapsing it if it has been set */
-	if( is_valid_rappro ){
-		collapse_node( self, GTK_WIDGET( priv->tview ));
-	} else {
-		expand_node( self, GTK_WIDGET( priv->tview ));
-	}
 
 	return( TRUE );
 }
@@ -2852,7 +2931,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 						}
 					}
 
-				} else if( ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
+				} else if( !ofo_bat_line_is_used( OFO_BAT_LINE( object ))){
 					amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 					if( amount < 0 ){
 						debit += -amount;
@@ -3030,7 +3109,7 @@ remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *en
 
 			/* search for a batline at level 0, not yet reconciliated,
 			 * with the right amounts */
-			if( OFO_IS_BAT_LINE( object ) && ofo_bat_line_get_entry( OFO_BAT_LINE( object )) == 0 ){
+			if( OFO_IS_BAT_LINE( object ) && !ofo_bat_line_is_used( OFO_BAT_LINE( object ))){
 				bat_amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 				if(( bat_amount > 0 && bat_amount == ent_debit ) ||
 						( bat_amount < 0 && bat_amount == ent_credit )){

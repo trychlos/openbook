@@ -390,6 +390,35 @@ my_utils_dialog_error( const gchar *msg )
 }
 
 /**
+ * my_utils_dialog_yesno:
+ *
+ * Returns: %TRUE if OK.
+ */
+gboolean
+my_utils_dialog_yesno( const gchar *msg, const gchar *ok_text )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE, "%s", msg );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			ok_text, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
+}
+
+/**
  * my_utils_char_replace:
  *
  * Replace @old_ch char with @new_ch in string, returning a newly

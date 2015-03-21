@@ -52,20 +52,36 @@ struct _ofoBatLinePrivate {
 	gchar     *label;
 	gchar     *currency;
 	ofxAmount  amount;
+
+	GList     *concils;
+};
+
+/* a entry reconciliation
+ * a bat line may have been used to reconciliate several entries
+ */
+typedef struct {
 	ofxCounter entry;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
-};
+}
+	sConcil;
 
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
 static GList      *bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms );
+static void        bat_line_add_concil( ofoBatLine *batline, const sConcil *concil );
 static void        bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
-static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user );
-static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
 static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
-static gboolean    bat_line_do_update( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_line_do_add_entry( ofoBatLine *bat, const ofaDbms *dbms, const sConcil *concil );
+static gboolean    bat_line_do_remove_entries( ofoBatLine *bat, const ofaDbms *dbms );
+
+static void
+concil_free( sConcil *concil )
+{
+	g_free( concil->upd_user );
+	g_free( concil );
+}
 
 static void
 bat_line_finalize( GObject *instance )
@@ -84,7 +100,7 @@ bat_line_finalize( GObject *instance )
 	g_free( priv->ref );
 	g_free( priv->label );
 	g_free( priv->currency );
-	g_free( priv->upd_user );
+	g_list_free_full( priv->concils, ( GDestroyNotify ) concil_free );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_bat_line_parent_class )->finalize( instance );
@@ -171,17 +187,16 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 {
 	GString *query;
 	GSList *result, *irow, *icol;
-	GList *dataset;
+	GList *dataset, *it;
 	ofoBatLine *line;
-	GTimeVal timeval;
+	sConcil *concil;
 
 	dataset = NULL;
 
 	query = g_string_new(
 					"SELECT BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,"
 					"	BAT_LINE_LABEL,BAT_LINE_REF,BAT_LINE_CURRENCY,"
-					"	BAT_LINE_AMOUNT,BAT_LINE_ENTRY,"
-					"	BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
+					"	BAT_LINE_AMOUNT "
 					"	FROM OFA_T_BAT_LINES " );
 
 	g_string_append_printf( query, "WHERE BAT_ID=%ld ", bat_id );
@@ -212,26 +227,52 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 			icol = icol->next;
 			ofo_bat_line_set_amount( line,
 					my_double_set_from_sql(( const gchar * ) icol->data ));
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_line_set_entry( line, atol(( gchar * ) icol->data ));
-			}
-			icol = icol->next;
-			if( icol->data ){
-				bat_line_set_upd_user( line, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				bat_line_set_upd_stamp( line,
-						my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-			}
+
 			dataset = g_list_prepend( dataset, line );
 		}
 		ofa_dbms_free_results( result );
 	}
 	g_string_free( query, TRUE );
 
+	for( it=dataset ; it ; it=it->next ){
+		line = OFO_BAT_LINE( it->data );
+
+		query = g_string_new(
+						"SELECT "
+						"	BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP "
+						"	FROM OFA_T_BAT_CONCIL " );
+		g_string_append_printf( query, "WHERE BAT_LINE_ID=%ld ", ofo_bat_line_get_line_id( line ));
+		query = g_string_append( query, "ORDER BY BAT_REC_ENTRY ASC" );
+
+		if( ofa_dbms_query_ex( dbms, query->str, &result, TRUE )){
+			for( irow=result ; irow ; irow=irow->next ){
+				concil = g_new0( sConcil, 1 );
+
+				icol = ( GSList * ) irow->data;
+				concil->entry = atol(( const gchar * ) icol->data );
+				icol = icol->next;
+				concil->upd_user = g_strdup(( const gchar * ) icol->data );
+				icol = icol->next;
+				my_utils_stamp_set_from_sql( &concil->upd_stamp, ( const gchar * ) icol->data );
+
+				bat_line_add_concil( line, concil );
+			}
+			ofa_dbms_free_results( result );
+		}
+		g_string_free( query, TRUE );
+	}
+
 	return( g_list_reverse( dataset ));
+}
+
+static void
+bat_line_add_concil( ofoBatLine *batline, const sConcil *concil )
+{
+	ofoBatLinePrivate *priv;
+
+	priv = batline->priv;
+
+	priv->concils = g_list_append( priv->concils, ( gpointer ) concil );
 }
 
 /**
@@ -371,54 +412,173 @@ ofo_bat_line_get_amount( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_entry:
+ * ofo_bat_line_get_entries:
+ *
+ * Returns: a #GList of entries which have been reconciliated against
+ * this bat line (most often, only one entry).
+ *
+ * The returned value should be #g_list_free() by the caller.
  */
-ofxCounter
-ofo_bat_line_get_entry( const ofoBatLine *bat )
+GList *
+ofo_bat_line_get_entries( const ofoBatLine *bat )
 {
+	GList *entries, *it;
+	sConcil *concil;
+
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
+
+	entries = NULL;
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->priv->entry );
+		for( it=bat->priv->concils ; it ; it=it->next ){
+			concil = ( sConcil * ) it->data;
+			entries = g_list_append( entries, ( gpointer ) concil->entry );
+		}
 	}
 
-	g_assert_not_reached();
-	return( 0 );
+	return( entries );
 }
 
 /**
  * ofo_bat_line_get_upd_user:
+ *
+ * We only look at the first record as all should have been
+ * reconciliated simultaneously.
  */
 const gchar *
 ofo_bat_line_get_upd_user( const ofoBatLine *bat )
 {
+	GList *concils;
+	sConcil *concil;
+	const gchar *cstr;
+
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
+
+	cstr = NULL;
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		concils = bat->priv->concils;
+		concil = concils ? ( sConcil * ) concils->data : NULL;
+		cstr = concil ? concil->upd_user : NULL;
+	}
+
+	return( cstr );
+}
+
+/**
+ * ofo_bat_line_is_used:
+ *
+ * Returns: %TRUE if the BAT line has been used to reconciliate some
+ * entry.
+ */
+gboolean
+ofo_bat_line_is_used( const ofoBatLine *bat )
+{
+	GList *concils;
+
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->priv->upd_user );
+		concils = bat->priv->concils;
+		return( concils != NULL );
 	}
 
 	g_assert_not_reached();
-	return( NULL );
+	return( FALSE );
+}
+
+/**
+ * ofo_bat_line_has_entry:
+ *
+ * Returns: %TRUE if the BAT line has been used to reconciliate this
+ * entry.
+ */
+gboolean
+ofo_bat_line_has_entry( const ofoBatLine *bat, ofxCounter entry )
+{
+	GList *it;
+
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		for( it=bat->priv->concils ; it ; it=it->next ){
+			if( entry == (( sConcil * ) it->data )->entry ){
+				return( TRUE );
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofo_bat_line_get_entries_group:
+ *
+ * Returns: the list of entries which have been reconciliated against
+ * the same BAT line that the given entry.
+ *
+ * The returned list should be #g_list_free_full( list, ( GDestroyNotify ) g_free )
+ * by the caller.
+ */
+GList *
+ofo_bat_line_get_entries_group( const ofoDossier *dossier, ofxCounter entry )
+{
+	gchar *query;
+	GSList *result, *irow, *icol;
+	ofxCounter *pnumber;
+	GList *entries;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+
+	entries = NULL;
+	query = g_strdup_printf(
+			"SELECT BAT_REC_ENTRY FROM OFA_T_BAT_CONCIL "
+			"	WHERE BAT_LINE_ID="
+			"		(SELECT BAT_LINE_ID FROM OFA_T_BAT_CONCIL WHERE BAT_REC_ENTRY=%ld)", entry );
+
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			pnumber = g_new0( ofxCounter, 1 );
+			*pnumber = atol(( gchar * ) icol->data );
+			entries = g_list_prepend( entries, pnumber );
+		}
+		ofa_dbms_free_results( result );
+	}
+	g_free( query );
+
+	return( entries );
 }
 
 /**
  * ofo_bat_line_get_upd_stamp:
+ *
+ * We only look at the first record as all should have been
+ * reconciliated simultaneously.
  */
 const GTimeVal *
 ofo_bat_line_get_upd_stamp( const ofoBatLine *bat )
 {
+	GList *concils;
+	sConcil *concil;
+	const GTimeVal *stamp;
+
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
+
+	stamp = NULL;
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &bat->priv->upd_stamp );
+		concils = bat->priv->concils;
+		concil = concils ? ( sConcil * ) concils->data : NULL;
+		stamp = concil ? ( const GTimeVal * ) &concil->upd_stamp : NULL;
 	}
 
-	g_assert_not_reached();
-	return( NULL );
+	return( stamp );
 }
 
 /*
@@ -519,49 +679,6 @@ ofo_bat_line_set_amount( ofoBatLine *bat, ofxAmount amount )
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		bat->priv->amount = amount;
-	}
-}
-
-/**
- * ofo_bat_line_set_entry:
- */
-void
-ofo_bat_line_set_entry( ofoBatLine *bat, ofxCounter number )
-{
-	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
-
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		bat->priv->entry = number;
-	}
-}
-
-/*
- * ofo_bat_line_set_upd_user:
- */
-static void
-bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user )
-{
-	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
-
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		g_free( bat->priv->upd_user );
-		bat->priv->upd_user = g_strdup( upd_user );
-	}
-}
-
-/*
- * ofo_bat_line_set_upd_stamp:
- */
-static void
-bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp )
-{
-	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
-
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		my_utils_stamp_set_from_stamp( &bat->priv->upd_stamp, upd_stamp );
 	}
 }
 
@@ -672,14 +789,16 @@ bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 }
 
 /**
- * ofo_bat_line_update:
+ * ofo_bat_line_add_entry:
  *
- * Updating a BAT line means mainly updating the reconciliation properties
+ * Add a new reconciliated entry against this BAT line.
+ * This update both the DBMS and the #ofoBatLine object.
  */
 gboolean
-ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
+ofo_bat_line_add_entry( ofoBatLine *bat_line, const ofoDossier *dossier, ofxCounter entry )
 {
 	static const gchar *thisfn = "ofo_bat_line_insert";
+	sConcil *concil;
 
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat_line ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -689,10 +808,16 @@ ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
-		if( bat_line_do_update(
+		concil = g_new0( sConcil, 1 );
+		concil->entry = entry;
+		concil->upd_user = g_strdup( ofo_dossier_get_user( dossier ));
+		my_utils_stamp_set_now( &concil->upd_stamp );
+		bat_line_add_concil( bat_line, concil );
+
+		if( bat_line_do_add_entry(
 					bat_line,
 					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					concil )){
 
 			return( TRUE );
 		}
@@ -702,37 +827,79 @@ ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
 }
 
 static gboolean
-bat_line_do_update( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
+bat_line_do_add_entry( ofoBatLine *bat, const ofaDbms *dbms, const sConcil *concil )
 {
 	gboolean ok;
 	GString *query;
 	gchar *stamp_str;
-	GTimeVal stamp;
-	ofxCounter entry_number;
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp_str = my_utils_stamp_to_str( &concil->upd_stamp, MY_STAMP_YYMDHMS );
 
-	entry_number = ofo_bat_line_get_entry( bat );
-
-	query = g_string_new( "UPDATE OFA_T_BAT_LINES SET " );
-
-	if( entry_number > 0 ){
-		g_string_append_printf( query,
-				"	BAT_LINE_ENTRY=%ld,BAT_LINE_UPD_USER='%s',BAT_LINE_UPD_STAMP='%s' ",
-					entry_number, user, stamp_str );
-	} else {
-		query = g_string_append( query,
-				"	BAT_LINE_ENTRY=NULL,BAT_LINE_UPD_USER=NULL,BAT_LINE_UPD_STAMP=0" );
-	}
+	query = g_string_new( "INSERT INTO OFA_T_BAT_CONCIL " );
 
 	g_string_append_printf( query,
-			"	WHERE BAT_LINE_ID=%ld", ofo_bat_line_get_line_id( bat ));
+			"	(BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
+			"	VALUES (%ld,%ld,'%s','%s')",
+					ofo_bat_line_get_line_id( bat ), concil->entry, concil->upd_user, stamp_str );
 
 	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+
+	return( ok );
+}
+
+/**
+ * ofo_bat_line_remove_entry:
+ *
+ * Un-reconciliate a previously reconciliated BAT line.
+ * This update both the DBMS and the #ofoBatLine object.
+ */
+gboolean
+ofo_bat_line_remove_entries( ofoBatLine *bat_line, const ofoDossier *dossier, ofxCounter entry )
+{
+	static const gchar *thisfn = "ofo_bat_line_insert";
+	ofoBatLinePrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat_line ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( bat_line )->prot->dispose_has_run ){
+
+		g_debug( "%s: bat=%p, dossier=%p",
+				thisfn, ( void * ) bat_line, ( void * ) dossier );
+
+		priv = bat_line->priv;
+		g_list_free_full( priv->concils, ( GDestroyNotify ) concil_free );
+		priv->concils = NULL;
+
+		if( bat_line_do_remove_entries(
+					bat_line,
+					ofo_dossier_get_dbms( dossier ))){
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+bat_line_do_remove_entries( ofoBatLine *bat, const ofaDbms *dbms )
+{
+	gboolean ok;
+	GString *query;
+
+	query = g_string_new( "DELETE FROM OFA_T_BAT_CONCIL " );
+
+	g_string_append_printf( query,
+			"	WHERE BAT_LINE_ID=%ld",
+					ofo_bat_line_get_line_id( bat ));
+
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
+
+	g_string_free( query, TRUE );
 
 	return( ok );
 }

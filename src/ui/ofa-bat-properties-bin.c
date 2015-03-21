@@ -422,22 +422,29 @@ display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
 static void
 display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
 {
-	gchar *sid, *sdope, *sdeffect, *samount, *sentry, *stamp;
+	gchar *sid, *sdope, *sdeffect, *samount, *stamp;
 	const gchar *cuser;
-	ofxCounter number;
+	GList *entries, *it;
+	GString *snumbers;
 	GtkTreeIter iter;
 
 	sid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
 	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
 	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
 	samount = my_double_to_str( ofo_bat_line_get_amount( line ));
-	number = ofo_bat_line_get_entry( line );
-	if( number ){
-		sentry = g_strdup_printf( "%lu", number );
+	entries = ofo_bat_line_get_entries( line );
+	snumbers = g_string_new( "" );
+	for( it=entries ; it ; it=it->next ){
+		if( snumbers->len ){
+			snumbers = g_string_append( snumbers, "," );
+		}
+		g_string_append_printf( snumbers, "%lu", ( gulong ) it->data );
+	}
+	g_list_free( entries );
+	if( snumbers->len ){
 		cuser = ofo_bat_line_get_upd_user( line );
 		stamp = my_utils_stamp_to_str( ofo_bat_line_get_upd_stamp( line ), MY_STAMP_DMYYHM );
 	} else {
-		sentry = g_strdup( "" );
 		cuser = "";
 		stamp = g_strdup( "" );
 	}
@@ -453,13 +460,13 @@ display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
 			COL_LABEL,    ofo_bat_line_get_label( line ),
 			COL_AMOUNT,   samount,
 			COL_CURRENCY, ofo_bat_line_get_currency( line ),
-			COL_ENTRY,    sentry,
+			COL_ENTRY,    snumbers->str,
 			COL_USER,     cuser,
 			COL_STAMP,    stamp,
 			-1 );
 
+	g_string_free( snumbers, TRUE );
 	g_free( stamp );
-	g_free( sentry );
 	g_free( samount );
 	g_free( sdeffect );
 	g_free( sdope );
