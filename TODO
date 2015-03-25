@@ -417,7 +417,9 @@
 
  757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
 
- 758
+ 758 2015- 3-25 when backing up, close all pages
+
+ 759
 
 -----------------------------------------------------------------------
  DONE

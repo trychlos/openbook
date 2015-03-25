@@ -1,3 +1,7 @@
+2015-03-25 Pierre Wieser <pwieser@trychlos.org>
+
+	* configure.ac: post-release version bump.
+
 2015-03-21 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-account-select.c,

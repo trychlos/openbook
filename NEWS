@@ -3,9 +3,28 @@
  Summary
  =======
  
+   Version 0.38
    Version 0.37
    Version 0.36
    Version 0.35
+
+-----------------------------------------------------------------------
+ Version 0.38
+ ============
+
+ Released on 
+
+ New features:
+
+	- 
+
+ Bug fixes:
+
+   -  
+
+ Other changes:
+
+   - 
 
 -----------------------------------------------------------------------
  Version 0.37
@@ -55,7 +74,6 @@
    - removed method ofo_bat_line_update().
    - new method ofo_bat_line_add_entry().
    - new method ofo_bat_line_remove_entries().
-   - update DBMS to version 24.
 
 -----------------------------------------------------------------------
  Version 0.36
