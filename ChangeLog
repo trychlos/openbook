@@ -1,5 +1,7 @@
 2015-03-25 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/import-lcl-pdf/ofa-importer.c: fix date check.
+
 	* configure.ac: post-release version bump.
 
 2015-03-21 Pierre Wieser <pwieser@trychlos.org>

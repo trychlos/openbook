@@ -829,7 +829,7 @@ get_dope_from_str( GDate *date, ofsBat *bat, const gchar *sdate )
 	my_date_clear( date );
 
 	if( sscanf( sdate, "%u.%u", &d, &m )){
-		if( d <= 31 && m <= 12 ){
+		if( g_date_valid_day( d ) && g_date_valid_month( m )){
 			g_date_set_day( date, d );
 			g_date_set_month( date, m );
 			m_end = g_date_get_month( &bat->end );
