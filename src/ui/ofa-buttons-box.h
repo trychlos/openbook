@@ -91,7 +91,8 @@ enum {
 	BUTTON_GUIDED_INPUT,
 	BUTTON_ACCEPT,
 	BUTTON_DECLINE,
-	BUTTON_ACCEPT_ALL
+	BUTTON_ACCEPT_ALL,
+	BUTTON_UNRECONCILIATE
 };
 
 GType          ofa_buttons_box_get_type      ( void ) G_GNUC_CONST;

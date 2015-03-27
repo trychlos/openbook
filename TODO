@@ -442,9 +442,6 @@
 
  768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
 
- 769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
-                'Import' one, setting the labels under the buttons
-
  770
 
 -----------------------------------------------------------------------
@@ -3440,6 +3437,10 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
+                'Import' one, setting the labels under the buttons
+     2015- 3-27 done - git #3235e9f
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

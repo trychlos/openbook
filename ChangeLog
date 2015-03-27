@@ -1,5 +1,12 @@
 2015-03-27 Pierre Wieser <pwieser@trychlos.org>
 
+	Reconciliation: have an 'Unreconciliate' button (todo #768)
+
+	* src/ui/ofa-buttons-box.c,
+	* src/ui/ofa-buttons-box.h: add 'Unreconciliate' button.
+
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
 	Reconciliation: replace GtkFileChooser button with an 'Import' one,
 	setting the labels under the buttons (todo #769).
 

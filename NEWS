@@ -17,6 +17,7 @@
  New features:
 
 	- Fix b-e reconciliation scheme.
+	- Have an 'Unreconciliate' button (todo #768).
 
  Bug fixes:
 

@@ -237,6 +237,9 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 			case BUTTON_ACCEPT_ALL:
 				button = gtk_button_new_with_mnemonic( _( "Accept a_ll" ));
 				break;
+			case BUTTON_UNRECONCILIATE:
+				button = gtk_button_new_with_mnemonic( _( "_Unreconciliate" ));
+				break;
 			default:
 				g_warning( "%s: button=%u not implemented", thisfn, button_id );
 				break;
