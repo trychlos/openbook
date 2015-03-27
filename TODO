@@ -371,7 +371,7 @@
 
  742 2015- 3-19 RestoreAssistant: have a filter on *.gz
 
- 743 2015- 3-19 Reconciliation: when onky displaying non reconciliated,
+ 743 2015- 3-19 Reconciliation: when only displaying non reconciliated,
                 reconciliating a couple entry+batline makes this entry
                 disappear (normal), but the focus go to the next line
                 which becomes wrongly collapsed
@@ -388,9 +388,9 @@
                 after having cleared the account number, trying to clear
                 the bat lines
 
- 749 2015- 3-19 Have a summary of non-reconciliated bat lines
-                because the corresponding bat files will not be purged
-                at the closing of the exercice
+ 749 2015- 3-19 Have a summary of non fully used bat files
+                because they will not be purged at the closing of the 
+                exercice
 
  750 2015- 3-20 Reconciliation: when opening the page, the last seen
                 account is displayed (normal), no line is selected,
@@ -409,7 +409,7 @@
  753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
                 using ofoBat object instead of bat_id
 
- 754 2015- 3-21 add unused count to bat page
+ 754 2015- 3-21 add unused count to bat page treeview
 
  755 2015- 3-21 add DBMS version to dossier properties
 
@@ -417,9 +417,35 @@
 
  757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
 
- 758 2015- 3-25 when backing up, close all pages
+ 758 2015- 3-21 warns when deleting a settled or reconciliated entry
+                +unsettle/unreconciliate
 
- 759
+ 759 2015- 3-22 review ofa_bats_page_on_import_clicked()
+
+ 760 2015- 3-22 DBMS upgrade may be long (notably in v24), so have a
+                progress bar in Restore assistant
+
+ 761 2015- 3-22 in the warning displayed when restoring to a database,
+                display the target database in bold (or red)
+
+ 762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
+
+ 763 2015- 3-23 systematize the use of my_strlen
+
+ 764 2015- 3-23 entry_load_dataset(): add order clause as an argument
+
+ 765 2015- 3-25 when backing up, close all pages
+
+ 766 2015- 3-26 replace ofaIDaseset interface by ofaICollector
+
+ 767 2015- 3-27 Reconciliation: replace 'Accept' with 'Reconciliate'
+
+ 768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
+
+ 769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
+                'Import' one, setting the label under the buttons
+
+ 770
 
 -----------------------------------------------------------------------
  DONE
