@@ -180,7 +180,7 @@ ofa_dbms_connect( ofaDbms *dbms,
 	ofaDbmsPrivate *priv;
 
 	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( dname ), FALSE );
 
 	g_debug( "%s: dbms=%p, dname=%s, dbname=%s, account=%s, password=%s, display_error=%s",
 			thisfn, ( void * ) dbms,
@@ -497,7 +497,7 @@ error_query( const ofaDbms *dbms, const gchar *query )
 	str = ofa_idbms_last_error( priv->pmodule, priv->phandle );
 
 	/* query_ex returns NULL if the result is empty: this is not an error */
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dlg ), "%s", str );
 	}
 	g_free( str );

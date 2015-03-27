@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-utils.h"
 
 #include "ui/my-editable-date.h"
 
@@ -224,9 +225,9 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 		}
 	}
 
-	if( text && g_utf8_strlen( text, -1 )){
+	if( my_strlen( text )){
 		g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_inserted, data );
-		gtk_editable_insert_text( editable, text, g_utf8_strlen( text, -1 ), position );
+		gtk_editable_insert_text( editable, text, my_strlen( text ), position );
 		g_signal_handlers_unblock_by_func( editable, ( gpointer ) on_text_inserted, data );
 	}
 
@@ -288,20 +289,20 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 		len_day = 0;
 		have_year = FALSE;
 		components = NULL;
-		if( g_utf8_strlen( str_result->str, -1 )){
+		if( my_strlen( str_result->str )){
 			components = g_strsplit( str_result->str, "/", -1 );
 			if( *components ){
-				if( g_utf8_strlen( *components, -1 )){
+				if( my_strlen( *components )){
 					day = atoi( *components );
-					len_day = g_utf8_strlen( *components, -1 );
+					len_day = my_strlen( *components );
 				}
 				if( *( components+1 )){
-					if( g_utf8_strlen( *( components+1 ), -1 )){
+					if( my_strlen( *( components+1 ))){
 						month = atoi( *( components+1 ));
 					}
 					if( *( components+2 )){
 						have_two_slashes = TRUE;
-						if( g_utf8_strlen( *( components+2 ), -1 )){
+						if( my_strlen( *( components+2 ))){
 							have_year = TRUE;
 						}
 						if( *( components+3 )){
@@ -532,7 +533,7 @@ insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *dat
 	data->setting_text = TRUE;
 
 	g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_inserted, data );
-	gtk_editable_insert_text( editable, text, g_utf8_strlen( text, -1 ), &pos );
+	gtk_editable_insert_text( editable, text, my_strlen( text ), &pos );
 	g_signal_handlers_unblock_by_func( editable, ( gpointer ) on_text_inserted, data );
 
 	g_free( text );
@@ -560,7 +561,7 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 
 	if( !data->setting_text ){
 		text = gtk_editable_get_chars( editable, 0, -1 );
-		len_text = g_utf8_strlen( text, -1 );
+		len_text = my_strlen( text );
 		my_date_set_from_str( &data->date, text, data->format->date_format );
 		data->valid = my_date_is_valid( &data->date );
 		DEBUG( "%s: editable=%p, data=%p, text='%s', valid=%s",
@@ -782,7 +783,7 @@ my_editable_date_is_empty( GtkEditable *editable )
 	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), NULL );
 
 	text = gtk_editable_get_chars( editable, 0, -1 );
-	empty = g_utf8_strlen( text, -1 ) == 0;
+	empty = my_strlen( text ) == 0;
 	g_free( text );
 
 	return( empty );

@@ -255,7 +255,7 @@ ofoCurrency *
 ofo_currency_get_by_code( ofoDossier *dossier, const gchar *code )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( code && g_utf8_strlen( code, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( code ), NULL );
 
 	OFA_IDATASET_GET( dossier, CURRENCY, currency );
 
@@ -447,9 +447,9 @@ ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 gboolean
 ofo_currency_is_valid( const gchar *code, const gchar *label, const gchar *symbol, gint digits )
 {
-	return( code && g_utf8_strlen( code, -1 ) &&
-			label && g_utf8_strlen( label, -1 ) &&
-			symbol && g_utf8_strlen( symbol, -1 ) &&
+	return( my_strlen( code ) &&
+			my_strlen( label ) &&
+			my_strlen( symbol ) &&
 			digits > 0 );
 }
 
@@ -934,7 +934,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* currency code */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ISO 3A currency code" ));
 			errors += 1;
@@ -945,7 +945,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* currency label */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency label" ));
 			errors += 1;
@@ -956,7 +956,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* currency symbol */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency symbol" ));
 			errors += 1;
@@ -968,7 +968,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		ofo_currency_set_digits( currency,
-				( cstr && g_utf8_strlen( cstr, -1 ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
+				( my_strlen( cstr ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
 
 		/* notes
 		 * we are tolerant on the last field... */

@@ -2553,7 +2553,7 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 
 				/* are the amounts compatible ?
 				 * a positive bat_amount implies that the entry should be a debit */
-				g_return_val_if_fail( g_utf8_strlen( sdeb, -1 ) || g_utf8_strlen( scre, -1 ), NULL );
+				g_return_val_if_fail( my_strlen( sdeb ) || my_strlen( scre ), NULL );
 				/*g_debug( "examining entry: sdeb=%s, scre=%s", sdeb, scre );*/
 
 				if(( my_strlen( scre ) && my_strlen( sbat_deb ) && !g_utf8_collate( scre, sbat_deb )) ||

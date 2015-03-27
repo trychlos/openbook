@@ -562,9 +562,9 @@ ofo_dossier_open( ofoDossier *dossier,
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), FALSE );
-	g_return_val_if_fail( password && g_utf8_strlen( password, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( dname ), FALSE );
+	g_return_val_if_fail( my_strlen( account ), FALSE );
+	g_return_val_if_fail( my_strlen( password ), FALSE );
 
 	g_debug( "%s: dossier=%p, dname=%s, dbname=%s, account=%s, password=%s",
 			thisfn,
@@ -643,7 +643,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			( void * ) user_data );
 
 	if( OFO_IS_CURRENCY( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
@@ -774,8 +774,7 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 
 		default_dev = ofo_dossier_get_default_currency( dossier );
 
-		if( default_dev &&
-				g_utf8_strlen( default_dev, -1 ) &&
+		if( my_strlen( default_dev ) &&
 				!g_utf8_collate( default_dev, currency )){
 			return( TRUE );
 		}
@@ -1618,7 +1617,7 @@ gboolean
 ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
 								const GDate *begin, const GDate *end, gchar **msg )
 {
-	if( !label || !g_utf8_strlen( label, -1 )){
+	if( !my_strlen( label )){
 		*msg = g_strdup( _( "Empty label" ));
 		return( FALSE );
 	}
@@ -1628,7 +1627,7 @@ ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
 		return( FALSE );
 	}
 
-	if( !currency || !g_utf8_strlen( currency, -1 )){
+	if( !my_strlen( currency )){
 		*msg = g_strdup( _( "Empty default currency"));
 		return( FALSE );
 	}
@@ -1764,7 +1763,7 @@ void
 ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( label && g_utf8_strlen( label, -1 ));
+	g_return_if_fail( my_strlen( label ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1827,7 +1826,7 @@ static void
 dossier_set_upd_user( ofoDossier *dossier, const gchar *user )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( user && g_utf8_strlen( user, -1 ));
+	g_return_if_fail( my_strlen( user ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1974,8 +1973,8 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 	sCurrency *sdet;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( currency && g_utf8_strlen( currency, -1 ));
-	g_return_if_fail( account && g_utf8_strlen( account, -1 ));
+	g_return_if_fail( my_strlen( currency ));
+	g_return_if_fail( my_strlen( account ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -2175,10 +2174,10 @@ dossier_read_properties( ofoDossier *dossier )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			currency = icol->data;
-			if( currency && g_utf8_strlen( currency, -1 )){
+			if( my_strlen( currency )){
 				icol = icol->next;
 				cstr = icol->data;
-				if( cstr && g_utf8_strlen( cstr, -1 )){
+				if( my_strlen( cstr )){
 					sdet = get_currency_detail( dossier, currency, TRUE );
 					sdet->sld_account = g_strdup( cstr );
 				}
@@ -2535,7 +2534,7 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname, gboolean verb
 	gboolean ok;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( fname && g_utf8_strlen( fname, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( fname ), FALSE );
 
 	ok = FALSE;
 

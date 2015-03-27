@@ -618,7 +618,7 @@ is_validable( ofaFileFormatBin *self )
 
 	/* charmap */
 	charmap = get_charmap( self );
-	if( !charmap || !g_utf8_strlen( charmap, -1 )){
+	if( !my_strlen( charmap )){
 		g_free( charmap );
 		return( FALSE );
 	}
@@ -632,7 +632,7 @@ is_validable( ofaFileFormatBin *self )
 
 	/* decimal separator */
 	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
-	if( !decimal_sep || !g_utf8_strlen( decimal_sep, -1 )){
+	if( !my_strlen( decimal_sep )){
 		g_free( decimal_sep );
 		return( FALSE );
 	}
@@ -640,7 +640,7 @@ is_validable( ofaFileFormatBin *self )
 
 	/* field separator */
 	field_sep = my_field_combo_get_selected( priv->field_combo );
-	if( !field_sep || !g_utf8_strlen( field_sep, -1 )){
+	if( !my_strlen( field_sep )){
 		g_free( field_sep );
 		return( FALSE );
 	}
@@ -785,7 +785,7 @@ get_available_charmaps( void )
 		g_warning( "%s: %s", thisfn, error->message );
 		g_error_free( error );
 
-	} else if( stderr && g_utf8_strlen( stderr, -1 )){
+	} else if( my_strlen( stderr )){
 		g_warning( "%s: stderr='%s'", thisfn, stderr );
 		g_free( stderr );
 
@@ -794,7 +794,7 @@ get_available_charmaps( void )
 		g_free( stdout );
 		iter = lines;
 		while( *iter ){
-			if( g_utf8_strlen( *iter, -1 )){
+			if( my_strlen( *iter )){
 				charmaps = g_list_prepend( charmaps, g_strdup( *iter ));
 			}
 			iter++;

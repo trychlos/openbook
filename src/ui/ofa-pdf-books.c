@@ -703,13 +703,12 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 	/* recall of account and date selections in line 4 */
 	stitle = g_string_new( "" );
 	if( priv->all_accounts ||
-			(( !priv->from_account || !g_utf8_strlen( priv->from_account, -1 )) &&
-			 ( !priv->to_account || !g_utf8_strlen( priv->to_account, -1 )))){
+			( !my_strlen( priv->from_account ) && !my_strlen( priv->to_account ))){
 		g_string_printf( stitle, _( "All accounts" ));
 	} else {
-		if( priv->from_account && g_utf8_strlen( priv->from_account, -1 )){
+		if( my_strlen( priv->from_account )){
 			g_string_printf( stitle, _( "From account %s" ), priv->from_account );
-			if( priv->from_account && g_utf8_strlen( priv->from_account, -1 )){
+			if( my_strlen( priv->to_account )){
 				g_string_append_printf( stitle, " to account %s", priv->to_account );
 			}
 		} else {
@@ -1002,7 +1001,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	/* piece */
 	cstr = ofo_entry_get_ref( entry );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		ofa_iprintable_ellipsize_text( instance, context,
 				priv->body_piece_ltab, y,
 				cstr, priv->body_piece_max_size );

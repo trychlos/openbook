@@ -151,7 +151,7 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 	entry = my_utils_container_get_child_by_name( page, "backup" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
-	if( cmdline && g_utf8_strlen( cmdline, -1 )){
+	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_backup_cmd( OFA_IDBMS( instance )));
@@ -161,7 +161,7 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 	entry = my_utils_container_get_child_by_name( page, "restore" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
-	if( cmdline && g_utf8_strlen( cmdline, -1 )){
+	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_restore_cmd( OFA_IDBMS( instance )));

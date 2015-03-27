@@ -292,7 +292,7 @@ ofa_currency_combo_set_selected( ofaCurrencyCombo *combo, const gchar *code )
 	ofaCurrencyComboPrivate *priv;
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
-	g_return_if_fail( code && g_utf8_strlen( code, -1 ));
+	g_return_if_fail( my_strlen( code ));
 
 	priv = combo->priv;
 

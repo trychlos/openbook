@@ -315,7 +315,7 @@ ofa_iimportable_get_string( GSList **it )
 	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
 	if( cstr ){
 		str = g_strstrip( g_strdup( cstr ));
-		if( !g_utf8_strlen( str, -1 )){
+		if( !my_strlen( str )){
 			g_free( str );
 			str = NULL;
 		}

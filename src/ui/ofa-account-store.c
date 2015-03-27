@@ -399,13 +399,14 @@ find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter
 	const gchar *number;
 	gchar *candidate_number;
 	gboolean found;
+	glong len;
 
 	number = ofo_account_get_number( account );
 	candidate_number = g_strdup( number );
 	found = FALSE;
 
-	while( !found && g_utf8_strlen( candidate_number, -1 ) > 1 ){
-		candidate_number[g_utf8_strlen( candidate_number, -1 )-1] = '\0';
+	while( !found && ( len = my_strlen( candidate_number )) > 1 ){
+		candidate_number[len-1] = '\0';
 		found = find_row_by_number( store, candidate_number, parent_iter, NULL );
 	}
 

@@ -434,7 +434,9 @@
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
- 770
+ 770 2015- 3-28 have my_collate()
+
+ 771
 
 -----------------------------------------------------------------------
  DONE

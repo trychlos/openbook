@@ -63,7 +63,7 @@ my_utils_quote( const gchar *str )
 	error = NULL;
 	new_str = NULL;
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 
 		regex = g_regex_new( "'", 0, 0, &error );
 		if( error ){
@@ -234,7 +234,7 @@ my_utils_export_multi_lines( const gchar *str )
 	export = NULL;
 	error = NULL;
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 
 		regex = g_regex_new( "\n", 0, 0, &error );
 		if( error ){
@@ -272,7 +272,7 @@ my_utils_import_multi_lines( const gchar *str )
 
 	import = NULL;
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 
 		array = g_strsplit( str, "][", -1 );
 		iter = array;
@@ -304,7 +304,7 @@ my_utils_import_multi_lines( const gchar *str )
 gboolean
 my_utils_boolean_from_str( const gchar *str )
 {
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		if( !g_utf8_collate( str, "1" )){
 			return( TRUE );
 		}
@@ -758,7 +758,7 @@ my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stre
 	GError *error;
 	gchar *sysfname;
 
-	g_return_val_if_fail( uri && g_utf8_strlen( uri, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ), FALSE );
 	g_return_val_if_fail( file, FALSE );
 	g_return_val_if_fail( stream, FALSE );
 
@@ -814,7 +814,7 @@ my_utils_input_stream_new( const gchar *filename, GFile **file, GInputStream **s
 	GError *error;
 	gchar *sysfname;
 
-	g_return_val_if_fail( filename && g_utf8_strlen( filename, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( filename ), FALSE );
 	g_return_val_if_fail( file, FALSE );
 	g_return_val_if_fail( stream, FALSE );
 

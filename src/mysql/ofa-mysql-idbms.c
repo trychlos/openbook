@@ -600,7 +600,7 @@ idbms_grant_user( const ofaIDbms *instance, const gchar *dname,
 	stmt = g_string_new( "" );
 
 	hostname = g_strdup( infos->host );
-	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+	if( !my_strlen( hostname )){
 		g_free( hostname );
 		hostname = g_strdup( "localhost" );
 	}
@@ -682,7 +682,7 @@ ofa_mysql_duplicate_grants( const ofaIDbms *instance, mysqlInfos *infos, const g
 	}
 
 	hostname = g_strdup( infos->host );
-	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+	if( !my_strlen( hostname )){
 		g_free( hostname );
 		hostname = g_strdup( "localhost" );
 	}
@@ -763,7 +763,7 @@ do_drop_account( MYSQL *mysql, const gchar *host, const gchar *account )
 	g_free( query );
 
 	hostname = g_strdup( host );
-	if( !host || !g_utf8_strlen( host, -1 )){
+	if( !my_strlen( host )){
 		g_free( hostname );
 		hostname = g_strdup( "localhost" );
 	}

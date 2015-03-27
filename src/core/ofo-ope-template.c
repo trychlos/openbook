@@ -370,7 +370,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, v
 			( void * ) user_data );
 
 	if( OFO_IS_LEDGER( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				on_update_ledger_mnemo( dossier, mnemo, prev_id );
@@ -378,7 +378,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, v
 		}
 
 	} else if( OFO_IS_RATE( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				on_update_rate_mnemo( dossier, mnemo, prev_id );
@@ -514,7 +514,7 @@ ofo_ope_template_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 	/*static const gchar *thisfn = "ofo_ope_template_get_by_mnemo";*/
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
@@ -546,7 +546,7 @@ gboolean
 ofo_ope_template_use_ledger( ofoDossier *dossier, const gchar *ledger )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ledger && g_utf8_strlen( ledger, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( ledger ), FALSE );
 
 	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
@@ -694,7 +694,7 @@ ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model, ofoDossier *do
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
 		mnemo = ofo_ope_template_get_mnemo( model );
-		len_mnemo = g_utf8_strlen( mnemo, -1 );
+		len_mnemo = my_strlen( mnemo );
 		for( i=2 ; ; ++i ){
 			/* if we are greater than 9999, there is a problem... */
 			maxlen = ( i < 10 ? MNEMO_LENGTH-1 :
@@ -1383,7 +1383,7 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, ofoDossier *dossier, cons
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 
 	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
@@ -1819,7 +1819,7 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	/* model mnemo */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;
@@ -1831,7 +1831,7 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	/* model label */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template label" ));
 		*errors += 1;
@@ -1843,7 +1843,7 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	/* model ledger */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template ledger" ));
 		*errors += 1;
@@ -1897,7 +1897,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	/* model mnemo */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;

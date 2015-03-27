@@ -82,7 +82,7 @@ amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, NULL );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		box->amount = ( ofxAmount ) my_double_set_from_sql( str );
 	}
@@ -131,7 +131,7 @@ counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, NULL );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		box->counter = atol( str );
 	}
@@ -180,7 +180,7 @@ int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, NULL );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		box->integer = atoi( str );
 	}
@@ -230,7 +230,7 @@ date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	g_return_val_if_fail( box->def->type == OFA_TYPE_DATE, NULL );
 	my_date_clear( &box->date );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		my_date_set_from_sql( &box->date, str );
 		/*g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, ofa_prefs_date_display()));*/
@@ -285,7 +285,7 @@ string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		box->string = g_strdup( str );
 	}
@@ -336,7 +336,7 @@ string_set_fn( sBoxData *box, const gchar *value )
 	g_free( box->string );
 	/*g_debug( "string_set_fn: value=%s", value );*/
 
-	if( value && g_utf8_strlen( value, -1 )){
+	if( my_strlen( value )){
 		box->is_null = FALSE;
 		box->string = g_strdup( value );
 
@@ -354,7 +354,7 @@ timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		box->is_null = FALSE;
 		my_utils_stamp_set_from_sql( &box->timestamp, str );
 	}
@@ -566,7 +566,7 @@ ofa_box_get_dbms_columns( const ofsBoxDef *defs )
 	if( defs ){
 		idef = defs;
 		while( idef->id ){
-			if( idef->dbms && g_utf8_strlen( idef->dbms, -1 )){
+			if( my_strlen( idef->dbms )){
 				if( query->len ){
 					query = g_string_append_c( query, ',' );
 				}
@@ -653,10 +653,12 @@ get_csv_name( const ofsBoxDef *def )
 {
 	gchar *name;
 
-	if( def->csv && g_utf8_strlen( def->csv, -1 )){
+	if( my_strlen( def->csv )){
 		name = g_strdup( def->csv );
-	} else if( def->dbms && g_utf8_strlen( def->dbms, -1 )){
+
+	} else if( my_strlen( def->dbms )){
 		name = compute_csv_name( def->dbms );
+
 	} else {
 		g_warning( "ofa_box_get_csv_name: empty DBMS name for id=%u", def->id );
 		name = g_strdup( "" );
@@ -682,7 +684,7 @@ compute_csv_name( const gchar *dbms_name )
 	while( *iter ){
 		first = g_utf8_substring( *iter, 0, 1 );
 		first_case = g_utf8_strup( first, -1 );
-		others = g_utf8_substring( *iter, 1, g_utf8_strlen( *iter, -1 ));
+		others = g_utf8_substring( *iter, 1, my_strlen( *iter ));
 		others_case = g_utf8_strdown( others, -1 );
 		g_string_append_printf( csv_name, "%s%s", first_case, others_case );
 		g_free( first );

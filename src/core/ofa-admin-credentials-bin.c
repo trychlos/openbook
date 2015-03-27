@@ -270,9 +270,9 @@ check_for_enable_dlg( ofaAdminCredentialsBin *self )
 	if( priv->msg_label ){
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
 
-		priv->ok = priv->account && g_utf8_strlen( priv->account, -1 ) &&
-					priv->password && g_utf8_strlen( priv->password, -1 ) &&
-					priv->bis && g_utf8_strlen( priv->bis, -1 ) &&
+		priv->ok = my_strlen( priv->account ) &&
+					my_strlen( priv->password ) &&
+					my_strlen( priv->bis ) &&
 					!g_utf8_collate( priv->password, priv->bis );
 
 		if( !priv->ok ){

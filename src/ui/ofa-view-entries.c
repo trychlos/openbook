@@ -487,7 +487,7 @@ setup_gen_selection( ofaViewEntries *self )
 	 * from the dbms on the last toggle only */
 
 	text = ofa_settings_get_string( st_pref_selection );
-	if( text && g_utf8_strlen( text, -1 ) && !g_utf8_collate( text, SEL_ACCOUNT )){
+	if( my_strlen( text ) && !g_utf8_collate( text, SEL_ACCOUNT )){
 		toggle = priv->account_btn;
 	/* default to select by ledger */
 	} else {
@@ -557,7 +557,7 @@ setup_account_selection( ofaViewEntries *self )
 	priv->f1_label = GTK_LABEL( widget );
 
 	text = ofa_settings_get_string( st_pref_account );
-	if( text && g_utf8_strlen( text, -1 )){
+	if( my_strlen( text )){
 		gtk_entry_set_text( priv->account_entry, text );
 	}
 	g_free( text );
@@ -1282,14 +1282,15 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 static gint
 cmp_strings( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 {
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -1303,14 +1304,15 @@ cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 {
 	ofxAmount a, b;
 
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -1327,14 +1329,15 @@ cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 {
 	ofxCounter a, b;
 
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -2087,7 +2090,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 	ofaViewEntriesPrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_VIEW_ENTRIES( self ));
-	g_return_if_fail( id && g_utf8_strlen( id, -1 ));
+	g_return_if_fail( my_strlen( id ));
 
 	if( !OFA_PAGE( self )->prot->dispose_has_run ){
 
@@ -2380,7 +2383,7 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DOPE, &sdope, -1 );
 
-	if( sdope && g_utf8_strlen( sdope, -1 )){
+	if( my_strlen( sdope )){
 		my_date_set_from_str( &date, sdope, ofa_prefs_date_display());
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
@@ -2417,7 +2420,7 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEFF, &sdeffect, -1 );
 
-	if( sdeffect && g_utf8_strlen( sdeffect, -1 )){
+	if( my_strlen( sdeffect )){
 		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
 		if( my_date_is_valid( &deff )){
 			is_valid = TRUE;
@@ -2458,7 +2461,7 @@ check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_LEDGER, &str, -1 );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		if( ofo_ledger_get_by_mnemo( priv->dossier, str )){
 			is_valid = TRUE;
 
@@ -2490,7 +2493,7 @@ check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter,
 			ENT_COL_ACCOUNT, &acc_number, ENT_COL_CURRENCY, &cur_code, -1 );
 
-	if( acc_number && g_utf8_strlen( acc_number, -1 )){
+	if( my_strlen( acc_number )){
 		account = ofo_account_get_by_number( priv->dossier, acc_number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
@@ -2536,7 +2539,7 @@ check_row_for_valid_label( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_LABEL, &str, -1 );
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		is_valid = TRUE;
 	} else {
 		set_error_msg( self, iter, _( "Empty label" ));
@@ -2557,7 +2560,7 @@ check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_CURRENCY, &code, -1 );
 
-	if( code && g_utf8_strlen( code, -1 )){
+	if( my_strlen( code )){
 		if( ofo_currency_get_by_code( priv->dossier, code )){
 			is_valid = TRUE;
 
@@ -2586,7 +2589,7 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 
-	if(( sdeb && g_utf8_strlen( sdeb, -1 )) || ( scre && g_utf8_strlen( scre, -1 ))){
+	if( my_strlen( sdeb ) || my_strlen( scre )){
 		debit = my_double_set_from_str( sdeb );
 		credit = my_double_set_from_str( scre );
 		if(( debit && !credit ) || ( !debit && credit )){
@@ -2633,7 +2636,7 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
 	g_return_if_fail( my_date_is_valid( &deff ));
 
-	g_return_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ));
+	g_return_if_fail( my_strlen( mnemo ));
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
@@ -2693,7 +2696,7 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
-		g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), FALSE );
+		g_return_val_if_fail( my_strlen( mnemo ), FALSE );
 		ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
@@ -2732,14 +2735,14 @@ check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter )
 	is_valid = FALSE;
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ACCOUNT, &number, ENT_COL_CURRENCY, &code, -1 );
 
-	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( number ), FALSE );
 	account = ofo_account_get_by_number( priv->dossier, number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
 	account_currency = ofo_account_get_currency( account );
 
-	g_return_val_if_fail( code && g_utf8_strlen( code, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( code ), FALSE );
 
 	if( !g_utf8_collate( account_currency, code )){
 		is_valid = TRUE;
@@ -2817,12 +2820,14 @@ display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
 
-	if( msgerr && g_utf8_strlen( msgerr, -1 )){
+	if( my_strlen( msgerr )){
 		text = msgerr;
 		color_str = RGBA_ERROR;
-	} else if( msgwarn && g_utf8_strlen( msgwarn, -1 )){
+
+	} else if( my_strlen( msgwarn )){
 		text = msgwarn;
 		color_str = RGBA_WARNING;
+
 	} else {
 		text = "";
 		color_str = RGBA_NORMAL;
@@ -3361,10 +3366,10 @@ get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter 
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
 
-	if( msgerr && g_utf8_strlen( msgerr, -1 )){
+	if( my_strlen( msgerr )){
 		err_level = ENT_ERR_ERROR;
 
-	} else if( msgwarn && g_utf8_strlen( msgwarn, -1 )){
+	} else if( my_strlen( msgwarn )){
 		err_level = ENT_ERR_WARNING;
 
 	} else {
@@ -3401,11 +3406,11 @@ insert_new_row( ofaViewEntries *self )
 	entry = ofo_entry_new();
 
 	if( gtk_toggle_button_get_active( priv->ledger_btn )){
-		if( priv->jou_mnemo && g_utf8_strlen( priv->jou_mnemo, -1 )){
+		if( my_strlen( priv->jou_mnemo )){
 			ofo_entry_set_ledger( entry, priv->jou_mnemo );
 		}
 	} else {
-		if( priv->acc_number && g_utf8_strlen( priv->acc_number, -1 )){
+		if( my_strlen( priv->acc_number )){
 			ofo_entry_set_account( entry, priv->acc_number );
 			account_object = ofo_account_get_by_number( priv->dossier, priv->acc_number );
 			ofo_entry_set_currency( entry, ofo_account_get_currency( account_object ));

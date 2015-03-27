@@ -60,7 +60,7 @@ ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "host" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	text = ofa_settings_dossier_get_string( dname, SETTINGS_HOST );
-	if( !text || !g_utf8_strlen( text, -1 )){
+	if( !my_strlen( text )){
 		g_free( text );
 		text = g_strdup( "localhost" );
 	}
@@ -70,7 +70,7 @@ ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "socket" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	text = ofa_settings_dossier_get_string( dname, SETTINGS_SOCKET );
-	if( text && g_utf8_strlen( text, -1 )){
+	if( my_strlen( text )){
 		gtk_label_set_text( GTK_LABEL( label ), text );
 	}
 	g_free( text );

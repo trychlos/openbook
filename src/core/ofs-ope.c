@@ -873,7 +873,7 @@ check_for_ledger( sChecker *checker )
 	ok = FALSE;
 	ope = checker->ope;
 
-	if( !ope->ledger || !g_utf8_strlen( ope->ledger, -1 )){
+	if( !my_strlen( ope->ledger )){
 		g_free( checker->message );
 		checker->message = g_strdup( _( "Ledger is empty" ));
 

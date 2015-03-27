@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <api/my-date.h>
+#include <api/my-utils.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
 #include "api/ofa-preferences.h"
@@ -382,7 +383,7 @@ lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer )
 	priv->errors = 0;
 
 	while( TRUE ){
-		if( !line || !line->data || !g_utf8_strlen( line->data, -1 )){
+		if( !line || !my_strlen( line->data )){
 			break;
 		}
 		tokens = g_strsplit( line->data, "\t", -1 );
@@ -400,7 +401,7 @@ lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer )
 			sdet->amount = get_double( *iter );
 
 			iter += 1;
-			if( *iter && g_utf8_strlen( *iter, -1 )){
+			if( my_strlen( *iter )){
 				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
 			}
 
@@ -467,7 +468,7 @@ lcl_get_ref_paiement( const gchar *str )
 {
 	gint i;
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		for( i=0 ; st_lcl_paiements[i].bat_label ; ++ i ){
 			if( !g_utf8_collate( str, st_lcl_paiements[i].bat_label )){
 				return( st_lcl_paiements[i].ofa_label );
@@ -491,8 +492,8 @@ lcl_concatenate_labels( gchar ***iter )
 	if( **iter ){
 		lab2 = g_strdup( **iter );
 		g_strstrip( lab2 );
-		if( lab2 && g_utf8_strlen( lab2, -1 )){
-			if( g_utf8_strlen( lab1->str, -1 )){
+		if( my_strlen( lab2 )){
+			if( my_strlen( lab1->str )){
 				lab1 = g_string_append( lab1, " " );
 			}
 			lab1 = g_string_append( lab1, lab2 );
@@ -503,8 +504,8 @@ lcl_concatenate_labels( gchar ***iter )
 		if( **iter ){
 			lab2 = g_strdup( **iter );
 			g_strstrip( lab2 );
-			if( lab2 && g_utf8_strlen( lab2, -1 )){
-				if( g_utf8_strlen( lab1->str, -1 )){
+			if( my_strlen( lab2 )){
+				if( my_strlen( lab1->str )){
 					lab1 = g_string_append( lab1, " " );
 				}
 				lab1 = g_string_append( lab1, lab2 );
@@ -512,11 +513,11 @@ lcl_concatenate_labels( gchar ***iter )
 			g_free( lab2 );
 
 			*iter += 1;
-			if( **iter && g_utf8_strlen( **iter, -1 )){
+			if( my_strlen( **iter )){
 				lab2 = g_strdup( **iter );
 				g_strstrip( lab2 );
-				if( lab2 && g_utf8_strlen( lab2, -1 )){
-					if( g_utf8_strlen( lab1->str, -1 )){
+				if( my_strlen( lab2 )){
+					if( my_strlen( lab1->str )){
 						lab1 = g_string_append( lab1, " " );
 					}
 					lab1 = g_string_append( lab1, lab2 );

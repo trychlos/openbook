@@ -357,7 +357,7 @@ on_account_changed( GtkEntry *entry, ofaPDFReconcil *self )
 				GTK_LABEL( priv->account_label), ofo_account_get_label( priv->account ));
 		priv->currency = ofo_account_get_currency( priv->account );
 		/* currency code may be empty for root accounts */
-		if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
+		if( my_strlen( priv->currency )){
 			currency = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, priv->currency );
 			if( currency && OFO_IS_CURRENCY( currency )){
 				priv->digits = ofo_currency_get_digits( currency );
@@ -504,7 +504,7 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 
 	/* keep the leftest column to display a line number */
 	str = g_strdup_printf( "%d", priv->count );
-	digits = g_utf8_strlen( str, -1 );
+	digits = my_strlen( str );
 	g_free( str );
 	priv->body_count_rtab = priv->page_margin + (1+digits) * 6*7/9;
 
@@ -664,7 +664,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), PANGO_ALIGN_LEFT );
 
 	cstr = ofo_entry_get_ref( entry );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		ofa_iprintable_ellipsize_text( instance, context,
 				priv->body_ref_ltab, y, cstr, priv->body_ref_max_size );
 	}

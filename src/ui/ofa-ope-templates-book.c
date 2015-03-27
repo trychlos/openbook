@@ -1199,13 +1199,13 @@ select_row_by_mnemo( ofaOpeTemplatesBook *book, const gchar *mnemo )
 
 	priv = book->priv;
 
-	if( mnemo && g_utf8_strlen( mnemo, -1 )){
+	if( my_strlen( mnemo )){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		if( ope ){
 			g_return_if_fail( OFO_IS_OPE_TEMPLATE( ope ));
 			ledger = ofo_ope_template_get_ledger( ope );
 			g_debug( "select_row_by_mnemo: ledger=%s", ledger );
-			if( ledger && g_utf8_strlen( ledger, -1 )){
+			if( my_strlen( ledger )){
 				page_w = book_get_page_by_ledger( book, ledger, FALSE );
 				if( page_w ){
 					page_n = gtk_notebook_page_num( priv->book, page_w );

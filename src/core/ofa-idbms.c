@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
@@ -349,7 +350,7 @@ ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {
 	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
 	g_return_val_if_fail( handle, FALSE );
-	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( query ), FALSE );
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->query ){
 		return( OFA_IDBMS_GET_INTERFACE( instance )->query( instance, handle, query ));
@@ -366,7 +367,7 @@ ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, 
 {
 	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
 	g_return_val_if_fail( handle, FALSE );
-	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( query ), FALSE );
 	g_return_val_if_fail( result, FALSE );
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
@@ -407,11 +408,11 @@ ofa_idbms_connect_display_attach_to( const gchar *dname, GtkContainer *parent )
 	ofaIDbms *instance;
 	gchar *provider;
 
-	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
+	g_return_if_fail( my_strlen( dname ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	provider = ofa_settings_get_dossier_provider( dname );
-	if( provider && g_utf8_strlen( provider, -1 )){
+	if( my_strlen( provider )){
 
 		modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
 		instance = get_provider_by_name( modules, provider );
@@ -509,7 +510,7 @@ ofa_idbms_connect_enter_apply( const ofaIDbms *instance, const gchar *dname, voi
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( dname ), FALSE );
 
 	ok = FALSE;
 

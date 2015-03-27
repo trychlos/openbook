@@ -908,14 +908,15 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 static gint
 cmp_strings( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -929,14 +930,15 @@ cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
 	ofxAmount a, b;
 
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -953,14 +955,15 @@ cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
 	ofxCounter a, b;
 
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
+	if( !my_strlen( stra )){
+		if( !my_strlen( strb )){
 			/* the two strings are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+
+	} else if( !my_strlen( strb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}

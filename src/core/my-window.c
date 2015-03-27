@@ -128,8 +128,7 @@ window_constructed( GObject *instance )
 	 *     the variables are set, though empty */
 	priv = MY_WINDOW( instance )->priv;
 
-	if( priv->window_xml && g_utf8_strlen( priv->window_xml, -1 ) &&
-		priv->window_name && g_utf8_strlen( priv->window_name, -1 )){
+	if( my_strlen( priv->window_xml ) && my_strlen( priv->window_name )){
 
 		toplevel = my_utils_builder_load_from_path( priv->window_xml, priv->window_name );
 		if( toplevel && GTK_IS_WINDOW( toplevel )){

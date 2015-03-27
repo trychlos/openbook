@@ -416,7 +416,7 @@ on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 
 	content = gtk_entry_get_text( entry );
 
-	if( !content || !g_utf8_strlen( content, -1 )){
+	if( !my_strlen( content )){
 		str = g_strdup( "" );
 	} else {
 		text = my_editable_amount_get_string( GTK_EDITABLE( entry ));

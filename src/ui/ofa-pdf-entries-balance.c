@@ -726,13 +726,12 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 	stitle = g_string_new( "" );
 
 	if( priv->all_accounts ||
-			(( !priv->from_account || !g_utf8_strlen( priv->from_account, -1 )) &&
-			 ( !priv->to_account || !g_utf8_strlen( priv->to_account, -1 )))){
+			( !my_strlen( priv->from_account ) && !my_strlen( priv->to_account ))){
 		g_string_printf( stitle, _( "All accounts" ));
 	} else {
-		if( priv->from_account && g_utf8_strlen( priv->from_account, -1 )){
+		if( my_strlen( priv->from_account )){
 			g_string_printf( stitle, _( "From account %s" ), priv->from_account );
-			if( priv->from_account && g_utf8_strlen( priv->from_account, -1 )){
+			if( my_strlen( priv->to_account )){
 				g_string_append_printf( stitle, " to account %s", priv->to_account );
 			}
 		} else {

@@ -185,7 +185,7 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, const gchar *dname )
 	gchar *sdbegin, *sdend;
 
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
-	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
+	g_return_if_fail( my_strlen( dname ));
 
 	priv = store->priv;
 

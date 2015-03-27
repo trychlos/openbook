@@ -212,7 +212,7 @@ my_double_set_from_str( const gchar *string )
 	gchar *text;
 	gdouble d;
 
-	if( string && g_utf8_strlen( string, -1 )){
+	if( my_strlen( string )){
 		text = my_double_undecorate( string );
 		d = g_strtod( text, NULL );
 		g_free( text );

@@ -828,7 +828,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	/* piece */
 	cstr = ofo_entry_get_ref( entry );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		ofa_iprintable_ellipsize_text( instance, context,
 				priv->body_piece_ltab, y,
 				cstr, priv->body_piece_max_size );
@@ -841,7 +841,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	/* template */
 	cstr = ofo_entry_get_ope_template( entry );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		ofa_iprintable_set_text( instance, context,
 				priv->body_template_ltab, y, cstr, PANGO_ALIGN_LEFT );
 	}

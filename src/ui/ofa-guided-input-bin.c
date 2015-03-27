@@ -709,7 +709,7 @@ row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	 * (because an empty locked field will obviously never be set) */
 	str = col_def->get_label ? (*col_def->get_label)( priv->model, row-1 ) : NULL;
 	locked = col_def->is_locked ? (*col_def->is_locked)( priv->model, row-1 ) : FALSE;
-	if(( str && g_utf8_strlen( str, -1 )) || !locked ){
+	if(( my_strlen( str )) || !locked ){
 
 		widget = gtk_entry_new();
 		gtk_widget_set_hexpand( widget, col_def->expand );
@@ -1450,7 +1450,7 @@ set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 	gtk_label_set_text( GTK_LABEL( priv->message ), errmsg );
 
 	if( gdk_rgba_parse(
-			&color, errmsg && g_utf8_strlen( errmsg, -1 ) ? "#ff0000":"#000000" )){
+			&color, my_strlen( errmsg ) ? "#ff0000":"#000000" )){
 		gtk_widget_override_color( priv->message, GTK_STATE_FLAG_NORMAL, &color );
 	}
 }

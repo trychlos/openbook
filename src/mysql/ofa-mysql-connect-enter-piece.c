@@ -180,7 +180,7 @@ on_port_changed( GtkEntry *entry, sPrivate *priv )
 	const gchar *port;
 
 	port = gtk_entry_get_text( entry );
-	if( port && g_utf8_strlen( port, -1 )){
+	if( my_strlen( port )){
 		priv->sInfos.port = atoi( port );
 	} else {
 		priv->sInfos.port = 0;
@@ -227,7 +227,7 @@ ofa_mysql_connect_enter_piece_is_valid( const ofaIDbms *instance, GtkContainer *
 	set_message( priv, "" );
 	ok = FALSE;
 
-	if( !priv->sInfos.dbname || !g_utf8_strlen( priv->sInfos.dbname, -1 )){
+	if( !my_strlen( priv->sInfos.dbname )){
 		set_message( priv, _( "Database name is not set" ));
 
 	} else {
@@ -264,7 +264,7 @@ ofa_mysql_connect_enter_piece_apply( const ofaIDbms *instance, const gchar *dnam
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( dname ), FALSE );
 
 	sInfos = ( mysqlInfos * ) infos;
 

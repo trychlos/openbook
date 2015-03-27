@@ -446,7 +446,7 @@ get_locales( void )
 		g_warning( "%s: %s", thisfn, error->message );
 		g_error_free( error );
 
-	} else if( stderr && g_utf8_strlen( stderr, -1 )){
+	} else if( my_strlen( stderr )){
 		g_warning( "%s: stderr='%s'", thisfn, stderr );
 		g_free( stderr );
 
@@ -456,7 +456,7 @@ get_locales( void )
 		g_free( stdout );
 		iter = lines;
 		while( *iter ){
-			if( g_utf8_strlen( *iter, -1 )){
+			if( my_strlen( *iter )){
 				g_debug( "%s: iter='%s'", thisfn, *iter );
 			}
 			iter++;

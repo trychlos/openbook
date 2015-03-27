@@ -259,7 +259,7 @@ ofa_dbms_root_bin_set_dossier( ofaDBMSRootBin *bin, const gchar *dname )
 	ofaDBMSRootBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
-	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
+	g_return_if_fail( my_strlen( dname ));
 
 	priv = bin->priv;
 

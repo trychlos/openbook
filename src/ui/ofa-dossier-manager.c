@@ -222,7 +222,7 @@ on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManag
 	gboolean ok;
 
 	priv = self->priv;
-	ok = dname && g_utf8_strlen( dname, -1 );
+	ok = my_strlen( dname );
 
 	gtk_widget_set_sensitive( priv->open_btn, ok );
 	gtk_widget_set_sensitive( priv->delete_btn, ok );
@@ -231,7 +231,7 @@ on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManag
 static void
 on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self )
 {
-	if( dname && g_utf8_strlen( dname, -1 )){
+	if( my_strlen( dname )){
 		open_dossier( self, dname );
 	}
 }

@@ -451,7 +451,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, g
 			( void * ) user_data );
 
 	if( OFO_IS_CURRENCY( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
@@ -609,7 +609,7 @@ ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !number || !g_utf8_strlen( number, -1 )){
+	if( !my_strlen( number )){
 		return( NULL );
 	}
 
@@ -666,7 +666,7 @@ gboolean
 ofo_account_use_currency( ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( currency && g_utf8_strlen( currency, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( currency ), FALSE );
 
 	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
@@ -787,10 +787,7 @@ ofo_account_get_class_from_number( const gchar *account_number )
 gint
 ofo_account_get_level_from_number( const gchar *account_number )
 {
-	if( !account_number ){
-		return( 0 );
-	}
-	return( g_utf8_strlen( account_number, -1 ));
+	return( my_strlen( account_number ));
 }
 
 /**
@@ -872,7 +869,7 @@ ofo_account_get_type_account( const ofoAccount *account )
 
 	str = account_get_string_ex( account, ACC_TYPE );
 
-	if(  str && g_utf8_strlen( str, -1 )){
+	if(  my_strlen( str )){
 
 		if( !g_utf8_collate( str, ACCOUNT_TYPE_ROOT ) || !g_utf8_collate( str, ACCOUNT_TYPE_DETAIL )){
 			return( str );
@@ -1078,7 +1075,7 @@ ofo_account_is_settleable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_SETTLEABLE );
-	is_settleable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_SETTLEABLE );
+	is_settleable = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_SETTLEABLE );
 
 	return( is_settleable );
 }
@@ -1101,7 +1098,7 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_RECONCILIABLE );
-	is_reconciliable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_RECONCILIABLE );
+	is_reconciliable = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_RECONCILIABLE );
 
 	return( is_reconciliable );
 }
@@ -1119,7 +1116,7 @@ ofo_account_is_forward( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_FORWARD );
-	is_forward = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_FORWARDABLE );
+	is_forward = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_FORWARDABLE );
 
 	return( is_forward );
 }
@@ -1166,7 +1163,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	/* is account number valid ?
 	 * must begin with a digit, and be at least two chars
 	 */
-	if( !number || g_utf8_strlen( number, -1 ) < 2 ){
+	if( !my_strlen( number ) < 2 ){
 		return( FALSE );
 	}
 	code = g_utf8_get_char( number );
@@ -1177,7 +1174,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	}
 
 	/* label */
-	if( !label || !g_utf8_strlen( label, -1 )){
+	if( !my_strlen( label )){
 		return( FALSE );
 	}
 
@@ -1186,7 +1183,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 
 	/* currency must be set for detail account */
 	if( !is_root ){
-		if( !currency || !g_utf8_strlen( currency, -1 )){
+		if( !my_strlen( currency )){
 			return( FALSE );
 		}
 	}
@@ -1523,7 +1520,7 @@ ofo_account_set_type_account( ofoAccount *account, const gchar *type )
 	const gchar *validated;
 
 	validated = ACCOUNT_TYPE_DETAIL;
-	if( type && g_utf8_strlen( type, -1 ) &&
+	if( my_strlen( type ) &&
 			( !g_utf8_collate( type, ACCOUNT_TYPE_DETAIL ) || !g_utf8_collate( type, ACCOUNT_TYPE_ROOT ))){
 
 			validated = type;
@@ -1746,7 +1743,7 @@ account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
 		g_string_append_printf( query, "'%s',", ofo_account_get_currency( account ));
 	}
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -1807,7 +1804,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( prev_number && g_utf8_strlen( prev_number, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( prev_number ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
@@ -1861,7 +1858,7 @@ account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, 
 		g_string_append_printf( query, "ACC_CURRENCY='%s',", ofo_account_get_currency( account ));
 	}
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "ACC_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "ACC_NOTES=NULL," );

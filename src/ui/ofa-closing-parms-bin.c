@@ -702,7 +702,7 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 	priv = self->priv;
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		if( msg ){
 			*msg = g_strdup( _( "Empty operation template mnemonic" ));
 		}
@@ -743,13 +743,13 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 		g_return_val_if_fail( OFA_IS_CURRENCY_COMBO( combo ), FALSE );
 
 		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
-		if( code && g_utf8_strlen( code, -1 )){
+		if( my_strlen( code )){
 
 			entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
 			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
-			if( !acc_number || !g_utf8_strlen( acc_number, -1 )){
+			if( !my_strlen( acc_number )){
 				if( msg ){
 					*msg = g_strdup_printf( _( "%s: empty account number" ), code );
 				}
@@ -863,13 +863,13 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 			g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
 
 			code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
-			if( code && g_utf8_strlen( code, -1 )){
+			if( my_strlen( code )){
 
 				entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
 				g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 				acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 
-				if( acc_number && g_utf8_strlen( acc_number, -1 )){
+				if( my_strlen( acc_number )){
 					ofo_dossier_set_sld_account( priv->dossier, code, acc_number );
 				}
 			}

@@ -492,7 +492,7 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 	const gchar *text;
 
 	text = gtk_entry_get_text( entry );
-	if( text && g_utf8_strlen( text, -1 )){
+	if( my_strlen( text )){
 		self->priv->duree = atoi( text );
 	}
 

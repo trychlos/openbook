@@ -64,7 +64,7 @@ ofa_dossier_misc_get_dossiers( void )
 	const gchar *cstr;
 
 	prefix = g_strdup_printf( "%s ", SETTINGS_GROUP_DOSSIER );
-	spfx = g_utf8_strlen( prefix, -1 );
+	spfx = my_strlen( prefix );
 
 	slist_in = ofa_settings_get_groups( SETTINGS_TARGET_DOSSIER );
 	slist_out = NULL;
@@ -442,7 +442,7 @@ get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings )
 			g_strfreev( lines );
 			return( NULL );
 		}
-		if( g_utf8_strlen( *iter_line, -1 )){
+		if( my_strlen( *iter_line )){
 			fields = g_strsplit(( const gchar * ) *iter_line, field_sep, -1 );
 			s_fields = NULL;
 			iter_field = fields;

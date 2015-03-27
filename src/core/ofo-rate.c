@@ -318,7 +318,7 @@ ofoRate *
 ofo_rate_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	OFA_IDATASET_GET( dossier, RATE, rate );
 
@@ -634,8 +634,7 @@ ofo_rate_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
 	gboolean ok;
 	gboolean consistent;
 
-	ok = mnemo && g_utf8_strlen( mnemo, -1 ) &&
-			label && g_utf8_strlen( label, -1 );
+	ok = my_strlen( mnemo ) && my_strlen( label );
 
 	consistent = TRUE;
 	validities = g_list_sort_with_data(
@@ -901,13 +900,13 @@ rate_insert_validity( ofoRate *rate, GList *fields, const ofaDbms *dbms )
 			"	VALUES ('%s',",
 					ofo_rate_get_mnemo( rate ));
 
-	if( sdbegin && g_utf8_strlen( sdbegin, -1 )){
+	if( my_strlen( sdbegin )){
 		g_string_append_printf( query, "'%s',", sdbegin );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( sdend && g_utf8_strlen( sdend, -1 )){
+	if( my_strlen( sdend )){
 		g_string_append_printf( query, "'%s',", sdend );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -937,7 +936,7 @@ ofo_rate_update( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo )
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
@@ -1409,7 +1408,7 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileF
 	/* rate mnemo */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
@@ -1421,7 +1420,7 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileF
 	/* rate label */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate label" ));
 		*errors += 1;
@@ -1456,7 +1455,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 	/* rate mnemo */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+	if( !my_strlen( cstr )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;

@@ -247,8 +247,7 @@ is_dialog_validable( ofaDossierLogin *self )
 
 	priv = self->priv;
 
-	ok = priv->account && g_utf8_strlen( priv->account, -1 ) &&
-			priv->password && g_utf8_strlen( priv->password, -1 );
+	ok = my_strlen( priv->account ) && my_strlen( priv->password );
 
 	return( ok );
 }

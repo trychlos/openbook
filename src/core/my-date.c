@@ -151,14 +151,15 @@ my_date_compare_by_str( const gchar *sda, const gchar *sdb, myDateFormat format 
 {
 	GDate da, db;
 
-	if( !sda || !g_utf8_strlen( sda, -1 )){
-		if( !sdb || !g_utf8_strlen( sdb, -1 )){
+	if( !my_strlen( sda )){
+		if( !my_strlen( sdb )){
 			/* the two dates are both empty */
 			return( 0 );
 		}
 		/* a is empty while b is set */
 		return( -1 );
-	} else if( !sdb || !g_utf8_strlen( sdb, -1 )){
+
+	} else if( !my_strlen( sdb )){
 		/* a is set while b is empty */
 		return( 1 );
 	}
@@ -240,8 +241,7 @@ my_date_set_from_sql( GDate *date, const gchar *sql_string )
 
 	g_date_clear( date, 1 );
 
-	if( sql_string &&
-			g_utf8_strlen( sql_string, -1 ) &&
+	if( my_strlen( sql_string ) &&
 			g_utf8_collate( sql_string, "0000-00-00" )){
 
 		g_date_set_parse( date, sql_string );
@@ -331,7 +331,7 @@ parse_yyyymmdd_string( GDate *date, const gchar *string )
 	valid = FALSE;
 	my_date_clear( date );
 
-	if( string && g_utf8_strlen( string, -1 )){
+	if( my_strlen( string )){
 		src = string;
 		memset( part, '\0', sizeof( part ));
 		g_utf8_strncpy( part, src, 4 );

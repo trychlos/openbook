@@ -109,7 +109,7 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 	infos = ( mysqlInfos * ) handle;
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
-	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
+	if( !my_strlen( cmdline )){
 		cmdline = g_strdup( ofa_mysql_get_def_backup_cmd( instance ));
 	}
 
@@ -160,7 +160,7 @@ ofa_mysql_restore( const ofaIDbms *instance,
 	create_fake_database( instance, infos );
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
-	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
+	if( !my_strlen( cmdline )){
 		cmdline = g_strdup( ofa_mysql_get_def_restore_cmd( instance ));
 	}
 
@@ -699,7 +699,7 @@ exit_backup_cb( GPid child_pid, gint status, backupInfos *infos )
 	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
 
 	if( infos->verbose ){
-		if( !msg || !g_utf8_strlen( msg, -1 )){
+		if( !my_strlen( msg )){
 			if( infos->backup_ok ){
 				msg = g_strdup( _( "Dossier successfully backuped" ));
 			} else {
@@ -760,7 +760,7 @@ exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
 
 	if( infos->verbose ){
-		if( !msg || !g_utf8_strlen( msg, -1 )){
+		if( !my_strlen( msg )){
 			if( infos->backup_ok ){
 				msg = g_strdup(
 						_( "Dossier successfully restored" ));

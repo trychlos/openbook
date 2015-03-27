@@ -361,8 +361,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 	priv->p2_fname = gtk_file_chooser_get_filename( priv->p2_chooser );
 	g_debug( "p2_check_for_complete: fname=%s", priv->p2_fname );
 
-	ok = priv->p2_fname &&
-			g_utf8_strlen( priv->p2_fname, -1 ) > 0 &&
+	ok = my_strlen( priv->p2_fname ) > 0 &&
 			my_utils_file_is_readable_file( priv->p2_fname );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
@@ -485,7 +484,7 @@ p3_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	g_clear_object( &priv->p3_dbms );
 
 	provider = ofa_settings_get_dossier_provider( priv->p3_dossier );
-	g_return_if_fail( provider && g_utf8_strlen( provider, -1 ));
+	g_return_if_fail( my_strlen( provider ));
 
 	priv->p3_dbms = ofa_idbms_get_provider_by_name( provider );
 	g_return_if_fail( priv->p3_dbms && OFA_IS_IDBMS( priv->p3_dbms ));

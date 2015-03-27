@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <api/my-date.h>
+#include <api/my-utils.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
 #include "api/ofa-preferences.h"
@@ -485,7 +486,7 @@ bourso_tabulated_text_v1_import( ofaBoursoImporter *bourso_importer, const gchar
 
 	while( TRUE ){
 		line = line->next;
-		if( !line || !line->data || !g_utf8_strlen( line->data, -1 )){
+		if( !line || !my_strlen( line->data )){
 			break;
 		}
 		sdet = g_new0( ofsBatDetail, 1 );

@@ -418,7 +418,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, g
 			( void * ) user_data );
 
 	if( OFO_IS_CURRENCY( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
@@ -543,7 +543,7 @@ ofoLedger *
 ofo_ledger_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
@@ -1101,8 +1101,8 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 gboolean
 ofo_ledger_is_valid( const gchar *mnemo, const gchar *label )
 {
-	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
-			label && g_utf8_strlen( label, -1 ));
+	return( my_strlen( mnemo ) &&
+			my_strlen( label ));
 }
 
 /**
@@ -1467,7 +1467,7 @@ ofo_ledger_update( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mne
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -1562,7 +1562,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, ofoDossier *dossier, const gchar *
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( currency && g_utf8_strlen( currency, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( currency ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 

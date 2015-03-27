@@ -397,7 +397,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			( void * ) user_data );
 
 	if( OFO_IS_ACCOUNT( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			number = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( g_utf8_collate( number, prev_id )){
 				on_updated_object_account_number( dossier, prev_id, number );
@@ -405,7 +405,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		}
 
 	} else if( OFO_IS_CURRENCY( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
@@ -413,7 +413,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		}
 
 	} else if( OFO_IS_LEDGER( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				on_updated_object_ledger_mnemo( dossier, prev_id, mnemo );
@@ -421,7 +421,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		}
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				on_updated_object_model_mnemo( dossier, prev_id, mnemo );
@@ -1093,7 +1093,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofoDossier *dossier,
 	gchar *str;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( account ), NULL );
 
 	where = g_string_new( "" );
 	g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
@@ -1187,7 +1187,7 @@ entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order 
 	dataset = NULL;
 	query = g_string_new( "OFA_T_ENTRIES " );
 
-	if( where && g_utf8_strlen( where, -1 )){
+	if( my_strlen( where )){
 		g_string_append_printf( query, "WHERE %s ", where );
 	}
 
@@ -1462,7 +1462,7 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 {
 	gint i;
 
-	g_return_val_if_fail( abr_status && g_utf8_strlen( abr_status, -1 ), ENT_STATUS_ROUGH );
+	g_return_val_if_fail( my_strlen( abr_status ), ENT_STATUS_ROUGH );
 
 	for( i=0 ; st_status[i].num ; ++i ){
 		if( !g_utf8_collate( st_status[i].str, abr_status )){
@@ -1618,7 +1618,7 @@ ofo_entry_get_max_val_deffect( ofoDossier *dossier, const gchar *account, GDate 
 	GSList *result, *icol;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
 	my_date_clear( date );
@@ -1659,7 +1659,7 @@ ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDat
 	gchar *sdate;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
 	my_date_clear( date );
@@ -1708,7 +1708,7 @@ ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDat
 	gchar *sdate;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
 	my_date_clear( date );
@@ -2077,19 +2077,19 @@ ofo_entry_is_valid( ofoDossier *dossier,
 
 	ok = TRUE;
 
-	if( !ledger || !g_utf8_strlen( ledger, -1 ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
+	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
 		error_ledger( ledger );
 		ok &= FALSE;
 	}
-	if( !model || !g_utf8_strlen( model, -1 ) || !ofo_ope_template_get_by_mnemo( dossier, model )){
+	if( !my_strlen( model ) || !ofo_ope_template_get_by_mnemo( dossier, model )){
 		error_ope_template( model );
 		ok &= FALSE;
 	}
-	if( !currency || !g_utf8_strlen( currency, -1 ) || !ofo_currency_get_by_code( dossier, currency )){
+	if( !my_strlen( currency ) || !ofo_currency_get_by_code( dossier, currency )){
 		error_currency( currency );
 		ok &= FALSE;
 	}
-	if( !account || !g_utf8_strlen( account, -1 )){
+	if( !my_strlen( account )){
 		error_acc_number();
 		ok &= FALSE;
 	} else {
@@ -2940,7 +2940,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* entry label */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry label" ));
 			errors += 1;
@@ -2991,7 +2991,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* entry account */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry account" ));
 			errors += 1;
@@ -3025,7 +3025,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		ofo_entry_set_account( entry, cstr );
 
 		cstr = ofo_account_get_currency( account );
-		if( !currency || !g_utf8_strlen( currency, -1 )){
+		if( !my_strlen( currency )){
 			g_free( currency );
 			currency = g_strdup( cstr );
 		} else if( g_utf8_collate( currency, cstr )){

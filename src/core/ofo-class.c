@@ -359,7 +359,7 @@ ofo_class_is_valid_number( gint number )
 gboolean
 ofo_class_is_valid_label( const gchar *label )
 {
-	return( label && g_utf8_strlen( label, -1 ) > 0 );
+	return( my_strlen( label ) > 0 );
 }
 
 /**
@@ -819,7 +819,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( !my_strlen( cstr )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty class label" ));
 			errors += 1;

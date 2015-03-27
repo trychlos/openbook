@@ -483,7 +483,7 @@ ofa_settings_get_int_ex( ofaSettingsTarget target, const gchar *group, const gch
 	kfile = get_keyfile_from_target( target );
 	if( kfile ){
 		str = g_key_file_get_string( kfile, group, key, NULL );
-		if( str && g_utf8_strlen( str, -1 )){
+		if( my_strlen( str )){
 			result = atoi( str );
 		}
 
@@ -540,7 +540,7 @@ ofa_settings_get_int_list_ex( ofaSettingsTarget target, const gchar *group, cons
 	if( kfile ){
 		str = g_key_file_get_string( kfile, group, key, NULL );
 
-		if( str && g_utf8_strlen( str, -1 )){
+		if( my_strlen( str )){
 			array = str_to_array( str );
 			if( array ){
 				iter = ( gchar ** ) array;
@@ -655,7 +655,7 @@ ofa_settings_get_string_list_ex( ofaSettingsTarget target, const gchar *group, c
 		str = g_key_file_get_string( kfile, group, key, NULL );
 		/*g_debug( "ofa_settings_get_string_list_ex: str='%s'", str );*/
 
-		if( str && g_utf8_strlen( str, -1 )){
+		if( my_strlen( str )){
 			array = str_to_array( str );
 			if( array ){
 				iter = ( gchar ** ) array;
@@ -753,7 +753,7 @@ str_to_array( const gchar *str )
 
 	array = NULL;
 
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		sdup = g_strstrip( g_strdup( str ));
 
 		/* GConf-style string list [value,value]

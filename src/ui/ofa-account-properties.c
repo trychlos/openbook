@@ -304,7 +304,7 @@ v_init_dialog( myDialog *dialog )
 			G_OBJECT( w_detail ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
-	if( priv->type && g_utf8_strlen( priv->type, -1 )){
+	if( my_strlen( priv->type )){
 		if( ofo_account_is_root( priv->account )){
 			g_debug( "%s: set root account", thisfn );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );

@@ -293,7 +293,7 @@ v_init_dialog( myDialog *dialog )
 	init_dialog_label( self );
 
 	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
-	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
+	priv->is_new = !my_strlen( mnemo );
 
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));

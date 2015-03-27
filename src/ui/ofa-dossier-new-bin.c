@@ -368,7 +368,7 @@ ofa_dossier_new_bin_set_provider( ofaDossierNewBin *bin, const gchar *provider )
 
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run && provider && g_utf8_strlen( provider, -1 )){
+	if( !priv->dispose_has_run && my_strlen( provider )){
 
 		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->dbms_combo ), provider );
 	}
@@ -521,7 +521,7 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 		oka = FALSE;
 
 		/* check for dossier name */
-		if( !priv->dname || !g_utf8_strlen( priv->dname, -1 )){
+		if( !my_strlen( priv->dname )){
 			set_message( bin, _( "Dossier name is not set" ));
 
 		} else if( ofa_settings_has_dossier( priv->dname )){

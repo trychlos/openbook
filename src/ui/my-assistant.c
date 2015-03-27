@@ -575,7 +575,7 @@ gulong
 my_assistant_signal_connect( myAssistant *assistant, const gchar *signal, GCallback cb )
 {
 	g_return_val_if_fail( assistant && MY_IS_ASSISTANT( assistant ), 0 );
-	g_return_val_if_fail( signal && g_utf8_strlen( signal, -1 ), 0 );
+	g_return_val_if_fail( my_strlen( signal ), 0 );
 
 	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 

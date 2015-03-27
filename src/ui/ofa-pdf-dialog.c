@@ -292,7 +292,7 @@ init_filechooser( ofaPDFDialog *self )
 
 	/* get the last stored filename (if any) */
 	last_uri = NULL;
-	if( priv->pref_name && g_utf8_strlen( priv->pref_name, -1 )){
+	if( my_strlen( priv->pref_name )){
 		last_uri = ofa_settings_get_string( priv->pref_name );
 	}
 

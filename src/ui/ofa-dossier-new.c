@@ -241,7 +241,7 @@ v_init_dialog( myDialog *dialog )
 	ofa_dossier_new_bin_attach_to( priv->new_bin, GTK_CONTAINER( parent ), group );
 	g_object_unref( group );
 	ofa_dossier_new_bin_set_frame( priv->new_bin, TRUE );
-	if( priv->prov_name && g_utf8_strlen( priv->prov_name, -1 )){
+	if( my_strlen( priv->prov_name )){
 		ofa_dossier_new_bin_set_provider( priv->new_bin, priv->prov_name );
 	}
 
@@ -373,7 +373,7 @@ v_quit_on_ok( myDialog *dialog )
 	/* get the database name */
 	g_free( priv->database );
 	ofa_dossier_new_bin_get_database( priv->new_bin, &priv->database );
-	g_return_val_if_fail( priv->database && g_utf8_strlen( priv->database, -1 ), FALSE );
+	g_return_val_if_fail( my_strlen( priv->database ), FALSE );
 
 	/* ask for user confirmation */
 	if( !create_confirmed( OFA_DOSSIER_NEW( dialog ))){
@@ -387,7 +387,7 @@ v_quit_on_ok( myDialog *dialog )
 		/* get the provider name (from user settings) */
 		g_free( priv->prov_name );
 		priv->prov_name = ofa_settings_get_dossier_provider( priv->dname );
-		g_return_val_if_fail( priv->prov_name && g_utf8_strlen( priv->prov_name, -1 ), FALSE );
+		g_return_val_if_fail( my_strlen( priv->prov_name ), FALSE );
 
 		/* and a new ref on the DBMS provider module */
 		prov_instance = ofa_idbms_get_provider_by_name( priv->prov_name );
@@ -462,18 +462,18 @@ get_settings( ofaDossierNew *self )
 	slist = ofa_settings_get_string_list( "DossierNew" );
 	it = slist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		g_free( priv->prov_name );
 		priv->prov_name = g_strdup( cstr );
 	}
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		priv->b_open = my_utils_boolean_from_str( cstr );
 	}
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr && g_utf8_strlen( cstr, -1 )){
+	if( my_strlen( cstr )){
 		priv->b_properties = my_utils_boolean_from_str( cstr );
 	}
 
