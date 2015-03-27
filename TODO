@@ -436,11 +436,9 @@
 
  765 2015- 3-25 when backing up, close all pages
 
- 766 2015- 3-26 replace ofaIDaseset interface by ofaICollector
+ 766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
  767 2015- 3-27 Reconciliation: replace 'Accept' with 'Reconciliate'
-
- 768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
 
  770
 
@@ -3437,6 +3435,9 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
+     2015- 3-27 done - git #0168e08
 
  769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
                 'Import' one, setting the labels under the buttons

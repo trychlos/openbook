@@ -228,14 +228,11 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 			case BUTTON_GUIDED_INPUT:
 				button = gtk_button_new_with_mnemonic( _( "_Guided input..." ));
 				break;
-			case BUTTON_ACCEPT:
-				button = gtk_button_new_with_mnemonic( _( "Accept" ));
+			case BUTTON_RECONCILIATE:
+				button = gtk_button_new_with_mnemonic( _( "_Reconciliate" ));
 				break;
 			case BUTTON_DECLINE:
 				button = gtk_button_new_with_mnemonic( _( "_Decline" ));
-				break;
-			case BUTTON_ACCEPT_ALL:
-				button = gtk_button_new_with_mnemonic( _( "Accept a_ll" ));
 				break;
 			case BUTTON_UNRECONCILIATE:
 				button = gtk_button_new_with_mnemonic( _( "_Unreconciliate" ));

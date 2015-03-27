@@ -91,7 +91,7 @@ struct _ofaReconciliationPrivate {
 	GtkWidget         *unused_label;
 	GtkWidget         *label3;
 	GtkButton         *clear;
-	GtkWidget         *accept_btn;
+	GtkWidget         *reconciliate_btn;
 	GtkWidget         *decline_btn;
 	GtkWidget         *unreconciliate_btn;
 
@@ -248,7 +248,7 @@ static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
 static void         expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean     check_for_enable_view( ofaReconciliation *self );
 static void         default_expand_view( ofaReconciliation *self );
-static void         on_accept_clicked( GtkButton *button, ofaReconciliation *self );
+static void         on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
 static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
@@ -1037,8 +1037,8 @@ setup_buttons( ofaPage *page )
 	priv->box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-	priv->accept_btn = ofa_buttons_box_add_button( priv->box,
-			BUTTON_ACCEPT, TRUE, G_CALLBACK( on_accept_clicked ), page );
+	priv->reconciliate_btn = ofa_buttons_box_add_button( priv->box,
+			BUTTON_RECONCILIATE, TRUE, G_CALLBACK( on_reconciliate_clicked ), page );
 	priv->decline_btn = ofa_buttons_box_add_button( priv->box,
 			BUTTON_DECLINE, FALSE, G_CALLBACK( on_decline_clicked ), page );
 	priv->unreconciliate_btn = ofa_buttons_box_add_button( priv->box,
@@ -2214,7 +2214,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
-	gtk_widget_set_sensitive( priv->accept_btn, accept_enabled );
+	gtk_widget_set_sensitive( priv->reconciliate_btn, accept_enabled );
 	gtk_widget_set_sensitive( priv->decline_btn, decline_enabled );
 	gtk_widget_set_sensitive( priv->unreconciliate_btn, unreconciliate_enabled );
 }
@@ -2397,7 +2397,7 @@ default_expand_view( ofaReconciliation *self )
  * together, so that accept may be enabled
  */
 static void
-on_accept_clicked( GtkButton *button, ofaReconciliation *self )
+on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	run_selection_engine( self );
 }

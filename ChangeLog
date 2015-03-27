@@ -1,5 +1,14 @@
 2015-03-27 Pierre Wieser <pwieser@trychlos.org>
 
+	Reconciliation: replace 'Accept' with 'Reconciliate' (todo #767)
+
+	* src/ui/ofa-buttons-box.c,
+	* src/ui/ofa-buttons-box.h:
+	- add 'Reconciliate' button
+	- remove unused 'Accept all' button.
+
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
 	Reconciliation: have an 'Unreconciliate' button (todo #768)
 
 	* src/ui/ofa-buttons-box.c,
