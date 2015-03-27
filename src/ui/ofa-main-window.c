@@ -323,6 +323,7 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
+static void             close_all_pages( ofaMainWindow *main_window );
 
 static void
 main_window_finalize( GObject *instance )
@@ -1205,6 +1206,7 @@ on_backup( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
+	close_all_pages( OFA_MAIN_WINDOW( user_data ));
 	ofa_backup_run( OFA_MAIN_WINDOW( user_data ));
 }
 
@@ -1807,6 +1809,18 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
 
 	g_signal_emit_by_name( handler, "page-removed", page_w, page_num );
+}
+
+static void
+close_all_pages( ofaMainWindow *main_window )
+{
+	GtkNotebook *book;
+	gint count;
+
+	book = main_get_book( main_window );
+	while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
+		gtk_notebook_remove_page( book, count-1 );
+	}
 }
 
 /**

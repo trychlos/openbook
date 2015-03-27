@@ -273,6 +273,17 @@ idbms_close( const ofaIDbms *instance, void *handle )
 	g_free( infos );
 }
 
+/**
+ * ofa_mysql_query:
+ *
+ * To be used within other files of the plugin
+ */
+gboolean
+ofa_mysql_query( const ofaIDbms *instance, mysqlInfos *infos, const gchar *query )
+{
+	return( idbms_query( instance, ( void * ) infos, query ));
+}
+
 static gboolean
 idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {

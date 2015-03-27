@@ -102,7 +102,7 @@ ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
 gboolean
 ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gboolean verbose )
 {
-	const mysqlInfos *infos;
+	mysqlInfos *infos;
 	gchar *cmdline;
 	gboolean ok;
 
@@ -113,8 +113,10 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 		cmdline = g_strdup( ofa_mysql_get_def_backup_cmd( instance ));
 	}
 
+	ofa_mysql_query( instance, infos, "FLUSH TABLES WITH READ LOCK" );
+
 	ok = do_backup_restore(
-				( const mysqlInfos * ) infos,
+				infos,
 				cmdline,
 				fname,
 				_( "Openbook backup" ),
@@ -122,6 +124,8 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 				verbose );
 
 	g_free( cmdline );
+
+	ofa_mysql_query( instance, infos, "UNLOCK TABLES" );
 
 	return( ok );
 }

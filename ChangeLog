@@ -1,5 +1,14 @@
 2015-03-27 Pierre Wieser <pwieser@trychlos.org>
 
+	Close pages and flush DBMS before backup (todo #765)
+
+	* src/mysql/ofa-mysql-backup.c: flush tables before backup.
+
+	* src/mysql/ofa-mysql-idbms.c,
+	* src/mysql/ofa-mysql-idbms.h: new ofa_mysql_query() function.
+
+	* src/ui/ofa-main-window.c: close pages before backup.
+
 	Reconciliation: replace 'Accept' with 'Reconciliate' (todo #767)
 
 	* src/ui/ofa-buttons-box.c,

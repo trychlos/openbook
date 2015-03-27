@@ -19,6 +19,7 @@
 	- Fix b-e reconciliation scheme.
 	- Have an 'Unreconciliate' button (todo #768).
 	- Replace the 'Accept' button by a 'Reconciliate' one (todo #767).
+	- Close main pages and flush the database before backup (todo #765).
 
  Bug fixes:
 

@@ -438,8 +438,6 @@
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
- 767 2015- 3-27 Reconciliation: replace 'Accept' with 'Reconciliate'
-
  770
 
 -----------------------------------------------------------------------
@@ -3435,6 +3433,9 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 767 2015- 3-27 Reconciliation: replace 'Accept' with 'Reconciliate'
+     2015- 3-27 done - git #0f42251
 
  768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
      2015- 3-27 done - git #0168e08
