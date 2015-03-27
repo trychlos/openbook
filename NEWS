@@ -24,6 +24,7 @@
 
  Other changes:
 
+   - ofa_bat_utils_import(): new function.
    - ofaICollector, ofaIConcil: new interfaces.
    - ofoConcil: new class.
    - review ofoBat and ofoBatLine public APIs.

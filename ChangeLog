@@ -1,5 +1,15 @@
 2015-03-27 Pierre Wieser <pwieser@trychlos.org>
 
+	Reconciliation: replace GtkFileChooser button with an 'Import' one,
+	setting the labels under the buttons (todo #769).
+
+	* src/ui/ofa-bat-utils.c,
+	* src/ui/ofa-bat-utils.h: new files.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-bats-page.c,
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
 	Improve the reconciliation scheme with DBMS v25.
 
 	* src/api/ofo-concil-def.h,

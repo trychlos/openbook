@@ -50,6 +50,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
+#include "ui/ofa-bat-utils.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-page.h"
@@ -85,9 +86,10 @@ struct _ofaReconciliationPrivate {
 
 	/* UI - assisted conciliation
 	 */
-	GtkWidget         *file_chooser;
+	GtkWidget         *bat_name;
 	GtkWidget         *count_label;
 	GtkWidget         *unused_label;
+	GtkWidget         *label3;
 	GtkButton         *clear;
 	GtkWidget         *accept_btn;
 	GtkWidget         *decline_btn;
@@ -223,7 +225,7 @@ static void         on_effect_dates_changed( ofaDateFilterBin *filter, gint who,
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         do_select_bat( ofaReconciliation *self );
-static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
+static void         on_import_clicked( GtkButton *button, ofaReconciliation *self );
 static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
 static void         clear_bat_file( ofaReconciliation *self );
 static void         setup_bat_file( ofaReconciliation *self, ofxCounter bat_id );
@@ -617,6 +619,7 @@ setup_manual_rappro( ofaPage *page )
 
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_grid_set_column_spacing( grid, 4 );
+	gtk_grid_set_row_spacing( grid, 3 );
 	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
 
 	label = GTK_LABEL( gtk_label_new_with_mnemonic( _( "Da_te :" )));
@@ -641,9 +644,9 @@ setup_manual_rappro( ofaPage *page )
 	g_signal_connect(
 			G_OBJECT( priv->date_concil ), "changed", G_CALLBACK( on_date_concil_changed ), page );
 
-	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0.5, 0.5 );
 	gtk_label_set_width_chars( label, 10 );
-	gtk_grid_attach( grid, GTK_WIDGET( label ), 2, 0, 1, 1 );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 1, 1, 1, 1 );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -655,12 +658,14 @@ setup_auto_rappro( ofaPage *page )
 	GtkFrame *frame;
 	GtkAlignment *alignment;
 	GtkGrid *grid;
-	GtkWidget *label;
+	GtkWidget *label, *grid2, *grid3;
 	gchar *markup;
 	GtkWidget *button, *image;
 	GdkRGBA color;
+	gint column;
 
 	priv = OFA_RECONCILIATION( page )->priv;
+	column = 0;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
@@ -677,52 +682,70 @@ setup_auto_rappro( ofaPage *page )
 
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_grid_set_column_spacing( grid, 4 );
+	gtk_grid_set_row_spacing( grid, 3 );
 	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
 
 	button = gtk_button_new_with_mnemonic( _( "_Select..." ));
-	gtk_grid_attach( grid, button, 0, 0, 1, 1 );
+	gtk_widget_set_halign( button, GTK_ALIGN_START );
+	gtk_grid_attach( grid, button, column++, 0, 1, 1 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_bat ), page );
 	gtk_widget_set_tooltip_text(
 			button,
 			_( "Select a previously imported Bank Account Transactions list" ));
 
-	button = gtk_file_chooser_button_new( NULL, GTK_FILE_CHOOSER_ACTION_OPEN );
-	gtk_grid_attach( grid, button, 1, 0, 1, 1 );
-	g_signal_connect( G_OBJECT( button ), "file-set", G_CALLBACK( on_file_set ), page );
+	button = gtk_button_new_with_mnemonic( _( "_Import..." ));
+	gtk_widget_set_halign( button, GTK_ALIGN_START );
+	gtk_grid_attach( grid, button, column++, 0, 1, 1 );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_import_clicked ), page );
 	gtk_widget_set_tooltip_text(
 			button,
 			_( "Import an new Bank Account Transactions list to be used in the reconciliation" ));
-	priv->file_chooser = button;
-
-	label = gtk_label_new( "(" );
-	gtk_grid_attach( grid, label, 2, 0, 1, 1 );
-
-	label = gtk_label_new( "" );
-	gtk_grid_attach( grid, label, 3, 0, 1, 1 );
-	priv->count_label = label;
-
-	label = gtk_label_new( "-" );
-	gtk_grid_attach( grid, label, 4, 0, 1, 1 );
-
-	label = gtk_label_new( "" );
-	gtk_grid_attach( grid, label, 5, 0, 1, 1 );
-	gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	priv->unused_label = label;
-
-	label = gtk_label_new( ")" );
-	gtk_grid_attach( grid, label, 6, 0, 1, 1 );
 
 	image = gtk_image_new_from_icon_name( "gtk-clear", GTK_ICON_SIZE_BUTTON );
+	gtk_widget_set_halign( button, GTK_ALIGN_START );
 	priv->clear = GTK_BUTTON( gtk_button_new());
 	gtk_button_set_image( priv->clear, image );
-	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), 7, 0, 1, 1 );
+	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), column++, 0, 1, 1 );
 	gtk_widget_set_tooltip_text(
 			GTK_WIDGET( priv->clear ),
 			_( "Clear the displayed Bank Account Transaction lines" ));
 	g_signal_connect(
 			G_OBJECT( priv->clear ),
 			"clicked", G_CALLBACK( on_clear_button_clicked ), page );
+
+	/* a widget at the end, to get the extra space */
+	label = gtk_label_new( "" );
+	gtk_widget_set_halign( label, GTK_ALIGN_FILL );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_grid_attach( grid, label, column++, 0, 1, 1 );
+
+	/* have a second row for labels */
+	grid2 = gtk_grid_new();
+	gtk_grid_set_column_spacing( GTK_GRID( grid2 ), 4 );
+	gtk_grid_attach( grid, grid2, 0, 1, 1+column, 1 );
+
+	label = gtk_label_new( "" );
+	gtk_label_set_ellipsize( GTK_LABEL( label ), PANGO_ELLIPSIZE_START );
+	gtk_grid_attach( GTK_GRID( grid2 ), label, 0, 0, 1, 1 );
+	priv->bat_name = label;
+
+	grid3 = gtk_grid_new();
+	gtk_widget_set_halign( grid3, GTK_ALIGN_END );
+	gtk_grid_attach( GTK_GRID( grid2 ), grid3, 1, 0, 1, 1 );
+
+	label = gtk_label_new( "" );
+	gtk_grid_attach( GTK_GRID( grid3 ), label, 1, 0, 1, 1 );
+	priv->count_label = label;
+
+	label = gtk_label_new( "" );
+	gtk_grid_attach( GTK_GRID( grid3 ), label, 3, 0, 1, 1 );
+	gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->unused_label = label;
+
+	label = gtk_label_new( "" );
+	gtk_grid_attach( GTK_GRID( grid3 ), label, 4, 0, 1, 1 );
+	priv->label3 = label;
 
 	return( GTK_WIDGET( frame ));
 }
@@ -1418,40 +1441,14 @@ do_select_bat( ofaReconciliation *self )
  * be unsuccessful)
  */
 static void
-on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
+on_import_clicked( GtkButton *button, ofaReconciliation *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_file_set";
-	ofaReconciliationPrivate *priv;
-	ofaFileFormat *settings;
-	ofaIImportable *importable;
-	ofxCounter *imported_id;
-	gchar *uri;
+	ofxCounter imported_id;
 
-	priv = self->priv;
-
-	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-	ofa_file_format_set( settings,
-			NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', 0 );
-
-	/* take the uri before clearing bat lines */
-	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
-
-	clear_bat_file( self );
-	importable = ofa_iimportable_find_willing_to( uri, settings );
-
-	if( importable ){
-		if( !ofa_iimportable_import_uri( importable, priv->dossier, NULL, ( void ** ) &imported_id )){
-			setup_bat_file( self, *imported_id );
-			g_free( imported_id );
-		}
-		g_debug( "%s: importable=%p (%s) ref_count=%d",
-				thisfn, ( void * ) importable,
-				G_OBJECT_TYPE_NAME( importable ), G_OBJECT( importable )->ref_count );
-		g_object_unref( importable );
+	imported_id = ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( self )));
+	if( imported_id > 0 ){
+		setup_bat_file( self, imported_id );
 	}
-
-	g_free( uri );
-	g_object_unref( settings );
 }
 
 static void
@@ -1514,9 +1511,11 @@ clear_bat_file( ofaReconciliation *self )
 	priv->batlines = NULL;
 	priv->bat = NULL;
 
-	/* also reinit the GtkFileChooserButton and the corresponding label */
-	gtk_file_chooser_unselect_all( GTK_FILE_CHOOSER( priv->file_chooser ));
+	/* also reinit the bat name label */
+	gtk_label_set_text( GTK_LABEL( priv->bat_name ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->count_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->unused_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->label3 ), "" );
 
 	/* and update the bank reconciliated balance */
 	set_reconciliated_balance( self );
@@ -1530,16 +1529,26 @@ static void
 setup_bat_file( ofaReconciliation *self, ofxCounter bat_id )
 {
 	ofaReconciliationPrivate *priv;
+	ofoDossier *dossier;
+	gchar *str;
+	gint total;
 
 	priv = self->priv;
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
-	priv->bat = ofo_bat_get_by_id( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
-	priv->batlines = ofo_bat_line_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )), bat_id );
+	priv->bat = ofo_bat_get_by_id( dossier, bat_id );
+	priv->batlines = ofo_bat_line_get_dataset( dossier, bat_id );
 
 	display_bat_lines( self );
 	default_expand_view( self );
 
-	gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->file_chooser ), ofo_bat_get_uri( priv->bat ));
+	gtk_label_set_text( GTK_LABEL( priv->bat_name ), ofo_bat_get_uri( priv->bat ));
+	total = ofo_bat_get_lines_count( priv->bat, dossier );
+	str = g_strdup_printf( "(%u-", total );
+	gtk_label_set_text( GTK_LABEL( priv->count_label ), str );
+	g_free( str );
+	gtk_label_set_text( GTK_LABEL( priv->label3 ), ")" );
+
 	display_bat_count( self );
 
 	set_reconciliated_balance( self );
@@ -1652,11 +1661,7 @@ display_bat_count( ofaReconciliation *self )
 
 	priv = self->priv;
 	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-
 	total = ofo_bat_get_lines_count( priv->bat, dossier );
-	str = g_strdup_printf( "%u", total );
-	gtk_label_set_text( GTK_LABEL( priv->count_label ), str );
-	g_free( str );
 
 	used = ofo_bat_get_used_count( priv->bat, dossier );
 	str = g_markup_printf_escaped( "<i>%u</i>", total-used );

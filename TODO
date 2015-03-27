@@ -422,7 +422,7 @@
 
  759 2015- 3-22 review ofa_bats_page_on_import_clicked()
 
- 760 2015- 3-22 DBMS upgrade may be long (notably in v24), so have a
+ 760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
                 progress bar in Restore assistant
 
  761 2015- 3-22 in the warning displayed when restoring to a database,
@@ -443,7 +443,7 @@
  768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
 
  769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
-                'Import' one, setting the label under the buttons
+                'Import' one, setting the labels under the buttons
 
  770
 

@@ -37,6 +37,7 @@
 
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
+#include "ui/ofa-bat-utils.h"
 #include "ui/ofa-bats-page.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
@@ -259,45 +260,5 @@ on_delete_clicked( GtkButton *button, ofaBatsPage *page )
 static void
 on_import_clicked( GtkButton *button, ofaBatsPage *page )
 {
-	static const gchar *thisfn = "ofa_bats_page_on_import_clicked";
-	GtkWidget *file_chooser;
-	ofaFileFormat *settings;
-	ofaIImportable *importable;
-	ofoDossier *dossier;
-	ofxCounter *imported_id;
-	gchar *uri;
-
-	file_chooser = gtk_file_chooser_dialog_new(
-			_( "Select a BAT file to be imported" ),
-			NULL,
-			GTK_FILE_CHOOSER_ACTION_OPEN,
-			_( "Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "Import" ), GTK_RESPONSE_OK,
-			NULL );
-
-	if( gtk_dialog_run( GTK_DIALOG( file_chooser )) == GTK_RESPONSE_OK ){
-
-		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', 0 );
-
-		/* take the uri before clearing bat lines */
-		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));
-
-		importable = ofa_iimportable_find_willing_to( uri, settings );
-
-		if( importable ){
-			dossier = ofa_page_get_dossier( OFA_PAGE( page ));
-			ofa_iimportable_import_uri( importable, dossier, NULL, ( void ** ) &imported_id );
-			g_debug( "%s: importable=%p (%s) ref_count=%d",
-					thisfn, ( void * ) importable,
-					G_OBJECT_TYPE_NAME( importable ), G_OBJECT( importable )->ref_count );
-			g_object_unref( importable );
-		}
-
-		g_free( uri );
-		g_object_unref( settings );
-	}
-
-	gtk_widget_destroy( file_chooser );
+	ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
 }

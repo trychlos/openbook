@@ -137,9 +137,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
 	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
 	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
-	ofa-bats-page.$(OBJEXT) ofa-buttons-box.$(OBJEXT) \
-	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
-	ofa-check-integrity.$(OBJEXT) \
+	ofa-bat-utils.$(OBJEXT) ofa-bats-page.$(OBJEXT) \
+	ofa-buttons-box.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
+	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-classes-page.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
@@ -512,6 +512,8 @@ openbook_SOURCES = \
 	ofa-bat-store.h										\
 	ofa-bat-treeview.c									\
 	ofa-bat-treeview.h									\
+	ofa-bat-utils.c										\
+	ofa-bat-utils.h										\
 	ofa-bats-page.c										\
 	ofa-bats-page.h										\
 	ofa-buttons-box.c									\
@@ -865,6 +867,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-treeview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bats-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances-bin.Po@am__quote@

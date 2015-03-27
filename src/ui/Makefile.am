@@ -101,6 +101,8 @@ openbook_SOURCES = \
 	ofa-bat-store.h										\
 	ofa-bat-treeview.c									\
 	ofa-bat-treeview.h									\
+	ofa-bat-utils.c										\
+	ofa-bat-utils.h										\
 	ofa-bats-page.c										\
 	ofa-bats-page.h										\
 	ofa-buttons-box.c									\
