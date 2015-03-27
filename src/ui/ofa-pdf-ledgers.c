@@ -40,6 +40,7 @@
 #include "api/ofs-currency.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofa-iconcil.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
@@ -794,6 +795,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	ofxAmount debit, credit;
 	ofoCurrency *currency;
 	gint digits;
+	ofoConcil *concil;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
@@ -851,12 +853,11 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	}
 
 	/* reconciliation ? */
-#if 0
-	if( my_date_is_valid( ofo_entry_get_concil_dval( entry ))){
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), MY_WINDOW( instance )->prot->dossier );
+	if( concil ){
 		ofa_iprintable_set_text( instance, context,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
 	}
-#endif
 
 	/* debit */
 	debit = ofo_entry_get_debit( entry );
