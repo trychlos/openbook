@@ -191,7 +191,7 @@ static gint         check_for_changed_end_exe_dates( ofoDossier *dossier, const 
 static gint         remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
 static void         on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
-static GList       *entry_load_dataset( ofoDossier *dossier, const gchar *where );
+static GList       *entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order );
 static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
 static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
@@ -692,7 +692,7 @@ remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, o
 	const GDate *last_close, *deffect;
 
 	count = 0;
-	dataset = entry_load_dataset( dossier, where );
+	dataset = entry_load_dataset( dossier, where, NULL );
 	count = g_list_length( dataset );
 
 	if( remediate ){
@@ -785,7 +785,7 @@ ofo_entry_dump( const ofoEntry *entry )
  * Returns all entries either for the specified @account (if any),
  * or for all accounts.
  *
- * The returned dataset is sorted by ascending dope/deffect/number.
+ * The returned dataset is sorted by ascending account/dope/deffect/number.
  */
 GList *
 ofo_entry_get_dataset_by_account( ofoDossier *dossier, const gchar *account )
@@ -802,7 +802,9 @@ ofo_entry_get_dataset_by_account( ofoDossier *dossier, const gchar *account )
 		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
 	}
 
-	dataset = entry_load_dataset( dossier, where->str );
+	dataset = entry_load_dataset( dossier, where->str,
+			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
+
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
@@ -818,7 +820,7 @@ ofo_entry_get_dataset_by_account( ofoDossier *dossier, const gchar *account )
  * Returns all entries either for the specified @ledger (if any),
  * or for all ledgers.
  *
- * The returned dataset is sorted by ascending dope/deffect/number.
+ * The returned dataset is sorted by ascending ledger/dope/deffect/number.
  */
 GList *ofo_entry_get_dataset_by_ledger( ofoDossier *dossier, const gchar *ledger )
 {
@@ -834,7 +836,9 @@ GList *ofo_entry_get_dataset_by_ledger( ofoDossier *dossier, const gchar *ledger
 		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
-	dataset = entry_load_dataset( dossier, where->str );
+	dataset = entry_load_dataset( dossier, where->str,
+			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
+
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
@@ -999,14 +1003,8 @@ ofo_entry_get_dataset_for_print_general_books( ofoDossier *dossier,
 	}
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	query = g_string_append( query, "ORDER BY "
-			"ENT_ACCOUNT ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
-
-	dataset = ofo_base_load_dataset(
-					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
-					query->str,
-					OFO_TYPE_ENTRY );
+	dataset = entry_load_dataset( dossier,  query->str,
+			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
 	g_string_free( query, TRUE );
 
@@ -1067,11 +1065,8 @@ ofo_entry_get_dataset_for_print_ledgers( ofoDossier *dossier,
 	query = g_string_append( query, "ORDER BY "
 			"ENT_LEDGER ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
-	dataset = ofo_base_load_dataset(
-					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
-					query->str,
-					OFO_TYPE_ENTRY );
+	dataset = entry_load_dataset( dossier, query->str,
+			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
 	g_string_free( query, TRUE );
 
@@ -1112,7 +1107,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofoDossier *dossier,
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( dossier, where->str );
+	dataset = entry_load_dataset( dossier, where->str, NULL );
 
 	g_string_free( where, TRUE );
 
@@ -1145,7 +1140,7 @@ ofo_entry_get_dataset_for_exercice_by_status( ofoDossier *dossier, ofaEntryStatu
 	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, status );
 	g_free( str );
 
-	dataset = entry_load_dataset( dossier, where->str );
+	dataset = entry_load_dataset( dossier, where->str, NULL );
 
 	g_string_free( where, TRUE );
 
@@ -1183,10 +1178,11 @@ effect_in_exercice( const ofoDossier *dossier )
  * returns a GList * of ofoEntries
  */
 static GList *
-entry_load_dataset( ofoDossier *dossier, const gchar *where )
+entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order )
 {
 	GList *dataset;
 	GString *query;
+	const gchar *real_order;
 
 	dataset = NULL;
 	query = g_string_new( "OFA_T_ENTRIES " );
@@ -1195,8 +1191,13 @@ entry_load_dataset( ofoDossier *dossier, const gchar *where )
 		g_string_append_printf( query, "WHERE %s ", where );
 	}
 
-	query = g_string_append( query,
-					"ORDER BY ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
+	if( my_strlen( order )){
+		real_order = order;
+	} else {
+		real_order = "ORDER BY ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC";
+	}
+
+	query = g_string_append( query, real_order );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
@@ -2768,7 +2769,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	GSList *lines;
 
-	result = entry_load_dataset( dossier, NULL );
+	result = entry_load_dataset( dossier, NULL, NULL );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );

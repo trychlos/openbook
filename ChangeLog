@@ -1,5 +1,8 @@
 2015-03-27 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/core/ofo-entry.c: entry_load_dataset() now takes order clause
+	as an argument (todo #764).
+
 	Close pages and flush DBMS before backup (todo #765)
 
 	* src/mysql/ofa-mysql-backup.c: flush tables before backup.
