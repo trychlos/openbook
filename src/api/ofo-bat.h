@@ -51,7 +51,6 @@ ofoBat         *ofo_bat_get_by_id          ( ofoDossier *dossier, ofxCounter id 
 ofxCounter      ofo_bat_get_id             ( const ofoBat *bat );
 const gchar    *ofo_bat_get_uri            ( const ofoBat *bat );
 const gchar    *ofo_bat_get_format         ( const ofoBat *bat );
-gint            ofo_bat_get_count          ( const ofoBat *bat, const ofoDossier *dossier );
 const GDate    *ofo_bat_get_begin          ( const ofoBat *bat );
 const GDate    *ofo_bat_get_end            ( const ofoBat *bat );
 const gchar    *ofo_bat_get_rib            ( const ofoBat *bat );
@@ -70,8 +69,10 @@ gboolean        ofo_bat_exists             ( const ofoDossier *dossier,
 													const GDate *end );
 gboolean        ofo_bat_is_deletable       ( const ofoBat *bat,
 													const ofoDossier *dossier );
-
-gint            ofo_bat_get_unused_count   ( const ofoDossier *dossier, ofxCounter id );
+gint            ofo_bat_get_lines_count    ( const ofoBat *bat,
+													const ofoDossier *dossier );
+gint            ofo_bat_get_used_count     ( const ofoBat *bat,
+													const ofoDossier *dossier );
 
 void            ofo_bat_set_uri            ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format         ( ofoBat *bat, const gchar *format );

@@ -42,6 +42,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -49,6 +50,8 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofs-account-balance.h"
 #include "api/ofs-currency.h"
+
+#include "core/ofa-iconcil.h"
 
 /* priv instance data
  */
@@ -67,9 +70,6 @@ enum {
 	ENT_STATUS,
 	ENT_UPD_USER,
 	ENT_UPD_STAMP,
-	ENT_CONCIL_DVAL,
-	ENT_CONCIL_USER,
-	ENT_CONCIL_STAMP,
 	ENT_STLMT_NUMBER,
 	ENT_STLMT_USER,
 	ENT_STLMT_STAMP,
@@ -123,9 +123,8 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-										/* settlement number and reconciliation date
-										 * are imported, but not the corresponding
-										 * users and dates */
+										/* settlement number is imported, but
+										 * not the corresponding users and dates */
 		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
 				OFA_TYPE_COUNTER,
 				TRUE,
@@ -135,18 +134,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_STLMT_STAMP ),
-				OFA_TYPE_TIMESTAMP,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_DVAL ),
-				OFA_TYPE_DATE,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_USER ),
-				OFA_TYPE_STRING,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
@@ -171,7 +158,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 };
 
 struct _ofoEntryPrivate {
-	gboolean import_settled;
+	gboolean   import_settled;
 };
 
 /* manage the abbreviated localized status
@@ -204,7 +191,7 @@ static gint         check_for_changed_end_exe_dates( ofoDossier *dossier, const 
 static gint         remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
 static void         on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
-static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
+static GList       *entry_load_dataset( ofoDossier *dossier, const gchar *where );
 static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
 static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
@@ -216,9 +203,6 @@ static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
-static void         entry_set_concil_dval( ofoEntry *entry, const GDate *date );
-static void         entry_set_concil_user( ofoEntry *entry, const gchar *user );
-static void         entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
@@ -232,7 +216,9 @@ static void         error_account( const gchar *number );
 static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
+/*
 static gboolean     do_update_concil( ofoEntry *entry, const GDate *date, const gchar *user, const ofaDbms *dbms );
+*/
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
@@ -241,6 +227,10 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFil
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
+static void         iconcil_iface_init( ofaIConcilInterface *iface );
+static guint        iconcil_get_interface_version( const ofaIConcil *instance );
+static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
+static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 
 static void
 entry_finalize( GObject *instance )
@@ -327,6 +317,12 @@ register_type( void )
 		NULL
 	};
 
+	static const GInterfaceInfo iconcil_iface_info = {
+		( GInterfaceInitFunc ) iconcil_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoEntry", &info, 0 );
@@ -334,6 +330,8 @@ register_type( void )
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICONCIL, &iconcil_iface_info );
 
 	return( type );
 }
@@ -505,6 +503,28 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 }
 
 /*
+ * Track deleted objects:
+ */
+/*
+static void
+on_deleted_object( const ofoDossier *dossier, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_on_deleted_object";
+	ofxCounter rec_id;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	if( OFO_IS_CONCIL( object )){
+		rec_id = ofo_concil_get_id( OFO_CONCIL( object ));
+	}
+}
+*/
+
+/*
  * The cases of remediation:
  *
  * 1/ entries were considered in the past, but are now in the exercice
@@ -672,7 +692,7 @@ remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, o
 	const GDate *last_close, *deffect;
 
 	count = 0;
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where );
+	dataset = entry_load_dataset( dossier, where );
 	count = g_list_length( dataset );
 
 	if( remediate ){
@@ -768,7 +788,7 @@ ofo_entry_dump( const ofoEntry *entry )
  * The returned dataset is sorted by ascending dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *account )
+ofo_entry_get_dataset_by_account( ofoDossier *dossier, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_by_account";
 	GString *where;
@@ -782,7 +802,7 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
 		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
 	}
 
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	dataset = entry_load_dataset( dossier, where->str );
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
@@ -800,7 +820,7 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
  *
  * The returned dataset is sorted by ascending dope/deffect/number.
  */
-GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger )
+GList *ofo_entry_get_dataset_by_ledger( ofoDossier *dossier, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_by_ledger";
 	GString *where;
@@ -814,7 +834,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
 		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	dataset = entry_load_dataset( dossier, where->str );
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
@@ -838,7 +858,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
  * The returned dataset is ordered by ascending account.
  */
 GList *
-ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
+ofo_entry_get_dataset_for_print_balance( ofoDossier *dossier,
 											const gchar *from_account, const gchar *to_account,
 											const GDate *from_date, const GDate *to_date )
 {
@@ -930,7 +950,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
  * The returned dataset is ordered by ascending account/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
+ofo_entry_get_dataset_for_print_general_books( ofoDossier *dossier,
 												const gchar *from_account, const gchar *to_account,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -1007,7 +1027,7 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
  * The returned dataset is ordered by ascending ledger/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
+ofo_entry_get_dataset_for_print_ledgers( ofoDossier *dossier,
 												const GSList *mnemos,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -1070,7 +1090,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
  * The returned dataset is ordered by ascending dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
+ofo_entry_get_dataset_for_print_reconcil( ofoDossier *dossier,
 											const gchar *account, const GDate *date )
 {
 	GList *dataset;
@@ -1092,7 +1112,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	dataset = entry_load_dataset( dossier, where->str );
 
 	g_string_free( where, TRUE );
 
@@ -1111,7 +1131,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
  * be #ofo_entry_free_dataset() by the caller.
  */
 GList *
-ofo_entry_get_dataset_for_exercice_by_status( const ofoDossier *dossier, ofaEntryStatus status )
+ofo_entry_get_dataset_for_exercice_by_status( ofoDossier *dossier, ofaEntryStatus status )
 {
 	GList *dataset;
 	GString *where;
@@ -1125,7 +1145,7 @@ ofo_entry_get_dataset_for_exercice_by_status( const ofoDossier *dossier, ofaEntr
 	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, status );
 	g_free( str );
 
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	dataset = entry_load_dataset( dossier, where->str );
 
 	g_string_free( where, TRUE );
 
@@ -1163,7 +1183,7 @@ effect_in_exercice( const ofoDossier *dossier )
  * returns a GList * of ofoEntries
  */
 static GList *
-entry_load_dataset( const ofaDbms *dbms, const gchar *where )
+entry_load_dataset( ofoDossier *dossier, const gchar *where )
 {
 	GList *dataset;
 	GString *query;
@@ -1180,7 +1200,7 @@ entry_load_dataset( const ofaDbms *dbms, const gchar *where )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					dbms,
+					ofo_dossier_get_dbms( dossier ),
 					query->str,
 					OFO_TYPE_ENTRY );
 
@@ -1452,6 +1472,7 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 	return( ENT_STATUS_ROUGH );
 }
 
+#if 0
 /**
  * ofo_entry_get_upd_user:
  */
@@ -1498,6 +1519,7 @@ ofo_entry_get_concil_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_CONCIL_STAMP );
 }
+#endif
 
 /**
  * ofo_entry_get_settlement_number:
@@ -1508,6 +1530,7 @@ ofo_entry_get_settlement_number( const ofoEntry *entry )
 	ofo_base_getter( ENTRY, entry, counter, 0, ENT_STLMT_NUMBER );
 }
 
+#if 0
 /**
  * ofo_entry_get_settlement_user:
  */
@@ -1525,6 +1548,7 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
 }
+#endif
 
 /**
  * ofo_entry_get_exe_changed_count:
@@ -1896,6 +1920,7 @@ entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_UPD_STAMP, upd_stamp );
 }
 
+#if 0
 /*
  * ofo_entry_set_concil_dval:
  *
@@ -1924,6 +1949,7 @@ entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_CONCIL_STAMP, stamp );
 }
+#endif
 
 /**
  * ofo_entry_set_settlement_number:
@@ -2436,6 +2462,7 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	return( ok );
 }
 
+#if 0
 /**
  * ofo_entry_update_concil:
  * @entry:
@@ -2514,6 +2541,7 @@ do_update_concil( ofoEntry *entry, const GDate *date, const gchar *user, const o
 
 	return( ok );
 }
+#endif
 
 /**
  * ofo_entry_update_settlement:
@@ -2740,7 +2768,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	GSList *lines;
 
-	result = entry_load_dataset( ofo_dossier_get_dbms( dossier ), NULL );
+	result = entry_load_dataset( dossier, NULL );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
@@ -2863,8 +2891,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
 	ofxCounter counter;
-	const GDate *cdate;
-	GTimeVal stamp;
 
 	dataset = NULL;
 	line = 0;
@@ -3066,6 +3092,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* ignored (settlement timestamp from export) */
 		itf = itf ? itf->next : NULL;
 
+#if 0
 		/* reconciliation date */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
@@ -3091,6 +3118,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			my_utils_stamp_set_from_str( &stamp, cstr );
 		}
 		entry_set_concil_stamp( entry, &stamp );
+#endif
 
 		/* what to do regarding the effect date ? */
 		if( !entry_compute_status( entry, dossier )){
@@ -3182,10 +3210,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 					counter = ofo_dossier_get_next_settlement( dossier );
 					ofo_entry_update_settlement( entry, dossier, counter );
 				}
+				/*
 				cdate = ofo_entry_get_concil_dval( entry );
 				if( my_date_is_valid( cdate )){
 					ofo_entry_update_concil( entry, dossier, cdate );
 				}
+				*/
 			} else {
 				errors -= 1;
 			}
@@ -3199,4 +3229,37 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	ofs_currency_list_free( &fut );
 
 	return( errors );
+}
+
+/*
+ * ofaIConcil interface management
+ */
+static void
+iconcil_iface_init( ofaIConcilInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iconcil_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iconcil_get_interface_version;
+	iface->get_object_id = iconcil_get_object_id;
+	iface->get_object_type = iconcil_get_object_type;
+}
+
+static guint
+iconcil_get_interface_version( const ofaIConcil *instance )
+{
+	return( 1 );
+}
+
+static ofxCounter
+iconcil_get_object_id( const ofaIConcil *instance )
+{
+	return( ofo_entry_get_number( OFO_ENTRY( instance )));
+}
+
+static const gchar *
+iconcil_get_object_type( const ofaIConcil *instance )
+{
+	return( CONCIL_TYPE_ENTRY );
 }

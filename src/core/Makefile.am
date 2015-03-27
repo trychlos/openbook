@@ -61,11 +61,20 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-application-def.h								\
 	ofa-box.c											\
+	ofa-collection.c									\
+	ofa-collection.h									\
+	ofa-collection-prot.h								\
+	ofa-concil-collection.c								\
+	ofa-concil-collection.h								\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dbms.c											\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
+	ofa-icollector.c									\
+	ofa-icollector.h									\
+	ofa-iconcil.c										\
+	ofa-iconcil.h										\
 	ofa-idataset.c										\
 	ofa-idbms.c											\
 	ofa-iexportable.c									\
@@ -84,6 +93,7 @@ libofa_core_la_SOURCES = \
 	ofo-bat.c											\
 	ofo-bat-line.c										\
 	ofo-class.c											\
+	ofo-concil.c										\
 	ofo-currency.c										\
 	ofo-dossier.c										\
 	ofo-dossier-ddl.c									\
@@ -95,6 +105,7 @@ libofa_core_la_SOURCES = \
 	\
 	ofs-account-balance.c								\
 	ofs-bat.c											\
+	ofs-concil-id.c										\
 	ofs-currency.c										\
 	ofs-ope.c											\
 	$(NULL)

@@ -46,6 +46,7 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-icollector.h"
 #include "core/ofo-dossier-ddl.h"
 #include "core/ofo-marshal.h"
 
@@ -78,6 +79,7 @@ struct _ofoDossierPrivate {
 	ofxCounter  last_batline;
 	ofxCounter  last_entry;
 	ofxCounter  last_settlement;
+	ofxCounter  last_concil;
 	gchar      *status;
 
 	GList      *cur_details;			/* a list of details per currency */
@@ -126,6 +128,7 @@ static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter
 static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
@@ -146,6 +149,8 @@ static void        idataset_set_datasets( ofaIDataset *instance, GList *list );
 static void        free_datasets( GList *datasets );
 static void        free_cur_detail( sCurrency *details );
 static void        free_cur_details( GList *details );
+static void        icollector_iface_init( ofaICollectorInterface *iface );
+static guint       icollector_get_interface_version( const ofaICollector *instance );
 
 GType
 ofo_dossier_get_type( void )
@@ -189,6 +194,12 @@ register_type( void )
 		NULL
 	};
 
+	static const GInterfaceInfo icollector_iface_info = {
+		( GInterfaceInitFunc ) icollector_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
@@ -196,6 +207,8 @@ register_type( void )
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IDATASET, &idataset_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTOR, &icollector_iface_info );
 
 	return( type );
 }
@@ -254,6 +267,8 @@ dossier_dispose( GObject *instance )
 		if( priv->dbms ){
 			g_clear_object( &priv->dbms );
 		}
+
+		ofa_icollector_dispose( OFA_ICOLLECTOR( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -269,6 +284,8 @@ dossier_instance_init( ofoDossier *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_DOSSIER, ofoDossierPrivate );
+
+	ofa_icollector_init( OFA_ICOLLECTOR( self ));
 }
 
 static void
@@ -341,6 +358,10 @@ dossier_class_init( ofoDossierClass *klass )
 	 * The signal is emitted just after an object has been successfully
 	 * deleted from the DBMS. A connected handler may take advantage of
 	 * this signal e.g. for updating its own list of displayed objects.
+	 *
+	 * Note that the emitter of this signal should attach a new reference
+	 * to the deleted object, as the class cleanup handler will decrease
+	 * the reference count from 1.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
@@ -1328,6 +1349,31 @@ ofo_dossier_get_next_settlement( ofoDossier *dossier )
 	return( 0 );
 }
 
+/**
+ * ofo_dossier_get_next_concil:
+ */
+ofxCounter
+ofo_dossier_get_next_concil( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	ofxCounter next;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		priv->last_concil += 1;
+		next = priv->last_concil;
+		dossier_update_next( dossier, "DOS_LAST_CONCIL", next );
+		return( next );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
 /*
  * ofo_dossier_update_next_number:
  */
@@ -1849,6 +1895,17 @@ dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
 	}
 }
 
+static void
+dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->last_concil = counter;
+	}
+}
+
 /**
  * ofo_dossier_set_status:
  * @dossier:
@@ -2002,7 +2059,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"	DOS_SLD_OPE,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
-			"	DOS_STATUS "
+			"	DOS_LAST_CONCIL,DOS_STATUS "
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -2091,6 +2148,11 @@ dossier_read_properties( ofoDossier *dossier )
 		cstr = icol->data;
 		if( my_strlen( cstr )){
 			dossier_set_last_settlement( dossier, atol( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( my_strlen( cstr )){
+			dossier_set_last_concil( dossier, atol( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
@@ -2550,4 +2612,23 @@ static void
 free_cur_details( GList *details )
 {
 	g_list_free_full( details, ( GDestroyNotify ) free_cur_detail );
+}
+
+/*
+ * ofaICollector interface management
+ */
+static void
+icollector_iface_init( ofaICollectorInterface *iface )
+{
+	static const gchar *thisfn = "ofo_dossier_icollector_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollector_get_interface_version;
+}
+
+static guint
+icollector_get_interface_version( const ofaICollector *instance )
+{
+	return( 1 );
 }

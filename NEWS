@@ -16,7 +16,7 @@
 
  New features:
 
-	- 
+	- Fix b-e reconciliation scheme.
 
  Bug fixes:
 
@@ -24,7 +24,10 @@
 
  Other changes:
 
-   - 
+   - ofaICollector, ofaIConcil: new interfaces.
+   - ofoConcil: new class.
+   - review ofoBat and ofoBatLine public APIs.
+   - update DBMS to version 25.
 
 -----------------------------------------------------------------------
  Version 0.37
@@ -45,7 +48,8 @@
 	- BATs page: now able to import BAT file from there (todo #642).
 	- Plugins may now access the application menu (todo #705).
 	- Manage recurrent operations with newly defined 'recurrent' plugin (todo #213).
-	- Reconciliation now accepts 1 batline vs. n entries (todo #747).
+	- Reconciliation now accepts any 'b' batline vs. any 'e' entries where
+	  'b' and 'e' may both be equal to zero (todo #747).
 
  Bug fixes:
 
@@ -74,6 +78,7 @@
    - removed method ofo_bat_line_update().
    - new method ofo_bat_line_add_entry().
    - new method ofo_bat_line_remove_entries().
+   - update DBMS to version 24.
 
 -----------------------------------------------------------------------
  Version 0.36

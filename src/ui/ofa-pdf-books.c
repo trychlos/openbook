@@ -1018,10 +1018,12 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	}
 
 	/* reconciliation */
+#if 0
 	if( my_date_is_valid( ofo_entry_get_concil_dval( entry ))){
 		ofa_iprintable_set_text( instance, context,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
 	}
+#endif
 
 	/* debit */
 	amount = ofo_entry_get_debit( entry );

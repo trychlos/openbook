@@ -98,6 +98,7 @@ ofxCounter       ofo_dossier_get_next_bat              ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_concil           ( ofoDossier *dossier );
 
 GDate           *ofo_dossier_get_min_deffect           ( GDate *date,
 																const ofoDossier *dossier,

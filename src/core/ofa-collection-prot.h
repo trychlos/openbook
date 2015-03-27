@@ -22,28 +22,26 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_DOSSIER_DDL_H__
-#define __OFO_DOSSIER_DDL_H__
+#ifndef __OFA_COLLECTION_PROT_H__
+#define __OFA_COLLECTION_PROT_H__
 
 /**
- * SECTION: ofo_dossier_ddl
- * @short_description: #ofoDossierDDL method definition.
- * @include: core/ofo-dossier-ddl.h
+ * SECTION: ofa_collection
+ * @short_description: #ofaCollection protected variable members.
+ * @include: core/ofa-collection-prot.h
  *
- * This file contains the methods available to maintain the DBMS model
- * up to date.
+ * This header is supposed to be included only by the child classes.
  */
-
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
-/* the identifier of the dossier row
+/* protected instance data
+ * these are freely available to all derived classes
  */
-#define THIS_DOS_ID                     1
-
-gboolean ofo_dossier_ddl_update( ofoDossier *dossier );
+struct _ofaCollectionProtected {
+	gboolean dispose_has_run;
+};
 
 G_END_DECLS
 
-#endif /* __OFO_DOSSIER_DDL_H__ */
+#endif /* __OFA_COLLECTION_PROT_H__ */

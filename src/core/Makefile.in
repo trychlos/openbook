@@ -154,15 +154,17 @@ libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = ofo-marshal.lo
 am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo my-dialog.lo \
 	my-double.lo my-utils.lo my-window.lo \
-	ofa-admin-credentials-bin.lo ofa-box.lo ofa-dbms-root-bin.lo \
-	ofa-dbms.lo ofa-dossier-misc.lo ofa-file-format.lo \
-	ofa-idataset.lo ofa-idbms.lo ofa-iexportable.lo \
+	ofa-admin-credentials-bin.lo ofa-box.lo ofa-collection.lo \
+	ofa-concil-collection.lo ofa-dbms-root-bin.lo ofa-dbms.lo \
+	ofa-dossier-misc.lo ofa-file-format.lo ofa-icollector.lo \
+	ofa-iconcil.lo ofa-idataset.lo ofa-idbms.lo ofa-iexportable.lo \
 	ofa-iimporter.lo ofa-iimportable.lo ofa-plugin.lo \
 	ofa-preferences.lo ofa-settings.lo ofa-settings-monitor.lo \
 	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
-	ofo-class.lo ofo-currency.lo ofo-dossier.lo ofo-dossier-ddl.lo \
-	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
-	ofs-account-balance.lo ofs-bat.lo ofs-currency.lo ofs-ope.lo
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-dossier-ddl.lo ofo-entry.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
+	ofs-bat.lo ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -433,11 +435,20 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-application-def.h								\
 	ofa-box.c											\
+	ofa-collection.c									\
+	ofa-collection.h									\
+	ofa-collection-prot.h								\
+	ofa-concil-collection.c								\
+	ofa-concil-collection.h								\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dbms.c											\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
+	ofa-icollector.c									\
+	ofa-icollector.h									\
+	ofa-iconcil.c										\
+	ofa-iconcil.h										\
 	ofa-idataset.c										\
 	ofa-idbms.c											\
 	ofa-iexportable.c									\
@@ -456,6 +467,7 @@ libofa_core_la_SOURCES = \
 	ofo-bat.c											\
 	ofo-bat-line.c										\
 	ofo-class.c											\
+	ofo-concil.c										\
 	ofo-currency.c										\
 	ofo-dossier.c										\
 	ofo-dossier-ddl.c									\
@@ -467,6 +479,7 @@ libofa_core_la_SOURCES = \
 	\
 	ofs-account-balance.c								\
 	ofs-bat.c											\
+	ofs-concil-id.c										\
 	ofs-currency.c										\
 	ofs-ope.c											\
 	$(NULL)
@@ -588,10 +601,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-window.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-collection.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-concil-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-misc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icollector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iconcil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idataset.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
@@ -606,6 +623,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-bat-line.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-bat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-class.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-concil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-currency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-dossier-ddl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-dossier.Plo@am__quote@
@@ -616,6 +634,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-account-balance.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-bat.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-concil-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-currency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-ope.Plo@am__quote@
 

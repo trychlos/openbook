@@ -53,6 +53,8 @@ api_include_HEADERS = \
 	ofo-bat-line.h										\
 	ofo-class.h											\
 	ofo-class-def.h										\
+	ofo-concil.h										\
+	ofo-concil-def.h									\
 	ofo-currency.h										\
 	ofo-currency-def.h									\
 	ofo-dossier.h										\
@@ -67,6 +69,7 @@ api_include_HEADERS = \
 	\
 	ofs-account-balance.h								\
 	ofs-bat.h											\
+	ofs-concil-id.h										\
 	ofs-currency.h										\
 	ofs-ope.h											\
 	$(NULL)

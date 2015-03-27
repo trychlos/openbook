@@ -1,8 +1,90 @@
+2015-03-27 Pierre Wieser <pwieser@trychlos.org>
+
+	Improve the reconciliation scheme with DBMS v25.
+
+	* src/api/ofo-concil-def.h,
+	* src/api/ofo-concil.h,
+	* src/core/ofo-concil.c,
+	* src/api/ofs-concil-id.h,
+	* src/core/ofs-concil-id.c,
+	* src/core/ofa-collection-prot.h,
+	* src/core/ofa-collection.c,
+	* src/core/ofa-collection.h,
+	* src/core/ofa-concil-collection.c,
+	* src/core/ofa-concil-collection.h,
+	* src/core/ofa-icollector.c,
+	* src/core/ofa-icollector.h,
+	* src/core/ofa-iconcil.c,
+	* src/core/ofa-iconcil.h: new files.
+
+	* src/api/ofo-dossier.h: ofo_dossier_get_next_concil(): new method.
+
+	* src/core/ofo-dossier-ddl.c,
+	* src/core/ofo-dossier-ddl.h: new dbmodel_to_v25() method.
+
+	* src/api/Makefile.am,
+	* src/core/Makefile.am,
+	* src/core/ofo-dossier.c,
+	* src/core/ofo-entry.c,
+	* src/ui/ofa-bat-properties-bin.c,
+	* src/ui/ofa-bat-store.c,
+	* src/ui/ofa-reconciliation.c
+	* src/ui/ofa-reconciliation.h: updated accordingly.
+
+	* src/api/ofo-bat.h,
+	* src/core/ofo-bat.c:
+	- ofo_bat_get_count(),
+	- ofo_bat_get_unused_count(): removed methods.
+	- ofo_bat_get_lines_count(),
+	- ofo_bat_get_used_count(): new methods.
+
+	* src/api/ofo-bat-line.h,
+	* src/core/ofo-bat-line.c: 
+	- ofo_bat_line_get_entries(),
+	- ofo_bat_line_get_upd_user(),
+	- ofo_bat_line_get_upd_stamp(),
+	- ofo_bat_line_is_used(),
+	- ofo_bat_line_has_entry(),
+	- ofo_bat_line_get_entries_group(),
+	- ofo_bat_line_add_entry(),
+	- ofo_bat_line_remove_entries(): removed methods.
+
+	* src/ui/ofa-exercice-close-assistant.c,
+	* src/ui/ofa-pdf-books.c,
+	* src/ui/ofa-pdf-ledgers.c,
+	* src/ui/ofa-view-entries.c: left to be fixed.
+
 2015-03-25 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/import-lcl-pdf/ofa-importer.c: fix date check.
 
 	* configure.ac: post-release version bump.
+
+2015-03-22 Pierre Wieser <pwieser@trychlos.org>
+
+	Introduce a new reconciliation b-e scheme where both 'b' bat lines
+	count and 'e' entries count may be zero.
+
+	* src/api/ofo-bat.h,
+	* src/core/ofo-bat.c:
+	- remove method ofo_bat_get_count(),
+	- remove method ofo_bat_get_unused_count(),
+	- add method ofo_bat_get_lines_count(),
+	- add method ofo_bat_get_used_count().
+
+	* src/ui/ofa-bat-properties-bin.c,
+	* src/ui/ofa-bat-store.c: updated accordingly.
+
+	* src/api/ofo-dossier.h,
+	* src/core/ofo-dossier.c: new method ofo_dossier_get_next_concil()
+
+	* src/core/ofo-dossier-ddl.c,
+	* src/core/ofo-dossier-ddl.h:
+	- review DBMS v24 content
+	- THIS_DBMODEL_VERSION is no more a constant, but is dynamically
+	  computed at run time.
+
+	* src/ui/ofa-reconciliation.c: code and interface reviews.
 
 2015-03-21 Pierre Wieser <pwieser@trychlos.org>
 

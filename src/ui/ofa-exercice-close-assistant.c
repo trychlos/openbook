@@ -943,10 +943,12 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 					ofo_entry_update_settlement( entry, dossier, counter );
 					p7_set_forward_settlement_number( for_entries, acc_number, counter );
 				}
+#if 0
 				if( ofo_account_is_reconciliable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
 					ofo_entry_update_concil( entry, dossier, end_cur );
 				}
+#endif
 			}
 			ofo_entry_free_dataset( sld_entries );
 
@@ -1307,11 +1309,15 @@ p7_forward( ofaExerciceCloseAssistant *self )
 	ofxCounter counter;
 	gdouble progress;
 	gchar *text;
+	/*
 	const GDate *dbegin;
+	*/
 
 	priv = self->priv;
 	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+	/*
 	dbegin = ofo_dossier_get_exe_begin( dossier );
+	*/
 
 	bar = get_new_bar( self, "p7-forward" );
 	gtk_widget_show_all( priv->current_page_widget );
@@ -1329,9 +1335,11 @@ p7_forward( ofaExerciceCloseAssistant *self )
 		/* set reconciliation on reconciliable account */
 		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+#if 0
 		if( ofo_account_is_reconciliable( account )){
 			ofo_entry_update_concil( entry, dossier, dbegin );
 		}
+#endif
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );

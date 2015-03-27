@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "api/my-date.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
@@ -48,14 +50,16 @@ static const gchar *st_ledgers          = INIT1DIR "/ledgers-h1.csv";
 static const gchar *st_ope_templates    = INIT1DIR "/ope-templates-h2.csv";
 static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
 
+static gint     get_max_version( void );
 static gint     dbmodel_get_version( const ofoDossier *dossier );
 static gboolean version_begin( const ofoDossier *dossier, gint version );
 static gboolean version_end( const ofoDossier *dossier, gint version );
-static gboolean dbmodel_to_v20( const ofoDossier *dossier, gint version );
-static gboolean dbmodel_to_v21( const ofoDossier *dossier, gint version );
-static gboolean dbmodel_to_v22( const ofoDossier *dossier, gint version );
-static gboolean dbmodel_to_v23( const ofoDossier *dossier, gint version );
-static gboolean dbmodel_to_v24( const ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v20( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v21( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v22( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v23( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v24( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v25( ofoDossier *dossier, gint version );
 static gboolean insert_classes( ofoDossier *dossier );
 static gboolean insert_currencies( ofoDossier *dossier );
 static gboolean insert_ledgers( ofoDossier *dossier );
@@ -68,7 +72,7 @@ static gint     count_rows( const ofoDossier *dossier, const gchar *table );
  */
 typedef struct {
 	gint        ver_target;
-	gboolean ( *fn )( const ofoDossier *dossier, gint version );
+	gboolean ( *fn )( ofoDossier *dossier, gint version );
 }
 	sMigration;
 
@@ -78,6 +82,7 @@ static sMigration st_migrates[] = {
 		{ 22, dbmodel_to_v22 },
 		{ 23, dbmodel_to_v23 },
 		{ 24, dbmodel_to_v24 },
+		{ 25, dbmodel_to_v25 },
 		{ 0 }
 };
 
@@ -92,16 +97,17 @@ gboolean
 ofo_dossier_ddl_update( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_ddl_update";
-	gint i, cur_version;
+	gint i, cur_version, max_version;
 	gboolean ok;
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	ok = TRUE;
+	max_version = get_max_version();
 	cur_version = dbmodel_get_version( dossier );
-	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
+	g_debug( "%s: cur_version=%d, max_version=%d", thisfn, cur_version, max_version );
 
-	if( cur_version < THIS_DBMODEL_VERSION ){
+	if( cur_version < max_version ){
 		for( i=0 ; st_migrates[i].ver_target ; ++i ){
 			if( cur_version < st_migrates[i].ver_target ){
 				if( !version_begin( dossier, st_migrates[i].ver_target ) ||
@@ -123,6 +129,22 @@ ofo_dossier_ddl_update( ofoDossier *dossier )
 	}
 
 	return( ok );
+}
+
+static gint
+get_max_version( void )
+{
+	gint max_version, i;
+
+	max_version = 0;
+
+	for( i=0 ; st_migrates[i].ver_target ; ++i ){
+		if( max_version < st_migrates[i].ver_target ){
+			max_version = st_migrates[i].ver_target;
+		}
+	}
+
+	return( max_version );
 }
 
 /*
@@ -199,7 +221,7 @@ version_end( const ofoDossier *dossier, gint version )
  * @account: the current connected account.
  */
 static gboolean
-dbmodel_to_v20( const ofoDossier *dossier, gint version )
+dbmodel_to_v20( ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v20";
 	const ofaDbms *dbms;
@@ -497,7 +519,7 @@ dbmodel_to_v20( const ofoDossier *dossier, gint version )
 
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
-			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key with NULL values',"
+			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key while keeping NULL values',"
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL        COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
 			"	RAT_VAL_END       DATE    DEFAULT NULL              COMMENT 'Validity end date',"
@@ -515,7 +537,7 @@ dbmodel_to_v20( const ofoDossier *dossier, gint version )
  * have zero timestamp on unreconciliated batlines
  */
 static gboolean
-dbmodel_to_v21( const ofoDossier *dossier, gint version )
+dbmodel_to_v21( ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v21";
 	const ofaDbms *dbms;
@@ -547,7 +569,7 @@ dbmodel_to_v21( const ofoDossier *dossier, gint version )
  * have begin_solde and end_solde in bat
  */
 static gboolean
-dbmodel_to_v22( const ofoDossier *dossier, gint version )
+dbmodel_to_v22( ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v22";
 	const ofaDbms *dbms;
@@ -580,7 +602,7 @@ dbmodel_to_v22( const ofoDossier *dossier, gint version )
  * closed accounts
  */
 static gboolean
-dbmodel_to_v23( const ofoDossier *dossier, gint version )
+dbmodel_to_v23( ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v23";
 	const ofaDbms *dbms;
@@ -602,11 +624,12 @@ dbmodel_to_v23( const ofoDossier *dossier, gint version )
 
 /*
  * ofo_dossier_dbmodel_to_v24:
- * a bat line may be reconciliated against several entries
- * -> create new OFA_T_BAT_CONCIL table
+ *
+ * This is an intermediate DB model wrongly introduced in v0.37 as a
+ * reconciliation improvement try, and replaced in v0.38
  */
 static gboolean
-dbmodel_to_v24( const ofoDossier *dossier, gint version )
+dbmodel_to_v24( ofoDossier *dossier, gint version )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v24";
 	const ofaDbms *dbms;
@@ -617,32 +640,180 @@ dbmodel_to_v24( const ofoDossier *dossier, gint version )
 
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_CONCIL ("
-			"	BAT_LINE_ID       BIGINT      NOT NULL COMMENT 'BAT line identifier',"
-			"	BAT_REC_ENTRY     BIGINT      NOT NULL COMMENT 'Entry the BAT line was reconciliated against',"
-			"	BAT_REC_UPD_USER  VARCHAR(20)          COMMENT 'User responsible of the reconciliation',"
-			"	BAT_REC_UPD_STAMP TIMESTAMP            COMMENT 'Reconciliation timestamp',"
-			"	UNIQUE (BAT_LINE_ID,BAT_REC_ENTRY)"
+			"       BAT_LINE_ID       BIGINT      NOT NULL COMMENT 'BAT line identifier',"
+			"       BAT_REC_ENTRY     BIGINT      NOT NULL COMMENT 'Entry the BAT line was reconciliated against',"
+			"       BAT_REC_UPD_USER  VARCHAR(20)          COMMENT 'User responsible of the reconciliation',"
+			"       BAT_REC_UPD_STAMP TIMESTAMP            COMMENT 'Reconciliation timestamp',"
+			"       UNIQUE (BAT_LINE_ID,BAT_REC_ENTRY)"
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_dbms_query( dbms,
 			"INSERT INTO OFA_T_BAT_CONCIL "
-			"	(BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
-			"	SELECT BAT_LINE_ID,BAT_LINE_ENTRY,BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
-			"	  FROM OFA_T_BAT_LINES "
-			"	    WHERE BAT_LINE_ENTRY IS NOT NULL "
-			"	    AND BAT_LINE_UPD_USER IS NOT NULL "
-			"	    AND BAT_LINE_UPD_STAMP!=0",
+			"       (BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
+			"       SELECT BAT_LINE_ID,BAT_LINE_ENTRY,BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
+			"         FROM OFA_T_BAT_LINES "
+			"           WHERE BAT_LINE_ENTRY IS NOT NULL "
+			"           AND BAT_LINE_UPD_USER IS NOT NULL "
+			"           AND BAT_LINE_UPD_STAMP!=0",
 			TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_dbms_query( dbms,
 			"ALTER TABLE OFA_T_BAT_LINES "
-			"	DROP COLUMN BAT_LINE_ENTRY,"
-			"	DROP COLUMN BAT_LINE_UPD_USER,"
-			"	DROP COLUMN BAT_LINE_UPD_STAMP",
+			"       DROP COLUMN BAT_LINE_ENTRY,"
+			"       DROP COLUMN BAT_LINE_UPD_USER,"
+			"       DROP COLUMN BAT_LINE_UPD_STAMP",
+			TRUE )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * ofo_dossier_dbmodel_to_v25:
+ *
+ * Define a new b-e reconciliation model where any 'b' bat lines may be
+ * reconciliated against any 'e' entries, where 'b' and 'e' may both be
+ * equal to zero.
+ * This is a rupture from the previous model where the relation was only
+ * 1-1.
+ */
+static gboolean
+dbmodel_to_v25( ofoDossier *dossier, gint version )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v25";
+	const ofaDbms *dbms;
+	GSList *result, *irow, *icol;
+	ofxCounter last_concil, number, rec_id, bat_id;
+	gchar *query, *sdval, *user, *stamp;
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+	last_concil = 0;
+
+	if( !ofa_dbms_query( dbms,
+			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL ("
+			"	REC_ID        BIGINT PRIMARY KEY NOT NULL COMMENT 'Reconciliation identifier',"
+			"	REC_DVAL      DATE               NOT NULL COMMENT 'Bank value date',"
+			"	REC_USER  VARCHAR(20)                 COMMENT 'User responsible of the reconciliation',"
+			"	REC_STAMP TIMESTAMP                   COMMENT 'Reconciliation timestamp'"
+			") CHARACTER SET utf8", TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL_IDS ("
+			"	REC_ID        BIGINT             NOT NULL COMMENT 'Reconciliation identifier',"
+			"	REC_IDS_TYPE  CHAR(1)            NOT NULL COMMENT 'Identifier type Bat/Entry',"
+			"	REC_IDS_OTHER  BIGINT             NOT NULL COMMENT 'Bat line identifier or Entry number'"
+			") CHARACTER SET utf8", TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN DOS_LAST_CONCIL BIGINT NOT NULL DEFAULT 0 COMMENT 'Last reconciliation identifier used'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query_ex( dbms,
+			"SELECT ENT_NUMBER,ENT_CONCIL_DVAL,ENT_CONCIL_USER,ENT_CONCIL_STAMP "
+			"	FROM OFA_T_ENTRIES "
+			"	WHERE ENT_CONCIL_DVAL IS NOT NULL",
+			&result, TRUE )){
+		return( FALSE );
+	} else {
+		for( irow=result ; irow ; irow=irow->next ){
+			/* read reconciliated entries */
+			icol = ( GSList * ) irow->data;
+			number = atol(( gchar * ) icol->data );
+			icol = icol->next;
+			sdval = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			user = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			stamp = g_strdup(( const gchar * ) icol->data );
+			/* allocate a new reconciliation id and insert into main table */
+			rec_id = ++last_concil;
+			query = g_strdup_printf(
+					"INSERT INTO OFA_T_CONCIL "
+					"	(REC_ID,REC_DVAL,REC_USER,REC_STAMP) "
+					"	VALUES (%ld,'%s','%s','%s')",
+					rec_id, sdval, user, stamp );
+			if( !ofa_dbms_query( dbms, query, TRUE )){
+				return( FALSE );
+			}
+			g_free( query );
+			g_free( stamp );
+			g_free( user );
+			g_free( sdval );
+			/* insert into table of ids */
+			query = g_strdup_printf(
+					"INSERT INTO OFA_T_CONCIL_IDS "
+					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
+					"	VALUES (%ld,'E',%ld)",
+					rec_id, number );
+			if( !ofa_dbms_query( dbms, query, TRUE )){
+				return( FALSE );
+			}
+			g_free( query );
+		}
+		ofa_dbms_free_results( result );
+	}
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_DOSSIER SET DOS_LAST_CONCIL=%ld WHERE DOS_ID=%u",
+			last_concil, THIS_DOS_ID );
+	if( !ofa_dbms_query( dbms, query, TRUE )){
+		return( FALSE );
+	}
+	g_free( query );
+
+	if( !ofa_dbms_query_ex( dbms,
+			"SELECT a.BAT_LINE_ID,b.REC_ID "
+			"	FROM OFA_T_BAT_CONCIL a, OFA_T_CONCIL_IDS b "
+			"	WHERE a.BAT_REC_ENTRY=b.REC_IDS_OTHER "
+			"	AND b.REC_IDS_TYPE='E'",
+			&result, TRUE )){
+		return( FALSE );
+	} else {
+		for( irow=result ; irow ; irow=irow->next ){
+			/* read reconciliated bat lines */
+			icol = ( GSList * ) irow->data;
+			bat_id = atol(( gchar * ) icol->data );
+			icol = icol->next;
+			rec_id = atol(( gchar * ) icol->data );
+			/* insert into table of ids */
+			query = g_strdup_printf(
+					"INSERT INTO OFA_T_CONCIL_IDS "
+					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
+					"	VALUES (%ld,'B',%ld)",
+					rec_id, bat_id );
+			if( !ofa_dbms_query( dbms, query, TRUE )){
+				return( FALSE );
+			}
+			g_free( query );
+		}
+		ofa_dbms_free_results( result );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"DROP TABLE OFA_T_BAT_CONCIL",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	DROP COLUMN ENT_CONCIL_DVAL, "
+			"	DROP COLUMN ENT_CONCIL_USER, "
+			"	DROP COLUMN ENT_CONCIL_STAMP",
 			TRUE )){
 		return( FALSE );
 	}

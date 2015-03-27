@@ -36,11 +36,14 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofs-currency.h"
+
+#include "core/ofa-iconcil.h"
 
 #include "ui/my-cell-renderer-amount.h"
 #include "ui/my-cell-renderer-date.h"
@@ -1712,6 +1715,7 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	ofxCounter counter;
 	const GDate *d;
 	ofxAmount amount;
+	ofoConcil *concil;
 
 	priv = self->priv;
 
@@ -1721,7 +1725,8 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	sdeb = amount ? my_double_to_str( amount ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
 	scre = amount ? my_double_to_str( amount ) : g_strdup( "" );
-	d = ofo_entry_get_concil_dval( entry );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), ofa_page_get_dossier( OFA_PAGE( self )));
+	d = concil ? ofo_concil_get_dval( concil ) : NULL;
 	srappro = my_date_to_str( d, ofa_prefs_date_display());
 	counter = ofo_entry_get_settlement_number( entry );
 	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );

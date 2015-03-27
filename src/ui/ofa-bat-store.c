@@ -263,7 +263,7 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
 	if( !cscurrency ){
 		cscurrency = "";
 	}
-	scount = g_strdup_printf( "%u", ofo_bat_get_count( bat, dossier ));
+	scount = g_strdup_printf( "%u", ofo_bat_get_lines_count( bat, dossier ));
 	stamp  = my_utils_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
 	gtk_list_store_set(

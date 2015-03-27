@@ -35,6 +35,7 @@
 
 #include "api/ofa-box.h"
 #include "api/ofo-base-def.h"
+#include "api/ofo-concil-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -98,28 +99,28 @@ void           ofo_entry_dump                 ( const ofoEntry *entry );
 
 void           ofo_entry_connect_handlers     ( const ofoDossier *dossier );
 
-GList         *ofo_entry_get_dataset_by_account             ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_by_account             ( ofoDossier *dossier,
 																	const gchar *account );
-GList         *ofo_entry_get_dataset_by_ledger              ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_by_ledger              ( ofoDossier *dossier,
 																	const gchar *ledger );
-GList         *ofo_entry_get_dataset_for_print_balance      ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_for_print_balance      ( ofoDossier *dossier,
 																	const gchar *from_account,
 																	const gchar *to_account,
 																	const GDate *from_date,
 																	const GDate *to_date );
-GList         *ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_for_print_general_books( ofoDossier *dossier,
 																	const gchar *from_account,
 																	const gchar *to_account,
 																	const GDate *from_date,
 																	const GDate *to_date );
-GList         *ofo_entry_get_dataset_for_print_ledgers      ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_for_print_ledgers      ( ofoDossier *dossier,
 																	const GSList *mnemos,
 																	const GDate *from_date,
 																	const GDate *to_date );
-GList         *ofo_entry_get_dataset_for_print_reconcil     ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_for_print_reconcil     ( ofoDossier *dossier,
 																	const gchar *account,
 																	const GDate *date );
-GList         *ofo_entry_get_dataset_for_exercice_by_status ( const ofoDossier *dossier,
+GList         *ofo_entry_get_dataset_for_exercice_by_status ( ofoDossier *dossier,
 																	ofaEntryStatus status );
 
 void           ofo_entry_free_dataset         ( GList *dataset );
@@ -143,14 +144,18 @@ ofxAmount      ofo_entry_get_credit           ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status           ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_abr_status       ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status_from_abr  ( const gchar *abr_status );
+/*
 const gchar   *ofo_entry_get_upd_user         ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_upd_stamp        ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_concil_dval      ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_concil_user      ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_concil_stamp     ( const ofoEntry *entry );
+*/
 ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
+/*
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
+*/
 
 gint           ofo_entry_get_exe_changed_count( ofoDossier *dossier,
 													const GDate *prev_begin,
@@ -193,7 +198,9 @@ ofoEntry      *ofo_entry_new_with_data        ( ofoDossier *dossier,
 
 gboolean       ofo_entry_insert               ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_update               ( ofoEntry *entry, const ofoDossier *dossier );
+/*
 gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier, const GDate *date );
+*/
 gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
 

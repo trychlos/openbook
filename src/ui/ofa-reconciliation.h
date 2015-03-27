@@ -39,47 +39,52 @@
  *   . as the child of an entry if they are reconciliated with this same
  *     entry, or proposed to
  *   . at the level zero if they are not reconciliated nor may be
- *     proposed to be reconciliated against any entry.
+ *     automatically proposed to be reconciliated against any entry.
  *
  * An entry may have zero or one bat line child.
  *
  * Bat lines are inserted:
  * - preferentially as the child of an entry:
- *   . whether the entry against which the bat line has been previously
- *     reconciliated
+ *   . either (one of) the entry against which the bat line has been
+ *     previously reconciliated
  *   . or a proposed compatible entry:
  *     > without yet any child
  *     > not yet reconciliated
  *     > with compatible amounts
- * - or at level zero if no proposition can be made.
+ * - or at level zero if no automatic proposition can be made.
  *
- * Activating an entry row toggles the reconciliation state:
- * - if the entry was reconciliated, then the reconciliation is undone
- *   . if this entry had a reconciliated child, then the corresponding
- *     bat line is set unreconciliated
+ * Activating (enter or double-click) an entry row toggles its
+ * reconciliation state:
+ * - if the entry was reconciliated, then all the reconciliation group
+ *   is undone as well
  * - if the entry was not reconciliated, then the reconciliation date
  *   is taken from:
- *   . the child bat line effect date if any
- *   . the manual reconciliation date if set
+ *   . the child bat line effect date if any, and these two lines (the
+ *     entry and the bat line) are set as members of a new reconciliation
+ *     group
+ *   . the manual reconciliation date if set (the entry is the only
+ *     member of a new reconciliation group)
  *   . else (no reconciliation date) nothing happens.
  *
  * Activating a bat line row has no effect
  *
- * Selection can be multiple.
- * Multiple selection is allowed if and only if it concerns one entry
- * and one bat line, both compatible together.
- * So selection count is zero, one or two (with the above condition).
+ * Selection can be multiple in order to allow 'b' bat lines be
+ * reconciliated against 'e' entries. Both b and e may be equal to
+ * zero, as soon as sum(b+e)=0.
  *
  * It is possible to import a bat file which concerns already manually
  * reconciliated entries.
- *
  * Imported bat lines will not be proposed against the right entry as
  * this later is already reconciliated. It is so possible to manually
  * select the already reconciliated entry with the to-be reconciliated
- * bat line and to 'Accept' the reconciliation.
+ * bat line and to 'Accept' the reconciliation. The batline will be
+ * added to the entry reconciliation group.
  *
  * The automatic proposal may be wrong, and may thus be declined. The
  * corresponding bat line is moved at tree view level zero.
+ *
+ * The OFA_T_CONCIL table records the conciliation groups, gathering
+ * them by concil identifier.
  */
 
 #include "ui/ofa-page-def.h"

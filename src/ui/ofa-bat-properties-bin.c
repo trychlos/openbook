@@ -35,7 +35,11 @@
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
+#include "api/ofs-concil-id.h"
+
+#include "core/ofa-iconcil.h"
 
 #include "ui/ofa-bat-properties-bin.h"
 
@@ -90,7 +94,7 @@ static void  load_dialog( ofaBatPropertiesBin *bin );
 static void  setup_treeview( ofaBatPropertiesBin *bin );
 static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable );
 static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
-static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line );
+static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, ofoDossier *dossier );
 
 static void
 bat_properties_bin_finalize( GObject *instance )
@@ -334,6 +338,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	ofxCounter bat_id;
 	const gchar *cstr;
 	gchar *str;
+	gint total, used;
 
 	priv = bin->priv;
 
@@ -349,11 +354,13 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_format ), "" );
 	}
 
-	str = g_strdup_printf( "%u", ofo_bat_get_count( bat, dossier ));
+	total = ofo_bat_get_lines_count( bat, dossier );
+	str = g_strdup_printf( "%u", total );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_count ), str );
 	g_free( str );
 
-	str = g_strdup_printf( "%u", ofo_bat_get_unused_count( dossier, bat_id ));
+	used = ofo_bat_get_used_count( bat, dossier );
+	str = g_strdup_printf( "%u", total-used );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
@@ -414,36 +421,44 @@ display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
 
 	dataset = ofo_bat_line_get_dataset( dossier, ofo_bat_get_id( bat ));
 	for( it=dataset ; it ; it=it->next ){
-		display_line( bin, tmodel, OFO_BAT_LINE( it->data ));
+		display_line( bin, tmodel, OFO_BAT_LINE( it->data ), dossier );
 	}
 	ofo_bat_line_free_dataset( dataset );
 }
 
 static void
-display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
+display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, ofoDossier *dossier )
 {
-	gchar *sid, *sdope, *sdeffect, *samount, *stamp;
-	const gchar *cuser;
-	GList *entries, *it;
-	GString *snumbers;
+	gchar *sid, *sdope, *sdeffect, *samount;
+	ofxCounter bat_id;
 	GtkTreeIter iter;
+	ofoConcil *concil;
+	const gchar *cuser;
+	gchar *stamp;
+	GString *snumbers;
+	GList *ids, *it;
+	ofsConcilId *scid;
 
-	sid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
+	bat_id = ofo_bat_line_get_line_id( line );
+	sid = g_strdup_printf( "%lu", bat_id );
 	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
 	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
 	samount = my_double_to_str( ofo_bat_line_get_amount( line ));
-	entries = ofo_bat_line_get_entries( line );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ), dossier );
 	snumbers = g_string_new( "" );
-	for( it=entries ; it ; it=it->next ){
-		if( snumbers->len ){
-			snumbers = g_string_append( snumbers, "," );
+	if( concil ){
+		cuser = ofo_concil_get_user( concil );
+		stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
+		ids = ofo_concil_get_ids( concil );
+		for( it=ids ; it ; it=it->next ){
+			scid = ( ofsConcilId * ) it->data;
+			if( !g_utf8_collate( scid->type, CONCIL_TYPE_ENTRY )){
+				if( snumbers->len ){
+					snumbers = g_string_append( snumbers, "," );
+				}
+				g_string_append_printf( snumbers, "%ld", scid->other_id );
+			}
 		}
-		g_string_append_printf( snumbers, "%lu", ( gulong ) it->data );
-	}
-	g_list_free( entries );
-	if( snumbers->len ){
-		cuser = ofo_bat_line_get_upd_user( line );
-		stamp = my_utils_stamp_to_str( ofo_bat_line_get_upd_stamp( line ), MY_STAMP_DMYYHM );
 	} else {
 		cuser = "";
 		stamp = g_strdup( "" );
