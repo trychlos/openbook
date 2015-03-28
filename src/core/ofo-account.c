@@ -870,7 +870,6 @@ ofo_account_get_type_account( const ofoAccount *account )
 	str = account_get_string_ex( account, ACC_TYPE );
 
 	if(  my_strlen( str )){
-
 		if( !g_utf8_collate( str, ACCOUNT_TYPE_ROOT ) || !g_utf8_collate( str, ACCOUNT_TYPE_DETAIL )){
 			return( str );
 		}
@@ -1050,7 +1049,7 @@ ofo_account_is_root( const ofoAccount *account )
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
 		account_type = ofo_account_get_type_account( account );
-		if( account_type && !g_utf8_collate( account_type, "R" )){
+		if( !my_collate( account_type, "R" )){
 			is_root = TRUE;
 		}
 	}
@@ -1075,7 +1074,7 @@ ofo_account_is_settleable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_SETTLEABLE );
-	is_settleable = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_SETTLEABLE );
+	is_settleable = !my_collate( str, ACCOUNT_SETTLEABLE );
 
 	return( is_settleable );
 }
@@ -1098,7 +1097,7 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_RECONCILIABLE );
-	is_reconciliable = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_RECONCILIABLE );
+	is_reconciliable = !my_collate( str, ACCOUNT_RECONCILIABLE );
 
 	return( is_reconciliable );
 }
@@ -1116,7 +1115,7 @@ ofo_account_is_forward( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_FORWARD );
-	is_forward = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_FORWARDABLE );
+	is_forward = !my_collate( str, ACCOUNT_FORWARDABLE );
 
 	return( is_forward );
 }
@@ -1134,7 +1133,7 @@ ofo_account_is_closed( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_CLOSED );
-	is_closed = my_strlen( str ) && !g_utf8_collate( str, ACCOUNT_CLOSED );
+	is_closed = !my_collate( str, ACCOUNT_CLOSED );
 
 	return( is_closed );
 }
@@ -1179,7 +1178,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	}
 
 	/* is root account ? */
-	is_root = ( type && !g_utf8_collate( type, "R" ));
+	is_root = ( !my_collate( type, ACCOUNT_TYPE_ROOT ));
 
 	/* currency must be set for detail account */
 	if( !is_root ){

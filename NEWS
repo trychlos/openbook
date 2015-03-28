@@ -27,6 +27,10 @@
 
  Other changes:
 
+   - Have an OPENBOOK_API_ prefix in all api headers (todo #762).
+   - Generalize my_strlen() use (todo #763).
+   - Have my_collate() function (todo #770).
+   - entry_load_dataset() now has an order clause argument (todo #764).
    - ofa_bat_utils_import(): new function.
    - ofaICollector, ofaIConcil: new interfaces.
    - ofoConcil: new class.

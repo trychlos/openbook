@@ -46,6 +46,7 @@ typedef enum {
 }
 	myStampFormat;
 
+gint       my_collate                      ( const gchar *a, const gchar *b );
 glong      my_strlen                       ( const gchar *str );
 
 gchar     *my_utils_quote                  ( const gchar *str );

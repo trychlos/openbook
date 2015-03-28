@@ -1,5 +1,15 @@
 2015-03-28 Pierre Wieser <pwieser@trychlos.org>
 
+	Have my_collate() function (todo #770).
+
+	* src/api/my-utils.h,
+	* src/core/my-utils.c: new my_collate() function.
+
+	* src/core/ofo-account.c,
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-settlement.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
+
 	Have an OPENBOOK_API_ prefix in all api headers (todo #762).
 
 	* src/api/my-date.h,

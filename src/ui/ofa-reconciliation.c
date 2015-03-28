@@ -1724,7 +1724,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 						ofo_entry_get_ref( OFO_ENTRY( object_a )) : empty;
 			str_b = OFO_IS_ENTRY( object_b ) ?
 						ofo_entry_get_ref( OFO_ENTRY( object_b )) : empty;
-			cmp = str_a && str_b ? g_utf8_collate( str_a, str_b ) : ( str_a ? 1 : ( str_b ? -1 : 0 ));
+			cmp = my_collate( str_a, str_b );
 			break;
 		case COL_NUMBER:
 			int_a = OFO_IS_ENTRY( object_a ) ?

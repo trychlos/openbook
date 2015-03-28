@@ -428,8 +428,6 @@
  761 2015- 3-22 in the warning displayed when restoring to a database,
                 display the target database in bold (or red)
 
- 762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
-
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
  770 2015- 3-28 have my_collate()
@@ -3429,6 +3427,9 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
+     2015- 3-28 done - git #bca6ea7
 
  763 2015- 3-23 systematize the use of my_strlen
      2015- 3-28 done - git #8afb1aa

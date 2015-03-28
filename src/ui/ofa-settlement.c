@@ -908,21 +908,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 static gint
 cmp_strings( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
-	if( !my_strlen( stra )){
-		if( !my_strlen( strb )){
-			/* the two strings are both empty */
-			return( 0 );
-		}
-		/* a is empty while b is set */
-		return( -1 );
-
-	} else if( !my_strlen( strb )){
-		/* a is set while b is empty */
-		return( 1 );
-	}
-
-	/* both a and b are set */
-	return( g_utf8_collate( stra, strb ));
+	return( my_collate( stra, strb ));
 }
 
 static gint
@@ -930,24 +916,14 @@ cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
 	ofxAmount a, b;
 
-	if( !my_strlen( stra )){
-		if( !my_strlen( strb )){
-			/* the two strings are both empty */
-			return( 0 );
-		}
-		/* a is empty while b is set */
-		return( -1 );
+	if( stra && strb ){
+		a = my_double_set_from_str( stra );
+		b = my_double_set_from_str( strb );
 
-	} else if( !my_strlen( strb )){
-		/* a is set while b is empty */
-		return( 1 );
+		return( a < b ? -1 : ( a > b ? 1 : 0 ));
 	}
 
-	/* both a and b are set */
-	a = my_double_set_from_str( stra );
-	b = my_double_set_from_str( strb );
-
-	return( a < b ? -1 : ( a > b ? 1 : 0 ));
+	return( my_collate( stra, strb ));
 }
 
 static gint
@@ -955,24 +931,14 @@ cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb )
 {
 	ofxCounter a, b;
 
-	if( !my_strlen( stra )){
-		if( !my_strlen( strb )){
-			/* the two strings are both empty */
-			return( 0 );
-		}
-		/* a is empty while b is set */
-		return( -1 );
+	if( stra && strb ){
+		a = atol( stra );
+		b = atol( strb );
 
-	} else if( !my_strlen( strb )){
-		/* a is set while b is empty */
-		return( 1 );
+		return( a < b ? -1 : ( a > b ? 1 : 0 ));
 	}
 
-	/* both a and b are set */
-	a = atol( stra );
-	b = atol( strb );
-
-	return( a < b ? -1 : ( a > b ? 1 : 0 ));
+	return( my_collate( stra, strb ));
 }
 
 /*

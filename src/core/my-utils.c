@@ -39,7 +39,24 @@ static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 static gboolean is_readable_gfile( GFile *file );
 
 /**
+ * my_collate:
+ * @a:
+ * @b:
+ *
+ * Returns: 1 if a > b, -1 if a < b 0 if equals.
+ *
+ * Note that this function shouldn't be generalized as it is a work-
+ * around to the not-null assertion of g_utf8_collate().
+ */
+gint
+my_collate( const gchar *a, const gchar *b )
+{
+	return( a && b ? g_utf8_collate( a, b ) : ( a ? 1 : ( b ? -1 : 0 )));
+}
+
+/**
  * my_strlen:
+ * @str:
  */
 glong
 my_strlen( const gchar *str )
