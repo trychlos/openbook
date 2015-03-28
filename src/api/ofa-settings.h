@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_SETTINGS_H__
-#define __OFA_SETTINGS_H__
+#ifndef __OPENBOOK_API_OFA_SETTINGS_H__
+#define __OPENBOOK_API_OFA_SETTINGS_H__
 
 /* @title: ofaSettings
  * @short_description: The Settings Class Definition
- * @include: api/ofa-settings.h
+ * @include: openbook/ofa-settings.h
  *
  * The #ofaSettings class manages both user preferences and dossiers
  * configuration in two distinct text files.
@@ -151,4 +151,4 @@ void     ofa_settings_dossier_set_string_list( const gchar *dname, const gchar *
 
 G_END_DECLS
 
-#endif /* __OFA_SETTINGS_H__ */
+#endif /* __OPENBOOK_API_OFA_SETTINGS_H__ */

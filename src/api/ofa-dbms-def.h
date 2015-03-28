@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DBMS_DEF_H__
-#define __OFA_DBMS_DEF_H__
+#ifndef __OPENBOOK_API_OFA_DBMS_DEF_H__
+#define __OPENBOOK_API_OFA_DBMS_DEF_H__
 
 /**
  * SECTION: ofa_dbms
  * @short_description: An object which handles the DBMS connexion
- * @include: api/ofa-dbms.h
+ * @include: openbook/ofa-dbms.h
  *
  * This class provides a convenience object to interact with the
  * #ofaIDbms interface. In particular, it takes in charges all
@@ -71,4 +71,4 @@ GType ofa_dbms_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_DBMS_DEF_H__ */
+#endif /* __OPENBOOK_API_OFA_DBMS_DEF_H__ */

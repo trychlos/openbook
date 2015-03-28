@@ -29,7 +29,7 @@
  * SECTION: idataset
  * @title: ofaIDataset
  * @short_description: The IDataset Interface
- * @include: api/ofa-idataset.h
+ * @include: openbook/ofa-idataset.h
  *
  * The #ofaIDataset interface is implemented by the #ofoDossier class,
  * so that it is able to manage the datasets of some reference classes

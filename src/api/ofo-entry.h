@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_ENTRY_H__
-#define __OFO_ENTRY_H__
+#ifndef __OPENBOOK_API_OFO_ENTRY_H__
+#define __OPENBOOK_API_OFO_ENTRY_H__
 
 /**
  * SECTION: ofo_entry
  * @short_description: #ofoEntry class definition.
- * @include: api/ofo-entry.h
+ * @include: openbook/ofo-entry.h
  *
  * This file defines the #ofoEntry public API.
  */
@@ -144,18 +144,7 @@ ofxAmount      ofo_entry_get_credit           ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status           ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_abr_status       ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status_from_abr  ( const gchar *abr_status );
-/*
-const gchar   *ofo_entry_get_upd_user         ( const ofoEntry *entry );
-const GTimeVal*ofo_entry_get_upd_stamp        ( const ofoEntry *entry );
-const GDate   *ofo_entry_get_concil_dval      ( const ofoEntry *entry );
-const gchar   *ofo_entry_get_concil_user      ( const ofoEntry *entry );
-const GTimeVal*ofo_entry_get_concil_stamp     ( const ofoEntry *entry );
-*/
 ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
-/*
-const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
-const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
-*/
 
 gint           ofo_entry_get_exe_changed_count( ofoDossier *dossier,
 													const GDate *prev_begin,
@@ -198,9 +187,6 @@ ofoEntry      *ofo_entry_new_with_data        ( ofoDossier *dossier,
 
 gboolean       ofo_entry_insert               ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_update               ( ofoEntry *entry, const ofoDossier *dossier );
-/*
-gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier, const GDate *date );
-*/
 gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
 
@@ -211,4 +197,4 @@ gboolean       ofo_entry_delete               ( ofoEntry *entry, const ofoDossie
 
 G_END_DECLS
 
-#endif /* __OFO_ENTRY_H__ */
+#endif /* __OPENBOOK_API_OFO_ENTRY_H__ */

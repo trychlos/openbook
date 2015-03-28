@@ -430,8 +430,6 @@
 
  762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
 
- 763 2015- 3-23 systematize the use of my_strlen
-
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
  770 2015- 3-28 have my_collate()
@@ -3431,6 +3429,9 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 763 2015- 3-23 systematize the use of my_strlen
+     2015- 3-28 done - git #8afb1aa
 
  764 2015- 3-23 entry_load_dataset(): add order clause as an argument
      2015- 3-27 done - git #63cf859

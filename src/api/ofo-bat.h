@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BAT_H__
-#define __OFO_BAT_H__
+#ifndef __OPENBOOK_API_OFO_BAT_H__
+#define __OPENBOOK_API_OFO_BAT_H__
 
 /**
  * SECTION: ofo_bat
  * @short_description: #ofoBat class definition.
- * @include: api/ofo-bat.h
+ * @include: openbook/ofo-bat.h
  *
  * This file defines the #ofoBat class public API: these are the tables
  * which contain the imported bank account transaction lines.
@@ -97,4 +97,4 @@ gboolean        ofo_bat_import             ( ofaIImportable *importable,
 
 G_END_DECLS
 
-#endif /* __OFO_BAT_H__ */
+#endif /* __OPENBOOK_API_OFO_BAT_H__ */

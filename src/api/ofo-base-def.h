@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BASE_DEF_H__
-#define __OFO_BASE_DEF_H__
+#ifndef __OPENBOOK_API_OFO_BASE_DEF_H__
+#define __OPENBOOK_API_OFO_BASE_DEF_H__
 
 /**
  * SECTION: ofo_base
  * @short_description: #ofoBase class definition.
- * @include: api/ofo-base.h
+ * @include: openbook/ofo-base.h
  *
  * The ofoBase class is the class base for application objects.
  */
@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass      parent;
 }
 	ofoBaseClass;
 
@@ -69,4 +69,4 @@ GType ofo_base_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_BASE_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_BASE_DEF_H__ */

@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_OFO_CONCIL_DEF_H__
-#define __OPENBOOK_OFO_CONCIL_DEF_H__
+#ifndef __OPENBOOK_API_OFO_CONCIL_DEF_H__
+#define __OPENBOOK_API_OFO_CONCIL_DEF_H__
 
 /**
  * SECTION: ofo_concil
@@ -68,4 +68,4 @@ GType ofo_concil_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_OFO_CONCIL_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_CONCIL_DEF_H__ */

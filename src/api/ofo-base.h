@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BASE_H__
-#define __OFO_BASE_H__
+#ifndef __OPENBOOK_API_OFO_BASE_H__
+#define __OPENBOOK_API_OFO_BASE_H__
 
 /**
  * SECTION: ofo_base
  * @short_description: #ofoBase class definition.
- * @include: api/ofo-base.h
+ * @include: openbook/ofo-base.h
  *
  * The ofoBase class is the class base for application objects.
  */
@@ -83,4 +83,4 @@ GList *ofo_base_load_rows       ( const ofsBoxDef *defs,
 
 G_END_DECLS
 
-#endif /* __OFO_BASE_H__ */
+#endif /* __OPENBOOK_API_OFO_BASE_H__ */

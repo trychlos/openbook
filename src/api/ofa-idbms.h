@@ -575,11 +575,11 @@ gboolean     ofa_idbms_archive                   ( const ofaIDbms *instance,
 															const GDate *begin_next,
 															const GDate *end_next );
 
-/* .... */
-
+#if 0
 gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
 
 gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
+#endif
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );

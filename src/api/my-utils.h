@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_UTILS_H__
-#define __MY_UTILS_H__
+#ifndef __OPENBOOK_API_MY_UTILS_H__
+#define __OPENBOOK_API_MY_UTILS_H__
 
 /**
  * SECTION: my_utils
  * @short_description: Miscellaneous utilities
- * @include: core/my-utils.h
+ * @include: openbook/my-utils.h
  */
 
 #include <gtk/gtk.h>
@@ -126,4 +126,4 @@ void       my_utils_action_enable          ( GActionMap *map, GSimpleAction **ac
 
 G_END_DECLS
 
-#endif /* __MY_UTILS_H__ */
+#endif /* __OPENBOOK_API_MY_UTILS_H__ */

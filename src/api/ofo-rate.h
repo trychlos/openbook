@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_RATE_H__
-#define __OFO_RATE_H__
+#ifndef __OPENBOOK_API_OFO_RATE_H__
+#define __OPENBOOK_API_OFO_RATE_H__
 
 /**
  * SECTION: ofo_rate
  * @short_description: #ofoRate class definition.
- * @include: api/ofo-rate.h
+ * @include: openbook/ofo-rate.h
  *
  * This file defines the #ofoRate class public API.
  */
@@ -84,4 +84,4 @@ gboolean        ofo_rate_delete          ( ofoRate *rate, ofoDossier *dossier );
 
 G_END_DECLS
 
-#endif /* __OFO_RATE_H__ */
+#endif /* __OPENBOOK_API_OFO_RATE_H__ */

@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_DOUBLE_H__
-#define __MY_DOUBLE_H__
+#ifndef __OPENBOOK_API_MY_DOUBLE_H__
+#define __OPENBOOK_API_MY_DOUBLE_H__
 
 /**
  * SECTION: my_amount
  * @short_description: Miscellaneous utilities for gdouble management
- * @include: api/my-double.h
+ * @include: openbook/my-double.h
  */
 
 #include <glib.h>
@@ -51,4 +51,4 @@ gchar     *my_double_to_str_ex      ( gdouble value, gint decimals );
 
 G_END_DECLS
 
-#endif /* __MY_DOUBLE_H__ */
+#endif /* __OPENBOOK_API_MY_DOUBLE_H__ */

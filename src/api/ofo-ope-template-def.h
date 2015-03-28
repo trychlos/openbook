@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_OPE_TEMPLATE_DEF_H__
-#define __OFO_OPE_TEMPLATE_DEF_H__
+#ifndef __OPENBOOK_API_OFO_OPE_TEMPLATE_DEF_H__
+#define __OPENBOOK_API_OFO_OPE_TEMPLATE_DEF_H__
 
 /**
  * SECTION: ofo_ope_template
  * @short_description: #ofoOpeTemplate class definition.
- * @include: api/ofo-ope-template.h
+ * @include: openbook/ofo-ope-template.h
  *
  * This file defines the #ofoOpeTemplate class behavior.
  */
@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass           parent;
 }
 	ofoOpeTemplateClass;
 
@@ -65,4 +65,4 @@ GType ofo_ope_template_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_OPE_TEMPLATE_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_OPE_TEMPLATE_DEF_H__ */

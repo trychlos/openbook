@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFS_ACCOUNT_BALANCE_H__
-#define __OFS_ACCOUNT_BALANCE_H__
+#ifndef __OPENBOOK_API_OFS_ACCOUNT_BALANCE_H__
+#define __OPENBOOK_API_OFS_ACCOUNT_BALANCE_H__
 
 /**
  * SECTION: ofs_account_balance
  * @short_description: #ofsAccountBalance structure definition.
- * @include: api/ofs-account-balance.h
+ * @include: openbook/ofs-account-balance.h
  *
  * This structure holds the balance for an account.
  */
@@ -56,4 +56,4 @@ void     ofs_account_balance_list_free( GList **list );
 
 G_END_DECLS
 
-#endif /* __OFS_ACCOUNT_BALANCE_H__ */
+#endif /* __OPENBOOK_API_OFS_ACCOUNT_BALANCE_H__ */

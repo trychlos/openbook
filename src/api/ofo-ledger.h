@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_LEDGER_H__
-#define __OFO_LEDGER_H__
+#ifndef __OPENBOOK_API_OFO_LEDGER_H__
+#define __OPENBOOK_API_OFO_LEDGER_H__
 
 /**
  * SECTION: ofo_ledger
  * @short_description: #ofoLedger class definition.
- * @include: api/ofo-ledger.h
+ * @include: openbook/ofo-ledger.h
  *
  * This file defines the #ofoLedger class public API.
  */
@@ -95,4 +95,4 @@ gboolean        ofo_ledger_delete            ( ofoLedger *ledger, ofoDossier *do
 
 G_END_DECLS
 
-#endif /* __OFO_LEDGER_H__ */
+#endif /* __OPENBOOK_API_OFO_LEDGER_H__ */

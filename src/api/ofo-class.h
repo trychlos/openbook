@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_CLASS_H__
-#define __OFO_CLASS_H__
+#ifndef __OPENBOOK_API_OFO_CLASS_H__
+#define __OPENBOOK_API_OFO_CLASS_H__
 
 /**
  * SECTION: ofo_class
  * @short_description: #ofoClass class definition.
- * @include: api/ofo-class.h
+ * @include: openbook/ofo-class.h
  *
  * This file defines the #ofoClass public API.
  *
@@ -69,4 +69,4 @@ gboolean        ofo_class_delete         ( ofoClass *class, ofoDossier *dossier 
 
 G_END_DECLS
 
-#endif /* __OFO_CLASS_H__ */
+#endif /* __OPENBOOK_API_OFO_CLASS_H__ */

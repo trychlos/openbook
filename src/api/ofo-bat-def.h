@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BAT_DEF_H__
-#define __OFO_BAT_DEF_H__
+#ifndef __OPENBOOK_API_OFO_BAT_DEF_H__
+#define __OPENBOOK_API_OFO_BAT_DEF_H__
 
 /**
  * SECTION: ofo_bat
  * @short_description: #ofoBat class definition.
- * @include: api/ofo-bat.h
+ * @include: openbook/ofo-bat.h
  *
  * This class implements the Bat behavior: these are the tables
  * which contain the imported bank account transaction lines.
@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass   parent;
 }
 	ofoBatClass;
 
@@ -66,4 +66,4 @@ GType ofo_bat_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_BAT_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_BAT_DEF_H__ */

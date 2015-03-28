@@ -648,6 +648,7 @@ ofa_idbms_archive( const ofaIDbms *instance,
 	return( ok );
 }
 
+#if 0
 /**
  * ofa_idbms_get_dossier_host:
  */
@@ -681,6 +682,7 @@ ofa_idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
 
 	return( dbname );
 }
+#endif
 
 /**
  * ofa_idbms_delete_dossier:

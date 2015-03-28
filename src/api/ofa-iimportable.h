@@ -29,7 +29,7 @@
  * SECTION: iimportable
  * @title: ofaIImportable
  * @short_description: The Import Interface
- * @include: api/ofa-iimportable.h
+ * @include: openbook/ofa-iimportable.h
  *
  * The #ofaIImportable interface imports items from the outside world.
  *

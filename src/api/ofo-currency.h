@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_CURRENCY_H__
-#define __OFO_CURRENCY_H__
+#ifndef __OPENBOOK_API_OFO_CURRENCY_H__
+#define __OPENBOOK_API_OFO_CURRENCY_H__
 
 /**
  * SECTION: ofo_currency
  * @short_description: #ofoCurrency class definition.
- * @include: api/ofo-currency.h
+ * @include: openbook/ofo-currency.h
  *
  * This file defines the #ofoCurrency public API.
  */
@@ -66,4 +66,4 @@ gboolean        ofo_currency_delete       ( ofoCurrency *currency, ofoDossier *d
 
 G_END_DECLS
 
-#endif /* __OFO_CURRENCY_H__ */
+#endif /* __OPENBOOK_API_OFO_CURRENCY_H__ */

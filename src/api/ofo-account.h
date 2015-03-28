@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_ACCOUNT_H__
-#define __OFO_ACCOUNT_H__
+#ifndef __OPENBOOK_API_OFO_ACCOUNT_H__
+#define __OPENBOOK_API_OFO_ACCOUNT_H__
 
 /**
  * SECTION: ofo_account
  * @short_description: #ofoAccount class definition.
- * @include: api/ofo-account.h
+ * @include: openbook/ofo-account.h
  *
  * This file defines the #ofoAccount class public API.
  */
@@ -119,4 +119,4 @@ gboolean        ofo_account_delete               ( ofoAccount *account, ofoDossi
 
 G_END_DECLS
 
-#endif /* __OFO_ACCOUNT_H__ */
+#endif /* __OPENBOOK_API_OFO_ACCOUNT_H__ */

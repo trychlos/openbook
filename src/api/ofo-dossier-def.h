@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_DOSSIER_DEF_H__
-#define __OFO_DOSSIER_DEF_H__
+#ifndef __OPENBOOK_API_OFO_DOSSIER_DEF_H__
+#define __OPENBOOK_API_OFO_DOSSIER_DEF_H__
 
 /**
  * SECTION: ofo_dossier
  * @short_description: #ofoDossier class definition.
- * @include: api/ofo-dossier-def.h
+ * @include: openbook/ofo-dossier-def.h
  *
  * This class implements the Dossier behavior, including the general
  * DB definition.
@@ -62,7 +62,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass       parent;
 }
 	ofoDossierClass;
 
@@ -104,4 +104,4 @@ GType ofo_dossier_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_DOSSIER_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_DOSSIER_DEF_H__ */

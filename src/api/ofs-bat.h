@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFS_BAT_H__
-#define __OFS_BAT_H__
+#ifndef __OPENBOOK_API_OFS_BAT_H__
+#define __OPENBOOK_API_OFS_BAT_H__
 
 /**
  * SECTION: ofs_ope
  * @short_description: #ofsOpe structure definition.
- * @include: api/ofs-ope.h
+ * @include: openbook/ofs-ope.h
  *
  * This is used as an entry for operation templates work:
  * an ope + an ope template = n entries (if %TRUE)
@@ -86,4 +86,4 @@ void ofs_bat_free( ofsBat *bat );
 
 G_END_DECLS
 
-#endif /* __OFS_BAT_H__ */
+#endif /* __OPENBOOK_API_OFS_BAT_H__ */

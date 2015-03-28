@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_RATE_DEF_H__
-#define __OFO_RATE_DEF_H__
+#ifndef __OPENBOOK_API_OFO_RATE_DEF_H__
+#define __OPENBOOK_API_OFO_RATE_DEF_H__
 
 /**
  * SECTION: ofo_rate
  * @short_description: #ofoRate class definition.
- * @include: api/ofo-rate.h
+ * @include: openbook/ofo-rate.h
  *
  * This file implements the #ofoRate class behavior.
  */
@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass    parent;
 }
 	ofoRateClass;
 
@@ -65,4 +65,4 @@ GType ofo_rate_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_RATE_DEF_H__ */
+#endif /* __OPENBOOK_API_OFO_RATE_DEF_H__ */

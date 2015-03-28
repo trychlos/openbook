@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFS_CURRENCY_H__
-#define __OFS_CURRENCY_H__
+#ifndef __OPENBOOK_API_OFS_CURRENCY_H__
+#define __OPENBOOK_API_OFS_CURRENCY_H__
 
 /**
  * SECTION: ofs_currency
  * @short_description: #ofsCurrency structure definition.
- * @include: api/ofs-currency.h
+ * @include: openbook/ofs-currency.h
  *
  * This structure is used when computing balances per currency.
  *
@@ -76,4 +76,4 @@ void  ofs_currency_list_free     ( GList **list );
 
 G_END_DECLS
 
-#endif /* __OFS_CURRENCY_H__ */
+#endif /* __OPENBOOK_API_OFS_CURRENCY_H__ */

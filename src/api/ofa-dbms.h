@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DBMS_H__
-#define __OFA_DBMS_H__
+#ifndef __OPENBOOK_API_OFA_DBMS_H__
+#define __OPENBOOK_API_OFA_DBMS_H__
 
 /**
  * SECTION: ofa_dbms
  * @short_description: An object which handles the DBMS connexion
- * @include: api/ofa-dbms.h
+ * @include: openbook/ofa-dbms.h
  */
 
 #include "api/ofa-dbms-def.h"
@@ -67,4 +67,4 @@ gboolean  ofa_dbms_backup              ( const ofaDbms *dbms,
 
 G_END_DECLS
 
-#endif /* __OFA_DBMS_H__ */
+#endif /* __OPENBOOK_API_OFA_DBMS_H__ */

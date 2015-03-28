@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BASE_PROT_H__
-#define __OFO_BASE_PROT_H__
+#ifndef __OPENBOOK_API_OFO_BASE_PROT_H__
+#define __OPENBOOK_API_OFO_BASE_PROT_H__
 
 /**
  * SECTION: ofo_base
  * @short_description: #ofoBase class definition.
- * @include: api/ofo-base-prot.h
+ * @include: openbook/ofo-base-prot.h
  *
  * The ofoBase class is the class base for application objects.
  *
@@ -50,4 +50,4 @@ struct _ofoBaseProtected {
 
 G_END_DECLS
 
-#endif /* __OFO_BASE_PROT_H__ */
+#endif /* __OPENBOOK_API_OFO_BASE_PROT_H__ */

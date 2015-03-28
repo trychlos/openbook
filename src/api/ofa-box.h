@@ -22,15 +22,15 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_BOX_H__
-#define __OFA_BOX_H__
+#ifndef __OPENBOOK_API_OFA_BOX_H__
+#define __OPENBOOK_API_OFA_BOX_H__
 
 #include <glib.h>
 
 /**
  * SECTION: ofa_box
  * @short_description: Definition of GBoxed-derived types
- * @include: api/ofa-box.h
+ * @include: openbook/ofa-box.h
  */
 
 G_BEGIN_DECLS
@@ -149,4 +149,4 @@ void          ofa_box_free_fields_list     ( GList *fields_list );
 
 G_END_DECLS
 
-#endif /* __OFA_BOX_H__ */
+#endif /* __OPENBOOK_API_OFA_BOX_H__ */

@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_DOSSIER_H__
-#define __OFO_DOSSIER_H__
+#ifndef __OPENBOOK_API_OFO_DOSSIER_H__
+#define __OPENBOOK_API_OFO_DOSSIER_H__
 
 /**
  * SECTION: ofo_dossier
  * @short_description: #ofoDossier class definition.
- * @include: api/ofo-dossier.h
+ * @include: openbook/ofo-dossier.h
  *
  * This file defines the #ofoDossier public API, including the general
  * DB definition.
@@ -144,4 +144,4 @@ gboolean         ofo_dossier_backup                    ( const ofoDossier *dossi
 
 G_END_DECLS
 
-#endif /* __OFO_DOSSIER_H__ */
+#endif /* __OPENBOOK_API_OFO_DOSSIER_H__ */

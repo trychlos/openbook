@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFO_BAT_LINE_H__
-#define __OFO_BAT_LINE_H__
+#ifndef __OPENBOOK_API_OFO_BAT_LINE_H__
+#define __OPENBOOK_API_OFO_BAT_LINE_H__
 
 /**
  * SECTION: ofo_bat_line
  * @short_description: #ofoBatLine class definition.
- * @include: api/ofo-bat-line.h
+ * @include: openbook/ofo-bat-line.h
  *
  * This file defines the #ofoBatLine class public API: these are the
  * imported bank account transaction lines.
@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass       parent;
 }
 	ofoBatLineClass;
 
@@ -92,4 +92,4 @@ gboolean     ofo_bat_line_insert           ( ofoBatLine *batline, ofoDossier *do
 
 G_END_DECLS
 
-#endif /* __OFO_BAT_LINE_H__ */
+#endif /* __OPENBOOK_API_OFO_BAT_LINE_H__ */

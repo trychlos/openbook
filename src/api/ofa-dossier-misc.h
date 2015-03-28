@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DOSSIER_MISC_H__
-#define __OFA_DOSSIER_MISC_H__
+#ifndef __OPENBOOK_API_OFA_DOSSIER_MISC_H__
+#define __OPENBOOK_API_OFA_DOSSIER_MISC_H__
 
 /**
  * SECTION: ofa_dossier_Misc
  * @short_description: Dossier mmiscellaneous functions
- * @include: api/ofa-dossier-misc.h
+ * @include: openbook/ofa-dossier-misc.h
  *
  * Delete a dossier.
  */
@@ -71,4 +71,4 @@ guint     ofa_dossier_misc_import_csv        ( ofoDossier *dossier,
 
 G_END_DECLS
 
-#endif /* __OFA_DOSSIER_MISC_H__ */
+#endif /* __OPENBOOK_API_OFA_DOSSIER_MISC_H__ */

@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_OFO_CONCIL_H__
-#define __OPENBOOK_OFO_CONCIL_H__
+#ifndef __OPENBOOK_API_OFO_CONCIL_H__
+#define __OPENBOOK_API_OFO_CONCIL_H__
 
 #include "api/ofa-box.h"
 #include "api/ofo-concil-def.h"
@@ -76,4 +76,4 @@ gboolean        ofo_concil_delete         ( ofoConcil *concil,
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_OFO_CONCIL_H__ */
+#endif /* __OPENBOOK_API_OFO_CONCIL_H__ */

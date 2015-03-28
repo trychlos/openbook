@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFS_CONCIL_ID_H__
-#define __OFS_CONCIL_ID_H__
+#ifndef __OPENBOOK_API_OFS_CONCIL_ID_H__
+#define __OPENBOOK_API_OFS_CONCIL_ID_H__
 
 /**
  * SECTION: ofs_concil_id
@@ -68,4 +68,4 @@ void         ofs_concil_id_get_count_by_type( GList *ids,
 
 G_END_DECLS
 
-#endif /* __OFS_CONCIL_ID_H__ */
+#endif /* __OPENBOOK_API_OFS_CONCIL_ID_H__ */

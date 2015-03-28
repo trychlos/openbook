@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_DATE_H__
-#define __MY_DATE_H__
+#ifndef __OPENBOOK_API_MY_DATE_H__
+#define __OPENBOOK_API_MY_DATE_H__
 
 /**
  * SECTION: my_date
  * @short_description: Miscellaneous utilities for GDate management
- * @include: ui/my-date.h
+ * @include: openbook/my-date.h
  */
 
 #include <glib-object.h>
@@ -84,4 +84,4 @@ const gchar *my_date_get_format_str ( myDateFormat format );
 
 G_END_DECLS
 
-#endif /* __MY_DATE_H__ */
+#endif /* __OPENBOOK_API_MY_DATE_H__ */

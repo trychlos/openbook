@@ -29,7 +29,7 @@
  * SECTION: iexportable
  * @title: ofaIExportable
  * @short_description: The Export Interface
- * @include: api/ofa-iexportable.h
+ * @include: openbook/ofa-iexportable.h
  *
  * The #ofaIExportable interface exports items to the outside world.
  */

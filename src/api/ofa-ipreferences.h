@@ -133,15 +133,18 @@ typedef struct {
 }
 	ofaIPreferencesInterface;
 
-GType      ofa_ipreferences_get_type        ( void );
+GType      ofa_ipreferences_get_type      ( void );
 
 guint      ofa_ipreferences_get_interface_last_version( void );
 
-GtkWidget *ofa_ipreferences_do_init         ( const ofaIPreferences *instance, GtkNotebook *book );
+GtkWidget *ofa_ipreferences_do_init       ( const ofaIPreferences *instance,
+													GtkNotebook *book );
 
-gboolean   ofa_ipreferences_do_check        ( const ofaIPreferences *instance, GtkWidget *page );
+gboolean   ofa_ipreferences_do_check      ( const ofaIPreferences *instance,
+													GtkWidget *page );
 
-void       ofa_ipreferences_do_apply        ( const ofaIPreferences *instance, GtkWidget *page );
+void       ofa_ipreferences_do_apply      ( const ofaIPreferences *instance,
+													GtkWidget *page );
 
 G_END_DECLS
 
