@@ -25,6 +25,7 @@
  Bug fixes:
 
    - LCL PDF importer: fix date check.
+   - GuidedInput OK stay insensitive while all amounts are zero (todo #777).
 
  Other changes:
 

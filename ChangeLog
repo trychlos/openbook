@@ -1,5 +1,10 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	Do not make OK/Validate GuidedInput buttons sensitive while all
+	amounts are zero (todo #777).
+
+	* src/core/ofs-ope.c: count generate-able entries.
+
 	Review the reconciliation UI.
 
 	* src/ui/ofa-date-filter-bin.c,

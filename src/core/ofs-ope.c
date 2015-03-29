@@ -816,8 +816,9 @@ get_closing_account( sHelper *helper, const gchar *content )
  *  per currency. If set, the returned list should be #ofs_currency_list_free()
  *  by the caller.
  *
- * Returns: %TRUE if the entries have been successfully generated and
- *  all chcecks are ok.
+ * Returns: %TRUE if the operation is valid enough to generate balanced
+ * entries on existing accounts with compatible operation and effect
+ * dates.
  */
 gboolean
 ofs_ope_is_valid( const ofsOpe *ope, ofoDossier *dossier, gchar **message, GList **currencies )
@@ -956,7 +957,7 @@ check_for_all_entries( sChecker *checker )
 	ofsOpeDetail *detail;
 	gboolean ok;
 	GList *it;
-	gint num;
+	gint num, count;
 
 	ok = TRUE;
 	ope = checker->ope;
@@ -964,6 +965,23 @@ check_for_all_entries( sChecker *checker )
 	for( it=ope->detail, num=1 ; it ; it=it->next, ++num ){
 		detail = ( ofsOpeDetail * ) it->data;
 		ok &= check_for_entry( checker, detail, num );
+	}
+
+	/* if all is correct, also check that we would be able to generate
+	 * at least one entry */
+	if( ok ){
+		for( it=ope->detail, count=0 ; it ; it=it->next ){
+			detail = ( ofsOpeDetail * ) it->data;
+			if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
+				count += 1;
+			}
+		}
+		if( count <= 1 ){
+			g_free( checker->message );
+			checker->message = g_strdup(
+					_( "No entry would be generated (may amounts be all zero ?)" ));
+			ok = FALSE;
+		}
 	}
 
 	return( ok );
