@@ -1,5 +1,16 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	Review the reconciliation UI.
+
+	* src/ui/ofa-date-filter-bin.c,
+	* src/ui/ofa-date-filter-bin.h:
+	new ofa_date_filter_bin_get_from_prompt() method.
+
+	* src/ui/ofa-reconciliation.ui: new file.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
 	Update entries import/export to DBMS v25.
 
 	* misc/convert/ebp_entries.pl: add missing fields.

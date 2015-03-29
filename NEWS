@@ -17,6 +17,7 @@
  New features:
 
 	- Fix b-e reconciliation scheme.
+	- New reconciliation user interface which displays more than 10% rows.
 	- Have an 'Unreconciliate' button (todo #768).
 	- Replace the 'Accept' button by a 'Reconciliate' one (todo #767).
 	- Close main pages and flush the database before backup (todo #765).

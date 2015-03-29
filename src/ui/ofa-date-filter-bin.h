@@ -67,19 +67,21 @@ enum {
 	OFA_DATE_FILTER_TO
 };
 
-GType             ofa_date_filter_bin_get_type( void ) G_GNUC_CONST;
+GType             ofa_date_filter_bin_get_type       ( void ) G_GNUC_CONST;
 
-ofaDateFilterBin *ofa_date_filter_bin_new     ( const gchar *pref_name );
+ofaDateFilterBin *ofa_date_filter_bin_new            ( const gchar *pref_name );
 
-const GDate      *ofa_date_filter_bin_get_from( const ofaDateFilterBin *bin );
+const GDate      *ofa_date_filter_bin_get_from       ( const ofaDateFilterBin *bin );
 
-void              ofa_date_filter_bin_set_from( ofaDateFilterBin *bin,
-														const GDate *from);
+void              ofa_date_filter_bin_set_from       ( ofaDateFilterBin *bin,
+															const GDate *from );
 
-const GDate      *ofa_date_filter_bin_get_to  ( const ofaDateFilterBin *bin );
+const GDate      *ofa_date_filter_bin_get_to         ( const ofaDateFilterBin *bin );
 
-void              ofa_date_filter_bin_set_to  ( ofaDateFilterBin *bin,
-														const GDate *to);
+void              ofa_date_filter_bin_set_to         ( ofaDateFilterBin *bin,
+															const GDate *to );
+
+GtkWidget        *ofa_date_filter_bin_get_from_prompt( const ofaDateFilterBin *bin );
 
 G_END_DECLS
 

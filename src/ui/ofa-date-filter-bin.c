@@ -345,6 +345,29 @@ ofa_date_filter_bin_set_to( ofaDateFilterBin *bin, const GDate *to)
 	}
 }
 
+/**
+ * ofa_date_filter_bin_get_from_prompt:
+ * @bin:
+ *
+ * Returns: a pointer to the GtkWidget which holds the 'From :' prompt.
+ */
+GtkWidget *
+ofa_date_filter_bin_get_from_prompt( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "from-prompt" ));
+	}
+
+	return( NULL );
+}
+
 /*
  * settings are: from;to; as SQL date
  */

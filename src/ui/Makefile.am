@@ -295,6 +295,7 @@ ui_files = \
 	ofa-print-books.ui									\
 	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
+	ofa-reconciliation.ui								\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\

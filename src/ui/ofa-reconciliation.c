@@ -51,7 +51,6 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -91,18 +90,19 @@ struct _ofaReconciliationPrivate {
 	GtkWidget         *unused_label;
 	GtkWidget         *label3;
 	GtkButton         *clear;
-	GtkWidget         *reconciliate_btn;
-	GtkWidget         *decline_btn;
-	GtkWidget         *unreconciliate_btn;
 
 	/* UI - actions
 	 */
+	GtkWidget         *reconciliate_btn;
+	GtkWidget         *decline_btn;
+	GtkWidget         *unreconciliate_btn;
 	GtkWidget         *print_btn;
 
 	/* UI - entries view
 	 */
-	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter of the tree view */
-	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked onto the TreeModelFilter */
+	GtkTreeModel      *tstore;				/* the GtkTreeStore */
+	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter stacked on the TreeStore */
+	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked on the TreeModelFilter */
 	GtkTreeView       *tview;				/* the treeview built on the sorted model */
 	GtkTreeViewColumn *sort_column;
 
@@ -110,10 +110,6 @@ struct _ofaReconciliationPrivate {
 	 */
 	GtkLabel          *bal_debit;			/* balance of the account  */
 	GtkLabel          *bal_credit;			/*  ... deducting unreconciliated entries */
-
-	/* UI - Buttons box
-	 */
-	ofaButtonsBox     *box;
 
 	/* internals
 	 */
@@ -185,6 +181,8 @@ static const sConcil st_concils[] = {
 
 static const gchar *st_reconciliation   = "Reconciliation";
 static const gchar *st_effect_dates     = "ReconciliationEffects";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-reconciliation.ui";
+static const gchar *st_ui_name          = "ReconciliationWindow";
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
@@ -200,15 +198,16 @@ static const gchar *st_default_reconciliated_class = "5"; /* default account cla
 G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_PAGE )
 
 static GtkWidget   *v_setup_view( ofaPage *page );
-static GtkWidget   *setup_account_selection( ofaPage *page );
-static GtkWidget   *setup_mode_filter( ofaPage *page );
-static GtkWidget   *setup_effect_dates( ofaPage *page );
-static GtkWidget   *setup_manual_rappro( ofaPage *page );
-static GtkWidget   *setup_auto_rappro( ofaPage *page );
-static GtkWidget   *setup_treeview_header( ofaPage *page );
-static GtkWidget   *setup_treeview( ofaPage *page );
-static GtkWidget   *setup_buttons( ofaPage *page );
-static GtkWidget   *setup_treeview_footer( ofaPage *page );
+static void         setup_treeview_header( ofaPage *page, GtkContainer *parent );
+static void         setup_treeview( ofaPage *page, GtkContainer *parent );
+static void         setup_treeview_footer( ofaPage *page, GtkContainer *parent );
+static void         setup_account_selection( ofaPage *page, GtkContainer *parent );
+static void         setup_entries_filter( ofaPage *page, GtkContainer *parent );
+static void         setup_dates_filter( ofaPage *page, GtkContainer *parent );
+static void         setup_manual_rappro( ofaPage *page, GtkContainer *parent );
+static void         setup_size_group( ofaPage *page, GtkContainer *parent );
+static void         setup_auto_rappro( ofaPage *page, GtkContainer *parent );
+static void         setup_buttons( ofaPage *page, GtkContainer *parent );
 static GtkWidget   *v_setup_buttons( ofaPage *page );
 static void         v_init_view( ofaPage *page );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
@@ -227,7 +226,7 @@ static void         on_date_concil_changed( GtkEditable *editable, ofaReconcilia
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         do_select_bat( ofaReconciliation *self );
 static void         on_import_clicked( GtkButton *button, ofaReconciliation *self );
-static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
+static void         on_clear_clicked( GtkButton *button, ofaReconciliation *self );
 static void         clear_bat_file( ofaReconciliation *self );
 static void         setup_bat_file( ofaReconciliation *self, ofxCounter bat_id );
 static void         display_bat_lines( ofaReconciliation *self );
@@ -373,416 +372,59 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	GtkGrid *grid;
-	gint column;
-	GtkWidget *account, *mode, *effect, *rappro, *tview, *buttons, *soldes;
-	GtkWidget *grid2;
+	GtkWidget *window, *widget, *page_widget;
 
-	grid = GTK_GRID( gtk_grid_new());
-	gtk_widget_set_margin_left( GTK_WIDGET( grid ), 4 );
-	gtk_widget_set_margin_right( GTK_WIDGET( grid ), 4 );
-	gtk_grid_set_column_spacing( grid, 4 );
-	column = 0;
+	page_widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 
-	account = setup_account_selection( page );
-	gtk_grid_attach( grid, account, column++, 0, 1, 1 );
+	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_name );
+	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
 
-	mode = setup_mode_filter( page );
-	gtk_grid_attach( grid, mode, column++, 0, 1, 1 );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	g_return_val_if_fail( widget && GTK_IS_CONTAINER( widget ), NULL );
 
-	/* effect dates filter */
-	effect = setup_effect_dates( page );
-	gtk_grid_attach( grid, effect, column++, 0, 1, 1 );
+	gtk_widget_reparent( widget, page_widget );
 
-	/* manual reconciliation (enter a date) */
-	rappro = setup_manual_rappro( page );
-	gtk_grid_attach( grid, rappro, column++, 0, 1, 1 );
+	setup_treeview_header( page, GTK_CONTAINER( widget ));
+	setup_treeview( page, GTK_CONTAINER( widget ) );
+	setup_treeview_footer( page, GTK_CONTAINER( widget ));
 
-	/* auto reconciliation from imported BAT file */
-	rappro = setup_auto_rappro( page );
-	gtk_grid_attach( grid, rappro, column++, 0, 1, 1 );
+	setup_account_selection( page, GTK_CONTAINER( widget ));
+	setup_entries_filter( page, GTK_CONTAINER( widget ));
+	setup_dates_filter( page, GTK_CONTAINER( widget ));
+	setup_manual_rappro( page, GTK_CONTAINER( widget ));
+	setup_size_group( page, GTK_CONTAINER( widget ));
+	setup_auto_rappro( page, GTK_CONTAINER( widget ));
+	setup_buttons( page, GTK_CONTAINER( widget ));
 
-	grid2 = gtk_grid_new();
-	gtk_grid_attach( grid, grid2, 0, 1, column, 1 );
-
-	/* account label and balance header display */
-	account = setup_treeview_header( page );
-	gtk_grid_attach( GTK_GRID( grid2 ), account, 0, 0, 1, 1 );
-
-	tview = setup_treeview( page );
-	gtk_grid_attach( GTK_GRID( grid2 ), tview, 0, 1, 1, 1 );
-
-	/* buttons box */
-	buttons = setup_buttons( page );
-	gtk_grid_attach( GTK_GRID( grid2 ), buttons, 1, 1, 1, 1 );
-
-	/* computed bank balance */
-	soldes = setup_treeview_footer( page );
-	gtk_grid_attach( GTK_GRID( grid2 ), soldes, 0, 2, 1, 1 );
-
-	get_settings( OFA_RECONCILIATION( page ));
 	dossier_signaling_connect( OFA_RECONCILIATION( page ));
 
-	return( GTK_WIDGET( grid ));
+	return( page_widget );
 }
 
-/*
- * account selection is an entry + a select button
- */
-static GtkWidget *
-setup_account_selection( ofaPage *page )
+static void
+setup_treeview_header( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
-	GtkWidget *frame, *alignment, *label, *grid_account, *grid_select;
-	gchar *markup;
-	GtkWidget *image, *button;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-
-	label = gtk_label_new( NULL );
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Account selection" ));
-	gtk_label_set_markup( GTK_LABEL( label ), markup );
-	gtk_frame_set_label_widget( GTK_FRAME( frame ), label );
-	g_free( markup );
-
-	alignment = gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 8, 4 );
-	gtk_container_add( GTK_CONTAINER( frame ), alignment );
-
-	/* the grid for account */
-	grid_account = gtk_grid_new();
-	gtk_grid_set_column_spacing( GTK_GRID( grid_account ), 4 );
-	gtk_grid_set_row_spacing( GTK_GRID( grid_account ), 3 );
-	gtk_container_add( GTK_CONTAINER( alignment ), grid_account );
-
-	label = gtk_label_new_with_mnemonic( _( "_Account :" ));
-	gtk_widget_set_halign( label, GTK_ALIGN_START );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( GTK_GRID( grid_account ), label, 0, 0, 1, 1 );
-
-	/* a small grid just for entry + select button
-	 * have a label at the end to make it expand*/
-	grid_select = gtk_grid_new();
-	gtk_grid_set_column_spacing( GTK_GRID( grid_select ), 2 );
-	gtk_grid_attach( GTK_GRID( grid_account ), grid_select, 1, 0, 1, 1 );
-
-	priv->account_entry = GTK_ENTRY( gtk_entry_new());
-	gtk_entry_set_max_length( priv->account_entry, 20 );
-	gtk_entry_set_width_chars( priv->account_entry, 10 );
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->account_entry ));
-	gtk_grid_attach( GTK_GRID( grid_select ), GTK_WIDGET( priv->account_entry ), 0, 0, 1, 1 );
-	gtk_widget_set_tooltip_text(
-			GTK_WIDGET( priv->account_entry ),
-			_( "Enter here the number of the account to be reconciliated" ));
-	g_signal_connect(
-			G_OBJECT( priv->account_entry ),
-			"changed", G_CALLBACK( on_account_entry_changed ), page );
-
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	button = gtk_button_new();
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	gtk_grid_attach( GTK_GRID( grid_select ), button, 1, 0, 1, 1 );
-	gtk_widget_set_tooltip_text(
-			button,
-			_( "Select the account to be reconciliated" ));
-	g_signal_connect(
-			G_OBJECT( button ),
-			"clicked", G_CALLBACK( on_account_select_clicked ), page );
-
-	label = gtk_label_new( "" );
-	gtk_widget_set_halign( label, GTK_ALIGN_FILL );
-	gtk_widget_set_hexpand( label, TRUE );
-	gtk_grid_attach( GTK_GRID( grid_select ), label, 2, 0, 1, 1 );
-
-	/* have the account label in row 2 */
-	priv->account_label = GTK_LABEL( gtk_label_new( "" ));
-	gtk_misc_set_alignment( GTK_MISC( priv->account_label ), 0, 0.5 );
-	gtk_label_set_ellipsize( priv->account_label, PANGO_ELLIPSIZE_END );
-	gtk_grid_attach( GTK_GRID( grid_account ), GTK_WIDGET( priv->account_label ), 0, 1, 2, 1 );
-
-	return( GTK_WIDGET( frame ));
-}
-
-/*
- * the combo box for filtering the displayed entries
- */
-static GtkWidget *
-setup_mode_filter( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-	GtkWidget *frame, *alignment, *label, *grid_filter;
-	gchar *markup;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeIter iter;
-	gint i;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-
-	label = gtk_label_new( NULL );
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Mode filter" ));
-	gtk_label_set_markup( GTK_LABEL( label ), markup );
-	gtk_frame_set_label_widget( GTK_FRAME( frame ), label );
-	g_free( markup );
-
-	alignment = gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 8, 4 );
-	gtk_container_add( GTK_CONTAINER( frame ), alignment );
-
-	/* the grid for filtering entries */
-	grid_filter = gtk_grid_new();
-	gtk_grid_set_column_spacing( GTK_GRID( grid_filter ), 4 );
-	gtk_container_add( GTK_CONTAINER( alignment ), grid_filter );
-
-	label = gtk_label_new_with_mnemonic( _( "_Entries :" ));
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( GTK_GRID( grid_filter ), label, 0, 0, 1, 1 );
-
-	priv->mode_combo = GTK_COMBO_BOX( gtk_combo_box_new());
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->mode_combo ));
-	gtk_grid_attach( GTK_GRID( grid_filter ), GTK_WIDGET( priv->mode_combo ), 1, 0, 1, 1 );
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new( ENT_N_COLUMNS, G_TYPE_INT, G_TYPE_STRING ));
-	gtk_combo_box_set_model( priv->mode_combo, tmodel );
-	g_object_unref( tmodel );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->mode_combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->mode_combo ), cell, "text", ENT_COL_LABEL );
-
-	for( i=0 ; st_concils[i].code ; ++i ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				ENT_COL_CODE,  st_concils[i].code,
-				ENT_COL_LABEL, gettext( st_concils[i].label ),
-				-1 );
-	}
-
-	gtk_widget_set_tooltip_text(
-			GTK_WIDGET( priv->mode_combo ),
-			_( "Filter the type of entries to be displayed" ));
-	g_signal_connect(
-			G_OBJECT( priv->mode_combo ),
-			"changed", G_CALLBACK( on_mode_combo_changed ), page );
-
-	return( GTK_WIDGET( frame ));
-}
-
-static GtkWidget *
-setup_effect_dates( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-
-	priv->effect_filter = ofa_date_filter_bin_new( st_effect_dates );
-	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_dates_changed ), page );
-
-	return( GTK_WIDGET( priv->effect_filter ));
-}
-
-static GtkWidget *
-setup_manual_rappro( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-	GtkFrame *frame;
-	GtkAlignment *alignment;
-	GtkGrid *grid;
-	GtkLabel *label;
-	gchar *markup;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-
-	label = GTK_LABEL( gtk_label_new( NULL ));
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Manual reconciliation" ));
-	gtk_label_set_markup( label, markup );
-	gtk_frame_set_label_widget( frame, GTK_WIDGET( label ));
-	g_free( markup );
-
-	alignment = GTK_ALIGNMENT( gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 ));
-	gtk_alignment_set_padding( alignment, 4, 4, 12, 4 );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( alignment ));
-
-	grid = GTK_GRID( gtk_grid_new());
-	gtk_grid_set_column_spacing( grid, 4 );
-	gtk_grid_set_row_spacing( grid, 3 );
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
-
-	label = GTK_LABEL( gtk_label_new_with_mnemonic( _( "Da_te :" )));
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, 0, 1, 1 );
-
-	priv->date_concil = GTK_ENTRY( gtk_entry_new());
-	label = GTK_LABEL( gtk_label_new( "" ));
-
-	my_editable_date_init( GTK_EDITABLE( priv->date_concil ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
-	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
-	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), GTK_WIDGET( label ), ofa_prefs_date_check());
-
-	gtk_entry_set_width_chars( priv->date_concil, 10 );
-	gtk_label_set_mnemonic_widget( label, GTK_WIDGET( priv->date_concil ));
-	gtk_grid_attach( grid, GTK_WIDGET( priv->date_concil ), 1, 0, 1, 1 );
-	gtk_widget_set_tooltip_text(
-			GTK_WIDGET( priv->date_concil ),
-			_( "The date to which the entry will be set as reconciliated if no account transaction is proposed" ));
-
-	g_signal_connect(
-			G_OBJECT( priv->date_concil ), "changed", G_CALLBACK( on_date_concil_changed ), page );
-
-	gtk_misc_set_alignment( GTK_MISC( label ), 0.5, 0.5 );
-	gtk_label_set_width_chars( label, 10 );
-	gtk_grid_attach( grid, GTK_WIDGET( label ), 1, 1, 1, 1 );
-
-	return( GTK_WIDGET( frame ));
-}
-
-static GtkWidget *
-setup_auto_rappro( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-	GtkFrame *frame;
-	GtkAlignment *alignment;
-	GtkGrid *grid;
-	GtkWidget *label, *grid2, *grid3;
-	gchar *markup;
-	GtkWidget *button, *image;
-	GdkRGBA color;
-	gint column;
-
-	priv = OFA_RECONCILIATION( page )->priv;
-	column = 0;
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-
-	label = gtk_label_new( NULL );
-	markup = g_markup_printf_escaped( "<b> %s </b>", _( "Assisted reconciliation" ));
-	gtk_label_set_markup( GTK_LABEL( label ), markup );
-	gtk_frame_set_label_widget( frame, label );
-	g_free( markup );
-
-	alignment = GTK_ALIGNMENT( gtk_alignment_new( 0.5, 0.5, 1.0, 1.0 ));
-	gtk_alignment_set_padding( alignment, 4, 4, 12, 4 );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( alignment ));
-
-	grid = GTK_GRID( gtk_grid_new());
-	gtk_grid_set_column_spacing( grid, 4 );
-	gtk_grid_set_row_spacing( grid, 3 );
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( grid ));
-
-	button = gtk_button_new_with_mnemonic( _( "_Select..." ));
-	gtk_widget_set_halign( button, GTK_ALIGN_START );
-	gtk_grid_attach( grid, button, column++, 0, 1, 1 );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_bat ), page );
-	gtk_widget_set_tooltip_text(
-			button,
-			_( "Select a previously imported Bank Account Transactions list" ));
-
-	button = gtk_button_new_with_mnemonic( _( "_Import..." ));
-	gtk_widget_set_halign( button, GTK_ALIGN_START );
-	gtk_grid_attach( grid, button, column++, 0, 1, 1 );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_import_clicked ), page );
-	gtk_widget_set_tooltip_text(
-			button,
-			_( "Import an new Bank Account Transactions list to be used in the reconciliation" ));
-
-	image = gtk_image_new_from_icon_name( "gtk-clear", GTK_ICON_SIZE_BUTTON );
-	gtk_widget_set_halign( button, GTK_ALIGN_START );
-	priv->clear = GTK_BUTTON( gtk_button_new());
-	gtk_button_set_image( priv->clear, image );
-	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), column++, 0, 1, 1 );
-	gtk_widget_set_tooltip_text(
-			GTK_WIDGET( priv->clear ),
-			_( "Clear the displayed Bank Account Transaction lines" ));
-	g_signal_connect(
-			G_OBJECT( priv->clear ),
-			"clicked", G_CALLBACK( on_clear_button_clicked ), page );
-
-	/* a widget at the end, to get the extra space */
-	label = gtk_label_new( "" );
-	gtk_widget_set_halign( label, GTK_ALIGN_FILL );
-	gtk_widget_set_hexpand( label, TRUE );
-	gtk_grid_attach( grid, label, column++, 0, 1, 1 );
-
-	/* have a second row for labels */
-	grid2 = gtk_grid_new();
-	gtk_grid_set_column_spacing( GTK_GRID( grid2 ), 4 );
-	gtk_grid_attach( grid, grid2, 0, 1, 1+column, 1 );
-
-	label = gtk_label_new( "" );
-	gtk_label_set_ellipsize( GTK_LABEL( label ), PANGO_ELLIPSIZE_START );
-	gtk_grid_attach( GTK_GRID( grid2 ), label, 0, 0, 1, 1 );
-	priv->bat_name = label;
-
-	grid3 = gtk_grid_new();
-	gtk_widget_set_halign( grid3, GTK_ALIGN_END );
-	gtk_grid_attach( GTK_GRID( grid2 ), grid3, 1, 0, 1, 1 );
-
-	label = gtk_label_new( "" );
-	gtk_grid_attach( GTK_GRID( grid3 ), label, 1, 0, 1, 1 );
-	priv->count_label = label;
-
-	label = gtk_label_new( "" );
-	gtk_grid_attach( GTK_GRID( grid3 ), label, 3, 0, 1, 1 );
-	gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	priv->unused_label = label;
-
-	label = gtk_label_new( "" );
-	gtk_grid_attach( GTK_GRID( grid3 ), label, 4, 0, 1, 1 );
-	priv->label3 = label;
-
-	return( GTK_WIDGET( frame ));
-}
-
-static GtkWidget *
-setup_treeview_header( ofaPage *page )
-{
-	ofaReconciliationPrivate *priv;
-	GtkBox *box;
-	GtkLabel *label;
+	GtkWidget *label;
 	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
-
-	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
 
 	gdk_rgba_parse( &color, COLOR_ACCOUNT );
 
-	label = GTK_LABEL( gtk_label_new( "" ));
-	gtk_label_set_width_chars( label, 14 );
-	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
+	label = my_utils_container_get_child_by_name( parent, "header-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 
-	priv->account_credit = GTK_LABEL( gtk_label_new( "" ));
-	gtk_widget_override_color( GTK_WIDGET( priv->account_credit ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( priv->account_credit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->account_credit, 12 );
-	gtk_box_pack_end( box, GTK_WIDGET( priv->account_credit ), FALSE, FALSE, 0 );
+	label = my_utils_container_get_child_by_name( parent, "header-debit" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->account_debit = GTK_LABEL( label );
 
-	priv->account_debit = GTK_LABEL( gtk_label_new( "" ));
-	gtk_widget_override_color( GTK_WIDGET( priv->account_debit ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( priv->account_debit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->account_debit, 12 );
-	gtk_box_pack_end( box, GTK_WIDGET( priv->account_debit ), FALSE, FALSE, 0 );
-
-	label = GTK_LABEL( gtk_label_new( _( "Openbook account balance :" )));
-	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
-
-	return( GTK_WIDGET( box ));
+	label = my_utils_container_get_child_by_name( parent, "header-credit" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->account_credit = GTK_LABEL( label );
 }
 
 /*
@@ -793,15 +435,12 @@ setup_treeview_header( ofaPage *page )
  * reconciliation, then it will be displayed as a child of the entry.
  * An entry has zero or one child, never more.
  */
-static GtkWidget *
-setup_treeview( ofaPage *page )
+static void
+setup_treeview( ofaPage *page, GtkContainer *parent )
 {
 	static const gchar *thisfn = "ofa_reconciliation_setup_treeview";
 	ofaReconciliationPrivate *priv;
-	GtkFrame *frame;
-	GtkScrolledWindow *scroll;
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
+	GtkWidget *tview;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
@@ -809,22 +448,15 @@ setup_treeview( ofaPage *page )
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
+	tview = my_utils_container_get_child_by_name( parent, "treeview" );
+	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	priv->tview = GTK_TREE_VIEW( tview );
 
-	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
-
-	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_tree_view_set_headers_visible( tview, TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
+	gtk_tree_view_set_headers_visible( priv->tview, TRUE );
+	g_signal_connect( G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
 	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_key_pressed ), page );
 
-	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
+	priv->tstore = GTK_TREE_MODEL( gtk_tree_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING,									/* account */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* dope, piece, number */
@@ -833,8 +465,8 @@ setup_treeview( ofaPage *page )
 			G_TYPE_STRING,									/* dcreconcil */
 			G_TYPE_OBJECT ));
 
-	priv->tfilter = gtk_tree_model_filter_new( tmodel, NULL );
-	g_object_unref( tmodel );
+	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
+	g_object_unref( priv->tstore );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
@@ -844,11 +476,11 @@ setup_treeview( ofaPage *page )
 	priv->tsort = gtk_tree_model_sort_new_with_model( priv->tfilter );
 	g_object_unref( priv->tfilter );
 
-	gtk_tree_view_set_model( tview, priv->tsort );
+	gtk_tree_view_set_model( priv->tview, priv->tsort );
 	g_object_unref( priv->tsort );
 
 	g_debug( "%s: treestore=%p, tfilter=%p, tsort=%p",
-			thisfn, ( void * ) tmodel, ( void * ) priv->tfilter, ( void * ) priv->tsort );
+			thisfn, ( void * ) priv->tstore, ( void * ) priv->tfilter, ( void * ) priv->tsort );
 
 	/* account is not displayed */
 
@@ -861,7 +493,7 @@ setup_treeview( ofaPage *page )
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 80 );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -887,7 +519,7 @@ setup_treeview( ofaPage *page )
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 80 );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -908,7 +540,7 @@ setup_treeview( ofaPage *page )
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -927,7 +559,7 @@ setup_treeview( ofaPage *page )
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -946,7 +578,7 @@ setup_treeview( ofaPage *page )
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -966,7 +598,7 @@ setup_treeview( ofaPage *page )
 	gtk_tree_view_column_set_title( column, _( "Reconcil." ));
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( priv->tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
@@ -974,14 +606,11 @@ setup_treeview( ofaPage *page )
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
-	select = gtk_tree_view_get_selection( tview );
+	select = gtk_tree_view_get_selection( priv->tview);
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
 	g_signal_connect( select, "changed", G_CALLBACK( on_tview_selection_changed ), page );
 
-	gtk_widget_set_sensitive( GTK_WIDGET( tview ), FALSE );
-	priv->tview = tview;
-
-	return( GTK_WIDGET( frame ));
+	gtk_widget_set_sensitive( tview, FALSE );
 }
 
 /*
@@ -989,66 +618,237 @@ setup_treeview( ofaPage *page )
  * account, by deducting the unreconciliated entries from the balance
  * in our book - this is supposed simulate the actual bank balance
  */
-static GtkWidget *
-setup_treeview_footer( ofaPage *page )
+static void
+setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
-	GtkBox *box;
-	GtkLabel *label;
+	GtkWidget *label;
 	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
 	gdk_rgba_parse( &color, COLOR_ACCOUNT );
 
-	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
-	gtk_widget_set_margin_bottom( GTK_WIDGET( box ), 2 );
+	label = my_utils_container_get_child_by_name( parent, "footer-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 
-	label = GTK_LABEL( gtk_label_new( "" ));
-	gtk_label_set_width_chars( label, 14 );
-	gtk_box_pack_end( box, GTK_WIDGET( label ), FALSE, FALSE, 0 );
+	label = my_utils_container_get_child_by_name( parent, "footer-debit" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->bal_debit = GTK_LABEL( label );
 
-	priv->bal_credit = GTK_LABEL( gtk_label_new( "" ));
-	gtk_widget_override_color( GTK_WIDGET( priv->bal_credit ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( priv->bal_credit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->bal_credit, 11 );
-	gtk_box_pack_end( box, GTK_WIDGET( priv->bal_credit ), FALSE, FALSE, 0 );
-
-	priv->bal_debit = GTK_LABEL( gtk_label_new( "" ));
-	gtk_widget_override_color( GTK_WIDGET( priv->bal_debit ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( priv->bal_debit ), 1.0, 0.5 );
-	gtk_label_set_width_chars( priv->bal_debit, 11 );
-	gtk_box_pack_end( box, GTK_WIDGET( priv->bal_debit ), FALSE, FALSE, 0 );
-
-	label = GTK_LABEL( gtk_label_new( _( "Bank reconciliated balance :" )));
-	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_box_pack_end( box, GTK_WIDGET( label ), TRUE, TRUE, 0 );
-
-	return( GTK_WIDGET( box ));
+	label = my_utils_container_get_child_by_name( parent, "footer-credit" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->bal_credit = GTK_LABEL( label );
 }
 
-static GtkWidget *
-setup_buttons( ofaPage *page )
+/*
+ * account selection is an entry + a select button
+ */
+static void
+setup_account_selection( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
+	GtkWidget *entry, *button, *label;
 
 	priv = OFA_RECONCILIATION( page )->priv;
-	priv->box = ofa_buttons_box_new();
 
-	ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-	priv->reconciliate_btn = ofa_buttons_box_add_button( priv->box,
-			BUTTON_RECONCILIATE, TRUE, G_CALLBACK( on_reconciliate_clicked ), page );
-	priv->decline_btn = ofa_buttons_box_add_button( priv->box,
-			BUTTON_DECLINE, FALSE, G_CALLBACK( on_decline_clicked ), page );
-	priv->unreconciliate_btn = ofa_buttons_box_add_button( priv->box,
-			BUTTON_UNRECONCILIATE, FALSE, G_CALLBACK( on_unreconciliate_clicked ), page );
+	entry = my_utils_container_get_child_by_name( parent, "account-number" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->account_entry = GTK_ENTRY( entry );
+	g_signal_connect(
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_entry_changed ), page );
 
-	ofa_buttons_box_add_spacer( priv->box );
-	priv->print_btn = ofa_buttons_box_add_button( priv->box,
-			BUTTON_PRINT, TRUE, G_CALLBACK( on_print_clicked ), page );
+	button = my_utils_container_get_child_by_name( parent, "account-select" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_account_select_clicked ), page );
 
-	return( GTK_WIDGET( priv->box ));
+	label = my_utils_container_get_child_by_name( parent, "account-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->account_label = GTK_LABEL( label );
+}
+
+/*
+ * the combo box for filtering the displayed entries
+ */
+static void
+setup_entries_filter( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkWidget *combo;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *cell;
+	GtkTreeIter iter;
+	gint i;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	priv->mode_combo = GTK_COMBO_BOX( combo );
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new( ENT_N_COLUMNS, G_TYPE_INT, G_TYPE_STRING ));
+	gtk_combo_box_set_model( priv->mode_combo, tmodel );
+	g_object_unref( tmodel );
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->mode_combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->mode_combo ), cell, "text", ENT_COL_LABEL );
+
+	for( i=0 ; st_concils[i].code ; ++i ){
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				-1,
+				ENT_COL_CODE,  st_concils[i].code,
+				ENT_COL_LABEL, gettext( st_concils[i].label ),
+				-1 );
+	}
+
+	g_signal_connect(
+			G_OBJECT( priv->mode_combo ),
+			"changed", G_CALLBACK( on_mode_combo_changed ), page );
+}
+
+static void
+setup_dates_filter( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkWidget *filter_parent;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	priv->effect_filter = ofa_date_filter_bin_new( st_effect_dates );
+
+	filter_parent = my_utils_container_get_child_by_name( parent, "effect-dates-filter" );
+	g_return_if_fail( filter_parent && GTK_IS_CONTAINER( filter_parent ));
+	gtk_container_add( GTK_CONTAINER( filter_parent ), GTK_WIDGET( priv->effect_filter ));
+
+	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_dates_changed ), page );
+}
+
+static void
+setup_manual_rappro( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkWidget *entry, *label;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	entry = my_utils_container_get_child_by_name( parent, "manual-date" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->date_concil = GTK_ENTRY( entry );
+
+	label = my_utils_container_get_child_by_name( parent, "manual-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_editable_date_init( GTK_EDITABLE( priv->date_concil ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
+	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
+	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check());
+
+	g_signal_connect(
+			G_OBJECT( priv->date_concil ), "changed", G_CALLBACK( on_date_concil_changed ), page );
+}
+
+/*
+ * setup a size group between effect dates filter and manual
+ * reconciliation to get the entries aligned
+ */
+static void
+setup_size_group( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkSizeGroup *group;
+	GtkWidget *label;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = ofa_date_filter_bin_get_from_prompt( priv->effect_filter );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( parent, "manual-prompt" );
+	gtk_size_group_add_widget( group, label );
+
+	g_object_unref( group );
+}
+
+static void
+setup_auto_rappro( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkWidget *button, *label;
+	GdkRGBA color;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	button = my_utils_container_get_child_by_name( parent, "assist-select" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_bat ), page );
+
+	button = my_utils_container_get_child_by_name( parent, "assist-import" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_import_clicked ), page );
+
+	button = my_utils_container_get_child_by_name( parent, "assist-clear" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_clear_clicked ), page );
+	priv->clear = GTK_BUTTON( button );
+
+	label = my_utils_container_get_child_by_name( parent, "assist-name" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->bat_name = label;
+
+	label = my_utils_container_get_child_by_name( parent, "assist-count1" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->count_label = label;
+
+	label = my_utils_container_get_child_by_name( parent, "assist-count2" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->unused_label = label;
+
+	label = my_utils_container_get_child_by_name( parent, "assist-count3" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->label3 = label;
+}
+
+static void
+setup_buttons( ofaPage *page, GtkContainer *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkWidget *button;
+
+	priv = OFA_RECONCILIATION( page )->priv;
+
+	button = my_utils_container_get_child_by_name( parent, "reconciliate-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_reconciliate_clicked ), page );
+	priv->reconciliate_btn = button;
+
+	button = my_utils_container_get_child_by_name( parent, "decline-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_decline_clicked ), page );
+	priv->decline_btn = button;
+
+	button = my_utils_container_get_child_by_name( parent, "unreconciliate-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_unreconciliate_clicked ), page );
+	priv->unreconciliate_btn = button;
+
+	button = my_utils_container_get_child_by_name( parent, "print-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), page );
+	priv->print_btn = button;
 }
 
 static GtkWidget *
@@ -1060,6 +860,7 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
+	get_settings( OFA_RECONCILIATION( page ));
 	check_for_enable_view( OFA_RECONCILIATION( page ));
 }
 
@@ -1451,7 +1252,7 @@ on_import_clicked( GtkButton *button, ofaReconciliation *self )
 }
 
 static void
-on_clear_button_clicked( GtkButton *button, ofaReconciliation *self )
+on_clear_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	clear_bat_file( self );
 }
@@ -1869,7 +1670,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 
 	/* as we insert the row before populating it, it may happen that
 	 * the object be not set */
-	if( !object ){
+	if( !object || ofo_dossier_has_dispose_run( ofa_page_get_dossier( OFA_PAGE( self )))){
 		return( FALSE );
 	}
 	g_return_val_if_fail( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object ), TRUE );
