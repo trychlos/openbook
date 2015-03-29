@@ -1478,6 +1478,15 @@ ofo_entry_get_settlement_number( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_settlement_stamp:
+ */
+const GTimeVal *
+ofo_entry_get_settlement_stamp( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
+}
+
+/**
  * ofo_entry_get_exe_changed_count:
  */
 gint

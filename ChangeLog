@@ -1,5 +1,15 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	Review the settlement UI (todo #774, #775).
+
+	* src/api/ofo-entry.h,
+	* src/core/ofo-entry.c: new ofo_entry_get_settlement_stamp() method.
+
+	* src/ui/ofa-settlement.c,
+	* src/ui/ofa-settlement.ui:
+	- move the settle/unsettle buttons to the right (todo #774)
+	- all the footer line has one same color (todo #775).
+
 	* src/ui/ofa-guided-input-bin.c: protect against closing the main
 	window while the focus is in date or amount entry (because focus-out
 	generated event will trigger the validation function which will want

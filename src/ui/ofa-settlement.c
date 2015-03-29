@@ -48,11 +48,10 @@
  * ofaEntrySettlement:
  */
 typedef enum {
-	ENT_SETTLEMENT_FIRST = 0,
-	ENT_SETTLEMENT_YES,
+	ENT_SETTLEMENT_YES = 1,
 	ENT_SETTLEMENT_NO,
 	ENT_SETTLEMENT_ALL,
-	ENT_SETTLEMENT_LAST
+	ENT_SETTLEMENT_SESSION
 }
 	ofaEntrySettlement;
 
@@ -86,11 +85,15 @@ struct _ofaSettlementPrivate {
 
 	/* footer
 	 */
-	GtkWidget         *settle_btn;
-	GtkWidget         *unsettle_btn;
+	GtkWidget         *footer_label;
 	GtkWidget         *debit_balance;
 	GtkWidget         *credit_balance;
 	GtkWidget         *currency_balance;
+
+	/* actions
+	 */
+	GtkWidget         *settle_btn;
+	GtkWidget         *unsettle_btn;
 };
 
 /* columns in the combo box which let us select which type of entries
@@ -109,9 +112,10 @@ typedef struct {
 	sSettlement;
 
 static const sSettlement st_settlements[] = {
-		{ ENT_SETTLEMENT_YES, N_( "Settled entries" ) },
-		{ ENT_SETTLEMENT_NO,  N_( "Unsettled entries" ) },
-		{ ENT_SETTLEMENT_ALL, N_( "All entries" ) },
+		{ ENT_SETTLEMENT_YES,     N_( "Settled entries" ) },
+		{ ENT_SETTLEMENT_NO,      N_( "Unsettled entries" ) },
+		{ ENT_SETTLEMENT_SESSION, N_( "Settlement session" ) },
+		{ ENT_SETTLEMENT_ALL,     N_( "All entries" ) },
 		{ 0 }
 };
 
@@ -189,6 +193,7 @@ static gint           cmp_strings( ofaSettlement *self, const gchar *stra, const
 static gint           cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb );
 static gint           cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb );
 static gboolean       is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self );
+static gboolean       is_session_settled( ofaSettlement *self, ofoEntry *entry );
 static void           on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self );
 static gboolean       settlement_status_is_valid( ofaSettlement *self );
 static void           try_display_entries( ofaSettlement *self );
@@ -326,8 +331,8 @@ reparent_from_dialog( ofaSettlement *self, GtkContainer *parent )
 	dialog = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 	g_return_if_fail( dialog && GTK_IS_WINDOW( dialog ));
 
-	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-box" );
-	g_return_if_fail( box && GTK_IS_BOX( box ));
+	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "top" );
+	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
 	self->priv->top_box = GTK_CONTAINER( box );
 
@@ -340,37 +345,33 @@ setup_footer( ofaSettlement *self )
 {
 	ofaSettlementPrivate *priv;
 	GtkWidget *widget;
-	GdkRGBA color;
 
 	priv = self->priv;
 
-	gdk_rgba_parse( &color, RGBA_NORMAL );
-
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-settle" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "settle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_settle_clicked ), self );
 	priv->settle_btn = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-unsettle" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "unsettle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_unsettle_clicked ), self );
 	priv->unsettle_btn = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-settlement-selection" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "footer-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	gtk_widget_override_color( widget, GTK_STATE_FLAG_NORMAL, &color );
+	priv->footer_label = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-debit" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "footer-debit" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->debit_balance = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-credit" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "footer-credit" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->credit_balance = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-currency" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "footer-currency" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	gtk_widget_override_color( widget, GTK_STATE_FLAG_NORMAL, &color );
 	priv->currency_balance = widget;
 }
 
@@ -392,7 +393,7 @@ setup_entries_treeview( ofaSettlement *self )
 
 	priv = self->priv;
 
-	tview = ( GtkTreeView * ) my_utils_container_get_child_by_name( priv->top_box, "p1-entries" );
+	tview = ( GtkTreeView * ) my_utils_container_get_child_by_name( priv->top_box, "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -630,11 +631,11 @@ setup_account_selection( ofaSettlement *self )
 	priv = self->priv;
 
 	/* label must be setup before entry may be changed */
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-account-label" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "account-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->account_label = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-account-entry" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "account-number" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
@@ -642,7 +643,7 @@ setup_account_selection( ofaSettlement *self )
 		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-account-select" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_account_select ), self );
 }
@@ -659,7 +660,7 @@ setup_settlement_selection( ofaSettlement *self )
 
 	priv = self->priv;
 
-	combo = my_utils_container_get_child_by_name( priv->top_box, "f3-settlement" );
+	combo = my_utils_container_get_child_by_name( priv->top_box, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -686,9 +687,6 @@ setup_settlement_selection( ofaSettlement *self )
 			idx = i;
 		}
 	}
-
-	gtk_widget_set_tooltip_text(
-			combo, _( "Select the type of entries to be displayed" ));
 
 	g_signal_connect(
 			G_OBJECT( combo ), "changed", G_CALLBACK( on_settlement_changed ), self );
@@ -984,6 +982,13 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 			case ENT_SETTLEMENT_NO:
 				visible = ( entry_set_number <= 0 );
 				break;
+			case ENT_SETTLEMENT_SESSION:
+				if( entry_set_number <= 0 ){
+					visible = TRUE;
+				} else {
+					visible = is_session_settled( self, entry );
+				}
+				break;
 			case ENT_SETTLEMENT_ALL:
 				visible = TRUE;
 				break;
@@ -993,6 +998,21 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 	}
 
 	return( visible );
+}
+
+static gboolean
+is_session_settled( ofaSettlement *self, ofoEntry *entry )
+{
+	gboolean is_session;
+	const GTimeVal *stamp;
+	GDate date, dnow;
+
+	stamp = ofo_entry_get_settlement_stamp( entry );
+	my_date_set_from_stamp( &date, stamp );
+	my_date_set_now( &dnow );
+	is_session = my_date_compare( &date, &dnow ) == 0;
+
+	return( is_session );
 }
 
 /*
@@ -1043,8 +1063,7 @@ settlement_status_is_valid( ofaSettlement *self )
 
 	priv = self->priv;
 
-	return( priv->settlement > ENT_SETTLEMENT_FIRST &&
-				priv->settlement < ENT_SETTLEMENT_LAST );
+	return( priv->settlement >= 1 );
 }
 
 static void
@@ -1167,21 +1186,28 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	gtk_widget_set_sensitive( priv->settle_btn, ses.unsettled > 0 );
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
 
+	gtk_widget_override_color(
+			priv->footer_label,
+			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+
 	samount = my_double_to_str( ses.debit );
+	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
+	g_free( samount );
 	gtk_widget_override_color(
 			priv->debit_balance,
 			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
-	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
-	g_free( samount );
 
 	samount = my_double_to_str( ses.credit );
+	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
+	g_free( samount );
 	gtk_widget_override_color(
 			priv->credit_balance,
 			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
-	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
-	g_free( samount );
 
 	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), priv->account_currency );
+	gtk_widget_override_color(
+			priv->currency_balance,
+			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
 }
 
 /*
