@@ -23,6 +23,7 @@
 	- Replace the 'Accept' button by a 'Reconciliate' one (todo #767).
 	- Close main pages and flush the database before backup (todo #765).
 	- ViewEntries: let the currency column visibility be toggled.
+	- Settled entries have a light gray background (todo #773).
 
  Bug fixes:
 

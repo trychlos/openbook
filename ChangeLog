@@ -1,5 +1,8 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-settlement.c:
+	- settled entries have a light gray background (todo #773).
+
 	* src/ui/ofa-view-entries.c,
 	* src/ui/ofa-view-entries.ui:
 	- let the currency column visibility be toggled.

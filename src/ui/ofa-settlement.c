@@ -167,6 +167,7 @@ typedef struct {
 
 #define RGBA_NORMAL                     "#0000ff"		/* blue */
 #define RGBA_WARNING                    "#ff8000"		/* orange */
+#define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.ui";
 static const gchar *st_ui_id            = "SettlementWindow";
@@ -194,6 +195,7 @@ static gint           cmp_amounts( ofaSettlement *self, const gchar *stra, const
 static gint           cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb );
 static gboolean       is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self );
 static gboolean       is_session_settled( ofaSettlement *self, ofoEntry *entry );
+static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self );
 static void           on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self );
 static gboolean       settlement_status_is_valid( ofaSettlement *self );
 static void           try_display_entries( ofaSettlement *self );
@@ -449,6 +451,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* effect date
 	 */
@@ -467,6 +470,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* piece's reference
 	 */
@@ -488,6 +492,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* ledger
 	 */
@@ -506,6 +511,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* account
 	 */
@@ -524,6 +530,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* label
 	 */
@@ -545,6 +552,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* debit
 	 */
@@ -566,6 +574,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* credit
 	 */
@@ -587,6 +596,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* settlement number
 	 */
@@ -606,6 +616,7 @@ setup_entries_treeview( ofaSettlement *self )
 	if( priv->sort_column_id == column_id ){
 		sort_column = column;
 	}
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
@@ -1013,6 +1024,38 @@ is_session_settled( ofaSettlement *self, ofoEntry *entry )
 	is_session = my_date_compare( &date, &dnow ) == 0;
 
 	return( is_session );
+}
+
+/*
+ * light gray background on settled entries
+ */
+static void
+on_cell_data_func( GtkTreeViewColumn *tcolumn,
+						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+						ofaSettlement *self )
+{
+	ofoEntry *entry;
+	ofxCounter number;
+	GdkRGBA color;
+
+	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+
+	g_object_set( G_OBJECT( cell ),
+						"background-set", FALSE,
+						NULL );
+
+	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
+	if( entry ){
+		g_return_if_fail( OFO_IS_ENTRY( entry ));
+		g_object_unref( entry );
+
+		number = ofo_entry_get_settlement_number( entry );
+
+		if( number > 0 ){
+			gdk_rgba_parse( &color, COLOR_SETTLED );
+			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+		}
+	}
 }
 
 /*
