@@ -1,5 +1,10 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-guided-input-bin.c: protect against closing the main
+	window while the focus is in date or amount entry (because focus-out
+	generated event will trigger the validation function which will want
+	access the dossier, which is already finalized at this time).
+
 	Do not make OK/Validate GuidedInput buttons sensitive while all
 	amounts are zero (todo #777).
 

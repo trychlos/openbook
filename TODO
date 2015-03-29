@@ -450,9 +450,6 @@
 
  776 2015- 3-28 ViewEntries: status doesn't work as a filter (but should)
 
- 777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
-                there is not at least one generable entry
-
  778
 
 -----------------------------------------------------------------------
@@ -3473,6 +3470,10 @@
 
  770 2015- 3-28 have my_collate()
      2015- 3-28 done - git #c86b583
+
+ 777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
+                there is not at least one generable entry
+     2015- 3-29 fixed - git #4148c19
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

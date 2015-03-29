@@ -1292,48 +1292,55 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	priv = bin->priv;
-	ope = priv->ope;
-	ofs_currency_list_free( &priv->currency_list );
+	ok = FALSE;
 
-	ofs_ope_apply_template( ope, priv->dossier );
+	if( priv->dossier &&
+			OFO_IS_DOSSIER( priv->dossier ) &&
+			!ofo_dossier_has_dispose_run( priv->dossier )){
 
-	/* update the bin dialog with the new content of operation */
-	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
-		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-		if( !detail->account_user_set ){
-			set_ope_to_ui( bin, i+1, OPE_COL_ACCOUNT, detail->account );
+		ope = priv->ope;
+		ofs_currency_list_free( &priv->currency_list );
+
+		ofs_ope_apply_template( ope, priv->dossier );
+
+		/* update the bin dialog with the new content of operation */
+		for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
+			detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+			if( !detail->account_user_set ){
+				set_ope_to_ui( bin, i+1, OPE_COL_ACCOUNT, detail->account );
+			}
+			if( !detail->label_user_set ){
+				set_ope_to_ui( bin, i+1, OPE_COL_LABEL, detail->label );
+			}
+			if( !detail->debit_user_set ){
+				amount = my_double_to_str( detail->debit );
+				set_ope_to_ui( bin, i+1, OPE_COL_DEBIT, amount );
+				g_free( amount );
+			}
+			if( !detail->credit_user_set ){
+				amount = my_double_to_str( detail->credit );
+				set_ope_to_ui( bin, i+1, OPE_COL_CREDIT, amount );
+				g_free( amount );
+			}
 		}
-		if( !detail->label_user_set ){
-			set_ope_to_ui( bin, i+1, OPE_COL_LABEL, detail->label );
+
+		ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
+		g_debug( "%s: ofs_ope_is_valid() returns ok=%s", thisfn, ok ? "True":"False" );
+
+		/* update the bin dialog with the new content of operation */
+		for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
+			detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+			display_currency( bin, i+1,
+					detail );
+			draw_valid_coche( bin, i+1,
+					detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid );
 		}
-		if( !detail->debit_user_set ){
-			amount = my_double_to_str( detail->debit );
-			set_ope_to_ui( bin, i+1, OPE_COL_DEBIT, amount );
-			g_free( amount );
-		}
-		if( !detail->credit_user_set ){
-			amount = my_double_to_str( detail->credit );
-			set_ope_to_ui( bin, i+1, OPE_COL_CREDIT, amount );
-			g_free( amount );
-		}
+
+		update_totals( bin );
+		set_message( bin, message );
+
+		g_free( message );
 	}
-
-	ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
-	g_debug( "%s: ofs_ope_is_valid() returns ok=%s", thisfn, ok ? "True":"False" );
-
-	/* update the bin dialog with the new content of operation */
-	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
-		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-		display_currency( bin, i+1,
-				detail );
-		draw_valid_coche( bin, i+1,
-				detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid );
-	}
-
-	update_totals( bin );
-	set_message( bin, message );
-
-	g_free( message );
 
 	return( ok );
 }
