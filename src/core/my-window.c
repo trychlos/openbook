@@ -129,13 +129,12 @@ window_constructed( GObject *instance )
 	priv = MY_WINDOW( instance )->priv;
 
 	if( my_strlen( priv->window_xml ) && my_strlen( priv->window_name )){
-
 		toplevel = my_utils_builder_load_from_path( priv->window_xml, priv->window_name );
+
 		if( toplevel && GTK_IS_WINDOW( toplevel )){
-
 			priv->toplevel = GTK_WINDOW( toplevel );
-			if( priv->manage_size_position ){
 
+			if( priv->manage_size_position ){
 				my_utils_window_restore_position( priv->toplevel, priv->window_name );
 			}
 		}
