@@ -107,6 +107,7 @@ sub msgprint
 }
 
 my $my_brief = "Converts Entries from EBP to Openbook csv format";
+my $my_version = "0.38";
 
 my $debug;
 
@@ -124,7 +125,7 @@ sub msg_help(){
 sub msg_version(){
 	print "
  $my_version
- Copyright (C) 2013 Pierre Wieser.
+ Copyright (C) 2013,2014,2015 Pierre Wieser.
 ";
 }
 
@@ -196,9 +197,13 @@ sub mapping
 	my $debit = convert_amount( $infields[14] );
 	my $credit = convert_amount( $infields[15] );
 	my $settlement = $infields[28] eq "oui" ? "True" : "";
+	my $number = $infields[0];
+	my $dcreation = convert_date( $infields[8] );
 	my $reconciliation = convert_date( $infields[7] );
-	
-	return( join( ';', $dope, $deff, $label, $ref, "", $ledger, "", $account, $debit, $credit, $settlement, "", "", $reconciliation, "", "" ));
+
+	return( join( ';',
+		 $dope, $deff, $label, $ref, "", $ledger, "", $account, $debit, $credit,
+		 $settlement, "", "", $number, "", "", $dcreation, $reconciliation, "", "" ));
 }
 
 ###
@@ -212,7 +217,10 @@ my $count = 0;
 while( <> ){
 	$count += 1;
 	if( $count == 1 ){
-		print "DOpe;DEffect;Label;Ref;Currency;Ledger;OpeTemplate;Account;Debit;Credit;Settlement;Reconciliation\n";
+		print ""
+		."DOpe;DEffect;Label;Ref;Currency;Ledger;OpeTemplate;Account;Debit;Credit;"
+		."Settlement;SettlementUser;SettlementStamp;Number;Status;CreationUser;CreationStamp;"
+		."ReconciliationDval;ReconciliationUser;ReconciliationStamp\n";
 	} else {
 		print mapping( $_ )."\n";
 	}

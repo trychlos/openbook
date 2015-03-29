@@ -424,15 +424,36 @@
 
  760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
                 progress bar in Restore assistant
+                + (page result of the restore) message converting from
+                to...
+     2015- 3-29 update_ddl is called not ony from restore assistant,
+                but also each time we open the dossier - so have to
+                take care of that
 
  761 2015- 3-22 in the warning displayed when restoring to a database,
                 display the target database in bold (or red)
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
- 770 2015- 3-28 have my_collate()
+ 771 2015- 3-28 when converting entries, have a table to convert accounts
 
- 771
+ 772 2015- 3-28 review ledger closing dialog: may be date check should
+                be moved to is_dialog_validable() function + all ledgers
+                should be closeable
+
+ 773 2015- 3-28 Settlement: have a light background to indicate the
+                settled entries
+
+ 774 2015- 3-28 Settlement: move the settle/unsettle buttons to the right
+
+ 775 2015- 3-28 Settlement: footer: have all the line the same color
+
+ 776 2015- 3-28 ViewEntries: status doesn't work as a filter (but should)
+
+ 777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
+                there is not at least one generable entry
+
+ 778
 
 -----------------------------------------------------------------------
  DONE
@@ -3449,6 +3470,9 @@
  769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
                 'Import' one, setting the labels under the buttons
      2015- 3-27 done - git #3235e9f
+
+ 770 2015- 3-28 have my_collate()
+     2015- 3-28 done - git #c86b583
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

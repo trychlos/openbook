@@ -1,3 +1,19 @@
+2015-03-29 Pierre Wieser <pwieser@trychlos.org>
+
+	Update entries import/export to DBMS v25.
+
+	* misc/convert/ebp_entries.pl: add missing fields.
+
+	* src/api/ofo-concil.h,
+	* src/core/ofo-concil.c:
+	- ofo_concil_set_user(),
+	- ofo_concil_set_stamp(): methods are now public.
+
+	* src/core/ofa-iconcil.c,
+	* src/core/ofa-iconcil.h: new ofa_iconcil_new_concil_ex() method.
+
+	* src/core/ofo-entry.c: updated accordingly.
+
 2015-03-28 Pierre Wieser <pwieser@trychlos.org>
 
 	Have my_collate() function (todo #770).

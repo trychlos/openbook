@@ -58,10 +58,8 @@ G_DEFINE_TYPE( ofoConcil, ofo_concil, OFO_TYPE_BASE )
 
 static ofoConcil *concil_get_by_query( const gchar *query, const ofaDbms *dbms );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
-static void       concil_set_user( ofoConcil *concil, const gchar *user );
-static void       concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
-static gboolean   concil_do_insert( ofoConcil *concil, const ofaDbms *dbms, const gchar *user );
+static gboolean   concil_do_insert( ofoConcil *concil, const ofaDbms *dbms );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaDbms *dbms );
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaDbms *dbms );
 
@@ -210,9 +208,9 @@ concil_get_by_query( const gchar *query, const ofaDbms *dbms )
 			ofo_concil_set_dval( concil,
 					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
-			concil_set_user( concil, ( const gchar * ) icol->data );
+			ofo_concil_set_user( concil, ( const gchar * ) icol->data );
 			icol = icol->next;
-			concil_set_stamp( concil,
+			ofo_concil_set_stamp( concil,
 					my_utils_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
 		}
 		ofa_dbms_free_results( result );
@@ -402,8 +400,13 @@ ofo_concil_set_dval( ofoConcil *concil, const GDate *dval )
 	}
 }
 
-static void
-concil_set_user( ofoConcil *concil, const gchar *user )
+/**
+ * ofo_concil_set_user:
+ * @concil:
+ * @user:
+ */
+void
+ofo_concil_set_user( ofoConcil *concil, const gchar *user )
 {
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
@@ -414,8 +417,13 @@ concil_set_user( ofoConcil *concil, const gchar *user )
 	}
 }
 
-static void
-concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp )
+/**
+ * ofo_concil_set_stamp:
+ * @concil:
+ * @stamp:
+ */
+void
+ofo_concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp )
 {
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
@@ -466,8 +474,7 @@ ofo_concil_insert( ofoConcil *concil, ofoDossier *dossier )
 
 		if( concil_do_insert(
 					concil,
-					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_dbms( dossier ))){
 
 			g_signal_emit_by_name(
 					dossier, SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( concil ));
@@ -480,24 +487,19 @@ ofo_concil_insert( ofoConcil *concil, ofoDossier *dossier )
 }
 
 static gboolean
-concil_do_insert( ofoConcil *concil, const ofaDbms *dbms, const gchar *user )
+concil_do_insert( ofoConcil *concil, const ofaDbms *dbms )
 {
 	gchar *query, *sdate, *stamp;
 	gboolean ok;
-	GTimeVal tval;
 
 	sdate = my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL );
-	my_utils_stamp_set_now( &tval );
-	stamp = my_utils_stamp_to_str( &tval, MY_STAMP_YYMDHMS );
-
-	concil_set_user( concil, user );
-	concil_set_stamp( concil, &tval );
+	stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
 
 	query = g_strdup_printf(
 			"INSERT INTO OFA_T_CONCIL "
 			"	(REC_ID,REC_DVAL,REC_USER,REC_STAMP) VALUES "
 			"	(%ld,'%s','%s','%s')",
-			ofo_concil_get_id( concil ), sdate, user, stamp );
+			ofo_concil_get_id( concil ), sdate, ofo_concil_get_user( concil ), stamp );
 
 	ok = ofa_dbms_query( dbms, query, TRUE );
 

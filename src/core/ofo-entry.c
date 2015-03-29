@@ -77,7 +77,7 @@ enum {
 
 /*
  * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
+ * 1/ put in in an import-compatible order
  * 2/ no more modify it
  * 3/ take attention to be able to support the import of a previously
  *    exported file
@@ -123,12 +123,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-										/* settlement number is imported, but
-										 * not the corresponding users and dates */
 		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
 				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
+										/* below data are not imported */
 		{ OFA_BOX_CSV( ENT_STLMT_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -137,7 +136,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
-										/* below data are not imported */
 		{ OFA_BOX_CSV( ENT_NUMBER ),
 				OFA_TYPE_COUNTER,
 				FALSE,
@@ -206,7 +204,7 @@ static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_st
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
-static gboolean     entry_compute_status( ofoEntry *entry, ofoDossier *dossier );
+static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofoDossier *dossier );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
@@ -1897,6 +1895,10 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
 
 /*
  * entry_compute_status:
+ * @entry:
+ * @set_deffect: if %TRUE, then the effect date is modified to the
+ *  minimum allowed.
+ * @dossier:
  *
  * Set the entry status depending of the exercice beginning and ending
  * dates of the dossier. If the entry is inside the current exercice,
@@ -1904,9 +1906,10 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
  *
  * Returns: %FALSE if the effect date is not valid regarding the last
  * closing date of the associated ledger.
+ * This never happens when @set_deffect is %TRUE.
  */
 gboolean
-entry_compute_status( ofoEntry *entry, ofoDossier *dossier )
+entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "entry_compute_status";
 	const GDate *exe_begin, *exe_end, *deffect;
@@ -1937,8 +1940,13 @@ entry_compute_status( ofoEntry *entry, ofoDossier *dossier )
 
 		} else {
 			min_deffect = entry_get_min_deffect( entry, dossier );
-			is_valid = !my_date_is_valid( min_deffect ) || my_date_compare( deffect, min_deffect ) >= 0;
-			g_free( min_deffect );
+			is_valid = !my_date_is_valid( min_deffect ) ||
+					my_date_compare( deffect, min_deffect ) >= 0;
+
+			if( !is_valid && set_deffect ){
+				ofo_entry_set_deffect( entry, min_deffect );
+				is_valid = TRUE;
+			}
 
 			if( !is_valid ){
 				sdeffect = my_date_to_str( deffect, ofa_prefs_date_display());
@@ -1952,6 +1960,8 @@ entry_compute_status( ofoEntry *entry, ofoDossier *dossier )
 			} else {
 				entry_set_status( entry, ENT_STATUS_ROUGH );
 			}
+
+			g_free( min_deffect );
 		}
 	}
 
@@ -2044,7 +2054,7 @@ ofo_entry_new_with_data( ofoDossier *dossier,
 	ofo_entry_set_debit( entry, debit );
 	ofo_entry_set_credit( entry, credit );
 
-	entry_compute_status( entry, dossier );
+	entry_compute_status( entry, FALSE, dossier );
 
 	return( entry );
 }
@@ -2071,7 +2081,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
-		entry_compute_status( entry, dossier );
+		entry_compute_status( entry, FALSE, dossier );
 
 		if( entry_do_insert( entry,
 					ofo_dossier_get_dbms( dossier ),
@@ -2565,7 +2575,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
 /*
  * iexportable_export:
  *
- * Exports the classes line by line.
+ * Exports the entries line by line.
  *
  * Returns: TRUE at the end if no error has been detected
  *
@@ -2574,6 +2584,10 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * only available from a stored program in the DBMS (as for MySQL at
  * least), and this would imply that the exact list of columns be
  * written in this stored program ?
+ *
+ * v0.38: as the conciliation information have moved to another table,
+ * and because we want to stay able to export/import them, we have to
+ * add to the dataset the informations got from conciliation groups.
  */
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
@@ -2582,8 +2596,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gboolean ok, with_headers;
 	gchar field_sep, decimal_sep;
 	gulong count;
-	gchar *str;
+	gchar *str, *str2, *sdate, *suser, *sstamp;
 	GSList *lines;
+	ofoConcil *concil;
 
 	result = entry_load_dataset( dossier, NULL, NULL );
 
@@ -2599,9 +2614,12 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
-		lines = g_slist_prepend( NULL, str );
+		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
+				str, field_sep, "ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp" );
+		lines = g_slist_prepend( NULL, str2 );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		g_free( str );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -2609,9 +2627,19 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	for( it=result ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
-		lines = g_slist_prepend( NULL, str );
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ), dossier );
+		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
+		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
+		sstamp = concil ? my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
+		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
+				str, field_sep, sdate, field_sep, suser, field_sep, sstamp );
+		lines = g_slist_prepend( NULL, str2 );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		g_free( str );
+		g_free( sdate );
+		g_free( suser );
+		g_free( sstamp );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -2661,6 +2689,10 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  *   settled, or empty
  * - ignored (settlement user on export)
  * - ignored (settlement timestamp on export)
+ * - ignored (entry number on export)
+ * - ignored (entry status on export)
+ * - ignored (creation user on export)
+ * - ignored (creation timestamp on export)
  * - reconciliation date: yyyy-mm-dd
  * - exported reconciliation user (defaults to current user)
  * - exported reconciliation timestamp (defaults to now)
@@ -2698,16 +2730,18 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GList *dataset, *it;
 	guint errors, line;
 	GDate date;
-	gchar *currency;
+	gchar *currency, *msg;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit, precision;
-	gchar *sdeffect, *msg;
 	ofaEntryStatus status;
 	GList *past, *exe, *fut;
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
 	ofxCounter counter;
+	GTimeVal stamp;
+	ofoConcil *concil;
+	myDateFormat date_format;
 
 	dataset = NULL;
 	line = 0;
@@ -2715,11 +2749,13 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	past = NULL;
 	exe = NULL;
 	fut = NULL;
+	date_format = ofa_file_format_get_date_format( settings );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
 		line += 1;
 		entry = ofo_entry_new();
+		concil = NULL;
 		fields = ( GSList * ) itl->data;
 		debit = 0;
 		credit = 0;
@@ -2728,7 +2764,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* operation date */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_sql( &date, cstr );
+		my_date_set_from_str( &date, cstr, date_format );
 		if( !my_date_is_valid( &date )){
 			msg = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
 			ofa_iimportable_set_message(
@@ -2742,7 +2778,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* effect date */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_sql( &date, cstr );
+		my_date_set_from_str( &date, cstr, date_format );
 		if( !my_date_is_valid( &date )){
 			msg = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
 			ofa_iimportable_set_message(
@@ -2909,48 +2945,58 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* ignored (settlement timestamp from export) */
 		itf = itf ? itf->next : NULL;
 
-#if 0
+		/* ignored (entry number from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* ignored (entry status from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* ignored (creation user from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* ignored (creation timestamp from export) */
+		itf = itf ? itf->next : NULL;
+
 		/* reconciliation date */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_sql( &date, cstr );
+		my_date_set_from_str( &date, cstr, date_format );
 		if( my_date_is_valid( &date )){
-			entry_set_concil_dval( entry, &date );
+			concil = ofo_concil_new();
+			g_object_set_data( G_OBJECT( entry ), "entry-concil", concil );
+			ofo_concil_set_dval( concil, &date );
+			g_debug( "new concil: dval=%s", cstr );
 		}
 
 		/* exported reconciliation user (defaults to current user) */
 		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
-			cstr = ofo_dossier_get_user( dossier );
+		if( concil ){
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( !my_strlen( cstr )){
+				cstr = ofo_dossier_get_user( dossier );
+			}
+			ofo_concil_set_user( concil, cstr );
+			g_debug( "concil user=%s", cstr );
 		}
-		entry_set_concil_user( entry, cstr );
 
 		/* exported reconciliation timestamp (defaults to now) */
 		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
-			my_utils_stamp_set_now( &stamp );
-		} else {
-			my_utils_stamp_set_from_str( &stamp, cstr );
-		}
-		entry_set_concil_stamp( entry, &stamp );
-#endif
-
-		/* what to do regarding the effect date ? */
-		if( !entry_compute_status( entry, dossier )){
-			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
-			msg = g_strdup_printf(
-					_( "entry effect date %s invalid regarding exercice beginning and ledger last closing dates" ),
-					sdeffect );
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, msg );
-			g_free( sdeffect );
-			g_free( msg );
-			errors += 1;
-			continue;
+		if( concil ){
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( !my_strlen( cstr )){
+				my_utils_stamp_set_now( &stamp );
+			} else {
+				my_utils_stamp_set_from_str( &stamp, cstr );
+			}
+			ofo_concil_set_stamp( concil, &stamp );
+			g_debug( "concil stamp=%s", cstr );
 		}
 
+		/* what to do regarding the effect date ?
+		 * we force it to be valid regarding exercice beginning and
+		 * ledger last closing dates, so that the entry is in ROUGH
+		 * status */
+		entry_compute_status( entry, TRUE, dossier );
 		status = ofo_entry_get_status( entry );
 		switch( status ){
 			case ENT_STATUS_PAST:
@@ -3027,12 +3073,11 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 					counter = ofo_dossier_get_next_settlement( dossier );
 					ofo_entry_update_settlement( entry, dossier, counter );
 				}
-				/*
-				cdate = ofo_entry_get_concil_dval( entry );
-				if( my_date_is_valid( cdate )){
-					ofo_entry_update_concil( entry, dossier, cdate );
+				concil = ( ofoConcil * ) g_object_get_data( G_OBJECT( entry ), "entry-concil" );
+				if( concil ){
+					/* gives the ownership to the ConcilCollection */
+					ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil, dossier );
 				}
-				*/
 			} else {
 				errors -= 1;
 			}

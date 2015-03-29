@@ -117,6 +117,10 @@ ofoConcil *ofa_iconcil_new_concil                ( ofaIConcil *instance,
 														const GDate *dval,
 														ofoDossier *dossier );
 
+void       ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
+														ofoConcil *concil,
+														ofoDossier *dossier );
+
 void       ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
 														ofoConcil *concil,
 														ofoDossier *dossier );

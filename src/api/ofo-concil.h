@@ -63,6 +63,12 @@ gboolean        ofo_concil_has_member     ( const ofoConcil *concil,
 void            ofo_concil_set_dval       ( ofoConcil *concil,
 													const GDate *dval );
 
+void            ofo_concil_set_user       ( ofoConcil *concil,
+													const gchar *user );
+
+void            ofo_concil_set_stamp       ( ofoConcil *concil,
+													const GTimeVal *stamp );
+
 gboolean        ofo_concil_insert         ( ofoConcil *concil,
 													ofoDossier *dossier );
 

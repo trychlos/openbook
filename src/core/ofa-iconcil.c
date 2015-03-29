@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
 
@@ -51,15 +52,6 @@ static void         interface_base_init( ofaIConcilInterface *klass );
 static void         interface_base_finalize( ofaIConcilInterface *klass );
 static const gchar *iconcil_get_type( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_id( const ofaIConcil *instance );
-
-/*
-static sIConcil *get_iconcil_data( ofaIConcil *instance );
-static void      on_updated_concil( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaIConcil *instance );
-static void      on_deleted_concil( ofoDossier *dossier, ofoBase *object, ofaIConcil *instance );
-static void      on_finalized_instance( void *empty, void *finalized_instance );
-static void      on_finalized_concil( ofaIConcil *instance, void *finalized_concil );
-static void      free_iconcil_data( sIConcil *sdata );
-*/
 
 /**
  * ofa_iconcil_get_type:
@@ -206,6 +198,7 @@ ofa_iconcil_get_concil( const ofaIConcil *instance, ofoDossier *dossier )
 /**
  * ofa_iconcil_new_concil:
  * @instance:
+ * @dval:
  * @dossier:
  *
  * Returns: a newly created conciliation group from the @instance.
@@ -214,23 +207,47 @@ ofoConcil *
 ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval, ofoDossier *dossier )
 {
 	ofoConcil *concil;
-	GObject *collection;
+	GTimeVal stamp;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	concil = ofo_concil_new();
-	ofo_concil_set_dval( concil, dval );
-	ofo_concil_insert( concil, dossier );
 
+	ofo_concil_set_dval( concil, dval );
+	ofo_concil_set_user( concil, ofo_dossier_get_user( dossier ));
+	ofo_concil_set_stamp( concil, my_utils_stamp_set_now( &stamp ));
+
+	ofa_iconcil_new_concil_ex( instance, concil, dossier );
+
+	return( concil );
+}
+
+/**
+ * ofa_iconcil_new_concil_ex:
+ * @instance:
+ * @concil:
+ * @dossier:
+ *
+ * An #ofoConcil object is already set with dval, user and stamp.
+ * Add the ofaIConcil instance to it and write in DBMS.
+ */
+void
+ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil, ofoDossier *dossier )
+{
+	GObject *collection;
+
+	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
+	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	ofo_concil_insert( concil, dossier );
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ), dossier );
 
 	collection = ofa_icollector_get_object( OFA_ICOLLECTOR( dossier ), OFA_TYPE_CONCIL_COLLECTION );
-	g_return_val_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ), NULL );
+	g_return_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ));
 
 	ofa_concil_collection_add( OFA_CONCIL_COLLECTION( collection ), concil );
-
-	return( concil );
 }
 
 /**
@@ -294,187 +311,3 @@ iconcil_get_id( const ofaIConcil *instance )
 
 	return( id );
 }
-
-#if 0
-/**
- * ofa_iconcil_dispose:
- * @instance:
- *
- * Remove the attached #ofoConcil object if any.
- */
-void
-ofa_iconcil_dispose( ofaIConcil *instance )
-{
-sIConcil *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
-
-	sdata = get_iconcil_data( instance );
-	if( sdata->concil ){
-		g_object_unref( sdata->concil );
-	}
-}
-
-/**
- * ofa_iconcil_set_concil_group:
- * @instance:
- * @concil_type:
- * @dossier:
- *
- * Read from the database the reconciliation group as a #ofoConcil object,
- * attaching its to @instance.
- */
-void
-ofa_iconcil_set_concil_group( ofaIConcil *instance, const gchar *concil_type, ofoDossier *dossier )
-{
-	ofxCounter obj_id;
-	ofoConcil *concil;
-	sIConcil *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
-
-	if( OFA_ICONCIL_GET_INTERFACE( instance )->get_object_id ){
-		obj_id = OFA_ICONCIL_GET_INTERFACE( instance )->get_object_id( instance );
-		concil = ofo_concil_get_by_other_id( dossier, concil_type, obj_id );
-		sdata = get_iconcil_data( instance );
-		g_return_if_fail( sdata->concil == NULL );
-
-		if( concil ){
-			g_object_weak_ref( G_OBJECT( concil ), ( GWeakNotify ) on_finalized_concil, instance );
-			sdata->concil = concil;
-
-		} else {
-			g_free( sdata );
-			g_object_set_data( G_OBJECT( instance ), ICONCIL_DATA, NULL );
-		}
-	}
-}
-
-static sIConcil *
-get_iconcil_data( ofaIConcil *instance )
-{
-	sIConcil *sdata;
-
-	sdata = ( sIConcil * ) g_object_get_data( G_OBJECT( instance ), ICONCIL_DATA );
-	if( !sdata ){
-		sdata = g_new0( sIConcil, 1 );
-		g_object_set_data( G_OBJECT( instance ), ICONCIL_DATA, sdata );
-	}
-
-	return( sdata );
-}
-
-/*
- * we are dealing here with signals emitted when updating/deleting a
- * #ofoConcil object, and we are only interested in the particular
- * reconciliation group which this entry belongs to
- */
-static void
-on_updated_concil( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaIConcil *instance )
-{
-	static const gchar *thisfn = "ofa_iconcil_on_updated_concil";
-	ofoConcil *instance_concil;
-	ofxCounter instance_concil_id, obj_id;
-	sIConcil *sdata;
-	gchar *type;
-
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, instance=%p (%s)",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	if( OFO_IS_CONCIL( object )){
-		instance_concil = ofa_iconcil_get_concil( instance );
-		instance_concil_id = ofo_concil_get_id( instance_concil );
-		obj_id = ofo_concil_get_id( OFO_CONCIL( object ));
-		if( instance_concil_id == obj_id ){
-			sdata = get_iconcil_data( instance );
-			type = g_strdup( sdata->type );
-			g_object_unref( sdata->concil );
-			ofa_iconcil_set_concil_group( instance, type, dossier );
-			g_free( type );
-		}
-	}
-}
-
-static void
-on_deleted_concil( ofoDossier *dossier, ofoBase *object, ofaIConcil *instance )
-{
-	static const gchar *thisfn = "ofa_iconcil_on_deleted_concil";
-	ofoConcil *instance_concil;
-	ofxCounter instance_concil_id, obj_id;
-	sIConcil *sdata;
-
-	g_debug( "%s: dossier=%p, object=%p (%s), instance=%p (%s)",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	if( OFO_IS_CONCIL( object )){
-		instance_concil = ofa_iconcil_get_concil( instance );
-		instance_concil_id = ofo_concil_get_id( instance_concil );
-		obj_id = ofo_concil_get_id( OFO_CONCIL( object ));
-		if( instance_concil_id == obj_id ){
-			sdata = get_iconcil_data( instance );
-			g_object_unref( sdata->concil );
-		}
-	}
-}
-
-static void
-on_finalized_instance( void *empty, void *finalized_instance )
-{
-	static const gchar *thisfn = "ofa_iconcil_on_finalized_instance";
-	sIConcil *sdata;
-
-	g_debug( "%s: empty=%p, finalized_instance=%p",
-			thisfn,
-			( void * ) empty,
-			( void * ) finalized_instance );
-
-	sdata = get_iconcil_data( finalized_instance );
-
-	if( sdata->concil ){
-		g_object_unref( sdata->concil );
-	}
-}
-
-static void
-on_finalized_concil( ofaIConcil *instance, void *finalized_concil )
-{
-	static const gchar *thisfn = "ofa_iconcil_on_finalized_concil";
-	sIConcil *sdata;
-
-	g_debug( "%s: instance=%p (%s), finalized_concil=%p",
-			thisfn,
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) finalized_concil );
-
-	sdata = get_iconcil_data( instance );
-	free_iconcil_data( sdata );
-	g_object_set_data( G_OBJECT( instance ), ICONCIL_DATA, NULL );
-}
-
-static void
-free_iconcil_data( sIConcil *sdata )
-{
-	/*
-	GList *it;
-
-	if( sdata->dossier &&
-			OFO_IS_DOSSIER( sdata->dossier ) &&
-			!ofo_dossier_has_dispose_run( sdata->dossier )){
-		for( it=sdata->dos_handlers ; it ; it=it->next ){
-			g_signal_handler_disconnect( sdata->dossier, ( gulong ) it->data );
-		}
-	}
-
-	g_list_free( sdata->dos_handlers );
-	*/
-	g_free( sdata->type );
-	g_free( sdata );
-}
-#endif
