@@ -444,12 +444,6 @@
  773 2015- 3-28 Settlement: have a light background to indicate the
                 settled entries
 
- 774 2015- 3-28 Settlement: move the settle/unsettle buttons to the right
-
- 775 2015- 3-28 Settlement: footer: have all the line the same color
-
- 776 2015- 3-28 ViewEntries: status doesn't work as a filter (but should)
-
  778
 
 -----------------------------------------------------------------------
@@ -3470,6 +3464,15 @@
 
  770 2015- 3-28 have my_collate()
      2015- 3-28 done - git #c86b583
+
+ 774 2015- 3-28 Settlement: move the settle/unsettle buttons to the right
+     2015- 3-29 done - git #edee846
+
+ 775 2015- 3-28 Settlement: footer: have all the line the same color
+     2015- 3-29 done - git #edee846
+
+ 776 2015- 3-28 ViewEntries: status doesn't work as a filter (but should)
+     2015- 3-29 actually it does
 
  777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
                 there is not at least one generable entry

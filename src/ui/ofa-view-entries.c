@@ -140,6 +140,7 @@ struct _ofaViewEntriesPrivate {
 	gboolean           settlement_visible;
 	gboolean           dreconcil_visible;
 	gboolean           status_visible;
+	gboolean           currency_visible;
 
 	/* frame 5: edition switch
 	 */
@@ -711,6 +712,13 @@ setup_display_columns( ofaViewEntries *self )
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->dreconcil_visible );
 
+	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-currency" );
+	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->currency_visible = has_column_id( id_list, ENT_COL_CURRENCY );
+	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->currency_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->currency_visible );
+
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-status" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
@@ -1092,6 +1100,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->currency_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
@@ -1863,7 +1872,9 @@ set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
 	/* 30 is less of 1 char, 40 is more of 1/2 char */
 
 	priv = self->priv;
-	margin = 26;
+
+	margin = 0;
+	margin += priv->currency_visible ? 25 : 0;
 	margin += priv->status_visible ? 48 : 0;
 
 	/* this doesn't work as expected: the scroll bar is always rendered
@@ -1873,8 +1884,8 @@ set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
 						GTK_SCROLLED_WINDOW(
 								gtk_widget_get_parent( GTK_WIDGET( priv->entries_tview ))));
 		if( bar && gtk_widget_get_visible( bar )){
-			margin += 10;
-			g_debug( "set_balance_currency_label_margin: set margin+10" );
+			margin += 12;
+			g_debug( "set_balance_currency_label_margin: set margin+12" );
 		}
 	}
 

@@ -1,5 +1,9 @@
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-view-entries.c,
+	* src/ui/ofa-view-entries.ui:
+	- let the currency column visibility be toggled.
+
 	Review the settlement UI (todo #774, #775).
 
 	* src/api/ofo-entry.h,
