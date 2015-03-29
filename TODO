@@ -441,9 +441,6 @@
                 be moved to is_dialog_validable() function + all ledgers
                 should be closeable
 
- 773 2015- 3-28 Settlement: have a light background to indicate the
-                settled entries
-
  778
 
 -----------------------------------------------------------------------
@@ -3464,6 +3461,10 @@
 
  770 2015- 3-28 have my_collate()
      2015- 3-28 done - git #c86b583
+
+ 773 2015- 3-28 Settlement: have a light background to indicate the
+                settled entries
+     2015- 3-29 done - git #0fdcc6d
 
  774 2015- 3-28 Settlement: move the settle/unsettle buttons to the right
      2015- 3-29 done - git #edee846
