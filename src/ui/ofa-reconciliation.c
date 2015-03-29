@@ -981,7 +981,9 @@ clear_account_properties( ofaReconciliation *self )
 	}
 
 	priv->account = NULL;
-	set_reconciliated_balance( self );
+
+	gtk_label_set_text( priv->bal_debit, "" );
+	gtk_label_set_text( priv->bal_credit, "" );
 }
 
 /*
@@ -2134,10 +2136,12 @@ check_for_enable_view( ofaReconciliation *self )
 	priv = self->priv;
 
 	enabled = priv->account && OFO_IS_ACCOUNT( priv->account );
-
 	enabled &= ( priv->mode >= 1 );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), enabled );
+	gtk_widget_set_sensitive( priv->reconciliate_btn, enabled );
+	gtk_widget_set_sensitive( priv->decline_btn, enabled );
+	gtk_widget_set_sensitive( priv->unreconciliate_btn, enabled );
 	gtk_widget_set_sensitive( priv->print_btn, enabled );
 
 	return( enabled );
