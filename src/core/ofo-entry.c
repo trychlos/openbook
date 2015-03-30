@@ -960,7 +960,7 @@ ofo_entry_get_dataset_for_print_general_books( ofoDossier *dossier,
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	query = g_string_new( "OFA_T_ENTRIES WHERE " );
+	query = g_string_new( "" );
 	first = FALSE;
 	dataset = NULL;
 
@@ -1032,7 +1032,7 @@ ofo_entry_get_dataset_for_print_ledgers( ofoDossier *dossier,
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	query = g_string_new( "OFA_T_ENTRIES WHERE " );
+	query = g_string_new( "" );
 	dataset = NULL;
 
 	/* (ENT_LEDGER=xxxx or ENT_LEDGER=xxx or ENT_LEDGER=xxx) */
@@ -1092,11 +1092,13 @@ ofo_entry_get_dataset_for_print_reconcil( ofoDossier *dossier,
 
 	where = g_string_new( "" );
 	g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
-	g_string_append_printf( where, "AND ENT_CONCIL_DVAL IS NULL " );
+	g_string_append_printf( where, "AND ENT_NUMBER NOT IN "
+			"(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='%s') ",
+			CONCIL_TYPE_ENTRY );
 
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DEFFECT <= '%s'", str );
+		g_string_append_printf( where, "AND ENT_DEFFECT<='%s'", str );
 		g_free( str );
 	}
 
