@@ -1,5 +1,8 @@
 2015-03-30 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/import-bourso-pdf/ofa-importer.c,
+	* src/import-lcl-pdf/ofa-importer.c: make sure we do not import empty lines.
+
 	* src/api/ofs-bat.h,
 	* src/core/ofs-bat.c: new ofs_bat_detail_free() function.
 

@@ -568,7 +568,7 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 	ofaBoursoPdfImporterPrivate *priv;
 	gint i;
 	sRC *src;
-	gdouble first_y;
+	gdouble first_y, prev_y;
 	GList *lines, *it;
 	sLine *line;
 	ofsBatDetail *detail, *prev_detail;
@@ -583,6 +583,7 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 	first_y = 0;
 	lines = NULL;
 	prev_detail = NULL;
+	prev_y = 0;
 	dbg1 = FALSE;
 
 	for( i=0, it=rc_list ; it ; ++i, it=it->next ){
@@ -679,9 +680,16 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 			debit = get_double_from_str( line->sdebit );
 			credit = get_double_from_str( line->scredit );
 			detail->amount = credit - debit;
-			prev_detail = detail;
-			bat->details = g_list_prepend( bat->details, detail );
-			priv->count += 1;
+			if( my_date_is_valid( &detail->deffect ) && detail->amount != 0 ){
+				prev_detail = detail;
+				prev_y = line->y;
+				bat->details = g_list_prepend( bat->details, detail );
+				priv->count += 1;
+			} else {
+				ofs_bat_detail_free( detail );
+				prev_detail = NULL;
+				prev_y = 0;
+			}
 
 		} else if( g_str_has_prefix( line->slabel, st_end_solde )){
 			debit = get_double_from_str( line->sdebit );
@@ -689,7 +697,9 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 			bat->end_solde = credit - debit;
 			bat->end_solde_set = TRUE;
 
-		} else if( !line->sdate && !line->svaleur && !line->sdebit && !line->scredit && prev_detail ){
+		} else if( !line->sdate && !line->svaleur &&
+				!line->sdebit && !line->scredit && prev_detail &&
+				line->y-prev_y <= 3*st_half_y ){
 			str = g_strdup_printf( "%s / %s", prev_detail->label, line->slabel );
 			g_free( prev_detail->label );
 			prev_detail->label = str;

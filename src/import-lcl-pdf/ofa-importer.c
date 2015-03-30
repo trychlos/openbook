@@ -564,7 +564,7 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	ofaLclPdfImporterPrivate *priv;
 	gint i;
 	sRC *src;
-	gdouble first_y;
+	gdouble first_y, prev_y;
 	GList *lines, *it;
 	sLine *line;
 	ofsBatDetail *detail, *prev_detail;
@@ -582,6 +582,7 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 	lines = NULL;
 	next_is_last = FALSE;
 	prev_detail = NULL;
+	prev_y = 0;
 	dbg1 = TRUE;
 
 	for( i=0, it=rc_list ; it ; ++i, it=it->next ){
@@ -714,11 +715,20 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 			debit = my_double_set_from_str( line->sdebit );
 			credit = my_double_set_from_str( line->scredit );
 			detail->amount = credit - debit;
-			prev_detail = detail;
-			bat->details = g_list_prepend( bat->details, detail );
-			priv->count += 1;
+			if( my_date_is_valid( &detail->deffect ) && detail->amount != 0 ){
+				prev_detail = detail;
+				prev_y = line->y;
+				bat->details = g_list_prepend( bat->details, detail );
+				priv->count += 1;
+			} else {
+				ofs_bat_detail_free( detail );
+				prev_detail = NULL;
+				prev_y = 0;
+			}
 
-		} else if( !line->sdate && !line->svaleur && !line->sdebit && !line->scredit && prev_detail ){
+		} else if( !line->sdate && !line->svaleur &&
+				!line->sdebit && !line->scredit && prev_detail &&
+				line->y-prev_y <= 3*st_half_y ){
 			str = g_strdup_printf( "%s / %s", prev_detail->label, line->slabel );
 			g_free( prev_detail->label );
 			prev_detail->label = str;
