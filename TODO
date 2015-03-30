@@ -406,16 +406,11 @@
                 those which are associated with the current account
                 number (if any) - of those which are not yet associated
 
- 753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
-                using ofoBat object instead of bat_id
-
  754 2015- 3-21 add unused count to bat page treeview
 
  755 2015- 3-21 add DBMS version to dossier properties
 
  756 2015- 3-21 use my_utils_dialog_yesno() function
-
- 757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
 
  758 2015- 3-21 warns when deleting a settled or reconciliated entry
                 +unsettle/unreconciliate
@@ -3436,6 +3431,13 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
+                using ofoBat object instead of bat_id
+     2015- 3-28 done in v0.37
+
+ 757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
+     2015- 3-29 done in v0.38
 
  762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
      2015- 3-28 done - git #bca6ea7

@@ -21,7 +21,7 @@
 
  Bug fixes:
 
-   - 
+   - Improve ledger closing checks before validation (todo #772).
 
  Other changes:
 

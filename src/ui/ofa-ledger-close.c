@@ -49,7 +49,6 @@ struct _ofaLedgerClosePrivate {
 
 	gboolean            done;			/* whether we have actually done something */
 	GDate               closing;
-	gboolean            valid;			/* reset after each date change */
 
 	/* UI
 	 */
@@ -62,7 +61,7 @@ struct _ofaLedgerClosePrivate {
 	/* during the iteration on each selected ledger
 	 */
 	gint                count;			/* count of ledgers */
-	gint                closeable;
+	gint                uncloseable;
 	GList              *handlers;
 	guint               entries_count;	/* count of validated entries for the ledger */
 	guint               entries_num;
@@ -205,6 +204,7 @@ v_init_dialog( myDialog *dialog )
 	GtkButton *button;
 	GtkLabel *label;
 	GtkWidget *parent;
+	GdkRGBA color;
 
 	priv = OFA_LEDGER_CLOSE( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -229,6 +229,8 @@ v_init_dialog( myDialog *dialog )
 	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
+	gdk_rgba_parse( &color, "#ff0000" );
+	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 
 	priv->closing_entry = my_utils_container_get_child_by_name( container, "p1-date" );
 	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
@@ -289,28 +291,11 @@ static void
 on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
-	const GDate *exe_end;
 
 	priv = self->priv;
-	priv->valid = FALSE;
+
 	my_date_set_from_date( &priv->closing,
 			my_editable_date_get_date( GTK_EDITABLE( priv->closing_entry ), NULL ));
-
-	if( !my_date_is_valid( &priv->closing )){
-		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
-
-	} else {
-		/* the date must be strictly less than the end of exercice */
-		exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier );
-		if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) < 0 ){
-			priv->valid = TRUE;
-			gtk_label_set_text( priv->message_label, "" );
-
-		} else {
-			gtk_label_set_text( priv->message_label,
-					_( "Closing date must be before the end of exercice" ));
-		}
-	}
 
 	check_for_enable_dlg( self, NULL );
 }
@@ -324,47 +309,79 @@ check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 }
 
 /*
- * an intermediate cloture is allowed if the proposed closing date is
- * valid, and greater that at least one of the previous closing dates
+ * the closing date is valid:
+ * - if it is itself valid
+ * - greater or equal to the begin of the exercice (if set)
+ * - stricly lesser than the end of the exercice (if set)
+ * - greater or equal than all selected ledger closing dates (if set)
  */
 static gboolean
 is_dialog_validable( ofaLedgerClose *self, GList *selected )
 {
 	ofaLedgerClosePrivate *priv;
-	GList *selection, *it;
+	GList *it;
 	gboolean ok;
+	const GDate *exe_begin, *exe_end;
+	gboolean selected_here;
 
 	priv = self->priv;
+	gtk_label_set_text( priv->message_label, "" );
+	ok = FALSE;
 
-	/* do we have a intrinsically valid proposed closing date ? */
-	ok = priv->valid;
+	/* do we have a intrinsically valid proposed closing date
+	 * + compare it to the limits of the exercice */
+	if( !my_date_is_valid( &priv->closing )){
+		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
 
-	/* check that each ledger is not yet closed for this date */
+	} else {
+		exe_begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->prot->dossier );
+		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) < 0 ){
+			gtk_label_set_text( priv->message_label,
+					_( "Closing date must be greater or equal to the beginning of exercice" ));
+
+		} else {
+			exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier );
+			if( my_date_is_valid( exe_end ) && my_date_compare( &priv->closing, exe_end ) >= 0 ){
+				gtk_label_set_text( priv->message_label,
+						_( "Closing date must be lesser than the end of exercice" ));
+
+			} else {
+				ok = TRUE;
+			}
+		}
+	}
+
+	/* check that each selecter ledger is not yet closed for this date */
 	if( ok ){
 		priv->count = 0;
-		priv->closeable = 0;
+		priv->uncloseable = 0;
+		ok = FALSE;
 
-		selection = NULL;
+		selected_here = FALSE;
 		if( !selected ){
-			selection = ofa_ledger_treeview_get_selected( priv->tview );
-			selected = selection;
+			selected = ofa_ledger_treeview_get_selected( priv->tview );
+			selected_here = TRUE;
 		}
 
 		for( it=selected ; it ; it=it->next ){
 			check_foreach_ledger( self, ( const gchar * ) it->data );
 		}
 
-		if( !priv->closeable ){
-			gtk_label_set_text( priv->message_label, _( "None of the selected ledgers is closeable at the proposed date" ));
-			ok = FALSE;
+		if( priv->count == 0 ){
+			gtk_label_set_text( priv->message_label,
+					_( "No selected ledger" ));
+
+		} else if( priv->uncloseable > 0 ){
+			gtk_label_set_text( priv->message_label,
+					_( "At least one of the selected ledgers is not closeable at the proposed date" ));
+
+		} else {
+			ok = TRUE;
 		}
 
-		if( selection ){
-			ofa_ledger_treeview_free_selected( selection );
+		if( selected_here ){
+			ofa_ledger_treeview_free_selected( selected );
 		}
-	}
-	if( ok ){
-		gtk_label_set_text( priv->message_label, "" );
 	}
 
 	return( ok );
@@ -378,17 +395,15 @@ check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
 	const GDate *last;
 
 	priv = self->priv;
+	g_return_if_fail( my_date_is_valid( &priv->closing ));
 	priv->count += 1;
 
 	ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	last = ofo_ledger_get_last_close( ledger );
-
-	g_return_if_fail( my_date_is_valid( &priv->closing ));
-
-	if( !my_date_is_valid( last ) || my_date_compare( &priv->closing, last ) > 0 ){
-		priv->closeable += 1;
+	if( my_date_is_valid( last ) && my_date_compare( &priv->closing, last ) < 0 ){
+		priv->uncloseable += 1;
 	}
 }
 
@@ -427,7 +442,6 @@ do_close( ofaLedgerClose *self )
 	priv = self->priv;
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	ok = is_dialog_validable( self, selected );
-
 	g_return_val_if_fail( ok, FALSE );
 
 	dialog = gtk_dialog_new_with_buttons(
