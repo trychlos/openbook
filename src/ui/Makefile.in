@@ -131,15 +131,16 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-editable-date.$(OBJEXT) my-field-combo.$(OBJEXT) \
 	my-progress-bar.$(OBJEXT) my-tab-label.$(OBJEXT) \
 	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
-	ofa-account-store.$(OBJEXT) ofa-accounts-book.$(OBJEXT) \
-	ofa-accounts-frame.$(OBJEXT) ofa-accounts-page.$(OBJEXT) \
-	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
-	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
-	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
-	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
-	ofa-bat-utils.$(OBJEXT) ofa-bats-page.$(OBJEXT) \
-	ofa-buttons-box.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
-	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
+	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
+	ofa-accounts-book.$(OBJEXT) ofa-accounts-frame.$(OBJEXT) \
+	ofa-accounts-page.$(OBJEXT) ofa-application.$(OBJEXT) \
+	ofa-backup.$(OBJEXT) ofa-balances-grid.$(OBJEXT) \
+	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
+	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
+	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
+	ofa-bats-page.$(OBJEXT) ofa-buttons-box.$(OBJEXT) \
+	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
+	ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-classes-page.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
@@ -488,6 +489,8 @@ openbook_SOURCES = \
 	ofa-account-properties.h							\
 	ofa-account-select.c								\
 	ofa-account-select.h								\
+	ofa-account-selector-bin.c							\
+	ofa-account-selector-bin.h							\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
 	ofa-accounts-book.c									\
@@ -669,6 +672,7 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
+	ofa-account-selector-bin.ui							\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\
@@ -856,6 +860,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-frame.Po@am__quote@
