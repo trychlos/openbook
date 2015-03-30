@@ -609,12 +609,15 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFBooksPrivate *priv;
 	GList *dataset;
+	const gchar *from_account, *to_account;
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
+	from_account = priv->all_accounts ? NULL : priv->from_account;
+	to_account = priv->all_accounts ? NULL : priv->to_account;
 
 	dataset = ofo_entry_get_dataset_for_print_general_books(
 							MY_WINDOW( instance )->prot->dossier,
-							priv->from_account, priv->to_account,
+							from_account, to_account,
 							&priv->from_date, &priv->to_date );
 
 	priv->count = g_list_length( dataset );
@@ -891,26 +894,28 @@ draw_account_report( ofaPDFBooks *self, GtkPrintOperation *operation, GtkPrintCo
 
 	y = ofa_iprintable_get_last_y( OFA_IPRINTABLE( self ));
 
-	/* account number */
-	ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
-			priv->body_accnumber_ltab, y,
-			ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
+	if( context ){
+		/* account number */
+		ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
+				priv->body_accnumber_ltab, y,
+				ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
 
-	/* account label */
-	ofa_iprintable_ellipsize_text( OFA_IPRINTABLE( self ), context,
-			priv->body_acclabel_ltab, y,
-			ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
+		/* account label */
+		ofa_iprintable_ellipsize_text( OFA_IPRINTABLE( self ), context,
+				priv->body_acclabel_ltab, y,
+				ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
 
-	/* current account balance */
-	str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
-	ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
-			priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		/* current account balance */
+		str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
+		ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
+				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
 
-	str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
-	ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
-			priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
+		ofa_iprintable_set_text( OFA_IPRINTABLE( self ), context,
+				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+	}
 
 	/* current account solde */
 	if( with_solde ){

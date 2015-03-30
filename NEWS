@@ -24,6 +24,8 @@
    - Improve ledger closing checks before validation (todo #772).
    - Import PDF: make sure we do not import empty lines.
    - Fix entry_load_dataset() query build.
+   - GeneralBooks: doesn't try to print while computing count of pages
+     (todo #782).
 
  Other changes:
 

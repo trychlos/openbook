@@ -1,5 +1,8 @@
 2015-03-30 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-pdf-books.c: doesn't try to print while computing the
+	count of pages (todo #782).
+
 	* src/import-bourso-pdf/ofa-importer.c,
 	* src/import-lcl-pdf/ofa-importer.c: make sure we do not import empty lines.
 
