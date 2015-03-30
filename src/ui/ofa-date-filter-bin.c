@@ -68,7 +68,7 @@ static void     get_settings( ofaDateFilterBin *bin );
 static void     set_settings( ofaDateFilterBin *bin );
 
 static void
-check_integrity_bin_finalize( GObject *instance )
+date_filter_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_date_filter_bin_finalize";
 	ofaDateFilterBinPrivate *priv;
@@ -88,7 +88,7 @@ check_integrity_bin_finalize( GObject *instance )
 }
 
 static void
-check_integrity_bin_dispose( GObject *instance )
+date_filter_bin_dispose( GObject *instance )
 {
 	ofaDateFilterBinPrivate *priv;
 
@@ -128,8 +128,8 @@ ofa_date_filter_bin_class_init( ofaDateFilterBinClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = check_integrity_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = check_integrity_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = date_filter_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = date_filter_bin_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaDateFilterBinPrivate ));
 
@@ -294,7 +294,7 @@ ofa_date_filter_bin_get_from( const ofaDateFilterBin *bin )
  * ofa_date_filter_bin_set_from:
  */
 void
-ofa_date_filter_bin_set_from( ofaDateFilterBin *bin, const GDate *from)
+ofa_date_filter_bin_set_from( ofaDateFilterBin *bin, const GDate *from )
 {
 	ofaDateFilterBinPrivate *priv;
 
@@ -332,7 +332,7 @@ ofa_date_filter_bin_get_to( const ofaDateFilterBin *bin )
  * ofa_date_filter_bin_set_to:
  */
 void
-ofa_date_filter_bin_set_to( ofaDateFilterBin *bin, const GDate *to)
+ofa_date_filter_bin_set_to( ofaDateFilterBin *bin, const GDate *to )
 {
 	ofaDateFilterBinPrivate *priv;
 
