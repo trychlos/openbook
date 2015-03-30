@@ -432,7 +432,11 @@
 
  771 2015- 3-28 when converting entries, have a table to convert accounts
 
- 778
+ 778 2015- 3-30 use ofaAccountSelector where appropriate
+
+ 779 2015- 3-30 import settleable indicator from EBP
+
+ 780
 
 -----------------------------------------------------------------------
  DONE

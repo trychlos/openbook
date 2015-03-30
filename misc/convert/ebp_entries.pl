@@ -21,6 +21,13 @@ my $opt_verbose = 0;
 my $opt_stamp_def = "yes";
 my $opt_stamp = 1;
 
+my $opt_account_def = "";
+my $opt_account = $opt_account_def;
+my $conv_accounts = {};
+my $opt_ledger_def = "";
+my $opt_ledger = $opt_ledger_def;
+my $conv_ledgers = {};
+
 # ---------------------------------------------------------------------
 # signal handlers
 
@@ -106,8 +113,68 @@ sub msgprint
 	print $fd $str;
 }
 
-my $my_brief = "Converts Entries from EBP to Openbook csv format";
-my $my_version = "0.38";
+# ---------------------------------------------------------------------
+# read a conversion file into a hash and returns it
+#   Conversion file are very sample:
+#   first all after the first sharp of the line is supposed to be a comment
+#   empty lines are ignored
+#   conversion must be specified as two spaces-separated values as in
+#   <old_value>  <new_value> 
+#
+# (E): 1. input filename
+
+sub read_convert_file
+{
+	my $infile = shift;
+	my $res = {};
+	my $fh;
+	my $count = 0;
+	if( ! -r $infile ){
+		msgerr "$infile: file not found or not readable";
+		$errs += 1;
+	} elsif( !open( $fh, "<$infile" )){
+		msgerr "$infile: $!";
+		$errs += 1;
+	} else {
+		my $line;
+		while( <$fh> ){
+			chomp;
+			$line = $_;
+			$line =~ s/#.*//;
+			if( $line ne "" ){
+				my ( $acc_src, $acc_dest ) = split /\s+/, $line;
+				if( $acc_src ne "" && $acc_dest ne "" ){
+					$res->{$acc_src} = $acc_dest;
+					$count += 1;
+				}
+			}
+		}
+		close( $fh );
+		print STDERR "$count conversion lines read from $infile\n";
+	}
+	return $res;
+}
+
+# ---------------------------------------------------------------------
+# convert a data throught the external conversion file if any
+#
+# (E): 1. ref to the hash which holds the conversion data
+#      2. data value to be converted
+
+sub apply_convert_file
+{
+	my $ref = shift;
+	my $value = shift;
+	my $out = $value;
+	if( $value ne "" && defined( $ref->{$value} )){
+		$out = $ref->{$value};
+		$out = $value if $out eq "";
+	}
+	return( $out );
+}
+
+my $my_brief = "Converts EBP entries to Openbook csv format";
+my $my_version = "0.39";
 
 my $debug;
 
@@ -119,6 +186,8 @@ sub msg_help(){
  Usage: $0 [options] < 'ebp_file' > 'openbook_file'
    --[no]help                 print this message, and exit [${opt_help_def}]
    --[no]stamp                display messages with a timestamp [${opt_stamp_def}]
+   --accounts=<path>          use an account conversion file [${opt_account_def}]
+   --ledgers=<path>           use an ledger conversion file [${opt_ledger_def}]
 ";
 }
 
@@ -131,11 +200,21 @@ sub msg_version(){
 
 if( !GetOptions(
 	"help!"				=> \$opt_help,
-	"stamp!"			=> \$opt_stamp
+	"stamp!"			=> \$opt_stamp,
+	"account=s"			=> \$opt_account,
+	"ledger=s"			=> \$opt_ledger
 	)){
 		msg "try '${0} --help' to get full usage syntax\n";
 		$errs = 1;
 		exit;
+}
+
+$conv_accounts = read_convert_file( $opt_account ) if $opt_account ne "";
+$conv_ledgers = read_convert_file( $opt_ledger ) if $opt_ledger ne "";
+
+if( $errs ){
+	msg "try '${0} --help' to get full usage syntax\n";
+	exit;
 }
 
 #print "nbopts=$nbopts\n";
@@ -191,9 +270,9 @@ sub mapping
 	my $label = $infields[13];
 	my $ref = $infields[11];
 	# curency is not set
-	my $ledger = $infields[1];
+	my $ledger = apply_convert_file( $conv_ledgers, $infields[1] );
 	# operation template is not set
-	my $account = $infields[2];
+	my $account = apply_convert_file( $conv_accounts, $infields[2] );
 	my $debit = convert_amount( $infields[14] );
 	my $credit = convert_amount( $infields[15] );
 	my $settlement = $infields[28] eq "oui" ? "True" : "";

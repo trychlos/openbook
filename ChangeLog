@@ -1,5 +1,10 @@
 2015-03-30 Pierre Wieser <pwieser@trychlos.org>
 
+	Have table conversion on import scripts (todo #771).
+
+	* misc/convert/ebp_accounts.pl,
+	* misc/convert/ebp_entries.pl: have account and ledger convertors.
+
 	Move ACCOUNT_ALLOW_xxx feature to ofoAccount class.
 
 	* src/api/ofo-account.h,
