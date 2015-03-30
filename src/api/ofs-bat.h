@@ -80,9 +80,11 @@ typedef struct {
 #define OFS_BAT_LAST_VERSION            1
 #define OFS_BAT_DETAIL_LAST_VERSION     1
 
-void ofs_bat_dump( const ofsBat *bat );
+void ofs_bat_dump       ( const ofsBat *bat );
 
-void ofs_bat_free( ofsBat *bat );
+void ofs_bat_free       ( ofsBat *bat );
+
+void ofs_bat_detail_free( ofsBatDetail *detail );
 
 G_END_DECLS
 

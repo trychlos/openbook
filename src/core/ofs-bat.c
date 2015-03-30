@@ -32,7 +32,6 @@
 #include "api/ofs-bat.h"
 
 static void bat_dump_detail( ofsBatDetail *detail, const gchar *thisfn );
-static void bat_free_detail( ofsBatDetail *detail );
 
 /**
  * ofs_bat_dump:
@@ -91,7 +90,7 @@ bat_dump_detail( ofsBatDetail *detail, const gchar *thisfn )
 void
 ofs_bat_free( ofsBat *bat )
 {
-	g_list_free_full( bat->details, ( GDestroyNotify ) bat_free_detail );
+	g_list_free_full( bat->details, ( GDestroyNotify ) ofs_bat_detail_free );
 
 	g_free( bat->uri );
 	g_free( bat->format );
@@ -100,8 +99,12 @@ ofs_bat_free( ofsBat *bat )
 	g_free( bat );
 }
 
-static void
-bat_free_detail( ofsBatDetail *detail )
+/**
+ * ofs_bat_detail_free:
+ * @detail:
+ */
+void
+ofs_bat_detail_free( ofsBatDetail *detail )
 {
 	g_free( detail->ref );
 	g_free( detail->label );
