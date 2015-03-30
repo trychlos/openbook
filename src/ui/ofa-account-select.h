@@ -62,20 +62,6 @@ typedef struct {
 }
 	ofaAccountSelectClass;
 
-/**
- * When selecting an account, specify which type of account if allowed
- * to be selected
- * Note that closed account are never allowed, unless explicitely specified.
- */
-enum {
-	OFA_ALLOW_ROOT          = 1 << 0,
-	OFA_ALLOW_DETAIL        = 1 << 1,
-	OFA_ALLOW_SETTLEABLE    = 1 << 2,
-	OFA_ALLOW_RECONCILIABLE = 1 << 3,
-	OFA_ALLOW_CLOSED        = 1 << 4,
-	OFA_ALLOW_ALL = OFA_ALLOW_ROOT | OFA_ALLOW_DETAIL
-};
-
 GType  ofa_account_select_get_type( void ) G_GNUC_CONST;
 
 gchar *ofa_account_select_run     ( const ofaMainWindow *main_window,

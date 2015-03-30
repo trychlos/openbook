@@ -1001,7 +1001,7 @@ do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row )
 
 	priv = bin->priv;
 
-	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ), OFA_ALLOW_DETAIL );
+	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
 	if( my_strlen( number )){
 		priv->focused_row = row;
 		priv->focused_column = OPE_COL_ACCOUNT;

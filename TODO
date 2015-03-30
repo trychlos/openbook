@@ -432,10 +432,6 @@
 
  771 2015- 3-28 when converting entries, have a table to convert accounts
 
- 772 2015- 3-28 review ledger closing dialog: may be date check should
-                be moved to is_dialog_validable() function + all ledgers
-                should be closeable
-
  778
 
 -----------------------------------------------------------------------
@@ -3463,6 +3459,11 @@
 
  770 2015- 3-28 have my_collate()
      2015- 3-28 done - git #c86b583
+
+ 772 2015- 3-28 review ledger closing dialog: may be date check should
+                be moved to is_dialog_validable() function + all ledgers
+                should be closeable
+     2015- 3-30 done - git #ccb7ba9
 
  773 2015- 3-28 Settlement: have a light background to indicate the
                 settled entries

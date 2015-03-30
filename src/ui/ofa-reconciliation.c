@@ -953,7 +953,7 @@ do_account_selection( ofaReconciliation *self )
 	number = ofa_account_select_run(
 					ofa_page_get_main_window( OFA_PAGE( self )),
 					account_number,
-					OFA_ALLOW_RECONCILIABLE );
+					ACCOUNT_ALLOW_RECONCILIABLE );
 
 	if( my_strlen( number )){
 		gtk_entry_set_text( priv->account_entry, number );

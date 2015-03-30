@@ -72,7 +72,6 @@ static void      on_account_changed( ofaAccountsFrame *piece, const gchar *numbe
 static void      on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
-static gboolean  is_selection_valid_by_account( ofaAccountSelect *self, const ofoAccount *account );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
 static void      set_message( ofaAccountSelect *self, const gchar *str );
@@ -264,7 +263,7 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 	g_object_unref( account );
 
-	if( GTK_IS_CELL_RENDERER_TEXT( cell ) && !is_selection_valid_by_account( self, account )){
+	if( GTK_IS_CELL_RENDERER_TEXT( cell ) && !ofo_account_is_allowed( account, priv->allowed )){
 		gdk_rgba_parse( &color, "#b0b0b0" );
 		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
@@ -304,9 +303,11 @@ check_for_enable_dlg( ofaAccountSelect *self )
 static gboolean
 is_selection_valid( ofaAccountSelect *self, const gchar *number )
 {
+	ofaAccountSelectPrivate *priv;
 	gboolean ok;
 	ofoAccount *account;
 
+	priv = self->priv;
 	ok = FALSE;
 	set_message( self, "" );
 
@@ -314,52 +315,8 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 		account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-		ok = is_selection_valid_by_account( self, account );
+		ok = ofo_account_is_allowed( account, priv->allowed );
 	}
-
-	return( ok );
-}
-
-static gboolean
-is_selection_valid_by_account( ofaAccountSelect *self, const ofoAccount *account )
-{
-	ofaAccountSelectPrivate *priv;
-	gboolean ok;
-
-	priv = self->priv;
-	ok = FALSE;
-
-	if( !ofo_account_is_closed( account ) || ( priv->allowed & OFA_ALLOW_CLOSED )){
-
-		if( !ok && ( priv->allowed & OFA_ALLOW_ALL )){
-			ok = TRUE;
-		}
-		if( !ok && ( priv->allowed & OFA_ALLOW_ROOT )){
-			if( ofo_account_is_root( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( priv->allowed & OFA_ALLOW_DETAIL )){
-			if( !ofo_account_is_root( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( priv->allowed & OFA_ALLOW_SETTLEABLE )){
-			if( ofo_account_is_settleable( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( priv->allowed & OFA_ALLOW_RECONCILIABLE )){
-			if( ofo_account_is_reconciliable( account )){
-				ok = TRUE;
-			}
-		}
-	}
-
-	/*
-	g_debug( "is_selection_valid_by_account: allowed=%u, number=%s, ok=%s",
-			priv->allowed, ofo_account_get_number( account ), ok ? "True":"False" );
-	*/
 
 	return( ok );
 }

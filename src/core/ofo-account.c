@@ -1378,6 +1378,56 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
 }
 
 /**
+ * ofo_account_is_allowed:
+ * @account:
+ * @allowables:
+ *
+ * Returns: %TRUE if the @account is allowed regarding the specifications
+ * if @allowables.
+ */
+gboolean
+ofo_account_is_allowed( const ofoAccount *account, gint allowables )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+	ok = FALSE;
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		if( !ofo_account_is_closed( account ) || ( allowables & ACCOUNT_ALLOW_CLOSED )){
+
+			if( !ok && ( allowables & ACCOUNT_ALLOW_ALL )){
+				ok = TRUE;
+			}
+			if( !ok && ( allowables & ACCOUNT_ALLOW_ROOT )){
+				if( ofo_account_is_root( account )){
+					ok = TRUE;
+				}
+			}
+			if( !ok && ( allowables & ACCOUNT_ALLOW_DETAIL )){
+				if( !ofo_account_is_root( account )){
+					ok = TRUE;
+				}
+			}
+			if( !ok && ( allowables & ACCOUNT_ALLOW_SETTLEABLE )){
+				if( ofo_account_is_settleable( account )){
+					ok = TRUE;
+				}
+			}
+			if( !ok && ( allowables & ACCOUNT_ALLOW_RECONCILIABLE )){
+				if( ofo_account_is_reconciliable( account )){
+					ok = TRUE;
+				}
+			}
+		}
+	}
+
+	return( ok );
+}
+
+/**
  * ofo_account_has_open_balances:
  * @dossier: the currently opened dossier.
  *

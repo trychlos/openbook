@@ -25,7 +25,7 @@
 
  Other changes:
 
-   - 
+   - ofo_account_is_allowed(): new method.
 
 -----------------------------------------------------------------------
  Version 0.38

@@ -1,5 +1,22 @@
 2015-03-30 Pierre Wieser <pwieser@trychlos.org>
 
+	Move ACCOUNT_ALLOW_xxx feature to ofoAccount class.
+
+	* src/api/ofo-account.h,
+	* src/core/ofo-account.c: new ofo_account_is_allowed() method.
+
+	* src/ui/ofa-account-select.c,
+	* src/ui/ofa-account-select.h,
+	* src/ui/ofa-closing-parms-bin.c,
+	* src/ui/ofa-guided-input-bin.c,
+	* src/ui/ofa-ope-template-properties.c,
+	* src/ui/ofa-pdf-books.c,
+	* src/ui/ofa-pdf-entries-balance.c,
+	* src/ui/ofa-pdf-reconcil.c,
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-settlement.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
+
 	* src/ui/ofa-ledger-close.c: review dialog validation (todo #772).
 
 2015-03-29 Pierre Wieser <pwieser@trychlos.org>

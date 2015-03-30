@@ -48,6 +48,20 @@ G_BEGIN_DECLS
 #define ACCOUNT_FORWARDABLE             "F"
 #define ACCOUNT_CLOSED                  "C"
 
+/**
+ * When selecting an account, specify which type of account if allowed
+ * to be selected
+ * Note that closed account are never allowed, unless explicitely specified.
+ */
+enum {
+	ACCOUNT_ALLOW_ROOT          = 1 << 0,
+	ACCOUNT_ALLOW_DETAIL        = 1 << 1,
+	ACCOUNT_ALLOW_SETTLEABLE    = 1 << 2,
+	ACCOUNT_ALLOW_RECONCILIABLE = 1 << 3,
+	ACCOUNT_ALLOW_CLOSED        = 1 << 4,
+	ACCOUNT_ALLOW_ALL = ACCOUNT_ALLOW_ROOT | ACCOUNT_ALLOW_DETAIL
+};
+
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 
 GList          *ofo_account_get_dataset          ( ofoDossier *dossier );
@@ -92,6 +106,7 @@ gdouble         ofo_account_get_global_solde     ( const ofoAccount *account );
 gboolean        ofo_account_has_children         ( const ofoAccount *account, ofoDossier *dossier );
 GList          *ofo_account_get_children         ( const ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_is_child_of          ( const ofoAccount *account, const ofoAccount *candidate );
+gboolean        ofo_account_is_allowed           ( const ofoAccount *account, gint allowables );
 
 gboolean        ofo_account_has_open_balance     ( const ofoDossier *dossier );
 gboolean        ofo_account_archive_open_balance ( ofoAccount *account, ofoDossier *dossier );

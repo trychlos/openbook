@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-account.h"
 #include "api/ofo-ope-template.h"
 
 #include "core/my-window-prot.h"
@@ -710,7 +711,7 @@ on_account_selection( ofaOpeTemplateProperties *self, gint row )
 	number = ofa_account_select_run(
 					MY_WINDOW( self )->prot->main_window,
 					gtk_entry_get_text( entry ),
-					OFA_ALLOW_DETAIL );
+					ACCOUNT_ALLOW_DETAIL );
 	if( my_strlen( number )){
 		gtk_entry_set_text( entry, number );
 	}
