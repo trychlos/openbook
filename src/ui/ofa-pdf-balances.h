@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PDF_ENTRIES_BALANCE_H__
-#define __OFA_PDF_ENTRIES_BALANCE_H__
+#ifndef __OFA_PDF_BALANCES_H__
+#define __OFA_PDF_BALANCES_H__
 
 /**
- * SECTION: ofa_pdf_entries_balance
- * @short_description: #ofaPDFEntriesBalance class definition.
- * @include: ui/ofa-print-reconcil.h
+ * SECTION: ofa_pdf_balances
+ * @short_description: #ofaPDFBalances class definition.
+ * @include: ui/ofa-pdf-balances.h
  *
  * Print the balances of entries between two dates.
  *
@@ -42,34 +42,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_PDF_ENTRIES_BALANCE                ( ofa_pdf_entries_balance_get_type())
-#define OFA_PDF_ENTRIES_BALANCE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PDF_ENTRIES_BALANCE, ofaPDFEntriesBalance ))
-#define OFA_PDF_ENTRIES_BALANCE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PDF_ENTRIES_BALANCE, ofaPDFEntriesBalanceClass ))
-#define OFA_IS_PDF_ENTRIES_BALANCE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PDF_ENTRIES_BALANCE ))
-#define OFA_IS_PDF_ENTRIES_BALANCE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PDF_ENTRIES_BALANCE ))
-#define OFA_PDF_ENTRIES_BALANCE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PDF_ENTRIES_BALANCE, ofaPDFEntriesBalanceClass ))
+#define OFA_TYPE_PDF_BALANCES                ( ofa_pdf_balances_get_type())
+#define OFA_PDF_BALANCES( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PDF_BALANCES, ofaPDFBalances ))
+#define OFA_PDF_BALANCES_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PDF_BALANCES, ofaPDFBalancesClass ))
+#define OFA_IS_PDF_BALANCES( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PDF_BALANCES ))
+#define OFA_IS_PDF_BALANCES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PDF_BALANCES ))
+#define OFA_PDF_BALANCES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PDF_BALANCES, ofaPDFBalancesClass ))
 
-typedef struct _ofaPDFEntriesBalancePrivate        ofaPDFEntriesBalancePrivate;
+typedef struct _ofaPDFBalancesPrivate        ofaPDFBalancesPrivate;
 
 typedef struct {
 	/*< public members >*/
 	ofaPDFDialog          parent;
 
 	/*< private members >*/
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 }
-	ofaPDFEntriesBalance;
+	ofaPDFBalances;
 
 typedef struct {
 	/*< public members >*/
 	ofaPDFDialogClass     parent;
 }
-	ofaPDFEntriesBalanceClass;
+	ofaPDFBalancesClass;
 
-GType    ofa_pdf_entries_balance_get_type( void ) G_GNUC_CONST;
+GType    ofa_pdf_balances_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_pdf_entries_balance_run     ( ofaMainWindow *parent );
+gboolean ofa_pdf_balances_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 
-#endif /* __OFA_PDF_ENTRIES_BALANCE_H__ */
+#endif /* __OFA_PDF_BALANCES_H__ */

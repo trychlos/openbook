@@ -46,11 +46,11 @@
 #include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-pdf-entries-balance.h"
+#include "ui/ofa-pdf-balances.h"
 
 /* private instance data
  */
-struct _ofaPDFEntriesBalancePrivate {
+struct _ofaPDFBalancesPrivate {
 
 	gboolean          printed;
 
@@ -114,14 +114,14 @@ typedef struct {
 }
 	sCurrency;
 
-static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-entries-balance.ui";
-static const gchar *st_ui_id             = "PrintBalanceDlg";
+static const gchar *st_ui_xml            = PKGUIDIR "/ofa-print-balances.ui";
+static const gchar *st_ui_id             = "PrintBalancesDlg";
 
-static const gchar *st_pref_uri          = "PDFEntriesBalanceURI";
-static const gchar *st_pref_settings     = "PDFEntriesBalanceSettings";
-static const gchar *st_pref_dates        = "PDFEntriesBalanceDates";
+static const gchar *st_pref_uri          = "PDFBalancesURI";
+static const gchar *st_pref_settings     = "PDFBalancesSettings";
+static const gchar *st_pref_dates        = "PDFBalancesDates";
 
-static const gchar *st_def_fname         = "EntriesBalance.pdf";
+static const gchar *st_def_fname         = "Balances.pdf";
 static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 
 /* these are parms which describe the page layout
@@ -151,22 +151,22 @@ static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 static void     iprintable_iface_init( ofaIPrintableInterface *iface );
 static guint    iprintable_get_interface_version( const ofaIPrintable *instance );
 static void     v_init_dialog( myDialog *dialog );
-static void     init_account_selection( ofaPDFEntriesBalance *self );
-static void     init_date_selection( ofaPDFEntriesBalance *self );
-static void     init_others( ofaPDFEntriesBalance *self );
-static void     on_from_account_changed( GtkEntry *entry, ofaPDFEntriesBalance *self );
-static void     on_from_account_select( GtkButton *button, ofaPDFEntriesBalance *self );
-static void     on_to_account_changed( GtkEntry *entry, ofaPDFEntriesBalance *self );
-static void     on_to_account_select( GtkButton *button, ofaPDFEntriesBalance *self );
-static void     on_account_changed( ofaPDFEntriesBalance *self, GtkEntry *entry, GtkWidget *label, gchar **dest );
-static void     on_account_select( GtkButton *button, ofaPDFEntriesBalance *self, GtkWidget *entry );
-static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
-static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
-static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
-static void     on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFEntriesBalance *self );
-static void     check_for_validable_dlg( ofaPDFEntriesBalance *self );
+static void     init_account_selection( ofaPDFBalances *self );
+static void     init_date_selection( ofaPDFBalances *self );
+static void     init_others( ofaPDFBalances *self );
+static void     on_from_account_changed( GtkEntry *entry, ofaPDFBalances *self );
+static void     on_from_account_select( GtkButton *button, ofaPDFBalances *self );
+static void     on_to_account_changed( GtkEntry *entry, ofaPDFBalances *self );
+static void     on_to_account_select( GtkButton *button, ofaPDFBalances *self );
+static void     on_account_changed( ofaPDFBalances *self, GtkEntry *entry, GtkWidget *label, gchar **dest );
+static void     on_account_select( GtkButton *button, ofaPDFBalances *self, GtkWidget *entry );
+static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalances *self );
+static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFBalances *self );
+static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFBalances *self );
+static void     on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self );
+static void     check_for_validable_dlg( ofaPDFBalances *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
-static gboolean do_apply( ofaPDFEntriesBalance *self );
+static gboolean do_apply( ofaPDFBalances *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
 static void     iprintable_free_dataset( GList *elements );
 static void     iprintable_reset_runtime( ofaIPrintable *instance );
@@ -184,12 +184,12 @@ static void     iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintO
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, const gchar *title );
 static void     draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context, GList *list, gdouble top, const gchar *title );
-static GList   *add_account_balance( ofaPDFEntriesBalance *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
+static GList   *add_account_balance( ofaPDFBalances *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
-static void     get_settings( ofaPDFEntriesBalance *self );
-static void     set_settings( ofaPDFEntriesBalance *self );
+static void     get_settings( ofaPDFBalances *self );
+static void     set_settings( ofaPDFBalances *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaPDFEntriesBalance, ofa_pdf_entries_balance, OFA_TYPE_PDF_DIALOG, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaPDFBalances, ofa_pdf_balances, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
 
 static void
@@ -200,30 +200,30 @@ free_currency( sCurrency *total_per_currency )
 }
 
 static void
-pdf_entries_balance_finalize( GObject *instance )
+pdf_balances_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_finalize";
-	ofaPDFEntriesBalancePrivate *priv;
+	static const gchar *thisfn = "ofa_pdf_balances_finalize";
+	ofaPDFBalancesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_PDF_ENTRIES_BALANCE( instance ));
+	g_return_if_fail( instance && OFA_IS_PDF_BALANCES( instance ));
 
 	/* free data members here */
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 	g_free( priv->from_account );
 	g_free( priv->to_account );
 	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_pdf_entries_balance_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_pdf_balances_parent_class )->finalize( instance );
 }
 
 static void
-pdf_entries_balance_dispose( GObject *instance )
+pdf_balances_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_PDF_ENTRIES_BALANCE( instance ));
+	g_return_if_fail( instance && OFA_IS_PDF_BALANCES( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
@@ -231,21 +231,21 @@ pdf_entries_balance_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_pdf_entries_balance_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_pdf_balances_parent_class )->dispose( instance );
 }
 
 static void
-ofa_pdf_entries_balance_init( ofaPDFEntriesBalance *self )
+ofa_pdf_balances_init( ofaPDFBalances *self )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_instance_init";
-	ofaPDFEntriesBalancePrivate *priv;
+	static const gchar *thisfn = "ofa_pdf_balances_instance_init";
+	ofaPDFBalancesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_PDF_ENTRIES_BALANCE( self ));
+	g_return_if_fail( self && OFA_IS_PDF_BALANCES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PDF_ENTRIES_BALANCE, ofaPDFEntriesBalancePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PDF_BALANCES, ofaPDFBalancesPrivate );
 	priv = self->priv;
 
 	priv->printed = FALSE;
@@ -253,25 +253,25 @@ ofa_pdf_entries_balance_init( ofaPDFEntriesBalance *self )
 }
 
 static void
-ofa_pdf_entries_balance_class_init( ofaPDFEntriesBalanceClass *klass )
+ofa_pdf_balances_class_init( ofaPDFBalancesClass *klass )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_class_init";
+	static const gchar *thisfn = "ofa_pdf_balances_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = pdf_entries_balance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = pdf_entries_balance_finalize;
+	G_OBJECT_CLASS( klass )->dispose = pdf_balances_dispose;
+	G_OBJECT_CLASS( klass )->finalize = pdf_balances_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 
-	g_type_class_add_private( klass, sizeof( ofaPDFEntriesBalancePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaPDFBalancesPrivate ));
 }
 
 static void
 iprintable_iface_init( ofaIPrintableInterface *iface )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_iprintable_iface_init";
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -300,16 +300,16 @@ iprintable_get_interface_version( const ofaIPrintable *instance )
 }
 
 /**
- * ofa_pdf_entries_balance_run:
+ * ofa_pdf_balances_run:
  * @main: the main window of the application.
  *
  * Print the accounts balance
  */
 gboolean
-ofa_pdf_entries_balance_run( ofaMainWindow *main_window )
+ofa_pdf_balances_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_run";
-	ofaPDFEntriesBalance *self;
+	static const gchar *thisfn = "ofa_pdf_balances_run";
+	ofaPDFBalances *self;
 	gboolean printed;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -317,7 +317,7 @@ ofa_pdf_entries_balance_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new(
-				OFA_TYPE_PDF_ENTRIES_BALANCE,
+				OFA_TYPE_PDF_BALANCES,
 				MY_PROP_MAIN_WINDOW, main_window,
 				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
@@ -337,17 +337,17 @@ ofa_pdf_entries_balance_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	get_settings( OFA_PDF_ENTRIES_BALANCE( dialog ));
+	get_settings( OFA_PDF_BALANCES( dialog ));
 
-	init_account_selection( OFA_PDF_ENTRIES_BALANCE( dialog ));
-	init_date_selection( OFA_PDF_ENTRIES_BALANCE( dialog ));
-	init_others( OFA_PDF_ENTRIES_BALANCE( dialog ));
+	init_account_selection( OFA_PDF_BALANCES( dialog ));
+	init_date_selection( OFA_PDF_BALANCES( dialog ));
+	init_others( OFA_PDF_BALANCES( dialog ));
 }
 
 static void
-init_account_selection( ofaPDFEntriesBalance *self )
+init_account_selection( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
 
@@ -404,9 +404,9 @@ init_account_selection( ofaPDFEntriesBalance *self )
 }
 
 static void
-init_date_selection( ofaPDFEntriesBalance *self )
+init_date_selection( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *parent, *label;
 	ofaDateFilterBin *bin;
@@ -429,9 +429,9 @@ init_date_selection( ofaPDFEntriesBalance *self )
 }
 
 static void
-init_others( ofaPDFEntriesBalance *self )
+init_others( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget, *label, *button;
 	GdkRGBA color;
@@ -469,31 +469,31 @@ init_others( ofaPDFEntriesBalance *self )
 }
 
 static void
-on_from_account_changed( GtkEntry *entry, ofaPDFEntriesBalance *self )
+on_from_account_changed( GtkEntry *entry, ofaPDFBalances *self )
 {
 	on_account_changed( self, entry, self->priv->from_account_label, &self->priv->from_account );
 }
 
 static void
-on_from_account_select( GtkButton *button, ofaPDFEntriesBalance *self )
+on_from_account_select( GtkButton *button, ofaPDFBalances *self )
 {
 	on_account_select( button, self, self->priv->from_account_entry );
 }
 
 static void
-on_to_account_changed( GtkEntry *entry, ofaPDFEntriesBalance *self )
+on_to_account_changed( GtkEntry *entry, ofaPDFBalances *self )
 {
 	on_account_changed( self, entry, self->priv->to_account_label, &self->priv->to_account );
 }
 
 static void
-on_to_account_select( GtkButton *button, ofaPDFEntriesBalance *self )
+on_to_account_select( GtkButton *button, ofaPDFBalances *self )
 {
 	on_account_select( button, self, self->priv->to_account_entry );
 }
 
 static void
-on_account_changed( ofaPDFEntriesBalance *self, GtkEntry *entry, GtkWidget *label, gchar **dest )
+on_account_changed( ofaPDFBalances *self, GtkEntry *entry, GtkWidget *label, gchar **dest )
 {
 	const gchar *cstr;
 	ofoAccount *account;
@@ -512,7 +512,7 @@ on_account_changed( ofaPDFEntriesBalance *self, GtkEntry *entry, GtkWidget *labe
 }
 
 static void
-on_account_select( GtkButton *button, ofaPDFEntriesBalance *self, GtkWidget *entry )
+on_account_select( GtkButton *button, ofaPDFBalances *self, GtkWidget *entry )
 {
 	gchar *number;
 
@@ -527,9 +527,9 @@ on_account_select( GtkButton *button, ofaPDFEntriesBalance *self, GtkWidget *ent
 }
 
 static void
-on_all_accounts_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
+on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gboolean bvalue;
 
 	priv = self->priv;
@@ -551,9 +551,9 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
 }
 
 static void
-on_per_class_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
+on_per_class_toggled( GtkToggleButton *button, ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gboolean bvalue;
 
 	priv = self->priv;
@@ -565,9 +565,9 @@ on_per_class_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
 }
 
 static void
-on_new_page_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
+on_new_page_toggled( GtkToggleButton *button, ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 
 	priv = self->priv;
 
@@ -575,7 +575,7 @@ on_new_page_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
 }
 
 static void
-on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFEntriesBalance *self )
+on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self )
 {
 	check_for_validable_dlg( self );
 }
@@ -585,9 +585,9 @@ on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolea
  * valid if dates are empty or valid
  */
 static void
-check_for_validable_dlg( ofaPDFEntriesBalance *self )
+check_for_validable_dlg( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gboolean valid;
 
 	priv = self->priv;
@@ -622,10 +622,10 @@ v_quit_on_ok( myDialog *dialog )
 	gchar *fname;
 
 	/* chain up to the parent class */
-	ok = MY_DIALOG_CLASS( ofa_pdf_entries_balance_parent_class )->quit_on_ok( dialog );
+	ok = MY_DIALOG_CLASS( ofa_pdf_balances_parent_class )->quit_on_ok( dialog );
 
 	if( ok ){
-		ok &= do_apply( OFA_PDF_ENTRIES_BALANCE( dialog ));
+		ok &= do_apply( OFA_PDF_BALANCES( dialog ));
 	}
 
 	if( ok ){
@@ -642,9 +642,9 @@ v_quit_on_ok( myDialog *dialog )
  * then load the entries
  */
 static gboolean
-do_apply( ofaPDFEntriesBalance *self )
+do_apply( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 
 	priv = self->priv;
 
@@ -661,10 +661,10 @@ do_apply( ofaPDFEntriesBalance *self )
 static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GList *dataset;
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	dataset = ofo_entry_get_dataset_for_print_balance(
 						MY_WINDOW( instance )->prot->dossier,
@@ -687,9 +687,9 @@ iprintable_free_dataset( GList *elements )
 static void
 iprintable_reset_runtime( ofaIPrintable *instance )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 	priv->totals = NULL;
@@ -698,8 +698,8 @@ iprintable_reset_runtime( ofaIPrintable *instance )
 static void
 iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_iprintable_on_begin_print";
-	ofaPDFEntriesBalancePrivate *priv;
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable_on_begin_print";
+	ofaPDFBalancesPrivate *priv;
 	gdouble page_width;
 	gint body_font_size;
 
@@ -709,7 +709,7 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	priv->page_margin = ofa_iprintable_get_page_margin( instance );
 	body_font_size = ofa_iprintable_get_default_font_size( instance );
@@ -753,11 +753,11 @@ iprintable_get_page_header_title( const ofaIPrintable *instance )
 static gchar *
 iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GString *stitle;
 	gchar *sfrom_date, *sto_date;
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 	stitle = g_string_new( "" );
 
 	if( priv->all_accounts ||
@@ -798,14 +798,14 @@ static void
 iprintable_draw_page_header_notes( ofaIPrintable *instance,
 		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gdouble y, width, line_height;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	if( page_num == 0 ){
 
-		priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+		priv = OFA_PDF_BALANCES( instance )->priv;
 
 		y = ofa_iprintable_get_last_y( instance );
 		line_height = ofa_iprintable_get_current_line_height( instance );
@@ -829,14 +829,14 @@ static void
 iprintable_draw_page_header_columns( ofaIPrintable *instance,
 		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	cairo_t *cr;
 	gdouble y, height, yh, hline, vspace;
 	gint bfs;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 	bfs = ofa_iprintable_get_current_font_size( instance );
@@ -911,13 +911,13 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance,
 static gboolean
 iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	ofsAccountBalance *current_sbal, *prev_sbal;
 	gint current_class, prev_class;
 
 	g_return_val_if_fail( current, FALSE );
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	if( priv->per_class ){
 
@@ -944,14 +944,14 @@ iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *p
 static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	ofsAccountBalance *sbal;
 	gdouble y;
 	gchar *str;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
@@ -993,7 +993,7 @@ iprintable_draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *op
 static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gdouble y;
 	ofsAccountBalance *sbal;
 	ofoAccount *account;
@@ -1002,7 +1002,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
@@ -1051,10 +1051,10 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 			priv->body_currency_rtab, y, sbal->currency, PANGO_ALIGN_RIGHT );
 
 	priv->subtotals = add_account_balance(
-						OFA_PDF_ENTRIES_BALANCE( instance ), priv->subtotals, sbal->currency, solde, sbal );
+						OFA_PDF_BALANCES( instance ), priv->subtotals, sbal->currency, solde, sbal );
 
 	priv->totals = add_account_balance(
-						OFA_PDF_ENTRIES_BALANCE( instance ), priv->totals, sbal->currency, solde, sbal );
+						OFA_PDF_BALANCES( instance ), priv->totals, sbal->currency, solde, sbal );
 }
 
 static void
@@ -1073,10 +1073,10 @@ iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation 
 static void
 iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gchar *str;
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
 	draw_subtotals_balance( instance, operation, context, str );
@@ -1090,13 +1090,13 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gdouble bottom, top, vspace, req_height;
 	gint bfs;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	if( !priv->count ){
 		ofa_iprintable_draw_no_data( instance, context );
@@ -1124,13 +1124,13 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 static void
 draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, const gchar *title )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gdouble vspace, req_height, last_y;
 	gint bfs;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	/* top of the rectangle */
 	bfs = ofa_iprintable_get_current_font_size( instance );
@@ -1147,13 +1147,13 @@ static void
 draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context,
 							GList *list, gdouble top, const gchar *title )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GList *it;
 	gboolean first;
 	sCurrency *scur;
 	gchar *str;
 
-	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
+	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	for( it=list, first=TRUE ; it ; it=it->next ){
 		if( first ){
@@ -1193,10 +1193,10 @@ draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context,
 }
 
 static GList *
-add_account_balance( ofaPDFEntriesBalance *self, GList *list,
+add_account_balance( ofaPDFBalances *self, GList *list,
 							const gchar *currency, gdouble solde, ofsAccountBalance *sbal )
 {
-	static const gchar *thisfn = "ofa_pdf_entries_balance_add_account_balance";
+	static const gchar *thisfn = "ofa_pdf_balances_add_account_balance";
 	GList *it;
 	sCurrency *scur;
 	gboolean found;
@@ -1242,9 +1242,9 @@ cmp_currencies( const sCurrency *a, const sCurrency *b )
  * from_account;to_account;all_accounts;per_class;new_page;
  */
 static void
-get_settings( ofaPDFEntriesBalance *self )
+get_settings( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
 
@@ -1286,9 +1286,9 @@ get_settings( ofaPDFEntriesBalance *self )
 }
 
 static void
-set_settings( ofaPDFEntriesBalance *self )
+set_settings( ofaPDFBalances *self )
 {
-	ofaPDFEntriesBalancePrivate *priv;
+	ofaPDFBalancesPrivate *priv;
 	gchar *str;
 
 	priv = self->priv;

@@ -33,6 +33,7 @@
 
  Other changes:
 
+   - Rename ofaPDFEntriesBalance class as ofaPDFBalances.
    - remove Accounts Balance PDF printing (same than entries balance).
    - ofo_account_is_allowed(): new method.
    - ofs_bat_detail_free(): new function.

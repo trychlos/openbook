@@ -1,5 +1,15 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	Rename ofaPDFEntriesBalance class as ofaPDFBalances
+
+	* src/ui/ofa-pdf-entries-balance.c: renamed as src/ui/ofa-pdf-balances.c
+	* src/ui/ofa-pdf-entries-balance.h: renamed as src/ui/ofa-pdf-balances.h
+	* src/ui/ofa-print-entries-balance.ui: renamed as src/ui/ofa-print-balances.ui
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-dos-menubar.ui,
+	* src/ui/ofa-main-window.c: updated accordingly.
+
 	Remove ofaPDFAccountsBalance class
 
 	* src/ui/ofa-pdf-accounts-balance.c,

@@ -100,8 +100,8 @@
       <attribute name="label" translatable="yes">_Printings</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Entries balance...</attribute>
-          <attribute name="action">win.entries-balance</attribute>
+          <attribute name="label" translatable="yes">_Account balances...</attribute>
+          <attribute name="action">win.pdf-balances</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
