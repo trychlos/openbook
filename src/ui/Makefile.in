@@ -171,7 +171,6 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-templates-book.$(OBJEXT) \
 	ofa-ope-templates-frame.$(OBJEXT) \
 	ofa-ope-templates-page.$(OBJEXT) ofa-page.$(OBJEXT) \
-	ofa-pdf-accounts-balance.$(OBJEXT) \
 	ofa-pdf-entries-balance.$(OBJEXT) ofa-pdf-books.$(OBJEXT) \
 	ofa-pdf-dialog.$(OBJEXT) ofa-pdf-ledgers.$(OBJEXT) \
 	ofa-pdf-reconcil.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
@@ -626,8 +625,6 @@ openbook_SOURCES = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
-	ofa-pdf-accounts-balance.c							\
-	ofa-pdf-accounts-balance.h							\
 	ofa-pdf-entries-balance.c							\
 	ofa-pdf-entries-balance.h							\
 	ofa-pdf-books.c										\
@@ -705,7 +702,6 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
-	ofa-print-accounts-balance.ui						\
 	ofa-print-entries-balance.ui						\
 	ofa-print-books.ui									\
 	ofa-print-ledgers.ui								\
@@ -928,7 +924,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-frame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-accounts-balance.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-books.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-dialog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-pdf-entries-balance.Po@am__quote@

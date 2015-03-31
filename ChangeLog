@@ -1,5 +1,15 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	Remove ofaPDFAccountsBalance class
+
+	* src/ui/ofa-pdf-accounts-balance.c,
+	* src/ui/ofa-pdf-accounts-balance.h,
+	* src/ui/ofa-print-accounts-balance.ui: deleted files.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-dos-menubar.ui,
+	* src/ui/ofa-main-window.c: updated accordingly.
+
 	* src/ui/ofa-date-filter-bin.c,
 	* src/ui/ofa-date-filter-bin.h,
 	* src/ui/ofa-date-filter-bin.ui:

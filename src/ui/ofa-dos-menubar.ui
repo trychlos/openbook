@@ -104,10 +104,6 @@
           <attribute name="action">win.entries-balance</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Accounts balance...</attribute>
-          <attribute name="action">win.accounts-balance</attribute>
-        </item>
-        <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
           <attribute name="action">win.pdf-reconcil</attribute>
         </item>
