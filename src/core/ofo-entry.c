@@ -1057,9 +1057,6 @@ ofo_entry_get_dataset_for_print_ledgers( ofoDossier *dossier,
 	}
 	g_string_append_printf( query, "AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	query = g_string_append( query, "ORDER BY "
-			"ENT_LEDGER ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
-
 	dataset = entry_load_dataset( dossier, query->str,
 			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 

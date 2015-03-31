@@ -443,16 +443,6 @@
                 Segmentation fault.
                 in ofa_bat_utils_import (main_window=0x886340) at ../../../src/ui/ofa-bat-utils.c:79
 
- 782 2015- 3-30 printing general book for 51541 account
-                ofo_account_get_number: assertion 'OFO_IS_ACCOUNT(account)' failed
-                ofo_account_get_number (account=0x0) at ../../../src/core/ofo-account.c:802
-#3  0x000000000046bf7e in draw_account_report (self=0xc201d0, context=0x0, with_solde=0, operation=<optimized out>) at ../../../src/ui/ofa-pdf-books.c:895
-#4  0x000000000045495b in get_group_bottom_report_height (sdata=0x152bd00, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1236
-#5  draw_line (page_num=0, sdata=0x152bd00, next=0x108f080 = {...}, line=0x108f0e0 = {...}, line_num=0, context=0x0, operation=0x0, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1136
-#6  draw_page (instance=instance@entry=0xc201d0, operation=operation@entry=0x0, context=context@entry=0x0, page_num=page_num@entry=0, sdata=sdata@entry=0x152bd00)
-    at ../../../src/ui/ofa-iprintable.c:671
-#7  0x0000000000454e5c in on_paginate (operation=0x74ef30, context=0x12c1310, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:581
-
  783
 
 -----------------------------------------------------------------------
@@ -3505,6 +3495,17 @@
  777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
                 there is not at least one generable entry
      2015- 3-29 fixed - git #4148c19
+
+ 782 2015- 3-30 printing general book for 51541 account
+                ofo_account_get_number: assertion 'OFO_IS_ACCOUNT(account)' failed
+                ofo_account_get_number (account=0x0) at ../../../src/core/ofo-account.c:802
+#3  0x000000000046bf7e in draw_account_report (self=0xc201d0, context=0x0, with_solde=0, operation=<optimized out>) at ../../../src/ui/ofa-pdf-books.c:895
+#4  0x000000000045495b in get_group_bottom_report_height (sdata=0x152bd00, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1236
+#5  draw_line (page_num=0, sdata=0x152bd00, next=0x108f080 = {...}, line=0x108f0e0 = {...}, line_num=0, context=0x0, operation=0x0, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1136
+#6  draw_page (instance=instance@entry=0xc201d0, operation=operation@entry=0x0, context=context@entry=0x0, page_num=page_num@entry=0, sdata=sdata@entry=0x152bd00)
+    at ../../../src/ui/ofa-iprintable.c:671
+#7  0x0000000000454e5c in on_paginate (operation=0x74ef30, context=0x12c1310, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:581
+     2015- 3-30 fixed - git #0111b0b
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
