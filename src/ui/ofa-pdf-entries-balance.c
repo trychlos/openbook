@@ -43,6 +43,7 @@
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-date-filter-bin.h"
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-pdf-entries-balance.h"
@@ -51,55 +52,57 @@
  */
 struct _ofaPDFEntriesBalancePrivate {
 
-	gboolean       printed;
+	gboolean          printed;
 
 	/* UI
 	 */
-	GtkWidget     *from_account_etiq;	/* account selection */
-	GtkWidget     *from_account_entry;
-	GtkWidget     *from_account_btn;
-	GtkWidget     *from_account_label;
-	GtkWidget     *to_account_etiq;
-	GtkWidget     *to_account_entry;
-	GtkWidget     *to_account_btn;
-	GtkWidget     *to_account_label;
+	GtkWidget        *from_account_etiq;	/* account selection */
+	GtkWidget        *from_account_entry;
+	GtkWidget        *from_account_btn;
+	GtkWidget        *from_account_label;
+	GtkWidget        *to_account_etiq;
+	GtkWidget        *to_account_entry;
+	GtkWidget        *to_account_btn;
+	GtkWidget        *to_account_label;
 
-	GtkWidget     *from_date_entry;		/* date selection */
-	GtkWidget     *to_date_entry;
+	ofaDateFilterBin *dates_filter;
 
-	GtkWidget     *per_class_btn;		/* subtotal per class */
-	GtkWidget     *new_page_btn;
+	GtkWidget        *per_class_btn;	/* subtotal per class */
+	GtkWidget        *new_page_btn;
+
+	GtkWidget        *msg_label;
+	GtkWidget        *btn_ok;
 
 	/* internals
 	 */
-	gchar         *from_account;
-	gchar         *to_account;
-	gboolean       all_accounts;
-	GDate          from_date;
-	GDate          to_date;
-	gboolean       per_class;
-	gboolean       new_page;
-	GList         *totals;
-	gint           count;				/* count of returned entries */
+	gchar            *from_account;
+	gchar            *to_account;
+	gboolean          all_accounts;
+	gboolean          per_class;
+	gboolean          new_page;
+	GDate             from_date;
+	GDate             to_date;
+	GList            *totals;
+	gint              count;			/* count of returned entries */
 
 	/* print datas
 	 */
-	gdouble        page_margin;
-	gdouble        amount_width;
-	gdouble        body_number_ltab;
-	gdouble        body_label_ltab;
-	gint           body_label_max_size;		/* Pango units */
-	gdouble        body_debit_period_rtab;
-	gdouble        body_credit_period_rtab;
-	gdouble        body_debit_solde_rtab;
-	gdouble        body_credit_solde_rtab;
-	gdouble        body_currency_rtab;
+	gdouble           page_margin;
+	gdouble           amount_width;
+	gdouble           body_number_ltab;
+	gdouble           body_label_ltab;
+	gint              body_label_max_size;		/* Pango units */
+	gdouble           body_debit_period_rtab;
+	gdouble           body_credit_period_rtab;
+	gdouble           body_debit_solde_rtab;
+	gdouble           body_credit_solde_rtab;
+	gdouble           body_currency_rtab;
 
 	/* subtotal per class
 	 */
-	gint           class_num;
-	ofoClass      *class_object;
-	GList         *subtotals;			/* subtotals per currency for this class */
+	gint              class_num;
+	ofoClass         *class_object;
+	GList            *subtotals;		/* subtotals per currency for this class */
 };
 
 typedef struct {
@@ -116,6 +119,7 @@ static const gchar *st_ui_id             = "PrintBalanceDlg";
 
 static const gchar *st_pref_uri          = "PDFEntriesBalanceURI";
 static const gchar *st_pref_settings     = "PDFEntriesBalanceSettings";
+static const gchar *st_pref_dates        = "PDFEntriesBalanceDates";
 
 static const gchar *st_def_fname         = "EntriesBalance.pdf";
 static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
@@ -159,6 +163,8 @@ static void     on_account_select( GtkButton *button, ofaPDFEntriesBalance *self
 static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
 static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
 static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self );
+static void     on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFEntriesBalance *self );
+static void     check_for_validable_dlg( ofaPDFEntriesBalance *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFEntriesBalance *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
@@ -243,8 +249,6 @@ ofa_pdf_entries_balance_init( ofaPDFEntriesBalance *self )
 	priv = self->priv;
 
 	priv->printed = FALSE;
-	my_date_clear( &priv->from_date );
-	my_date_clear( &priv->to_date );
 	priv->per_class = FALSE;
 }
 
@@ -404,38 +408,24 @@ init_date_selection( ofaPDFEntriesBalance *self )
 {
 	ofaPDFEntriesBalancePrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *widget;
+	GtkWidget *parent, *label;
+	ofaDateFilterBin *bin;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-date-entry" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	my_editable_date_init( GTK_EDITABLE( widget ));
-	my_editable_date_set_format( GTK_EDITABLE( widget ), ofa_prefs_date_display());
-	my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
-	priv->from_date_entry = widget;
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "from-date-label" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->from_date_entry ), widget, ofa_prefs_date_check());
-	if( my_date_is_valid( &priv->from_date )){
-		my_editable_date_set_date( GTK_EDITABLE( priv->from_date_entry ), &priv->from_date );
-	}
+	bin = ofa_date_filter_bin_new( st_pref_dates );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bin ));
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-entry" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	my_editable_date_init( GTK_EDITABLE( widget ));
-	my_editable_date_set_format( GTK_EDITABLE( widget ), ofa_prefs_date_display());
-	my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
-	priv->to_date_entry = widget;
+	label = ofa_date_filter_bin_get_frame_label( bin );
+	gtk_label_set_text( GTK_LABEL( label ), _( "Effect date selection" ));
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "to-date-label" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, ofa_prefs_date_check());
-	if( my_date_is_valid( &priv->to_date )){
-		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &priv->to_date );
-	}
+	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
+
+	priv->dates_filter = bin;
 }
 
 static void
@@ -443,7 +433,8 @@ init_others( ofaPDFEntriesBalance *self )
 {
 	ofaPDFEntriesBalancePrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *widget;
+	GtkWidget *widget, *label, *button;
+	GdkRGBA color;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -454,6 +445,7 @@ init_others( ofaPDFEntriesBalance *self )
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = widget;
+
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->new_page );
 	on_new_page_toggled( GTK_TOGGLE_BUTTON( widget ), self );
 
@@ -461,8 +453,19 @@ init_others( ofaPDFEntriesBalance *self )
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_per_class_toggled ), self );
 	priv->per_class_btn = widget;
+
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->per_class );
 	on_per_class_toggled( GTK_TOGGLE_BUTTON( widget ), self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	priv->btn_ok = button;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, "#ff0000" );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->msg_label = label;
 }
 
 static void
@@ -571,6 +574,43 @@ on_new_page_toggled( GtkToggleButton *button, ofaPDFEntriesBalance *self )
 	priv->new_page = gtk_toggle_button_get_active( button );
 }
 
+static void
+on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFEntriesBalance *self )
+{
+	check_for_validable_dlg( self );
+}
+
+/*
+ * valid whatever be the accounts
+ * valid if dates are empty or valid
+ */
+static void
+check_for_validable_dlg( ofaPDFEntriesBalance *self )
+{
+	ofaPDFEntriesBalancePrivate *priv;
+	gboolean valid;
+
+	priv = self->priv;
+	valid = FALSE;
+
+	if( priv->msg_label ){
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
+
+		valid = ( ofa_date_filter_bin_is_from_empty( priv->dates_filter ) ||
+						ofa_date_filter_bin_is_from_valid( priv->dates_filter )) &&
+				( ofa_date_filter_bin_is_to_empty( priv->dates_filter ) ||
+						ofa_date_filter_bin_is_to_valid( priv->dates_filter ));
+
+		if( !valid ){
+			gtk_label_set_text( GTK_LABEL( priv->msg_label ), _( "Invalid effect dates selection" ));
+		}
+	}
+
+	if( priv->btn_ok ){
+		gtk_widget_set_sensitive( priv->btn_ok, valid );
+	}
+}
+
 /*
  * #GtkPrintOperation only export to PDF addressed by filename (not URI)
  * so first convert
@@ -608,13 +648,10 @@ do_apply( ofaPDFEntriesBalance *self )
 
 	priv = self->priv;
 
-	my_date_set_from_date( &priv->from_date,
-			my_editable_date_get_date( GTK_EDITABLE( priv->from_date_entry ), NULL ));
-
-	my_date_set_from_date( &priv->to_date,
-			my_editable_date_get_date( GTK_EDITABLE( priv->to_date_entry ), NULL ));
-
 	set_settings( self );
+
+	my_date_set_from_date( &priv->from_date, ofa_date_filter_bin_get_from( priv->dates_filter ));
+	my_date_set_from_date( &priv->to_date, ofa_date_filter_bin_get_to( priv->dates_filter ));
 
 	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 
@@ -625,18 +662,16 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFEntriesBalancePrivate *priv;
-	const gchar *acc_from, *acc_to;
 	GList *dataset;
 
 	priv = OFA_PDF_ENTRIES_BALANCE( instance )->priv;
 
-	acc_from = priv->all_accounts ? NULL : priv->from_account;
-	acc_to = priv->all_accounts ? NULL : priv->to_account;
-
 	dataset = ofo_entry_get_dataset_for_print_balance(
 						MY_WINDOW( instance )->prot->dossier,
-						acc_from, acc_to,
-						&priv->from_date, &priv->to_date );
+						priv->all_accounts ? NULL : priv->from_account,
+						priv->all_accounts ? NULL : priv->to_account,
+						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
+						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
 	priv->count = g_list_length( dataset );
 
@@ -1204,7 +1239,7 @@ cmp_currencies( const sCurrency *a, const sCurrency *b )
 
 /*
  * settings are:
- * from_account;to_account;all_accounts;from_date;to_date;per_class;new_page;
+ * from_account;to_account;all_accounts;per_class;new_page;
  */
 static void
 get_settings( ofaPDFEntriesBalance *self )
@@ -1238,18 +1273,6 @@ get_settings( ofaPDFEntriesBalance *self )
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		my_date_set_from_str( &priv->from_date, cstr, MY_DATE_SQL );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		my_date_set_from_str( &priv->to_date, cstr, MY_DATE_SQL );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
 		priv->per_class = my_utils_boolean_from_str( cstr );
 	}
 
@@ -1266,24 +1289,18 @@ static void
 set_settings( ofaPDFEntriesBalance *self )
 {
 	ofaPDFEntriesBalancePrivate *priv;
-	gchar *str, *sfrom, *sto;
+	gchar *str;
 
 	priv = self->priv;
 
-	sfrom = my_date_to_str( &priv->from_date, MY_DATE_SQL );
-	sto = my_date_to_str( &priv->to_date, MY_DATE_SQL );
-
-	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
 			priv->from_account ? priv->from_account : "",
 			priv->to_account ? priv->to_account : "",
 			priv->all_accounts ? "True":"False",
-			sfrom, sto,
 			priv->per_class ? "True":"False",
 			priv->new_page ? "True":"False" );
 
 	ofa_settings_set_string( st_pref_settings, str );
 
 	g_free( str );
-	g_free( sfrom );
-	g_free( sto );
 }

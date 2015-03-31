@@ -432,8 +432,6 @@
 
  778 2015- 3-30 use ofaAccountSelector where appropriate
 
- 779 2015- 3-30 import settleable indicator from EBP accounts
-
  783
 
 -----------------------------------------------------------------------
@@ -3508,6 +3506,9 @@
     at ../../../src/ui/ofa-iprintable.c:671
 #7  0x0000000000454e5c in on_paginate (operation=0x74ef30, context=0x12c1310, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:581
      2015- 3-30 fixed - git #0111b0b
+
+ 779 2015- 3-30 import settleable indicator from EBP accounts
+     2015- 3-31 done - git #918430877
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
