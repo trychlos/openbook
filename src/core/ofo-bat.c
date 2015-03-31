@@ -1173,7 +1173,7 @@ bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
  * Import the provided #ofsBat structure.
  */
 gboolean
-ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, ofxCounter **id )
+ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, ofxCounter *id )
 {
 	gboolean ok;
 	ofoBat *bat;
@@ -1230,8 +1230,7 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 			}
 		}
 		if( id ){
-			*id = g_new0( ofxCounter, 1 );
-			**id = ofo_bat_get_id( bat );
+			*id = ofo_bat_get_id( bat );
 		}
 	}
 

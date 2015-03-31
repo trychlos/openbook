@@ -48,18 +48,18 @@ G_BEGIN_DECLS
  * number of the structure to the version it is using.
  */
 typedef struct {
-	gint     version;
-	gchar   *uri;
-	gchar   *format;
-	GDate    begin;
-	GDate    end;
-	gchar   *rib;
-	gchar   *currency;
-	gdouble  begin_solde;				/* <0 if bank debit (so account credit) */
-	gboolean begin_solde_set;
-	gdouble  end_solde;
-	gboolean end_solde_set;
-	GList   *details;
+	gint      version;
+	gchar    *uri;
+	gchar    *format;
+	GDate     begin;
+	GDate     end;
+	gchar    *rib;
+	gchar    *currency;
+	gdouble   begin_solde;				/* <0 if bank debit (so account credit) */
+	gboolean  begin_solde_set;
+	gdouble   end_solde;
+	gboolean  end_solde_set;
+	GList    *details;
 }
 	ofsBat;
 

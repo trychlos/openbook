@@ -41,12 +41,15 @@
  *
  * open GtkFileChooser dialog to let the user select the file to be
  * imported and import it
+ *
+ * Returns: the identifier of the newly imported BAT file, or zero if
+ * an error has happened.
  */
 ofxCounter
 ofa_bat_utils_import( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_bat_utils_import";
-	ofxCounter imported_id, *pimported;
+	ofxCounter imported_id;
 	GtkWidget *file_chooser;
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
@@ -54,6 +57,7 @@ ofa_bat_utils_import( ofaMainWindow *main_window )
 	gchar *uri;
 
 	imported_id = 0;
+
 	file_chooser = gtk_file_chooser_dialog_new(
 			_( "Select a BAT file to be imported" ),
 			NULL,
@@ -75,9 +79,9 @@ ofa_bat_utils_import( ofaMainWindow *main_window )
 
 		if( importable ){
 			dossier = ofa_main_window_get_dossier( main_window );
-			ofa_iimportable_import_uri( importable, dossier, NULL, ( void ** ) &pimported );
-			imported_id = *pimported;
-			g_free( pimported );
+			if( ofa_iimportable_import_uri( importable, dossier, NULL, &imported_id ) > 0 ){
+				imported_id = 0;
+			}
 
 			g_debug( "%s: importable=%p (%s) ref_count=%d, imported_id=%ld",
 					thisfn, ( void * ) importable,

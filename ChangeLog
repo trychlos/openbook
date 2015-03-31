@@ -1,5 +1,18 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	Fix segfault when trying to import again a BAT file (todo #781).
+
+	* src/api/ofa-iimportable.h,
+	* src/core/ofa-iimportable.c,
+	* src/api/ofo-bat.h,
+	* src/core/ofo-bat.c,
+	* src/import-bourso/ofa-importer.c,
+	* src/import-bourso-pdf/ofa-importer.c,
+	* src/import-lcl/ofa-importer.c,
+	* src/import-lcl-pdf/ofa-importer.c,
+	* src/ui/ofa-bat-utils.c:
+	- use a pointer to an ofxCounter instead of to a pointer.
+
 	* src/core/ofo-entry.c: remove double order clause.
 
 2015-03-30 Pierre Wieser <pwieser@trychlos.org>

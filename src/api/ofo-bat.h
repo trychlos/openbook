@@ -93,7 +93,7 @@ gboolean        ofo_bat_delete             ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_import             ( ofaIImportable *importable,
 													ofsBat *sbat,
 													ofoDossier *dossier,
-													ofxCounter **id );
+													ofxCounter *id );
 
 G_END_DECLS
 

@@ -466,7 +466,7 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  */
 guint
 ofa_iimportable_import_uri( ofaIImportable *importable,
-									ofoDossier *dossier, void *caller, void **imported_id )
+									ofoDossier *dossier, void *caller, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_iimportable_import_uri";
 	sIImportable *sdata;

@@ -41,6 +41,7 @@
 #include <api/ofa-iimportable.h>
 #include "api/ofa-preferences.h"
 #include <api/ofo-bat.h>
+#include <api/ofs-bat.h>
 
 #include "ofa-importer.h"
 
@@ -115,7 +116,7 @@ static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *bourso_pdf_importer );
 static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, void **imported_id );
+static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, ofxCounter *imported_id );
 static ofsBat      *read_header( ofaBoursoPdfImporter *importer, PopplerPage *page, GList *rc_list );
 static void         read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint page_i, GList *rc_list );
 static GList       *get_ordered_layout_list( ofaBoursoPdfImporter *importer, PopplerPage *page );
@@ -285,16 +286,16 @@ iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofa
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, void **imported_id )
+iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_bourso_pdf_importer_iimportable_import_uri";
 	ofaBoursoPdfImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
 
-	g_debug( "%s: importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p",
+	g_debug( "%s: importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p, imported_id=%p",
 			thisfn, ( void * ) importer, ref,
-			uri, ( void * ) settings, ( void * ) dossier );
+			uri, ( void * ) settings, ( void * ) dossier, ( void * ) imported_id );
 
 	priv = OFA_BOURSO_PDF_IMPORTER( importer )->priv;
 
@@ -309,7 +310,7 @@ iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, c
 		if( bat ){
 			bat->uri = g_strdup( uri );
 			bat->format = g_strdup( st_import_formats[idx].label );
-			ofo_bat_import( importer, bat, dossier, ( ofxCounter ** ) imported_id );
+			ofo_bat_import( importer, bat, dossier, imported_id );
 			ofs_bat_free( bat );
 		}
 	}

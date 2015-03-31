@@ -39,6 +39,7 @@
 #include <api/ofa-iimportable.h>
 #include "api/ofa-preferences.h"
 #include <api/ofo-bat.h>
+#include <api/ofs-bat.h>
 
 #include "ofa-importer.h"
 
@@ -86,7 +87,7 @@ static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *bourso_importer );
 static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, void **imported_id );
+static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, ofxCounter *imported_id );
 static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
 static gboolean     bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
 static ofsBat      *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
@@ -257,16 +258,16 @@ iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, co
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, void **imported_id )
+iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofoDossier *dossier, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_uri";
 	ofaBoursoImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
 
-	g_debug( "%s: bourso_importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p",
+	g_debug( "%s: bourso_importer=%p, ref=%p, uri=%s, settings=%p, dossier=%p, imported_id=%p",
 			thisfn, ( void * ) bourso_importer, ref,
-			uri, ( void * ) settings, ( void * ) dossier );
+			uri, ( void * ) settings, ( void * ) dossier, ( void * ) imported_id );
 
 	priv = OFA_BOURSO_IMPORTER( bourso_importer )->priv;
 
@@ -282,7 +283,7 @@ iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar 
 		if( bat ){
 			bat->uri = g_strdup( uri );
 			bat->format = g_strdup( st_import_formats[idx].label );
-			ofo_bat_import( bourso_importer, bat, dossier, ( ofxCounter ** ) imported_id );
+			ofo_bat_import( bourso_importer, bat, dossier, imported_id );
 			ofs_bat_free( bat );
 		}
 	}

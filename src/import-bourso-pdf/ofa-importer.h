@@ -48,7 +48,7 @@ typedef struct _ofaBoursoPdfImporterPrivate         ofaBoursoPdfImporterPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                   parent;
+	GObject                      parent;
 
 	/*< private members >*/
 	ofaBoursoPdfImporterPrivate *priv;
@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass              parent;
+	GObjectClass                 parent;
 }
 	ofaBoursoPdfImporterClass;
 

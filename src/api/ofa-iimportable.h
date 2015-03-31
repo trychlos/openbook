@@ -48,6 +48,7 @@
  * are used by the above functions.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofo-dossier-def.h"
 
@@ -126,9 +127,9 @@ typedef struct {
 	 * @instance: the #ofaIImportable provider.
 	 * @ref: the internal ref of the provider as returned from #is_willing_to().
 	 * @dossier: the #ofoDossier
-	 * @imported_id: [allow-none][out]: if non %NULL, then set to a
-	 *  newly allocated identifier of the imported object which should
-	 *  be g_free() by the caller.
+	 * @imported_id: [allow-none][out]: if non %NULL, then must point to an
+	 *  #ofxCounter which will be set to the identifier of the newly
+	 *  allocated #ofoBat object.
 	 *
 	 * Import the specified @uri.
 	 *
@@ -139,7 +140,7 @@ typedef struct {
 												const gchar *uri,
 												const ofaFileFormat *settings,
 												ofoDossier *dossier,
-												void **imported_id );
+												ofxCounter *imported_id );
 }
 	ofaIImportableInterface;
 
@@ -179,7 +180,7 @@ gint            ofa_iimportable_import            ( ofaIImportable *importable,
 guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,
 															ofoDossier *dossier,
 															void *caller,
-															void **imported_id );
+															ofxCounter *imported_id );
 
 guint           ofa_iimportable_get_count         ( ofaIImportable *importable );
 

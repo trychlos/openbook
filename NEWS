@@ -27,6 +27,7 @@
    - PrintGeneralBooks: doesn't try to print while computing count of
      pages (todo #782).
    - PrintLedgers: remove double ORDER clause.
+   - Fix segfault when trying to import again a BAT file (todo #781).
 
  Other changes:
 
