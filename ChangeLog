@@ -1,5 +1,13 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	Have a 'About...' dialog (todo #8).
+
+	* src/ui/ofa-about.c,
+	* src/ui/ofa-about.h: new files.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-application.c: updated accordingly.
+
 	Rename ofaPDFEntriesBalance class as ofaPDFBalances
 
 	* src/ui/ofa-pdf-entries-balance.c: renamed as src/ui/ofa-pdf-balances.c

@@ -37,6 +37,7 @@
 #include "api/ofa-preferences.h"
 #include "core/ofa-settings-monitor.h"
 
+#include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-manager.h"
@@ -900,16 +901,17 @@ on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data
 static void
 on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-#if 0
 	static const gchar *thisfn = "ofa_application_on_about";
-	ofaApplication *application;
+	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	application = OFA_APPLICATION( user_data );
-#endif
+	priv = OFA_APPLICATION( user_data )->priv;
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_about_run( priv->main_window );
 }
 
 static void

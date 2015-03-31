@@ -130,7 +130,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-decimal-combo.$(OBJEXT) my-editable-amount.$(OBJEXT) \
 	my-editable-date.$(OBJEXT) my-field-combo.$(OBJEXT) \
 	my-progress-bar.$(OBJEXT) my-tab-label.$(OBJEXT) \
-	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
+	ofa-about.$(OBJEXT) ofa-account-properties.$(OBJEXT) \
+	ofa-account-select.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
 	ofa-accounts-book.$(OBJEXT) ofa-accounts-frame.$(OBJEXT) \
 	ofa-accounts-page.$(OBJEXT) ofa-application.$(OBJEXT) \
@@ -484,6 +485,8 @@ openbook_SOURCES = \
 	my-progress-bar.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
+	ofa-about.c											\
+	ofa-about.h											\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
 	ofa-account-select.c								\
@@ -854,6 +857,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
