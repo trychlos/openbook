@@ -1,5 +1,9 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-classes-page.c,
+	* src/ui/ofa-currencies-page.c,
+	* src/ui/ofa-rates-page.c: have a treeview horizontally expand.
+
 	Have a 'About...' dialog (todo #8).
 
 	* src/ui/ofa-about.c,

@@ -222,6 +222,7 @@ setup_tree_view( ofaCurrenciesPage *self )
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
+	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
