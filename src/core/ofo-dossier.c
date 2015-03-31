@@ -1247,6 +1247,25 @@ ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_last_concil:
+ *
+ * Returns: the last reconciliation id. allocated.
+ */
+ofxCounter
+ofo_dossier_get_last_concil( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_concil );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
  * ofo_dossier_get_next_bat:
  */
 ofxCounter

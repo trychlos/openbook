@@ -93,6 +93,7 @@ ofxCounter       ofo_dossier_get_last_bat              ( const ofoDossier *dossi
 ofxCounter       ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_settlement       ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_last_concil           ( const ofoDossier *dossier );
 
 ofxCounter       ofo_dossier_get_next_bat              ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );

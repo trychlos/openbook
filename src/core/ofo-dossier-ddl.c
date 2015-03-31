@@ -51,7 +51,6 @@ static const gchar *st_ope_templates    = INIT1DIR "/ope-templates-h2.csv";
 static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
 
 static gint     get_max_version( void );
-static gint     dbmodel_get_version( const ofoDossier *dossier );
 static gboolean version_begin( const ofoDossier *dossier, gint version );
 static gboolean version_end( const ofoDossier *dossier, gint version );
 static gboolean dbmodel_to_v20( ofoDossier *dossier, gint version );
@@ -104,7 +103,7 @@ ofo_dossier_ddl_update( ofoDossier *dossier )
 
 	ok = TRUE;
 	max_version = get_max_version();
-	cur_version = dbmodel_get_version( dossier );
+	cur_version = ofo_dossier_ddl_get_version( dossier );
 	g_debug( "%s: cur_version=%d, max_version=%d", thisfn, cur_version, max_version );
 
 	if( cur_version < max_version ){
@@ -151,8 +150,8 @@ get_max_version( void )
  * returns the last complete version
  * i.e. une version where the version date is set
  */
-static gint
-dbmodel_get_version( const ofoDossier *dossier )
+gint
+ofo_dossier_ddl_get_version( const ofoDossier *dossier )
 {
 	gint vmax;
 

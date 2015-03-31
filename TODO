@@ -413,8 +413,6 @@
  758 2015- 3-21 warns when deleting a settled or reconciliated entry
                 +unsettle/unreconciliate
 
- 759 2015- 3-22 review ofa_bats_page_on_import_clicked()
-
  760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
                 progress bar in Restore assistant
                 + (page result of the restore) message converting from
@@ -3435,6 +3433,9 @@
 
  757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
      2015- 3-29 done in v0.38
+
+ 759 2015- 3-22 review ofa_bats_page_on_import_clicked()
+     2015- 3-31 no more needed
 
  762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
      2015- 3-28 done - git #bca6ea7

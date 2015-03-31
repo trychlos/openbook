@@ -39,6 +39,7 @@
 #include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofo-dossier-ddl.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
@@ -441,6 +442,18 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 	label = my_utils_container_get_child_by_name( container, "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_settlement( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	label = my_utils_container_get_child_by_name( container, "p4-last-concil" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = my_bigint_to_str( ofo_dossier_get_last_concil( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	label = my_utils_container_get_child_by_name( container, "p5-version" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = g_strdup_printf( "%u", ( ofo_dossier_ddl_get_version( priv->dossier )));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 }

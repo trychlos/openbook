@@ -21,6 +21,7 @@
 	- Import settleable indicator from EBP accounts (todo #779).
 	- EBP imports now accept a field separator argument.
 	- Have a 'About...' dialog (todo #8).
+	- Improve DossierProperties dialog box (todo #755).
 
  Bug fixes:
 
