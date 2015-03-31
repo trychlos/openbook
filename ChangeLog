@@ -1,5 +1,8 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	* misc/convert/ebp_accounts.pl:
+	- import settleable indicator from EBP accounts (todo #779).
+
 	Fix segfault when trying to import again a BAT file (todo #781).
 
 	* src/api/ofa-iimportable.h,

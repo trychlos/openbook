@@ -18,6 +18,7 @@
  New features:
 
 	- Have account and ledger convertors on EBP import scripts (todo #771).
+	- Import settleable indicator from EBP accounts (todo #779).
 
  Bug fixes:
 

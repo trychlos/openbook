@@ -263,8 +263,12 @@ sub mapping
 	if( $infields[2] eq "1" ){
 		$type = "R";
 	}
+	my $settleable = "";
+	if( $infields[6] eq "oui" ){
+		$settleable = "S";
+	}
 	
-	return( join( ';', $number, $label, "", $type ));
+	return( join( ';', $number, $label, "", $type, $settleable ));
 }
 
 ###

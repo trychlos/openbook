@@ -434,15 +434,6 @@
 
  779 2015- 3-30 import settleable indicator from EBP accounts
 
- 780 2015- 3-30 is_visible_row: assertion 'my_date_is_valid( deffect )' failed
-                is_visible_row (tmodel=<optimized out>, iter=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-reconciliation.c:1690
-                while importing and mode=All (but actually imported)
-                even if mode=Session
-
- 781 2015- 3-30 when trying to import again the same file
-                Segmentation fault.
-                in ofa_bat_utils_import (main_window=0x886340) at ../../../src/ui/ofa-bat-utils.c:79
-
  783
 
 -----------------------------------------------------------------------
@@ -3495,6 +3486,17 @@
  777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
                 there is not at least one generable entry
      2015- 3-29 fixed - git #4148c19
+
+ 780 2015- 3-30 is_visible_row: assertion 'my_date_is_valid( deffect )' failed
+                is_visible_row (tmodel=<optimized out>, iter=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-reconciliation.c:1690
+                while importing and mode=All (but actually imported)
+                even if mode=Session
+     2015- 3-31 fixed - git #2b55207f1fb4ad3587670426eb43b8ac8d3c961c
+
+ 781 2015- 3-30 when trying to import again the same file
+                Segmentation fault.
+                in ofa_bat_utils_import (main_window=0x886340) at ../../../src/ui/ofa-bat-utils.c:79
+     2015- 3-31 fixed - git #78b524a
 
  782 2015- 3-30 printing general book for 51541 account
                 ofo_account_get_number: assertion 'OFO_IS_ACCOUNT(account)' failed
