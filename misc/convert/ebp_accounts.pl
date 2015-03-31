@@ -21,6 +21,8 @@ my $opt_verbose = 0;
 my $opt_stamp_def = "yes";
 my $opt_stamp = 1;
 
+my $opt_fieldsep_def = ";";
+my $opt_fieldsep = $opt_fieldsep_def;
 my $opt_account_def = "";
 my $opt_account = $opt_account_def;
 my $conv_accounts = {};
@@ -183,6 +185,7 @@ sub msg_help(){
  Usage: $0 [options] < 'ebp_file' > 'openbook_file'
    --[no]help                 print this message, and exit [${opt_help_def}]
    --[no]stamp                display messages with a timestamp [${opt_stamp_def}]
+   --fieldsep=<char>          field separator [${opt_fieldsep_def}]
    --accounts=<path>          use an account conversion file [${opt_account_def}]
 ";
 }
@@ -197,11 +200,17 @@ sub msg_version(){
 if( !GetOptions(
 	"help!"				=> \$opt_help,
 	"stamp!"			=> \$opt_stamp,
+	"fieldsep=s"		=> \$opt_fieldsep,
 	"account=s"			=> \$opt_account
 	)){
 		msg "try '${0} --help' to get full usage syntax\n";
 		$errs = 1;
 		exit;
+}
+
+if( !defined( $opt_fieldsep ) || $opt_fieldsep eq "" ){
+	msgerr "field separator not set or empty";
+	$errs += 1;
 }
 
 $conv_accounts = read_convert_file( $opt_account ) if $opt_account ne "";
@@ -268,7 +277,8 @@ sub mapping
 		$settleable = "S";
 	}
 	
-	return( join( ';', $number, $label, "", $type, $settleable ));
+	return( join( substr( $opt_fieldsep, 0, 1 ),
+		 $number, $label, "", $type, $settleable ));
 }
 
 ###

@@ -19,6 +19,7 @@
 
 	- Have account and ledger convertors on EBP import scripts (todo #771).
 	- Import settleable indicator from EBP accounts (todo #779).
+	- EBP imports now accept a field separator argument.
 
  Bug fixes:
 

@@ -1,5 +1,8 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	* misc/convert/ebp_accounts.pl,
+	* misc/convert/ebp_entries.pl: accept a field separator argument.
+
 	* misc/convert/ebp_accounts.pl:
 	- import settleable indicator from EBP accounts (todo #779).
 
