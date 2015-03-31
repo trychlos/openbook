@@ -71,15 +71,25 @@ GType             ofa_date_filter_bin_get_type       ( void ) G_GNUC_CONST;
 
 ofaDateFilterBin *ofa_date_filter_bin_new            ( const gchar *pref_name );
 
+gboolean          ofa_date_filter_bin_is_from_empty  ( const ofaDateFilterBin *bin );
+
+gboolean          ofa_date_filter_bin_is_from_valid  ( const ofaDateFilterBin *bin );
+
 const GDate      *ofa_date_filter_bin_get_from       ( const ofaDateFilterBin *bin );
 
 void              ofa_date_filter_bin_set_from       ( ofaDateFilterBin *bin,
 															const GDate *from );
 
+gboolean          ofa_date_filter_bin_is_to_empty    ( const ofaDateFilterBin *bin );
+
+gboolean          ofa_date_filter_bin_is_to_valid    ( const ofaDateFilterBin *bin );
+
 const GDate      *ofa_date_filter_bin_get_to         ( const ofaDateFilterBin *bin );
 
 void              ofa_date_filter_bin_set_to         ( ofaDateFilterBin *bin,
 															const GDate *to );
+
+GtkWidget        *ofa_date_filter_bin_get_frame_label( const ofaDateFilterBin *bin );
 
 GtkWidget        *ofa_date_filter_bin_get_from_prompt( const ofaDateFilterBin *bin );
 

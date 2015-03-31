@@ -1,5 +1,17 @@
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-date-filter-bin.c,
+	* src/ui/ofa-date-filter-bin.h,
+	* src/ui/ofa-date-filter-bin.ui:
+	- new ofa_date_filter_bin_get_frame_label() method,
+	- new ofa_date_filter_bin_is_from_empty() method,
+	- new ofa_date_filter_bin_is_from_valid() method,
+	- new ofa_date_filter_bin_is_to_empty() method,
+	- new ofa_date_filter_bin_is_to_valid() method.
+
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
+
 	* misc/convert/ebp_accounts.pl,
 	* misc/convert/ebp_entries.pl: accept a field separator argument.
 

@@ -258,7 +258,7 @@ static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self 
 static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static void           display_entries_from_account( ofaViewEntries *self );
-static void           on_effect_filter_changed( ofaDateFilterBin *bin, gint who, const GDate *date, ofaViewEntries *self );
+static void           on_effect_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
@@ -573,7 +573,8 @@ setup_dates_selection( ofaViewEntries *self )
 	priv = self->priv;
 
 	priv->effect_filter = ofa_date_filter_bin_new( st_pref_effect );
-	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_filter_changed ), self );
+	g_signal_connect(
+			priv->effect_filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
 
 	container = my_utils_container_get_child_by_name( priv->top_box, "effect-dates-filter" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -1636,7 +1637,7 @@ display_entries_from_account( ofaViewEntries *self )
 }
 
 static void
-on_effect_filter_changed( ofaDateFilterBin *bin, gint who, const GDate *date, ofaViewEntries *self )
+on_effect_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
 {
 	refresh_display( self );
 }

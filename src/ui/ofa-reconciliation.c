@@ -221,7 +221,7 @@ static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore,
 static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self );
 static void         select_mode( ofaReconciliation *self, gint mode );
-static void         on_effect_dates_changed( ofaDateFilterBin *filter, gint who, const GDate *date, ofaReconciliation *self );
+static void         on_effect_dates_changed( ofaDateFilterBin *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         do_select_bat( ofaReconciliation *self );
@@ -727,7 +727,8 @@ setup_dates_filter( ofaPage *page, GtkContainer *parent )
 	g_return_if_fail( filter_parent && GTK_IS_CONTAINER( filter_parent ));
 	gtk_container_add( GTK_CONTAINER( filter_parent ), GTK_WIDGET( priv->effect_filter ));
 
-	g_signal_connect( priv->effect_filter, "changed", G_CALLBACK( on_effect_dates_changed ), page );
+	g_signal_connect(
+			priv->effect_filter, "ofa-focus-out", G_CALLBACK( on_effect_dates_changed ), page );
 }
 
 static void
@@ -1175,7 +1176,7 @@ select_mode( ofaReconciliation *self, gint mode )
  * effect dates filter are not stored in settings
  */
 static void
-on_effect_dates_changed( ofaDateFilterBin *filter, gint who, const GDate *date, ofaReconciliation *self )
+on_effect_dates_changed( ofaDateFilterBin *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 

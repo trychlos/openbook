@@ -35,6 +35,11 @@
 
    - ofo_account_is_allowed(): new method.
    - ofs_bat_detail_free(): new function.
+   - ofa_date_filter_bin_get_frame_label(): new method.
+   - ofa_date_filter_bin_is_from_empty(): new method,
+   - ofa_date_filter_bin_is_from_valid(): new method,
+   - ofa_date_filter_bin_is_to_empty(): new method,
+   - ofa_date_filter_bin_is_to_valid(): new method.
 
 -----------------------------------------------------------------------
  Version 0.38

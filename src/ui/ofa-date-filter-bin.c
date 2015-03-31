@@ -37,18 +37,22 @@
 /* private instance data
  */
 struct _ofaDateFilterBinPrivate {
-	gboolean dispose_has_run;
+	gboolean   dispose_has_run;
 
-	gchar   *pref_name;					/* settings key name */
+	gchar     *pref_name;				/* settings key name */
 
-	GDate    from_date;
-	GDate    to_date;
+	GtkWidget *from_entry;
+	GDate      from_date;
+
+	GtkWidget *to_entry;
+	GDate      to_date;
 };
 
 /* signals defined here
  */
 enum {
 	CHANGED = 0,
+	FOCUS_OUT,
 	N_SIGNALS
 };
 
@@ -61,8 +65,11 @@ G_DEFINE_TYPE( ofaDateFilterBin, ofa_date_filter_bin, GTK_TYPE_BIN )
 
 static void     load_dialog( ofaDateFilterBin *bin );
 static void     setup_dialog( ofaDateFilterBin *bin );
+static void     on_from_changed( GtkEntry *entry, ofaDateFilterBin *bin );
 static gboolean on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaDateFilterBin *bin );
+static void     on_to_changed( GtkEntry *entry, ofaDateFilterBin *bin );
 static gboolean on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaDateFilterBin *bin );
+static void     on_date_changed( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date );
 static gboolean on_date_focus_out( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date );
 static void     get_settings( ofaDateFilterBin *bin );
 static void     set_settings( ofaDateFilterBin *bin );
@@ -134,18 +141,19 @@ ofa_date_filter_bin_class_init( ofaDateFilterBinClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaDateFilterBinPrivate ));
 
 	/**
-	 * ofaDateFilterBin::changed:
+	 * ofaDateFilterBin::ofa-changed:
 	 *
 	 * This signal is sent when one of the from or to dates is changed.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDateFilterBin *bin,
 	 * 						gint            who,
-	 * 						const GDate    *date,
+	 * 						gboolean        empty,
+	 * 						gboolean        valid,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_DATE_FILTER_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -153,8 +161,33 @@ ofa_date_filter_bin_class_init( ofaDateFilterBinClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				2,
-				G_TYPE_INT, G_TYPE_POINTER );
+				3,
+				G_TYPE_INT, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
+
+	/**
+	 * ofaDateFilterBin::ofa-focus-out:
+	 *
+	 * This signal is sent when one of the from or to date entries lose
+	 * the focus. The date is supposed to be complete.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaDateFilterBin *bin,
+	 * 						gint            who,
+	 * 						gboolean        empty,
+	 * 						GDate          *date,
+	 * 						gpointer        user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-focus-out",
+				OFA_TYPE_DATE_FILTER_BIN,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				3,
+				G_TYPE_INT, G_TYPE_BOOLEAN, G_TYPE_POINTER );
 }
 
 /**
@@ -200,6 +233,7 @@ setup_dialog( ofaDateFilterBin *bin )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->from_entry = entry;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -209,6 +243,7 @@ setup_dialog( ofaDateFilterBin *bin )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 
+	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), bin );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), bin );
 
 	if( my_date_is_valid( &priv->from_date )){
@@ -217,6 +252,7 @@ setup_dialog( ofaDateFilterBin *bin )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->to_entry = entry;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -226,11 +262,18 @@ setup_dialog( ofaDateFilterBin *bin )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 
+	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), bin );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), bin );
 
 	if( my_date_is_valid( &priv->to_date )){
 		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->to_date );
 	}
+}
+
+static void
+on_from_changed( GtkEntry *entry, ofaDateFilterBin *bin )
+{
+	on_date_changed( bin, OFA_DATE_FILTER_FROM, entry, &bin->priv->from_date );
 }
 
 /*
@@ -244,6 +287,12 @@ on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaDateFilterBin *bin )
 	return( on_date_focus_out( bin, OFA_DATE_FILTER_FROM, entry, &bin->priv->from_date ));
 }
 
+static void
+on_to_changed( GtkEntry *entry, ofaDateFilterBin *bin )
+{
+	on_date_changed( bin, OFA_DATE_FILTER_TO, entry, &bin->priv->to_date );
+}
+
 /*
  * Returns :
  * TRUE to stop other handlers from being invoked for the event.
@@ -255,6 +304,19 @@ on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaDateFilterBin *bin )
 	return( on_date_focus_out( bin, OFA_DATE_FILTER_TO, entry, &bin->priv->to_date ));
 }
 
+static void
+on_date_changed( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date )
+{
+	gboolean empty, valid;
+
+	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
+
+	empty = my_editable_date_is_empty( GTK_EDITABLE( entry ));
+	valid = my_date_is_valid( date );
+
+	g_signal_emit_by_name( bin, "ofa-changed", who, empty, valid );
+}
+
 static gboolean
 on_date_focus_out( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date )
 {
@@ -264,9 +326,53 @@ on_date_focus_out( ofaDateFilterBin *bin, gint who, GtkEntry *entry, GDate *date
 		set_settings( bin );
 	}
 
-	g_signal_emit_by_name( bin, "changed", who, date );
+	g_signal_emit_by_name( bin, "ofa-focus-out", who, date );
 
 	return( FALSE );
+}
+
+/**
+ * ofa_date_filter_bin_is_from_empty:
+ */
+gboolean
+ofa_date_filter_bin_is_from_empty( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+	gboolean empty;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+	empty = TRUE;
+
+	if( !priv->dispose_has_run ){
+
+		empty = my_strlen( gtk_entry_get_text( GTK_ENTRY( priv->from_entry ))) == 0;
+	}
+
+	return( empty );
+}
+
+/**
+ * ofa_date_filter_bin_is_from_valid:
+ */
+gboolean
+ofa_date_filter_bin_is_from_valid( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+	gboolean valid;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+	valid = TRUE;
+
+	if( !priv->dispose_has_run ){
+
+		valid = my_date_is_valid( &priv->from_date );
+	}
+
+	return( valid );
 }
 
 /**
@@ -308,6 +414,50 @@ ofa_date_filter_bin_set_from( ofaDateFilterBin *bin, const GDate *from )
 }
 
 /**
+ * ofa_date_filter_bin_is_to_empty:
+ */
+gboolean
+ofa_date_filter_bin_is_to_empty( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+	gboolean empty;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+	empty = TRUE;
+
+	if( !priv->dispose_has_run ){
+
+		empty = my_strlen( gtk_entry_get_text( GTK_ENTRY( priv->to_entry ))) == 0;
+	}
+
+	return( empty );
+}
+
+/**
+ * ofa_date_filter_bin_is_to_valid:
+ */
+gboolean
+ofa_date_filter_bin_is_to_valid( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+	gboolean valid;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+	valid = TRUE;
+
+	if( !priv->dispose_has_run ){
+
+		valid = my_date_is_valid( &priv->to_date );
+	}
+
+	return( valid );
+}
+
+/**
  * ofa_date_filter_bin_get_to:
  */
 const GDate *
@@ -343,6 +493,29 @@ ofa_date_filter_bin_set_to( ofaDateFilterBin *bin, const GDate *to )
 	if( !priv->dispose_has_run ){
 		my_date_set_from_date( &priv->to_date, to );
 	}
+}
+
+/**
+ * ofa_date_filter_bin_get_frame_label:
+ * @bin:
+ *
+ * Returns: a pointer to the GtkWidget which is used as the frame label.
+ */
+GtkWidget *
+ofa_date_filter_bin_get_frame_label( const ofaDateFilterBin *bin )
+{
+	ofaDateFilterBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DATE_FILTER_BIN( bin ), NULL );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "frame-label" ));
+	}
+
+	return( NULL );
 }
 
 /**
