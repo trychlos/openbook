@@ -1,0 +1,360 @@
+/*
+ * Open Freelance Accounting
+ * A double-entry accounting application for freelances.
+ *
+ * Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
+ *
+ * Open Freelance Accounting is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * Open Freelance Accounting is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Open Freelance Accounting; see the file COPYING. If not,
+ * see <http://www.gnu.org/licenses/>.
+ *
+ * Authors:
+ *   Pierre Wieser <pwieser@trychlos.org>
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdlib.h>
+
+#include "api/my-utils.h"
+#include "api/ofa-idbms.h"
+#include "api/ofa-settings.h"
+
+#include "core/ofa-dossier-delete-prefs-bin.h"
+
+/* private instance data
+ */
+struct _ofaDossierDeletePrefsBinPrivate {
+	gboolean   dispose_has_run;
+
+	/* data
+	 */
+	gint       db_mode;
+	gboolean   account_mode;
+
+	/* UI
+	 */
+	GtkWidget *p2_db_drop;
+	GtkWidget *p2_db_keep;
+	GtkWidget *p3_account;
+};
+
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-delete-prefs-bin.ui";
+static const gchar *st_bin_id           = "DossierDeletePrefsBin";
+
+static const gchar *st_delete_prefs     = "DossierDeletePrefs";
+
+G_DEFINE_TYPE( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_BIN )
+
+static void setup_composite( ofaDossierDeletePrefsBin *bin );
+static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
+static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
+static void setup_settings( ofaDossierDeletePrefsBin *bin );
+
+static void
+dossier_delete_prefs_bin_finalize( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_prefs_bin_finalize";
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE_PREFS_BIN( instance ));
+
+	/* free data members here */
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_dossier_delete_prefs_bin_parent_class )->finalize( instance );
+}
+
+static void
+dossier_delete_prefs_bin_dispose( GObject *instance )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE_PREFS_BIN( instance ));
+
+	priv = OFA_DOSSIER_DELETE_PREFS_BIN( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_dossier_delete_prefs_bin_parent_class )->dispose( instance );
+}
+
+static void
+ofa_dossier_delete_prefs_bin_init( ofaDossierDeletePrefsBin *self )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_prefs_bin_init";
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_DOSSIER_DELETE_PREFS_BIN( self ));
+
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+							self, OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, ofaDossierDeletePrefsBinPrivate );
+}
+
+static void
+ofa_dossier_delete_prefs_bin_class_init( ofaDossierDeletePrefsBinClass *klass )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_prefs_bin_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = dossier_delete_prefs_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dossier_delete_prefs_bin_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrefsBinPrivate ));
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_new:
+ */
+ofaDossierDeletePrefsBin *
+ofa_dossier_delete_prefs_bin_new( void )
+{
+	ofaDossierDeletePrefsBin *bin;
+
+	bin = g_object_new( OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, NULL );
+
+	setup_composite( bin );
+	setup_settings( bin );
+
+	return( bin );
+}
+
+static void
+setup_composite( ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	GtkWidget *window, *top_widget, *radio, *check;
+
+	priv = bin->priv;
+
+	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
+	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
+
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+
+	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
+	gtk_widget_destroy( window );
+
+	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-drop" );
+	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
+	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), bin );
+	priv->p2_db_drop = radio;
+
+	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-leave" );
+	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
+	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), bin );
+	priv->p2_db_keep = radio;
+
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-account-drop" );
+	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
+	g_signal_connect( G_OBJECT( check ), "toggled", G_CALLBACK( on_account_toggled ), bin );
+	priv->p3_account = check;
+
+	/* #303: unable to remove administrative accounts */
+	gtk_widget_set_sensitive( check, FALSE );
+}
+
+static void
+on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	gboolean is_active;
+
+	priv = bin->priv;
+	is_active = gtk_toggle_button_get_active( btn );
+	priv->db_mode = 0;
+
+	if( is_active ){
+		if(( GtkWidget * ) btn == priv->p2_db_drop ){
+			priv->db_mode = DBMODE_DROP;
+
+		} else if(( GtkWidget * ) btn == priv->p2_db_keep ){
+			priv->db_mode = DBMODE_KEEP;
+		}
+	}
+}
+
+static void
+on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	priv = bin->priv;
+
+	priv->account_mode = gtk_toggle_button_get_active( btn );
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_get_db_mode:
+ * @bin:
+ *
+ * Returns: what to do about the database when deleting a dossier.
+ * See definition in api/ofa-idbms.h
+ */
+gint
+ofa_dossier_delete_prefs_bin_get_db_mode( const ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	gint mode;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ), -1 );
+
+	priv = bin->priv;
+	mode = -1;
+
+	if( !priv->dispose_has_run ){
+
+		mode = priv->db_mode;
+	}
+
+	return( mode );
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_set_db_mode:
+ * @bin:
+ * @mode: what to do about the database when deleting a dossier.
+ * See definition in api/ofa-idbms.h
+ */
+void
+ofa_dossier_delete_prefs_bin_set_db_mode( ofaDossierDeletePrefsBin *bin, gint mode )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( mode == DBMODE_DROP ){
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), TRUE );
+			on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), bin );
+
+		} else if( mode == DBMODE_KEEP ){
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), TRUE );
+			on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), bin );
+		}
+	}
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_get_account_mode:
+ * @bin:
+ *
+ * Returns: %TRUE if administrative accounts should be remove from the
+ * DBMS when deleting a dossier.
+ */
+gboolean
+ofa_dossier_delete_prefs_bin_get_account_mode( const ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	gboolean drop;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ), FALSE );
+
+	priv = bin->priv;
+	drop = FALSE;
+
+	if( !priv->dispose_has_run ){
+
+		drop = priv->account_mode;
+	}
+
+	return( drop );
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_set_account_mode:
+ * @bin:
+ * @drop: %TRUE if dossier administrative credentials should be dropped
+ *  from the DBMS when deleting the dossier.
+ */
+void
+ofa_dossier_delete_prefs_bin_set_account_mode( ofaDossierDeletePrefsBin *bin, gboolean drop )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p3_account ), drop );
+		on_account_toggled( GTK_TOGGLE_BUTTON( priv->p3_account ), bin );
+	}
+}
+
+/*
+ * settings: dbmode;drop_account;
+ */
+static void
+setup_settings( ofaDossierDeletePrefsBin *bin )
+{
+	GList *strlist, *it;
+	const gchar *cstr;
+	gint dbmode;
+	gboolean drop_account;
+
+	strlist = ofa_settings_get_string_list( st_delete_prefs );
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		dbmode = atoi( cstr );
+		ofa_dossier_delete_prefs_bin_set_db_mode( bin, dbmode );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		drop_account = my_utils_boolean_from_str( cstr );
+		ofa_dossier_delete_prefs_bin_set_account_mode( bin, drop_account );
+	}
+}
+
+/**
+ * ofa_dossier_delete_prefs_bin_set_settings:
+ * @bin:
+ */
+void
+ofa_dossier_delete_prefs_bin_set_settings( const ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	gchar *str;
+
+	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		str = g_strdup_printf( "%d;%s;", priv->db_mode, priv->account_mode ? "True":"False" );
+		ofa_settings_set_string( st_delete_prefs, str );
+		g_free( str );
+	}
+}

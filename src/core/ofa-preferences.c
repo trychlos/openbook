@@ -36,11 +36,11 @@
 #include "api/ofa-settings.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofa-dossier-delete-prefs-bin.h"
 #include "core/ofa-plugin.h"
 
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
-#include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-main-window.h"
 
@@ -48,50 +48,50 @@
  */
 struct _ofaPreferencesPrivate {
 
-	GtkWidget             *book;			/* main notebook of the dialog */
-	GtkWidget             *btn_ok;
+	GtkWidget                *book;			/* main notebook of the dialog */
+	GtkWidget                *btn_ok;
 
 	/* whether the dialog has been validated
 	 */
-	gboolean               updated;
+	gboolean                  updated;
 
 	/* when opening the preferences from the plugin manager
 	 */
-	ofaPlugin             *plugin;
-	GtkWidget             *object_page;
+	ofaPlugin                *plugin;
+	GtkWidget                *object_page;
 
 	/* UI - Quitting
 	 */
-	GtkCheckButton        *confirm_on_escape_btn;
+	GtkCheckButton           *confirm_on_escape_btn;
 
 	/* UI - Dossier delete page
 	 */
-	ofaDossierDeletePrefs *dd_prefs;
+	ofaDossierDeletePrefsBin *dd_prefs;
 
 	/* UI - Account delete page
 	 */
 
 	/* UI - Locales
 	 */
-	myDateCombo           *p3_display_combo;
-	myDateCombo           *p3_check_combo;
-	myDecimalCombo        *p3_decimal_sep;
-	GtkWidget             *p3_thousand_sep;
-	GtkWidget             *p3_accept_dot;
-	GtkWidget             *p3_accept_comma;
+	myDateCombo              *p3_display_combo;
+	myDateCombo              *p3_check_combo;
+	myDecimalCombo           *p3_decimal_sep;
+	GtkWidget                *p3_thousand_sep;
+	GtkWidget                *p3_accept_dot;
+	GtkWidget                *p3_accept_comma;
 
 	/* Export settings
 	 */
-	ofaFileFormatBin      *export_settings;
-	GtkFileChooser        *p5_chooser;
+	ofaFileFormatBin         *export_settings;
+	GtkFileChooser           *p5_chooser;
 
 	/* Import settings
 	 */
-	ofaFileFormatBin      *import_settings;
+	ofaFileFormatBin         *import_settings;
 
 	/* UI - Plugin pages
 	 */
-	GList                 *plugs;
+	GList                    *plugs;
 };
 
 #define SETTINGS_AMOUNT                    "UserAmount"
@@ -117,8 +117,6 @@ static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCance
 
 static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferences.ui";
 static const gchar *st_ui_id                          = "PreferencesDlg";
-static const gchar *st_delete_dossier_xml             = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
-static const gchar *st_delete_dossier_id              = "DossierDeleteWindow";
 
 typedef struct {
 	ofaIPreferences *object;
@@ -131,15 +129,15 @@ typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPreferences * );
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
 static void       v_init_dialog( myDialog *dialog );
-static void       init_quitting_page( ofaPreferences *self );
-static void       init_dossier_delete_page( ofaPreferences *self );
-static void       init_account_page( ofaPreferences *self );
-static void       init_locales_page( ofaPreferences *self );
+static void       init_quitting_page( ofaPreferences *self, GtkContainer *toplevel );
+static void       init_dossier_delete_page( ofaPreferences *self, GtkContainer *toplevel );
+static void       init_account_page( ofaPreferences *self, GtkContainer *toplevel );
+static void       init_locales_page( ofaPreferences *self, GtkContainer *toplevel );
 /*static void       get_locales( void );*/
-static void       init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
-static void       init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
-static void       init_export_page( ofaPreferences *self );
-static void       init_import_page( ofaPreferences *self );
+static void       init_locale_date( ofaPreferences *self, GtkContainer *toplevel, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
+static void       init_locale_sep( ofaPreferences *self, GtkContainer *toplevel, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
+static void       init_export_page( ofaPreferences *self, GtkContainer *toplevel );
+static void       init_import_page( ofaPreferences *self, GtkContainer *toplevel );
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       activate_first_page( ofaPreferences *self );
@@ -190,8 +188,6 @@ preferences_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = OFA_PREFERENCES( instance )->priv;
-
-		g_clear_object( &priv->dd_prefs );
 
 		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
 		priv->plugs = NULL;
@@ -280,102 +276,92 @@ v_init_dialog( myDialog *dialog )
 	GtkWindow *toplevel;
 
 	priv = OFA_PREFERENCES( dialog )->priv;
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
 
-	init_quitting_page( OFA_PREFERENCES( dialog ));
-	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
-	init_account_page( OFA_PREFERENCES( dialog ));
-	init_locales_page( OFA_PREFERENCES( dialog ));
-	init_export_page( OFA_PREFERENCES( dialog ));
-	init_import_page( OFA_PREFERENCES( dialog ));
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
+	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
+	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
+
+	init_quitting_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_dossier_delete_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_account_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_locales_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_export_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_import_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
 	enumerate_prefs_plugins( OFA_PREFERENCES( dialog ), init_plugin_page );
 }
 
 static void
-init_quitting_page( ofaPreferences *self )
+init_quitting_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
-	GtkContainer *container;
 	GtkWidget *button;
 	gboolean bvalue;
 
 	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	/* priv->confirm_on_escape_btn is set before acting on
 	 *  quit-on-escape button as triggered signal use the variable */
-	button = my_utils_container_get_child_by_name( container, "p1-confirm-on-escape" );
+	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_escape();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->confirm_on_escape_btn = GTK_CHECK_BUTTON( button );
 
-	button = my_utils_container_get_child_by_name( container, "p1-quit-on-escape" );
+	button = my_utils_container_get_child_by_name( toplevel, "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
 	bvalue = ofa_prefs_assistant_quit_on_escape();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
-	button = my_utils_container_get_child_by_name( container, "p1-confirm-on-cancel" );
+	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_cancel();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
-	button = my_utils_container_get_child_by_name( container, "p1-confirm-altf4" );
+	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-altf4" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_appli_confirm_on_altf4();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
-	button = my_utils_container_get_child_by_name( container, "p1-confirm-quit" );
+	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-quit" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_appli_confirm_on_quit();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
 static void
-init_dossier_delete_page( ofaPreferences *self )
+init_dossier_delete_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
-	GtkContainer *container;
-	GtkWidget *window;
-	GtkWidget *grid, *parent;
+	GtkWidget *parent;
 
 	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	parent = my_utils_container_get_child_by_name( toplevel, "alignment2-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	window = my_utils_builder_load_from_path( st_delete_dossier_xml, st_delete_dossier_id );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "grid-container" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-
-	parent = my_utils_container_get_child_by_name( container, "alignment2-parent" );
-	gtk_widget_reparent( grid, parent );
-
-	priv->dd_prefs = ofa_dossier_delete_prefs_new();
-	ofa_dossier_delete_prefs_init_dialog( priv->dd_prefs, container );
+	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dd_prefs ));
 }
 
 static void
-init_account_page( ofaPreferences *self )
+init_account_page( ofaPreferences *self, GtkContainer *toplevel )
 {
-	GtkContainer *container;
 	GtkWidget *button;
 	gboolean bvalue;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-
-	button = my_utils_container_get_child_by_name( container, "p4-delete-with-child" );
+	button = my_utils_container_get_child_by_name( toplevel, "p4-delete-with-child" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_account_delete_root_with_children();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
 static void
-init_locales_page( ofaPreferences *self )
+init_locales_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *parent, *label, *check;
@@ -384,12 +370,12 @@ init_locales_page( ofaPreferences *self )
 
 	/*get_locales();*/
 
-	init_locale_date( self,
+	init_locale_date( self, toplevel,
 			&priv->p3_display_combo, "l-display", "p3-alignment-display", ofa_prefs_date_display());
 	g_signal_connect( priv->p3_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
 	on_display_date_changed( GTK_COMBO_BOX( priv->p3_display_combo ), self );
 
-	init_locale_date( self,
+	init_locale_date( self, toplevel,
 			&priv->p3_check_combo,   "l-visual",  "p3-alignment-check",   ofa_prefs_date_check());
 	g_signal_connect( priv->p3_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
 	on_check_date_changed( GTK_COMBO_BOX( priv->p3_check_combo ), self );
@@ -397,18 +383,18 @@ init_locales_page( ofaPreferences *self )
 	/* decimal display */
 	priv->p3_decimal_sep = my_decimal_combo_new();
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-decimal-parent" );
+	parent = my_utils_container_get_child_by_name( toplevel, "p3-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_decimal_sep ));
 	my_decimal_combo_set_selected( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "l-decimal" );
+	label = my_utils_container_get_child_by_name( toplevel, "l-decimal" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p3_decimal_sep ));
 
 	/* accept dot decimal separator */
-	check = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-accept-dot" );
+	check = my_utils_container_get_child_by_name( toplevel, "p3-accept-dot" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p3_accept_dot = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_dot_toggled ), self );
@@ -416,7 +402,7 @@ init_locales_page( ofaPreferences *self )
 	on_accept_dot_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* accept comma decimal separator */
-	check = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), "p3-accept-comma" );
+	check = my_utils_container_get_child_by_name( toplevel, "p3-accept-comma" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p3_accept_comma = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_comma_toggled ), self );
@@ -424,7 +410,7 @@ init_locales_page( ofaPreferences *self )
 	on_accept_comma_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* thousand separator */
-	init_locale_sep( self,
+	init_locale_sep( self, toplevel,
 			&priv->p3_thousand_sep, "l-thousand", "p3-thousand-sep", ofa_prefs_amount_thousand_sep());
 }
 
@@ -467,48 +453,41 @@ get_locales( void )
 #endif
 
 static void
-init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label_name, const gchar *parent, myDateFormat ivalue )
+init_locale_date( ofaPreferences *self, GtkContainer *toplevel, myDateCombo **wcombo, const gchar *label_name, const gchar *parent, myDateFormat ivalue )
 {
-	ofaPreferencesPrivate *priv;
 	GtkWidget *parent_widget, *label;
 
-	priv = self->priv;
-
-	parent_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), parent );
+	parent_widget = my_utils_container_get_child_by_name( toplevel, parent );
 	g_return_if_fail( parent_widget && GTK_IS_CONTAINER( parent_widget ));
 
 	*wcombo = my_date_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent_widget ), GTK_WIDGET( *wcombo ));
 	my_date_combo_set_selected( *wcombo, ivalue );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), label_name );
+	label = my_utils_container_get_child_by_name( toplevel, label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wcombo ));
 }
 
 static void
-init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label_name, const gchar *wname, const gchar *svalue )
+init_locale_sep( ofaPreferences *self, GtkContainer *toplevel, GtkWidget **wentry, const gchar *label_name, const gchar *wname, const gchar *svalue )
 {
-	ofaPreferencesPrivate *priv;
 	GtkWidget *label;
 
-	priv = self->priv;
-
-	*wentry = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), wname );
+	*wentry = my_utils_container_get_child_by_name( toplevel, wname );
 	g_return_if_fail( *wentry && GTK_IS_ENTRY( *wentry ));
 
 	gtk_entry_set_text( GTK_ENTRY( *wentry ), svalue );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->book ), label_name );
+	label = my_utils_container_get_child_by_name( toplevel, label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( *wentry ));
 }
 
 static void
-init_export_page( ofaPreferences *self )
+init_export_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
-	GtkContainer *container;
 	GtkWidget *target, *label;
 	gchar *str;
 	GtkSizeGroup *group;
@@ -516,8 +495,7 @@ init_export_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-	target = my_utils_container_get_child_by_name( container, "alignment5-parent" );
+	target = my_utils_container_get_child_by_name( toplevel, "alignment5-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
@@ -525,7 +503,7 @@ init_export_page( ofaPreferences *self )
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 
-	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
+	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( toplevel, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
 	if( my_strlen( str )){
 		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
@@ -534,39 +512,37 @@ init_export_page( ofaPreferences *self )
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = my_utils_container_get_child_by_name( container, "label1x" );
+	label = my_utils_container_get_child_by_name( toplevel, "label1x" );
 	gtk_size_group_add_widget( group, label );
 
-	label = my_utils_container_get_child_by_name( container, "label2x" );
+	label = my_utils_container_get_child_by_name( toplevel, "label2x" );
 	gtk_size_group_add_widget( group, label );
 
-	label = my_utils_container_get_child_by_name( container, "label3x" );
+	label = my_utils_container_get_child_by_name( toplevel, "label3x" );
 	gtk_size_group_add_widget( group, label );
 
-	label = my_utils_container_get_child_by_name( container, "label4x" );
+	label = my_utils_container_get_child_by_name( toplevel, "label4x" );
 	gtk_size_group_add_widget( group, label );
 
-	label = my_utils_container_get_child_by_name( container, "p5-field-label" );
+	label = my_utils_container_get_child_by_name( toplevel, "p5-field-label" );
 	gtk_size_group_add_widget( group, label );
 
-	label = my_utils_container_get_child_by_name( container, "p52-label" );
+	label = my_utils_container_get_child_by_name( toplevel, "p52-label" );
 	gtk_size_group_add_widget( group, label );
 
 	g_object_unref( group );
 }
 
 static void
-init_import_page( ofaPreferences *self )
+init_import_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
-	GtkContainer *container;
 	GtkWidget *target;
 	ofaFileFormat *settings;
 
 	priv = self->priv;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-	target = my_utils_container_get_child_by_name( container, "p6-import-parent" );
+	target = my_utils_container_get_child_by_name( toplevel, "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
@@ -746,7 +722,7 @@ do_update( ofaPreferences *self )
 	priv = self->priv;
 
 	do_update_quitting_page( self );
-	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
+	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
 	do_update_account_page( self );
 	ok = do_update_locales_page( self );
 	do_update_export_page( self );

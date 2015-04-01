@@ -148,7 +148,6 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-currency-combo.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
 	ofa-currency-store.$(OBJEXT) ofa-date-filter-bin.$(OBJEXT) \
 	ofa-dossier-delete.$(OBJEXT) \
-	ofa-dossier-delete-prefs.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-login.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
@@ -549,8 +548,6 @@ openbook_SOURCES = \
 	ofa-date-filter-bin.h								\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
-	ofa-dossier-delete-prefs.c							\
-	ofa-dossier-delete-prefs.h							\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
 	ofa-dossier-login.c									\
@@ -888,7 +885,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-login.Po@am__quote@

@@ -137,8 +137,6 @@ openbook_SOURCES = \
 	ofa-date-filter-bin.h								\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
-	ofa-dossier-delete-prefs.c							\
-	ofa-dossier-delete-prefs.h							\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
 	ofa-dossier-login.c									\

@@ -491,6 +491,17 @@ typedef enum {
 }
 	ofnDBMode;
 
+/**
+ * ofnDBMode:
+ *
+ * What to do about the database when deleting a dossier.
+ */
+typedef enum {
+	DBMODE_DROP = 1,
+	DBMODE_KEEP
+}
+	ofnDBDeleteMode;
+
 GType        ofa_idbms_get_type                  ( void );
 
 void        *ofa_idbms_connect                   ( const ofaIDbms *instance,

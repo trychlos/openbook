@@ -69,6 +69,8 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dbms.c											\
+	ofa-dossier-delete-prefs-bin.c						\
+	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
 	ofa-icollector.c									\
@@ -130,7 +132,7 @@ libofa_core_la_LDFLAGS = \
 ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-dbms-root-bin.ui								\
-	ofa-dossier-delete-prefs.piece.ui					\
+	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-preferences.ui									\
 	$(NULL)
 

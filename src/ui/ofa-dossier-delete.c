@@ -34,9 +34,9 @@
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofa-dossier-delete-prefs-bin.h"
 
 #include "ui/ofa-dossier-delete.h"
-#include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -45,33 +45,30 @@ struct _ofaDossierDeletePrivate {
 
 	/* input parameters
 	 */
-	const gchar           *label;
-	const gchar           *provider;
-	const gchar           *host;
-	const gchar           *dbname;
+	const gchar              *label;
+	const gchar              *provider;
+	const gchar              *host;
+	const gchar              *dbname;
 
 	/* entered data
 	 */
-	gchar                 *p2_account;
-	gchar                 *p2_password;
+	gchar                    *p2_account;
+	gchar                    *p2_password;
 
 	/* output data
 	 */
-	gboolean               deleted;
+	gboolean                  deleted;
 
 	/* UI
 	 */
-	gboolean               connect_ok;
-	GtkLabel              *p2_msg;
-	ofaDossierDeletePrefs *prefs;
-	GtkWidget             *btn_ok;
+	gboolean                  connect_ok;
+	GtkLabel                 *p2_msg;
+	ofaDossierDeletePrefsBin *prefs;
+	GtkWidget                *btn_ok;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-delete.ui";
 static const gchar *st_ui_id            = "DossierDeleteDlg";
-
-static const gchar *st_delete_prefs_xml = PKGCOREDIR "/ofa-dossier-delete-prefs.piece.ui";
-static const gchar *st_delete_prefs_ui  = "DossierDeleteWindow";
 
 /* keep the dbserver admin password */
 static       gchar *st_passwd           = NULL;
@@ -110,15 +107,11 @@ dossier_delete_finalize( GObject *instance )
 static void
 dossier_delete_dispose( GObject *instance )
 {
-	ofaDossierDeletePrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_DOSSIER_DELETE( instance )->priv;
-		g_clear_object( &priv->prefs );
 	}
 
 	/* chain up to the parent class */
@@ -259,22 +252,17 @@ init_delete_prefs( ofaDossierDelete *self )
 {
 	ofaDossierDeletePrivate *priv;
 	GtkContainer *container;
-	GtkWidget *window;
-	GtkWidget *grid, *parent;
+	GtkWidget *parent;
 
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-
-	window = my_utils_builder_load_from_path( st_delete_prefs_xml, st_delete_prefs_ui );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "grid-container" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	parent = my_utils_container_get_child_by_name( container, "alignment3-parent" );
-	gtk_widget_reparent( grid, parent );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->prefs = ofa_dossier_delete_prefs_new();
-	ofa_dossier_delete_prefs_init_dialog( priv->prefs, container );
+	priv->prefs = ofa_dossier_delete_prefs_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs ));
 }
 
 static void
@@ -376,7 +364,7 @@ v_quit_on_ok( myDialog *dialog )
 
 	priv->deleted = do_delete_dossier( OFA_DOSSIER_DELETE( dialog ));
 
-	ofa_dossier_delete_prefs_set_settings( priv->prefs );
+	ofa_dossier_delete_prefs_bin_set_settings( priv->prefs );
 
 	return( TRUE );
 }
@@ -397,11 +385,11 @@ do_delete_dossier( ofaDossierDelete *self )
 		return( FALSE );
 	}
 
-	db_mode = ofa_dossier_delete_prefs_get_db_mode( priv->prefs );
+	db_mode = ofa_dossier_delete_prefs_bin_get_db_mode( priv->prefs );
 	g_debug( "%s: db_mode=%u", thisfn, db_mode );
 	drop_db = ( db_mode == DBMODE_REINIT );
 
-	drop_accounts = ofa_dossier_delete_prefs_get_account_mode( priv->prefs );
+	drop_accounts = ofa_dossier_delete_prefs_bin_get_account_mode( priv->prefs );
 
 	ofa_idbms_delete_dossier(
 			module,

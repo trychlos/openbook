@@ -156,8 +156,9 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo my-dialog.lo \
 	my-double.lo my-utils.lo my-window.lo \
 	ofa-admin-credentials-bin.lo ofa-box.lo ofa-collection.lo \
 	ofa-concil-collection.lo ofa-dbms-root-bin.lo ofa-dbms.lo \
-	ofa-dossier-misc.lo ofa-file-format.lo ofa-icollector.lo \
-	ofa-iconcil.lo ofa-idataset.lo ofa-idbms.lo ofa-iexportable.lo \
+	ofa-dossier-delete-prefs-bin.lo ofa-dossier-misc.lo \
+	ofa-file-format.lo ofa-icollector.lo ofa-iconcil.lo \
+	ofa-idataset.lo ofa-idbms.lo ofa-iexportable.lo \
 	ofa-iimporter.lo ofa-iimportable.lo ofa-plugin.lo \
 	ofa-preferences.lo ofa-settings.lo ofa-settings-monitor.lo \
 	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
@@ -443,6 +444,8 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dbms.c											\
+	ofa-dossier-delete-prefs-bin.c						\
+	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
 	ofa-icollector.c									\
@@ -497,7 +500,7 @@ libofa_core_la_LDFLAGS = \
 ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-dbms-root-bin.ui								\
-	ofa-dossier-delete-prefs.piece.ui					\
+	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-preferences.ui									\
 	$(NULL)
 
@@ -605,6 +608,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-concil-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-misc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icollector.Plo@am__quote@
