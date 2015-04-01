@@ -611,8 +611,8 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p5_admin_credentials = ofa_admin_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_admin_credentials ));
 
-	g_signal_connect(
-			priv->p5_admin_credentials, "changed", G_CALLBACK( p5_on_admin_credentials_changed ), self );
+	g_signal_connect( priv->p5_admin_credentials,
+			"ofa-changed", G_CALLBACK( p5_on_admin_credentials_changed ), self );
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
@@ -664,7 +664,7 @@ p5_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_admin_credentials_bin_is_valid( priv->p5_admin_credentials );
+	ok = ofa_admin_credentials_bin_is_valid( priv->p5_admin_credentials, NULL );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }

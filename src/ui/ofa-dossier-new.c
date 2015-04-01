@@ -252,7 +252,8 @@ v_init_dialog( myDialog *dialog )
 	priv->admin_credentials = ofa_admin_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_credentials ));
 
-	g_signal_connect( priv->admin_credentials, "changed", G_CALLBACK( on_admin_credentials_changed ), dialog );
+	g_signal_connect( priv->admin_credentials,
+			"ofa-changed", G_CALLBACK( on_admin_credentials_changed ), dialog );
 
 	/* set properties_toggle before setting open value */
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-properties" );
@@ -352,7 +353,7 @@ check_for_enable_dlg( ofaDossierNew *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	oka = ofa_dossier_new_bin_is_valid( priv->new_bin );
-	okb = ofa_admin_credentials_bin_is_valid( priv->admin_credentials );
+	okb = ofa_admin_credentials_bin_is_valid( priv->admin_credentials, NULL );
 
 	enabled = oka && okb;
 

@@ -31,8 +31,14 @@
  * @include: core/ofa-admin-credentials-bin.h
  *
  * Let the user enter dossier administrative account and password when
- * defining a new dossier, so we do not check here whether the entered
- * credentials are actually registered into the dossier database.
+ * defining a new (or restoring a) dossier. We do not check here whether
+ * the entered credentials are actually registered and valid into the
+ * dossier database, but only if they are set.
+ *
+ * This is a composite widget, so:
+ * - have a "top" container
+ * - do not manage its own error message display
+ * - do not manage its own settings.
  */
 
 #include <gtk/gtk.h>
@@ -67,7 +73,8 @@ GType                   ofa_admin_credentials_bin_get_type ( void ) G_GNUC_CONST
 
 ofaAdminCredentialsBin *ofa_admin_credentials_bin_new      ( void );
 
-gboolean                ofa_admin_credentials_bin_is_valid ( const ofaAdminCredentialsBin *bin );
+gboolean                ofa_admin_credentials_bin_is_valid ( const ofaAdminCredentialsBin *bin,
+																		gchar **error_message );
 
 G_END_DECLS
 

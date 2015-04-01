@@ -37,16 +37,11 @@
 struct _ofaAdminCredentialsBinPrivate {
 	gboolean      dispose_has_run;
 
-	/* UI
-	 */
-	GtkWidget    *msg_label;
-
 	/* runtime data
 	 */
 	gchar        *account;
 	gchar        *password;
 	gchar        *bis;
-	gboolean      ok;
 };
 
 /* signals defined here
@@ -63,11 +58,12 @@ static const gchar *st_bin_id           = "AdminCredentialsBin";
 
 G_DEFINE_TYPE( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN )
 
-static void setup_dialog( ofaAdminCredentialsBin *bin );
-static void on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void check_for_enable_dlg( ofaAdminCredentialsBin *self );
+static void     setup_composite( ofaAdminCredentialsBin *bin );
+static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void     changed_composite( ofaAdminCredentialsBin *self );
+static gboolean is_valid_composite( const ofaAdminCredentialsBin *self );
 
 static void
 admin_credentials_bin_finalize( GObject *instance )
@@ -140,10 +136,11 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 	/**
 	 * ofaAdminCredentialsBin::changed:
 	 *
-	 * This signal is sent on the #ofaAdminCredentialsBin when the
-	 * account or the password are changed.
+	 * This signal is sent on the #ofaAdminCredentialsBin when one of
+	 * the three entry fields (account, password or second password) is
+	 * changed.
 	 *
-	 * Arguments are account and password.
+	 * Arguments are current account and password.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaAdminCredentialsBin *bin,
@@ -152,7 +149,7 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_ADMIN_CREDENTIALS_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -174,26 +171,24 @@ ofa_admin_credentials_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_ADMIN_CREDENTIALS_BIN, NULL );
 
-	setup_dialog( bin );
+	setup_composite( bin );
 
 	return( bin );
 }
 
 static void
-setup_dialog( ofaAdminCredentialsBin *bin )
+setup_composite( ofaAdminCredentialsBin *bin )
 {
-	ofaAdminCredentialsBinPrivate *priv;
 	GtkWidget *window, *top_widget, *entry;
-
-	priv =bin->priv;
 
 	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
 	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "adm-top" );
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
 	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
+	gtk_widget_destroy( window );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-account" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -202,18 +197,13 @@ setup_dialog( ofaAdminCredentialsBin *bin )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-password" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
+	g_signal_connect(
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-bis" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_bis_changed ), bin );
-
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-msg" );
-	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-
-	check_for_enable_dlg( bin );
-
-	gtk_widget_show_all( GTK_WIDGET( bin ));
+	g_signal_connect(
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_bis_changed ), bin );
 }
 
 static void
@@ -226,7 +216,7 @@ on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 	g_free( priv->account );
 	priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 static void
@@ -239,7 +229,7 @@ on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 	g_free( priv->password );
 	priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 static void
@@ -252,55 +242,66 @@ on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 	g_free( priv->bis );
 	priv->bis = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 /*
- * test the DBMS root connection by trying to connect with empty dbname
+ * check that all fields are set, and that the two passwords are equal
  */
 static void
-check_for_enable_dlg( ofaAdminCredentialsBin *self )
+changed_composite( ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
-	GdkRGBA color;
 
 	priv = self->priv;
-	priv->ok = FALSE;
 
-	if( priv->msg_label ){
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
-
-		priv->ok = my_strlen( priv->account ) &&
-					my_strlen( priv->password ) &&
-					my_strlen( priv->bis ) &&
-					!g_utf8_collate( priv->password, priv->bis );
-
-		if( !priv->ok ){
-			gtk_label_set_text( GTK_LABEL( priv->msg_label ),
-					_( "Dossier administrative credentials are not valid" ));
-			gdk_rgba_parse( &color, "#ff0000" );
-			gtk_widget_override_color(
-					GTK_WIDGET( priv->msg_label ), GTK_STATE_FLAG_NORMAL, &color );
-		}
-	}
-
-	g_signal_emit_by_name( self, "changed", priv->account, priv->password );
+	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
 }
 
 /**
  * ofa_admin_credentials_bin_is_valid:
+ * @bin:
+ * @error_message: [allow-none]: set to the error message as a newly
+ *  allocated string which should be g_free() by the caller.
+ *
+ * Returns: %TRUE if the composite widget is valid: both account and
+ * password are set, password is repeated twice and are equal.
  */
 gboolean
-ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin )
+ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **error_message )
 {
 	ofaAdminCredentialsBinPrivate *priv;
+	gboolean is_valid;
 
 	priv = bin->priv;
+	is_valid = FALSE;
 
 	if( !priv->dispose_has_run ){
 
-		return( priv->ok );
+		is_valid = is_valid_composite( bin );
+
+		if( error_message ){
+			*error_message = is_valid ?
+					NULL :
+					g_strdup( _( "Dossier administrative credentials are not valid" ));
+		}
 	}
 
-	return( FALSE );
+	return( is_valid );
+}
+
+static gboolean
+is_valid_composite( const ofaAdminCredentialsBin *bin )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+	gboolean ok;
+
+	priv = bin->priv;
+
+	ok = my_strlen( priv->account ) &&
+			my_strlen( priv->password ) &&
+			my_strlen( priv->bis ) &&
+			!g_utf8_collate( priv->password, priv->bis );
+
+	return( ok );
 }
