@@ -527,14 +527,15 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p4_dbms_credentials = ofa_dbms_root_bin_new();
-	ofa_dbms_root_bin_attach_to( priv->p4_dbms_credentials, GTK_CONTAINER( parent ), NULL );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_dbms_credentials ));
 	ofa_dbms_root_bin_set_dossier( priv->p4_dbms_credentials, priv->p3_dossier );
+
+	g_signal_connect(
+			priv->p4_dbms_credentials, "ofa-changed", G_CALLBACK( p4_on_dbms_root_changed ), self );
 
 	if( priv->p4_account && priv->p4_password ){
 		ofa_dbms_root_bin_set_credentials( priv->p4_dbms_credentials, priv->p4_account, priv->p4_password );
 	}
-
-	g_signal_connect( priv->p4_dbms_credentials, "changed", G_CALLBACK( p4_on_dbms_root_changed ), self );
 }
 
 static void
@@ -567,7 +568,7 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p4_dbms_credentials );
+	ok = ofa_dbms_root_bin_is_valid( priv->p4_dbms_credentials, NULL );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }

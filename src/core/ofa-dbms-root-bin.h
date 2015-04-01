@@ -31,6 +31,15 @@
  * @include: core/ofa-dbms-root-bin.h
  *
  * Let the user enter DBMS administrator account and password.
+ *
+ * The widget is considered valid here if account and password are both
+ * set, and - if the dossier is set - valid to connect to an unnamed
+ * database.
+ *
+ * This is a composite widget, so:
+ * - have a "top" container
+ * - do not manage its own error message display
+ * - do not manage its own settings.
  */
 
 #include <gtk/gtk.h>
@@ -65,21 +74,17 @@ GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
 
 ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
 
-void            ofa_dbms_root_bin_attach_to      ( ofaDBMSRootBin *bin,
-																GtkContainer *parent,
-																GtkSizeGroup *group );
+GtkWidget      *ofa_dbms_root_bin_get_label      ( const ofaDBMSRootBin *bin );
 
 void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
 																const gchar *dname );
 
-gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin );
+gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
+																gchar **error_message );
 
 void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
 																const gchar *account,
 																const gchar *password );
-
-void            ofa_dbms_root_bin_set_valid      ( ofaDBMSRootBin *bin,
-																gboolean valid );
 
 G_END_DECLS
 

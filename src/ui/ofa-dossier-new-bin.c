@@ -315,10 +315,12 @@ setup_dialog( ofaDossierNewBin *bin )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dbms-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dbms_credentials = ofa_dbms_root_bin_new();
-	ofa_dbms_root_bin_attach_to( priv->dbms_credentials, GTK_CONTAINER( parent ), priv->group );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dbms_credentials ));
+	label = ofa_dbms_root_bin_get_label( priv->dbms_credentials );
+	gtk_size_group_add_widget( priv->group, label );
 
 	g_signal_connect(
-			priv->dbms_credentials, "changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
+			priv->dbms_credentials, "ofa-changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
 
 	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
@@ -538,7 +540,6 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 
 		/* check for credentials */
 		okc = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
-		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, okc );
 
 		ok = oka && okb && okc;
 	}

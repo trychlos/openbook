@@ -53,7 +53,6 @@ struct _ofaDBMSRootBinPrivate {
 	 */
 	gchar        *account;
 	gchar        *password;
-	gboolean      ok;
 };
 
 /* signals defined here
@@ -70,11 +69,11 @@ static const gchar *st_bin_id           = "DBMSRootBin";
 
 G_DEFINE_TYPE( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN )
 
-static void     setup_dialog( ofaDBMSRootBin *bin );
+static void     setup_composite( ofaDBMSRootBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self );
-static void     check_for_enable_dlg( ofaDBMSRootBin *self );
-static void     set_message( ofaDBMSRootBin *bin );
+static void     changed_composite( ofaDBMSRootBin *self );
+static gboolean is_valid_composite( const ofaDBMSRootBin *bin );
 
 static void
 dbms_root_bin_finalize( GObject *instance )
@@ -157,7 +156,7 @@ ofa_dbms_root_bin_class_init( ofaDBMSRootBinClass *klass )
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_DBMS_ROOT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -179,60 +178,27 @@ ofa_dbms_root_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DBMS_ROOT_BIN, NULL );
 
+	setup_composite( bin );
+
 	return( bin );
 }
 
-/**
- * ofa_dbms_root_bin_attach_to:
- */
-void
-ofa_dbms_root_bin_attach_to( ofaDBMSRootBin *bin, GtkContainer *parent, GtkSizeGroup *group )
-{
-	ofaDBMSRootBinPrivate *priv;
-	GtkWidget *window, *widget;
-
-	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	g_return_if_fail( !group || GTK_IS_SIZE_GROUP( group ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "dra-top" );
-		g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
-
-		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
-		gtk_container_add( parent, GTK_WIDGET( bin ));
-
-		priv->group = group;
-
-		setup_dialog( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
 static void
-setup_dialog( ofaDBMSRootBin *bin )
+setup_composite( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
-	GtkWidget *label;
+	GtkWidget *window, *top_widget, *label;
 
 	priv =bin->priv;
 
-	if( priv->group ){
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label1" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( priv->group, label );
+	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
+	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label2" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( priv->group, label );
-	}
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+
+	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
+	gtk_widget_destroy( window );
 
 	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-account" );
 	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
@@ -244,14 +210,46 @@ setup_dialog( ofaDBMSRootBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->password_entry ), "changed", G_CALLBACK( on_password_changed ), bin );
 
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-msg" );
-	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->msg_label = label;
+}
 
-	check_for_enable_dlg( bin );
+/**
+ * ofa_dbms_root_bin_get_label:
+ * @bin:
+ *
+ * Returns: a label of the column 0
+ * (use case: let the container build a #GtkSizeGroup).
+ */
+GtkWidget *
+ofa_dbms_root_bin_get_label( const ofaDBMSRootBin *bin )
+{
+	ofaDBMSRootBinPrivate *priv;
+	GtkWidget *label;
+
+	g_return_val_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ), NULL );
+
+	priv = bin->priv;
+	label = NULL;
+
+	if( !priv->dispose_has_run ){
+
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label2" );
+		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+	}
+
+	return( label );
 }
 
 /**
  * ofa_dbms_root_bin_set_dossier:
+ * @bin:
+ * @dname: the name of the dossier.
+ *
+ * When set, this let the composite widget validate the account and the
+ * password against the actual DBMS which manages this dossier.
+ * Else, we only check if account and password are set.
  */
 void
 ofa_dbms_root_bin_set_dossier( ofaDBMSRootBin *bin, const gchar *dname )
@@ -281,7 +279,7 @@ on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self )
 	g_free( priv->account );
 	priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 static void
@@ -294,53 +292,91 @@ on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self )
 	g_free( priv->password );
 	priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 /*
  * test the DBMS root connection by trying to connect with empty dbname
  */
 static void
-check_for_enable_dlg( ofaDBMSRootBin *self )
+changed_composite( ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
-	ofaDbms *dbms;
 
 	priv = self->priv;
-	priv->ok = FALSE;
 
-	if( my_strlen( priv->dname ) && my_strlen( priv->account )){
-
-		dbms = ofa_dbms_new();
-		priv->ok = ofa_dbms_connect(
-						dbms, priv->dname, NULL, priv->account, priv->password, FALSE );
-		g_object_unref( dbms );
-	}
-
-	set_message( self );
-	g_signal_emit_by_name( self, "changed", priv->account, priv->password );
+	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
 }
 
 /**
  * ofa_dbms_root_bin_is_valid:
+ * @bin:
+ * @error_message: [allow-none]: set to the error message as a newly
+ *  allocated string which should be g_free() by the caller.
+ *
+ * Returns: %TRUE if the composite widget is valid: both account and
+ * password are set. If dossier is set, then account and password let
+ * have a successful connection to the DBMS.
  */
 gboolean
-ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin )
+ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
 {
 	ofaDBMSRootBinPrivate *priv;
+	gboolean ok;
 
 	priv = bin->priv;
+	ok = FALSE;
 
 	if( !priv->dispose_has_run ){
 
-		return( priv->ok );
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
+		ok = is_valid_composite( bin );
+
+		if( error_message ){
+			*error_message = ok ?
+					NULL :
+					g_strdup( _( "Unable to connect to DB server" ));
+		}
+
+		if( ok ){
+			gtk_label_set_text( GTK_LABEL( priv->msg_label ), _( "DB server connection is OK" ));
+		}
 	}
 
-	return( FALSE );
+	return( ok );
+}
+
+static gboolean
+is_valid_composite( const ofaDBMSRootBin *bin )
+{
+	ofaDBMSRootBinPrivate *priv;
+	ofaDbms *dbms;
+	gboolean ok;
+
+	priv = bin->priv;
+	ok = FALSE;
+
+	if( my_strlen( priv->dname ) && my_strlen( priv->account )){
+
+		if( my_strlen( priv->dname )){
+			dbms = ofa_dbms_new();
+			ok = ofa_dbms_connect(
+							dbms, priv->dname, NULL, priv->account, priv->password, FALSE );
+			g_object_unref( dbms );
+
+		} else {
+			ok = TRUE;
+		}
+	}
+
+	return( ok );
 }
 
 /**
  * ofa_dbms_root_bin_set_credentials:
+ * @bin:
+ * @account:
+ * @password:
  */
 void
 ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin, const gchar *account, const gchar *password )
@@ -354,38 +390,4 @@ ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin, const gchar *account, co
 		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
 		gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
 	}
-}
-
-/**
- * ofa_dbms_root_bin_set_valid:
- */
-void
-ofa_dbms_root_bin_set_valid( ofaDBMSRootBin *bin, gboolean valid )
-{
-	ofaDBMSRootBinPrivate *priv;
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		priv->ok = valid;
-		set_message( bin );
-	}
-}
-
-static void
-set_message( ofaDBMSRootBin *bin )
-{
-	ofaDBMSRootBinPrivate *priv;
-	GdkRGBA color;
-
-	priv = bin->priv;
-
-	if( priv->msg_label ){
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ),
-				priv->ok ? _( "DB server connection is OK" ) : _( "Unable to connect to DB server" ));
-	}
-
-	gdk_rgba_parse( &color, priv->ok ? "#000000" : "#ff0000" );
-	gtk_widget_override_color( priv->msg_label, GTK_STATE_FLAG_NORMAL, &color );
 }

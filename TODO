@@ -206,7 +206,7 @@
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
      2015- 4- 1 -> review api, signals, readonly, err_ message, settings
-                src/core/ofa-admin-credentials-bin.ui       :
+                src/core/ofa-admin-credentials-bin.ui       : ok #d69d42d
                 src/core/ofa-dbms-root-bin.ui               :
                 src/core/ofa-dossier-delete-prefs.piece.ui  :
                 src/core/ofa-preferences.ui                 :

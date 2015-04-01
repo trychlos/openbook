@@ -525,16 +525,17 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
-	ofa_dbms_root_bin_attach_to( priv->p3_dbms_credentials, GTK_CONTAINER( parent ), NULL );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
 	dname = ofo_dossier_get_name( MY_WINDOW( self )->prot->dossier );
 	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, dname );
+
+	g_signal_connect(
+			priv->p3_dbms_credentials, "ofa-changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
 
 	if( priv->p3_account && priv->p3_password ){
 		ofa_dbms_root_bin_set_credentials(
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
-
-	g_signal_connect( priv->p3_dbms_credentials, "changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
@@ -569,7 +570,7 @@ p3_check_for_complete( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials );
+	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials, NULL );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, ok );
 }
