@@ -115,7 +115,7 @@ interface_base_init( ofaIDbmsInterface *klass )
 		klass->get_interface_version = idbms_get_interface_version;
 
 		/**
-		 * ofaIDbms::changed:
+		 * ofaIDbms::dbms-changed:
 		 *
 		 * This signal may be sent by a IDbms provider when a change
 		 * occurs in its connection information dialog. The application
@@ -127,7 +127,7 @@ interface_base_init( ofaIDbmsInterface *klass )
 		 * 						gpointer user_data );
 		 */
 		st_signals[ CHANGED ] = g_signal_new_class_handler(
-					"changed",
+					"dbms-changed",
 					OFA_TYPE_IDBMS,
 					G_SIGNAL_RUN_LAST,
 					NULL,
@@ -430,45 +430,49 @@ ofa_idbms_connect_display_new( const gchar *dname )
 }
 
 /**
- * ofa_idbms_connect_enter_attach_to:
+ * ofa_idbms_connect_enter_new:
  * @instance: this #ofaIDbms instance.
- * @parent: the widget into which the connection informations will be
- *  entered.
- * @group: [allow-none]: if set, then the horizontal size group which
- *  should be used to set the width of labels on left column.
+ * @group: [allow-none]: a #GtkSizeGroup.
  *
- * Let the user enter connection informations.
+ * Create a piece of dialog which will let the user enter connection
+ * informations.
  */
-void
-ofa_idbms_connect_enter_attach_to( ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
+GtkWidget *
+ofa_idbms_connect_enter_new( ofaIDbms *instance, GtkSizeGroup *group )
 {
-	g_return_if_fail( instance && OFA_IS_IDBMS( instance ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	GtkWidget *widget;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_attach_to ){
-		OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_attach_to( instance, parent, group );
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+
+	widget = NULL;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_new ){
+		widget = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_new( instance, group );
 	}
+
+	return( widget );
 }
 
 /**
  * ofa_idbms_connect_enter_is_valid:
  * @instance: this #ofaIDbms instance.
- * @parent: the #GtkContainer to which the widget has been attached.
+ * @piece: the piece of widget created by #ofa_idbms_connect_enter_new().
+ * @message: [allow-none]: a message to be set.
  *
  * Returns: %TRUE if the entered connection informations are valid.
  */
 gboolean
-ofa_idbms_connect_enter_is_valid( const ofaIDbms *instance, GtkContainer *parent )
+ofa_idbms_connect_enter_is_valid( const ofaIDbms *instance, GtkWidget *piece, gchar **message )
 {
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+	g_return_val_if_fail( piece && GTK_IS_WIDGET( piece ), FALSE );
 
 	ok = FALSE;
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_is_valid ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_is_valid( instance, parent );
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_is_valid( instance, piece, message );
 	}
 
 	return( ok );
@@ -477,22 +481,22 @@ ofa_idbms_connect_enter_is_valid( const ofaIDbms *instance, GtkContainer *parent
 /**
  * ofa_idbms_connect_enter_get_database:
  * @instance: this #ofaIDbms instance.
- * @parent: the #GtkContainer to which the widget has been attached.
+ * @piece: the piece of widget created by #ofa_idbms_connect_enter_new().
  *
  * Returns: %TRUE if the entered connection informations are valid.
  */
 gchar *
-ofa_idbms_connect_enter_get_database( const ofaIDbms *instance, GtkContainer *parent )
+ofa_idbms_connect_enter_get_database( const ofaIDbms *instance, GtkWidget *piece )
 {
 	gchar *database;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
+	g_return_val_if_fail( piece && GTK_IS_WIDGET( piece ), NULL );
 
 	database = NULL;
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_database ){
-		database = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_database( instance, parent );
+		database = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_database( instance, piece );
 	}
 
 	return( database );

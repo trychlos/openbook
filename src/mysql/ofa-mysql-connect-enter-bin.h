@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_CONNECT_ENTER_PIECE_H__
-#define __OFA_MYSQL_CONNECT_ENTER_PIECE_H__
+#ifndef __OFA_MYSQL_CONNECT_ENTER_BIN_H__
+#define __OFA_MYSQL_CONNECT_ENTER_BIN_H__
 
 /**
  * SECTION: ofa_mysql_idbms
@@ -36,20 +36,20 @@
 
 G_BEGIN_DECLS
 
-void     ofa_mysql_connect_enter_piece_attach_to   ( ofaIDbms *instance,
-																GtkContainer *parent,
+GtkWidget *ofa_mysql_connect_enter_bin_new         ( ofaIDbms *instance,
 																GtkSizeGroup *group );
 
-gboolean ofa_mysql_connect_enter_piece_is_valid    ( const ofaIDbms *instance,
-																GtkContainer *parent );
+gboolean   ofa_mysql_connect_enter_bin_is_valid    ( const ofaIDbms *instance,
+																GtkWidget *piece,
+																gchar **message );
 
-gchar   *ofa_mysql_connect_enter_piece_get_database( const ofaIDbms *instance,
-																GtkContainer *parent );
+gchar     *ofa_mysql_connect_enter_bin_get_database( const ofaIDbms *instance,
+																GtkWidget *piece );
 
-gboolean ofa_mysql_connect_enter_piece_apply       ( const ofaIDbms *instance,
+gboolean   ofa_mysql_connect_enter_bin_apply       ( const ofaIDbms *instance,
 																const gchar *dname,
 																void *infos );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_CONNECT_ENTER_PIECE_H__ */
+#endif /* __OFA_MYSQL_CONNECT_ENTER_BIN_H__ */

@@ -45,6 +45,7 @@ struct _ofaDossierNewBinPrivate {
 	 */
 	GtkSizeGroup   *group;
 	GtkWidget      *dbms_combo;
+	GtkWidget      *connect_infos_parent;
 	GtkWidget      *connect_infos;
 	ofaDBMSRootBin *dbms_credentials;
 	GtkWidget      *msg_label;
@@ -284,8 +285,8 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 
 	/* take a pointer on the parent container of the DBMS widget before
 	 *  selecting the default */
-	priv->connect_infos = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-connect-infos" );
-	g_return_if_fail( priv->connect_infos && GTK_IS_CONTAINER( priv->connect_infos ));
+	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-connect-infos" );
+	g_return_if_fail( priv->connect_infos_parent && GTK_IS_CONTAINER( priv->connect_infos_parent ));
 
 	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }
@@ -405,7 +406,7 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 	set_message( self, "" );
 
 	/* do we have finished with the initialization ? */
-	if( priv->connect_infos ){
+	if( priv->connect_infos_parent ){
 
 		/* do we had a previous selection ? */
 		if( priv->prov_handler ){
@@ -413,9 +414,10 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 			g_signal_handler_disconnect( priv->prov_module, priv->prov_handler );
 			g_clear_object( &priv->prov_module );
 			/* last, remove the widget */
-			child = gtk_bin_get_child( GTK_BIN( priv->connect_infos ));
+			child = gtk_bin_get_child( GTK_BIN( priv->connect_infos_parent ));
 			if( child ){
-				gtk_container_remove( GTK_CONTAINER( priv->connect_infos ), child );
+				gtk_container_remove( GTK_CONTAINER( priv->connect_infos_parent ), child );
+				priv->connect_infos = NULL;
 			}
 		}
 
@@ -434,12 +436,12 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 
 			if( priv->prov_module ){
 				/* let the DBMS initialize its own part */
-				ofa_idbms_connect_enter_attach_to(
-						priv->prov_module, GTK_CONTAINER( priv->connect_infos ), priv->group );
+				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module, priv->group );
+				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), priv->connect_infos );
 
-				priv->prov_handler = g_signal_connect(
-												priv->prov_module,
-												"changed" , G_CALLBACK( on_connect_infos_changed ), self );
+				priv->prov_handler =
+						g_signal_connect( priv->prov_module,
+								"dbms-changed" , G_CALLBACK( on_connect_infos_changed ), self );
 
 			} else {
 				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->prov_name );
@@ -530,10 +532,11 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 			g_free( str );
 
 		/* check for connection informations */
-		} else if( !ofa_idbms_connect_enter_is_valid( priv->prov_module, GTK_CONTAINER( priv->connect_infos ))){
-			set_message( bin, _( "Connection informations are not valid" ));
+		} else if( !ofa_idbms_connect_enter_is_valid( priv->prov_module, priv->connect_infos, &str )){
+			set_message( bin, str );
+			g_free( str );
 
-			/* check for credentials */
+			/* check for DBMS root credentials */
 		} else if( !ofa_idbms_connect_ex(
 				priv->prov_module, priv->infos, priv->account, priv->password )){
 			set_message( bin, _( "DBMS root credentials are not valid" ));
@@ -596,7 +599,7 @@ ofa_dossier_new_bin_get_dname( const ofaDossierNewBin *bin, gchar **dname )
 /**
  * ofa_dossier_new_bin_get_database:
  *
- * Return the dossier name
+ * Return the database name
  */
 void
 ofa_dossier_new_bin_get_database( const ofaDossierNewBin *bin, gchar **database )
@@ -610,8 +613,7 @@ ofa_dossier_new_bin_get_database( const ofaDossierNewBin *bin, gchar **database 
 
 	if( !priv->dispose_has_run ){
 
-		*database = ofa_idbms_connect_enter_get_database(
-							priv->prov_module, GTK_CONTAINER( priv->connect_infos ));
+		*database = ofa_idbms_connect_enter_get_database( priv->prov_module, priv->connect_infos );
 	}
 }
 

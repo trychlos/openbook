@@ -208,13 +208,13 @@
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
      2015- 4- 1 -> review api, signals, readonly, err_ message, settings
-                src/core/ofa-admin-credentials-bin.ui       : ok #d69d42d
-                src/core/ofa-dbms-root-bin.ui               : ok #366e131
-                src/core/ofa-dossier-delete-prefs.piece.ui  : ok #bd9c322
-                src/core/ofa-file-format-bin.ui             :
-                src/core/ofa-preferences.ui                 : ok #d2f554b
-                src/mysql/ofa-mysql-connect-display-piece.ui:
-                src/mysql/ofa-mysql-connect-enter-piece.ui
+                src/core/ofa-admin-credentials-bin.ui       : #d69d42d
+                src/core/ofa-dbms-root-bin.ui               : #366e131
+                src/core/ofa-dossier-delete-prefs.piece.ui  : #bd9c322
+                src/core/ofa-file-format-bin.ui             : ok
+                src/core/ofa-preferences.ui                 : #d2f554b
+                src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
+                src/mysql/ofa-mysql-connect-enter-piece.ui  :
                 src/mysql/ofa-mysql-prefs.piece.ui
                 src/ui/ofa-account-properties.ui
                 src/ui/ofa-account-select.ui

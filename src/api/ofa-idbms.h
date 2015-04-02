@@ -212,32 +212,28 @@ typedef struct {
 															const gchar *dname );
 
 	/**
-	 * connect_enter_attach_to:
+	 * connect_enter_new:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the widget into which the connection informations are
-	 *  to be displayed.
+	 * @group: [allow-none]: a #GtkSizegroup.
 	 *
-	 * Display a dialog box in order to let the user enter the connection
-	 * informations.
+	 * The DBMS provider should returns a piece of dialog as a #GtkWidget.
+	 * In following operations, this same #GtkWidget will be passed in,
+	 * so the DBMS provider may set some data against it.
 	 *
-	 * The DBMS provider should load and display a piece of dialog,
-	 * attaching it to the @parent #GtkContainer. In following operations,
-	 * the #GtkContainer will be passed in, so the DBMS provider may set
-	 * some data against it.
-	 * The DBMS provider should send a "changed" signal when something
+	 * The DBMS provider should send a "dbms-changed" signal when something
 	 * is updated in the displayed piece of dialog, joining to the signal
 	 * a pointer to connection informations.
 	 *
 	 * Since: version 1
 	 */
-	void          ( *connect_enter_attach_to )   ( ofaIDbms *instance,
-															GtkContainer *parent,
+	GtkWidget   * ( *connect_enter_new )         ( ofaIDbms *instance,
 															GtkSizeGroup *group );
 
 	/**
 	 * connect_enter_is_valid:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the #GtkContainer to which the dialog piece is attached.
+	 * @piece: the #GtkContainer to which the dialog piece is attached.
+	 * @message: [allow-none]: a message to be set.
 	 *
 	 * Returns: %TRUE if the entered connection informations are valid.
 	 *
@@ -247,12 +243,13 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *connect_enter_is_valid )    ( const ofaIDbms *instance,
-															GtkContainer *parent );
+															GtkWidget *piece,
+															gchar **message );
 
 	/**
 	 * connect_enter_get_database:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the #GtkContainer to which the dialog piece is attached.
+	 * @piece: the #GtkContainer to which the dialog piece is attached.
 	 *
 	 * Returns: the database name as a newly allocated string which
 	 * should be g_free() by the caller.
@@ -260,14 +257,14 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gchar *       ( *connect_enter_get_database )( const ofaIDbms *instance,
-															GtkContainer *parent );
+															GtkWidget *piece );
 
 	/**
 	 * connect_enter_apply:
 	 * @instance: the #ofaIDbms provider.
 	 * @dname: the name of the dossier.
-	 * @infos: the connection informations as sent by the "changed"
-	 *  signal in the #ofa_idbms_connect_enter_attach_to() function.
+	 * @infos: the connection informations as sent by the "dbms-changed"
+	 *  signal in the #ofa_idbms_connect_enter_new() function.
 	 *
 	 * Record the newly defined dossier in settings.
 	 *
@@ -541,15 +538,15 @@ gchar       *ofa_idbms_last_error                ( const ofaIDbms *instance,
 
 GtkWidget   *ofa_idbms_connect_display_new       ( const gchar *dname );
 
-void         ofa_idbms_connect_enter_attach_to   ( ofaIDbms *instance,
-															GtkContainer *parent,
+GtkWidget   *ofa_idbms_connect_enter_new         ( ofaIDbms *instance,
 															GtkSizeGroup *group );
 
 gboolean     ofa_idbms_connect_enter_is_valid    ( const ofaIDbms *instance,
-															GtkContainer *parent );
+															GtkWidget *piece,
+															gchar **message );
 
 gchar       *ofa_idbms_connect_enter_get_database( const ofaIDbms *instance,
-															GtkContainer *parent );
+															GtkWidget *piece );
 
 gboolean     ofa_idbms_connect_enter_apply       ( const ofaIDbms *instance,
 															const gchar *dname,
