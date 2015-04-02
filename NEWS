@@ -32,9 +32,11 @@
      pages (todo #782).
    - PrintLedgers: remove double ORDER clause.
    - Fix segfault when trying to import again a BAT file (todo #781).
+   - Reconciliation: disable buttons when opening the page (todo #750).
 
  Other changes:
 
+   - Big refactoring of dialogs (todo #512).
    - Rename ofaPDFEntriesBalance class as ofaPDFBalances.
    - remove Accounts Balance PDF printing (same than entries balance).
    - ofo_account_is_allowed(): new method.

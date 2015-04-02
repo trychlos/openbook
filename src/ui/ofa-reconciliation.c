@@ -861,8 +861,18 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	get_settings( OFA_RECONCILIATION( page ));
-	check_for_enable_view( OFA_RECONCILIATION( page ));
+	ofaReconciliation *self;
+	ofaReconciliationPrivate *priv;
+	GtkTreeSelection *select;
+
+	self = OFA_RECONCILIATION( page );
+	priv = self->priv;
+
+	get_settings( self );
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	gtk_tree_selection_unselect_all( select );
+	on_tview_selection_changed( select, self );
 }
 
 static GtkWidget *
@@ -1913,6 +1923,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_on_tview_selection_changed";
 	ofaReconciliationPrivate *priv;
 	GList *selected, *it;
 	GtkTreeModel *tmodel;
@@ -1933,6 +1944,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 	unreconciliate_enabled = FALSE;
 	selected = gtk_tree_selection_get_selected_rows( select, &tmodel );
 	count = g_list_length( selected );
+	g_debug( "%s: count=%d", thisfn, count );
 
 	if( count == 1 ){
 		object = get_object_by_path( self, tmodel, ( GtkTreePath * ) selected->data );

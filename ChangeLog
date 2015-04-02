@@ -1,3 +1,13 @@
+2015-04-03 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-reconciliation.c: disabled the buttons when the page
+	opens and there is no selection (todo #750).
+
+2015-04-01 Pierre Wieser <pwieser@trychlos.org>
+
+	Big refactoring of dialogs (see todo #512).
+	Almost all files impacted.
+
 2015-03-31 Pierre Wieser <pwieser@trychlos.org>
 
 	Improve dossier properties, adding last reconciliation identifier

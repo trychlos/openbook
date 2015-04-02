@@ -214,7 +214,7 @@
                 src/core/ofa-file-format-bin.ui             : ok
                 src/core/ofa-preferences.ui                 : #d2f554b
                 src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
-                src/mysql/ofa-mysql-connect-enter-piece.ui  :
+                src/mysql/ofa-mysql-connect-enter-piece.ui  : d53ac94
                 src/mysql/ofa-mysql-prefs.piece.ui
                 src/ui/ofa-account-properties.ui
                 src/ui/ofa-account-select.ui
@@ -262,7 +262,6 @@
                 src/ui/ofa-restore-assistant.ui
                 src/ui/ofa-settlement.ui
                 src/ui/ofa-view-entries.ui
-
 
  513 2014-12- 9 whether balancing accounts are settleable or 
                 reconciliable (and shouldn't) has to be checked when 
