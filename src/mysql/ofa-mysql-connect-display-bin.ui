@@ -2,14 +2,12 @@
 <!-- Generated with glade 3.16.1 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
-  <object class="GtkWindow" id="MySQLConnectDisplayPiece">
+  <object class="GtkWindow" id="MySQLConnectDisplayBin">
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkGrid" id="infos-grid">
+      <object class="GtkAlignment" id="top-decorated">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
-        <property name="column_spacing">4</property>
         <child>
           <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
@@ -18,7 +16,7 @@
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkAlignment" id="alignment1">
+              <object class="GtkAlignment" id="alignment2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="top_padding">4</property>
@@ -26,7 +24,7 @@
                 <property name="left_padding">12</property>
                 <property name="right_padding">4</property>
                 <child>
-                  <object class="GtkGrid" id="grid1">
+                  <object class="GtkGrid" id="top-undecorated">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="row_spacing">3</property>
@@ -184,12 +182,6 @@
               </object>
             </child>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
-          </packing>
         </child>
       </object>
     </child>

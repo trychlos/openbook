@@ -32,33 +32,36 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbms.h"
-#include "ofa-mysql-connect-display-piece.h"
+#include "ofa-mysql-connect-display-bin.h"
 
-static const gchar *st_ui_xml           = PROVIDER_DATADIR "/ofa-mysql-connect-display-piece.ui";
-static const gchar *st_ui_mysql         = "MySQLConnectDisplayPiece";
+static const gchar *st_ui_xml           = PROVIDER_DATADIR "/ofa-mysql-connect-display-bin.ui";
+static const gchar *st_ui_mysql         = "MySQLConnectDisplayBin";
 
-void
-ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar *dname, GtkContainer *parent )
+GtkWidget *
+ofa_mysql_connect_display_bin_new( const ofaIDbms *instance, const gchar *dname )
 {
 	GtkWidget *window;
-	GtkWidget *grid;
+	GtkWidget *top_widget, *new_parent;
 	GtkWidget *label;
 	gchar *text;
 	gint port_num;
 
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
+	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
 
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "infos-grid" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-	gtk_widget_reparent( grid, GTK_WIDGET( parent ));
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-decorated" );
+	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "provider" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	new_parent = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_widget_reparent( top_widget, new_parent );
+	gtk_widget_destroy( window );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "provider" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	gtk_label_set_text( GTK_LABEL( label ), ofa_mysql_idbms_get_provider_name( instance ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "host" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "host" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	text = ofa_settings_dossier_get_string( dname, SETTINGS_HOST );
 	if( !my_strlen( text )){
 		g_free( text );
@@ -67,26 +70,28 @@ ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance, const gchar
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "socket" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "socket" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	text = ofa_settings_dossier_get_string( dname, SETTINGS_SOCKET );
 	if( my_strlen( text )){
 		gtk_label_set_text( GTK_LABEL( label ), text );
 	}
 	g_free( text );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "database" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "database" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	text = ofa_dossier_misc_get_current_dbname( dname );
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "port" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "port" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	port_num = ofa_settings_dossier_get_int( dname, SETTINGS_PORT );
 	if( port_num > 0 ){
 		text = g_strdup_printf( "%d", port_num );
 		gtk_label_set_text( GTK_LABEL( label ), text );
 		g_free( text );
 	}
+
+	return( new_parent );
 }

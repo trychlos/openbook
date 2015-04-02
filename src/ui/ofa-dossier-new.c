@@ -69,7 +69,7 @@ struct _ofaDossierNewPrivate {
 
 	/* result
 	 */
-	gboolean       dossier_created;
+	gboolean                dossier_created;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new.ui";
@@ -87,6 +87,7 @@ static void      update_settings( ofaDossierNew *self );
 static void      check_for_enable_dlg( ofaDossierNew *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  create_confirmed( const ofaDossierNew *self );
+static void      set_message( ofaDossierNew *self, const gchar *message );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -226,7 +227,8 @@ v_init_dialog( myDialog *dialog )
 	ofaDossierNewPrivate *priv;
 	GtkWindow *toplevel;
 	GtkSizeGroup *group;
-	GtkWidget *parent, *toggle;
+	GtkWidget *parent, *toggle, *label;
+	GdkRGBA color;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
 	get_settings( OFA_DOSSIER_NEW( dialog ));
@@ -269,6 +271,12 @@ v_init_dialog( myDialog *dialog )
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-msg" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, "#ff0000" );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->msg_label = label;
 
 	check_for_enable_dlg( OFA_DOSSIER_NEW( dialog ));
 }
@@ -343,19 +351,23 @@ on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self )
 static void
 check_for_enable_dlg( ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_check_for_enable_dlg";
 	ofaDossierNewPrivate *priv;
 	gboolean enabled;
-	gboolean oka, okb;
+	gchar *message;
 
 	priv = self->priv;
+	set_message( self, "" );
+	enabled = FALSE;
 
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+	if( ofa_dossier_new_bin_is_valid( priv->new_bin )){
 
-	oka = ofa_dossier_new_bin_is_valid( priv->new_bin );
-	okb = ofa_admin_credentials_bin_is_valid( priv->admin_credentials, NULL );
-
-	enabled = oka && okb;
+		if( ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message )){
+			enabled = TRUE;
+		} else {
+			set_message( self, message );
+			g_free( message );
+		}
+	}
 
 	if( priv->ok_btn ){
 		gtk_widget_set_sensitive( priv->ok_btn, enabled );
@@ -496,4 +508,16 @@ update_settings( ofaDossierNew *self )
 	ofa_settings_set_string_list( "DossierNew", slist );
 
 	g_list_free_full( slist, ( GDestroyNotify ) g_free );
+}
+
+static void
+set_message( ofaDossierNew *self, const gchar *message )
+{
+	ofaDossierNewPrivate *priv;
+
+	priv = self->priv;
+
+	if( priv->msg_label ){
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
+	}
 }

@@ -261,10 +261,9 @@ ofa_dbms_root_bin_set_dossier( ofaDBMSRootBin *bin, const gchar *dname )
 
 	priv = bin->priv;
 
-	g_return_if_fail( !priv->dname );
-
 	if( !priv->dispose_has_run ){
 
+		g_free( priv->dname );
 		priv->dname = g_strdup( dname );
 	}
 }
@@ -315,8 +314,9 @@ changed_composite( ofaDBMSRootBin *self )
  *  allocated string which should be g_free() by the caller.
  *
  * Returns: %TRUE if the composite widget is valid: both account and
- * password are set. If dossier is set, then account and password let
- * have a successful connection to the DBMS.
+ * password are set. If dossier is set and is defined in the settings,
+ * then check that account and password let have a successful connection
+ * to the DBMS.
  */
 gboolean
 ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
@@ -338,9 +338,7 @@ ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
 					g_strdup( _( "Unable to connect to DB server" ));
 		}
 
-		if( ok ){
-			gtk_label_set_text( GTK_LABEL( priv->msg_label ), _( "DB server connection is OK" ));
-		}
+		ofa_dbms_root_bin_set_valid( bin, ok );
 	}
 
 	return( ok );
@@ -370,6 +368,29 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_dbms_root_bin_set_valid:
+ * @bin:
+ * @valid:
+ *
+ * This let us turn the 'connection ok' message on, which is useful
+ * when checking for a connection which is not yet referenced in the
+ * settings.
+ */
+void
+ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
+{
+	ofaDBMSRootBinPrivate *priv;
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		gtk_label_set_text(
+				GTK_LABEL( priv->msg_label ), valid ? _( "DB server connection is OK" ) : "" );
+	}
 }
 
 /**

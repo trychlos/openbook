@@ -164,15 +164,15 @@ am__DEPENDENCIES_1 =
 @HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-backup.c ofa-mysql-backup.h \
-	ofa-mysql-connect-display-piece.c \
-	ofa-mysql-connect-display-piece.h \
+	ofa-mysql-connect-display-bin.c \
+	ofa-mysql-connect-display-bin.h \
 	ofa-mysql-connect-enter-piece.c \
 	ofa-mysql-connect-enter-piece.h ofa-mysql-idbms.c \
 	ofa-mysql-idbms.h ofa-mysql-ipreferences.c \
 	ofa-mysql-ipreferences.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.lo ofa-mysql-ipreferences.lo \
 @HAVE_MYSQL_TRUE@	ofa-module.lo
@@ -428,8 +428,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql.h										\
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.c				\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.h				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.c					\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.h					\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.c					\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.h					\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.c								\
@@ -450,7 +450,7 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@ui_files = \
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-piece.ui				\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.ui				\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-piece.ui				\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs.piece.ui						\
 @HAVE_MYSQL_TRUE@	$(NULL)
@@ -552,7 +552,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-backup.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-display-piece.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-display-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-enter-piece.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ipreferences.Plo@am__quote@

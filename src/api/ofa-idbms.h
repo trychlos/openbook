@@ -196,19 +196,20 @@ typedef struct {
 															void *handle );
 
 	/**
-	 * connect_display_attach_to:
+	 * connect_display_new:
 	 * @instance: the #ofaIDbms provider.
 	 * @dname: the dname of the dossier.
-	 * @parent: the widget into which the connection informations are
-	 *  to be displayed.
 	 *
-	 * Display the DBMS connection informations.
+	 * The DBMS provider is asked to return a widget to display the
+	 * connection informations for the specified @dname dossier.
+	 *
+	 * The returned widget should be left undecorated, in order to
+	 * give the client application full control on the global visual.
 	 *
 	 * Since: version 1
 	 */
-	void          ( *connect_display_attach_to ) ( const ofaIDbms *instance,
-															const gchar *dname,
-															GtkContainer *parent );
+	GtkWidget   * ( *connect_display_new )       ( const ofaIDbms *instance,
+															const gchar *dname );
 
 	/**
 	 * connect_enter_attach_to:
@@ -538,8 +539,7 @@ gboolean     ofa_idbms_query_ex                  ( const ofaIDbms *instance,
 gchar       *ofa_idbms_last_error                ( const ofaIDbms *instance,
 															void *handle );
 
-void         ofa_idbms_connect_display_attach_to ( const gchar *dname,
-															GtkContainer *parent );
+GtkWidget   *ofa_idbms_connect_display_new       ( const gchar *dname );
 
 void         ofa_idbms_connect_enter_attach_to   ( ofaIDbms *instance,
 															GtkContainer *parent,

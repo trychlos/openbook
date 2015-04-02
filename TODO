@@ -211,7 +211,8 @@
                 src/core/ofa-admin-credentials-bin.ui       : ok #d69d42d
                 src/core/ofa-dbms-root-bin.ui               : ok #366e131
                 src/core/ofa-dossier-delete-prefs.piece.ui  : ok #bd9c322
-                src/core/ofa-preferences.ui                 :
+                src/core/ofa-file-format-bin.ui             :
+                src/core/ofa-preferences.ui                 : ok #d2f554b
                 src/mysql/ofa-mysql-connect-display-piece.ui:
                 src/mysql/ofa-mysql-connect-enter-piece.ui
                 src/mysql/ofa-mysql-prefs.piece.ui
@@ -242,7 +243,6 @@
                 src/ui/ofa-dossier-properties.ui
                 src/ui/ofa-exercice-close-assistant.ui
                 src/ui/ofa-export-assistant.ui
-                src/ui/ofa-file-format-bin.ui
                 src/ui/ofa-guided-input-bin.ui
                 src/ui/ofa-guided-input.ui
                 src/ui/ofa-import-assistant.ui

@@ -38,7 +38,7 @@
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
 #include "ofa-mysql-idbms.h"
-#include "ofa-mysql-connect-display-piece.h"
+#include "ofa-mysql-connect-display-bin.h"
 #include "ofa-mysql-connect-enter-piece.h"
 
 /*
@@ -94,7 +94,7 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->last_error = idbms_last_error;
-	iface->connect_display_attach_to = ofa_mysql_connect_display_piece_attach_to;
+	iface->connect_display_new = ofa_mysql_connect_display_bin_new;
 	iface->connect_enter_attach_to = ofa_mysql_connect_enter_piece_attach_to;
 	iface->connect_enter_is_valid = ofa_mysql_connect_enter_piece_is_valid;
 	iface->connect_enter_get_database = ofa_mysql_connect_enter_piece_get_database;

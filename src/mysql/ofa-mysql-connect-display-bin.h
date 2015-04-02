@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_CONNECT_DISPLAY_PIECE_H__
-#define __OFA_MYSQL_CONNECT_DISPLAY_PIECE_H__
+#ifndef __OFA_MYSQL_CONNECT_DISPLAY_BIN_H__
+#define __OFA_MYSQL_CONNECT_DISPLAY_BIN_H__
 
 /**
  * SECTION: ofa_mysql_idbms
@@ -39,10 +39,9 @@
 
 G_BEGIN_DECLS
 
-void ofa_mysql_connect_display_piece_attach_to( const ofaIDbms *instance,
-															const gchar *dname,
-															GtkContainer *parent );
+GtkWidget *ofa_mysql_connect_display_bin_new( const ofaIDbms *instance,
+															const gchar *dname );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_CONNECT_DISPLAY_PIECE_H__ */
+#endif /* __OFA_MYSQL_CONNECT_DISPLAY_BIN_H__ */

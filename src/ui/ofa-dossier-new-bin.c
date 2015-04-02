@@ -509,7 +509,7 @@ gboolean
 ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	gboolean ok, oka, okb, okc;
+	gboolean ok;
 	gchar *str;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
@@ -520,8 +520,6 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		oka = FALSE;
-
 		/* check for dossier name */
 		if( !my_strlen( priv->dname )){
 			set_message( bin, _( "Dossier name is not set" ));
@@ -531,17 +529,19 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 			set_message( bin, str );
 			g_free( str );
 
-		} else {
-			oka = TRUE;
-		}
-
 		/* check for connection informations */
-		okb = ofa_idbms_connect_enter_is_valid( priv->prov_module, GTK_CONTAINER( priv->connect_infos ));
+		} else if( !ofa_idbms_connect_enter_is_valid( priv->prov_module, GTK_CONTAINER( priv->connect_infos ))){
+			set_message( bin, _( "Connection informations are not valid" ));
 
-		/* check for credentials */
-		okc = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
+			/* check for credentials */
+		} else if( !ofa_idbms_connect_ex(
+				priv->prov_module, priv->infos, priv->account, priv->password )){
+			set_message( bin, _( "DBMS root credentials are not valid" ));
 
-		ok = oka && okb && okc;
+		} else {
+			ofa_dbms_root_bin_set_valid( priv->dbms_credentials, TRUE );
+			ok = TRUE;
+		}
 	}
 
 	return( ok );

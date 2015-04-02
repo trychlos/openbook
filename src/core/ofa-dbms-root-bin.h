@@ -82,6 +82,9 @@ void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
 gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
 																gchar **error_message );
 
+void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
+																gboolean valid );
+
 void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
 																const gchar *account,
 																const gchar *password );

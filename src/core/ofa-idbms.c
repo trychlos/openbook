@@ -393,23 +393,23 @@ ofa_idbms_last_error( const ofaIDbms *instance, void *handle )
 }
 
 /**
- * ofa_idbms_connect_display_attach_to:
+ * ofa_idbms_connect_display_new:
  * @dname: the name of the dossier.
- * @parent: the widget into which display the connection informations
  *
  * Ask the DBMS provider associated to the named dossier to display
- * its connect informations
+ * its connect informations.
  */
-void
-ofa_idbms_connect_display_attach_to( const gchar *dname, GtkContainer *parent )
+GtkWidget *
+ofa_idbms_connect_display_new( const gchar *dname )
 {
 	GList *modules;
 	ofaIDbms *instance;
 	gchar *provider;
+	GtkWidget *widget;
 
-	g_return_if_fail( my_strlen( dname ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	g_return_val_if_fail( my_strlen( dname ), NULL );
 
+	widget = NULL;
 	provider = ofa_settings_get_dossier_provider( dname );
 	if( my_strlen( provider )){
 
@@ -419,13 +419,14 @@ ofa_idbms_connect_display_attach_to( const gchar *dname, GtkContainer *parent )
 
 		if( instance &&
 				OFA_IS_IDBMS( instance ) &&
-				OFA_IDBMS_GET_INTERFACE( instance )->connect_display_attach_to ){
+				OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new ){
 
-			OFA_IDBMS_GET_INTERFACE( instance )->connect_display_attach_to( instance, dname, parent );
+			widget = OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new( instance, dname );
 		}
 	}
 
 	g_free( provider );
+	return( widget );
 }
 
 /**

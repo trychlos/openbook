@@ -86,6 +86,7 @@ struct _ofaExerciceCloseAssistantPrivate {
 	ofaDBMSRootBin       *p3_dbms_credentials;
 	gchar                *p3_account;
 	gchar                *p3_password;
+	GtkWidget            *p3_message;
 
 	/* p4 - checking that entries, accounts and ledgers are balanced
 	 */
@@ -125,6 +126,8 @@ enum {
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-exercice-close-assistant.ui";
 static const gchar *st_ui_id            = "ExerciceCloseAssistant";
 
+#define COLOR_ERROR                     "#ff0000"
+
 G_DEFINE_TYPE( ofaExerciceCloseAssistant, ofa_exercice_close_assistant, MY_TYPE_ASSISTANT )
 
 static void             p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -138,6 +141,7 @@ static void             p3_do_init( ofaExerciceCloseAssistant *self, gint page_n
 static void             p3_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self );
 static void             p3_check_for_complete( ofaExerciceCloseAssistant *self );
+static void             p3_set_message( ofaExerciceCloseAssistant *self, const gchar *message );
 static void             p3_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -525,8 +529,9 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p3_do_init";
 	GtkApplicationWindow *main_window;
 	ofaExerciceCloseAssistantPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *parent, *label;
 	const gchar *dname;
+	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -551,6 +556,13 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, COLOR_ERROR );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->p3_message = label;
+
+	gtk_widget_show_all( page_widget );
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
 
@@ -581,12 +593,30 @@ p3_check_for_complete( ofaExerciceCloseAssistant *self )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	gboolean ok;
+	gchar *message;
+
+	priv = self->priv;
+	p3_set_message( self, "" );
+
+	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials, &message );
+	if( !ok ){
+		p3_set_message( self, message );
+		g_free( message );
+	}
+
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, ok );
+}
+
+static void
+p3_set_message( ofaExerciceCloseAssistant *self, const gchar *message )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials, NULL );
-
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, ok );
+	if( priv->p3_message ){
+		gtk_label_set_text( GTK_LABEL( priv->p3_message ), message );
+	}
 }
 
 static void

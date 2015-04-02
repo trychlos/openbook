@@ -91,6 +91,7 @@ struct _ofaRestoreAssistantPrivate {
 	ofaDBMSRootBin         *p4_dbms_credentials;
 	gchar                  *p4_account;
 	gchar                  *p4_password;
+	GtkWidget              *p4_message;
 
 	/* p4: dossier administrative credentials
 	 */
@@ -98,6 +99,7 @@ struct _ofaRestoreAssistantPrivate {
 	gchar                  *p5_account;
 	gchar                  *p5_password;
 	gboolean                p5_open;
+	GtkWidget              *p5_message;
 
 	/* p5: restore the file, display the result
 	 */
@@ -116,6 +118,8 @@ static const gchar *st_prefs_import     = "RestoreAssistant-settings";
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-restore-assistant.ui";
 static const gchar *st_ui_id            = "RestoreAssistant";
 
+#define COLOR_ERROR                     "#ff0000"
+
 static void            p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p2_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p2_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self );
@@ -132,12 +136,14 @@ static void            p4_do_init( ofaRestoreAssistant *self, gint page_num, Gtk
 static void            p4_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void            p4_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p4_check_for_complete( ofaRestoreAssistant *self );
+static void            p4_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void            p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void            p5_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
 static void            p5_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_check_for_complete( ofaRestoreAssistant *self );
+static void            p5_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void            p5_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p6_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -508,7 +514,8 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p4_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *label, *parent;
+	GtkWidget *label, *parent, *infos;
+	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -526,7 +533,8 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-connect-infos" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	ofa_idbms_connect_display_attach_to( priv->p3_dossier, GTK_CONTAINER( parent ));
+	infos = ofa_idbms_connect_display_new( priv->p3_dossier );
+	gtk_container_add( GTK_CONTAINER( parent ), infos );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -540,6 +548,14 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	if( priv->p4_account && priv->p4_password ){
 		ofa_dbms_root_bin_set_credentials( priv->p4_dbms_credentials, priv->p4_account, priv->p4_password );
 	}
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, COLOR_ERROR );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->p4_message = label;
+
+	gtk_widget_show_all( page );
 }
 
 static void
@@ -569,12 +585,30 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
+	gchar *message;
+
+	priv = self->priv;
+	p4_set_message( self, "" );
+
+	ok = ofa_dbms_root_bin_is_valid( priv->p4_dbms_credentials, &message );
+	if( !ok ){
+		p4_set_message( self, message );
+		g_free( message );
+	}
+
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+}
+
+static void
+p4_set_message( ofaRestoreAssistant *self, const gchar *message )
+{
+	ofaRestoreAssistantPrivate *priv;
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p4_dbms_credentials, NULL );
-
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	if( priv->p4_message ){
+		gtk_label_set_text( GTK_LABEL( priv->p4_message ), message );
+	}
 }
 
 static void
@@ -596,6 +630,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p5_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *label, *parent, *toggle;
+	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -624,6 +659,14 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->p5_open );
 
 	g_signal_connect( toggle, "toggled", G_CALLBACK( p5_on_open_toggled ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gdk_rgba_parse( &color, COLOR_ERROR );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	priv->p5_message = label;
+
+	gtk_widget_show_all( page );
 }
 
 static void
@@ -666,12 +709,30 @@ p5_check_for_complete( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
+	gchar *message;
+
+	priv = self->priv;
+	p5_set_message( self, "" );
+
+	ok = ofa_admin_credentials_bin_is_valid( priv->p5_admin_credentials, &message );
+	if( !ok ){
+		p5_set_message( self, message );
+		g_free( message );
+	}
+
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+}
+
+static void
+p5_set_message( ofaRestoreAssistant *self, const gchar *message )
+{
+	ofaRestoreAssistantPrivate *priv;
 
 	priv = self->priv;
 
-	ok = ofa_admin_credentials_bin_is_valid( priv->p5_admin_credentials, NULL );
-
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	if( priv->p5_message ){
+		gtk_label_set_text( GTK_LABEL( priv->p5_message ), message );
+	}
 }
 
 static void
