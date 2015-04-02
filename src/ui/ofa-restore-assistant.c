@@ -29,12 +29,12 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 
@@ -272,7 +272,6 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT,
 							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 							MY_PROP_WINDOW_XML,  st_ui_xml,
 							MY_PROP_WINDOW_NAME, st_ui_id,
 							NULL );
@@ -438,11 +437,16 @@ static void
 p3_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	gchar *dname, *account, *password;
 
 	priv = assistant->priv;
 
-	if( ofa_dossier_new_mini_run( MY_WINDOW( assistant )->prot->main_window, &dname, &account, &password )){
+	main_window = my_window_get_main_window( MY_WINDOW( assistant ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	if( ofa_dossier_new_mini_run(
+			OFA_MAIN_WINDOW( main_window ), &dname, &account, &password )){
 
 		g_free( priv->p3_dossier );
 		priv->p3_dossier = dname;
@@ -737,6 +741,7 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p7_do_display";
 	ofaRestoreAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GtkWidget *label;
 
@@ -744,6 +749,11 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = self->priv;
 	priv->current_page_w = page;
@@ -757,11 +767,10 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	} else {
 		/* first close the currently opened dossier if we are going to
 		 * restore to this same dossier */
-		dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
 		if( dossier ){
 			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
 			if( !g_utf8_collate( priv->p3_dossier, ofo_dossier_get_name( dossier ))){
-				ofa_main_window_close_dossier( MY_WINDOW( self )->prot->main_window );
+				ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
 			}
 		}
 
@@ -888,9 +897,13 @@ static gboolean
 p7_do_open( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofsDossierOpen *sdo;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
 
 	if( priv->p5_open ){
 		sdo = g_new0( ofsDossierOpen, 1 );
@@ -898,7 +911,7 @@ p7_do_open( ofaRestoreAssistant *self )
 		sdo->dbname = g_strdup( priv->p3_database );
 		sdo->account = g_strdup( priv->p5_account );
 		sdo->password = g_strdup( priv->p5_password );
-		g_signal_emit_by_name( MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
+		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 	}
 
 	return( G_SOURCE_REMOVE );

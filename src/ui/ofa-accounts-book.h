@@ -42,9 +42,7 @@
  * also available in AccountSelect dialog.
  */
 
-#include <gtk/gtk.h>
-
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

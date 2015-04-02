@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-currency.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-editable-date.h"
@@ -334,7 +334,6 @@ ofa_pdf_books_run( ofaMainWindow *main_window )
 	self = g_object_new(
 			OFA_TYPE_PDF_BOOKS,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
@@ -491,11 +490,18 @@ on_to_account_select( GtkButton *button, ofaPDFBooks *self )
 static void
 on_account_changed( GtkEntry *entry, ofaPDFBooks *self, gchar **number, GtkWidget *label )
 {
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	const gchar *cstr;
 	ofoAccount *account;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	cstr = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, cstr );
+	account = ofo_account_get_by_number( dossier, cstr );
 	if( account ){
 		gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account ));
 	} else {
@@ -508,10 +514,14 @@ on_account_changed( GtkEntry *entry, ofaPDFBooks *self, gchar **number, GtkWidge
 static void
 on_account_select( GtkButton *button, ofaPDFBooks *self, GtkWidget *entry )
 {
+	GtkApplicationWindow *main_window;
 	gchar *number;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
 	number = ofa_account_select_run(
-					MY_WINDOW( self )->prot->main_window,
+					OFA_MAIN_WINDOW( main_window ),
 					gtk_entry_get_text( GTK_ENTRY( entry )),
 					ACCOUNT_ALLOW_ALL );
 	if( number ){
@@ -608,15 +618,22 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFBooksPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GList *dataset;
 	const gchar *from_account, *to_account;
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
 	from_account = priv->all_accounts ? NULL : priv->from_account;
 	to_account = priv->all_accounts ? NULL : priv->to_account;
 
 	dataset = ofo_entry_get_dataset_for_print_general_books(
-							MY_WINDOW( instance )->prot->dossier,
+							dossier,
 							from_account, to_account,
 							&priv->from_date, &priv->to_date );
 
@@ -827,10 +844,17 @@ static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFBooksPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble y;
 	ofoCurrency *currency;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
 
@@ -843,14 +867,12 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	priv->account_debit = 0;
 	priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number(
-							MY_WINDOW( instance )->prot->dossier, priv->account_number );
+	priv->account_object = ofo_account_get_by_number( dossier, priv->account_number );
 	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	currency = ofo_currency_get_by_code(
-							MY_WINDOW( instance )->prot->dossier, priv->currency_code );
+	currency = ofo_currency_get_by_code( dossier, priv->currency_code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	priv->currency_digits = ofo_currency_get_digits( currency );
@@ -974,6 +996,8 @@ static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFBooksPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofoEntry *entry;
 	const gchar *cstr;
 	gchar *str;
@@ -982,6 +1006,11 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	ofoConcil *concil;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
 
@@ -1024,7 +1053,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	}
 
 	/* reconciliation */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), MY_WINDOW( instance )->prot->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), dossier );
 	if( concil ){
 		ofa_iprintable_set_text( instance, context,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
@@ -1122,6 +1151,8 @@ static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFBooksPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble bottom, vspace, req_height, line_height, top, y;
 	gchar *str;
 	GList *it;
@@ -1131,6 +1162,11 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	gint digits;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
 
@@ -1155,7 +1191,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

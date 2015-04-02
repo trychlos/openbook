@@ -33,9 +33,7 @@
  * This is a base class for assistants.
  */
 
-#include <gtk/gtk.h>
-
-#include "core/my-window.h"
+#include "api/my-window.h"
 
 G_BEGIN_DECLS
 
@@ -59,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myWindowClass parent;
+	myWindowClass       parent;
 }
 	myAssistantClass;
 

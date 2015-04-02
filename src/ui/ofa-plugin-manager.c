@@ -30,13 +30,12 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-ipreferences.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-window-prot.h"
-#include "core/ofa-plugin.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"
@@ -48,12 +47,12 @@ struct _ofaPluginManagerPrivate {
 
 	/* UI
 	 */
-	GtkTreeView *tview;
-	GtkWidget   *properties_btn;
+	GtkTreeView   *tview;
+	GtkWidget     *properties_btn;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-plugin-manager.ui";
-static const gchar  *st_ui_id  = "PluginManagerDlg";
+static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-plugin-manager.ui";
+static const gchar  *st_ui_id           = "PluginManagerDlg";
 
 /* column ordering in the selection listview
  */
@@ -310,10 +309,14 @@ on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 static void
 on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 {
+	GtkApplicationWindow *main_window;
 	GtkTreeSelection *selection;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofaPlugin *plugin;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	selection = gtk_tree_view_get_selection( self->priv->tview );
 
@@ -322,6 +325,6 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		ofa_preferences_run( MY_WINDOW( self )->prot->main_window, plugin );
+		ofa_preferences_run( main_window, plugin );
 	}
 }

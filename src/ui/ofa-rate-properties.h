@@ -51,9 +51,8 @@
  *                     with 01/01/2014
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-rate-def.h"
-
-#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

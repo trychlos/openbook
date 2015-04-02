@@ -32,13 +32,13 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofo-dossier-ddl.h"
 
 #include "ui/my-editable-date.h"
@@ -282,6 +282,7 @@ static void
 init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 {
 	ofaDossierPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *entry, *label, *parent;
 	gchar *str;
 	ofaCurrencyCombo *c_combo;
@@ -290,6 +291,9 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gint ivalue;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	entry = my_utils_container_get_child_by_name( container, "p1-label" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -314,7 +318,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	c_combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
 	ofa_currency_combo_set_columns( c_combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_main_window( c_combo, MY_WINDOW( self )->prot->main_window );
+	ofa_currency_combo_set_main_window( c_combo, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
 	if( !priv->is_current ){
@@ -326,7 +330,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	l_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( l_combo ));
 	ofa_ledger_combo_set_columns( l_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_main_window( l_combo, MY_WINDOW( self )->prot->main_window );
+	ofa_ledger_combo_set_main_window( l_combo, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
 	if( !priv->is_current ){
@@ -381,17 +385,20 @@ static void
 init_forward_page( ofaDossierProperties *self, GtkContainer *container )
 {
 	ofaDossierPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	parent = my_utils_container_get_child_by_name( container, "p5-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->closing_parms = ofa_closing_parms_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->closing_parms ));
-	ofa_closing_parms_bin_set_main_window(
-			priv->closing_parms, MY_WINDOW( self )->prot->main_window );
+	ofa_closing_parms_bin_set_main_window( priv->closing_parms, OFA_MAIN_WINDOW( main_window ));
 
 	g_signal_connect( priv->closing_parms, "changed", G_CALLBACK( on_closing_parms_changed ), self );
 }
@@ -664,11 +671,15 @@ static gboolean
 do_update( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkContainer *container;
 	gboolean date_has_changed;
 	gint count;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
@@ -718,7 +729,7 @@ do_update( ofaDossierProperties *self )
 	priv->updated = ofo_dossier_update( priv->dossier );
 
 	if( count > 0 ){
-		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+		ofa_main_window_update_title( OFA_MAIN_WINDOW( main_window ));
 		display_progress_init( self );
 		g_signal_emit_by_name(
 				priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED, &priv->begin_init, &priv->end_init );

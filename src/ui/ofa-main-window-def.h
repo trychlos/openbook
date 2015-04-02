@@ -49,10 +49,10 @@ typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkApplicationWindow  parent;
+	GtkApplicationWindow      parent;
 
 	/*< private members >*/
-	ofaMainWindowPrivate *priv;
+	ofaMainWindowPrivate     *priv;
 }
 	ofaMainWindow;
 

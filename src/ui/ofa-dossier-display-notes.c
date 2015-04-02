@@ -27,9 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-dossier-display-notes.h"
 #include "ui/ofa-main-window.h"

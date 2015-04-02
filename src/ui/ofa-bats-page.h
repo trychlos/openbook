@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass        parent;
 }
 	ofaBatsPageClass;
 

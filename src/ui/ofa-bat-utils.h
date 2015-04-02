@@ -33,7 +33,7 @@
 
 #include "api/ofa-box.h"
 
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

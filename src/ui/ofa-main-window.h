@@ -63,9 +63,9 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "core/ofa-application-def.h"
+#include "ui/ofa-application-def.h"
+#include "ui/ofa-main-window-def.h"
 #include "ui/ofa-page-def.h"
-#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

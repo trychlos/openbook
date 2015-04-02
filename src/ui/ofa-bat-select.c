@@ -30,10 +30,9 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
@@ -160,7 +159,6 @@ ofa_bat_select_run( ofaMainWindow *main_window, ofxCounter id )
 	self = g_object_new(
 			OFA_TYPE_BAT_SELECT,
 			MY_PROP_MAIN_WINDOW, main_window,
-			MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 			MY_PROP_WINDOW_XML,  st_ui_xml,
 			MY_PROP_WINDOW_NAME, st_ui_id,
 			NULL );
@@ -216,10 +214,14 @@ static void
 setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 {
 	ofaBatSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
 	static ofaBatColumns st_columns[] = { BAT_DISP_URI, 0 };
 	GtkWidget *widget;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	widget = my_utils_container_get_child_by_name( parent, "treeview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -231,7 +233,7 @@ setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 
-	ofa_bat_treeview_set_main_window( priv->tview, MY_WINDOW( self )->prot->main_window );
+	ofa_bat_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 }
 
@@ -254,14 +256,21 @@ static void
 on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	priv->bat_id = -1;
 
 	if( bat ){
 		priv->bat_id = ofo_bat_get_id( bat );
-		ofa_bat_properties_bin_set_bat(
-				priv->bat_bin, bat, MY_WINDOW( self )->prot->dossier, FALSE );
+		ofa_bat_properties_bin_set_bat( priv->bat_bin, bat, dossier, FALSE );
 	}
 }
 

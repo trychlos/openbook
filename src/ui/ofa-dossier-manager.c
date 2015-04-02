@@ -30,12 +30,11 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
@@ -239,9 +238,13 @@ on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierMan
 static void
 on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
+	GtkApplicationWindow *main_window;
 	gboolean dossier_opened;
 
-	dossier_opened = ofa_dossier_new_run( MY_WINDOW( self )->prot->main_window );
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	dossier_opened = ofa_dossier_new_run( OFA_MAIN_WINDOW( main_window ));
 
 	if( dossier_opened ){
 		gtk_dialog_response(
@@ -265,13 +268,17 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 static void
 open_dossier( ofaDossierManager *self, const gchar *dname )
 {
+	GtkApplicationWindow *main_window;
 	ofsDossierOpen *sdo;
 
-	sdo = ofa_dossier_open_run( MY_WINDOW( self )->prot->main_window, dname );
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	sdo = ofa_dossier_open_run( OFA_MAIN_WINDOW( main_window ), dname );
 
 	if( sdo ){
 		g_signal_emit_by_name(
-				MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
+				OFA_MAIN_WINDOW( main_window ), OFA_SIGNAL_DOSSIER_OPEN, sdo );
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CANCEL );

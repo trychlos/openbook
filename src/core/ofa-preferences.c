@@ -31,18 +31,16 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-ipreferences.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 
-#include "core/my-window-prot.h"
+#include "core/my-date-combo.h"
+#include "core/my-decimal-combo.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
-#include "core/ofa-plugin.h"
-
-#include "ui/my-date-combo.h"
-#include "ui/my-decimal-combo.h"
-#include "ui/ofa-file-format-bin.h"
-#include "ui/ofa-main-window.h"
+#include "core/ofa-file-format-bin.h"
 
 /* private instance data
  */
@@ -235,14 +233,14 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
  * Update the properties of an dossier
  */
 gboolean
-ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
+ofa_preferences_run( GtkApplicationWindow *main_window, ofaPlugin *plugin )
 {
 	static const gchar *thisfn = "ofa_preferences_run";
 	ofaPreferences *self;
 	ofaPreferencesPrivate *priv;
 	gboolean updated;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_val_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ), FALSE );
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 

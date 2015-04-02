@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_WINDOW_PROT_H__
-#define __MY_WINDOW_PROT_H__
+#ifndef __OPENBOOK_API_MY_WINDOW_PROT_H__
+#define __OPENBOOK_API_MY_WINDOW_PROT_H__
 
 /**
  * SECTION: my_window
  * @short_description: #myWindow class definition.
- * @include: core/my-window.h
+ * @include: openbook/my-window.h
  *
  * This is a base class for application window toplevels. These may be
  * either GtkDialog-derived or GtkAssistant-derived classes.
@@ -38,22 +38,15 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "core/ofa-main-window-def.h"
-
 G_BEGIN_DECLS
 
 /* protected instance data
  * freely available to all derived classes
  */
 struct _myWindowProtected {
-	gboolean       dispose_has_run;
-
-	/* all derived classes will need these
-	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
+	gboolean dispose_has_run;
 };
 
 G_END_DECLS
 
-#endif /* __MY_WINDOW_PROT_H__ */
+#endif /* __OPENBOOK_API_MY_WINDOW_PROT_H__ */

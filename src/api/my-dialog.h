@@ -22,18 +22,18 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_DIALOG_H__
-#define __MY_DIALOG_H__
+#ifndef __OPENBOOK_API_MY_DIALOG_H__
+#define __OPENBOOK_API_MY_DIALOG_H__
 
 /**
  * SECTION: my_dialog
  * @short_description: #myDialog class definition.
- * @include: core/my-dialog.h
+ * @include: openbook/my-dialog.h
  *
  * The base class for application dialog boxes.
  */
 
-#include "core/my-window.h"
+#include "api/my-window.h"
 
 G_BEGIN_DECLS
 
@@ -169,4 +169,4 @@ void           my_dialog_set_readonly_buttons( myDialog *dialog );
 
 G_END_DECLS
 
-#endif /* __MY_DIALOG_H__ */
+#endif /* __OPENBOOK_API_MY_DIALOG_H__ */

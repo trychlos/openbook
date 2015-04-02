@@ -59,16 +59,10 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
 	my-cell-renderer-date.h								\
-	my-date-combo.c										\
-	my-date-combo.h										\
-	my-decimal-combo.c									\
-	my-decimal-combo.h									\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
-	my-field-combo.c									\
-	my-field-combo.h									\
 	my-progress-bar.c									\
 	my-progress-bar.h									\
 	my-tab-label.c										\
@@ -91,6 +85,7 @@ openbook_SOURCES = \
 	ofa-accounts-page.h									\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-application-def.h								\
 	ofa-backup.c										\
 	ofa-backup.h										\
 	ofa-balances-grid.c									\
@@ -165,8 +160,6 @@ openbook_SOURCES = \
 	ofa-exercice-store.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
-	ofa-file-format-bin.c								\
-	ofa-file-format-bin.h								\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
@@ -196,6 +189,7 @@ openbook_SOURCES = \
 	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-main-window-def.h								\
 	ofa-ope-template-help.c								\
 	ofa-ope-template-help.h								\
 	ofa-ope-template-properties.c						\
@@ -281,7 +275,6 @@ ui_files = \
 	ofa-dossier-properties.ui							\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
-	ofa-file-format-bin.ui								\
 	ofa-guided-input.ui									\
 	ofa-guided-input-bin.ui								\
 	ofa-import-assistant.ui								\

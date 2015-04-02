@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PLUGIN_H__
-#define __OFA_PLUGIN_H__
+#ifndef __OPENBOOK_API_OFA_PLUGIN_H__
+#define __OPENBOOK_API_OFA_PLUGIN_H__
 
 /* @title: ofaPlugin
  * @short_description: The #ofaPlugin Class Definition
- * @include: core/ofa-plugin.h
+ * @include: openbook/ofa-plugin.h
  *
  * The ofaPlugin class manages the application extensions as
  * dynamically loadable modules (thus 'plugins').
@@ -114,4 +114,4 @@ const gchar *ofa_plugin_get_version_number     ( ofaPlugin *plugin );
 
 G_END_DECLS
 
-#endif /* __OFA_PLUGIN_H__ */
+#endif /* __OPENBOOK_API_OFA_PLUGIN_H__ */

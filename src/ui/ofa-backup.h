@@ -33,7 +33,7 @@
  * Backup the database behind the dossier.
  */
 
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass      parent;
 }
 	ofaBackupClass;
 

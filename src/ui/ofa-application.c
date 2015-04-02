@@ -31,10 +31,10 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
+#include "api/ofa-plugin.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-plugin.h"
-#include "api/ofa-preferences.h"
 #include "core/ofa-settings-monitor.h"
 
 #include "ui/ofa-about.h"
@@ -850,7 +850,7 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_preferences_run( priv->main_window, NULL );
+	ofa_preferences_run( GTK_APPLICATION_WINDOW( priv->main_window ), NULL );
 }
 
 /*

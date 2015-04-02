@@ -29,9 +29,8 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-
-#include "core/my-dialog.h"
-#include "core/my-window-prot.h"
+#include "api/my-dialog.h"
+#include "api/my-window-prot.h"
 
 /* private instance data
  */
@@ -120,15 +119,16 @@ my_dialog_class_init( myDialogClass *klass )
 gboolean
 my_dialog_init_dialog( myDialog *self )
 {
-	GtkWindow *window;
+	GtkWindow *toplevel, *window;
 	const gchar *name;
 
 	g_return_val_if_fail( self && MY_IS_DIALOG( self ), FALSE );
 
 	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
-		if( my_window_has_valid_toplevel( MY_WINDOW( self )) &&
-				!self->priv->init_has_run ){
+		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+
+		if( toplevel && GTK_IS_WINDOW( toplevel ) && !self->priv->init_has_run ){
 
 			do_init_dialog( self );
 

@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-decimal-combo.h"
+#include "core/my-decimal-combo.h"
 
 /* private instance data
  */

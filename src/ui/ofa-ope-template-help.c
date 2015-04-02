@@ -26,10 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-dialog.h"
 #include "api/my-utils.h"
-
-#include "core/my-dialog.h"
-#include "core/my-window-prot.h"
+#include "api/my-window-prot.h"
 
 #include "ui/ofa-ope-template-help.h"
 

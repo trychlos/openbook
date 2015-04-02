@@ -33,10 +33,10 @@
  * Display the BAT properties. Only the notes can be updated.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-bat-def.h"
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass            parent;
 }
 	ofaBatPropertiesClass;
 

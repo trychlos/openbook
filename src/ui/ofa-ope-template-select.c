@@ -27,9 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-account.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-ope-template-select.h"
 #include "ui/ofa-ope-templates-frame.h"
@@ -42,7 +41,6 @@ struct _ofaOpeTemplateSelectPrivate {
 	/* UI
 	 */
 	ofaOpeTemplatesFrame *ope_templates_frame;
-
 	GtkWidget            *ok_btn;
 
 	/* returned value
@@ -161,11 +159,9 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 			thisfn, ( void * ) main_window, asked_mnemo );
 
 	if( !st_this ){
-		dossier = ofa_main_window_get_dossier( main_window );
 		st_this = g_object_new(
 				OFA_TYPE_OPE_TEMPLATE_SELECT,
 				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_DOSSIER,       dossier,
 				MY_PROP_WINDOW_XML,    st_ui_xml,
 				MY_PROP_WINDOW_NAME,   st_ui_id,
 				MY_PROP_SIZE_POSITION, FALSE,
@@ -176,6 +172,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
 		/* setup a weak reference on the dossier to auto-unref */
+		dossier = ofa_main_window_get_dossier( main_window );
 		g_object_weak_ref( G_OBJECT( dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
 	}
 
@@ -202,12 +199,16 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_v_init_dialog";
 	ofaOpeTemplateSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkContainer *container;
 	GtkWidget *parent;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_OPE_TEMPLATE_SELECT( dialog )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this )));
 
@@ -218,7 +219,8 @@ v_init_dialog( myDialog *dialog )
 
 	priv->ope_templates_frame = ofa_ope_templates_frame_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
-	ofa_ope_templates_frame_set_main_window( priv->ope_templates_frame, MY_WINDOW( dialog )->prot->main_window );
+	ofa_ope_templates_frame_set_main_window(
+			priv->ope_templates_frame, OFA_MAIN_WINDOW( main_window ));
 	ofa_ope_templates_frame_set_buttons( priv->ope_templates_frame, FALSE );
 
 	g_signal_connect(

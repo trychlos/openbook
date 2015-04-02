@@ -49,17 +49,19 @@ BUILT_SOURCES = \
 libofa_core_la_SOURCES = \
 	$(BUILT_SOURCES)									\
 	my-date.c											\
+	my-date-combo.c										\
+	my-date-combo.h										\
+	my-decimal-combo.c									\
+	my-decimal-combo.h									\
 	my-dialog.c											\
-	my-dialog.h											\
 	my-double.c											\
+	my-field-combo.c									\
+	my-field-combo.h									\
 	my-utils.c											\
 	my-window.c											\
-	my-window.h											\
-	my-window-prot.h									\
 	\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
-	ofa-application-def.h								\
 	ofa-box.c											\
 	ofa-collection.c									\
 	ofa-collection.h									\
@@ -73,6 +75,8 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
+	ofa-file-format-bin.c								\
+	ofa-file-format-bin.h								\
 	ofa-icollector.c									\
 	ofa-icollector.h									\
 	ofa-iconcil.c										\
@@ -82,9 +86,7 @@ libofa_core_la_SOURCES = \
 	ofa-iexportable.c									\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
-	ofa-main-window-def.h								\
 	ofa-plugin.c										\
-	ofa-plugin.h										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
 	ofa-settings-monitor.c								\
@@ -133,6 +135,7 @@ ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-dbms-root-bin.ui								\
 	ofa-dossier-delete-prefs-bin.ui						\
+	ofa-file-format-bin.ui								\
 	ofa-preferences.ui									\
 	$(NULL)
 

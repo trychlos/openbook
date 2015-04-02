@@ -37,9 +37,8 @@
  * visually render the progress and the possible error messages.
  */
 
-#include "core/ofa-main-window-def.h"
-
 #include "ui/my-assistant.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

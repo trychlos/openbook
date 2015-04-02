@@ -33,9 +33,10 @@
  * Update the ledger properties.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-ledger-def.h"
 
-#include "core/my-dialog.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -59,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass               parent;
 }
 	ofaLedgerPropertiesClass;
 

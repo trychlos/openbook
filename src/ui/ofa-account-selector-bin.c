@@ -38,24 +38,24 @@
 /* private instance data
  */
 struct _ofaAccountSelectorBinPrivate {
-	gboolean             dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* initialization
 	 */
-	gchar               *pref_name;			/* settings key name */
-	gint                 allowed;
-	gchar               *def_account;
-	const ofaMainWindow *main_window;
+	gchar         *pref_name;			/* settings key name */
+	gint           allowed;
+	gchar         *def_account;
+	ofaMainWindow *main_window;
 
 	/* UI
 	 */
-	GtkWidget           *acc_entry;
-	GtkWidget           *acc_select;
-	GtkWidget           *acc_label;
+	GtkWidget     *acc_entry;
+	GtkWidget     *acc_select;
+	GtkWidget     *acc_label;
 
 	/* data
 	 */
-	gchar               *acc_number;
+	gchar         *acc_number;
 };
 
 /* signals defined here
@@ -247,7 +247,7 @@ setup_dialog( ofaAccountSelectorBin *bin )
  */
 void
 ofa_account_selector_bin_set_select_args(
-		ofaAccountSelectorBin *bin, const gchar *default_account, const ofaMainWindow *main_window )
+		ofaAccountSelectorBin *bin, const gchar *default_account, ofaMainWindow *main_window )
 {
 	ofaAccountSelectorBinPrivate *priv;
 

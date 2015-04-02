@@ -28,7 +28,7 @@
 /**
  * SECTION: my_field_combo
  * @short_description: #myFieldCombo class definition.
- * @include: ui/my-field-combo.h
+ * @include: core/my-field-combo.h
  *
  * This class manages a combobox which display the available field
  * separators.

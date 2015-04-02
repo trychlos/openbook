@@ -40,11 +40,9 @@
  *   receives another model, and so on
  */
 
-#include <gtk/gtk.h>
-
 #include "api/ofo-ope-template-def.h"
 
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -77,7 +75,7 @@ GType              ofa_guided_input_bin_get_type        ( void ) G_GNUC_CONST;
 ofaGuidedInputBin *ofa_guided_input_bin_new             ( void );
 
 void               ofa_guided_input_bin_set_main_window ( ofaGuidedInputBin *bin,
-																	const ofaMainWindow *main_window );
+																	ofaMainWindow *main_window );
 
 void               ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin,
 																	const ofoOpeTemplate *template );

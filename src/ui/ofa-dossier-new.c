@@ -31,11 +31,11 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofa-admin-credentials-bin.h"
 
 #include "ui/ofa-dossier-new.h"

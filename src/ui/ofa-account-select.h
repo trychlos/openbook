@@ -33,8 +33,9 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "api/my-dialog.h"
+
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -64,7 +65,7 @@ typedef struct {
 
 GType  ofa_account_select_get_type( void ) G_GNUC_CONST;
 
-gchar *ofa_account_select_run     ( const ofaMainWindow *main_window,
+gchar *ofa_account_select_run     ( ofaMainWindow *main_window,
 											const gchar *asked_number,
 											gint allowed );
 

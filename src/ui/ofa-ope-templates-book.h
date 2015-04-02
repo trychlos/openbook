@@ -47,7 +47,7 @@
  * the main window, so that the treeviews are rightly created.
  */
 
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

@@ -33,10 +33,10 @@
  * Update properties of an account.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-account-def.h"
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

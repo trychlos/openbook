@@ -31,13 +31,12 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-currency-combo.h"
@@ -197,7 +196,6 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 	self = g_object_new(
 				OFA_TYPE_ACCOUNT_PROPERTIES,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
@@ -216,6 +214,8 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_properties_v_init_dialog";
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
 	gchar *title;
@@ -228,6 +228,9 @@ v_init_dialog( myDialog *dialog )
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -241,9 +244,9 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
-	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
+	is_current = ofo_dossier_is_current( dossier );
 
-	priv->has_entries = ofo_entry_use_account( MY_WINDOW( dialog )->prot->dossier, acc_number );
+	priv->has_entries = ofo_entry_use_account( dossier, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 
 	/* account number */
@@ -282,7 +285,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_main_window( combo, MY_WINDOW( dialog )->prot->main_window );
+	ofa_currency_combo_set_main_window( combo, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	if( my_strlen( priv->currency )){
 		ofa_currency_combo_set_selected( combo, priv->currency );
@@ -459,6 +462,8 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 {
 	static const gchar *thisfn = "ofa_account_properties_on_currency_changed";
 	ofaAccountPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofoCurrency *cur_obj;
 	const gchar *iso3a;
 
@@ -467,14 +472,18 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 
 	priv = self->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
 
-	cur_obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, code );
+	cur_obj = ofo_currency_get_by_code( dossier, code );
 
 	if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
-		iso3a = ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier );
-		cur_obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, iso3a );
+		iso3a = ofo_dossier_get_default_currency( dossier );
+		cur_obj = ofo_currency_get_by_code( dossier, iso3a );
 	}
 	priv->cur_digits = 2;
 	priv->cur_symbol = NULL;
@@ -525,12 +534,19 @@ static void
 check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gboolean is_root, is_current;
 	gboolean ok_enabled;
 
 	priv = self->priv;
 
-	is_current = ofo_dossier_is_current( MY_WINDOW( self )->prot->dossier );
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	is_current = ofo_dossier_is_current( dossier );
 	if( !is_current ){
 		ok_enabled = TRUE;
 
@@ -560,13 +576,18 @@ check_for_enable_dlg( ofaAccountProperties *self )
 static gboolean
 is_dialog_validable( ofaAccountProperties *self )
 {
-	gboolean ok;
 	ofaAccountPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
+	gboolean ok;
 	ofoAccount *exists;
 	const gchar *prev;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->type );
 
@@ -578,7 +599,6 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !priv->number_ok ){
 
-		dossier = MY_WINDOW( self )->prot->dossier;
 		exists = ofo_account_get_by_number( dossier, priv->number );
 		if( exists ){
 			prev = ofo_account_get_number( priv->account );
@@ -602,11 +622,18 @@ static gboolean
 do_update( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *prev_number;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	prev_number = g_strdup( ofo_account_get_number( self->priv->account ));
 
 	ofo_account_set_number( priv->account, priv->number );
@@ -625,10 +652,10 @@ do_update( ofaAccountProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_account_insert( priv->account, MY_WINDOW( self )->prot->dossier );
+				ofo_account_insert( priv->account, dossier );
 	} else {
 		priv->updated =
-				ofo_account_update( priv->account, MY_WINDOW( self )->prot->dossier, prev_number );
+				ofo_account_update( priv->account, dossier, prev_number );
 	}
 
 	g_free( prev_number );

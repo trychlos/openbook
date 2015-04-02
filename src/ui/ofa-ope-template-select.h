@@ -34,8 +34,9 @@
  * edit or select one.
  */
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "api/my-dialog.h"
+
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,7 +51,7 @@ typedef struct _ofaOpeTemplateSelectPrivate         ofaOpeTemplateSelectPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                 parent;
+	myDialog                     parent;
 
 	/*< private members >*/
 	ofaOpeTemplateSelectPrivate *priv;
@@ -59,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass            parent;
+	myDialogClass                parent;
 }
 	ofaOpeTemplateSelectClass;
 

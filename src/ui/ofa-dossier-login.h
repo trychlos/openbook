@@ -33,8 +33,9 @@
  * Let the user enter DBMS administrator account and password.
  */
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "api/my-dialog.h"
+
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -58,7 +59,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass           parent;
 }
 	ofaDossierLoginClass;
 

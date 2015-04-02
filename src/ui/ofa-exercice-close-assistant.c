@@ -32,6 +32,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbms.h"
@@ -45,7 +46,6 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-iconcil.h"
 
@@ -277,7 +277,6 @@ ofa_exercice_close_assistant_run( ofaMainWindow *main_window )
 	self = g_object_new(
 					OFA_TYPE_EXERCICE_CLOSE_ASSISTANT,
 					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
@@ -295,13 +294,17 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p1_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	priv->dname = ofo_dossier_get_name( dossier );
 	priv->provider = ofa_settings_get_dossier_provider( priv->dname );
@@ -315,7 +318,7 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 		} else {
 			ofa_main_window_get_dossier_credentials(
-					MY_WINDOW( self )->prot->main_window, &priv->cur_account, &priv->cur_password );
+					OFA_MAIN_WINDOW( main_window ), &priv->cur_account, &priv->cur_password );
 		}
 	}
 }
@@ -324,6 +327,7 @@ static void
 p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 	ofoDossier *dossier;
 	const GDate *begin_cur, *end_cur;
@@ -331,7 +335,11 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	gint exe_length;
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	exe_length = ofo_dossier_get_exe_length( dossier );
 
 	priv->p2_begin_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-begin" );
@@ -399,8 +407,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_closing_parms = ofa_closing_parms_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_closing_parms ));
-	ofa_closing_parms_bin_set_main_window(
-			priv->p2_closing_parms, MY_WINDOW( self )->prot->main_window );
+	ofa_closing_parms_bin_set_main_window( priv->p2_closing_parms, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( G_OBJECT( priv->p2_closing_parms ), "changed", G_CALLBACK( p2_on_closing_parms_changed ), self );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
@@ -489,11 +496,15 @@ static void
 p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
-	const GDate *begin_cur, *end_cur;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
+	const GDate *begin_cur, *end_cur;
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	begin_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_cur ), NULL );
 	end_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p2_end_cur ), NULL );
@@ -501,7 +512,7 @@ p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	ofo_dossier_set_exe_begin( dossier, begin_cur );
 	ofo_dossier_set_exe_end( dossier, end_cur );
 	ofa_dossier_misc_set_current( priv->dname, begin_cur, end_cur );
-	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+	ofa_main_window_update_title( OFA_MAIN_WINDOW( main_window ));
 
 	ofa_closing_parms_bin_apply( priv->p2_closing_parms );
 
@@ -512,6 +523,7 @@ static void
 p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p3_do_init";
+	GtkApplicationWindow *main_window;
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkWidget *parent;
 	const gchar *dname;
@@ -520,13 +532,15 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = self->priv;
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	priv->current_page_widget = page_widget;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
-	dname = ofo_dossier_get_name( MY_WINDOW( self )->prot->dossier );
+	dname = ofo_dossier_get_name( ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window )));
 	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, dname );
 
 	g_signal_connect(
@@ -603,8 +617,14 @@ static void
 p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, priv->p4_done );
 
@@ -613,7 +633,7 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 		priv->current_page_widget = page_widget;
 		my_assistant_set_page_type( MY_ASSISTANT( self ), page_widget, GTK_ASSISTANT_PAGE_PROGRESS );
 
-		ofa_check_balances_bin_set_dossier( priv->p4_checks_bin, MY_WINDOW( self )->prot->dossier );
+		ofa_check_balances_bin_set_dossier( priv->p4_checks_bin, dossier );
 	}
 }
 
@@ -661,8 +681,14 @@ static void
 p5_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, priv->p5_done );
 
@@ -671,7 +697,7 @@ p5_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 		priv->current_page_widget = page_widget;
 		my_assistant_set_page_type( MY_ASSISTANT( self ), page_widget, GTK_ASSISTANT_PAGE_PROGRESS );
 
-		ofa_check_integrity_bin_set_dossier( priv->p5_checks_bin, MY_WINDOW( self )->prot->dossier );
+		ofa_check_integrity_bin_set_dossier( priv->p5_checks_bin, dossier );
 	}
 }
 
@@ -721,6 +747,7 @@ p7_validate_entries( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_validate_entries";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GList *entries, *it;
 	myProgressBar *bar;
@@ -733,7 +760,10 @@ p7_validate_entries( ofaExerciceCloseAssistant *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
@@ -807,6 +837,7 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_do_solde_accounts";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GList *accounts, *sld_entries, *for_entries, *it, *ite, *currencies;
 	myProgressBar *bar;
@@ -829,9 +860,13 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 1 );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	bar = NULL;
 	errors = 0;
-	dossier = MY_WINDOW( self )->prot->dossier;
 	accounts = ofo_account_get_dataset_for_solde( dossier );
 	count = g_list_length( accounts );
 	precision = 1/PRECISION;
@@ -1015,6 +1050,7 @@ p7_close_ledgers( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_close_ledgers";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GList *ledgers, *it;
 	myProgressBar *bar;
@@ -1027,7 +1063,11 @@ p7_close_ledgers( ofaExerciceCloseAssistant *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	ledgers = ofo_ledger_get_dataset( dossier );
 	count = g_list_length( ledgers );
 	bar = get_new_bar( self, "p7-ledgers" );
@@ -1091,6 +1131,7 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gboolean ok;
 	const GDate *begin_next, *end_next;
@@ -1100,14 +1141,17 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	priv = self->priv;
 	ok = FALSE;
-	dossier = MY_WINDOW( self )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_next ), NULL );
 	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_end_next ), NULL );
 
 	ofo_dossier_set_status( dossier, DOS_STATUS_CLOSED );
 	ofo_dossier_update( dossier );
-	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+	ofa_main_window_update_title( OFA_MAIN_WINDOW( main_window ));
 
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p3_account, priv->p3_password,
@@ -1122,15 +1166,15 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		sdo->dname = g_strdup( priv->dname );
 		sdo->account = g_strdup( priv->cur_account );
 		sdo->password = g_strdup( priv->cur_password );
-		g_signal_emit_by_name( MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
+		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 
-		dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+		dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 		if( dossier && OFO_IS_DOSSIER( dossier )){
 			ofo_dossier_set_status( dossier, DOS_STATUS_OPENED );
 			ofo_dossier_set_exe_begin( dossier, begin_next );
 			ofo_dossier_set_exe_end( dossier, end_next );
 			ofo_dossier_update( dossier );
-			ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+			ofa_main_window_update_title( OFA_MAIN_WINDOW( main_window ));
 
 			ok = TRUE;
 		}
@@ -1153,6 +1197,7 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_cleanup";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gchar *query;
 	const ofaDbms *dbms;
@@ -1162,7 +1207,10 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	dbms = ofo_dossier_get_dbms( dossier );
@@ -1300,6 +1348,7 @@ p7_forward( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	myProgressBar *bar;
 	gint count, i;
 	GList *it;
@@ -1312,7 +1361,11 @@ p7_forward( ofaExerciceCloseAssistant *self )
 	const GDate *dbegin;
 
 	priv = self->priv;
-	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	dbegin = ofo_dossier_get_exe_begin( dossier );
 
 	bar = get_new_bar( self, "p7-forward" );
@@ -1366,6 +1419,7 @@ p7_open( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_open";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	myProgressBar *bar;
 	gint count, i;
 	GList *accounts, *it;
@@ -1375,7 +1429,11 @@ p7_open( ofaExerciceCloseAssistant *self )
 	gchar *text;
 
 	priv = self->priv;
-	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	accounts = ofo_account_get_dataset( dossier );
 	count = g_list_length( accounts );
 
@@ -1413,6 +1471,7 @@ p7_future( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p7_future";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	myProgressBar *bar;
 	gint count, i;
@@ -1423,7 +1482,11 @@ p7_future( ofaExerciceCloseAssistant *self )
 	GtkWidget *label;
 
 	priv = self->priv;
-	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
 

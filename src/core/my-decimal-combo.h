@@ -28,7 +28,7 @@
 /**
  * SECTION: my_decimal_combo
  * @short_description: #myDecimalCombo class definition.
- * @include: ui/my-decimal-combo.h
+ * @include: core/my-decimal-combo.h
  *
  * This class manages a combobox which display the available decimal
  * dot separators.

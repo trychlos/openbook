@@ -33,9 +33,8 @@
  * Update the dossier properties.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-dossier-def.h"
-
-#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

@@ -27,8 +27,7 @@
 #endif
 
 #include "api/my-utils.h"
-
-#include "core/my-window-prot.h"
+#include "api/my-window-prot.h"
 
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-balances-bin.h"
@@ -45,8 +44,8 @@ struct _ofaCheckBalancesPrivate {
 	GtkWidget           *close_btn;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-check-balances.ui";
-static const gchar  *st_ui_id  = "CheckBalancesDlg";
+static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-check-balances.ui";
+static const gchar  *st_ui_id           = "CheckBalancesDlg";
 
 G_DEFINE_TYPE( ofaCheckBalances, ofa_check_balances, MY_TYPE_DIALOG )
 
@@ -129,7 +128,6 @@ ofa_check_balances_run( ofaMainWindow *main_window )
 	self = g_object_new(
 				OFA_TYPE_CHECK_BALANCES,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
@@ -143,10 +141,17 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaCheckBalancesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 
 	priv = OFA_CHECK_BALANCES( dialog )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
@@ -164,7 +169,7 @@ v_init_dialog( myDialog *dialog )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), dialog );
 
-	ofa_check_balances_bin_set_dossier( priv->bin, MY_WINDOW( dialog )->prot->dossier );
+	ofa_check_balances_bin_set_dossier( priv->bin, dossier );
 
 	g_debug( "ofa_check_balances_v_init_dialog: returning..." );
 }

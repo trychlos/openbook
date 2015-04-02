@@ -30,10 +30,9 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-main-window.h"
@@ -159,7 +158,6 @@ ofa_currency_properties_run( ofaMainWindow *main_window, ofoCurrency *currency )
 	self = g_object_new(
 				OFA_TYPE_CURRENCY_PROPERTIES,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
@@ -178,6 +176,8 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaCurrencyPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
@@ -188,6 +188,11 @@ v_init_dialog( myDialog *dialog )
 	priv = OFA_CURRENCY_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	code = ofo_currency_get_code( priv->currency );
 	if( !code ){
 		priv->is_new = TRUE;
@@ -197,7 +202,7 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( toplevel, title );
 
-	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
+	is_current = ofo_dossier_is_current( dossier );
 
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
@@ -296,15 +301,21 @@ static gboolean
 is_dialog_validable( ofaCurrencyProperties *self )
 {
 	ofaCurrencyPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gboolean ok;
 	ofoCurrency *exists;
 
 	priv = self->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	ok = ofo_currency_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
-		exists = ofo_currency_get_by_code(
-					MY_WINDOW( self )->prot->dossier, priv->code );
+		exists = ofo_currency_get_by_code( dossier, priv->code );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
 	}
@@ -322,11 +333,19 @@ static gboolean
 do_update( ofaCurrencyProperties *self )
 {
 	ofaCurrencyPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	gchar *prev_code;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	prev_code = g_strdup( ofo_currency_get_code( priv->currency ));
 
 	ofo_currency_set_code( priv->currency, priv->code );
@@ -337,10 +356,10 @@ do_update( ofaCurrencyProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_currency_insert( priv->currency, MY_WINDOW( self )->prot->dossier );
+				ofo_currency_insert( priv->currency, dossier );
 	} else {
 		priv->updated =
-				ofo_currency_update( priv->currency, MY_WINDOW( self )->prot->dossier, prev_code );
+				ofo_currency_update( priv->currency, dossier, prev_code );
 	}
 
 	g_free( prev_code );

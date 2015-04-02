@@ -29,10 +29,9 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-properties-bin.h"
@@ -146,7 +145,6 @@ ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
 	self = g_object_new(
 				OFA_TYPE_BAT_PROPERTIES,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
@@ -166,11 +164,17 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *title;
 	GtkWindow *toplevel;
 	GtkWidget *container;
-	ofoDossier *dossier;
 	gboolean is_current;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
@@ -179,7 +183,6 @@ v_init_dialog( myDialog *dialog )
 
 	self = OFA_BAT_PROPERTIES( dialog );
 	priv = self->priv;
-	dossier = MY_WINDOW( dialog )->prot->dossier;
 	is_current = ofo_dossier_is_current( dossier );
 
 	container = my_utils_container_get_child_by_name(
@@ -225,13 +228,18 @@ static gboolean
 do_update( ofaBatProperties *self )
 {
 	ofaBatPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 	g_return_val_if_fail( !self->priv->is_new, FALSE );
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->prot->dossier;
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
 

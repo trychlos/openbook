@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -41,8 +42,6 @@
 #include "api/ofo-rate.h"
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
@@ -58,7 +57,7 @@ struct _ofaGuidedInputBinPrivate {
 
 	/* input parameters at initialization time
 	 */
-	const ofaMainWindow  *main_window;
+	ofaMainWindow        *main_window;
 
 	/* from dossier
 	 */
@@ -414,7 +413,7 @@ load_dialog( ofaGuidedInputBin *bin )
  * ofa_guided_input_bin_set_main_window:
  */
 void
-ofa_guided_input_bin_set_main_window( ofaGuidedInputBin *bin, const ofaMainWindow *main_window )
+ofa_guided_input_bin_set_main_window( ofaGuidedInputBin *bin, ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_set_main_window";
 	ofaGuidedInputBinPrivate *priv;
@@ -1001,7 +1000,8 @@ do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row )
 
 	priv = bin->priv;
 
-	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
+	number = ofa_account_select_run(
+			priv->main_window, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
 	if( my_strlen( number )){
 		priv->focused_row = row;
 		priv->focused_column = OPE_COL_ACCOUNT;

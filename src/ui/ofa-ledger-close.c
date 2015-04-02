@@ -30,12 +30,11 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
@@ -109,6 +108,7 @@ static void
 ledger_close_dispose( GObject *instance )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GList *it;
 
@@ -118,7 +118,11 @@ ledger_close_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = OFA_LEDGER_CLOSE( instance )->priv;
-		dossier = MY_WINDOW( instance )->prot->dossier;
+
+		main_window = my_window_get_main_window( MY_WINDOW( instance ));
+		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+		dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		if( dossier && OFO_IS_DOSSIER( dossier )){
 			for( it=priv->handlers ; it ; it=it->next ){
@@ -182,7 +186,6 @@ ofa_ledger_close_run( ofaMainWindow *main_window )
 	self = g_object_new(
 					OFA_TYPE_LEDGER_CLOSE,
 					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
@@ -200,11 +203,15 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;
 	GtkWidget *parent;
 	GdkRGBA color;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv = OFA_LEDGER_CLOSE( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -220,7 +227,7 @@ v_init_dialog( myDialog *dialog )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_main_window( priv->tview, MY_WINDOW( dialog )->prot->main_window );
+	ofa_ledger_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), dialog );
@@ -250,11 +257,16 @@ static void
 connect_to_dossier( ofaLedgerClose *dialog )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gulong handler;
 
 	priv = dialog->priv;
-	dossier = MY_WINDOW( dialog )->prot->dossier;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	handler = g_signal_connect(
 					G_OBJECT( dossier ),
@@ -319,12 +331,20 @@ static gboolean
 is_dialog_validable( ofaLedgerClose *self, GList *selected )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GList *it;
 	gboolean ok;
 	const GDate *exe_begin, *exe_end;
 	gboolean selected_here;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	gtk_label_set_text( priv->message_label, "" );
 	ok = FALSE;
 
@@ -334,13 +354,13 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
 
 	} else {
-		exe_begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->prot->dossier );
+		exe_begin = ofo_dossier_get_exe_begin( dossier );
 		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) < 0 ){
 			gtk_label_set_text( priv->message_label,
 					_( "Closing date must be greater or equal to the beginning of exercice" ));
 
 		} else {
-			exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier );
+			exe_end = ofo_dossier_get_exe_end( dossier );
 			if( my_date_is_valid( exe_end ) && my_date_compare( &priv->closing, exe_end ) >= 0 ){
 				gtk_label_set_text( priv->message_label,
 						_( "Closing date must be lesser than the end of exercice" ));
@@ -391,14 +411,22 @@ static void
 check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofoLedger *ledger;
 	const GDate *last;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	g_return_if_fail( my_date_is_valid( &priv->closing ));
 	priv->count += 1;
 
-	ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	last = ofo_ledger_get_last_close( ledger );
@@ -514,11 +542,18 @@ static gboolean
 close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
 	ofaLedgerClosePrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GtkWidget *widget, *bar;
 	ofoLedger *ledger;
 	gboolean ok;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	widget = gtk_grid_get_child_at( GTK_GRID( grid ), 1, priv->count );
 	g_return_val_if_fail( widget && GTK_IS_BIN( widget ), FALSE );
@@ -527,10 +562,10 @@ close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid 
 	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
 	priv->bar = MY_PROGRESS_BAR( bar );
 
-	ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
-	ok = ofo_ledger_close( ledger, MY_WINDOW( self )->prot->dossier, &priv->closing );
+	ok = ofo_ledger_close( ledger, dossier, &priv->closing );
 
 	priv->count += 1;
 

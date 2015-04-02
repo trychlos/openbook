@@ -31,12 +31,11 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-main-window.h"
@@ -172,7 +171,6 @@ ofa_ledger_properties_run( ofaMainWindow *main_window, ofoLedger *ledger )
 	self = g_object_new(
 					OFA_TYPE_LEDGER_PROPERTIES,
 					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
@@ -192,6 +190,8 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaLedgerPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
@@ -200,6 +200,12 @@ v_init_dialog( myDialog *dialog )
 	gboolean is_current;
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
@@ -211,7 +217,7 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
-	is_current = ofo_dossier_is_current( MY_WINDOW( dialog )->prot->dossier );
+	is_current = ofo_dossier_is_current( dossier );
 
 	priv->mnemo = g_strdup( jou_mnemo );
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo" ));
@@ -257,6 +263,8 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GtkWindow *container;
 	GtkWidget *grid, *label;
 	GList *currencies, *it;
@@ -267,6 +275,11 @@ init_balances_page( ofaLedgerProperties *self )
 	GdkRGBA color;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	container = my_window_get_toplevel( MY_WINDOW( self ));
 
@@ -282,7 +295,7 @@ init_balances_page( ofaLedgerProperties *self )
 
 	for( i=0, it=currencies ; it ; ++i, it=it->next ){
 		code = ( const gchar * ) it->data;
-		currency = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, code );
+		currency = ofo_currency_get_by_code( dossier, code );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 		symbol = ofo_currency_get_symbol( currency );
@@ -407,17 +420,23 @@ check_for_enable_dlg( ofaLedgerProperties *self )
 static gboolean
 is_dialog_validable( ofaLedgerProperties *self )
 {
-	gboolean ok;
 	ofaLedgerPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofoLedger *exists;
+	gboolean ok;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	ok = ofo_ledger_is_valid( priv->mnemo, priv->label );
 
 	if( ok ){
-		exists = ofo_ledger_get_by_mnemo(
-				MY_WINDOW( self )->prot->dossier, priv->mnemo );
+		exists = ofo_ledger_get_by_mnemo( dossier, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 	}
@@ -442,9 +461,16 @@ static gboolean
 do_update( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	priv = self->priv;
 	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
@@ -458,10 +484,10 @@ do_update( ofaLedgerProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_ledger_insert( priv->ledger, MY_WINDOW( self )->prot->dossier );
+				ofo_ledger_insert( priv->ledger, dossier );
 	} else {
 		priv->updated =
-				ofo_ledger_update( priv->ledger, MY_WINDOW( self )->prot->dossier, prev_mnemo );
+				ofo_ledger_update( priv->ledger, dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

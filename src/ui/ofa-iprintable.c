@@ -30,11 +30,9 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "core/my-window.h"
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-main-window.h"
@@ -312,6 +310,7 @@ ofa_iprintable_init( ofaIPrintable *instance )
 	sIPrintable *sdata;
 
 	g_return_if_fail( G_IS_OBJECT( instance ));
+	g_return_if_fail( MY_IS_WINDOW( instance ));
 	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
 
 	sdata = g_new0( sIPrintable, 1 );
@@ -737,8 +736,9 @@ iprintable_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operati
 static void
 draw_page_header_dossier( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gdouble y;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
+	gdouble y;
 
 	y = sdata->last_y;
 
@@ -746,7 +746,11 @@ draw_page_header_dossier( ofaIPrintable *instance, GtkPrintOperation *operation,
 	ofa_iprintable_set_font( instance, "Bold Italic", st_page_header_dossier_name_font_size );
 
 	/* dossier name on line 1 */
-	dossier = ofa_main_window_get_dossier( MY_WINDOW( instance )->prot->main_window );
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	ofa_iprintable_set_text( instance, context,
 			0, y, ofo_dossier_get_name( dossier ), PANGO_ALIGN_LEFT );
 

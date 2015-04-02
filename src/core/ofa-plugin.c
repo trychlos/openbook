@@ -29,8 +29,7 @@
 #include <gmodule.h>
 
 #include "api/my-utils.h"
-
-#include "core/ofa-plugin.h"
+#include "api/ofa-plugin.h"
 
 /* private instance data
  */

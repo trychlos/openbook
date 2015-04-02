@@ -36,13 +36,10 @@
  * selected currency changes.
  */
 
-#include <gtk/gtk.h>
-
 #include "api/ofo-dossier-def.h"
 
-#include "core/ofa-main-window-def.h"
-
 #include "ui/ofa-currency-store.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

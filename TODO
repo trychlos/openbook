@@ -191,6 +191,8 @@
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
                 among predefined values
+     2015- 4- 1 when done, review the Preferences which becomes non
+                validable if export field separator is empty
 
  470 2014-11-28 when entering a new database name, only accepts
                 [A..Z,a..z,0..9,_] characters
@@ -208,7 +210,7 @@
      2015- 4- 1 -> review api, signals, readonly, err_ message, settings
                 src/core/ofa-admin-credentials-bin.ui       : ok #d69d42d
                 src/core/ofa-dbms-root-bin.ui               : ok #366e131
-                src/core/ofa-dossier-delete-prefs.piece.ui  :
+                src/core/ofa-dossier-delete-prefs.piece.ui  : ok #bd9c322
                 src/core/ofa-preferences.ui                 :
                 src/mysql/ofa-mysql-connect-display-piece.ui:
                 src/mysql/ofa-mysql-connect-enter-piece.ui

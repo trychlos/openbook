@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_WINDOW_H__
-#define __MY_WINDOW_H__
+#ifndef __OPENBOOK_API_MY_WINDOW_H__
+#define __OPENBOOK_API_MY_WINDOW_H__
 
 /**
  * SECTION: my_window
  * @short_description: #myWindow class definition.
- * @include: core/my-window.h
+ * @include: openbook/my-window.h
  *
  * This is a base class for application window toplevels. These may be
  * either GtkDialog-derived or GtkAssistant-derived classes.
@@ -40,9 +40,7 @@
  * - disconnect signals on finalizing
  */
 
-#include "api/ofo-dossier-def.h"
-
-#include "core/ofa-main-window-def.h"
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -78,29 +76,23 @@ typedef struct {
  * Properties defined by the myWindow class.
  *
  * @MY_PROP_MAIN_WINDOW:      main window of the application
- * @MY_PROP_DOSSIER:          the currently opened dossier (if any)
  * @MY_PROP_WINDOW_XML:       path to the xml file which contains the UI description
  * @MY_PROP_WINDOW_NAME:      window toplevel name
  * @MY_PROP_SIZE_POSITION:    whether to manage size and position
  */
 #define MY_PROP_MAIN_WINDOW             "my-window-prop-main-window"
-#define MY_PROP_DOSSIER                 "my-window-prop-dossier"
 #define MY_PROP_WINDOW_XML              "my-window-prop-xml"
 #define MY_PROP_WINDOW_NAME             "my-window-prop-name"
 #define MY_PROP_SIZE_POSITION           "my-window-prop-size-position"
 
-GType          my_window_get_type          ( void ) G_GNUC_CONST;
+GType                 my_window_get_type          ( void ) G_GNUC_CONST;
 
-ofoDossier    *my_window_get_dossier       ( const myWindow *window );
+GtkApplicationWindow *my_window_get_main_window   ( const myWindow *window );
 
-ofaMainWindow *my_window_get_main_window   ( const myWindow *window );
+const gchar          *my_window_get_name          ( const myWindow *window );
 
-const gchar   *my_window_get_name          ( const myWindow *window );
-
-GtkWindow     *my_window_get_toplevel      ( const myWindow *window );
-
-gboolean       my_window_has_valid_toplevel( const myWindow *window );
+GtkWindow            *my_window_get_toplevel      ( const myWindow *window );
 
 G_END_DECLS
 
-#endif /* __MY_WINDOW_H__ */
+#endif /* __OPENBOOK_API_MY_WINDOW_H__ */

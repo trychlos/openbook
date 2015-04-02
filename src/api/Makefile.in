@@ -370,12 +370,16 @@ api_include_HEADERS = \
 	ofa-ipreferences.h									\
 	\
 	my-date.h											\
+	my-dialog.h											\
 	my-double.h											\
 	my-utils.h											\
+	my-window.h											\
+	my-window-prot.h									\
 	ofa-box.h											\
 	ofa-dbms.h											\
 	ofa-dbms-def.h										\
 	ofa-dossier-misc.h									\
+	ofa-plugin.h										\
 	ofa-preferences.h									\
 	ofa-settings.h										\
 	\

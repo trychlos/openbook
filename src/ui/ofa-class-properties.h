@@ -33,10 +33,10 @@
  * Update the devise properties.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-class-def.h"
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass              parent;
 }
 	ofaClassPropertiesClass;
 

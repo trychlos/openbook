@@ -29,9 +29,8 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-account.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-store.h"
@@ -159,7 +158,7 @@ on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
  * that must be g_free() by the caller
  */
 gchar *
-ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
+ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
@@ -172,11 +171,12 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 			thisfn, ( void * ) main_window, asked_number );
 
 	if( !st_this ){
+
 		dossier = ofa_main_window_get_dossier( main_window );
+
 		st_this = g_object_new(
 				OFA_TYPE_ACCOUNT_SELECT,
 				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_DOSSIER,       ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,    st_ui_xml,
 				MY_PROP_WINDOW_NAME,   st_ui_id,
 				MY_PROP_SIZE_POSITION, FALSE,
@@ -213,11 +213,15 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
 	ofaAccountSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "btn-ok" );
 
@@ -229,7 +233,7 @@ v_init_dialog( myDialog *dialog )
 	priv->accounts_book = ofa_accounts_frame_get_book( priv->accounts_frame );
 	ofa_accounts_book_set_cell_data_func(
 			priv->accounts_book, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
-	ofa_accounts_frame_set_main_window( priv->accounts_frame, MY_WINDOW( dialog )->prot->main_window );
+	ofa_accounts_frame_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
 	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE );
 
 	g_signal_connect(
@@ -304,6 +308,8 @@ static gboolean
 is_selection_valid( ofaAccountSelect *self, const gchar *number )
 {
 	ofaAccountSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gboolean ok;
 	ofoAccount *account;
 
@@ -311,8 +317,12 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	ok = FALSE;
 	set_message( self, "" );
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	if( my_strlen( number )){
-		account = ofo_account_get_by_number( MY_WINDOW( self )->prot->dossier, number );
+		account = ofo_account_get_by_number( dossier, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		ok = ofo_account_is_allowed( account, priv->allowed );

@@ -33,6 +33,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -45,7 +46,6 @@
 
 #include "core/ofa-concil-collection.h"
 #include "core/ofa-iconcil.h"
-#include "core/ofa-plugin.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"

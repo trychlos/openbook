@@ -35,7 +35,7 @@
  * displayed in this same frame.
  */
 
-#include "core/ofa-main-window-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -70,7 +70,7 @@ ofaAccountSelectorBin *ofa_account_selector_bin_new            ( const gchar *pr
 
 void                   ofa_account_selector_bin_set_select_args( ofaAccountSelectorBin *bin,
 																		const gchar *default_account,
-																		const ofaMainWindow *main_window );
+																		ofaMainWindow *main_window );
 
 const gchar           *ofa_account_selector_bin_get_account    ( const ofaAccountSelectorBin *bin );
 

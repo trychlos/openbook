@@ -35,10 +35,8 @@
  */
 
 #include "api/my-date.h"
-
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
-#include "core/ofa-plugin.h"
+#include "api/my-dialog.h"
+#include "api/ofa-plugin.h"
 
 G_BEGIN_DECLS
 
@@ -62,13 +60,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass          parent;
 }
 	ofaPreferencesClass;
 
 GType        ofa_preferences_get_type( void ) G_GNUC_CONST;
 
-gboolean     ofa_preferences_run     (     ofaMainWindow *parent,     ofaPlugin *plugin );
+gboolean     ofa_preferences_run     ( GtkApplicationWindow *parent, ofaPlugin *plugin );
 
 /* these are helpers available to the rest of the application
  */

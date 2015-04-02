@@ -27,9 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
-
-#include "core/my-window.h"
-#include "core/my-window-prot.h"
+#include "api/my-window.h"
+#include "api/my-window-prot.h"
 
 /* private instance data
  */
@@ -37,20 +36,20 @@ struct _myWindowPrivate {
 
 	/* properties
 	 */
-	gchar         *window_xml;
-	gchar         *window_name;
-	gboolean       manage_size_position;
+	gchar                *window_xml;
+	gchar                *window_name;
+	gboolean              manage_size_position;
+	GtkApplicationWindow *main_window;
 
 	/* this may be either a GtkDialog or a GtkAssistant
 	 */
-	GtkWindow     *toplevel;
+	GtkWindow            *toplevel;
 };
 
 /* class properties
  */
 enum {
 	PROP_MAIN_WINDOW_ID = 1,
-	PROP_DOSSIER_ID,
 	PROP_WINDOW_XML_ID,
 	PROP_WINDOW_NAME_ID,
 	PROP_SIZE_POSITION_ID
@@ -96,7 +95,9 @@ window_dispose( GObject *instance )
 		prot->dispose_has_run = TRUE;
 		priv = self->priv;
 
-		if( priv->manage_size_position && priv->toplevel && priv->window_name ){
+		if( priv->manage_size_position &&
+				priv->toplevel && GTK_IS_WINDOW( priv->toplevel ) &&
+				priv->window_name ){
 			my_utils_window_save_position( priv->toplevel, priv->window_name );
 		}
 
@@ -154,11 +155,7 @@ window_get_property( GObject *object, guint property_id, GValue *value, GParamSp
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				g_value_set_pointer( value, self->prot->main_window );
-				break;
-
-			case PROP_DOSSIER_ID:
-				g_value_set_pointer( value, self->prot->dossier );
+				g_value_set_pointer( value, self->priv->main_window );
 				break;
 
 			case PROP_WINDOW_XML_ID:
@@ -193,11 +190,7 @@ window_set_property( GObject *object, guint property_id, const GValue *value, GP
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				self->prot->main_window = g_value_get_pointer( value );
-				break;
-
-			case PROP_DOSSIER_ID:
-				self->prot->dossier = g_value_get_pointer( value );
+				self->priv->main_window = g_value_get_pointer( value );
 				break;
 
 			case PROP_WINDOW_XML_ID:
@@ -260,16 +253,7 @@ my_window_class_init( myWindowClass *klass )
 			g_param_spec_pointer(
 					MY_PROP_MAIN_WINDOW,
 					"Main window",
-					"The main window of the application",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			PROP_DOSSIER_ID,
-			g_param_spec_pointer(
-					MY_PROP_DOSSIER,
-					"Dossier",
-					"The currently opened dossier (if any)",
+					"The main #GtkApplicationWindow window of the application",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property(
@@ -304,39 +288,31 @@ my_window_class_init( myWindowClass *klass )
 }
 
 /**
- * my_window_get_dossier:
- */
-ofoDossier *
-my_window_get_dossier( const myWindow *self )
-{
-	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
-
-	if( !self->prot->dispose_has_run ){
-
-		return( self->prot->dossier );
-	}
-
-	return( NULL );
-}
-
-/**
  * my_window_get_main_window:
  */
-ofaMainWindow *
+GtkApplicationWindow *
 my_window_get_main_window( const myWindow *self )
 {
+	myWindowPrivate *priv;
+	GtkApplicationWindow *window;
+
+	priv = self->priv;
+	window = NULL;
+
 	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
 	if( !self->prot->dispose_has_run ){
 
-		return( self->prot->main_window );
+		window = priv->main_window;
 	}
 
-	return( NULL );
+	return( window );
 }
 
 /**
  * my_window_get_name:
+ *
+ * Returns: the name of the most top GTkBuildable widget.
  */
 const gchar *
 my_window_get_name( const myWindow *self )
@@ -365,20 +341,4 @@ my_window_get_toplevel( const myWindow *self )
 	}
 
 	return( NULL );
-}
-
-/**
- * my_window_has_valid_toplevel:
- */
-gboolean
-my_window_has_valid_toplevel( const myWindow *self )
-{
-	g_return_val_if_fail( self && MY_IS_WINDOW( self ), FALSE );
-
-	if( !self->prot->dispose_has_run ){
-
-		return( self->priv->toplevel && GTK_IS_WINDOW( self->priv->toplevel ));
-	}
-
-	return( FALSE );
 }

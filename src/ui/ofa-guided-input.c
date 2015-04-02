@@ -30,10 +30,9 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-guided-input-bin.h"
@@ -142,7 +141,6 @@ ofa_guided_input_run( ofaMainWindow *main_window, const ofoOpeTemplate *model )
 	self = g_object_new(
 					OFA_TYPE_GUIDED_INPUT,
 					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
@@ -158,10 +156,14 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaGuidedInputPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 
 	priv = OFA_GUIDED_INPUT( dialog )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
@@ -171,7 +173,7 @@ v_init_dialog( myDialog *dialog )
 
 	priv->input_bin = ofa_guided_input_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
-	ofa_guided_input_bin_set_main_window( priv->input_bin, MY_WINDOW( dialog )->prot->main_window );
+	ofa_guided_input_bin_set_main_window( priv->input_bin, OFA_MAIN_WINDOW( main_window ));
 	ofa_guided_input_bin_set_ope_template( priv->input_bin, priv->model );
 
 	g_signal_connect( priv->input_bin, "changed", G_CALLBACK( on_input_bin_changed ), dialog );

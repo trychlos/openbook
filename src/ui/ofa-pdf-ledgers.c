@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-currency.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-ledger.h"
 #include "api/ofs-currency.h"
 
-#include "core/my-window-prot.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-editable-date.h"
@@ -296,7 +296,6 @@ ofa_pdf_ledgers_run( ofaMainWindow *main_window )
 	self = g_object_new(
 				OFA_TYPE_PDF_LEDGERS,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
@@ -324,10 +323,15 @@ static void
 init_ledgers_selection( ofaPDFLedgers *self )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
 
 	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-alignment" );
@@ -338,7 +342,7 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ledgers_tview ));
 	ofa_ledger_treeview_set_columns( priv->ledgers_tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, MY_WINDOW( self )->prot->main_window );
+	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, OFA_MAIN_WINDOW( main_window ));
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 
 	g_signal_connect(
@@ -476,18 +480,25 @@ static gboolean
 do_apply( ofaPDFLedgers *self )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GList *list, *it;
 	ofoLedger *ledger;
 
 	priv = self->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	if( priv->all_ledgers ){
-		priv->selected = ofo_ledger_get_dataset( MY_WINDOW( self )->prot->dossier );
+		priv->selected = ofo_ledger_get_dataset( dossier );
 	} else {
 		list = ofa_ledger_treeview_get_selected( priv->ledgers_tview );
 		priv->selected = NULL;
 		for( it=list ; it ; it=it->next ){
-			ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, ( const gchar * ) it->data );
+			ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) it->data );
 			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 			priv->selected = g_list_append( priv->selected, ledger );
 		}
@@ -516,11 +527,18 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GSList *mnemos;
 	GList *it;
 	GList *dataset;
 
 	priv = OFA_PDF_LEDGERS( instance )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	/* build a list of requested ledger mnemos */
 	for( mnemos=NULL, it=priv->selected ; it ; it=it->next ){
@@ -528,8 +546,7 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 	}
 
 	dataset = ofo_entry_get_dataset_for_print_ledgers(
-							MY_WINDOW( instance )->prot->dossier,
-							mnemos, &priv->from_date, &priv->to_date );
+							dossier, mnemos, &priv->from_date, &priv->to_date );
 
 	priv->count = g_list_length( dataset );
 	g_debug( "ofa_pdf_ledgers_iprintable_get_dataset: count=%d", priv->count );
@@ -743,11 +760,18 @@ static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble y;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	priv = OFA_PDF_LEDGERS( instance )->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	y = ofa_iprintable_get_last_y( instance );
 
@@ -755,9 +779,7 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
 
-	priv->ledger_object = ofo_ledger_get_by_mnemo(
-							MY_WINDOW( instance )->prot->dossier,
-							priv->ledger_mnemo );
+	priv->ledger_object = ofo_ledger_get_by_mnemo( dossier, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
 
 	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );
@@ -788,6 +810,8 @@ static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofoEntry *entry;
 	const gchar *cstr, *code;
 	gchar *str;
@@ -801,12 +825,17 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	priv = OFA_PDF_LEDGERS( instance )->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	y = ofa_iprintable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
 
 	/* get currency properties */
 	code = ofo_entry_get_currency( entry );
-	currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, code );
+	currency = ofo_currency_get_by_code( dossier, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	digits = ofo_currency_get_digits( currency );
 
@@ -853,7 +882,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	}
 
 	/* reconciliation ? */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), MY_WINDOW( instance )->prot->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), dossier );
 	if( concil ){
 		ofa_iprintable_set_text( instance, context,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
@@ -925,6 +954,8 @@ static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble bottom, vspace, req_height, line_height, top;
 	gchar *str;
 	GList *it;
@@ -942,6 +973,11 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 		return;
 	}
 
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	/* bottom of the rectangle */
 	bottom = ofa_iprintable_get_max_y( instance );
 
@@ -957,7 +993,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 
 	for( it=priv->report_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 
@@ -995,6 +1031,8 @@ static void
 draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFLedgersPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble y;
 	gboolean first;
 	gchar *str;
@@ -1007,11 +1045,16 @@ draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 
 	priv = OFA_PDF_LEDGERS( instance )->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	y = ofa_iprintable_get_last_y( instance );
 
 	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

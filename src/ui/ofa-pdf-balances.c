@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -38,8 +39,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
@@ -319,7 +318,6 @@ ofa_pdf_balances_run( ofaMainWindow *main_window )
 	self = g_object_new(
 				OFA_TYPE_PDF_BALANCES,
 				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				PDF_PROP_DEF_NAME,   st_def_fname,
@@ -495,12 +493,18 @@ on_to_account_select( GtkButton *button, ofaPDFBalances *self )
 static void
 on_account_changed( ofaPDFBalances *self, GtkEntry *entry, GtkWidget *label, gchar **dest )
 {
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	const gchar *cstr;
 	ofoAccount *account;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	cstr = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number(
-					ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window ), cstr );
+	account = ofo_account_get_by_number( dossier, cstr );
 	if( account ){
 		gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account ));
 	} else {
@@ -514,10 +518,17 @@ on_account_changed( ofaPDFBalances *self, GtkEntry *entry, GtkWidget *label, gch
 static void
 on_account_select( GtkButton *button, ofaPDFBalances *self, GtkWidget *entry )
 {
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gchar *number;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	number = ofa_account_select_run(
-						MY_WINDOW( self )->prot->main_window,
+						OFA_MAIN_WINDOW( main_window ),
 						gtk_entry_get_text( GTK_ENTRY( entry )),
 						ACCOUNT_ALLOW_DETAIL );
 	if( number ){
@@ -662,12 +673,19 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFBalancesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GList *dataset;
 
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
 	dataset = ofo_entry_get_dataset_for_print_balance(
-						MY_WINDOW( instance )->prot->dossier,
+						dossier,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -945,11 +963,18 @@ static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFBalancesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	ofsAccountBalance *sbal;
 	gdouble y;
 	gchar *str;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
@@ -959,8 +984,7 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	sbal = ( ofsAccountBalance * ) current->data;
 	priv->class_num = ofo_account_get_class_from_number( sbal->account );
 
-	priv->class_object = ofo_class_get_by_number(
-			MY_WINDOW( instance )->prot->dossier, priv->class_num );
+	priv->class_object = ofo_class_get_by_number( dossier, priv->class_num );
 
 	g_list_free_full( priv->subtotals, ( GDestroyNotify ) free_currency );
 	priv->subtotals = NULL;
@@ -994,6 +1018,8 @@ static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFBalancesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	gdouble y;
 	ofsAccountBalance *sbal;
 	ofoAccount *account;
@@ -1002,15 +1028,18 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
+	main_window = my_window_get_main_window( MY_WINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
 	sbal = ( ofsAccountBalance * ) current->data;
 
-	account = ofo_account_get_by_number(
-					ofa_main_window_get_dossier( MY_WINDOW( instance )->prot->main_window ),
-					sbal->account );
+	account = ofo_account_get_by_number( dossier, sbal->account );
 
 	solde = 0;
 

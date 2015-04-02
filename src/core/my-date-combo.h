@@ -28,7 +28,7 @@
 /**
  * SECTION: my_date_combo
  * @short_description: #myDateCombo class definition.
- * @include: ui/my-date-combo.h
+ * @include: core/my-date-combo.h
  *
  * This class manages a combo box which display the known date formats.
  *

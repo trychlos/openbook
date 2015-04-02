@@ -28,18 +28,14 @@
 /**
  * SECTION: ofa_file_format_bin
  * @short_description: #ofaFileFormatBin class definition.
- * @include: ui/ofa-file-format-bin.h
+ * @include: core/ofa-file-format-bin.h
  *
  * A convenience class which let the user manages its own export
  * and import settings. It is to be used as a #GtkBin in user
  * preferences.
  */
 
-#include <gtk/gtk.h>
-
 #include "api/ofa-file-format.h"
-
-#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

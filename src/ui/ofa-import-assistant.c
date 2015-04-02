@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
@@ -46,10 +47,9 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "core/my-window-prot.h"
+#include "core/ofa-file-format-bin.h"
 
 #include "ui/my-progress-bar.h"
-#include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-main-window.h"
 
@@ -328,7 +328,6 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT,
 							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 							MY_PROP_WINDOW_XML,  st_ui_xml,
 							MY_PROP_WINDOW_NAME, st_ui_id,
 							NULL );
@@ -825,13 +824,18 @@ static guint
 p6_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	guint count;
 
 	priv = self->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
 	count = ofa_dossier_misc_import_csv(
-			MY_WINDOW( self )->prot->dossier,
-			priv->p6_object, priv->p2_uri, priv->p4_import_settings, self, errors );
+			dossier, priv->p6_object, priv->p2_uri, priv->p4_import_settings, self, errors );
 
 	return( count );
 }
@@ -840,11 +844,17 @@ static guint
 p6_do_import_other( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	guint count;
 
 	priv = self->priv;
 
-	*errors = ofa_iimportable_import_uri( priv->p6_plugin, MY_WINDOW( self )->prot->dossier, self, NULL );
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
+	*errors = ofa_iimportable_import_uri( priv->p6_plugin, dossier, self, NULL );
 	count = ofa_iimportable_get_count( priv->p6_plugin );
 
 	return( count );

@@ -35,8 +35,7 @@
  * This is a convenience class around a GtkPrintOperation.
  */
 
-#include "core/ofa-main-window-def.h"
-
+#include "ui/ofa-main-window-def.h"
 #include "ui/ofa-pdf-dialog.h"
 
 G_BEGIN_DECLS

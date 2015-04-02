@@ -38,8 +38,9 @@
  * exported filename.
  */
 
-#include "core/my-dialog.h"
-#include "core/ofa-main-window-def.h"
+#include "api/my-dialog.h"
+
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

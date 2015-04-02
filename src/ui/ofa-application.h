@@ -64,7 +64,7 @@
  *            ofa_application_activate: main window instanciated at 0xfe43d0
  */
 
-#include "core/ofa-application-def.h"
+#include "ui/ofa-application-def.h"
 
 G_BEGIN_DECLS
 

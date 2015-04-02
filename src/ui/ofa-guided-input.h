@@ -36,9 +36,10 @@
  * It internally implements an #ofaGuidedInputPiece convenience class.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-ope-template-def.h"
 
-#include "core/my-dialog.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

@@ -33,9 +33,10 @@
  * Run an intermediate closing on the selected ledgers.
  */
 
+#include "api/my-dialog.h"
 #include "api/ofo-ledger-def.h"
 
-#include "core/my-dialog.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

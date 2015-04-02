@@ -126,12 +126,10 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-cell-renderer-amount.$(OBJEXT) \
-	my-cell-renderer-date.$(OBJEXT) my-date-combo.$(OBJEXT) \
-	my-decimal-combo.$(OBJEXT) my-editable-amount.$(OBJEXT) \
-	my-editable-date.$(OBJEXT) my-field-combo.$(OBJEXT) \
-	my-progress-bar.$(OBJEXT) my-tab-label.$(OBJEXT) \
-	ofa-about.$(OBJEXT) ofa-account-properties.$(OBJEXT) \
-	ofa-account-select.$(OBJEXT) \
+	my-cell-renderer-date.$(OBJEXT) my-editable-amount.$(OBJEXT) \
+	my-editable-date.$(OBJEXT) my-progress-bar.$(OBJEXT) \
+	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
+	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
 	ofa-accounts-book.$(OBJEXT) ofa-accounts-frame.$(OBJEXT) \
 	ofa-accounts-page.$(OBJEXT) ofa-application.$(OBJEXT) \
@@ -156,15 +154,14 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-dossier-treeview.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
-	ofa-file-format-bin.$(OBJEXT) ofa-guided-ex.$(OBJEXT) \
-	ofa-guided-input.$(OBJEXT) ofa-guided-input-bin.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-ipreferences.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-istore.$(OBJEXT) \
-	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
-	ofa-ledger-treeview.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
-	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
-	ofa-ope-template-help.$(OBJEXT) \
+	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
+	ofa-guided-input-bin.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-ipreferences.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
+	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
+	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
+	ofa-ledgers-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
+	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
@@ -470,16 +467,10 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
 	my-cell-renderer-date.h								\
-	my-date-combo.c										\
-	my-date-combo.h										\
-	my-decimal-combo.c									\
-	my-decimal-combo.h									\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
-	my-field-combo.c									\
-	my-field-combo.h									\
 	my-progress-bar.c									\
 	my-progress-bar.h									\
 	my-tab-label.c										\
@@ -502,6 +493,7 @@ openbook_SOURCES = \
 	ofa-accounts-page.h									\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-application-def.h								\
 	ofa-backup.c										\
 	ofa-backup.h										\
 	ofa-balances-grid.c									\
@@ -576,8 +568,6 @@ openbook_SOURCES = \
 	ofa-exercice-store.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
-	ofa-file-format-bin.c								\
-	ofa-file-format-bin.h								\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
@@ -607,6 +597,7 @@ openbook_SOURCES = \
 	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-main-window-def.h								\
 	ofa-ope-template-help.c								\
 	ofa-ope-template-help.h								\
 	ofa-ope-template-properties.c						\
@@ -692,7 +683,6 @@ ui_files = \
 	ofa-dossier-properties.ui							\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
-	ofa-file-format-bin.ui								\
 	ofa-guided-input.ui									\
 	ofa-guided-input-bin.ui								\
 	ofa-import-assistant.ui								\
@@ -847,11 +837,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-date.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-combo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-decimal-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-date.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
@@ -900,7 +887,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-export-assistant.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@

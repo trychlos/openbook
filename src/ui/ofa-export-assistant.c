@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
@@ -43,11 +44,10 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "core/my-window-prot.h"
+#include "core/ofa-file-format-bin.h"
 
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-export-assistant.h"
-#include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -297,7 +297,6 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_EXPORT_ASSISTANT,
 							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 							MY_PROP_WINDOW_XML,  st_ui_xml,
 							MY_PROP_WINDOW_NAME, st_ui_id,
 							NULL );
@@ -789,16 +788,22 @@ static gboolean
 export_data( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
 	GtkWidget *label;
 	gchar *str, *text;
 	gboolean ok;
 
 	priv = self->priv;
 
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
-			priv->p6_base, priv->p4_uri, priv->p3_export_settings,
-			MY_WINDOW( self )->prot->dossier, self );
+			priv->p6_base, priv->p4_uri, priv->p3_export_settings, dossier, self );
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name(

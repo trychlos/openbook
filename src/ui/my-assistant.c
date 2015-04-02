@@ -29,11 +29,10 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-
-#include "core/my-window-prot.h"
+#include "api/my-window-prot.h"
+#include "api/ofa-preferences.h"
 
 #include "ui/my-assistant.h"
-#include "api/ofa-preferences.h"
 
 /* private instance data
  */
@@ -254,7 +253,7 @@ do_setup_assistant( myAssistant *self )
 
 	gtk_window_set_modal( GTK_WINDOW( priv->assistant ), TRUE );
 	gtk_window_set_transient_for( GTK_WINDOW( priv->assistant ),
-									GTK_WINDOW( MY_WINDOW( self )->prot->main_window ));
+									GTK_WINDOW( my_window_get_main_window( MY_WINDOW( self ))));
 
 	/* deals with 'Esc' key */
 	g_signal_connect(

@@ -31,9 +31,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-dossier-misc.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
-
-#include "core/ofa-plugin.h"
 
 /* signals defined here
  */

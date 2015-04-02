@@ -33,9 +33,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-plugin.h"
 #include "api/ofo-base-def.h"
-
-#include "core/ofa-plugin.h"
 
 /* data set against the imported object
  */

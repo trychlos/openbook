@@ -36,8 +36,7 @@
  * included in the specified period.
  */
 
-#include "core/ofa-main-window-def.h"
-
+#include "ui/ofa-main-window-def.h"
 #include "ui/ofa-pdf-dialog.h"
 
 G_BEGIN_DECLS

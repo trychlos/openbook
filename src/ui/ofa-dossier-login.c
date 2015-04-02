@@ -29,10 +29,9 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
-
-#include "core/my-window-prot.h"
 
 #include "ui/ofa-dossier-login.h"
 
