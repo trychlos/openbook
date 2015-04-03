@@ -2349,13 +2349,12 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model;
+	const gchar *model, *cstr;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
-	ref = my_utils_quote( ofo_entry_get_ref( entry ));
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_double_to_sql( ofo_entry_get_debit( entry ));
@@ -2366,11 +2365,20 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 
 	g_string_append_printf( query,
-			"	SET ENT_DEFFECT='%s',ENT_DOPE='%s',ENT_LABEL='%s',ENT_REF='%s',"
-			"	ENT_ACCOUNT='%s',ENT_CURRENCY='%s',ENT_LEDGER='%s',",
+			"	SET ENT_DEFFECT='%s',ENT_DOPE='%s',ENT_LABEL='%s',",
 			sdeff, sdope,
-			label,
-			ref,
+			label );
+
+	cstr = ofo_entry_get_ref( entry );
+	ref = my_strlen( cstr ) ? my_utils_quote( cstr ) : NULL;
+	if( my_strlen( ref )){
+		g_string_append_printf( query, " ENT_REF='%s',", ref );
+	} else {
+		query = g_string_append( query, " ENT_REF=NULL," );
+	}
+
+	g_string_append_printf( query,
+			"	ENT_ACCOUNT='%s',ENT_CURRENCY='%s',ENT_LEDGER='%s',",
 			ofo_entry_get_account( entry ),
 			ofo_entry_get_currency( entry ),
 			ofo_entry_get_ledger( entry ));

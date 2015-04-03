@@ -334,7 +334,10 @@ string_set_fn( sBoxData *box, const gchar *value )
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
 	g_free( box->string );
-	/*g_debug( "string_set_fn: value=%s", value );*/
+	/* debug */
+	if( 0 ){
+		g_debug( "string_set_fn: value=%s, len=%ld", value, my_strlen( value ));
+	}
 
 	if( my_strlen( value )){
 		box->is_null = FALSE;

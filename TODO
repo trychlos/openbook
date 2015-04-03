@@ -402,9 +402,6 @@
 
  733 2015- 3-15 be able to search for an entry
 
- 740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
-                case of a rounding error
-
  744 2015- 3-19 have an option to automatically check the balances when
                opening the dossier
 
@@ -464,7 +461,7 @@
 #5  0x0000000000481f69 in compute_balances (self=self@entry=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:1776
 #6  0x0000000000482ffb in on_cell_edited (cell=<optimized out>, path_str=<optimized out>, text=<optimized out>, self=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:2221
 
- 787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is null
+ 787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
 
  788
 
@@ -3471,6 +3468,10 @@
  739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
                 cf. also #747
      2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
+                case of a rounding error
+     2015- 4- 3 fixed - git #f7aaf05
 
  741 2015- 3-19 we have an example of unbalanced entries/ledgers/accounts
                 appeared between PWIConsultants-20140731_1.gz (kept) and

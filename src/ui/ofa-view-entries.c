@@ -1694,6 +1694,7 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	const GDate *d;
 	ofxAmount amount;
 	ofoConcil *concil;
+	const gchar *cstr, *cref;
 
 	priv = self->priv;
 
@@ -1708,6 +1709,8 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	srappro = my_date_to_str( d, ofa_prefs_date_display());
 	counter = ofo_entry_get_settlement_number( entry );
 	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+	cstr = ofo_entry_get_ref( entry );
+	cref = cstr ? cstr : "";
 
 	gtk_list_store_set(
 				GTK_LIST_STORE( priv->tstore ),
@@ -1715,7 +1718,7 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_DOPE,         sdope,
 				ENT_COL_DEFF,         sdeff,
 				ENT_COL_NUMBER,       ofo_entry_get_number( entry ),
-				ENT_COL_REF,          ofo_entry_get_ref( entry ),
+				ENT_COL_REF,          cref,
 				ENT_COL_LABEL,        ofo_entry_get_label( entry ),
 				ENT_COL_LEDGER,       ofo_entry_get_ledger( entry ),
 				ENT_COL_ACCOUNT,      ofo_entry_get_account( entry ),
@@ -2882,7 +2885,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 	ofo_entry_set_deffect( entry, &deff );
 
-	ofo_entry_set_ref( entry, ref );
+	ofo_entry_set_ref( entry, my_strlen( ref ) ? ref : NULL );
 	ofo_entry_set_label( entry, label );
 	ofo_entry_set_ledger( entry, ledger );
 	ofo_entry_set_account( entry, account );

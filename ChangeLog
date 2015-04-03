@@ -1,5 +1,13 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	Get rid of '(null)' piece reference (todo #787)
+
+	* src/core/ofa-box.c: improve debug management.
+
+	* src/core/ofo-entry.c: set NULL field instead of '(null)'.
+
+	* src/ui/ofa-view-entries.c: make sure null values are written as empty.
+
 	Get rid of rounding errors when displaying the balances (todo #740).
 
 	* src/core/ofs-currency.c: compute integer value of each amount.
