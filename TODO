@@ -449,10 +449,6 @@
                 (this is for the audit trace: be able to prove that we
                 have kept all generated entries on an exercice base)
 
- 785 2015- 4- 3 updating the amount of an entry make the operation date
-                change when it is less that the minimum allowed (though
-                the effect date is correct)
-
  788
 
 -----------------------------------------------------------------------
@@ -3596,6 +3592,11 @@
 
  779 2015- 3-30 import settleable indicator from EBP accounts
      2015- 3-31 done - git #918430877
+
+ 785 2015- 4- 3 updating the amount of an entry make the operation date
+                change when it is less that the minimum allowed (though
+                the effect date is correct)
+     2015- 4- 3 fixed - git #2506676
 
  786 2015- 4- 3 when inserting a new entry:
                 g_utf8_collate: assertion 'str2 != NULL' failed

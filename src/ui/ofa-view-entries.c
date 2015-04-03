@@ -253,11 +253,11 @@ static void           set_visible_columns( ofaViewEntries *self );
 static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *self );
-static void           display_entries_from_ledger( ofaViewEntries *self );
+static gboolean       display_entries_from_ledger( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
 static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
-static void           display_entries_from_account( ofaViewEntries *self );
+static gboolean       display_entries_from_account( ofaViewEntries *self );
 static void           on_effect_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
@@ -1475,9 +1475,12 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 	priv = self->priv;
 
 	is_active = gtk_toggle_button_get_active( button );
-	g_debug( "on_gen_selection_toggled: button=%p, is_active=%s",
-			( void * ) button, is_active ? "True":"False" );
 
+	/* debug */
+	if( 0 ){
+		g_debug( "on_gen_selection_toggled: button=%p, is_active=%s",
+				( void * ) button, is_active ? "True":"False" );
+	}
 
 	if( button == priv->ledger_btn ){
 		/* update the frames sensitivity */
@@ -1492,8 +1495,8 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 		/* and display the entries */
 		if( is_active ){
-			display_entries_from_ledger( self );
 			ofa_settings_set_string( st_pref_selection, SEL_LEDGER );
+			g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
 		}
 
 	} else {
@@ -1509,8 +1512,8 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 		/* and display the entries */
 		if( is_active ){
-			display_entries_from_account( self );
 			ofa_settings_set_string( st_pref_selection, SEL_ACCOUNT );
+			g_idle_add(( GSourceFunc ) display_entries_from_account, self );
 		}
 	}
 }
@@ -1529,10 +1532,10 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *se
 	priv->jou_mnemo = g_strdup( mnemo );
 	ofa_settings_set_string( st_pref_ledger, mnemo );
 
-	display_entries_from_ledger( self );
+	g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
 }
 
-static void
+static gboolean
 display_entries_from_ledger( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
@@ -1541,10 +1544,17 @@ display_entries_from_ledger( ofaViewEntries *self )
 	priv = self->priv;
 
 	if( priv->jou_mnemo && !priv->initializing ){
+
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
+
 		entries = ofo_entry_get_dataset_by_ledger( priv->dossier, priv->jou_mnemo );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
+
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), TRUE );
 	}
+
+	return( G_SOURCE_REMOVE );
 }
 
 static void
@@ -1566,9 +1576,9 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 		str = g_strdup_printf( "%s: %s", _( "Account" ), ofo_account_get_label( account ));
 		gtk_label_set_text( priv->f1_label, str );
 		g_free( str );
-		display_entries_from_account( self );
 		ofa_settings_set_string( st_pref_account, priv->acc_number );
 		priv->acc_valid = TRUE;
+		g_idle_add(( GSourceFunc ) display_entries_from_account, self );
 
 	} else {
 		gtk_label_set_text( priv->f1_label, "" );
@@ -1620,7 +1630,7 @@ on_account_select( GtkButton *button, ofaViewEntries *self )
 	}
 }
 
-static void
+static gboolean
 display_entries_from_account( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
@@ -1629,10 +1639,17 @@ display_entries_from_account( ofaViewEntries *self )
 	priv = self->priv;
 
 	if( priv->acc_number && !priv->initializing ){
+
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
+
 		entries = ofo_entry_get_dataset_by_account( priv->dossier, priv->acc_number );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
+
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), TRUE );
 	}
+
+	return( G_SOURCE_REMOVE );
 }
 
 static void
@@ -1676,6 +1693,7 @@ display_entries( ofaViewEntries *self, GList *entries )
 		for( iset=entries ; iset ; iset=iset->next ){
 			gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
 			display_entry( self, OFO_ENTRY( iset->data ), &iter );
+			gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
 		}
 
 		compute_balances( self );
