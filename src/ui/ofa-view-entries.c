@@ -2193,6 +2193,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 	GtkTreeIter sort_iter, filter_iter, iter;
 	gchar *str;
 	gdouble amount;
+	ofoEntry *entry;
 
 	g_debug( "%s: cell=%p, path=%s, text=%s, self=%p",
 			thisfn, ( void * ) cell, path_str, text, ( void * ) self );
@@ -2210,6 +2211,17 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
 			set_data_set_indicator( self, column_id, &iter );
+
+			/* also set the operation date so that it will not get modified
+			 * when checking the effect date - only for already recorded
+			 * entries as we are so sure that the operation date was valid */
+			gtk_tree_model_get( priv->tstore, &iter, ENT_COL_OBJECT, &entry, -1 );
+			if( entry ){
+				g_object_unref( entry );
+				if( ofo_entry_get_number( entry ) > 0 ){
+					set_data_set_indicator( self, ENT_COL_DOPE, &iter );
+				}
+			}
 
 			/* reformat amounts before storing them */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){

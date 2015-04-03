@@ -38,6 +38,7 @@
    - Get rid of rounding errors when displaying the balances (todo #740).
    - Get rid of '(null)' piece reference (todo #787).
    - Do not try to compute balances while currency if not set (todo #786).
+   - No more modifiy operation date when checking effect date (todo #785).
 
  Other changes:
 

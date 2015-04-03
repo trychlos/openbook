@@ -1,6 +1,9 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-view-entries.c:
+	- no more modifiy operation date when checking effect date (todo #785).
+
+	* src/ui/ofa-view-entries.c:
 	- do not try to compute balances while currency if not set (todo #786)
 	- improve error message.
 

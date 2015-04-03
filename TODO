@@ -450,16 +450,8 @@
                 have kept all generated entries on an exercice base)
 
  785 2015- 4- 3 updating the amount of an entry make the operation date
-                change when it is left that the minimum allowed (though
+                change when it is less that the minimum allowed (though
                 the effect date is correct)
-
- 786 2015- 4- 3 when inserting a new entry:
-                g_utf8_collate: assertion 'str2 != NULL' failed
-#2  0x0000003d04a780ca in g_utf8_collate () from /lib64/libglib-2.0.so.0
-#3  0x00007ffff7dcf130 in currency_get_by_code (currency=0x0, list=0x9e06c8, list@entry=0xdb8bd0) at ../../../src/core/ofs-currency.c:50
-#4  ofs_currency_add_currency (list=list@entry=0x9e06c8, currency=0x0, debit=0, credit=credit@entry=0) at ../../../src/core/ofs-currency.c:109
-#5  0x0000000000481f69 in compute_balances (self=self@entry=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:1776
-#6  0x0000000000482ffb in on_cell_edited (cell=<optimized out>, path_str=<optimized out>, text=<optimized out>, self=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:2221
 
  788
 
@@ -3604,6 +3596,15 @@
 
  779 2015- 3-30 import settleable indicator from EBP accounts
      2015- 3-31 done - git #918430877
+
+ 786 2015- 4- 3 when inserting a new entry:
+                g_utf8_collate: assertion 'str2 != NULL' failed
+#2  0x0000003d04a780ca in g_utf8_collate () from /lib64/libglib-2.0.so.0
+#3  0x00007ffff7dcf130 in currency_get_by_code (currency=0x0, list=0x9e06c8, list@entry=0xdb8bd0) at ../../../src/core/ofs-currency.c:50
+#4  ofs_currency_add_currency (list=list@entry=0x9e06c8, currency=0x0, debit=0, credit=credit@entry=0) at ../../../src/core/ofs-currency.c:109
+#5  0x0000000000481f69 in compute_balances (self=self@entry=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:1776
+#6  0x0000000000482ffb in on_cell_edited (cell=<optimized out>, path_str=<optimized out>, text=<optimized out>, self=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:2221
+     2015- 4- 3 fixed - git #da27804
 
  787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
      2015- 4- 3 fixed - git #f1ab147
