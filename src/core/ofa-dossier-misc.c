@@ -369,7 +369,7 @@ ofa_dossier_misc_import_csv( ofoDossier *dossier, ofaIImportable *object, const 
 			str = g_strdup_printf(
 					_( "Headers count=%u greater than count of lines read from '%s' file" ),
 					ofa_file_format_get_headers_count( settings ), uri );
-			my_utils_dialog_error( str );
+			my_utils_dialog_warning( str );
 			g_free( str );
 		}
 
@@ -401,7 +401,7 @@ get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings )
 	sysfname = my_utils_filename_from_utf8( uri );
 	if( !sysfname ){
 		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), uri );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 		return( NULL );
 	}
@@ -412,7 +412,7 @@ get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings )
 	contents = NULL;
 	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
 		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ), uri, error->message );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 		g_error_free( error );
 		g_free( contents );
@@ -437,7 +437,7 @@ get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings )
 		if( !str ){
 			str = g_strdup_printf(
 					_( "Charset conversion error: %s\nline='%s'" ), error->message, *iter_line );
-			my_utils_dialog_error( str );
+			my_utils_dialog_warning( str );
 			g_free( str );
 			g_strfreev( lines );
 			return( NULL );

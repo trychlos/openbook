@@ -351,7 +351,7 @@ connection_is_valid( ofaDossierOpen *self )
 
 	if( !valid ){
 		str = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 	}
 

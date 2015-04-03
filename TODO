@@ -436,8 +436,6 @@
 
  754 2015- 3-21 add unused count to bat page treeview
 
- 756 2015- 3-21 use my_utils_dialog_yesno() function
-
  758 2015- 3-21 warns when deleting a settled or reconciliated entry
                 +unsettle/unreconciliate
 
@@ -3501,6 +3499,9 @@
  755 2015- 3-21 add DBMS version to dossier properties
      2015- 3-31 + add last reconciliation id.
      2015- 3-31 done - git #e84dcb0
+
+ 756 2015- 3-21 use my_utils_dialog_yesno() function
+     2015- 4- 3 done - git #0caf944
 
  757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
      2015- 3-29 done in v0.38

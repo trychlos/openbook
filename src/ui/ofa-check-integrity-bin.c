@@ -807,7 +807,7 @@ set_checks_result( ofaCheckIntegrityBin *bin )
 	if( priv->total_errs > 0 ){
 		str = g_strdup_printf(
 				_( "We have detected %lu integrity errors in the DBMS." ), priv->total_errs );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 
 	} else {

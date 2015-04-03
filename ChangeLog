@@ -1,5 +1,25 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/api/my-utils.h,
+	* src/core/my-utils.c,
+	* src/core/ofa-dbms.c,
+	* src/core/ofa-dossier-misc.c,
+	* src/core/ofa-iexportable.c,
+	* src/core/ofo-entry.c,
+	* src/ui/ofa-check-balances-bin.c,
+	* src/ui/ofa-check-integrity-bin.c,
+	* src/ui/ofa-dossier-open.c,
+	* src/ui/ofa-exercice-close-assistant.c,
+	* src/ui/ofa-export-assistant.c,
+	* src/ui/ofa-import-assistant.c,
+	* src/ui/ofa-iprintable.c,
+	* src/ui/ofa-main-window.c,
+	* src/ui/ofa-pdf-dialog.c,
+	* src/ui/ofa-pdf-ledgers.c,
+	* src/ui/ofa-pdf-reconcil.c:
+	- my_utils_dialog_error() is renamed as my_utils_dialog_warning()
+	because actually amkes use of GTK_MESSAGE_WARNING flag.
+
 	Remove obsoleted ofa_main_window_confirm_deletion() method.
 
 	* src/ui/ofa-accounts-book.c,

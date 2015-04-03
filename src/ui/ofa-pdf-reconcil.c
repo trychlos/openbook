@@ -433,12 +433,12 @@ do_apply( ofaPDFReconcil *self )
 	priv = self->priv;
 
 	if( !priv->account || !OFO_IS_ACCOUNT( priv->account )){
-		my_utils_dialog_error( _( "Invalid account" ));
+		my_utils_dialog_warning( _( "Invalid account" ));
 		return( FALSE );
 	}
 
 	if( ofo_account_is_root( priv->account )){
-		my_utils_dialog_error( _( "Root account is not allowed here" ));
+		my_utils_dialog_warning( _( "Root account is not allowed here" ));
 		return( FALSE );
 	}
 
@@ -446,7 +446,7 @@ do_apply( ofaPDFReconcil *self )
 			my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), NULL ));
 
 	if( !my_date_is_valid( &priv->date )){
-		my_utils_dialog_error( _( "Invalid reconciliation date" ));
+		my_utils_dialog_warning( _( "Invalid reconciliation date" ));
 		return( FALSE );
 	}
 

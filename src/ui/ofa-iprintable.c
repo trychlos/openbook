@@ -393,7 +393,7 @@ ofa_iprintable_print_to_pdf( ofaIPrintable *instance, const gchar *filename )
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset ){
 		sdata->dataset = OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset( instance );
 	} else {
-		my_utils_dialog_error( _( "get_dataset() virtual not implemented, but is mandatory" ));
+		my_utils_dialog_warning( _( "get_dataset() virtual not implemented, but is mandatory" ));
 		return( FALSE );
 	}
 
@@ -503,7 +503,7 @@ do_operate( ofaIPrintable *instance, sIPrintable *sdata )
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
 		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 		g_error_free( error );
 

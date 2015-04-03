@@ -733,7 +733,7 @@ p6_error_no_interface( const ofaImportAssistant *self )
 		str = g_strdup_printf( _( "Unable to find a plugin to import the specified data" ));
 	}
 
-	my_utils_dialog_error( str );
+	my_utils_dialog_warning( str );
 
 	g_free( str );
 

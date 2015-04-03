@@ -547,7 +547,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 	priv->result = priv->entries_ok && priv->ledgers_ok && priv->accounts_ok;
 
 	if( !priv->result ){
-		my_utils_dialog_error(
+		my_utils_dialog_warning(
 				_( "We have detected losses of balance in your books.\n\n"
 					"In this current state, we will be unable to close this "
 					"exercice until you fix your balances." ));

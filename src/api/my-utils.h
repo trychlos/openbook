@@ -70,7 +70,7 @@ gchar     *my_utils_str_replace            ( const gchar *string, const gchar *o
 
 GtkWidget *my_utils_builder_load_from_path ( const gchar *path_xml, const gchar *widget_name );
 
-void       my_utils_dialog_error           ( const gchar *msg );
+void       my_utils_dialog_warning           ( const gchar *msg );
 gboolean   my_utils_dialog_yesno           ( const gchar *msg, const gchar *ok_text );
 
 gboolean   my_utils_entry_get_valid        ( GtkEntry *entry );

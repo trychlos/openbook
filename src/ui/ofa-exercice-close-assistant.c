@@ -1040,7 +1040,7 @@ p7_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	if( errors ){
 		msg = g_strdup_printf(
 				_( "%d errors have been found while computing accounts soldes" ), errors );
-		my_utils_dialog_error( msg );
+		my_utils_dialog_warning( msg );
 		g_free( msg );
 		my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
 		my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
@@ -1186,7 +1186,7 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p3_account, priv->p3_password,
 				priv->cur_account, begin_next, end_next )){
-		my_utils_dialog_error( _( "Unable to archive the dossier" ));
+		my_utils_dialog_warning( _( "Unable to archive the dossier" ));
 		my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
 		my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
 

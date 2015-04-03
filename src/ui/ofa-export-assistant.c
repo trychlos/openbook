@@ -761,7 +761,7 @@ p6_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p6_base = ( ofaIExportable * ) g_object_new( st_types[priv->p2_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->p6_base )){
-		my_utils_dialog_error( _( "The requested type does not implement the IExportable interface" ));
+		my_utils_dialog_warning( _( "The requested type does not implement the IExportable interface" ));
 		return;
 	}
 

@@ -349,7 +349,7 @@ apply_on_filechooser( ofaPDFDialog *self )
 	/* the export filename is the only mandatory argument */
 	priv->uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->filechooser ));
 	if( !my_strlen( priv->uri )){
-		my_utils_dialog_error( _( "Empty export selection: unable to continue" ));
+		my_utils_dialog_warning( _( "Empty export selection: unable to continue" ));
 		return( FALSE );
 	}
 

@@ -506,7 +506,7 @@ do_apply( ofaPDFLedgers *self )
 	}
 
 	if( !g_list_length( priv->selected )){
-		my_utils_dialog_error( _( "Empty ledgers selection: unable to continue" ));
+		my_utils_dialog_warning( _( "Empty ledgers selection: unable to continue" ));
 		return( FALSE );
 	}
 

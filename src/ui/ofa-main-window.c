@@ -921,7 +921,7 @@ warning_archived_dossier( const ofaMainWindow *window )
 				_( "Warning: this exercice has been archived.\n\n"
 					"No new entry is allowed on an archived exercice." ));
 
-	my_utils_dialog_error( str );
+	my_utils_dialog_warning( str );
 
 	g_free( str );
 }

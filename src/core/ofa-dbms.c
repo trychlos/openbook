@@ -254,7 +254,7 @@ get_provider_module_from_provider_name( ofaDbms *dbms, const gchar *dname, const
 	if( !provider_module ){
 		if( display_error ){
 			str = g_strdup_printf( _( "Unable to get a module instance for '%s' provider" ), provider_name );
-			my_utils_dialog_error( str );
+			my_utils_dialog_warning( str );
 			g_free( str );
 		} else {
 			g_warning( "%s: dname=%s, provider=%s: module not found",
@@ -285,7 +285,7 @@ get_provider_module_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboole
 	prov_name = ofa_settings_get_dossier_provider( dname );
 	if( !my_strlen( prov_name )){
 		str = g_strdup_printf( _( "Provider is not defined for '%s' dossier" ), dname );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 		return( NULL );
 	}

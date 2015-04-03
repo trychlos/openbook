@@ -388,10 +388,10 @@ my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name
 }
 
 /**
- * my_utils_dialog_error:
+ * my_utils_dialog_warning:
  */
 void
-my_utils_dialog_error( const gchar *msg )
+my_utils_dialog_warning( const gchar *msg )
 {
 	GtkWidget *dialog;
 
@@ -1082,7 +1082,7 @@ my_utils_filename_from_utf8( const gchar *filename )
 		str = g_strdup_printf(
 					_( "Unable to convert '%s' filename to filesystem encoding: %s" ),
 					filename, error->message );
-		my_utils_dialog_error( str );
+		my_utils_dialog_warning( str );
 		g_free( str );
 		g_error_free( error );
 	}
