@@ -403,7 +403,7 @@ delete_confirmed( ofaLedgersPage *self, ofoLedger *ledger )
 			ofo_ledger_get_mnemo( ledger ),
 			ofo_ledger_get_label( ledger ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

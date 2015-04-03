@@ -729,7 +729,7 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 			"This operation will not be recoverable.\n"
 			"Are you sure ?" ), label );
 
-	ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

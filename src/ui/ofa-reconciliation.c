@@ -2665,7 +2665,7 @@ is_unreconciliate_accepted( ofaReconciliation *self, ofoConcil *concil )
 
 	if( ent_count > 1 || bat_count > 1 ){
 
-		ok = my_utils_dialog_yesno(
+		ok = my_utils_dialog_question(
 					_( "You are about to unreconciliate a row which belongs "
 						"to a reconciliation group.\n"
 						"This implies that all entries and BAT lines of this "

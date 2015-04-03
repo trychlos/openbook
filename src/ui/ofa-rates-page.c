@@ -703,7 +703,7 @@ delete_confirmed( ofaRatesPage *self, ofoRate *rate )
 			ofo_rate_get_mnemo( rate ),
 			ofo_rate_get_label( rate ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

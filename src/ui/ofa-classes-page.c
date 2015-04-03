@@ -541,7 +541,7 @@ delete_confirmed( ofaClassesPage *self, ofoClass *class )
 	msg = g_strdup_printf( _( "Are you sure you want delete the '%s' class ?" ),
 			ofo_class_get_label( class ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

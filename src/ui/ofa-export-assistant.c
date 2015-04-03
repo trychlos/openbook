@@ -711,7 +711,7 @@ confirm_overwrite( const ofaExportAssistant *self, const gchar *fname )
 				_( "The file '%s' already exists.\n"
 					"Are you sure you want to overwrite it ?" ), fname );
 
-	ok = my_utils_dialog_yesno( str, _( "_Overwrite" ));
+	ok = my_utils_dialog_question( str, _( "_Overwrite" ));
 
 	g_free( str );
 

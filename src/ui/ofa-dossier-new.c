@@ -439,7 +439,7 @@ create_confirmed( const ofaDossierNew *self )
 					"This may not be what you actually want !\n"
 					"Are you sure you want to create into this database ?" ), priv->database );
 
-	ok = my_utils_dialog_yesno( str, _( "C_reate" ));
+	ok = my_utils_dialog_question( str, _( "C_reate" ));
 
 	g_free( str );
 

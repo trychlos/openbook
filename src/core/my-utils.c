@@ -407,12 +407,12 @@ my_utils_dialog_warning( const gchar *msg )
 }
 
 /**
- * my_utils_dialog_yesno:
+ * my_utils_dialog_question:
  *
  * Returns: %TRUE if OK.
  */
 gboolean
-my_utils_dialog_yesno( const gchar *msg, const gchar *ok_text )
+my_utils_dialog_question( const gchar *msg, const gchar *ok_text )
 {
 	GtkWidget *dialog;
 	gint response;

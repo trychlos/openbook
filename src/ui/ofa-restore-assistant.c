@@ -912,7 +912,7 @@ p7_restore_confirmed( const ofaRestoreAssistant *self )
 					"This may not be what you actually want !\n"
 					"Are you sure you want to restore into this database ?" ), priv->p3_database );
 
-	ok = my_utils_dialog_yesno( str, _( "_Restore" ));
+	ok = my_utils_dialog_question( str, _( "_Restore" ));
 
 	g_free( str );
 

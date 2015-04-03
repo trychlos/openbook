@@ -3442,7 +3442,7 @@ delete_row( ofaViewEntries *self )
 					_( "Are you sure you want to remove the '%s' entry" ),
 					label );
 
-			if( my_utils_dialog_yesno( msg, _( "_Delete" ))){
+			if( my_utils_dialog_question( msg, _( "_Delete" ))){
 				gtk_tree_model_sort_convert_iter_to_child_iter(
 						GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 				gtk_tree_model_filter_convert_iter_to_child_iter(

@@ -369,7 +369,7 @@ is_willing_to_quit( myAssistant *self )
 {
 	gboolean ok;
 
-	ok = my_utils_dialog_yesno(
+	ok = my_utils_dialog_question(
 			_( "Are you sure you want to quit this assistant ?" ),
 			_( "_Quit" ));
 

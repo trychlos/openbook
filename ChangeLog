@@ -2,6 +2,28 @@
 
 	* src/api/my-utils.h,
 	* src/core/my-utils.c,
+	* src/core/ofa-idbms.c,
+	* src/ui/my-assistant.c,
+	* src/ui/ofa-accounts-book.c,
+	* src/ui/ofa-bat-treeview.c,
+	* src/ui/ofa-classes-page.c,
+	* src/ui/ofa-currencies-page.c,
+	* src/ui/ofa-dossier-manager.c,
+	* src/ui/ofa-dossier-new.c,
+	* src/ui/ofa-dossier-properties.c,
+	* src/ui/ofa-export-assistant.c,
+	* src/ui/ofa-ledgers-page.c,
+	* src/ui/ofa-main-window.c,
+	* src/ui/ofa-ope-templates-book.c,
+	* src/ui/ofa-rates-page.c,
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-restore-assistant.c,
+	* src/ui/ofa-view-entries.c:
+	- my_utils_dialog_yesno() is renamed as my_utils_dialog_question()
+	because actually makes use of GTK_MESSAGE_QUESTION flag. 
+
+	* src/api/my-utils.h,
+	* src/core/my-utils.c,
 	* src/core/ofa-dbms.c,
 	* src/core/ofa-dossier-misc.c,
 	* src/core/ofa-iexportable.c,
@@ -18,7 +40,7 @@
 	* src/ui/ofa-pdf-ledgers.c,
 	* src/ui/ofa-pdf-reconcil.c:
 	- my_utils_dialog_error() is renamed as my_utils_dialog_warning()
-	because actually amkes use of GTK_MESSAGE_WARNING flag.
+	because actually makes use of GTK_MESSAGE_WARNING flag.
 
 	Remove obsoleted ofa_main_window_confirm_deletion() method.
 
@@ -32,7 +54,7 @@
 	* src/ui/ofa-ope-templates-book.c,
 	* src/ui/ofa-rates-page.c: updated accordingly.
 
-	Use my_utils_dialog_yesno() function when appropriate (todo #756)
+	Use my_utils_dialog_question() function when appropriate (todo #756)
 
 	* src/core/ofa-idbms.c,
 	* src/ui/my-assistant.c,
@@ -477,7 +499,7 @@
 	Have a 1 batline vs. n entries reconciliation scheme (todo #747)
 
 	* src/api/my-utils.h,
-	* src/core/my-utils.c: new function my_utils_dialog_yesno().
+	* src/core/my-utils.c: new function my_utils_dialog_question().
 
 	* src/ui/ofa-main-window.c: updated accordingly.
 

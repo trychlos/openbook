@@ -914,7 +914,7 @@ delete_confirmed( ofaOpeTemplatesBook *self, ofoOpeTemplate *ope )
 			ofo_ope_template_get_mnemo( ope ),
 			ofo_ope_template_get_label( ope ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

@@ -321,7 +321,7 @@ confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname
 				"Are your sure ?" ),
 					dbname, dname );
 
-	ok = my_utils_dialog_yesno( str, _( "_Delete" ));
+	ok = my_utils_dialog_question( str, _( "_Delete" ));
 
 	g_free( str );
 

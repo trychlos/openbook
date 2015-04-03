@@ -49,7 +49,8 @@
    - ofa_date_filter_bin_is_to_valid(): new method.
    - ofa_main_window_confirm_deletion(): removed method.
    - my_utils_dialog_error() is renamed as my_utils_dialog_warning().
-   - Use my_utils_dialog_yesno() function when appropriate (todo #756).
+   - my_utils_dialog_yesno() is renamed as my_utils_dialog_question().
+   - Use my_utils_dialog_question() function when appropriate (todo #756).
 
 -----------------------------------------------------------------------
  Version 0.38
@@ -127,7 +128,7 @@
    - new ofa_box_get_csv_line_ex() function.
    - ofa_extension_startup() now takes a GApplication as argument.
    - new 'main-window-created' signal.
-   - new my_utils_dialog_yesno() function.
+   - new my_utils_dialog_question() function.
    - new method ofo_bat_line_is_used().
    - new method ofo_bat_line_has_entry().
    - new method ofo_bat_line_get_entries_group().

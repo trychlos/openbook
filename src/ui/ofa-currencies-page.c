@@ -531,7 +531,7 @@ delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency )
 			ofo_currency_get_code( currency ),
 			ofo_currency_get_label( currency ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

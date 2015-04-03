@@ -668,7 +668,7 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 gboolean
 ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 {
-	return( my_utils_dialog_yesno(
+	return( my_utils_dialog_question(
 			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
 }
 

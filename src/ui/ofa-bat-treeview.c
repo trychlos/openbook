@@ -506,7 +506,7 @@ delete_confirmed( ofaBatTreeview *self, ofoBat *bat )
 	msg = g_strdup( _( "Are you sure you want delete this imported BAT file\n"
 			"(All the corresponding lines will be deleted too) ?" ));
 
-	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 

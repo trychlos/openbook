@@ -752,7 +752,7 @@ confirm_remediation( ofaDossierProperties *self, gint count )
 				"update the corresponding account and ledger balances.\n"
 				"Are your sure ?" ), count );
 
-	ok = my_utils_dialog_yesno( str, _( "Con_firm" ));
+	ok = my_utils_dialog_question( str, _( "Con_firm" ));
 
 	g_free( str );
 
