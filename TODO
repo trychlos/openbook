@@ -447,10 +447,6 @@
                 because they will not be purged at the closing of the 
                 exercice
 
- 750 2015- 3-20 Reconciliation: when opening the page, the last seen
-                account is displayed (normal), no line is selected,
-                but the Accept button is enabled
-
  751 2015- 3-20 Reconciliation: associate the bat file with the openbook
                 account as soon as we reconciliate one line thus refusing
                 the selection for another account
@@ -483,7 +479,10 @@
 
  778 2015- 3-30 use ofaAccountSelector where appropriate
 
- 783
+ 783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
+                will be reported after exercice closing
+
+ 784
 
 -----------------------------------------------------------------------
  DONE
@@ -3481,6 +3480,11 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 750 2015- 3-20 Reconciliation: when opening the page, the last seen
+                account is displayed (normal), no line is selected,
+                but the Accept button is enabled
+     2015- 4- 3 done - git #811dee9
 
  753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
                 using ofoBat object instead of bat_id

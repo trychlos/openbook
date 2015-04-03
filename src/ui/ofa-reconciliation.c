@@ -892,6 +892,7 @@ on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self )
 	ofaReconciliationPrivate *priv;
 	gdouble debit, credit;
 	gchar *str, *msg;
+	GtkTreeSelection *select;
 
 	priv = self->priv;
 
@@ -934,6 +935,10 @@ on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self )
 	}
 
 	check_for_enable_view( self );
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	gtk_tree_selection_unselect_all( select );
+	on_tview_selection_changed( select, self );
 }
 
 static void
