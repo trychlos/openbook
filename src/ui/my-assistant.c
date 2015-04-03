@@ -367,26 +367,13 @@ on_cancel( GtkAssistant *assistant, myAssistant *self )
 static gboolean
 is_willing_to_quit( myAssistant *self )
 {
-	GtkWidget *dialog;
-	gint response;
+	gboolean ok;
 
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			_( "Are you sure you want to quit this assistant ?" ));
+	ok = my_utils_dialog_yesno(
+			_( "Are you sure you want to quit this assistant ?" ),
+			_( "_Quit" ));
 
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "_Quit" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }
 
 static void

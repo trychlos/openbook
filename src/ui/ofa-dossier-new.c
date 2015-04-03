@@ -429,9 +429,8 @@ static gboolean
 create_confirmed( const ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	GtkWidget *dialog;
+	gboolean ok;
 	gchar *str;
-	gint response;
 
 	priv = self->priv;
 
@@ -440,24 +439,11 @@ create_confirmed( const ofaDossierNew *self )
 					"This may not be what you actually want !\n"
 					"Are you sure you want to create into this database ?" ), priv->database );
 
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( my_window_get_toplevel( MY_WINDOW( self ))),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", str );
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "C_reate" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+	ok = my_utils_dialog_yesno( str, _( "C_reate" ));
 
 	g_free( str );
-	gtk_widget_destroy( dialog );
 
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }
 
 /*

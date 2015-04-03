@@ -311,7 +311,6 @@ static GDate         *get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmode
 static gint           get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void           insert_new_row( ofaViewEntries *self );
 static void           delete_row( ofaViewEntries *self );
-static gboolean       delete_confirmed( const ofaViewEntries *self, const gchar *message );
 
 static void
 view_entries_finalize( GObject *instance )
@@ -3442,7 +3441,8 @@ delete_row( ofaViewEntries *self )
 			msg = g_strdup_printf(
 					_( "Are you sure you want to remove the '%s' entry" ),
 					label );
-			if( delete_confirmed( self, msg )){
+
+			if( my_utils_dialog_yesno( msg, _( "_Delete" ))){
 				gtk_tree_model_sort_convert_iter_to_child_iter(
 						GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 				gtk_tree_model_filter_convert_iter_to_child_iter(
@@ -3452,37 +3452,10 @@ delete_row( ofaViewEntries *self )
 				ofo_entry_delete( entry, priv->dossier );
 				compute_balances( self );
 			}
+
 			g_free( msg );
 		}
 		g_free( label );
 		g_object_unref( entry );
 	}
-}
-
-/*
- * Returns: %TRUE if the deletion is confirmed by the user.
- */
-static gboolean
-delete_confirmed( const ofaViewEntries *self, const gchar *message )
-{
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", message );
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "_Delete" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
 }

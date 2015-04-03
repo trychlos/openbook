@@ -722,31 +722,16 @@ ofa_idbms_delete_dossier( const ofaIDbms *instance,
 static gboolean
 confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean drop_db, gboolean drop_accounts )
 {
-	GtkWidget *dialog;
+	gboolean ok;
 	gchar *msg;
-	gint response;
 
 	msg = g_strdup_printf( _( "You are about to delete the '%s' dossier.\n"
-			"This operation will cannot be recoverable.\n"
+			"This operation will not be recoverable.\n"
 			"Are you sure ?" ), label );
 
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", msg );
+	ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_OK" ), GTK_RESPONSE_CANCEL,
-			_( "_Cancel" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }

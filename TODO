@@ -414,8 +414,6 @@
                 -> ledgers are not correctly updated when modifying an
                 amount in ViewEntries
 
- 742 2015- 3-19 RestoreAssistant: have a filter on *.gz
-
  744 2015- 3-19 have an option to automatically check the balances when
                opening the dossier
 
@@ -3461,6 +3459,9 @@
  739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
                 cf. also #747
      2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 742 2015- 3-19 RestoreAssistant: have a filter on *.gz
+     2015- 4- 3 done - git #aec67de
 
  743 2015- 3-19 Reconciliation: when only displaying non reconciliated,
                 reconciliating a couple entry+batline makes this entry

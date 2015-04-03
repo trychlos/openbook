@@ -742,8 +742,7 @@ do_update( ofaDossierProperties *self )
 static gboolean
 confirm_remediation( ofaDossierProperties *self, gint count )
 {
-	GtkWidget *dialog;
-	gint response;
+	gboolean ok;
 	gchar *str;
 
 	str = g_strdup_printf(
@@ -753,25 +752,11 @@ confirm_remediation( ofaDossierProperties *self, gint count )
 				"update the corresponding account and ledger balances.\n"
 				"Are your sure ?" ), count );
 
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", str );
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "Con_firm" ), GTK_RESPONSE_OK,
-			NULL );
+	ok = my_utils_dialog_yesno( str, _( "Con_firm" ));
 
 	g_free( str );
 
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }
 
 static void

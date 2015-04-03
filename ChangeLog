@@ -1,5 +1,17 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	Use my_utils_dialog_yesno() function when appropriate (todo #756)
+
+	* /core/ofa-idbms.c,
+	* /ui/my-assistant.c,
+	* /ui/ofa-dossier-manager.c,
+	* /ui/ofa-dossier-new.c,
+	* /ui/ofa-dossier-properties.c,
+	* /ui/ofa-export-assistant.c,
+	* /ui/ofa-main-window.c,
+	* /ui/ofa-restore-assistant.c,
+	* /ui/ofa-view-entries.c: updated accordingly.
+
 	* src/ui/ofa-restore-assistant.c: add filters to file chooser (todo #742).
 
 	* src/ui/ofa-reconciliation.c: disabled the buttons when the page

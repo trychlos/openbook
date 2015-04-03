@@ -915,23 +915,15 @@ warning_exercice_unset( const ofaMainWindow *window )
 static void
 warning_archived_dossier( const ofaMainWindow *window )
 {
-	GtkWidget *dialog;
 	gchar *str;
 
 	str = g_strdup_printf(
 				_( "Warning: this exercice has been archived.\n\n"
 					"No new entry is allowed on an archived exercice." ));
 
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 /*
@@ -1818,24 +1810,9 @@ close_all_pages( ofaMainWindow *main_window )
 gboolean
 ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *message )
 {
-	GtkWidget *dialog;
-	gint response;
+	gboolean ok;
 
-	dialog = gtk_message_dialog_new(
-			window ? GTK_WINDOW( window ) : NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", message );
+	ok = my_utils_dialog_yesno( message, _( "_Delete" ));
 
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "_Delete" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }

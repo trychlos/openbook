@@ -704,30 +704,18 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 static gboolean
 confirm_overwrite( const ofaExportAssistant *self, const gchar *fname )
 {
-	GtkWidget *dialog;
+	gboolean ok;
 	gchar *str;
-	gint response;
 
 	str = g_strdup_printf(
 				_( "The file '%s' already exists.\n"
 					"Are you sure you want to overwrite it ?" ), fname );
 
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_NONE,
-			"%s", str );
+	ok = my_utils_dialog_yesno( str, _( "_Overwrite" ));
 
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "Overwrite" ), GTK_RESPONSE_OK,
-			NULL );
+	g_free( str );
 
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( ok );
 }
 
 /*
