@@ -37,6 +37,7 @@
    - Fix ledgers updates when the entry amount is modified (todo #741).
    - Get rid of rounding errors when displaying the balances (todo #740).
    - Get rid of '(null)' piece reference (todo #787).
+   - Do not try to compute balances while currency if not set (todo #786).
 
  Other changes:
 

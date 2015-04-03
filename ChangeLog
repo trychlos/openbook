@@ -1,5 +1,9 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-view-entries.c:
+	- do not try to compute balances while currency if not set (todo #786)
+	- improve error message.
+
 	Get rid of '(null)' piece reference (todo #787)
 
 	* src/core/ofa-box.c: improve debug management.

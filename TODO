@@ -461,8 +461,6 @@
 #5  0x0000000000481f69 in compute_balances (self=self@entry=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:1776
 #6  0x0000000000482ffb in on_cell_edited (cell=<optimized out>, path_str=<optimized out>, text=<optimized out>, self=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:2221
 
- 787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
-
  788
 
 -----------------------------------------------------------------------
@@ -3606,6 +3604,9 @@
 
  779 2015- 3-30 import settleable indicator from EBP accounts
      2015- 3-31 done - git #918430877
+
+ 787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
+     2015- 4- 3 fixed - git #f1ab147
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

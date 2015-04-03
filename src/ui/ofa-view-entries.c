@@ -1776,9 +1776,11 @@ compute_balances( ofaViewEntries *self )
 					ENT_COL_CURRENCY, &dev_code,
 					-1 );
 
-			ofs_currency_add_currency(
-					&priv->balances,
-					dev_code, my_double_set_from_str( sdeb ), my_double_set_from_str( scre ));
+			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
+				ofs_currency_add_currency(
+						&priv->balances,
+						dev_code, my_double_set_from_str( sdeb ), my_double_set_from_str( scre ));
+			}
 
 			g_free( sdeb );
 			g_free( scre );
@@ -2734,7 +2736,9 @@ check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter )
 		is_valid = TRUE;
 
 	} else {
-		msg = g_strdup_printf( _( "Account expects %s currency while entry has %s" ), account_currency, code );
+		msg = g_strdup_printf(
+				_( "Account %s expects %s currency while entry has %s" ),
+				number, account_currency, code );
 		set_error_msg( self, iter, msg );
 		g_free( msg );
 	}
