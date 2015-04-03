@@ -1813,10 +1813,10 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 	gchar *str;
 	GdkRGBA color;
 
-	if( pc->debit || pc->credit ){
+	if( pc->ldebit || pc->lcredit ){
 
 		priv = self->priv;
-		gdk_rgba_parse( &color, pc->debit == pc->credit ? RGBA_BALANCE : RGBA_WARNING );
+		gdk_rgba_parse( &color, pc->ldebit == pc->lcredit ? RGBA_BALANCE : RGBA_WARNING );
 
 		box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
 		g_return_if_fail( box && GTK_IS_BOX( box ));

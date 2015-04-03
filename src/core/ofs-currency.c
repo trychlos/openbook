@@ -105,10 +105,15 @@ void
 ofs_currency_add_currency( GList **list, const gchar *currency, gdouble debit, gdouble credit )
 {
 	ofsCurrency *found;
+	gdouble precision;
 
 	found = currency_get_by_code( list, currency );
 	found->debit += debit;
 	found->credit += credit;
+
+	precision = exp10( found->digits );
+	found->ldebit = ( gulong ) found->debit * precision;
+	found->lcredit = ( gulong ) found->credit * precision;
 }
 
 /**

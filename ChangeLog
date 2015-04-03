@@ -1,5 +1,11 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	Get rid of rounding errors when displaying the balances (todo #740).
+
+	* src/core/ofs-currency.c: compute integer value of each amount.
+
+	* src/ui/ofa-view-entries.c: compare integer values when choosing the color.
+
 	* src/ui/ofa-view-entries.c:
 	- fix ledgers updates when the entry amount is modified (todo #741).
 

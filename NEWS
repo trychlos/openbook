@@ -35,6 +35,7 @@
    - Fix segfault when trying to import again a BAT file (todo #781).
    - Reconciliation: disable buttons when opening the page (todo #750).
    - Fix ledgers updates when the entry amount is modified (todo #741).
+   - Get rid of rounding errors when displaying the balances (todo #740).
 
  Other changes:
 
