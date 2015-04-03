@@ -396,23 +396,13 @@
  720 2015- 3-13 Reconciliation: when declining a proposition, should
                 search for the next
 
- 723 2015- 3-13 Reconciliation: add footer lines
-                'left unreconciliated batlines' &
-                'left unreconciliated entries'
-
  729 2015- 3-14 PrintLedgers: have an option to print a summary
 
  732 2015- 3-15 have a misc option to consult the audit log
 
  733 2015- 3-15 be able to search for an entry
 
- 734 2015- 3-15 when sorting entries, makes sure they are always in the
-                same order (add ent_number as last discriminant)
-
  738 2015- 3-16 ViewEntries: have a Delete button
-
- 739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
-                cf. also #747
 
  740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
                 case of a rounding error
@@ -426,22 +416,11 @@
 
  742 2015- 3-19 RestoreAssistant: have a filter on *.gz
 
- 743 2015- 3-19 Reconciliation: when only displaying non reconciliated,
-                reconciliating a couple entry+batline makes this entry
-                disappear (normal), but the focus go to the next line
-                which becomes wrongly collapsed
-
  744 2015- 3-19 have an option to automatically check the balances when
                opening the dossier
 
  745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
                 selected account is displayed
-
- 748 2015- 3-19 Reconciliation
-                OFA-CRITICAL **: set_reconciliated_balance: assertion 'my_strlen( account_number )' failed
-                set_reconciliated_balance (self=self@entry=0x1112b10) at ../../../src/ui/ofa-reconciliation.c:2824
-                after having cleared the account number, trying to clear
-                the bat lines
 
  749 2015- 3-19 Have a summary of non fully used bat files
                 because they will not be purged at the closing of the 
@@ -3420,6 +3399,13 @@
                 fix: propose against un-reconciliated entry
      2015- 3-13 fixed - git #30d4d29
 
+ 723 2015- 3-13 Reconciliation: add footer lines
+                'left unreconciliated batlines' &
+                'left unreconciliated entries'
+     2015- 4- 3 cancelled:
+                > unreconciliated batlines count is already displayed
+                > unreconciliated entries is visually obvious
+
  724 2015- 3-13 Reconciliation: add effect date filter
      2015- 3-14 done - git #c886e4e
 
@@ -3459,6 +3445,10 @@
                 visually all the informations to decline the wrongly
                 proposed line
 
+ 734 2015- 3-15 when sorting entries, makes sure they are always in the
+                same order (add ent_number as last discriminant)
+     20156 4- 3 ok - done
+
  735 2015- 3-15 closing ledger ui: center date label
      2015- 3-15 done - git #6798321
 
@@ -3467,6 +3457,16 @@
 
  737 2015- 3-15 Exporting: entry models becomes ope templates
      2015- 3-15 done - git #e3e3803
+
+ 739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
+                cf. also #747
+     2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 743 2015- 3-19 Reconciliation: when only displaying non reconciliated,
+                reconciliating a couple entry+batline makes this entry
+                disappear (normal), but the focus go to the next line
+                which becomes wrongly collapsed
+     2015- 4- 3 already fixed when refactoring the reconciliation
 
  746 2015- 3-19 when importing lcl-201408.pdf
                 GLib-CRITICAL **: g_str_has_prefix: assertion 'str != NULL' failed
@@ -3480,6 +3480,13 @@
                 use case: two peage tickets which are debited together
                 + remediate lcl-201408.pdf imported bat file
      2015- 3-21 done - git #a6bfe8a
+
+ 748 2015- 3-19 Reconciliation
+                OFA-CRITICAL **: set_reconciliated_balance: assertion 'my_strlen( account_number )' failed
+                set_reconciliated_balance (self=self@entry=0x1112b10) at ../../../src/ui/ofa-reconciliation.c:2824
+                after having cleared the account number, trying to clear
+                the bat lines
+     2015- 4- 3 already fixed when refactoring the reconciliation
 
  750 2015- 3-20 Reconciliation: when opening the page, the last seen
                 account is displayed (normal), no line is selected,

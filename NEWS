@@ -22,6 +22,7 @@
 	- EBP imports now accept a field separator argument.
 	- Have a 'About...' dialog (todo #8).
 	- Improve DossierProperties dialog box (todo #755).
+	- RestoreAssistant: add filter to file chooser (todo #742).
 
  Bug fixes:
 

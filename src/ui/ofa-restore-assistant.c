@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
@@ -77,6 +78,7 @@ struct _ofaRestoreAssistantPrivate {
 	GtkFileChooser         *p2_chooser;
 	gchar                  *p2_folder;
 	gchar                  *p2_fname;		/* the utf-8 to be restored filename */
+	gint                    p2_filter;
 
 	/* p2: select the dossier target
 	 */
@@ -110,6 +112,28 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *current_page_w;
 };
 
+/* GtkFileChooser filters
+ */
+enum {
+	FILE_CHOOSER_ALL = 1,
+	FILE_CHOOSER_GZ
+};
+
+typedef struct {
+	gint         type;
+	const gchar *pattern;
+	const gchar *name;
+}
+	sFilter;
+
+static sFilter st_filters[] = {
+		{ FILE_CHOOSER_ALL, "*",    N_( "All files (*)" )},
+		{ FILE_CHOOSER_GZ,  "*.gz", N_( "Backup files (*.gz)" )},
+		{ 0 }
+};
+
+#define CHOOSER_FILTER_TYPE             "file-chooser-filter-type"
+
 /* the user preferences stored as a string list
  * folder
  */
@@ -121,6 +145,7 @@ static const gchar *st_ui_id            = "RestoreAssistant";
 #define COLOR_ERROR                     "#ff0000"
 
 static void            p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void            p2_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser );
 static void            p2_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p2_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self );
 static void            p2_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self );
@@ -320,10 +345,39 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( widget && GTK_IS_FILE_CHOOSER_WIDGET( widget ));
 	priv->p2_chooser = GTK_FILE_CHOOSER( widget );
 
+	p2_set_filters( self, priv->p2_chooser );
+
 	g_signal_connect(
 			G_OBJECT( widget ), "selection-changed", G_CALLBACK( p2_on_selection_changed ), self );
 	g_signal_connect(
 			G_OBJECT( widget ), "file-activated", G_CALLBACK( p2_on_file_activated ), self );
+}
+
+static void
+p2_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser )
+{
+	ofaRestoreAssistantPrivate *priv;
+	gint i;
+	GtkFileFilter *filter, *selected;
+
+	priv = self->priv;
+	selected = NULL;
+	for( i=0 ; st_filters[i].type ; ++i ){
+		filter = gtk_file_filter_new();
+		gtk_file_filter_set_name( filter, gettext( st_filters[i].name ));
+		gtk_file_filter_add_pattern( filter, st_filters[i].pattern );
+		gtk_file_chooser_add_filter( chooser, filter );
+		g_object_set_data(
+				G_OBJECT( filter ), CHOOSER_FILTER_TYPE, GINT_TO_POINTER( st_filters[i].type ));
+
+		if( st_filters[i].type == priv->p2_filter ){
+			selected = filter;
+		}
+	}
+
+	if( selected ){
+		gtk_file_chooser_set_filter( chooser, selected );
+	}
 }
 
 static void
@@ -376,11 +430,15 @@ static void
 p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
 	ofaRestoreAssistantPrivate *priv;
+	GtkFileFilter *filter;
 
 	priv = self->priv;
 
 	g_free( priv->p2_folder );
 	priv->p2_folder = gtk_file_chooser_get_current_folder_uri( priv->p2_chooser );
+
+	filter = gtk_file_chooser_get_filter( priv->p2_chooser );
+	priv->p2_filter = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( filter ), CHOOSER_FILTER_TYPE ));
 
 	update_settings( self );
 }
@@ -979,7 +1037,7 @@ p7_do_open( ofaRestoreAssistant *self )
 }
 
 /*
- * settings is "folder;open;"
+ * settings is "folder;open;filter_type;"
  */
 static void
 get_settings( ofaRestoreAssistant *self )
@@ -998,10 +1056,17 @@ get_settings( ofaRestoreAssistant *self )
 		g_free( priv->p2_folder );
 		priv->p2_folder = g_strdup( cstr );
 	}
+
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->p5_open = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p2_filter = atoi( cstr );
 	}
 
 	ofa_settings_free_string_list( list );
@@ -1017,6 +1082,7 @@ update_settings( ofaRestoreAssistant *self )
 
 	list = g_list_append( NULL, g_strdup( priv->p2_folder ));
 	list = g_list_append( list, g_strdup_printf( "%s", priv->p5_open ? "True":"False" ));
+	list = g_list_append( list, g_strdup_printf( "%d", priv->p2_filter ));
 
 	ofa_settings_set_string_list( st_prefs_import, list );
 

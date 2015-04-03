@@ -1,5 +1,7 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-restore-assistant.c: add filters to file chooser (todo #742).
+
 	* src/ui/ofa-reconciliation.c: disabled the buttons when the page
 	opens and there is no selection (todo #750).
 
