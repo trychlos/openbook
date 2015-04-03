@@ -160,6 +160,8 @@ GDate          *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gcha
 GSList         *ofo_entry_get_currencies       ( const ofoDossier *dossier );
 #define         ofo_entry_free_currencies( L ) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
+gboolean        ofo_entry_is_editable          ( const ofoEntry *entry );
+
 void            ofo_entry_set_label            ( ofoEntry *entry, const gchar *label );
 void            ofo_entry_set_deffect          ( ofoEntry *entry, const GDate *date );
 void            ofo_entry_set_dope             ( ofoEntry *entry, const GDate *date );

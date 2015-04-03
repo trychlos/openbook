@@ -1729,6 +1729,34 @@ entry_get_import_settled( const ofoEntry *entry )
 	return( FALSE );
 }
 
+/**
+ * ofo_entry_is_editable:
+ * @entry:
+ *
+ * Returns: %TRUE if the @entry may be edited.
+ *
+ * An entry may be edited if its status is either rough or future.
+ * Past, validated or deleted entries cannot be edited.
+ */
+gboolean
+ofo_entry_is_editable( const ofoEntry *entry )
+{
+	gboolean editable;
+	ofaEntryStatus status;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	editable = FALSE;
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		status = ofo_entry_get_status( entry );
+		editable = ( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+	}
+
+	return( editable );
+}
+
 /*
  * entry_set_number:
  */

@@ -2278,14 +2278,20 @@ static void
 on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
+	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	ofoEntry *entry;
 	gboolean is_editable, is_active;
 
 	priv = self->priv;
 
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, ENT_COL_OBJECT, &entry, -1 );
+		if( entry ){
+			g_object_unref( entry );
+		}
 
-		is_editable = ( get_row_status( self, priv->tsort, &iter ) == ENT_STATUS_ROUGH );
+		is_editable = entry ? ofo_entry_is_editable( entry ): FALSE;
 		is_editable &= ofo_dossier_is_current( priv->dossier );
 
 		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
@@ -2931,6 +2937,8 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 
 	priv = self->priv;
 
+	g_return_if_fail( ofo_entry_is_editable( entry ));
+
 	remediate = FALSE;
 	account = ofo_entry_get_account( entry );
 	debit = ofo_entry_get_debit( entry );
@@ -2951,16 +2959,6 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 		}
 
 		switch( status ){
-			case ENT_STATUS_VALIDATED:
-				amount = ofo_account_get_val_debit( account_prev );
-				ofo_account_set_val_debit( account_prev, amount-prev_debit );
-				amount = ofo_account_get_val_credit( account_prev );
-				ofo_account_set_val_credit( account_prev, amount-prev_credit );
-				amount = ofo_account_get_val_debit( account_new );
-				ofo_account_set_val_debit( account_new, amount+debit );
-				amount = ofo_account_get_val_credit( account_new );
-				ofo_account_set_val_credit( account_new, amount+credit );
-				break;
 			case ENT_STATUS_ROUGH:
 				amount = ofo_account_get_rough_debit( account_prev );
 				ofo_account_set_rough_debit( account_prev, amount-prev_debit );
@@ -2982,7 +2980,7 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 				ofo_account_set_futur_credit( account_new, amount+credit );
 				break;
 			default:
-				remediate = FALSE;
+				g_return_if_reached();
 				break;
 		}
 
@@ -3004,28 +3002,28 @@ remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev
 	ofxAmount amount, debit, credit;
 	ofaEntryStatus status;
 	ofoLedger *ledger_new, *ledger_prev;
-	gint cmp;
-	gboolean remediate;
+	gboolean ledger_has_changed;
 
 	g_debug( "%s: self=%p, entry=%p, prev_ledger=%s, prev_debit=%lf, prev_credit=%lf",
 			thisfn, ( void * ) self, ( void * ) entry, prev_ledger, prev_debit, prev_credit );
 
 	priv = self->priv;
 
-	remediate = FALSE;
+	g_return_if_fail( ofo_entry_is_editable( entry ));
+
+	status = ofo_entry_get_status( entry );
 	ledger = ofo_entry_get_ledger( entry );
 	currency = ofo_entry_get_currency( entry );
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
-	status = ofo_entry_get_status( entry );
-	cmp = g_utf8_collate( ledger, prev_ledger );
+	ledger_has_changed = ( g_utf8_collate( ledger, prev_ledger ) != 0 );
 
-	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
+	/* if ledger has changed or debit has changed or credit has changed */
+	if( ledger_has_changed || debit != prev_debit || credit != prev_credit ){
 
-		remediate = TRUE;
 		ledger_new = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
 		g_return_if_fail( ledger_new && OFO_IS_LEDGER( ledger_new ));
-		if( cmp != 0 ){
+		if( ledger_has_changed ){
 			ledger_prev = ofo_ledger_get_by_mnemo( priv->dossier, prev_ledger );
 			g_return_if_fail( ledger_prev && OFO_IS_LEDGER( ledger_prev ));
 		} else {
@@ -3033,16 +3031,6 @@ remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev
 		}
 
 		switch( status ){
-			case ENT_STATUS_VALIDATED:
-				amount = ofo_ledger_get_val_debit( ledger_prev, currency );
-				ofo_ledger_set_val_debit( ledger_prev, amount-prev_debit, currency );
-				amount = ofo_ledger_get_val_credit( ledger_prev, currency );
-				ofo_ledger_set_val_credit( ledger_prev, amount-prev_credit, currency );
-				amount = ofo_ledger_get_val_debit( ledger_new, currency );
-				ofo_ledger_set_val_debit( ledger_new, amount+debit, currency );
-				amount = ofo_ledger_get_val_credit( ledger_new, currency );
-				ofo_ledger_set_val_credit( ledger_new, amount+credit, currency );
-				break;
 			case ENT_STATUS_ROUGH:
 				amount = ofo_ledger_get_rough_debit( ledger_prev, currency );
 				ofo_ledger_set_rough_debit( ledger_prev, amount-prev_debit, currency );
@@ -3064,16 +3052,14 @@ remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev
 				ofo_ledger_set_futur_credit( ledger_new, amount+credit, currency );
 				break;
 			default:
-				remediate = FALSE;
+				g_return_if_reached();
 				break;
 		}
 
-		if( remediate ){
-			if( cmp != 0 ){
-				ofo_ledger_update( ledger_prev, priv->dossier, prev_ledger );
-			}
-			ofo_ledger_update( ledger_new, priv->dossier, ledger );
+		if( ledger_has_changed ){
+			ofo_ledger_update_balance( ledger_prev, priv->dossier, currency );
 		}
+		ofo_ledger_update_balance( ledger_new, priv->dossier, currency );
 	}
 }
 

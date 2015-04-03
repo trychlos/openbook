@@ -457,7 +457,11 @@
  783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
                 will be reported after exercice closing
 
- 784
+ 784 2015- 4- 3 archive the entries last number when opening the exercice
+                (this is for the audit trace: be able to prove that we
+                have kept all generated entries on an exercice base)
+
+ 785
 
 -----------------------------------------------------------------------
  DONE

@@ -1,5 +1,11 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-view-entries.c:
+	- fix ledgers updates when the entry amount is modified (todo #741).
+
+	* src/api/ofo-entry.h,
+	* src/core/ofo-entry.c: ofo_entry_is_editable(): new method.
+
 	* src/api/my-utils.h,
 	* src/core/my-utils.c,
 	* src/core/ofa-idbms.c,
