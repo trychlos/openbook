@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
@@ -540,8 +541,7 @@ delete_confirmed( ofaClassesPage *self, ofoClass *class )
 	msg = g_strdup_printf( _( "Are you sure you want delete the '%s' class ?" ),
 			ofo_class_get_label( class ));
 
-	delete_ok = ofa_main_window_confirm_deletion(
-						ofa_page_get_main_window( OFA_PAGE( self )), msg );
+	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 

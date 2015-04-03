@@ -1,16 +1,28 @@
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
+	Remove obsoleted ofa_main_window_confirm_deletion() method.
+
+	* src/ui/ofa-accounts-book.c,
+	* src/ui/ofa-bat-treeview.c,
+	* src/ui/ofa-classes-page.c,
+	* src/ui/ofa-currencies-page.c,
+	* src/ui/ofa-ledgers-page.c,
+	* src/ui/ofa-main-window.c,
+	* src/ui/ofa-main-window.h,
+	* src/ui/ofa-ope-templates-book.c,
+	* src/ui/ofa-rates-page.c: updated accordingly.
+
 	Use my_utils_dialog_yesno() function when appropriate (todo #756)
 
-	* /core/ofa-idbms.c,
-	* /ui/my-assistant.c,
-	* /ui/ofa-dossier-manager.c,
-	* /ui/ofa-dossier-new.c,
-	* /ui/ofa-dossier-properties.c,
-	* /ui/ofa-export-assistant.c,
-	* /ui/ofa-main-window.c,
-	* /ui/ofa-restore-assistant.c,
-	* /ui/ofa-view-entries.c: updated accordingly.
+	* src/core/ofa-idbms.c,
+	* src/ui/my-assistant.c,
+	* src/ui/ofa-dossier-manager.c,
+	* src/ui/ofa-dossier-new.c,
+	* src/ui/ofa-dossier-properties.c,
+	* src/ui/ofa-export-assistant.c,
+	* src/ui/ofa-main-window.c,
+	* src/ui/ofa-restore-assistant.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
 
 	* src/ui/ofa-restore-assistant.c: add filters to file chooser (todo #742).
 

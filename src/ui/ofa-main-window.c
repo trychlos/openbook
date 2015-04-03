@@ -1798,21 +1798,3 @@ close_all_pages( ofaMainWindow *main_window )
 		gtk_notebook_remove_page( book, count-1 );
 	}
 }
-
-/**
- * ofa_main_window_confirm_deletion:
- * @window: [allow-null]: this main window, or %NULL if the method is
- *  not called from a #ofaPage-derived class.
- * @message: the message to be displayed.
- *
- * Returns: %TRUE if the deletion is confirmed by the user.
- */
-gboolean
-ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *message )
-{
-	gboolean ok;
-
-	ok = my_utils_dialog_yesno( message, _( "_Delete" ));
-
-	return( ok );
-}

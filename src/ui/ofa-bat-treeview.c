@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
@@ -499,16 +500,13 @@ ofa_bat_treeview_delete_bat( ofaBatTreeview *view, ofoBat *bat )
 static gboolean
 delete_confirmed( ofaBatTreeview *self, ofoBat *bat )
 {
-	ofaBatTreeviewPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
-
-	priv = self->priv;
 
 	msg = g_strdup( _( "Are you sure you want delete this imported BAT file\n"
 			"(All the corresponding lines will be deleted too) ?" ));
 
-	delete_ok = ofa_main_window_confirm_deletion( priv->main_window, msg );
+	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 

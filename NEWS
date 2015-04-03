@@ -47,6 +47,7 @@
    - ofa_date_filter_bin_is_from_valid(): new method,
    - ofa_date_filter_bin_is_to_empty(): new method,
    - ofa_date_filter_bin_is_to_valid(): new method.
+   - ofa_main_window_confirm_deletion(): removed method.
    - Use my_utils_dialog_yesno() function when appropriate (todo #756).
 
 -----------------------------------------------------------------------

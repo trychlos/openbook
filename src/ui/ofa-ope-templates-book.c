@@ -907,17 +907,14 @@ do_delete_ope_template( ofaOpeTemplatesBook *self )
 static gboolean
 delete_confirmed( ofaOpeTemplatesBook *self, ofoOpeTemplate *ope )
 {
-	ofaOpeTemplatesBookPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
-
-	priv = self->priv;
 
 	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' entry model ?" ),
 			ofo_ope_template_get_mnemo( ope ),
 			ofo_ope_template_get_label( ope ));
 
-	delete_ok = ofa_main_window_confirm_deletion( priv->main_window, msg );
+	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 

@@ -1174,7 +1174,7 @@ delete_confirmed( ofaAccountsBook *self, ofoAccount *account )
 					ofo_account_get_label( account ));
 	}
 
-	delete_ok = ofa_main_window_confirm_deletion( priv->main_window, msg );
+	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 

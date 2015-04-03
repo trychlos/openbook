@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -530,8 +531,7 @@ delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency )
 			ofo_currency_get_code( currency ),
 			ofo_currency_get_label( currency ));
 
-	delete_ok = ofa_main_window_confirm_deletion(
-						ofa_page_get_main_window( OFA_PAGE( self )), msg );
+	delete_ok = my_utils_dialog_yesno( msg, _( "_Delete" ));
 
 	g_free( msg );
 

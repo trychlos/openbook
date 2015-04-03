@@ -105,8 +105,6 @@ void           ofa_main_window_close_dossier          ( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry       ( const ofaMainWindow *window );
 
-gboolean       ofa_main_window_confirm_deletion       ( const ofaMainWindow *window, const gchar *message );
-
 G_END_DECLS
 
 #endif /* __OFA_MAIN_WINDOW_H__ */
