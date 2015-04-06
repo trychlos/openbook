@@ -448,8 +448,28 @@
  784 2015- 4- 3 archive the entries last number when opening the exercice
                 (this is for the audit trace: be able to prove that we
                 have kept all generated entries on an exercice base)
+                > next dbms version:
+                  - last entry number from previous exercice
+                  - row number if rate detail validites
+                  - account number in bat file
 
- 788
+ 788 2015- 4- 4 review ofa_date_filter_api 
+
+ 789 2015- 4- 6 GuidedInputBin: check date label is in display format
+                instead of check format
+
+ 790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
+
+ 791 2015- 4- 6 after having entered new AVRLOY operation template:
+                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed 
+#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
+#3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
+    at ../../../src/ui/ofa-guided-ex.c:734
+#4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
+
+ 792 2015- 4- 6 have a comment in the backup
+
+ 793
 
 -----------------------------------------------------------------------
  DONE

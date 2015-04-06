@@ -1162,7 +1162,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	/* is account number valid ?
 	 * must begin with a digit, and be at least two chars
 	 */
-	if( !my_strlen( number ) < 2 ){
+	if( my_strlen( number ) < 2 ){
 		return( FALSE );
 	}
 	code = g_utf8_get_char( number );
