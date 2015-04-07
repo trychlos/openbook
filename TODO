@@ -455,9 +455,6 @@
 
  788 2015- 4- 4 review ofa_date_filter_api
 
- 789 2015- 4- 6 GuidedInputBin: check date label is in display format
-                instead of check format
-
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
 
  791 2015- 4- 6 after having entered new AVRLOY operation template:
@@ -466,6 +463,7 @@
 #3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
     at ../../../src/ui/ofa-guided-ex.c:734
 #4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
+     2015- 4- 7 not reproduced
 
  792 2015- 4- 6 have a comment in the backup
 
@@ -3629,6 +3627,10 @@
 
  787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
      2015- 4- 3 fixed - git #f1ab147
+
+ 789 2015- 4- 6 GuidedInputBin: check date label is in display format
+                instead of check format
+     2015- 4- 7 fixed - git #5d41bd8
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
