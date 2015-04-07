@@ -453,7 +453,7 @@
                   - row number if rate detail validites
                   - account number in bat file
 
- 788 2015- 4- 4 review ofa_date_filter_api 
+ 788 2015- 4- 4 review ofa_date_filter_api
 
  789 2015- 4- 6 GuidedInputBin: check date label is in display format
                 instead of check format
@@ -461,7 +461,7 @@
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
 
  791 2015- 4- 6 after having entered new AVRLOY operation template:
-                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed 
+                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
 #2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
 #3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
     at ../../../src/ui/ofa-guided-ex.c:734

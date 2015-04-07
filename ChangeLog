@@ -1,3 +1,13 @@
+2015-04-07 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-guided-input-bin.c:
+	- make entries insensitive while no operation template is defined.
+	- fix dates check format (todo #789).
+
+2015-04-06 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/core/ofo-account.c: fix account validity check.
+
 2015-04-03 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-view-entries.c:

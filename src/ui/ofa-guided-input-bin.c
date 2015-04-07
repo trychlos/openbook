@@ -470,6 +470,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
+	gtk_widget_set_sensitive( priv->ledger_parent, FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), bin );
@@ -481,10 +482,11 @@ setup_dialog( ofaGuidedInputBin *bin )
 	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->dope_entry ), FALSE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
 
 	g_signal_connect(
 			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), bin );
@@ -492,10 +494,11 @@ setup_dialog( ofaGuidedInputBin *bin )
 	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect" ));
 	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->deffect_entry ), FALSE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
 
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), bin );
@@ -504,11 +507,10 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), bin );
 
-	/* as this is easier, we only have here a single 'piece ref' entry
-	 * which will be duplicated on each detail ref */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), bin );
+	gtk_widget_set_sensitive( widget, FALSE );
 	priv->ref_entry = widget;
 
 	/* setup other widgets */
@@ -585,6 +587,10 @@ init_model_data( ofaGuidedInputBin *bin )
 	const gchar *cstr;
 
 	priv = bin->priv;
+
+	/* operation and effect dates */
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->dope_entry ), TRUE );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->deffect_entry ), TRUE );
 
 	/* operation template mnemo and label */
 	str = g_strdup_printf( "%s - %s",

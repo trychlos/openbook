@@ -39,6 +39,9 @@
    - Get rid of '(null)' piece reference (todo #787).
    - Do not try to compute balances while currency if not set (todo #786).
    - No more modifiy operation date when checking effect date (todo #785).
+   - GuidedInputEx:
+     . make entries insensitive while no operation template is defined
+     . fix dates check format (todo #789).
 
  Other changes:
 
