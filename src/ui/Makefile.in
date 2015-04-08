@@ -144,7 +144,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-classes-page.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
 	ofa-currency-combo.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
-	ofa-currency-store.$(OBJEXT) ofa-date-filter-bin.$(OBJEXT) \
+	ofa-currency-store.$(OBJEXT) ofa-dates-filter-hv-bin.$(OBJEXT) \
 	ofa-dossier-delete.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-login.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
@@ -155,13 +155,14 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
-	ofa-guided-input-bin.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
-	ofa-ipreferences.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
-	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
-	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
-	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-ledgers-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
-	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
+	ofa-guided-input-bin.$(OBJEXT) ofa-idates-filter.$(OBJEXT) \
+	ofa-import-assistant.$(OBJEXT) ofa-ipreferences.$(OBJEXT) \
+	ofa-iprintable.$(OBJEXT) ofa-istore.$(OBJEXT) \
+	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
+	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
+	ofa-ledger-treeview.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
+	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
+	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
@@ -536,8 +537,8 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-date-filter-bin.c								\
-	ofa-date-filter-bin.h								\
+	ofa-dates-filter-hv-bin.c							\
+	ofa-dates-filter-hv-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
@@ -574,6 +575,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-idates-filter.c									\
+	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-ipreferences.c									\
@@ -671,7 +674,7 @@ ui_files = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
-	ofa-date-filter-bin.ui								\
+	ofa-dates-filter-hv-bin.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
@@ -871,7 +874,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dates-filter-hv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-login.Po@am__quote@
@@ -890,6 +893,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idates-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ipreferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@

@@ -42,7 +42,8 @@
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-date-filter-bin.h"
+#include "ui/ofa-dates-filter-hv-bin.h"
+#include "ui/ofa-idates-filter.h"
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-pdf-balances.h"
@@ -51,57 +52,57 @@
  */
 struct _ofaPDFBalancesPrivate {
 
-	gboolean          printed;
+	gboolean             printed;
 
 	/* UI
 	 */
-	GtkWidget        *from_account_etiq;	/* account selection */
-	GtkWidget        *from_account_entry;
-	GtkWidget        *from_account_btn;
-	GtkWidget        *from_account_label;
-	GtkWidget        *to_account_etiq;
-	GtkWidget        *to_account_entry;
-	GtkWidget        *to_account_btn;
-	GtkWidget        *to_account_label;
+	GtkWidget           *from_account_etiq;	/* account selection */
+	GtkWidget           *from_account_entry;
+	GtkWidget           *from_account_btn;
+	GtkWidget           *from_account_label;
+	GtkWidget           *to_account_etiq;
+	GtkWidget           *to_account_entry;
+	GtkWidget           *to_account_btn;
+	GtkWidget           *to_account_label;
 
-	ofaDateFilterBin *dates_filter;
+	ofaDatesFilterHVBin *dates_filter;
 
-	GtkWidget        *per_class_btn;	/* subtotal per class */
-	GtkWidget        *new_page_btn;
+	GtkWidget           *per_class_btn;	/* subtotal per class */
+	GtkWidget           *new_page_btn;
 
-	GtkWidget        *msg_label;
-	GtkWidget        *btn_ok;
+	GtkWidget           *msg_label;
+	GtkWidget           *btn_ok;
 
 	/* internals
 	 */
-	gchar            *from_account;
-	gchar            *to_account;
-	gboolean          all_accounts;
-	gboolean          per_class;
-	gboolean          new_page;
-	GDate             from_date;
-	GDate             to_date;
-	GList            *totals;
-	gint              count;			/* count of returned entries */
+	gchar               *from_account;
+	gchar               *to_account;
+	gboolean             all_accounts;
+	gboolean             per_class;
+	gboolean             new_page;
+	GDate                from_date;
+	GDate                to_date;
+	GList               *totals;
+	gint                 count;			/* count of returned entries */
 
 	/* print datas
 	 */
-	gdouble           page_margin;
-	gdouble           amount_width;
-	gdouble           body_number_ltab;
-	gdouble           body_label_ltab;
-	gint              body_label_max_size;		/* Pango units */
-	gdouble           body_debit_period_rtab;
-	gdouble           body_credit_period_rtab;
-	gdouble           body_debit_solde_rtab;
-	gdouble           body_credit_solde_rtab;
-	gdouble           body_currency_rtab;
+	gdouble              page_margin;
+	gdouble              amount_width;
+	gdouble              body_number_ltab;
+	gdouble              body_label_ltab;
+	gint                 body_label_max_size;		/* Pango units */
+	gdouble              body_debit_period_rtab;
+	gdouble              body_credit_period_rtab;
+	gdouble              body_debit_solde_rtab;
+	gdouble              body_credit_solde_rtab;
+	gdouble              body_currency_rtab;
 
 	/* subtotal per class
 	 */
-	gint              class_num;
-	ofoClass         *class_object;
-	GList            *subtotals;		/* subtotals per currency for this class */
+	gint                 class_num;
+	ofoClass            *class_object;
+	GList               *subtotals;		/* subtotals per currency for this class */
 };
 
 typedef struct {
@@ -162,7 +163,7 @@ static void     on_account_select( GtkButton *button, ofaPDFBalances *self, GtkW
 static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalances *self );
 static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFBalances *self );
 static void     on_new_page_toggled( GtkToggleButton *button, ofaPDFBalances *self );
-static void     on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self );
+static void     on_date_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self );
 static void     check_for_validable_dlg( ofaPDFBalances *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFBalances *self );
@@ -407,7 +408,7 @@ init_date_selection( ofaPDFBalances *self )
 	ofaPDFBalancesPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *parent, *label;
-	ofaDateFilterBin *bin;
+	ofaDatesFilterHVBin *bin;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -415,10 +416,11 @@ init_date_selection( ofaPDFBalances *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_date_filter_bin_new( st_pref_dates );
+	bin = ofa_dates_filter_hv_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bin ));
+	ofa_idates_filter_set_prefs( OFA_IDATES_FILTER( bin ), st_pref_dates );
 
-	label = ofa_date_filter_bin_get_frame_label( bin );
+	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
 	gtk_label_set_text( GTK_LABEL( label ), _( "Effect date selection" ));
 
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
@@ -586,7 +588,7 @@ on_new_page_toggled( GtkToggleButton *button, ofaPDFBalances *self )
 }
 
 static void
-on_date_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self )
+on_date_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaPDFBalances *self )
 {
 	check_for_validable_dlg( self );
 }
@@ -600,6 +602,7 @@ check_for_validable_dlg( ofaPDFBalances *self )
 {
 	ofaPDFBalancesPrivate *priv;
 	gboolean valid;
+	gchar *message;
 
 	priv = self->priv;
 	valid = FALSE;
@@ -607,13 +610,15 @@ check_for_validable_dlg( ofaPDFBalances *self )
 	if( priv->msg_label ){
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
 
-		valid = ( ofa_date_filter_bin_is_from_empty( priv->dates_filter ) ||
-						ofa_date_filter_bin_is_from_valid( priv->dates_filter )) &&
-				( ofa_date_filter_bin_is_to_empty( priv->dates_filter ) ||
-						ofa_date_filter_bin_is_to_valid( priv->dates_filter ));
+		if( !ofa_idates_filter_is_valid(
+				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, &message )){
+			gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
+			g_free( message );
 
-		if( !valid ){
-			gtk_label_set_text( GTK_LABEL( priv->msg_label ), _( "Invalid effect dates selection" ));
+		} else if( !ofa_idates_filter_is_valid(
+				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO, &message )){
+			gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
+			g_free( message );
 		}
 	}
 
@@ -661,8 +666,10 @@ do_apply( ofaPDFBalances *self )
 
 	set_settings( self );
 
-	my_date_set_from_date( &priv->from_date, ofa_date_filter_bin_get_from( priv->dates_filter ));
-	my_date_set_from_date( &priv->to_date, ofa_date_filter_bin_get_to( priv->dates_filter ));
+	my_date_set_from_date( &priv->from_date,
+			ofa_idates_filter_get_date( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM ));
+	my_date_set_from_date( &priv->to_date,
+			ofa_idates_filter_get_date( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO ));
 
 	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 

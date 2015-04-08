@@ -1,3 +1,19 @@
+2015-04-08 Pierre Wieser <pwieser@trychlos.org>
+
+	Review ofaDateFilterBin API, moving it to ofaDatesFilterHVBin class
+	and ofaIDatesFilter interface (todo #788).
+
+	* src/ui/ofa-idates-filter.c,
+	* src/ui/ofa-idates-filter.h: new files.
+
+	* src/ui/ofa-date-filter-bin.c: renamed as src/ui/ofa-dates-filter-hv-bin.c
+	* src/ui/ofa-date-filter-bin.h: renamed as src/ui/ofa-dates-filter-hv-bin.h
+	* src/ui/ofa-date-filter-bin.ui: renamed as src/ui/ofa-dates-filter-hv-bin.ui
+
+	* src/ui/ofa-pdf-balances.c,
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-view-entries.c: updated accordingly.
+
 2015-04-07 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-guided-input-bin.c:

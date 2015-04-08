@@ -150,7 +150,7 @@
                   <object class="GtkLabel" id="label1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Selection &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Selection </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -290,7 +290,7 @@
                   <object class="GtkLabel" id="label7">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Status &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Status </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -481,7 +481,7 @@
                   <object class="GtkLabel" id="label6">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Display &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Display </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -532,7 +532,7 @@
                   <object class="GtkLabel" id="label5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Edition &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Edition </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>

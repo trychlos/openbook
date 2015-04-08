@@ -49,7 +49,8 @@
 #include "ui/my-cell-renderer-date.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-date-filter-bin.h"
+#include "ui/ofa-dates-filter-hv-bin.h"
+#include "ui/ofa-idates-filter.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -90,78 +91,78 @@ struct _ofaViewEntriesPrivate {
 
 	/* internals
 	 */
-	ofoDossier        *dossier;			/* dossier */
-	const GDate       *dossier_opening;
-	GList             *handlers;
-	gboolean           initializing;
+	ofoDossier          *dossier;		/* dossier */
+	const GDate         *dossier_opening;
+	GList               *handlers;
+	gboolean             initializing;
 
 	/* UI
 	 */
-	GtkContainer      *top_box;			/* reparented from dialog */
+	GtkContainer        *top_box;		/* reparented from dialog */
 
 	/* frame 1: general selection
 	 */
-	GtkToggleButton   *ledger_btn;
-	ofaLedgerCombo    *ledger_combo;
-	GtkWidget         *ledger_parent;
-	gchar             *jou_mnemo;
+	GtkToggleButton     *ledger_btn;
+	ofaLedgerCombo      *ledger_combo;
+	GtkWidget           *ledger_parent;
+	gchar               *jou_mnemo;
 
-	GtkToggleButton   *account_btn;
-	GtkEntry          *account_entry;
-	GtkButton         *account_select;
-	gchar             *acc_number;
-	gboolean           acc_valid;
+	GtkToggleButton     *account_btn;
+	GtkEntry            *account_entry;
+	GtkButton           *account_select;
+	gchar               *acc_number;
+	gboolean             acc_valid;
 
-	GtkLabel          *f1_label;
+	GtkLabel            *f1_label;
 
 	/* frame 2: effect dates layout
 	 */
-	ofaDateFilterBin  *effect_filter;
+	ofaDatesFilterHVBin *effect_filter;
 
 	/* frame 3: entry status
 	 */
-	gboolean           display_past;
-	gboolean           display_rough;
-	gboolean           display_validated;
-	gboolean           display_deleted;
-	gboolean           display_future;
+	gboolean             display_past;
+	gboolean             display_rough;
+	gboolean             display_validated;
+	gboolean             display_deleted;
+	gboolean             display_future;
 
 	/* frame 4: visible columns
 	 */
-	GtkCheckButton    *account_checkbox;
-	GtkCheckButton    *ledger_checkbox;
-	GtkCheckButton    *currency_checkbox;
+	GtkCheckButton      *account_checkbox;
+	GtkCheckButton      *ledger_checkbox;
+	GtkCheckButton      *currency_checkbox;
 
-	gboolean           dope_visible;
-	gboolean           deffect_visible;
-	gboolean           ref_visible;
-	gboolean           ledger_visible;
-	gboolean           account_visible;
-	gboolean           settlement_visible;
-	gboolean           dreconcil_visible;
-	gboolean           status_visible;
-	gboolean           currency_visible;
+	gboolean             dope_visible;
+	gboolean             deffect_visible;
+	gboolean             ref_visible;
+	gboolean             ledger_visible;
+	gboolean             account_visible;
+	gboolean             settlement_visible;
+	gboolean             dreconcil_visible;
+	gboolean             status_visible;
+	gboolean             currency_visible;
 
 	/* frame 5: edition switch
 	 */
-	GtkSwitch         *edit_switch;
+	GtkSwitch           *edit_switch;
 
 	/* entries list view
 	 */
-	GtkCellRenderer   *renderers[ENT_N_COLUMNS];
-	GtkTreeView       *entries_tview;
-	GtkTreeModel      *tfilter;			/* GtkTreeModelFilter stacked on the GtkListStore */
-	GtkTreeModel      *tsort;			/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
-	GtkTreeModel      *tstore;
-	GtkTreeViewColumn *sort_column;
+	GtkCellRenderer     *renderers[ENT_N_COLUMNS];
+	GtkTreeView         *entries_tview;
+	GtkTreeModel        *tfilter;		/* GtkTreeModelFilter stacked on the GtkListStore */
+	GtkTreeModel        *tsort;			/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
+	GtkTreeModel        *tstore;
+	GtkTreeViewColumn   *sort_column;
 
 	/* runtime data used while editing a single row
 	 */
 
 	/* footer
 	 */
-	GtkLabel          *comment;
-	GList             *balances;
+	GtkLabel            *comment;
+	GList               *balances;
 };
 
 /* the id of the column is set against some columns of interest,
@@ -258,7 +259,7 @@ static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self 
 static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static gboolean       display_entries_from_account( ofaViewEntries *self );
-static void           on_effect_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
+static void           on_effect_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
@@ -571,7 +572,8 @@ setup_dates_selection( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	priv->effect_filter = ofa_date_filter_bin_new( st_pref_effect );
+	priv->effect_filter = ofa_dates_filter_hv_bin_new();
+	ofa_idates_filter_set_prefs( OFA_IDATES_FILTER( priv->effect_filter ), st_pref_effect );
 	g_signal_connect(
 			priv->effect_filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
 
@@ -1653,7 +1655,7 @@ display_entries_from_account( ofaViewEntries *self )
 }
 
 static void
-on_effect_filter_changed( ofaDateFilterBin *bin, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
+on_effect_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
 {
 	refresh_display( self );
 }
@@ -1981,14 +1983,16 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 
 			get_row_deffect( self, tmodel, iter, &deffect );
 			if( visible ){
-				effect_filter = ofa_date_filter_bin_get_from( priv->effect_filter );
+				effect_filter = ofa_idates_filter_get_date(
+						OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
 				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
 						my_date_compare( effect_filter, &deffect ) <= 0;
 				visible &= ok;
 			}
 			if( visible ){
-				effect_filter = ofa_date_filter_bin_get_to( priv->effect_filter );
+				effect_filter = ofa_idates_filter_get_date(
+						OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO );
 				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
 						my_date_compare( effect_filter, &deffect ) >= 0;
@@ -2101,8 +2105,10 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
-		ofa_date_filter_bin_set_from( priv->effect_filter, begin );
-		ofa_date_filter_bin_set_to( priv->effect_filter, end );
+		ofa_idates_filter_set_date(
+				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM, begin );
+		ofa_idates_filter_set_date(
+				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO, end );
 
 		/* then setup the general selection: changes on theses entries
 		 * will automativally trigger a display refresh */

@@ -51,7 +51,8 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-date-filter-bin.h"
+#include "ui/ofa-dates-filter-hv-bin.h"
+#include "ui/ofa-idates-filter.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-pdf-reconcil.h"
@@ -63,60 +64,60 @@ struct _ofaReconciliationPrivate {
 
 	/* UI - account
 	 */
-	GtkEntry          *account_entry;
-	GtkLabel          *account_label;
-	GtkLabel          *account_debit;
-	GtkLabel          *account_credit;
-	ofoAccount        *account;
+	GtkEntry            *account_entry;
+	GtkLabel            *account_label;
+	GtkLabel            *account_debit;
+	GtkLabel            *account_credit;
+	ofoAccount          *account;
 
 	/* UI - filtering mode
 	 */
-	GtkComboBox       *mode_combo;
-	gint               mode;
+	GtkComboBox         *mode_combo;
+	gint                 mode;
 
 	/* UI - effect dates filter
 	 */
-	ofaDateFilterBin  *effect_filter;
+	ofaDatesFilterHVBin *effect_filter;
 
 	/* UI - manual conciliation
 	 */
-	GtkEntry          *date_concil;
-	GDate              dconcil;
+	GtkEntry            *date_concil;
+	GDate                dconcil;
 
 	/* UI - assisted conciliation
 	 */
-	GtkWidget         *bat_name;
-	GtkWidget         *count_label;
-	GtkWidget         *unused_label;
-	GtkWidget         *label3;
-	GtkButton         *clear;
+	GtkWidget           *bat_name;
+	GtkWidget           *count_label;
+	GtkWidget           *unused_label;
+	GtkWidget           *label3;
+	GtkButton           *clear;
 
 	/* UI - actions
 	 */
-	GtkWidget         *reconciliate_btn;
-	GtkWidget         *decline_btn;
-	GtkWidget         *unreconciliate_btn;
-	GtkWidget         *print_btn;
+	GtkWidget           *reconciliate_btn;
+	GtkWidget           *decline_btn;
+	GtkWidget           *unreconciliate_btn;
+	GtkWidget           *print_btn;
 
 	/* UI - entries view
 	 */
-	GtkTreeModel      *tstore;				/* the GtkTreeStore */
-	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter stacked on the TreeStore */
-	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked on the TreeModelFilter */
-	GtkTreeView       *tview;				/* the treeview built on the sorted model */
-	GtkTreeViewColumn *sort_column;
+	GtkTreeModel        *tstore;		/* the GtkTreeStore */
+	GtkTreeModel        *tfilter;		/* GtkTreeModelFilter stacked on the TreeStore */
+	GtkTreeModel        *tsort;			/* GtkTreeModelSort stacked on the TreeModelFilter */
+	GtkTreeView         *tview;			/* the treeview built on the sorted model */
+	GtkTreeViewColumn   *sort_column;
 
 	/* UI - reconciliated balance
 	 */
-	GtkLabel          *bal_debit;			/* balance of the account  */
-	GtkLabel          *bal_credit;			/*  ... deducting unreconciliated entries */
+	GtkLabel            *bal_debit;		/* balance of the account  */
+	GtkLabel            *bal_credit;	/*  ... deducting unreconciliated entries */
 
 	/* internals
 	 */
-	ofoDossier        *dossier;
-	GList             *handlers;
-	ofoBat            *bat;
-	GList             *batlines;
+	ofoDossier          *dossier;
+	GList               *handlers;
+	ofoBat              *bat;
+	GList               *batlines;
 };
 
 /* column ordering in the main entries listview
@@ -221,7 +222,7 @@ static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore,
 static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self );
 static void         select_mode( ofaReconciliation *self, gint mode );
-static void         on_effect_dates_changed( ofaDateFilterBin *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
+static void         on_effect_dates_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         do_select_bat( ofaReconciliation *self );
@@ -721,7 +722,8 @@ setup_dates_filter( ofaPage *page, GtkContainer *parent )
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
-	priv->effect_filter = ofa_date_filter_bin_new( st_effect_dates );
+	priv->effect_filter = ofa_dates_filter_hv_bin_new();
+	ofa_idates_filter_set_prefs( OFA_IDATES_FILTER( priv->effect_filter ), st_effect_dates );
 
 	filter_parent = my_utils_container_get_child_by_name( parent, "effect-dates-filter" );
 	g_return_if_fail( filter_parent && GTK_IS_CONTAINER( filter_parent ));
@@ -769,8 +771,10 @@ setup_size_group( ofaPage *page, GtkContainer *parent )
 	priv = OFA_RECONCILIATION( page )->priv;
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = ofa_date_filter_bin_get_from_prompt( priv->effect_filter );
-	gtk_size_group_add_widget( group, label );
+	label = ofa_idates_filter_get_from_prompt( OFA_IDATES_FILTER( priv->effect_filter ));
+	if( label ){
+		gtk_size_group_add_widget( group, label );
+	}
 
 	label = my_utils_container_get_child_by_name( parent, "manual-prompt" );
 	gtk_size_group_add_widget( group, label );
@@ -1191,7 +1195,7 @@ select_mode( ofaReconciliation *self, gint mode )
  * effect dates filter are not stored in settings
  */
 static void
-on_effect_dates_changed( ofaDateFilterBin *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
+on_effect_dates_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 
@@ -1705,12 +1709,14 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 				ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 		g_return_val_if_fail( my_date_is_valid( deffect ), FALSE );
 		/* ... against lower limit */
-		filter = ofa_date_filter_bin_get_from( priv->effect_filter );
+		filter = ofa_idates_filter_get_date(
+				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) <= 0;
 		visible &= ok;
 		/* ... against upper limit */
-		filter = ofa_date_filter_bin_get_to( priv->effect_filter );
+		filter = ofa_idates_filter_get_date(
+				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) >= 0;
 		visible &= ok;

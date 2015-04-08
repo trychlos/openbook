@@ -17,7 +17,7 @@ src/ui/ofa-check-integrity-bin.ui
 src/ui/ofa-class-properties.ui
 src/ui/ofa-closing-parms-bin.ui
 src/ui/ofa-currency-properties.ui
-src/ui/ofa-date-filter-bin.ui
+src/ui/ofa-dates-filter-hv-bin.ui
 src/ui/ofa-dos-menubar.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui

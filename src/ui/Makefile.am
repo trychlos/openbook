@@ -128,8 +128,8 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-date-filter-bin.c								\
-	ofa-date-filter-bin.h								\
+	ofa-dates-filter-hv-bin.c							\
+	ofa-dates-filter-hv-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
@@ -166,6 +166,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-idates-filter.c									\
+	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-ipreferences.c									\
@@ -263,7 +265,7 @@ ui_files = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
-	ofa-date-filter-bin.ui								\
+	ofa-dates-filter-hv-bin.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\

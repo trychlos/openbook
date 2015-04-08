@@ -467,7 +467,10 @@
 
  792 2015- 4- 6 have a comment in the backup
 
- 793
+ 793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
+                the calling window
+
+ 794
 
 -----------------------------------------------------------------------
  DONE
