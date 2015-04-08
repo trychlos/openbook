@@ -293,7 +293,7 @@
                               <object class="GtkLabel" id="label3">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">&lt;b&gt; Characteristics &lt;/b&gt;</property>
+                                <property name="label" translatable="yes"> Characteristics </property>
                                 <property name="use_markup">True</property>
                               </object>
                             </child>
@@ -489,7 +489,7 @@
                               <object class="GtkLabel" id="label6">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">&lt;b&gt; Exercice &lt;/b&gt;</property>
+                                <property name="label" translatable="yes"> Exercice </property>
                                 <property name="use_markup">True</property>
                               </object>
                             </child>
@@ -675,7 +675,7 @@
                                   <object class="GtkLabel" id="label8">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">&lt;b&gt; Internal counters &lt;/b&gt;</property>
+                                    <property name="label" translatable="yes"> Internal counters </property>
                                     <property name="use_markup">True</property>
                                   </object>
                                 </child>
@@ -742,7 +742,7 @@
                                   <object class="GtkLabel" id="label18">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">&lt;b&gt; Internal properties &lt;/b&gt;</property>
+                                    <property name="label" translatable="yes"> Internal properties </property>
                                     <property name="use_markup">True</property>
                                   </object>
                                 </child>

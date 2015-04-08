@@ -75,7 +75,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label16">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Selected backup file &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Selected backup file </property>
                 <property name="use_markup">True</property>
               </object>
             </child>
@@ -145,7 +145,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label14">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Choose the target dossier &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Choose the target dossier </property>
                 <property name="use_markup">True</property>
               </object>
             </child>
@@ -266,7 +266,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Selected target &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Selected target </property>
                 <property name="use_markup">True</property>
               </object>
             </child>
@@ -372,7 +372,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label8">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Actions &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Actions </property>
                 <property name="use_markup">True</property>
               </object>
             </child>
@@ -467,7 +467,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label13">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Selected target &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Selected target </property>
                 <property name="use_markup">True</property>
               </object>
             </child>

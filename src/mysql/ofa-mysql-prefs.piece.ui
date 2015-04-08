@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkWindow" id="MySQLPrefsWindow">
     <property name="can_focus">False</property>
     <child>
@@ -249,7 +250,7 @@
               <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt; Database backup &lt;/b&gt;</property>
+                <property name="label" translatable="yes"> Database backup </property>
                 <property name="use_markup">True</property>
               </object>
             </child>

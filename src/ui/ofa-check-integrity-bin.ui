@@ -71,7 +71,7 @@
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding dossier &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding dossier </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -141,7 +141,7 @@
                   <object class="GtkLabel" id="label5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding BAT files and lines &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding BAT files and lines </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -211,7 +211,7 @@
                   <object class="GtkLabel" id="label8">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding accounts &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding accounts </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -316,7 +316,7 @@
                   <object class="GtkLabel" id="label1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding entries &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding entries </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -386,7 +386,7 @@
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding ledgers &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding ledgers </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -456,7 +456,7 @@
                   <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Check for upstanding operation templates &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Check for upstanding operation templates </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>

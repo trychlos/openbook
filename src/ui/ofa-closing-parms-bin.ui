@@ -246,7 +246,7 @@
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Closing operations &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Closing operations </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -257,9 +257,6 @@
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
-            </child>
-            <child>
-              <placeholder/>
             </child>
           </object>
         </child>

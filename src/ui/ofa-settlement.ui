@@ -2,6 +2,11 @@
 <!-- Generated with glade 3.16.1 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-index</property>
+  </object>
   <object class="GtkWindow" id="SettlementWindow">
     <property name="can_focus">False</property>
     <child>
@@ -115,7 +120,7 @@
                       <object class="GtkLabel" id="label3">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">&lt;b&gt; Account selection &lt;/b&gt;</property>
+                        <property name="label" translatable="yes"> Account selection </property>
                         <property name="use_markup">True</property>
                       </object>
                     </child>
@@ -182,7 +187,7 @@
                       <object class="GtkLabel" id="label4">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">&lt;b&gt; Entries filter &lt;/b&gt;</property>
+                        <property name="label" translatable="yes"> Entries filter </property>
                         <property name="use_markup">True</property>
                       </object>
                     </child>
@@ -254,7 +259,7 @@
                       <object class="GtkLabel" id="label8">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">&lt;b&gt; Actions &lt;/b&gt;</property>
+                        <property name="label" translatable="yes"> Actions </property>
                         <property name="use_markup">True</property>
                       </object>
                     </child>
@@ -265,9 +270,6 @@
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -385,10 +387,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-index</property>
   </object>
 </interface>

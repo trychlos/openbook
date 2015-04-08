@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkDialog" id="DossierDeleteDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -184,7 +185,7 @@
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Properties &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Properties </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -251,7 +252,6 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="invisible_char">●</property>
-                            <property name="invisible_char_set">True</property>
                             <property name="caps_lock_warning">False</property>
                           </object>
                           <packing>
@@ -267,7 +267,6 @@
                             <property name="can_focus">True</property>
                             <property name="visibility">False</property>
                             <property name="invisible_char">●</property>
-                            <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -297,7 +296,7 @@
                   <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; DBServer admin account &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> DBServer admin account </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -332,7 +331,7 @@
                   <object class="GtkLabel" id="label7">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Dossier deletion &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Dossier deletion </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>

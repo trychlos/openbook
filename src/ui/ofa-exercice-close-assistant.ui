@@ -152,7 +152,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       <object class="GtkLabel" id="label19">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">&lt;b&gt; Closing exercice &lt;/b&gt;</property>
+                        <property name="label" translatable="yes"> Closing exercice </property>
                         <property name="use_markup">True</property>
                       </object>
                     </child>
@@ -250,7 +250,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       <object class="GtkLabel" id="label20">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">&lt;b&gt; Next exercice &lt;/b&gt;</property>
+                        <property name="label" translatable="yes"> Next exercice </property>
                         <property name="use_markup">True</property>
                       </object>
                     </child>

@@ -162,7 +162,7 @@
                   <object class="GtkLabel" id="label16">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Locale settings &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Locale settings </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -261,7 +261,7 @@
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Disposition &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> Disposition </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -325,7 +325,7 @@
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">&lt;b&gt; File format &lt;/b&gt;</property>
+                    <property name="label" translatable="yes"> File format </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>

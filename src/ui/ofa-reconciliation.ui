@@ -2,6 +2,16 @@
 <!-- Generated with glade 3.16.1 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-index</property>
+  </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-clear</property>
+  </object>
   <object class="GtkWindow" id="ReconciliationWindow">
     <property name="can_focus">False</property>
     <child>
@@ -253,7 +263,7 @@
                           <object class="GtkLabel" id="label3">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Account selection &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Account selection </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -320,7 +330,7 @@
                           <object class="GtkLabel" id="label4">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Entries filter &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Entries filter </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -417,7 +427,7 @@
                           <object class="GtkLabel" id="label6">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Manual reconciliation &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Manual reconciliation </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -590,7 +600,7 @@
                           <object class="GtkLabel" id="label7">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Assisted reconciliation &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Assisted reconciliation </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -690,12 +700,6 @@
                                 <child>
                                   <placeholder/>
                                 </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
                               </object>
                             </child>
                           </object>
@@ -704,7 +708,7 @@
                           <object class="GtkLabel" id="label8">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Actions &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Actions </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -739,15 +743,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-index</property>
-  </object>
-  <object class="GtkImage" id="image2">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-clear</property>
   </object>
 </interface>
