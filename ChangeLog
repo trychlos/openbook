@@ -1,3 +1,13 @@
+2015-04-10 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-dos-menubar.ui,
+	* src/ui/ofa-main-window.c: change "pdf-" action prefix with "render-".
+
+	* src/ui/ofa-main-window.h: introduce new (future) theme identifiers.
+
+	* src/ui/ofa-iprintable2.c,
+	* src/ui/ofa-iprintable2.h: new files.
+
 2015-04-08 Pierre Wieser <pwieser@trychlos.org>
 
 	Review ofaDateFilterBin API, moving it to ofaDatesFilterHVBin class

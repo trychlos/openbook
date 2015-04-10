@@ -105,15 +105,15 @@
         </item>
         <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
-          <attribute name="action">win.pdf-reconcil</attribute>
+          <attribute name="action">win.render-reconcil</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">General b_ooks...</attribute>
-          <attribute name="action">win.pdf-books</attribute>
+          <attribute name="action">win.render-books</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Ledgers...</attribute>
-          <attribute name="action">win.pdf-ledgers</attribute>
+          <attribute name="action">win.render-ledgers</attribute>
         </item>
       </section>
     </submenu>

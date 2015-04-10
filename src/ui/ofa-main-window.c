@@ -59,12 +59,12 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
-#include "ui/ofa-render-balances-page.h"
 #include "ui/ofa-pdf-books.h"
 #include "ui/ofa-pdf-ledgers.h"
 #include "ui/ofa-pdf-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
+#include "ui/ofa-render-balances-page.h"
 #include "ui/ofa-settlement.h"
 #include "ui/ofa-view-entries.h"
 
@@ -149,9 +149,9 @@ static const GActionEntry st_dos_entries[] = {
 		{ "import",           on_ope_import,           NULL, NULL, NULL },
 		{ "export",           on_ope_export,           NULL, NULL, NULL },
 		{ "render-balances",  on_render_balances,      NULL, NULL, NULL },
-		{ "pdf-books",        on_pdf_books,            NULL, NULL, NULL },
-		{ "pdf-ledgers",      on_pdf_ledgers,          NULL, NULL, NULL },
-		{ "pdf-reconcil",     on_pdf_reconcil,         NULL, NULL, NULL },
+		{ "render-books",     on_pdf_books,            NULL, NULL, NULL },
+		{ "render-ledgers",   on_pdf_ledgers,          NULL, NULL, NULL },
+		{ "render-reconcil",  on_pdf_reconcil,         NULL, NULL, NULL },
 		{ "accounts",         on_ref_accounts,         NULL, NULL, NULL },
 		{ "ledgers",          on_ref_ledgers,          NULL, NULL, NULL },
 		{ "ope-templates",    on_ref_ope_templates,    NULL, NULL, NULL },
