@@ -1,12 +1,16 @@
 2015-04-10 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-page.c,
+	* src/ui/ofa-render-page.h,
+	* src/ui/ofa-render-page.ui: new ofaRenderPage class.
+
 	* src/ui/ofa-dos-menubar.ui,
 	* src/ui/ofa-main-window.c: change "pdf-" action prefix with "render-".
 
 	* src/ui/ofa-main-window.h: introduce new (future) theme identifiers.
 
 	* src/ui/ofa-iprintable2.c,
-	* src/ui/ofa-iprintable2.h: new files.
+	* src/ui/ofa-iprintable2.h: new ofaIPrintable interface.
 
 2015-04-08 Pierre Wieser <pwieser@trychlos.org>
 
