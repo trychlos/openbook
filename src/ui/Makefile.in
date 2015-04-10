@@ -157,7 +157,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-idates-filter.$(OBJEXT) \
 	ofa-import-assistant.$(OBJEXT) ofa-ipreferences.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-istore.$(OBJEXT) \
+	ofa-iprintable.$(OBJEXT) ofa-iprintable2.$(OBJEXT) \
+	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
 	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
 	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
@@ -173,9 +174,10 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-pdf-dialog.$(OBJEXT) ofa-pdf-ledgers.$(OBJEXT) \
 	ofa-pdf-reconcil.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
 	ofa-rate-properties.$(OBJEXT) ofa-rates-page.$(OBJEXT) \
-	ofa-reconciliation.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
-	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-view-entries.$(OBJEXT)
+	ofa-reconciliation.$(OBJEXT) ofa-render-balances-bin.$(OBJEXT) \
+	ofa-render-balances-page.$(OBJEXT) ofa-render-page.$(OBJEXT) \
+	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
+	ofa-tree-store.$(OBJEXT) ofa-view-entries.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -582,6 +584,10 @@ openbook_SOURCES = \
 	ofa-ipreferences.c									\
 	ofa-iprintable.c									\
 	ofa-iprintable.h									\
+	ofa-iprintable2.c									\
+	ofa-iprintable2.h									\
+	ofa-irenderable.c									\
+	ofa-irenderable.h									\
 	ofa-istore.c										\
 	ofa-istore.h										\
 	ofa-ledger-close.c									\
@@ -637,6 +643,12 @@ openbook_SOURCES = \
 	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
+	ofa-render-balances-bin.c							\
+	ofa-render-balances-bin.h							\
+	ofa-render-balances-page.c							\
+	ofa-render-balances-page.h							\
+	ofa-render-page.c									\
+	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
 	ofa-settlement.c									\
@@ -700,6 +712,8 @@ ui_files = \
 	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
+	ofa-render-balances-bin.ui							\
+	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
@@ -897,6 +911,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ipreferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Po@am__quote@
@@ -923,6 +939,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rates-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconciliation.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-balances-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-balances-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Po@am__quote@

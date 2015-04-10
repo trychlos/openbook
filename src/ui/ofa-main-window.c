@@ -59,7 +59,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
-#include "ui/ofa-pdf-balances.h"
+#include "ui/ofa-render-balances-page.h"
 #include "ui/ofa-pdf-books.h"
 #include "ui/ofa-pdf-ledgers.h"
 #include "ui/ofa-pdf-reconcil.h"
@@ -122,7 +122,7 @@ static void on_ope_ledger_close    ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_exercice_close  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_pdf_balances        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_balances     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_books           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_reconcil        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -148,7 +148,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "execlosing",       on_ope_exercice_close,   NULL, NULL, NULL },
 		{ "import",           on_ope_import,           NULL, NULL, NULL },
 		{ "export",           on_ope_export,           NULL, NULL, NULL },
-		{ "pdf-balances",     on_pdf_balances,         NULL, NULL, NULL },
+		{ "render-balances",  on_render_balances,      NULL, NULL, NULL },
 		{ "pdf-books",        on_pdf_books,            NULL, NULL, NULL },
 		{ "pdf-ledgers",      on_pdf_ledgers,          NULL, NULL, NULL },
 		{ "pdf-reconcil",     on_pdf_reconcil,         NULL, NULL, NULL },
@@ -230,6 +230,11 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_RECONCIL,
 				N_( "Reconciliation" ),
 				ofa_reconciliation_get_type,
+				FALSE
+		},
+		{ THM_RENDER_BALANCES,
+				N_( "Render balances" ),
+				ofa_render_balances_page_get_type,
 				FALSE
 		},
 		{ THM_SETTLEMENT,
@@ -1371,16 +1376,16 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
-on_pdf_balances( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_pdf_balances";
+	static const gchar *thisfn = "ofa_main_window_on_render_balances";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_pdf_balances_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_BALANCES );
 }
 
 static void

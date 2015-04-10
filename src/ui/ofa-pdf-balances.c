@@ -44,7 +44,8 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-idates-filter.h"
-#include "ui/ofa-iprintable.h"
+#include "ui/ofa-iprintable2.h"
+#include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-pdf-balances.h"
 
@@ -87,6 +88,8 @@ struct _ofaPDFBalancesPrivate {
 
 	/* print datas
 	 */
+	gdouble              render_width;
+	gdouble              render_height;
 	gdouble              page_margin;
 	gdouble              amount_width;
 	gdouble              body_number_ltab;
@@ -148,8 +151,16 @@ static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 #define COLOR_BLACK                 0,      0,      0
 #define COLOR_WHITE                 1,      1,      1
 
-static void     iprintable_iface_init( ofaIPrintableInterface *iface );
-static guint    iprintable_get_interface_version( const ofaIPrintable *instance );
+static ofaPDFDialogClass *ofa_pdf_balances_parent_class = NULL;
+
+static GType    register_type( void );
+static void     pdf_balances_finalize( GObject *instance );
+static void     pdf_balances_dispose( GObject *instance );
+static void     pdf_balances_instance_init( ofaPDFBalances *self );
+static void     pdf_balances_class_init( ofaPDFBalancesClass *klass );
+static void     free_currency( sCurrency *total_per_currency );
+static void     iprintable2_iface_init( ofaIPrintable2Interface *iface );
+static guint    iprintable2_get_interface_version( const ofaIPrintable2 *instance );
 static void     v_init_dialog( myDialog *dialog );
 static void     init_account_selection( ofaPDFBalances *self );
 static void     init_date_selection( ofaPDFBalances *self );
@@ -167,36 +178,86 @@ static void     on_date_filter_changed( ofaIDatesFilter *filter, gint who, gbool
 static void     check_for_validable_dlg( ofaPDFBalances *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFBalances *self );
-static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
-static void     iprintable_free_dataset( GList *elements );
-static void     iprintable_reset_runtime( ofaIPrintable *instance );
-static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
-static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
-static void     iprintable_draw_page_header_notes( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
-static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
-static gboolean iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev );
-static void     iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
-static void     iprintable_draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
-static void     iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, const gchar *title );
-static void     draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context, GList *list, gdouble top, const gchar *title );
+static void     iprintable2_iface_init( ofaIPrintable2Interface *iface );
+static guint    iprintable2_get_interface_version( const ofaIPrintable2 *instance );
+static void     iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void     iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     irenderable_iface_init( ofaIRenderableInterface *iface );
+static guint    irenderable_get_interface_version( const ofaIRenderable *instance );
+static GList   *irenderable_get_dataset( ofaIRenderable *instance );
+static void     irenderable_free_dataset( ofaIRenderable *instance, GList *elements );
+static void     irenderable_reset_runtime( ofaIRenderable *instance );
+static void     irenderable_begin_render( ofaIRenderable *instance, cairo_t *context, gdouble render_width, gdouble render_height );
+static gchar   *irenderable_get_page_header_title( const ofaIRenderable *instance );
+static gchar   *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
+static void     irenderable_draw_page_header_notes( ofaIRenderable *instance, cairo_t *context, gint page_num );
+static void     irenderable_draw_page_header_columns( ofaIRenderable *instance, cairo_t *context, gint page_num );
+static gboolean irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
+static void     irenderable_draw_group_header( ofaIRenderable *instance, cairo_t *context, GList *current );
+static void     irenderable_draw_group_top_report( ofaIRenderable *instance, cairo_t *context );
+static void     irenderable_draw_line( ofaIRenderable *instance, cairo_t *context, GList *current );
+static void     irenderable_draw_group_bottom_report( ofaIRenderable *instance, cairo_t *context );
+static void     irenderable_draw_group_footer( ofaIRenderable *instance, cairo_t *context );
+static void     irenderable_draw_bottom_summary( ofaIRenderable *instance, cairo_t *context );
+static void     draw_subtotals_balance( ofaIRenderable *instance, cairo_t *context, const gchar *title );
+static void     draw_account_balance( ofaIRenderable *instance, cairo_t *context, GList *list, gdouble top, const gchar *title );
 static GList   *add_account_balance( ofaPDFBalances *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
 static void     get_settings( ofaPDFBalances *self );
 static void     set_settings( ofaPDFBalances *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaPDFBalances, ofa_pdf_balances, OFA_TYPE_PDF_DIALOG, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
-
-static void
-free_currency( sCurrency *total_per_currency )
+GType
+ofa_pdf_balances_get_type( void )
 {
-	g_free( total_per_currency->currency );
-	g_free( total_per_currency );
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_pdf_balances_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofaPDFBalancesClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) pdf_balances_class_init,
+		NULL,
+		NULL,
+		sizeof( ofaPDFBalances ),
+		0,
+		( GInstanceInitFunc ) pdf_balances_instance_init
+	};
+
+	static const GInterfaceInfo iprintable2_iface_info = {
+		( GInterfaceInitFunc ) iprintable2_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo irenderable_iface_info = {
+		( GInterfaceInitFunc ) irenderable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFA_TYPE_PDF_DIALOG, "ofaPDFBalances", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IPRINTABLE2, &iprintable2_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IRENDERABLE, &irenderable_iface_info );
+
+	return( type );
 }
 
 static void
@@ -235,7 +296,7 @@ pdf_balances_dispose( GObject *instance )
 }
 
 static void
-ofa_pdf_balances_init( ofaPDFBalances *self )
+pdf_balances_instance_init( ofaPDFBalances *self )
 {
 	static const gchar *thisfn = "ofa_pdf_balances_instance_init";
 	ofaPDFBalancesPrivate *priv;
@@ -253,11 +314,13 @@ ofa_pdf_balances_init( ofaPDFBalances *self )
 }
 
 static void
-ofa_pdf_balances_class_init( ofaPDFBalancesClass *klass )
+pdf_balances_class_init( ofaPDFBalancesClass *klass )
 {
 	static const gchar *thisfn = "ofa_pdf_balances_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	ofa_pdf_balances_parent_class = g_type_class_peek_parent( klass );
 
 	G_OBJECT_CLASS( klass )->dispose = pdf_balances_dispose;
 	G_OBJECT_CLASS( klass )->finalize = pdf_balances_finalize;
@@ -269,34 +332,10 @@ ofa_pdf_balances_class_init( ofaPDFBalancesClass *klass )
 }
 
 static void
-iprintable_iface_init( ofaIPrintableInterface *iface )
+free_currency( sCurrency *total_per_currency )
 {
-	static const gchar *thisfn = "ofa_pdf_balances_iprintable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iprintable_get_interface_version;
-	iface->get_dataset = iprintable_get_dataset;
-	iface->free_dataset = iprintable_free_dataset;
-	iface->reset_runtime = iprintable_reset_runtime;
-	iface->on_begin_print = iprintable_on_begin_print;
-	iface->get_page_header_title = iprintable_get_page_header_title;
-	iface->get_page_header_subtitle = iprintable_get_page_header_subtitle;
-	iface->draw_page_header_notes = iprintable_draw_page_header_notes;
-	iface->draw_page_header_columns = iprintable_draw_page_header_columns;
-	iface->is_new_group = iprintable_is_new_group;
-	iface->draw_group_header = iprintable_draw_group_header;
-	iface->draw_group_top_report = iprintable_draw_group_top_report;
-	iface->draw_line = iprintable_draw_line;
-	iface->draw_group_bottom_report = iprintable_draw_group_bottom_report;
-	iface->draw_group_footer = iprintable_draw_group_footer;
-	iface->draw_bottom_summary = iprintable_draw_bottom_summary;
-}
-
-static guint
-iprintable_get_interface_version( const ofaIPrintable *instance )
-{
-	return( 1 );
+	g_free( total_per_currency->currency );
+	g_free( total_per_currency );
 }
 
 /**
@@ -646,7 +685,7 @@ v_quit_on_ok( myDialog *dialog )
 
 	if( ok ){
 		fname = ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog ));
-		ok &= ofa_iprintable_print_to_pdf( OFA_IPRINTABLE( dialog ), fname );
+		ok &= ofa_iprintable2_print( OFA_IPRINTABLE2( dialog ));
 		g_free( fname );
 	}
 
@@ -671,13 +710,113 @@ do_apply( ofaPDFBalances *self )
 	my_date_set_from_date( &priv->to_date,
 			ofa_idates_filter_get_date( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO ));
 
-	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
+	ofa_irenderable_set_group_on_new_page( OFA_IRENDERABLE( self ), priv->new_page );
 
 	return( TRUE );
 }
 
+static void
+iprintable2_iface_init( ofaIPrintable2Interface *iface )
+{
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable2_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iprintable2_get_interface_version;
+	iface->begin_print = iprintable2_begin_print;
+	iface->draw_page = iprintable2_draw_page;
+	iface->end_print = iprintable2_end_print;
+}
+
+static guint
+iprintable2_get_interface_version( const ofaIPrintable2 *instance )
+{
+	return( 1 );
+}
+
+static void
+iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+{
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable2_begin_print";
+	gint pages_count;
+
+	g_debug( "%s: instance=%p, operation=%p, context=%p",
+			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
+
+	pages_count = ofa_irenderable_begin_render(
+			OFA_IRENDERABLE( instance ),
+			gtk_print_context_get_cairo_context( context ),
+			gtk_print_context_get_width( context ),
+			gtk_print_context_get_height( context ));
+
+	gtk_print_operation_set_n_pages( operation, pages_count );
+}
+
+/*
+ * GtkPrintOperation signal handler
+ * call once per page, with a page_num counted from zero
+ */
+static void
+iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+{
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable2_draw_page";
+	cairo_t *cr;
+
+	g_debug( "%s: instance=%p, operation=%p, context=%p, page_num=%d",
+			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context, page_num );
+
+	cr = gtk_print_context_get_cairo_context( context );
+
+	ofa_irenderable_render_page( OFA_IRENDERABLE( instance ), cr, page_num );
+}
+
+static void
+iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+{
+	static const gchar *thisfn = "ofa_pdf_balances_iprintable2_end_print";
+	cairo_t *cr;
+
+	g_debug( "%s: instance=%p, operation=%p, context=%p",
+			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
+
+	cr = gtk_print_context_get_cairo_context( context );
+
+	ofa_irenderable_end_render( OFA_IRENDERABLE( instance ), cr );
+}
+
+static void
+irenderable_iface_init( ofaIRenderableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_pdf_balances_irenderable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = irenderable_get_interface_version;
+	iface->get_dataset = irenderable_get_dataset;
+	iface->begin_render = irenderable_begin_render;
+	iface->free_dataset = irenderable_free_dataset;
+	iface->reset_runtime = irenderable_reset_runtime;
+	iface->get_page_header_title = irenderable_get_page_header_title;
+	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
+	iface->draw_page_header_notes = irenderable_draw_page_header_notes;
+	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
+	iface->is_new_group = irenderable_is_new_group;
+	iface->draw_group_header = irenderable_draw_group_header;
+	iface->draw_group_top_report = irenderable_draw_group_top_report;
+	iface->draw_line = irenderable_draw_line;
+	iface->draw_group_bottom_report = irenderable_draw_group_bottom_report;
+	iface->draw_group_footer = irenderable_draw_group_footer;
+	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
+}
+
+static guint
+irenderable_get_interface_version( const ofaIRenderable *instance )
+{
+	return( 1 );
+}
+
 static GList *
-iprintable_get_dataset( const ofaIPrintable *instance )
+irenderable_get_dataset( ofaIRenderable *instance )
 {
 	ofaPDFBalancesPrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -704,13 +843,13 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 }
 
 static void
-iprintable_free_dataset( GList *elements )
+irenderable_free_dataset( ofaIRenderable *instance, GList *elements )
 {
 	ofs_account_balance_list_free( &elements );
 }
 
 static void
-iprintable_reset_runtime( ofaIPrintable *instance )
+irenderable_reset_runtime( ofaIRenderable *instance )
 {
 	ofaPDFBalancesPrivate *priv;
 
@@ -721,24 +860,24 @@ iprintable_reset_runtime( ofaIPrintable *instance )
 }
 
 static void
-iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+irenderable_begin_render( ofaIRenderable *instance, cairo_t *context, gdouble render_width, gdouble render_height )
 {
-	static const gchar *thisfn = "ofa_pdf_balances_iprintable_on_begin_print";
+	static const gchar *thisfn = "ofa_pdf_balances_irenderable_on_begin_print";
 	ofaPDFBalancesPrivate *priv;
-	gdouble page_width;
 	gint body_font_size;
 
 	/*gint entries_count, other_count, last_count;
 	gdouble footer_height, balance_height, last_height, header_height;*/
 
-	g_debug( "%s: instance=%p, operation=%p, context=%p",
-			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
+	g_debug( "%s: instance=%p, context=%p",
+			thisfn, ( void * ) instance, ( void * ) context );
 
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
-	priv->page_margin = ofa_iprintable_get_page_margin( instance );
-	body_font_size = ofa_iprintable_get_default_font_size( instance );
-	page_width = gtk_print_context_get_width( context );
+	priv->render_width = render_width;
+	priv->render_height = render_height;
+	priv->page_margin = ofa_irenderable_get_page_margin( instance );
+	body_font_size = ofa_irenderable_get_default_font_size( instance );
 
 	/* starting from the left : body_number_ltab on the left margin */
 	priv->body_number_ltab = priv->page_margin;
@@ -747,13 +886,13 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 	/* computing the width of amounts so that the four columns will
 	 * take half of the page width
 	 * margin+number+col+label+col+amount+col+amount+col+amount+col+amount+col+currency+margin */
-	priv->amount_width = (page_width/2 - priv->page_margin)/4 - st_column_spacing;
+	priv->amount_width = (priv->render_width/2 - priv->page_margin)/4 - st_column_spacing;
 	g_debug( "%s: amount_width=%lf", thisfn, priv->amount_width );
 	/* amount_width=65 instead of 80 */
 	priv->amount_width = 75;
 
 	/* starting from the right */
-	priv->body_currency_rtab = page_width - priv->page_margin;
+	priv->body_currency_rtab = priv->render_width - priv->page_margin;
 	priv->body_credit_solde_rtab = priv->body_currency_rtab - st_currency_width - st_column_spacing;
 	priv->body_debit_solde_rtab = priv->body_credit_solde_rtab - priv->amount_width - st_column_spacing;
 	priv->body_credit_period_rtab = priv->body_debit_solde_rtab - priv->amount_width - st_column_spacing;
@@ -767,7 +906,7 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
  * Accounts Balance
  */
 static gchar *
-iprintable_get_page_header_title( const ofaIPrintable *instance )
+irenderable_get_page_header_title( const ofaIRenderable *instance )
 {
 	return( g_strdup( st_page_header_title ));
 }
@@ -776,7 +915,7 @@ iprintable_get_page_header_title( const ofaIPrintable *instance )
  * From account xxx to account xxx - From date xxx to date xxx
  */
 static gchar *
-iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
+irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 {
 	ofaPDFBalancesPrivate *priv;
 	GString *stitle;
@@ -820,113 +959,100 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 }
 
 static void
-iprintable_draw_page_header_notes( ofaIPrintable *instance,
-		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+irenderable_draw_page_header_notes( ofaIRenderable *instance, cairo_t *context, gint page_num )
 {
 	ofaPDFBalancesPrivate *priv;
-	gdouble y, width, line_height;
-
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+	gdouble y;
 
 	if( page_num == 0 ){
-
 		priv = OFA_PDF_BALANCES( instance )->priv;
 
-		y = ofa_iprintable_get_last_y( instance );
-		line_height = ofa_iprintable_get_current_line_height( instance );
-		width = context ? gtk_print_context_get_width( context ) : 0;
+		y = ofa_irenderable_get_last_y( instance );
 
-		ofa_iprintable_set_wrapped_text( instance, context,
+		y += ofa_irenderable_set_wrapped_text( instance, context,
 					priv->page_margin, y,
-					(width-priv->page_margin)*PANGO_SCALE,
+					(priv->render_width-priv->page_margin)*PANGO_SCALE,
 					_( "Please note that this entries balance printing only "
 						"displays the balance of the entries whose effect "
 						"date is between the above date limits.\n"
 						"As such, it is not intended to reflect the balances "
 						"of the accounts." ), PANGO_ALIGN_LEFT );
 
-		y += 2*line_height;
-		ofa_iprintable_set_last_y( instance, y );
+		ofa_irenderable_set_last_y( instance, y );
 	}
 }
 
 static void
-iprintable_draw_page_header_columns( ofaIPrintable *instance,
-		GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+irenderable_draw_page_header_columns( ofaIRenderable *instance, cairo_t *context, gint page_num )
 {
 	ofaPDFBalancesPrivate *priv;
-	cairo_t *cr;
 	gdouble y, height, yh, hline, vspace;
 	gint bfs;
 
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
-
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
-	y = ofa_iprintable_get_last_y( instance );
-	bfs = ofa_iprintable_get_current_font_size( instance );
-	vspace = ofa_iprintable_get_current_line_vspace( instance );
+	y = ofa_irenderable_get_last_y( instance );
+	bfs = ofa_irenderable_get_current_font_size( instance );
+	vspace = ofa_irenderable_get_current_line_vspace( instance );
 
-	if( context ){
-		cr = gtk_print_context_get_cairo_context( context );
+	/* draw three vertical white lines to visually separate the amounts */
+	if( page_num >= 0 ){
+		cairo_set_source_rgb( context, COLOR_WHITE );
+		cairo_set_line_width( context, 0.5 );
+		height = ofa_irenderable_get_page_header_columns_height( instance );
 
-		/* draw three vertical white lines to visually separate the amounts */
-		cairo_set_source_rgb( cr, COLOR_WHITE );
-		cairo_set_line_width( cr, 0.5 );
-		height = ofa_iprintable_get_page_header_columns_height( instance );
+		cairo_move_to( context, priv->body_debit_period_rtab-priv->amount_width, y );
+		cairo_line_to( context, priv->body_debit_period_rtab-priv->amount_width, y+height );
+		cairo_stroke( context );
 
-		cairo_move_to( cr, priv->body_debit_period_rtab-priv->amount_width, y );
-		cairo_line_to( cr, priv->body_debit_period_rtab-priv->amount_width, y+height );
-		cairo_stroke( cr );
+		cairo_move_to( context, priv->body_credit_period_rtab+priv->page_margin, y );
+		cairo_line_to( context, priv->body_credit_period_rtab+priv->page_margin, y+height );
+		cairo_stroke( context );
 
-		cairo_move_to( cr, priv->body_credit_period_rtab+priv->page_margin, y );
-		cairo_line_to( cr, priv->body_credit_period_rtab+priv->page_margin, y+height );
-		cairo_stroke( cr );
-
-		cairo_move_to( cr, priv->body_credit_solde_rtab+priv->page_margin, y );
-		cairo_line_to( cr, priv->body_credit_solde_rtab+priv->page_margin, y+height );
-		cairo_stroke( cr );
+		cairo_move_to( context, priv->body_credit_solde_rtab+priv->page_margin, y );
+		cairo_line_to( context, priv->body_credit_solde_rtab+priv->page_margin, y+height );
+		cairo_stroke( context );
 
 		yh = y+(height/2);
-		cairo_move_to( cr, priv->body_debit_period_rtab-priv->amount_width, yh );
-		cairo_line_to( cr, priv->body_credit_solde_rtab+priv->page_margin, yh );
-		cairo_stroke( cr );
+		cairo_move_to( context, priv->body_debit_period_rtab-priv->amount_width, yh );
+		cairo_line_to( context, priv->body_credit_solde_rtab+priv->page_margin, yh );
+		cairo_stroke( context );
 	}
 
 	y += vspace;
 	hline = bfs + vspace;
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_number_ltab, y+(hline+st_page_header_columns_vspace)/2,
 			_( "Account" ), PANGO_ALIGN_LEFT );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_label_ltab, y+(hline+st_page_header_columns_vspace)/2,
 			_( "Label" ), PANGO_ALIGN_LEFT );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_debit_period_rtab, y-1, _( "Period balance" ), PANGO_ALIGN_CENTER );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_debit_solde_rtab, y-1, _( "Solde balance" ), PANGO_ALIGN_CENTER );
 
 	y += hline + st_page_header_columns_vspace;
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_debit_period_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_credit_period_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_debit_solde_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_credit_solde_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
 	y += hline;
 
-	ofa_iprintable_set_last_y( instance, y );
+	ofa_irenderable_set_last_y( instance, y );
 }
 
 /*
@@ -934,7 +1060,7 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance,
  * previous one
  */
 static gboolean
-iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev )
+irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
 {
 	ofaPDFBalancesPrivate *priv;
 	ofsAccountBalance *current_sbal, *prev_sbal;
@@ -967,7 +1093,7 @@ iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *p
  * Class x - xxx
  */
 static void
-iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
+irenderable_draw_group_header( ofaIRenderable *instance, cairo_t *context, GList *current )
 {
 	ofaPDFBalancesPrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -976,8 +1102,6 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	gdouble y;
 	gchar *str;
 
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
-
 	main_window = my_window_get_main_window( MY_WINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
@@ -985,7 +1109,7 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
-	y = ofa_iprintable_get_last_y( instance );
+	y = ofa_irenderable_get_last_y( instance );
 
 	/* setup the class properties */
 	sbal = ( ofsAccountBalance * ) current->data;
@@ -1001,28 +1125,28 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	str = g_strdup_printf(
 				_( "Class %u - %s" ),
 				priv->class_num, ofo_class_get_label( priv->class_object ));
-	ofa_iprintable_set_text( instance, context, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
+	ofa_irenderable_set_text( instance, context, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
-	y += ofa_iprintable_get_current_line_height( instance );
-	ofa_iprintable_set_last_y( instance, y );
+	y += ofa_irenderable_get_current_line_height( instance );
+	ofa_irenderable_set_last_y( instance, y );
 }
 
 static void
-iprintable_draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+irenderable_draw_group_top_report( ofaIRenderable *instance, cairo_t *context )
 {
-	draw_subtotals_balance( instance, operation, context, _( "Top class report : " ));
+	draw_subtotals_balance( instance, context, _( "Top class report : " ));
 }
 
 /*
  * num_line is counted from 0 in the page
  *
- * (printable)width(A4)=559
+ * (printable2)width(A4)=559
  * date  journal  piece    label      debit   credit   solde
  * 10    6        max(10)  max(80)      15d      15d     15d
  */
 static void
-iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
+irenderable_draw_line( ofaIRenderable *instance, cairo_t *context, GList *current )
 {
 	ofaPDFBalancesPrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -1033,8 +1157,6 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	gchar *str;
 	gdouble solde;
 
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
-
 	main_window = my_window_get_main_window( MY_WINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
@@ -1042,24 +1164,27 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
-	y = ofa_iprintable_get_last_y( instance );
+	y = ofa_irenderable_get_last_y( instance );
 
 	sbal = ( ofsAccountBalance * ) current->data;
 
 	account = ofo_account_get_by_number( dossier, sbal->account );
+	/*
+	g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));
+	*/
 
 	solde = 0;
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_number_ltab, y, sbal->account, PANGO_ALIGN_LEFT );
 
-	ofa_iprintable_ellipsize_text( instance, context,
+	ofa_irenderable_ellipsize_text( instance, context,
 			priv->body_label_ltab, y,
 			ofo_account_get_label( account ), priv->body_label_max_size );
 
 	if( sbal->debit ){
 		str = my_double_to_str( sbal->debit );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		solde -= sbal->debit;
@@ -1067,23 +1192,23 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	if( sbal->credit ){
 		str = my_double_to_str( sbal->credit );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		solde += sbal->credit;
 	}
 
 	if( solde < 0 ){
 		str = my_double_to_str( -1*solde );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 
 	} else {
 		str = my_double_to_str( solde );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	}
 
-	ofa_iprintable_set_text( instance, context,
+	ofa_irenderable_set_text( instance, context,
 			priv->body_currency_rtab, y, sbal->currency, PANGO_ALIGN_RIGHT );
 
 	priv->subtotals = add_account_balance(
@@ -1094,20 +1219,20 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 }
 
 static void
-iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+irenderable_draw_group_bottom_report( ofaIRenderable *instance, cairo_t *context )
 {
-	draw_subtotals_balance( instance, operation, context, _( "Bottom class report : " ));
+	draw_subtotals_balance( instance, context, _( "Bottom class report : " ));
 }
 
 /*
  * This function is called many time with NULL arguments in order to
  * auto-detect the height of the group footer (in particular each time
- * the #ofa_iprintable_draw_line() function needs to know if there is
+ * the #ofa_irenderable_draw_line() function needs to know if there is
  * enough vertical space left to draw the current line) - so take care
  * of not updating the account balance when not drawing...
  */
 static void
-iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+irenderable_draw_group_footer( ofaIRenderable *instance, cairo_t *context )
 {
 	ofaPDFBalancesPrivate *priv;
 	gchar *str;
@@ -1115,7 +1240,7 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
-	draw_subtotals_balance( instance, operation, context, str );
+	draw_subtotals_balance( instance, context, str );
 	g_free( str );
 }
 
@@ -1124,63 +1249,59 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
  * currency
  */
 static void
-iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+irenderable_draw_bottom_summary( ofaIRenderable *instance, cairo_t *context )
 {
 	ofaPDFBalancesPrivate *priv;
 	gdouble bottom, top, vspace, req_height;
 	gint bfs;
 
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
-
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	if( !priv->count ){
-		ofa_iprintable_draw_no_data( instance, context );
+		ofa_irenderable_draw_no_data( instance, context );
 		return;
 	}
 
 	/* bottom of the rectangle */
-	bottom = ofa_iprintable_get_max_y( instance );
+	bottom = ofa_irenderable_get_max_y( instance );
 
 	/* top of the rectangle */
-	bfs = ofa_iprintable_get_current_font_size( instance );
-	vspace = ofa_iprintable_get_current_line_vspace( instance );
+	bfs = ofa_irenderable_get_current_font_size( instance );
+	vspace = ofa_irenderable_get_current_line_vspace( instance );
 	req_height = vspace + g_list_length( priv->totals )*(bfs+vspace );
 	top = bottom - req_height;
 
-	ofa_iprintable_draw_rect( instance, context, 0, top, -1, req_height );
+	ofa_irenderable_draw_rect( instance, context, 0, top, -1, req_height );
 
 	top += vspace;
 
 	draw_account_balance( instance, context, priv->totals, top, _( "General balance : " ));
 
-	ofa_iprintable_set_last_y( instance, ofa_iprintable_get_last_y( instance ) + req_height );
+	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );
 }
 
 static void
-draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, const gchar *title )
+draw_subtotals_balance( ofaIRenderable *instance, cairo_t *context, const gchar *title )
 {
 	ofaPDFBalancesPrivate *priv;
 	gdouble vspace, req_height, last_y;
 	gint bfs;
 
-	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
-
 	priv = OFA_PDF_BALANCES( instance )->priv;
 
 	/* top of the rectangle */
-	bfs = ofa_iprintable_get_current_font_size( instance );
-	vspace = ofa_iprintable_get_current_line_vspace( instance );
+	bfs = ofa_irenderable_get_current_font_size( instance );
+	vspace = ofa_irenderable_get_current_line_vspace( instance );
 	req_height = g_list_length( priv->subtotals )*(bfs+vspace );
-	last_y = ofa_iprintable_get_last_y( instance );
+	last_y = ofa_irenderable_get_last_y( instance );
 
 	draw_account_balance( instance, context, priv->subtotals, last_y, title );
 
-	ofa_iprintable_set_last_y( instance, last_y+req_height );
+	ofa_irenderable_set_last_y( instance, last_y+req_height );
 }
 
 static void
-draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context,
+draw_account_balance( ofaIRenderable *instance, cairo_t *context,
 							GList *list, gdouble top, const gchar *title )
 {
 	ofaPDFBalancesPrivate *priv;
@@ -1193,7 +1314,7 @@ draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context,
 
 	for( it=list, first=TRUE ; it ; it=it->next ){
 		if( first ){
-			ofa_iprintable_set_text( instance, context,
+			ofa_irenderable_set_text( instance, context,
 						priv->body_debit_period_rtab-priv->amount_width, top,
 						title, PANGO_ALIGN_RIGHT );
 			first = FALSE;
@@ -1202,29 +1323,29 @@ draw_account_balance( ofaIPrintable *instance, GtkPrintContext *context,
 		scur = ( sCurrency * ) it->data;
 
 		str = my_double_to_str( scur->period_d );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_debit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		str = my_double_to_str( scur->period_c );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_credit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		str = my_double_to_str( scur->solde_d );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_debit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		str = my_double_to_str( scur->solde_c );
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_credit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		ofa_iprintable_set_text( instance, context,
+		ofa_irenderable_set_text( instance, context,
 				priv->body_currency_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
 
-		top += ofa_iprintable_get_current_line_height( instance );
+		top += ofa_irenderable_get_current_line_height( instance );
 	}
 }
 

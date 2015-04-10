@@ -101,7 +101,7 @@
       <section>
         <item>
           <attribute name="label" translatable="yes">_Account balances...</attribute>
-          <attribute name="action">win.pdf-balances</attribute>
+          <attribute name="action">win.render-balances</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>

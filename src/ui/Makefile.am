@@ -173,6 +173,10 @@ openbook_SOURCES = \
 	ofa-ipreferences.c									\
 	ofa-iprintable.c									\
 	ofa-iprintable.h									\
+	ofa-iprintable2.c									\
+	ofa-iprintable2.h									\
+	ofa-irenderable.c									\
+	ofa-irenderable.h									\
 	ofa-istore.c										\
 	ofa-istore.h										\
 	ofa-ledger-close.c									\
@@ -228,6 +232,12 @@ openbook_SOURCES = \
 	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
+	ofa-render-balances-bin.c							\
+	ofa-render-balances-bin.h							\
+	ofa-render-balances-page.c							\
+	ofa-render-balances-page.h							\
+	ofa-render-page.c									\
+	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
 	ofa-settlement.c									\
@@ -291,6 +301,8 @@ ui_files = \
 	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
+	ofa-render-balances-bin.ui							\
+	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\

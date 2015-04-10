@@ -41,6 +41,8 @@ src/ui/ofa-print-ledgers.ui
 src/ui/ofa-print-reconcil.ui
 src/ui/ofa-rate-properties.ui
 src/ui/ofa-reconciliation.ui
+src/ui/ofa-render-balances-bin.ui
+src/ui/ofa-render-page.ui
 src/ui/ofa-restore-assistant.ui
 src/ui/ofa-settlement.ui
 src/ui/ofa-view-entries.ui

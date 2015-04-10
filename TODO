@@ -453,8 +453,6 @@
                   - row number if rate detail validites
                   - account number in bat file
 
- 788 2015- 4- 4 review ofa_date_filter_api
-
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
 
  791 2015- 4- 6 after having entered new AVRLOY operation template:
@@ -468,7 +466,7 @@
  792 2015- 4- 6 have a comment in the backup
 
  793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
-                the calling window
+                the calling window (as much as possible)
 
  794
 
@@ -3630,6 +3628,9 @@
 
  787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
      2015- 4- 3 fixed - git #f1ab147
+
+ 788 2015- 4- 4 review ofa_date_filter_api
+     2015- 4- 8 done - git #601f95c
 
  789 2015- 4- 6 GuidedInputBin: check date label is in display format
                 instead of check format
