@@ -1,5 +1,9 @@
 2015-04-10 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-balances-bin.c,
+	* src/ui/ofa-render-balances-bin.h,
+	* src/ui/ofa-render-balances-bin.ui: new ofaRenderBalancesBin class.
+
 	* src/ui/ofa-render-page.c,
 	* src/ui/ofa-render-page.h,
 	* src/ui/ofa-render-page.ui: new ofaRenderPage class.
