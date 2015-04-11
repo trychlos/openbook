@@ -30,7 +30,6 @@
 #include <cairo-pdf.h>
 #include <glib/gi18n.h>
 #include <math.h>
-#include <poppler.h>
 
 #include "api/my-utils.h"
 
@@ -79,6 +78,7 @@ struct _ofaRenderPagePrivate {
 #define COLOR_BLACK                     0,       0,       0			/* #000000 */
 
 #define COLOR_ERROR                     "#ff0000"	/* red */
+#define COLOR_INFO                      "#0000ff"	/* blue */
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
@@ -102,13 +102,14 @@ static gint               do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble 
 static void               draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y );
 static void               on_render_clicked( GtkButton *button, ofaRenderPage *page );
 static void               on_print_clicked( GtkButton *button, ofaRenderPage *page );
-static void               push_context( ofaRenderPage *page, cairo_t *cr );
+static cairo_t           *create_context( ofaRenderPage *page, gdouble width, gdouble height );
 static void               set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name );
 static void               pdf_crs_free( GList **pdf_crs );
 static void               iprintable2_iface_init( ofaIPrintable2Interface *iface );
 static guint              iprintable2_get_interface_version( const ofaIPrintable2 *instance );
 static const gchar       *iprintable2_get_paper_name( ofaIPrintable2 *instance );
 static GtkPageOrientation iprintable2_get_page_orientation( ofaIPrintable2 *instance );
+static void               iprintable2_get_print_settings( ofaIPrintable2 *instance, GKeyFile **keyfile, gchar **group_name );
 static void               iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void               iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static void               iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
@@ -444,18 +445,17 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x )
 	ofaRenderPagePrivate *priv;
 	GList *it;
 	cairo_t *pdf_cr;
-	gdouble y;
-	/*gdouble dx, dy;*/
+	gdouble y, dx, dy;
 
 	priv = page->priv;
 	y = PAGE_EXT_MARGIN_V_HEIGHT;
-	/*dx = shift_x+(priv->paper_width-priv->render_width)/2.0;*/
+	dx = shift_x+(priv->paper_width-priv->render_width)/2.0;
 
 	for( it=priv->pdf_crs ; it ; it=it->next ){
 		draw_page_background( page, cr, shift_x, y );
 		pdf_cr = ( cairo_t * ) it->data;
-		/*dy = y+(paper_height-render_height)/2.0;*/
-		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), shift_x, y );
+		dy = y+(priv->paper_height-priv->render_height)/2.0;
+		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), dx, dy );
 		cairo_paint( cr );
 		y += priv->paper_height + PAGE_SEPARATION_V_HEIGHT;
 	}
@@ -481,19 +481,30 @@ static void
 on_render_clicked( GtkButton *button, ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
-	gboolean ok;
+	cairo_t *cr, *page_cr;
+	gint pages_count, i;
+	gchar *str;
 
 	priv = page->priv;
-
 	pdf_crs_free( &priv->pdf_crs );
 
-	ok = ofa_iprintable2_preview( OFA_IPRINTABLE2( page ));
+	cr = create_context( page, priv->render_width, priv->render_height );
+	pages_count = ofa_irenderable_begin_render(
+			OFA_IRENDERABLE( page ), cr, priv->render_width, priv->render_height );
 
-	if( ok ){
-		gtk_widget_queue_draw( priv->drawing_area );
+	for( i=0 ; i<pages_count ; ++i ){
+		page_cr = create_context( page, priv->render_width, priv->render_height );
+		ofa_irenderable_render_page( OFA_IRENDERABLE( page ), page_cr, i );
+		priv->pdf_crs = g_list_append( priv->pdf_crs, page_cr );
 	}
 
-	gtk_widget_set_sensitive( priv->print_btn, ok );
+	ofa_irenderable_end_render( OFA_IRENDERABLE( page ), cr );
+	cairo_destroy( cr );
+	str = g_strdup_printf( "%d printed page(s).", pages_count );
+	set_message( page, str, COLOR_INFO );
+
+	gtk_widget_queue_draw( priv->drawing_area );
+	gtk_widget_set_sensitive( priv->print_btn, TRUE );
 }
 
 static void
@@ -502,31 +513,17 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 	ofa_iprintable2_print( OFA_IPRINTABLE2( page ));
 }
 
-/*
- * ofa_render_page_push_context:
- * @page:
- * @context:
- * @width:
- * @height:
- */
-static void
-push_context( ofaRenderPage *page, cairo_t *context )
+static cairo_t *
+create_context( ofaRenderPage *page, gdouble width, gdouble height )
 {
-	ofaRenderPagePrivate *priv;
-	cairo_surface_t *context_surface, *cr_surface;
+	cairo_surface_t *surface;
 	cairo_t *cr;
 
-	priv = page->priv;
+	surface = cairo_pdf_surface_create( NULL, width, height );
+	cr = cairo_create( surface );
+	cairo_surface_destroy( surface );
 
-	context_surface = cairo_get_target( context );
-	cr_surface = cairo_pdf_surface_create( NULL, priv->render_width, priv->render_height );
-	g_debug( "push_context: render_width=%lf, render_height=%lf", priv->render_width, priv->render_height );
-	cr = cairo_create( cr_surface );
-	cairo_surface_destroy( cr_surface );
-
-	cairo_set_source_surface( cr, context_surface, 0, 0 );
-	cairo_paint( cr );
-	priv->pdf_crs = g_list_append( priv->pdf_crs, cr );
+	return( cr );
 }
 
 static void
@@ -559,6 +556,7 @@ iprintable2_iface_init( ofaIPrintable2Interface *iface )
 	iface->get_interface_version = iprintable2_get_interface_version;
 	iface->get_paper_name = iprintable2_get_paper_name;
 	iface->get_page_orientation = iprintable2_get_page_orientation;
+	iface->get_print_settings = iprintable2_get_print_settings;
 	iface->begin_print = iprintable2_begin_print;
 	iface->draw_page = iprintable2_draw_page;
 	iface->end_print = iprintable2_end_print;
@@ -597,6 +595,15 @@ iprintable2_get_page_orientation( ofaIPrintable2 *instance )
 }
 
 static void
+iprintable2_get_print_settings( ofaIPrintable2 *instance, GKeyFile **keyfile, gchar **group_name )
+{
+	if( OFA_RENDER_PAGE_GET_CLASS( instance )->get_print_settings ){
+		OFA_RENDER_PAGE_GET_CLASS( instance )->get_print_settings( OFA_RENDER_PAGE( instance ), keyfile, group_name );
+	}
+}
+
+
+static void
 iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	static const gchar *thisfn = "ofa_render_page_iprintable2_begin_print";
@@ -629,7 +636,6 @@ iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, G
 
 	cr = gtk_print_context_get_cairo_context( context );
 	ofa_irenderable_render_page( OFA_IRENDERABLE( instance ), cr, page_num );
-	push_context( OFA_RENDER_PAGE( instance ), cr );
 }
 
 static void

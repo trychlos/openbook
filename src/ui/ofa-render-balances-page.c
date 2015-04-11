@@ -105,6 +105,8 @@ typedef struct {
 
 static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
 
+static const gchar *st_print_settings    = "RenderBalancesPrint";
+
 /* these are parms which describe the page layout
  */
 
@@ -129,6 +131,7 @@ static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *v_get_args_widget( ofaRenderPage *page );
 static const gchar       *v_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation v_get_page_orientation( ofaRenderPage *page );
+static void               v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static void               on_args_changed( ofaRenderBalancesBin *bin, ofaRenderBalancesPage *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
@@ -272,6 +275,7 @@ render_balances_page_class_init( ofaRenderBalancesPageClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = v_get_args_widget;
 	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = v_get_paper_name;
 	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = v_get_page_orientation;
+	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = v_get_print_settings;
 
 	g_type_class_add_private( klass, sizeof( ofaRenderBalancesPagePrivate ));
 }
@@ -318,6 +322,13 @@ static GtkPageOrientation
 v_get_page_orientation( ofaRenderPage *page )
 {
 	return( THIS_PAGE_ORIENTATION );
+}
+
+static void
+v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
+{
+	*keyfile = ofa_settings_get_actual_keyfile( SETTINGS_TARGET_USER );
+	*group_name = g_strdup( st_print_settings );
 }
 
 /*

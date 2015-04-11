@@ -97,6 +97,17 @@ typedef struct {
 	 * This is used to compute the drawn page width and height.
 	 */
 	GtkPageOrientation ( *get_page_orientation )( ofaRenderPage *page );
+
+	/**
+	 * get_print_settings_group_name:
+	 * @page: this #ofaRenderPage instance.
+	 *
+	 * Returns the name of the keyfile's group which holds the
+	 * current print settings.
+	 */
+	void               ( *get_print_settings )  ( ofaRenderPage *page,
+														GKeyFile **keyfile,
+														gchar **group_name );
 }
 	ofaRenderPageClass;
 

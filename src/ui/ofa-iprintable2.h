@@ -116,6 +116,19 @@ typedef struct {
 	GtkPageOrientation ( *get_page_orientation ) ( ofaIPrintable2 *instance );
 
 	/**
+	 * get_settings:
+	 * @instance: the #ofaIPrintable2 provider.
+	 * @keyfile: [out]:
+	 * @group_name: [out]:
+	 *
+	 * The implementation should set the GKeyFile and the group name to
+	 * load/save the print settings.
+	 */
+	void               ( *get_print_settings )   ( ofaIPrintable2 *instance,
+														GKeyFile **keyfile,
+														gchar **group_name );
+
+	/**
 	 * begin_print:
 	 * @instance: the #ofaIPrintable2 provider.
 	 * @operation: the #GtkPrintOperation operation.
@@ -170,14 +183,12 @@ typedef struct {
 }
 	ofaIPrintable2Interface;
 
-GType    ofa_iprintable2_get_type    ( void );
+GType    ofa_iprintable2_get_type     ( void );
 
 guint    ofa_iprintable2_get_interface_last_version
-                                     ( const ofaIPrintable2 *instance );
+                                      ( const ofaIPrintable2 *instance );
 
-gboolean ofa_iprintable2_preview     ( ofaIPrintable2 *instance );
-
-gboolean ofa_iprintable2_print       ( ofaIPrintable2 *instance );
+gboolean ofa_iprintable2_print        ( ofaIPrintable2 *instance );
 
 G_END_DECLS
 

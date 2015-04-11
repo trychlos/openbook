@@ -305,6 +305,26 @@ ofa_settings_get_key_file( ofaSettingsTarget target )
 	return( fname );
 }
 
+/**
+ * ofa_settings_get_actual_keyfile:
+ */
+GKeyFile *
+ofa_settings_get_actual_keyfile( ofaSettingsTarget target )
+{
+	settings_new();
+
+	switch( target ){
+		case SETTINGS_TARGET_USER:
+			return( st_user_settings->priv->keyfile );
+			break;
+		case SETTINGS_TARGET_DOSSIER:
+			return( st_dossier_settings->priv->keyfile );
+			break;
+	}
+
+	return( NULL );
+}
+
 static void
 load_key_file( ofaSettings *settings )
 {

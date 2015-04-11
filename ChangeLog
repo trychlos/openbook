@@ -1,5 +1,15 @@
 2015-04-11 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/api/ofa-settings.h,
+	* src/core/ofa-settings.c: new ofa_settings_get_actual_keyfile() method.
+
+	* src/ui/ofa-iprintable2.c,
+	* src/ui/ofa-iprintable2.h,
+	* src/ui/ofa-render-page.c,
+	* src/ui/ofa-render-page.h,
+	* src/ui/ofa-render-balances-page.c,
+	* src/ui/ofa-render-balances-page.h: get and save print settings.
+
 	* src/ui/ofa-render-balances-page.c,
 	* src/ui/ofa-render-balances-page.h: new ofaRenderBalancesPage class.
 

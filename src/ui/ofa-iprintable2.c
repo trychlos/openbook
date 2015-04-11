@@ -41,6 +41,9 @@
 typedef struct {
 	GtkPaperSize      *paper_size;
 	GtkPageOrientation page_orientation;
+	GtkPrintOperation *print;
+	GKeyFile          *keyfile;
+	gchar             *group_name;
 }
 	sIPrintable;
 
@@ -54,16 +57,15 @@ static void         interface_base_init( ofaIPrintable2Interface *klass );
 static void         interface_base_finalize( ofaIPrintable2Interface *klass );
 static sIPrintable *get_iprintable_data( ofaIPrintable2 *instance );
 static void         on_instance_finalized( sIPrintable *sdata, void *instance );
-static gboolean     do_preview( ofaIPrintable2 *instance, const gchar *filename, sIPrintable *sdata );
 static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance );
 static void         iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static gboolean     on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance );
-static gboolean     iprintable2_paginate( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable2 *instance );
 static void         iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance );
 static void         iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gboolean     do_print( ofaIPrintable2 *instance, sIPrintable *sdata );
+static gboolean     load_settings( ofaIPrintable2 *instance, sIPrintable *sdata );
+static void         save_settings( ofaIPrintable2 *instance, sIPrintable *sdata );
 
 /**
  * ofa_iprintable2_get_type:
@@ -123,7 +125,6 @@ interface_base_init( ofaIPrintable2Interface *klass )
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		klass->begin_print = iprintable2_begin_print;
-		klass->paginate = iprintable2_paginate;
 		klass->draw_page = iprintable2_draw_page;
 		klass->end_print = iprintable2_end_print;
 	}
@@ -153,56 +154,6 @@ guint
 ofa_iprintable2_get_interface_last_version( const ofaIPrintable2 *instance )
 {
 	return( IPRINTABLE2_LAST_VERSION );
-}
-
-/**
- * ofa_iprintable2_print:
- * @instance: this #ofaIPrintable2 instance.
- *
- * Preview.
- *
- * in Openbook, ofa_iprintable2_preview() is always called before
- * ofa_iprintable2_print(). Preparation which is made here (e.g. page
- * setup) is not re-made when actually printing.
- */
-gboolean
-ofa_iprintable2_preview( ofaIPrintable2 *instance )
-{
-	static const gchar *thisfn = "ofa_iprintable2_preview";
-	static const gchar *sufix = ".pdf";
-	sIPrintable *sdata;
-	gboolean ok;
-	gchar *str, *template;
-	gint fd;
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	g_return_val_if_fail( instance && OFA_IS_IPRINTABLE2( instance ), FALSE );
-
-	sdata = get_iprintable_data( instance );
-	fd = -1;
-
-	/* on preview mode, create a temporary pdf file
-	 * do not know why, but its cairo context is much more clean than
-	 * those we are wreating ourselves */
-	str = g_strdup_printf( "openbook_XXXXXX%s", sufix );
-	template = g_build_filename( g_get_tmp_dir(), str, NULL );
-	g_free( str );
-	fd = mkstemps( template, my_strlen( sufix ));
-	if( fd == -1 ){
-		str = g_strdup_printf( "%s", strerror( errno ));
-		my_utils_dialog_warning( str );
-		g_free( str );
-		return( FALSE );
-	}
-	close( fd );
-
-	ok = do_preview( instance, template, sdata );
-
-	unlink( template );
-	g_free( template );
-
-	return( ok );
 }
 
 /*
@@ -244,60 +195,9 @@ on_instance_finalized( sIPrintable *sdata, void *instance )
 
 	g_object_set_data( G_OBJECT( instance ), IPRINTABLE2_DATA, NULL );
 	gtk_paper_size_free( sdata->paper_size );
+	g_clear_object( &sdata->print );
+	g_free( sdata->group_name );
 	g_free( sdata );
-}
-
-static gboolean
-do_preview( ofaIPrintable2 *instance, const gchar *filename, sIPrintable *sdata )
-{
-	static const gchar *thisfn = "ofa_iprintable2_do_preview";
-	gboolean printed;
-	GtkPrintOperation *print;
-	GtkPrintOperationResult res;
-	GError *error;
-	GtkPageSetup *page_setup;
-	gchar *str;
-
-	printed = FALSE;
-	error = NULL;
-	print = gtk_print_operation_new ();
-
-	/* unit_points gives width=559,2, height=783,5 */
-	gtk_print_operation_set_unit( print, GTK_UNIT_POINTS );
-
-	g_signal_connect( print, "begin-print", G_CALLBACK( on_begin_print ), instance );
-	g_signal_connect( print, "paginate", G_CALLBACK( on_paginate ), instance );
-	g_signal_connect( print, "draw-page", G_CALLBACK( on_draw_page ), instance );
-	g_signal_connect( print, "end-print", G_CALLBACK( on_end_print ), instance );
-
-	page_setup = gtk_page_setup_new();
-	gtk_page_setup_set_paper_size( page_setup, sdata->paper_size );
-	gtk_page_setup_set_orientation( page_setup, sdata->page_orientation );
-	gtk_print_operation_set_default_page_setup( print, page_setup );
-	g_object_unref( page_setup );
-
-	gtk_print_operation_set_export_filename( print, filename );
-
-	res = gtk_print_operation_run(
-					print,
-					GTK_PRINT_OPERATION_ACTION_EXPORT,
-	                NULL,
-	                &error );
-
-	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
-		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
-		my_utils_dialog_warning( str );
-		g_free( str );
-		g_error_free( error );
-
-	} else {
-		printed = TRUE;
-	}
-
-	g_object_unref( print );
-	g_debug( "%s: printed=%s", thisfn, printed ? "True":"False" );
-
-	return( printed );
 }
 
 /*
@@ -321,34 +221,6 @@ iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation,
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
-}
-
-/*
- * GtkPrintOperation signal handler
- * repeatdly called while not %TRUE
- *
- * Returns: %TRUE at the end of the pagination
- *
- * We implement it so that it is called only once.
- */
-static gboolean
-on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance )
-{
-	return( OFA_IPRINTABLE2_GET_INTERFACE( instance )->paginate( instance, operation, context ));
-}
-
-/*
- * default interface handler.
- */
-static gboolean
-iprintable2_paginate( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
-{
-	static const gchar *thisfn = "ofa_iprintable2_paginate";
-
-	g_debug( "%s: instance=%p, operation=%p, context=%p",
-			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
-
-	return( TRUE );
 }
 
 /*
@@ -416,7 +288,6 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
 {
 	static const gchar *thisfn = "ofa_iprintable2_do_print";
 	gboolean printed;
-	GtkPrintOperation *print;
 	GtkPrintOperationResult res;
 	GError *error;
 	GtkPageSetup *page_setup;
@@ -424,25 +295,28 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
 
 	printed = FALSE;
 	error = NULL;
-	print = gtk_print_operation_new ();
+	sdata->print = gtk_print_operation_new ();
 
 	/* unit_points gives width=559,2, height=783,5 */
-	gtk_print_operation_set_unit( print, GTK_UNIT_POINTS );
+	gtk_print_operation_set_unit( sdata->print, GTK_UNIT_POINTS );
 
-	g_signal_connect( print, "begin-print", G_CALLBACK( on_begin_print ), instance );
-	g_signal_connect( print, "draw-page", G_CALLBACK( on_draw_page ), instance );
+	g_signal_connect( sdata->print, "begin-print", G_CALLBACK( on_begin_print ), instance );
+	g_signal_connect( sdata->print, "draw-page", G_CALLBACK( on_draw_page ), instance );
+	g_signal_connect( sdata->print, "end-print", G_CALLBACK( on_end_print ), instance );
 
-	page_setup = gtk_page_setup_new();
-	gtk_page_setup_set_paper_size( page_setup, sdata->paper_size );
-	gtk_page_setup_set_orientation( page_setup, sdata->page_orientation );
-	gtk_print_operation_set_default_page_setup( print, page_setup );
-	g_object_unref( page_setup );
+	if( !load_settings( instance, sdata )){
+		page_setup = gtk_page_setup_new();
+		gtk_page_setup_set_paper_size( page_setup, sdata->paper_size );
+		gtk_page_setup_set_orientation( page_setup, sdata->page_orientation );
+		gtk_print_operation_set_default_page_setup( sdata->print, page_setup );
+		g_object_unref( page_setup );
+	}
 
 	res = gtk_print_operation_run(
-					print,
-					GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
-	                NULL,
-	                &error );
+				sdata->print,
+				GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
+	            NULL,
+	            &error );
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
 		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
@@ -452,10 +326,59 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
 
 	} else {
 		printed = TRUE;
+		save_settings( instance, sdata );
 	}
 
-	g_object_unref( print );
 	g_debug( "%s: printed=%s", thisfn, printed ? "True":"False" );
 
 	return( printed );
+}
+
+/*
+ * save_settings:
+ * @instance:
+ * sdata:
+ */
+static gboolean
+load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
+{
+	GtkPrintSettings *settings;
+	GError *error;
+	gboolean ok;
+
+	ok = FALSE;
+
+	if( OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings ){
+		OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings( instance, &sdata->keyfile, &sdata->group_name );
+	}
+	if( sdata->keyfile && my_strlen( sdata->group_name )){
+		settings = gtk_print_settings_new();
+		error = NULL;
+		if( !gtk_print_settings_load_key_file( settings, sdata->keyfile, sdata->group_name, &error )){
+			if( error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ){
+				my_utils_dialog_warning( error->message );
+			}
+			g_error_free( error );
+		} else {
+			gtk_print_operation_set_print_settings( sdata->print, settings );
+			ok = TRUE;
+		}
+		g_object_unref( settings );
+	}
+
+	return( ok );
+}
+
+/*
+ * save_settings:
+ * @instance:
+ * sdata:
+ */
+static void
+save_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
+{
+	GtkPrintSettings *settings;
+
+	settings = gtk_print_operation_get_print_settings( sdata->print );
+	gtk_print_settings_to_key_file( settings, sdata->keyfile, sdata->group_name );
 }

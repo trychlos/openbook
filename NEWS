@@ -61,6 +61,12 @@
    - Use my_utils_dialog_question() function when appropriate (todo #756).
    - Review ofaDateFilterBin API, moving it to ofaDatesFilterHVBin class
      and ofaIDatesFilter interface (todo #788).
+   - ofa_settings_get_actual_keyfile(): new method.
+   - new ofaIPrintable2 interface.
+   - new ofaIRenderable interface.
+   - new ofaRenderPage base class.
+   - new ofaRenderBalancesPage class.
+   - new ofaRenderBalancesBin clas.
 
 -----------------------------------------------------------------------
  Version 0.38

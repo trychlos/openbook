@@ -77,6 +77,8 @@ void         ofa_settings_free               ( void );
 
 const gchar *ofa_settings_get_key_file       ( ofaSettingsTarget target );
 
+GKeyFile    *ofa_settings_get_actual_keyfile ( ofaSettingsTarget target );
+
 /* user preferences management */
 #define  ofa_settings_get_boolean(K)         ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
 #define  ofa_settings_set_boolean(K,V)       ofa_settings_set_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
