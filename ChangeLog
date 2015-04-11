@@ -1,3 +1,11 @@
+2015-04-11 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-render-balances-page.c,
+	* src/ui/ofa-render-balances-page.h: new ofaRenderBalancesPage class.
+
+	* src/ui/ofa-irenderable.c,
+	* src/ui/ofa-irenderable.h: new ofaIRenderable interface.
+
 2015-04-10 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-render-balances-bin.c,

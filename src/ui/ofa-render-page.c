@@ -526,7 +526,7 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_wid
 	ofaRenderPagePrivate *priv;
 	GList *it;
 	cairo_t *pdf_cr;
-	gdouble y, dx, dy;
+	gdouble y, dx/*, dy*/;
 	gdouble render_width, render_height;
 
 	priv = page->priv;
@@ -544,8 +544,8 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_wid
 	for( it=priv->pdf_crs ; it ; it=it->next ){
 		draw_page_background( page, cr, shift_x, y, paper_width, paper_height );
 		pdf_cr = ( cairo_t * ) it->data;
-		dy = y+(paper_height-render_height)/2.0;
-		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), shift_x, dy );
+		/*dy = y+(paper_height-render_height)/2.0;*/
+		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), shift_x, y );
 		cairo_paint( cr );
 		y += paper_height + PAGE_SEPARATION_V_HEIGHT;
 	}
@@ -559,7 +559,7 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_wid
 static void
 draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y, gdouble paper_width, gdouble paper_height )
 {
-	ofa_irenderable_set_color( OFA_IRENDERABLE( page ), cr, COLOR_WHITE );
+	cairo_set_source_rgb( cr, COLOR_WHITE );
 	cairo_rectangle( cr, x, y, paper_width, paper_height );
 	cairo_fill( cr );
 }
