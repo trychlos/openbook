@@ -97,18 +97,6 @@ typedef struct {
 	 * This is used to compute the drawn page width and height.
 	 */
 	GtkPageOrientation ( *get_page_orientation )( ofaRenderPage *page );
-
-	/**
-	 * get_rendering_size:
-	 * @page: this #ofaRenderPage instance.
-	 * @render_width: [out]:
-	 * @render_height: [out]:
-	 *
-	 * Returns the surface rendering size in points.
-	 */
-	void               ( *get_rendering_size )  ( ofaRenderPage *page,
-														gdouble *render_width,
-														gdouble *render_height);
 }
 	ofaRenderPageClass;
 

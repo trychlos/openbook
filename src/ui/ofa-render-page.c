@@ -57,11 +57,8 @@ struct _ofaRenderPagePrivate {
 	 */
 	gdouble    paper_width;				/* in points */
 	gdouble    paper_height;
-	gboolean   paper_size_set;
-
 	gdouble    render_width;			/* in points */
 	gdouble    render_height;
-	gboolean   render_size_set;
 
 	/* pagination
 	 */
@@ -97,15 +94,12 @@ static GtkWidget         *v_setup_view( ofaPage *page );
 static void               setup_args_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_actions_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_drawing_area( ofaRenderPage *page, GtkContainer *parent );
+static void               setup_page_size( ofaRenderPage *page );
 static void               v_init_view( ofaPage *page );
-static void               get_paper_size( ofaRenderPage *page, gdouble *paper_width, gdouble *paper_height );
-static gboolean           setup_paper_size( ofaRenderPage *page );
-static gboolean           compute_paper_size( GtkPaperSize *paper_size, GtkPageOrientation orientation, gdouble *paper_width, gdouble *paper_height );
-static void               get_rendering_size( ofaRenderPage *page, gdouble *render_width, gdouble *render_height );
 static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
 static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
-static gint               do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_width, gdouble paper_height );
-static void               draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y, gdouble paper_width, gdouble paper_height );
+static gint               do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x );
+static void               draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y );
 static void               on_render_clicked( GtkButton *button, ofaRenderPage *page );
 static void               on_print_clicked( GtkButton *button, ofaRenderPage *page );
 static void               push_context( ofaRenderPage *page, cairo_t *cr );
@@ -248,6 +242,7 @@ v_setup_view( ofaPage *page )
 	setup_args_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 	setup_actions_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 	setup_drawing_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
+	setup_page_size( OFA_RENDER_PAGE( page ));
 
 	return( page_widget );
 }
@@ -308,6 +303,46 @@ setup_drawing_area( ofaRenderPage *page, GtkContainer *parent )
 }
 
 static void
+setup_page_size( ofaRenderPage *page )
+{
+	static const gchar *thisfn = "ofa_render_page_setup_page_size";
+	ofaRenderPagePrivate *priv;
+	const gchar *paper_name;
+	GtkPaperSize *paper_size;
+	GtkPageOrientation orientation;
+	GtkPageSetup *page_setup;
+
+	priv = page->priv;
+
+	paper_name = OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name ?
+			OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name( OFA_RENDER_PAGE( page )) :
+			NULL;
+	g_return_if_fail( my_strlen( paper_name ));
+
+	orientation = OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation ?
+			OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation( OFA_RENDER_PAGE( page )) :
+			-1;
+	g_return_if_fail( orientation != -1 );
+
+	paper_size = gtk_paper_size_new( paper_name );
+	page_setup = gtk_page_setup_new();
+	gtk_page_setup_set_orientation( page_setup, orientation );
+	gtk_page_setup_set_paper_size( page_setup, paper_size );
+
+	priv->paper_width = gtk_page_setup_get_paper_width( page_setup, GTK_UNIT_POINTS );
+	priv->paper_height = gtk_page_setup_get_paper_height( page_setup, GTK_UNIT_POINTS );
+	priv->render_width = gtk_page_setup_get_page_width( page_setup, GTK_UNIT_POINTS );
+	priv->render_height = gtk_page_setup_get_page_height( page_setup, GTK_UNIT_POINTS );
+
+	g_debug( "%s: paper_width=%lf, paper_height=%lf, render_width=%lf, render_height=%lf",
+			thisfn,
+			priv->paper_width, priv->paper_height, priv->render_width, priv->render_height );
+
+	g_object_unref( page_setup );
+	gtk_paper_size_free( paper_size );
+}
+
+static void
 v_init_view( ofaPage *page )
 {
 }
@@ -336,120 +371,6 @@ ofa_render_page_set_args_valid( ofaRenderPage *page, gboolean is_valid, const gc
 	}
 }
 
-static void
-get_paper_size( ofaRenderPage *page, gdouble *paper_width, gdouble *paper_height )
-{
-	ofaRenderPagePrivate *priv;
-
-	priv = page->priv;
-
-	if( !priv->paper_size_set ){
-		priv->paper_size_set = setup_paper_size( page );
-	}
-	if( priv->paper_size_set ){
-		*paper_width = priv->paper_width;
-		*paper_height = priv->paper_height;
-	}
-}
-
-/*
- * this is called after the end of the rendering, before allowing the draw
- */
-static gboolean
-setup_paper_size( ofaRenderPage *page )
-{
-	ofaRenderPagePrivate *priv;
-	const gchar *paper_name;
-	GtkPageOrientation orientation;
-	GtkPaperSize *paper_size;
-	gboolean ok;
-	gdouble width, height;
-
-	priv = page->priv;
-
-	paper_name = OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name ?
-			OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name( page ) :
-			NULL;
-	g_return_val_if_fail( my_strlen( paper_name ), FALSE );
-
-	orientation = OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation ?
-			OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation( page ) :
-			-1;
-	g_return_val_if_fail( orientation != -1, FALSE );
-
-	paper_size = gtk_paper_size_new( paper_name );
-	ok = compute_paper_size( paper_size, orientation, &width, &height );
-	g_return_val_if_fail( ok, FALSE );
-
-	priv->paper_width = width;
-	priv->paper_height = height;
-
-	return( TRUE );
-}
-
-/*
- * compute the paper width and height in points, taking into account
- * the orientation of the page
- */
-static gboolean
-compute_paper_size( GtkPaperSize *paper_size, GtkPageOrientation orientation, gdouble *paper_width, gdouble *paper_height )
-{
-	static const gchar *thisfn = "ofa_render_page_compute_paper_size";
-	gdouble cx, cy, temp;
-
-	cx = gtk_paper_size_get_width( paper_size, GTK_UNIT_POINTS );
-	cy = gtk_paper_size_get_height( paper_size, GTK_UNIT_POINTS );
-	g_return_val_if_fail( cx > 0 && cy > 0, FALSE );
-
-	switch( orientation ){
-		case GTK_PAGE_ORIENTATION_PORTRAIT:
-		case GTK_PAGE_ORIENTATION_REVERSE_PORTRAIT:
-			if( cx > cy ){
-				temp = cy;
-				cy = cx;
-				cx = temp;
-			}
-			break;
-		case GTK_PAGE_ORIENTATION_LANDSCAPE:
-		case GTK_PAGE_ORIENTATION_REVERSE_LANDSCAPE:
-			if( cy > cx ){
-				temp = cy;
-				cy = cx;
-				cx = temp;
-			}
-			break;
-	}
-
-	*paper_width = cx;
-	*paper_height = cy;
-	g_debug( "%s: paper_width=%lf, paper_height=%lf", thisfn, cx, cy );
-
-	return( TRUE );
-}
-
-static void
-get_rendering_size( ofaRenderPage *page, gdouble *render_width, gdouble *render_height )
-{
-	ofaRenderPagePrivate *priv;
-
-	priv = page->priv;
-
-	if( !priv->render_size_set ){
-		if( OFA_RENDER_PAGE_GET_CLASS( page )->get_rendering_size ){
-			OFA_RENDER_PAGE_GET_CLASS( page )->get_rendering_size( page, &priv->render_width, &priv->render_height );
-			if( priv->render_width > 0 && priv->render_height > 0 ){
-				priv->render_size_set = TRUE;
-			}
-		}
-	}
-	if( priv->render_size_set ){
-		*render_width = priv->render_width;
-		*render_height = priv->render_height;
-	} else {
-		get_paper_size( page, render_width, render_height );
-	}
-}
-
 /*
  * We are drawing pages:
  * - requested width is the width if the page
@@ -461,26 +382,24 @@ get_rendering_size( ofaRenderPage *page, gdouble *render_width, gdouble *render_
 static gboolean
 on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page )
 {
+	ofaRenderPagePrivate *priv;
 	gint widget_width, req_width, req_height, nb_pages;
 	gdouble x;
-	gdouble paper_width, paper_height;
 
+	priv = page->priv;
 	draw_widget_background( cr, area );
-	paper_width = 0;
-	paper_height = 0;
-	get_paper_size( page, &paper_width, &paper_height );
 
 	widget_width = gtk_widget_get_allocated_width( area );
-	x = widget_width > paper_width ?
-			(( gdouble ) widget_width - paper_width ) / 2.0 :
+	x = widget_width > priv->paper_width ?
+			(( gdouble ) widget_width - priv->paper_width ) / 2.0 :
 			0;
 
-	nb_pages = do_drawing( page, cr, x, paper_width, paper_height );
+	nb_pages = do_drawing( page, cr, x );
 
-	req_width = widget_width > paper_width ? -1 : paper_width;
+	req_width = widget_width > priv->paper_width ? -1 : priv->paper_width;
 
 	req_height = nb_pages > 0 ?
-			nb_pages * paper_height
+			nb_pages * priv->paper_height
 				+ ( nb_pages-1 ) * PAGE_SEPARATION_V_HEIGHT
 				+ 2 * PAGE_EXT_MARGIN_V_HEIGHT:
 			-1;
@@ -520,34 +439,25 @@ draw_widget_background( cairo_t *cr, GtkWidget *area )
  * requirement of the widget drawing area)
  */
 static gint
-do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_width, gdouble paper_height )
+do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x )
 {
-	static const gchar *thisfn = "ofa_render_page_do_drawing";
 	ofaRenderPagePrivate *priv;
 	GList *it;
 	cairo_t *pdf_cr;
-	gdouble y, dx/*, dy*/;
-	gdouble render_width, render_height;
+	gdouble y;
+	/*gdouble dx, dy;*/
 
 	priv = page->priv;
 	y = PAGE_EXT_MARGIN_V_HEIGHT;
-	get_rendering_size( page, &render_width, &render_height );
-	dx = shift_x+(paper_width-render_width)/2.0;
-
-	if( 0 ){
-		g_debug( "%s: shift_x=%lf, paper_width=%lf, paper_height=%lf, "
-				"render_width=%lf, render_height=%lf, dx=%lf",
-				thisfn, shift_x, paper_width, paper_height,
-				render_width, render_height, dx );
-	}
+	/*dx = shift_x+(priv->paper_width-priv->render_width)/2.0;*/
 
 	for( it=priv->pdf_crs ; it ; it=it->next ){
-		draw_page_background( page, cr, shift_x, y, paper_width, paper_height );
+		draw_page_background( page, cr, shift_x, y );
 		pdf_cr = ( cairo_t * ) it->data;
 		/*dy = y+(paper_height-render_height)/2.0;*/
 		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), shift_x, y );
 		cairo_paint( cr );
-		y += paper_height + PAGE_SEPARATION_V_HEIGHT;
+		y += priv->paper_height + PAGE_SEPARATION_V_HEIGHT;
 	}
 
 	return( g_list_length( priv->pdf_crs ));
@@ -557,10 +467,13 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x, gdouble paper_wid
  * draw the background of the page
  */
 static void
-draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y, gdouble paper_width, gdouble paper_height )
+draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y )
 {
+	ofaRenderPagePrivate *priv;
+
+	priv = page->priv;
 	cairo_set_source_rgb( cr, COLOR_WHITE );
-	cairo_rectangle( cr, x, y, paper_width, paper_height );
+	cairo_rectangle( cr, x, y, priv->paper_width, priv->paper_height );
 	cairo_fill( cr );
 }
 
@@ -576,9 +489,6 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 
 	ok = ofa_iprintable2_preview( OFA_IPRINTABLE2( page ));
 
-	if( ok && ( !priv->paper_width || !priv->paper_height )){
-		ok &= setup_paper_size( page );
-	}
 	if( ok ){
 		gtk_widget_queue_draw( priv->drawing_area );
 	}
@@ -602,23 +512,15 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 static void
 push_context( ofaRenderPage *page, cairo_t *context )
 {
-	static const gchar *thisfn = "ofa_render_page_push_context";
 	ofaRenderPagePrivate *priv;
 	cairo_surface_t *context_surface, *cr_surface;
 	cairo_t *cr;
-	gdouble width, height;
 
 	priv = page->priv;
 
-	get_rendering_size( page, &width, &height );
-
-	if( 0 ){
-		g_debug( "%s: page=%p, context=%p, render_width=%lf, render_height=%lf",
-				thisfn, ( void * ) page, ( void * ) context, width, height );
-	}
-
 	context_surface = cairo_get_target( context );
-	cr_surface = cairo_pdf_surface_create( NULL, width, height );
+	cr_surface = cairo_pdf_surface_create( NULL, priv->render_width, priv->render_height );
+	g_debug( "push_context: render_width=%lf, render_height=%lf", priv->render_width, priv->render_height );
 	cr = cairo_create( cr_surface );
 	cairo_surface_destroy( cr_surface );
 

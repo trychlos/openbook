@@ -650,8 +650,8 @@ draw_line( ofaIRenderable *instance,
 	/* does the group change ? */
 	if( is_new_group( instance, line, sdata->last_printed )){
 		sdata->have_groups = TRUE;
-		g_debug( "draw_line_new_group: page_num=%d, line_num=%d, group_footer_printed=%s",
-				page_num, line_num, sdata->group_footer_printed ? "True":"False" );
+		/*g_debug( "draw_line_new_group: page_num=%d, line_num=%d, group_footer_printed=%s",
+				page_num, line_num, sdata->group_footer_printed ? "True":"False" );*/
 
 		/* do we have a previous group footer not yet printed ? */
 		if( sdata->last_printed && !sdata->group_footer_printed ){

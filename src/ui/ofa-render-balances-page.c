@@ -129,7 +129,6 @@ static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *v_get_args_widget( ofaRenderPage *page );
 static const gchar       *v_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation v_get_page_orientation( ofaRenderPage *page );
-static void               v_get_rendering_size( ofaRenderPage *page, gdouble *render_width, gdouble *render_height );
 static void               on_args_changed( ofaRenderBalancesBin *bin, ofaRenderBalancesPage *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
@@ -273,7 +272,6 @@ render_balances_page_class_init( ofaRenderBalancesPageClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = v_get_args_widget;
 	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = v_get_paper_name;
 	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = v_get_page_orientation;
-	OFA_RENDER_PAGE_CLASS( klass )->get_rendering_size = v_get_rendering_size;
 
 	g_type_class_add_private( klass, sizeof( ofaRenderBalancesPagePrivate ));
 }
@@ -320,17 +318,6 @@ static GtkPageOrientation
 v_get_page_orientation( ofaRenderPage *page )
 {
 	return( THIS_PAGE_ORIENTATION );
-}
-
-static void
-v_get_rendering_size( ofaRenderPage *page, gdouble *render_width, gdouble *render_height )
-{
-	ofaRenderBalancesPagePrivate *priv;
-
-	priv = OFA_RENDER_BALANCES_PAGE( page )->priv;
-
-	*render_width = priv->render_width;
-	*render_height = priv->render_height;
 }
 
 /*
