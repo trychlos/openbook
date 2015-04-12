@@ -383,7 +383,6 @@ on_date_changed( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date
 	gboolean empty, valid;
 
 	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
-
 	empty = my_editable_date_is_empty( GTK_EDITABLE( entry ));
 	valid = my_date_is_valid( date );
 

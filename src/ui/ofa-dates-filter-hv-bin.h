@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_dates_filter_hv_bin
  * @short_description: #ofaDatesFilterHVBin class definition.
- * @include: ui/ofa-date-filter-bin.h
+ * @include: ui/ofa-dates-filter-hv-bin.h
  *
  * Display a frame with a starting and an ending date to be used as
  * filters in a treeview.

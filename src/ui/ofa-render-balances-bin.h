@@ -34,6 +34,7 @@
  * print the balance of the accounts between two effect dates.
  */
 
+#include "ui/ofa-iaccounts-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -63,26 +64,24 @@ typedef struct {
 }
 	ofaRenderBalancesBinClass;
 
-GType                 ofa_render_balances_bin_get_type        ( void ) G_GNUC_CONST;
+GType                 ofa_render_balances_bin_get_type( void ) G_GNUC_CONST;
 
-ofaRenderBalancesBin *ofa_render_balances_bin_new             ( ofaMainWindow *main_window );
+ofaRenderBalancesBin *ofa_render_balances_bin_new     ( ofaMainWindow *main_window );
 
-gboolean              ofa_render_balances_bin_is_valid        ( ofaRenderBalancesBin *bin,
+gboolean              ofa_render_balances_bin_is_valid( ofaRenderBalancesBin *bin,
 																		gchar **message );
 
-const gchar          *ofa_render_balances_bin_get_from_account( const ofaRenderBalancesBin *bin );
-
-const gchar          *ofa_render_balances_bin_get_to_account  ( const ofaRenderBalancesBin *bin );
-
-gboolean              ofa_render_balances_bin_get_all_accounts( const ofaRenderBalancesBin *bin );
-
 gboolean              ofa_render_balances_bin_get_subtotal_per_class
-                                                              ( const ofaRenderBalancesBin *bin );
+                                                      ( const ofaRenderBalancesBin *bin );
 
 gboolean              ofa_render_balances_bin_get_new_page_per_class
-                                                              ( const ofaRenderBalancesBin *bin );
+                                                      ( const ofaRenderBalancesBin *bin );
 
-ofaIDatesFilter      *ofa_render_balances_bin_get_dates_filter( const ofaRenderBalancesBin *bin );
+ofaIAccountsFilter   *ofa_render_balances_bin_get_accounts_filter
+                                                      ( const ofaRenderBalancesBin *bin );
+
+ofaIDatesFilter      *ofa_render_balances_bin_get_dates_filter
+                                                      ( const ofaRenderBalancesBin *bin );
 
 G_END_DECLS
 

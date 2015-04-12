@@ -1,3 +1,18 @@
+2015-04-12 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-accounts-filter-vv-bin.c,
+	* src/ui/ofa-accounts-filter-vv-bin.h,
+	* src/ui/ofa-accounts-filter-vv-bin.ui: new ofaAccountsFilterVVBin class.
+
+	* src/ui/ofa-iaccounts-filter.c,
+	* src/ui/ofa-iaccounts-filter.h: new ofaIAccountsFilter interface.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-render-balances-bin.c,
+	* src/ui/ofa-render-balances-bin.h,
+	* src/ui/ofa-render-balances-bin.ui,
+	* src/ui/ofa-render-balances-page.c: updated accordingly.
+
 2015-04-11 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/api/ofa-settings.h,

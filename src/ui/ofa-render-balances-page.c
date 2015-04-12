@@ -39,6 +39,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
 
+#include "ui/ofa-iaccounts-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-iprintable2.h"
 #include "ui/ofa-irenderable.h"
@@ -385,7 +386,8 @@ irenderable_get_dataset( ofaIRenderable *instance )
 	ofaMainWindow *main_window;
 	ofoDossier *dossier;
 	GList *dataset;
-	ofaIDatesFilter *filter;
+	ofaIAccountsFilter *accounts_filter;
+	ofaIDatesFilter *dates_filter;
 
 	priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
 
@@ -395,16 +397,18 @@ irenderable_get_dataset( ofaIRenderable *instance )
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_free( priv->from_account );
-	priv->from_account = g_strdup( ofa_render_balances_bin_get_from_account( priv->args_bin ));
 	g_free( priv->to_account );
-	priv->to_account = g_strdup( ofa_render_balances_bin_get_to_account( priv->args_bin ));
-	priv->all_accounts = ofa_render_balances_bin_get_all_accounts( priv->args_bin );
+	accounts_filter = ofa_render_balances_bin_get_accounts_filter( priv->args_bin );
+	priv->from_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_FROM ));
+	priv->to_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_TO ));
+	priv->all_accounts = ofa_iaccounts_filter_get_all_accounts( accounts_filter );
+
 	priv->per_class = ofa_render_balances_bin_get_subtotal_per_class( priv->args_bin );
 	priv->new_page = ofa_render_balances_bin_get_new_page_per_class( priv->args_bin );
 
-	filter = ofa_render_balances_bin_get_dates_filter( priv->args_bin );
-	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( filter, IDATES_FILTER_FROM ));
-	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( filter, IDATES_FILTER_TO ));
+	dates_filter = ofa_render_balances_bin_get_dates_filter( priv->args_bin );
+	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
+	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_balance(
 						dossier,

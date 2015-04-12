@@ -79,6 +79,8 @@ openbook_SOURCES = \
 	ofa-account-store.h									\
 	ofa-accounts-book.c									\
 	ofa-accounts-book.h									\
+	ofa-accounts-filter-vv-bin.c						\
+	ofa-accounts-filter-vv-bin.h						\
 	ofa-accounts-frame.c								\
 	ofa-accounts-frame.h								\
 	ofa-accounts-page.c									\
@@ -166,6 +168,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-iaccounts-filter.c								\
+	ofa-iaccounts-filter.h								\
 	ofa-idates-filter.c									\
 	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
@@ -263,6 +267,7 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
+	ofa-accounts-filter-vv-bin.ui						\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\

@@ -131,15 +131,16 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
-	ofa-accounts-book.$(OBJEXT) ofa-accounts-frame.$(OBJEXT) \
-	ofa-accounts-page.$(OBJEXT) ofa-application.$(OBJEXT) \
-	ofa-backup.$(OBJEXT) ofa-balances-grid.$(OBJEXT) \
-	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
-	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
-	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
-	ofa-bats-page.$(OBJEXT) ofa-buttons-box.$(OBJEXT) \
-	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
-	ofa-check-integrity.$(OBJEXT) \
+	ofa-accounts-book.$(OBJEXT) \
+	ofa-accounts-filter-vv-bin.$(OBJEXT) \
+	ofa-accounts-frame.$(OBJEXT) ofa-accounts-page.$(OBJEXT) \
+	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
+	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
+	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
+	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
+	ofa-bat-utils.$(OBJEXT) ofa-bats-page.$(OBJEXT) \
+	ofa-buttons-box.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
+	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-classes-page.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
@@ -155,15 +156,15 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
-	ofa-guided-input-bin.$(OBJEXT) ofa-idates-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-ipreferences.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-iprintable2.$(OBJEXT) \
-	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
-	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
-	ofa-ledger-treeview.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
-	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
-	ofa-ope-template-help.$(OBJEXT) \
+	ofa-guided-input-bin.$(OBJEXT) ofa-iaccounts-filter.$(OBJEXT) \
+	ofa-idates-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-ipreferences.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
+	ofa-iprintable2.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
+	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
+	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
+	ofa-ledgers-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
+	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
@@ -490,6 +491,8 @@ openbook_SOURCES = \
 	ofa-account-store.h									\
 	ofa-accounts-book.c									\
 	ofa-accounts-book.h									\
+	ofa-accounts-filter-vv-bin.c						\
+	ofa-accounts-filter-vv-bin.h						\
 	ofa-accounts-frame.c								\
 	ofa-accounts-frame.h								\
 	ofa-accounts-page.c									\
@@ -577,6 +580,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-iaccounts-filter.c								\
+	ofa-iaccounts-filter.h								\
 	ofa-idates-filter.c									\
 	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
@@ -674,6 +679,7 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
+	ofa-accounts-filter-vv-bin.ui						\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\
@@ -861,6 +867,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-frame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
@@ -904,6 +911,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccounts-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idates-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ipreferences.Po@am__quote@
