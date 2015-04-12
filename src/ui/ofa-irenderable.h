@@ -279,6 +279,29 @@ typedef struct {
 	void               ( *draw_top_summary )        ( ofaIRenderable *instance );
 
 	/**
+	 * want_groups:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: %TRUE if the implementation manages groups
+	 *
+	 * Defaults to FALSE.
+	 */
+	gboolean           ( *want_groups )             ( const ofaIRenderable *instance );
+
+	/**
+	 * want_new_page:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: If implemented, this method should return %TRUE if the
+	 * implementation wishes to begin a new page on new groups.
+	 *
+	 * This is only called if #want_groups() has returned %TRUE.
+	 *
+	 * Defaults to FALSE (on the same page while there is enough place).
+	 */
+	gboolean           ( *want_new_page )           ( const ofaIRenderable *instance );
+
+	/**
 	 * is_new_group:
 	 * @instance: the #ofaIRenderable instance.
 	 * @current: the element currently candidate for printing (not nul).
@@ -293,17 +316,6 @@ typedef struct {
 	gboolean           ( *is_new_group )            ( const ofaIRenderable *instance,
 															GList *current,
 															GList *prev );
-
-	/**
-	 * want_new_page:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * Returns: If implemented, this method should return %TRUE if the
-	 * implementation wishes to begin a new page on new groups.
-	 *
-	 * Defaults to FALSE (on the same page while there is enough place).
-	 */
-	gboolean           ( *want_new_page )           ( const ofaIRenderable *instance );
 
 	/**
 	 * draw_group_header:

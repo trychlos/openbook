@@ -1,5 +1,12 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-irenderable.c,
+	* src/ui/ofa-irenderable.h:
+	- define new want_groups() interface method
+	- reset sIRenderable data on begin_render(), freeing on end_render().
+
+	* src/ui/ofa-render-balances-page.c: updated accordingly.
+
 	* src/ui/ofa-render-balances-bin.ui,
 	* src/ui/ofa-render-balances-page.c,
 	* src/ui/ofa-render-books-bin.ui,

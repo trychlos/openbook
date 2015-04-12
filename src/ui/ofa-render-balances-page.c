@@ -137,6 +137,8 @@ static guint              irenderable_get_interface_version( const ofaIRenderabl
 static GList             *irenderable_get_dataset( ofaIRenderable *instance );
 static void               irenderable_free_dataset( ofaIRenderable *instance, GList *elements );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
+static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
+static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
 static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
 static const gchar       *irenderable_get_dossier_name( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
@@ -144,7 +146,6 @@ static gchar             *irenderable_get_page_header_subtitle( const ofaIRender
 static void               irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num );
 static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
 static void               irenderable_draw_group_header( ofaIRenderable *instance, GList *current );
 static void               irenderable_draw_group_top_report( ofaIRenderable *instance );
 static void               irenderable_draw_line( ofaIRenderable *instance, GList *current );
@@ -356,13 +357,14 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->begin_render = irenderable_begin_render;
 	iface->free_dataset = irenderable_free_dataset;
 	iface->reset_runtime = irenderable_reset_runtime;
+	iface->want_groups = irenderable_want_groups;
+	iface->want_new_page = irenderable_want_new_page;
 	iface->get_dossier_name = irenderable_get_dossier_name;
 	iface->get_page_header_title = irenderable_get_page_header_title;
 	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
 	iface->draw_page_header_notes = irenderable_draw_page_header_notes;
 	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
 	iface->is_new_group = irenderable_is_new_group;
-	iface->want_new_page = irenderable_want_new_page;
 	iface->draw_group_header = irenderable_draw_group_header;
 	iface->draw_group_top_report = irenderable_draw_group_top_report;
 	iface->draw_line = irenderable_draw_line;
@@ -435,6 +437,26 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 
 	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 	priv->totals = NULL;
+}
+
+static gboolean
+irenderable_want_groups( const ofaIRenderable *instance )
+{
+	ofaRenderBalancesPagePrivate *priv;
+
+	priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
+
+	return( priv->per_class );
+}
+
+static gboolean
+irenderable_want_new_page( const ofaIRenderable *instance )
+{
+	ofaRenderBalancesPagePrivate *priv;
+
+	priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
+
+	return( priv->new_page );
 }
 
 static void
@@ -681,16 +703,6 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList 
 	return( FALSE );
 }
 
-static gboolean
-irenderable_want_new_page( const ofaIRenderable *instance )
-{
-	ofaRenderBalancesPagePrivate *priv;
-
-	priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
-
-	return( priv->new_page );
-}
-
 /*
  * draw account header
  * Class x - xxx
@@ -814,11 +826,14 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofa_irenderable_set_text( instance,
 			priv->body_currency_ltab, y, sbal->currency, PANGO_ALIGN_LEFT );
 
-	priv->subtotals = add_account_balance(
-						OFA_RENDER_BALANCES_PAGE( instance ), priv->subtotals, sbal->currency, solde, sbal );
-
-	priv->totals = add_account_balance(
-						OFA_RENDER_BALANCES_PAGE( instance ), priv->totals, sbal->currency, solde, sbal );
+	if( !ofa_irenderable_is_paginating( instance )){
+		priv->subtotals = add_account_balance(
+							OFA_RENDER_BALANCES_PAGE( instance ),
+							priv->subtotals, sbal->currency, solde, sbal );
+		priv->totals = add_account_balance(
+							OFA_RENDER_BALANCES_PAGE( instance ),
+							priv->totals, sbal->currency, solde, sbal );
+	}
 }
 
 static void
