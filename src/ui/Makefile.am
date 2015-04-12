@@ -218,8 +218,6 @@ openbook_SOURCES = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
-	ofa-pdf-books.c										\
-	ofa-pdf-books.h										\
 	ofa-pdf-dialog.c									\
 	ofa-pdf-dialog.h									\
 	ofa-pdf-ledgers.c									\
@@ -238,6 +236,10 @@ openbook_SOURCES = \
 	ofa-render-balances-bin.h							\
 	ofa-render-balances-page.c							\
 	ofa-render-balances-page.h							\
+	ofa-render-books-bin.c								\
+	ofa-render-books-bin.h								\
+	ofa-render-books-page.c								\
+	ofa-render-books-page.h								\
 	ofa-render-page.c									\
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
@@ -304,6 +306,7 @@ ui_files = \
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
 	ofa-render-balances-bin.ui							\
+	ofa-render-books-bin.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\

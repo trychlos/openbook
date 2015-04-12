@@ -1,5 +1,15 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-books-bin.c,
+	* src/ui/ofa-render-books-bin.h,
+	* src/ui/ofa-render-books-bin.ui: new ofaRenderBooksBin class.
+
+	* src/ui/ofa-render-books-page.c,
+	* src/ui/ofa-render-books-page.h: new ofaRenderBooksPage class. 
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-main-window.c: updated accordingly.
+
 	* src/ui/ofa-render-balances-page.c: remove useless include.
 
 	* src/ui/ofa-irenderable.c,

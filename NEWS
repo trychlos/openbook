@@ -62,11 +62,15 @@
    - Review ofaDateFilterBin API, moving it to ofaDatesFilterHVBin class
      and ofaIDatesFilter interface (todo #788).
    - ofa_settings_get_actual_keyfile(): new method.
-   - new ofaIPrintable2 interface.
-   - new ofaIRenderable interface.
-   - new ofaRenderPage base class.
-   - new ofaRenderBalancesPage class.
-   - new ofaRenderBalancesBin clas.
+   - ofaIPrintable2: new interface.
+   - ofaIRenderable: new interface.
+   - ofaRenderPage: new base class.
+   - ofaRenderBalancesPage: new class.
+   - ofaRenderBalancesBin: new class.
+   - ofaRenderBooksBin: new class.
+   - ofaRenderBookPage: new class.
+   - ofaAccountsFilterVVBin: new class.
+   - ofaIAccountsFilter: new interface.
 
 -----------------------------------------------------------------------
  Version 0.38
