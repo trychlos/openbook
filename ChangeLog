@@ -1,5 +1,9 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-pdf-books.c,
+	* src/ui/ofa-pdf-books.h,
+	* src/ui/ofa-print-books.ui: removed files.
+
 	* src/ui/ofa-render-books-bin.c,
 	* src/ui/ofa-render-books-bin.h,
 	* src/ui/ofa-render-books-bin.ui: new ofaRenderBooksBin class.
