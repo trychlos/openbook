@@ -104,16 +104,16 @@
           <attribute name="action">win.render-balances</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Reconciliation...</attribute>
-          <attribute name="action">win.render-reconcil</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">General b_ooks...</attribute>
+          <attribute name="label" translatable="yes">A_ccount books...</attribute>
           <attribute name="action">win.render-books</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Ledgers...</attribute>
+          <attribute name="label" translatable="yes">_Ledgers books...</attribute>
           <attribute name="action">win.render-ledgers</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Reconciliation...</attribute>
+          <attribute name="action">win.render-reconcil</attribute>
         </item>
       </section>
     </submenu>
