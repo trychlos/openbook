@@ -1,6 +1,8 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
-	* src/ui/ofa-idates-filter.c: Fix myEditableDate initialization.
+	* src/ui/ofa-iprintable2.c: GtkPrintSettings doesn't handle page setup.
+
+	* src/ui/ofa-idates-filter.c: fix myEditableDate initialization.
 
 	* src/ui/ofa-accounts-filter-vv-bin.c,
 	* src/ui/ofa-accounts-filter-vv-bin.h,

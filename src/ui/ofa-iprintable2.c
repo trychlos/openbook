@@ -304,13 +304,13 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
 	g_signal_connect( sdata->print, "draw-page", G_CALLBACK( on_draw_page ), instance );
 	g_signal_connect( sdata->print, "end-print", G_CALLBACK( on_end_print ), instance );
 
-	if( !load_settings( instance, sdata )){
-		page_setup = gtk_page_setup_new();
-		gtk_page_setup_set_paper_size( page_setup, sdata->paper_size );
-		gtk_page_setup_set_orientation( page_setup, sdata->page_orientation );
-		gtk_print_operation_set_default_page_setup( sdata->print, page_setup );
-		g_object_unref( page_setup );
-	}
+	load_settings( instance, sdata );
+
+	page_setup = gtk_page_setup_new();
+	gtk_page_setup_set_paper_size( page_setup, sdata->paper_size );
+	gtk_page_setup_set_orientation( page_setup, sdata->page_orientation );
+	gtk_print_operation_set_default_page_setup( sdata->print, page_setup );
+	g_object_unref( page_setup );
 
 	res = gtk_print_operation_run(
 				sdata->print,
@@ -335,13 +335,16 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
 }
 
 /*
- * save_settings:
+ * load_settings:
  * @instance:
  * sdata:
+ *
+ * Note that print settings do not include page setup
  */
 static gboolean
 load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
 {
+	static const gchar *thisfn = "ofa_iprintable2_load_settings";
 	GtkPrintSettings *settings;
 	GError *error;
 	gboolean ok;
@@ -351,6 +354,8 @@ load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
 	if( OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings ){
 		OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings( instance, &sdata->keyfile, &sdata->group_name );
 	}
+	g_debug( "%s: group_name=%s", thisfn, sdata->group_name );
+
 	if( sdata->keyfile && my_strlen( sdata->group_name )){
 		settings = gtk_print_settings_new();
 		error = NULL;
@@ -377,8 +382,11 @@ load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
 static void
 save_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
 {
+	static const gchar *thisfn = "ofa_iprintable2_save_settings";
 	GtkPrintSettings *settings;
 
 	settings = gtk_print_operation_get_print_settings( sdata->print );
 	gtk_print_settings_to_key_file( settings, sdata->keyfile, sdata->group_name );
+
+	g_debug( "%s: group_name=%s", thisfn, sdata->group_name );
 }
