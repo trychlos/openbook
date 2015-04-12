@@ -349,7 +349,7 @@ on_to_changed( GtkEntry *entry, ofaIAccountsFilter *filter )
 	sIAccountsFilter *sdata;
 
 	sdata = get_iaccounts_filter_data( filter );
-	on_account_changed( filter, IACCOUNTS_FILTER_TO, entry, sdata->from_label, &sdata->to_account, sdata );
+	on_account_changed( filter, IACCOUNTS_FILTER_TO, entry, sdata->to_label, &sdata->to_account, sdata );
 }
 
 static void

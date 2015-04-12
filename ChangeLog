@@ -1,5 +1,7 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-iaccounts-filter.c: fix 'To:' account label display.
+
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h:
 	- define new want_groups() interface method
