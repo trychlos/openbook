@@ -1,5 +1,8 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-ledger-treeview.c,
+	* src/ui/ofa-ledger-treeview.h: new ofa_ledger_treeview_set_hexpand() method.
+
 	* src/ui/ofa-pdf-books.c,
 	* src/ui/ofa-pdf-books.h,
 	* src/ui/ofa-print-books.ui: removed files.

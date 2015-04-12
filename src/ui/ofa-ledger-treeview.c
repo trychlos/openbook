@@ -609,9 +609,29 @@ ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view, GtkSelectionMod
 	if( !priv->dispose_has_run ){
 
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
-
 		select = gtk_tree_view_get_selection( priv->tview );
 		gtk_tree_selection_set_mode( select, mode );
+	}
+}
+
+/**
+ * ofa_ledger_treeview_set_hexpand:
+ * @view:
+ * @hexpand:
+ */
+void
+ofa_ledger_treeview_set_hexpand( ofaLedgerTreeview *view, gboolean hexpand )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+		gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), hexpand );
 	}
 }
 

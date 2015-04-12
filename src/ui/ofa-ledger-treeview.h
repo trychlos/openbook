@@ -81,6 +81,9 @@ void               ofa_ledger_treeview_set_main_window         ( ofaLedgerTreevi
 void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
 																			GtkSelectionMode mode );
 
+void               ofa_ledger_treeview_set_hexpand             ( ofaLedgerTreeview *view,
+																			gboolean hexpand );
+
 GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreeview *view );
 
 #define            ofa_ledger_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
