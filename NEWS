@@ -71,6 +71,10 @@
    - ofaRenderBookPage: new class.
    - ofaAccountsFilterVVBin: new class.
    - ofaIAccountsFilter: new interface.
+   - ofaRenderLedgersBin: new class.
+   - ofaRenderLedgersPage: new class.
+   - ofaPDFBalances: removed class.
+   - ofaPDFBooks: removed class.
 
 -----------------------------------------------------------------------
  Version 0.38

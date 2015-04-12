@@ -1,5 +1,15 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-ledgers-bin.c,
+	* src/ui/ofa-render-ledgers-bin.h,
+	* src/ui/ofa-render-ledgers-bin.ui: new ofaRenderLedgersBin class.
+
+	* src/ui/ofa-render-ledgers-page.c,
+	* src/ui/ofa-render-ledgers-page.h: new ofaRenderLedgersPage class.
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-main-window.c: updated accordingly.
+
 	* src/ui/ofa-dos-menubar.ui: review menu items order and labels.
 
 	* src/ui/ofa-render-books-page.c: use want_groups() method.
