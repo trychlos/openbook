@@ -41,7 +41,6 @@
 
 #include "ui/ofa-iaccounts-filter.h"
 #include "ui/ofa-idates-filter.h"
-#include "ui/ofa-iprintable2.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"

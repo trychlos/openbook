@@ -1,5 +1,7 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-balances-page.c: remove useless include.
+
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h: new ofa_irenderable_is_paginating() method.
 
