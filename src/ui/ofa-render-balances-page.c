@@ -116,7 +116,6 @@ static const gint st_body_font_size      = 8;
 #define st_currency_width                (gdouble) 23/9*st_body_font_size
 #define st_column_spacing                (gdouble) 4
 
-#define COLOR_BLACK                      0,      0,      0
 #define COLOR_WHITE                      1,      1,      1
 
 static ofaRenderPageClass *ofa_render_balances_page_parent_class = NULL;
@@ -877,7 +876,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	top = bottom - req_height;
 
 	ofa_irenderable_draw_rect( instance, 0, top, -1, req_height );
-
 	top += vspace;
 
 	draw_account_balance( instance, priv->totals, top, _( "General balance : " ));

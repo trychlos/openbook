@@ -68,7 +68,7 @@
                         <property name="can_focus">False</property>
                         <child>
                           <object class="GtkCheckButton" id="p3-one-page">
-                            <property name="label" translatable="yes">_Have a new page on each account</property>
+                            <property name="label" translatable="yes">_Have a new page per account</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>

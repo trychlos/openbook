@@ -142,9 +142,6 @@ static const gint st_body_font_size      = 9;
 #define st_sens_width                    (gdouble) 18/9*st_body_font_size
 #define st_column_hspacing               (gdouble) 4
 
-#define COLOR_BLACK                      0,      0,      0
-#define COLOR_WHITE                      1,      1,      1
-
 static ofaRenderPageClass *ofa_render_books_page_parent_class = NULL;
 
 static GType              register_type( void );
@@ -973,7 +970,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	static const gdouble st_vspace_rate = 0.25;
 	ofaMainWindow *main_window;
 	ofoDossier *dossier;
-	gdouble bottom, vspace, req_height, height, top, y;
+	gdouble bottom, vspace, req_height, height, top;
 	gchar *str;
 	GList *it;
 	ofsCurrency *scur;
@@ -1004,9 +1001,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	top = bottom - req_height;
 
 	ofa_irenderable_draw_rect( instance, 0, top, -1, req_height );
-
 	top += vspace;
-	y = top;
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
@@ -1016,23 +1011,23 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 		if( first ){
 			ofa_irenderable_set_text( instance,
-					priv->body_debit_rtab-st_amount_width, y,
+					priv->body_debit_rtab-st_amount_width, top,
 					_( "General balance : " ), PANGO_ALIGN_RIGHT );
 			first = FALSE;
 		}
 
 		str = my_double_to_str_ex( scur->debit, digits );
 		ofa_irenderable_set_text( instance,
-				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+				priv->body_debit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		str = my_double_to_str_ex( scur->credit, digits );
 		ofa_irenderable_set_text( instance,
-				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+				priv->body_credit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		ofa_irenderable_set_text( instance,
-				priv->body_solde_sens_rtab, y, scur->currency, PANGO_ALIGN_RIGHT );
+				priv->body_solde_sens_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
 
 		top += height * ( 1+st_vspace_rate );
 	}

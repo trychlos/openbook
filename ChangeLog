@@ -1,5 +1,10 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-balances-bin.ui,
+	* src/ui/ofa-render-balances-page.c,
+	* src/ui/ofa-render-books-bin.ui,
+	* src/ui/ofa-render-books-page.c: fix minor typos.
+
 	* src/ui/ofa-ledger-treeview.c,
 	* src/ui/ofa-ledger-treeview.h: new ofa_ledger_treeview_set_hexpand() method.
 
