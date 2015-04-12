@@ -303,7 +303,6 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
-	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
 	ofa-render-balances-bin.ui							\

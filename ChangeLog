@@ -1,5 +1,9 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-pdf-ledgers.c,
+	* src/ui/ofa-pdf-ledgers.h,
+	* src/ui/ofa-print-ledgers.ui: removed files.
+
 	* src/ui/ofa-render-ledgers-bin.c,
 	* src/ui/ofa-render-ledgers-bin.h,
 	* src/ui/ofa-render-ledgers-bin.ui: new ofaRenderLedgersBin class.

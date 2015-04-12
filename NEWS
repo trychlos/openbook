@@ -75,6 +75,7 @@
    - ofaRenderLedgersPage: new class.
    - ofaPDFBalances: removed class.
    - ofaPDFBooks: removed class.
+   - ofaPDFLedgers: removed class.
 
 -----------------------------------------------------------------------
  Version 0.38
