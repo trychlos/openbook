@@ -50,6 +50,7 @@ typedef struct {
 	cairo_t     *current_context;
 	PangoLayout *current_layout;
 	gdouble      current_font_size;
+	gboolean     paginating;
 
 	/* groups management
 	 * @have_groups: is initialized to %FALSE on initialization,
@@ -269,6 +270,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	sdata->have_groups = FALSE;
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
+	sdata->paginating = TRUE;
 
 	sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
 	sdata->temp_context = get_temp_context( instance, sdata );
@@ -300,6 +302,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	g_debug( "%s: about to render %d page(s)", thisfn, sdata->pages_count );
 
 	reset_runtime( instance, sdata );
+	sdata->paginating = FALSE;
 
 	return( sdata->pages_count );
 
@@ -546,7 +549,7 @@ draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable 
 /*
  * header columns have always the same height
  * so it is worth to caching it
- * This is thus called once from begin_render().
+ * This is thus called once from begin_render() during pagination phase.
  */
 static gdouble
 get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
@@ -791,7 +794,7 @@ static gdouble
 get_group_header_height( ofaIRenderable *instance, gint line_num, GList *line, sIRenderable *sdata )
 {
 	gdouble height, prev_y;
-	gboolean prev_printed;
+	gboolean prev_printed, prev_paginating;
 	cairo_t *prev_context;
 	PangoLayout *prev_layout;
 
@@ -802,6 +805,8 @@ get_group_header_height( ofaIRenderable *instance, gint line_num, GList *line, s
 	sdata->current_context = sdata->temp_context;
 	prev_layout = sdata->current_layout;
 	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
 
 	draw_group_header( instance, line_num, line, sdata );
 
@@ -810,6 +815,7 @@ get_group_header_height( ofaIRenderable *instance, gint line_num, GList *line, s
 	sdata->last_y = prev_y;
 	sdata->current_context = prev_context;
 	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
 
 	return( height );
 }
@@ -853,6 +859,7 @@ get_group_bottom_report_height( ofaIRenderable *instance, sIRenderable *sdata )
 	gdouble height, prev_y;
 	cairo_t *prev_context;
 	PangoLayout *prev_layout;
+	gboolean prev_paginating;
 
 	prev_y = sdata->last_y;
 	sdata->last_y = 0;
@@ -860,6 +867,8 @@ get_group_bottom_report_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->current_context = sdata->temp_context;
 	prev_layout = sdata->current_layout;
 	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
 
 	draw_group_bottom_report( instance, sdata );
 
@@ -867,6 +876,7 @@ get_group_bottom_report_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->last_y = prev_y;
 	sdata->current_context = prev_context;
 	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
 
 	return( height );
 }
@@ -894,7 +904,7 @@ draw_group_footer( ofaIRenderable *instance, gint line_num, sIRenderable *sdata 
 static gdouble
 get_group_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 {
-	gboolean prev_printed;
+	gboolean prev_printed, prev_paginating;
 	gdouble height, prev_y;
 	cairo_t *prev_context;
 	PangoLayout *prev_layout;
@@ -905,6 +915,8 @@ get_group_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->current_context = sdata->temp_context;
 	prev_layout = sdata->current_layout;
 	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
 
 	draw_group_footer( instance, -1, sdata );
 
@@ -913,6 +925,7 @@ get_group_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->group_footer_printed = prev_printed;
 	sdata->current_context = prev_context;
 	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
 
 	return( height );
 }
@@ -942,6 +955,7 @@ get_bottom_summary_height( ofaIRenderable *instance, sIRenderable *sdata )
 	gdouble height, prev_y;
 	cairo_t *prev_context;
 	PangoLayout *prev_layout;
+	gboolean prev_paginating;
 
 	prev_y = sdata->last_y;
 	sdata->last_y = 0;
@@ -949,6 +963,8 @@ get_bottom_summary_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->current_context = sdata->temp_context;
 	prev_layout = sdata->current_layout;
 	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
 
 	draw_bottom_summary( instance, sdata );
 
@@ -956,6 +972,7 @@ get_bottom_summary_height( ofaIRenderable *instance, sIRenderable *sdata )
 	sdata->last_y = prev_y;
 	sdata->current_context = prev_context;
 	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
 
 	return( height );
 }
@@ -1010,7 +1027,8 @@ irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
  * at y=0, and then requiring Pango the layout height
  *
  * We consider here that the footer is of constant height, and so can
- * be cached. This is thus called once from begin_render().
+ * be cached. This is thus called once from begin_render() during
+ * pagination phase.
  */
 static gdouble
 get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
@@ -1144,6 +1162,22 @@ get_temp_context( ofaIRenderable *instance, sIRenderable *sdata )
 	cairo_surface_destroy( surf );
 
 	return( new_cr );
+}
+
+/**
+ * ofa_irenderable_is_paginating:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: %TRUE if while pagination.
+ */
+gboolean
+ofa_irenderable_is_paginating( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = get_irenderable_data( instance );
+
+	return( sdata->paginating );
 }
 
 /**

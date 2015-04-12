@@ -456,6 +456,8 @@ void         ofa_irenderable_render_page          ( ofaIRenderable *instance,
 void         ofa_irenderable_end_render           ( ofaIRenderable *instance,
 															cairo_t *cr );
 
+gboolean     ofa_irenderable_is_paginating        ( ofaIRenderable *instance );
+
 void         ofa_irenderable_get_paper_size       ( ofaIRenderable *instance,
 															gdouble *width,
 															gdouble *height );
