@@ -161,13 +161,14 @@ static guint              irenderable_get_interface_version( const ofaIRenderabl
 static GList             *irenderable_get_dataset( ofaIRenderable *instance );
 static void               irenderable_free_dataset( ofaIRenderable *instance, GList *elements );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
+static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
+static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
 static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
 static const gchar       *irenderable_get_dossier_name( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
 static void               irenderable_draw_group_header( ofaIRenderable *instance, GList *current );
 static void               irenderable_draw_group_top_report( ofaIRenderable *instance );
 static void               draw_account_report( ofaRenderBooksPage *self, gboolean with_solde );
@@ -370,12 +371,13 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->begin_render = irenderable_begin_render;
 	iface->free_dataset = irenderable_free_dataset;
 	iface->reset_runtime = irenderable_reset_runtime;
+	iface->want_groups = irenderable_want_groups;
+	iface->want_new_page = irenderable_want_new_page;
 	iface->get_dossier_name = irenderable_get_dossier_name;
 	iface->get_page_header_title = irenderable_get_page_header_title;
 	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
 	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
 	iface->is_new_group = irenderable_is_new_group;
-	iface->want_new_page = irenderable_want_new_page;
 	iface->draw_group_header = irenderable_draw_group_header;
 	iface->draw_group_top_report = irenderable_draw_group_top_report;
 	iface->draw_line = irenderable_draw_line;
@@ -449,6 +451,22 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 
 	g_free( priv->account_number );
 	priv->account_number = NULL;
+}
+
+static gboolean
+irenderable_want_groups( const ofaIRenderable *instance )
+{
+	return( TRUE );
+}
+
+static gboolean
+irenderable_want_new_page( const ofaIRenderable *instance )
+{
+	ofaRenderBooksPagePrivate *priv;
+
+	priv = OFA_RENDER_BOOKS_PAGE( instance )->priv;
+
+	return( priv->new_page );
 }
 
 /*
@@ -646,16 +664,6 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList 
 				ofo_entry_get_account( prev_entry )) != 0 );
 }
 
-static gboolean
-irenderable_want_new_page( const ofaIRenderable *instance )
-{
-	ofaRenderBooksPagePrivate *priv;
-
-	priv = OFA_RENDER_BOOKS_PAGE( instance )->priv;
-
-	return( priv->new_page );
-}
-
 /*
  * draw account header
  */
@@ -732,31 +740,34 @@ draw_account_report( ofaRenderBooksPage *self, gboolean with_solde )
 	priv = self->priv;
 
 	y = ofa_irenderable_get_last_y( OFA_IRENDERABLE( self ));
+	height = ofa_irenderable_get_text_height( OFA_IRENDERABLE( self ));
 
-	/* account number */
-	height = ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-			priv->body_accnumber_ltab, y,
-			ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
+	if( priv->account_object ){
+		/* account number */
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_accnumber_ltab, y,
+				ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
 
-	/* account label */
-	ofa_irenderable_ellipsize_text( OFA_IRENDERABLE( self ),
-			priv->body_acclabel_ltab, y,
-			ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
+		/* account label */
+		ofa_irenderable_ellipsize_text( OFA_IRENDERABLE( self ),
+				priv->body_acclabel_ltab, y,
+				ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
 
-	/* current account balance */
-	str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
-	ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-			priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		/* current account balance */
+		str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
 
-	str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
-	ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-			priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
 
-	/* current account solde */
-	if( with_solde ){
-		draw_account_solde_debit_credit( self, y );
+		/* current account solde */
+		if( with_solde ){
+			draw_account_solde_debit_credit( self, y );
+		}
 	}
 
 	y += height * ( 1+st_vspace_rate );
@@ -916,6 +927,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	static const gdouble st_vspace_rate = 0.4;
 	gchar *str;
 	gdouble y, height;
+	gboolean is_paginating;
 
 	priv = OFA_RENDER_BOOKS_PAGE( instance )->priv;
 
@@ -947,13 +959,11 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 		draw_account_solde_debit_credit( OFA_RENDER_BOOKS_PAGE( instance ), y );
 
 		/* add the account balance to the total per currency */
-		if( !ofa_irenderable_is_paginating( instance )){
-			ofs_currency_add_currency( &priv->totals,
-					priv->currency_code, priv->account_debit, priv->account_credit );
-			g_debug( "draw_group_footer: adding debit=%lf, credit=%lf", priv->account_debit, priv->account_credit );
-		} else {
-			g_debug( "draw_group_footer: paginating is True" );
-		}
+		is_paginating = ofa_irenderable_is_paginating( instance );
+		ofs_currency_add_currency( &priv->totals,
+				priv->currency_code,
+				is_paginating ? priv->account_debit : 0,
+				is_paginating ? priv->account_credit : 0 );
 	}
 
 	y += height * ( 1+st_vspace_rate );
