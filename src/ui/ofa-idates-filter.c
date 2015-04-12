@@ -479,14 +479,13 @@ ofa_idates_filter_set_date( ofaIDatesFilter *filter, gint who, const GDate *date
 	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
 
 	sdata = get_idates_filter_data( filter );
-	date = NULL;
 
 	switch( who ){
 		case IDATES_FILTER_FROM:
-			my_date_set_from_date( &sdata->from_date, date );
+			my_editable_date_set_date( GTK_EDITABLE( sdata->from_entry ), date );
 			break;
 		case IDATES_FILTER_TO:
-			my_date_set_from_date( &sdata->to_date, date );
+			my_editable_date_set_date( GTK_EDITABLE( sdata->to_entry ), date );
 			break;
 		default:
 			g_warning( "%s: invalid date identifier: %d", thisfn, who );
