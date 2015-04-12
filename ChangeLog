@@ -1,5 +1,7 @@
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-irenderable.c: fix end-of-page position computing.
+
 	* src/ui/ofa-iaccounts-filter.c: fix 'To:' account label display.
 
 	* src/ui/ofa-irenderable.c,

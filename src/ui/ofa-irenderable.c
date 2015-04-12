@@ -684,14 +684,12 @@ draw_line( ofaIRenderable *instance,
 
 	/* this line + a group bottom report or a group footer or a page bottom report */
 	end_height =
-			line_height
-			+ sdata->want_groups ?
-				(( !next || is_new_group( instance, next, line )) ?
-					get_group_footer_height( instance, sdata ) :
-					get_group_bottom_report_height( instance, sdata )) :
-				get_page_bottom_report_height( instance, page_num, sdata );
-	/*g_debug( "line_height=%lf, group_footer=%lf, bottom_report=%lf",
-			st_line_height, get_group_footer_height( instance, sdata ), get_group_bottom_report_height( instance, sdata ));*/
+			line_height +
+			( sdata->want_groups ?
+					(( !next || is_new_group( instance, next, line )) ?
+							get_group_footer_height( instance, sdata ) :
+							get_group_bottom_report_height( instance, sdata )) :
+					get_page_bottom_report_height( instance, page_num, sdata ));
 
 	/* does the group change ? */
 	if( sdata->want_groups &&
@@ -729,13 +727,14 @@ draw_line( ofaIRenderable *instance,
 		/* do we have enough vertical space for this line, and a group
 		 * bottom report or a group footer or a page bottom report ? */
 		req_height = end_height;
-		/*g_debug( "draw_line: last_y=%lf, req=%lf", sdata->last_y, req_height );*/
 		if( sdata->last_y + req_height > sdata->max_y ){
 			if( sdata->want_groups ){
 				draw_group_bottom_report( instance, sdata );
 			} else {
 				draw_page_bottom_report( instance, page_num, sdata );
 			}
+			g_debug( "draw_line: last_y=%lf, font_height=%lf, line_height=%lf, req_height=%lf, max_y=%lf",
+					sdata->last_y, font_height, line_height, req_height, sdata->max_y );
 			return( FALSE );
 		}
 	}
@@ -878,10 +877,9 @@ draw_group_top_report( ofaIRenderable *instance, sIRenderable *sdata )
 static void
 draw_group_bottom_report( ofaIRenderable *instance, sIRenderable *sdata )
 {
-	ofa_irenderable_set_color( instance, COLOR_REPORT );
-	ofa_irenderable_set_font( instance, st_default_report_font );
-
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_bottom_report ){
+		ofa_irenderable_set_color( instance, COLOR_REPORT );
+		ofa_irenderable_set_font( instance, st_default_report_font );
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_bottom_report( instance );
 	}
 }
