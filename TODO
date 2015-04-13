@@ -475,10 +475,6 @@
                 per class, but this is ok starting with the second render
                 (or printing after having rendered)
 
- 795 2015- 4-13 IRenderable: not a good idea to free and recreate sdata
-                because this is not consistent with page life cycle -
-                instead reinit the data
-
  796 2015- 4-13 IRenderable: have a second level of grouping (subgroup)
                 use case: when printing accounts book, have a subtotal
                 per class
@@ -3664,6 +3660,11 @@
  789 2015- 4- 6 GuidedInputBin: check date label is in display format
                 instead of check format
      2015- 4- 7 fixed - git #5d41bd8
+
+ 795 2015- 4-13 IRenderable: not a good idea to free and recreate sdata
+                because this is not consistent with page life cycle -
+                instead reinit the data
+     2015- 4-13 fixed - git #63124d6
 
  797 2015- 4-13 AccountsBook is not balanced (should have same totals
                 than AccountsBalance)

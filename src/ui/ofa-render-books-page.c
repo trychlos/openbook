@@ -416,8 +416,6 @@ irenderable_get_dataset( ofaIRenderable *instance )
 	priv->to_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_TO ));
 	priv->all_accounts = ofa_iaccounts_filter_get_all_accounts( accounts_filter );
 
-	priv->new_page = ofa_render_books_bin_get_new_page_per_account( priv->args_bin );
-
 	dates_filter = ofa_render_books_bin_get_dates_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
@@ -465,6 +463,7 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 	ofaRenderBooksPagePrivate *priv;
 
 	priv = OFA_RENDER_BOOKS_PAGE( instance )->priv;
+	priv->new_page = ofa_render_books_bin_get_new_page_per_account( priv->args_bin );
 
 	return( priv->new_page );
 }

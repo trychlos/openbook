@@ -1,5 +1,9 @@
 2015-04-13 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-balances-page.c,
+	* src/ui/ofa-render-books-page.c,
+	* src/ui/ofa-render-ledgers-page.c: set attributes on needed (todo #794).
+
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h:
 	- make sure the rendering is idempotent (todo #795)

@@ -420,8 +420,6 @@ irenderable_get_dataset( ofaIRenderable *instance )
 		mnemos = g_slist_prepend( mnemos, g_strdup( ofo_ledger_get_mnemo( OFO_LEDGER( it->data ))));
 	}
 
-	priv->new_page = ofa_render_ledgers_bin_get_new_page_per_ledger( priv->args_bin );
-
 	dates_filter = ofa_render_ledgers_bin_get_dates_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
@@ -468,6 +466,7 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 	ofaRenderLedgersPagePrivate *priv;
 
 	priv = OFA_RENDER_LEDGERS_PAGE( instance )->priv;
+	priv->new_page = ofa_render_ledgers_bin_get_new_page_per_ledger( priv->args_bin );
 
 	return( priv->new_page );
 }
