@@ -733,6 +733,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofoCurrency *currency;
 	gint digits;
 	ofoConcil *concil;
+	gboolean is_paginating;
 
 	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -821,10 +822,10 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofa_irenderable_set_text( instance,
 			priv->body_currency_rtab, y, code, PANGO_ALIGN_RIGHT );
 
-	if( !ofa_irenderable_is_paginating( instance )){
-		ofs_currency_add_currency(
-				&priv->ledger_totals, code, debit, credit );
-	}
+	is_paginating = ofa_irenderable_is_paginating( instance );
+	ofs_currency_add_currency(
+			&priv->ledger_totals, code,
+			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 }
 
 static void
@@ -834,11 +835,13 @@ irenderable_draw_group_bottom_report( ofaIRenderable *instance )
 }
 
 /*
- * This function is called many time with NULL arguments in order to
- * auto-detect the height of the group footer (in particular each time
- * the #ofa_irenderable_draw_line() function needs to know if there is
- * enough vertical space left to draw the current line) - so take care
- * of not updating the account balance when not drawing...
+ * This function is called many times in order to auto-detect the
+ * height of the group footer (in particular each time the
+ * #ofa_irenderable_draw_line() function needs to know if there is
+ * enough vertical space left to draw the current line)
+ * so take care of:
+ * - currency has yet to be defined even during pagination phase
+ *   in order to be able to detect the heigtht of the summary
  */
 static void
 irenderable_draw_group_footer( ofaIRenderable *instance )
@@ -846,17 +849,18 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	ofaRenderLedgersPagePrivate *priv;
 	GList *it;
 	ofsCurrency *cur;
+	gboolean is_paginating;
 
 	priv = OFA_RENDER_LEDGERS_PAGE( instance )->priv;
 
 	draw_ledger_totals( instance );
 
-	if( !ofa_irenderable_is_paginating( instance )){
-		for( it=priv->ledger_totals ; it ; it=it->next ){
-			cur = ( ofsCurrency * ) it->data;
-			ofs_currency_add_currency(
-					&priv->report_totals, cur->currency, cur->debit, cur->credit );
-		}
+	is_paginating = ofa_irenderable_is_paginating( instance );
+	for( it=priv->ledger_totals ; it ; it=it->next ){
+		cur = ( ofsCurrency * ) it->data;
+		ofs_currency_add_currency(
+				&priv->report_totals, cur->currency,
+				is_paginating ? 0 : cur->debit, is_paginating ? 0 : cur->credit );
 	}
 }
 
@@ -930,7 +934,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 		ofa_irenderable_set_text( instance,
 				priv->body_currency_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
 
-		top += height * ( 1+st_vspace_rate );
+		top += height+vspace;
 	}
 
 	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );

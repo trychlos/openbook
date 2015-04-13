@@ -471,10 +471,6 @@
  793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
                 the calling window (as much as possible)
 
- 794 2015- 4-13 Balances: first render doesn't take into account subtotal
-                per class, but this is ok starting with the second render
-                (or printing after having rendered)
-
  796 2015- 4-13 IRenderable: have a second level of grouping (subgroup)
                 use case: when printing accounts book, have a subtotal
                 per class
@@ -493,7 +489,15 @@
                 - added to the account label or rigt-aligned before the
                   debit ?
 
- 800
+ 800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
+
+ 801 2015- 4-13 rename:
+                RenderBalances -> RenderAccountsBalance
+                RenderBooks -> RenderAccountsBook
+                RenderLedgers -> RenderLedgersBook
+                + update Bin composite widgets accordingly
+
+ 802
 
 -----------------------------------------------------------------------
  DONE
@@ -3660,6 +3664,11 @@
  789 2015- 4- 6 GuidedInputBin: check date label is in display format
                 instead of check format
      2015- 4- 7 fixed - git #5d41bd8
+
+ 794 2015- 4-13 Balances: first render doesn't take into account subtotal
+                per class, but this is ok starting with the second render
+                (or printing after having rendered)
+     2015- 4-13 fixed - git #4829832
 
  795 2015- 4-13 IRenderable: not a good idea to free and recreate sdata
                 because this is not consistent with page life cycle -
