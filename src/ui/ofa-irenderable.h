@@ -456,6 +456,8 @@ GType        ofa_irenderable_get_type             ( void );
 guint        ofa_irenderable_get_interface_last_version
                                                   ( const ofaIRenderable *instance );
 
+/* three main entry points for this interface
+ */
 gint         ofa_irenderable_begin_render         ( ofaIRenderable *instance,
 															cairo_t *cr,
 															gdouble render_width,
@@ -468,6 +470,8 @@ void         ofa_irenderable_render_page          ( ofaIRenderable *instance,
 void         ofa_irenderable_end_render           ( ofaIRenderable *instance,
 															cairo_t *cr );
 
+/* helpers
+ */
 gboolean     ofa_irenderable_is_paginating        ( ofaIRenderable *instance );
 
 void         ofa_irenderable_get_paper_size       ( ofaIRenderable *instance,

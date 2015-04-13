@@ -157,7 +157,7 @@ static void          irenderable_draw_page_footer( ofaIRenderable *instance, gin
 static gdouble       get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata );
 static void          reset_runtime( ofaIRenderable *instance, sIRenderable *sdata );
 static sIRenderable *get_irenderable_data( ofaIRenderable *instance );
-static void          set_irenderable_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
+static void          set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
 static void          on_instance_finalized( sIRenderable *sdata, void *instance );
 static void          free_irenderable_data( sIRenderable *sdata );
 static cairo_t      *get_temp_context( ofaIRenderable *instance, sIRenderable *sdata );
@@ -262,6 +262,12 @@ ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance )
  * @cr:
  * @render_width:
  * @render_height:
+ *
+ * The first entry point of the interface.
+ * This initialize all main variables, and paginates the render.
+ * Must be called before any rendering.
+ *
+ * Returns: the pages count.
  */
 gint
 ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height )
@@ -273,20 +279,18 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
 	sdata = get_irenderable_data( instance );
-	set_irenderable_context( instance, cr, sdata );
+	set_irenderable_input_context( instance, cr, sdata );
 
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
-	sdata->paginating = TRUE;
 
-	sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
-	sdata->temp_context = get_temp_context( instance, sdata );
-	sdata->temp_layout = pango_cairo_create_layout( sdata->temp_context );
+	sdata->paginating = TRUE;
+	sdata->current_context = sdata->temp_context;
+	sdata->current_layout = sdata->temp_layout;
+
 	sdata->page_header_columns_height = get_page_header_columns_height( instance, sdata );
 	sdata->page_footer_height = get_page_footer_height( instance, sdata );
 	sdata->max_y = render_height - sdata->page_footer_height;
-	sdata->current_context = sdata->temp_context;
-	sdata->current_layout = sdata->temp_layout;
 
 	sdata->want_groups = want_groups( instance );
 	if( sdata->want_groups ){
@@ -306,7 +310,6 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	}
 
 	reset_runtime( instance, sdata );
-
 	page_num = 0;
 	while( draw_page( instance, page_num++, sdata ));
 
@@ -358,6 +361,9 @@ irenderable_want_new_page( const ofaIRenderable *instance )
  * @instance:
  * @cr:
  * @page_number: counted from zero.
+ *
+ * The main entry point of the interface.
+ * Must be called once for each page in order each page be rendered.
  */
 void
 ofa_irenderable_render_page( ofaIRenderable *instance, cairo_t *context, gint page_number )
@@ -366,7 +372,7 @@ ofa_irenderable_render_page( ofaIRenderable *instance, cairo_t *context, gint pa
 	sIRenderable *sdata;
 
 	sdata = get_irenderable_data( instance );
-	set_irenderable_context( instance, context, sdata );
+	set_irenderable_input_context( instance, context, sdata );
 
 	g_debug( "%s: instance=%p, context=%p, page_number=%d, count=%d",
 			thisfn, ( void * ) instance, ( void * ) context, page_number, g_list_length( sdata->dataset ));
@@ -1046,7 +1052,7 @@ irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
 	ofa_irenderable_set_color( instance, COLOR_FOOTER );
 	ofa_irenderable_set_font( instance, st_default_footer_font );
 
-	y = sdata->render_height - sdata->page_footer_height;
+	y = sdata->max_y;
 	y += vspace_before_footer;
 	cairo_set_line_width( sdata->current_context, 0.5 );
 	cairo_move_to( sdata->current_context, 0, y );
@@ -1077,6 +1083,8 @@ irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
  * We consider here that the footer is of constant height, and so can
  * be cached. This is thus called once from begin_render() during
  * pagination phase.
+ *
+ * Computing is made only once, i.e. on the first call.
  */
 static gdouble
 get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
@@ -1085,22 +1093,25 @@ get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 	cairo_t *prev_context;
 	PangoLayout *prev_layout;
 
-	prev_y = sdata->last_y;
-	sdata->last_y = 0;
-	prev_render_height = sdata->render_height;
-	sdata->render_height = 0;
-	prev_context = sdata->current_context;
-	sdata->current_context = sdata->temp_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_layout = sdata->temp_layout;
+	if(( height = sdata->page_footer_height ) == 0 ){
 
-	draw_page_footer( instance, 0, sdata );
+		prev_y = sdata->last_y;
+		sdata->last_y = 0;
+		prev_render_height = sdata->render_height;
+		sdata->render_height = 0;
+		prev_context = sdata->current_context;
+		sdata->current_context = sdata->temp_context;
+		prev_layout = sdata->current_layout;
+		sdata->current_layout = sdata->temp_layout;
 
-	height = sdata->last_y;
-	sdata->last_y = prev_y;
-	sdata->render_height = prev_render_height;
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
+		draw_page_footer( instance, 0, sdata );
+
+		height = sdata->last_y;
+		sdata->last_y = prev_y;
+		sdata->render_height = prev_render_height;
+		sdata->current_context = prev_context;
+		sdata->current_layout = prev_layout;
+	}
 
 	return( height );
 }
@@ -1109,6 +1120,9 @@ get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
  * ofa_irenderable_end_render:
  * @instance:
  * @cr:
+ *
+ * The last entry point of the interface.
+ * Must be called after all pages have been rendered.
  */
 void
 ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
@@ -1121,7 +1135,7 @@ ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
 	sdata = get_irenderable_data( instance );
-	set_irenderable_context( instance, context, sdata );
+	set_irenderable_input_context( instance, context, sdata );
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render( instance );
@@ -1130,9 +1144,13 @@ ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->free_dataset( instance, sdata->dataset );
 	}
 
+	/* #795 - sIRenderable struct should have the same life cycle
+	 * than the implementation page */
+	/*
 	free_irenderable_data( sdata );
 	g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, NULL );
 	g_object_weak_unref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+	*/
 }
 
 /*
@@ -1162,13 +1180,22 @@ get_irenderable_data( ofaIRenderable *instance )
 		sdata = g_new0( sIRenderable, 1 );
 		g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+
+		sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
+		sdata->temp_context = get_temp_context( instance, sdata );
+		sdata->temp_layout = pango_cairo_create_layout( sdata->temp_context );
 	}
 
 	return( sdata );
 }
 
+/*
+ * save the provided context, and create an associated layout
+ * this is called on each entry point of the interface:
+ * - begin_render(), render_page() and end_render().
+ */
 static void
-set_irenderable_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata )
+set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata )
 {
 	/* save the provided context */
 	sdata->in_context = context;

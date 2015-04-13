@@ -483,9 +483,6 @@
                 use case: when printing accounts book, have a subtotal
                 per class
 
- 797 2015- 4-13 AccountsBook is not balanced (should have same totals
-                than AccountsBalance) 
-
  798 2015- 4-13 creating a new ledger let the user enter an entry at
                 any effect date, even if all other ledgers has been
                 previously closed - this may or may not be wanted -
@@ -3667,6 +3664,10 @@
  789 2015- 4- 6 GuidedInputBin: check date label is in display format
                 instead of check format
      2015- 4- 7 fixed - git #5d41bd8
+
+ 797 2015- 4-13 AccountsBook is not balanced (should have same totals
+                than AccountsBalance)
+     2015- 4-13 fixed - git #a2de48a
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

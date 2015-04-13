@@ -1,5 +1,10 @@
 2015-04-13 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-irenderable.c,
+	* src/ui/ofa-irenderable.h:
+	- make sure the rendering is idempotent (todo #795)
+	- improve some comments. 
+
 	* src/ui/ofa-render-books-page.c: fix the general computing (todo #797).
 
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
