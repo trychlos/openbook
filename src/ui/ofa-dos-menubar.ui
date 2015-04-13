@@ -100,15 +100,15 @@
       <attribute name="label" translatable="yes">_Printings</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Account balances...</attribute>
+          <attribute name="label" translatable="yes">_Accounts balance...</attribute>
           <attribute name="action">win.render-balances</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">A_ccount books...</attribute>
+          <attribute name="label" translatable="yes">A_ccounts book...</attribute>
           <attribute name="action">win.render-books</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Ledgers books...</attribute>
+          <attribute name="label" translatable="yes">_Ledgers book...</attribute>
           <attribute name="action">win.render-ledgers</attribute>
         </item>
         <item>
