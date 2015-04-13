@@ -1,3 +1,7 @@
+2015-04-13 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-render-books-page.c: fix the general computing (todo #797).
+
 2015-04-12 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-pdf-ledgers.c,

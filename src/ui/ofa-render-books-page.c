@@ -108,9 +108,9 @@ struct _ofaRenderBooksPagePrivate {
 	gchar             *currency_code;
 	gint               currency_digits;
 
-	/* total general
+	/* general summary
 	 */
-	GList             *totals;			/* list of totals per currency */
+	GList             *totals;			/* total of debit/credit per currency */
 };
 
 /*
@@ -729,6 +729,11 @@ irenderable_draw_group_top_report( ofaIRenderable *instance )
 	draw_account_report( OFA_RENDER_BOOKS_PAGE( instance ), TRUE );
 }
 
+/*
+ * draw total of debit and credits for this account
+ * current balance is not printed on the bottom report (because already
+ * appears on the immediate previous line)
+ */
 static void
 draw_account_report( ofaRenderBooksPage *self, gboolean with_solde )
 {
@@ -774,9 +779,6 @@ draw_account_report( ofaRenderBooksPage *self, gboolean with_solde )
 	ofa_irenderable_set_last_y( OFA_IRENDERABLE( self ), y );
 }
 
-/*
- * only run when is_drawing=TRUE
- */
 static void
 draw_account_solde_debit_credit( ofaRenderBooksPage *self, gdouble y )
 {
@@ -786,37 +788,31 @@ draw_account_solde_debit_credit( ofaRenderBooksPage *self, gdouble y )
 
 	priv = self->priv;
 
-	/* current account balance */
+	/* current account balance
+	 * if current balance is zero, then also print it */
 	amount = priv->account_credit - priv->account_debit;
-	if( amount ){
-		if( amount > 0 ){
-			str = my_double_to_str_ex( amount, priv->currency_digits );
-			ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-					priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-					priv->body_solde_sens_rtab, y, _( "CR" ), PANGO_ALIGN_RIGHT );
+	if( amount >= 0 ){
+		str = my_double_to_str_ex( amount, priv->currency_digits );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_solde_sens_rtab, y, _( "CR" ), PANGO_ALIGN_RIGHT );
 
-		} else {
-			str = my_double_to_str_ex( -1*amount, priv->currency_digits );
-			ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-					priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
-					priv->body_solde_sens_rtab, y, _( "DB" ), PANGO_ALIGN_RIGHT );
-		}
+	} else {
+		str = my_double_to_str_ex( -1*amount, priv->currency_digits );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
+				priv->body_solde_sens_rtab, y, _( "DB" ), PANGO_ALIGN_RIGHT );
 	}
 }
 
 /*
- * (printable)width(A4)=559
- * date  journal  piece    label      debit   credit   solde
- * 10    6        max(10)  max(80)      15d      15d     15d
- *
- * Returns: %TRUE if we may continue to print on this page,
- * %FALSE when we have terminated the page.
- * If the page is terminated, this particular line may not have been
- * printed.
+ * each line update the account sum of debits and credits
+ * the total of debits/credits for this currency is incremented in
+ * group footer
  */
 static void
 irenderable_draw_line( ofaIRenderable *instance, GList *current )
@@ -914,11 +910,14 @@ irenderable_draw_group_bottom_report( ofaIRenderable *instance )
 }
 
 /*
- * This function is called many time with NULL arguments in order to
- * auto-detect the height of the group footer (in particular each time
- * the #ofa_irenderable_draw_line() function needs to know if there is
- * enough vertical space left to draw the current line) - so take care
- * of not updating the account balance when not drawing...
+ * This function is called many times in order to auto-detect the
+ * height of the group footer (in particular each time the
+ * #ofa_irenderable_draw_line() function needs to know if there is
+ * enough vertical space left to draw the current line)
+ * so take care of:
+ * - no account has been yet identified on first call
+ * - currency has yet to be defined even during pagination phase
+ *   in order to be able to detect the heigtht of the summary
  */
 static void
 irenderable_draw_group_footer( ofaIRenderable *instance )
@@ -962,8 +961,8 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 		is_paginating = ofa_irenderable_is_paginating( instance );
 		ofs_currency_add_currency( &priv->totals,
 				priv->currency_code,
-				is_paginating ? priv->account_debit : 0,
-				is_paginating ? priv->account_credit : 0 );
+				is_paginating ? 0 : priv->account_debit,
+				is_paginating ? 0 : priv->account_credit );
 	}
 
 	y += height * ( 1+st_vspace_rate );
@@ -1039,7 +1038,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 		ofa_irenderable_set_text( instance,
 				priv->body_solde_sens_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
 
-		top += height * ( 1+st_vspace_rate );
+		top += height+vspace;
 	}
 
 	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );

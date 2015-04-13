@@ -371,6 +371,7 @@
                 (to be printed only after user visual validation)
      2015- 4-11 Balances: done
      2015- 4-12 Books: done
+     2015- 4-12 Ledgers: done
 
  701 2015- 3- 8 be able to open a current dossier as read-only
                 (use case: when user wants to make sure he will not
@@ -452,7 +453,7 @@
                 have kept all generated entries on an exercice base)
                 > next dbms version:
                   - last entry number from previous exercice
-                  - row number if rate detail validites
+                  - row number in rate detail validities
                   - account number in bat file
 
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
@@ -470,7 +471,36 @@
  793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
                 the calling window (as much as possible)
 
- 794
+ 794 2015- 4-13 Balances: first render doesn't take into account subtotal
+                per class, but this is ok starting with the second render
+                (or printing after having rendered)
+
+ 795 2015- 4-13 IRenderable: not a good idea to free and recreate sdata
+                because this is not consistent with page life cycle -
+                instead reinit the data
+
+ 796 2015- 4-13 IRenderable: have a second level of grouping (subgroup)
+                use case: when printing accounts book, have a subtotal
+                per class
+
+ 797 2015- 4-13 AccountsBook is not balanced (should have same totals
+                than AccountsBalance) 
+
+ 798 2015- 4-13 creating a new ledger let the user enter an entry at
+                any effect date, even if all other ledgers has been
+                previously closed - this may or may not be wanted -
+                so we have to distinguish:
+                - closing a ledger at a given date
+                - closing a period at a given date
+                (+ closing an exercice)
+
+ 799 2015- 4-13 AccountsBook account top and bottom reports:
+                - add a label [bottom report] or [top report] ?
+                - in italic ?
+                - added to the account label or rigt-aligned before the
+                  debit ?
+
+ 800
 
 -----------------------------------------------------------------------
  DONE
