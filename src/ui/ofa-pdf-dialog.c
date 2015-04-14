@@ -122,10 +122,8 @@ pdf_dialog_constructed( GObject *instance )
 	/* add and initialize our GtkFileChooser */
 	init_filechooser( OFA_PDF_DIALOG( instance ));
 
-#if 0
 	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
 	ofa_iprintable_init( OFA_IPRINTABLE( instance ));
-#endif
 }
 
 static void
