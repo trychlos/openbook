@@ -47,6 +47,7 @@ struct _ofaGuidedExPrivate {
 	/* internals
 	 */
 	ofoDossier           *dossier;			/* dossier */
+	GList                *dos_handlers;
 	const ofoOpeTemplate *model;			/* model */
 	ofaGuidedInputBin    *input_bin;
 
@@ -115,6 +116,7 @@ static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *o
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
+static void       dossier_disconnect_handlers( ofaGuidedEx *page );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -182,6 +184,7 @@ v_setup_view( ofaPage *page )
 {
 	ofaGuidedExPrivate *priv;
 	GtkWidget *pane;
+	gulong handler;
 
 	priv = OFA_GUIDED_EX( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
@@ -192,21 +195,25 @@ v_setup_view( ofaPage *page )
 	priv->pane = pane;
 	pane_restore_position( pane );
 
-	g_signal_connect(
+	handler = g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
-	g_signal_connect(
+	handler = g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
-	g_signal_connect(
+	handler = g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
-	g_signal_connect(
+	handler = g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	g_signal_connect(
 			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
@@ -1027,6 +1034,7 @@ on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty
 	if( priv->pane ){
 		pane_save_position( priv->pane );
 	}
+	dossier_disconnect_handlers( page );
 }
 
 static void
@@ -1037,4 +1045,20 @@ pane_save_position( GtkWidget *pane )
 	pos = gtk_paned_get_position( GTK_PANED( pane ));
 	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
 	ofa_settings_set_int( "GuidedInputExDlg-pane", pos );
+}
+
+static void
+dossier_disconnect_handlers( ofaGuidedEx *page )
+{
+	ofaGuidedExPrivate *priv;
+	GList *it;
+
+	priv = page->priv;
+
+	if( priv->dossier &&
+			OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
+		for( it=priv->dos_handlers ; it ; it=it->next ){
+			g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+		}
+	}
 }

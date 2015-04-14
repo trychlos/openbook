@@ -489,15 +489,35 @@
                 - added to the account label or rigt-aligned before the
                   debit ?
 
- 800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
-
  801 2015- 4-13 rename:
                 RenderBalances -> RenderAccountsBalance
                 RenderBooks -> RenderAccountsBook
                 RenderLedgers -> RenderLedgersBook
                 + update Bin composite widgets accordingly
 
- 802
+ 802 2015- 4-13 importing lcl-01800_493012R_du_16-06-2014_au_19-12-2014.xls
+                doesn't take into account decimal fields (which are comma-
+                separated)
+
+ 803 2015- 4-13 Reconciliation: display the ledger
+
+ 804 2015- 4-13 while importing entries.
+(openbook:14117): OFA-DEBUG: ofa_guided_ex_on_updated_object: dossier=0x744cb0, object=0x7fffe400a960 (ofoLedger), prev_id=(null), self=0x11be4f0
+(openbook:14117): Gtk-CRITICAL **: gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
+#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
+#3  0x0000000000449c52 in find_left_ledger_by_mnemo (self=self@entry=0x11be4f0, mnemo=0x112ace0 "OD", tmodel=tmodel@entry=0x7fffffffc178, iter=iter@entry=0x7fffffffc180)
+    at ../../../src/ui/ofa-guided-ex.c:734
+#4  0x000000000044a62c in update_left_ledger_row (prev_id=0x0, ledger=0x7fffe400a960, self=0x11be4f0) at ../../../src/ui/ofa-guided-ex.c:667
+#5  on_updated_object (dossier=<optimized out>, object=<optimized out>, prev_id=0x0, self=0x11be4f0) at ../../../src/ui/ofa-guided-ex.c:971
+                though GuidedEx was not currently opened 
+                this can be due to a dossier handler which doesn"t have 
+                been removed
+
+ 805 2015- 4-13 add a check box to AccountsBalance to display the 
+                "accounts" balances (=> since the beginning of the exercice)
+                Else these are entries balance
+
+ 806
 
 -----------------------------------------------------------------------
  DONE
@@ -3678,6 +3698,9 @@
  797 2015- 4-13 AccountsBook is not balanced (should have same totals
                 than AccountsBalance)
      2015- 4-13 fixed - git #a2de48a
+
+ 800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
+     2015- 4-13 fixed - git #f95e872
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
