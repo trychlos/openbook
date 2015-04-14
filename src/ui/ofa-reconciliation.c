@@ -125,6 +125,7 @@ struct _ofaReconciliationPrivate {
 enum {
 	COL_ACCOUNT,
 	COL_DOPE,
+	COL_LEDGER,
 	COL_PIECE,
 	COL_NUMBER,
 	COL_LABEL,
@@ -459,8 +460,8 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 
 	priv->tstore = GTK_TREE_MODEL( gtk_tree_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING,									/* account */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* dope, piece, number */
+			G_TYPE_STRING, G_TYPE_STRING,					/* account, dope */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* ledger, piece, number */
 			G_TYPE_STRING,									/* label */
 			G_TYPE_STRING, G_TYPE_STRING,					/* debit, credit */
 			G_TYPE_STRING,									/* dcreconcil */
@@ -508,6 +509,23 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	priv->sort_column = column;
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, OFA_SORT_ASCENDING );
+
+	/* ledger
+	 */
+	column_id = COL_LEDGER;
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Ledger" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_append_column( priv->tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
 	/* piece's reference
 	 */
@@ -1126,6 +1144,7 @@ set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter,
 			iter,
 			COL_ACCOUNT,   ofo_entry_get_account( entry ),
 			COL_DOPE,      sdope,
+			COL_LEDGER,    ofo_entry_get_ledger( entry ),
 			COL_PIECE,     ofo_entry_get_ref( entry ),
 			COL_NUMBER,    ofo_entry_get_number( entry ),
 			COL_LABEL,     ofo_entry_get_label( entry ),
@@ -1541,6 +1560,13 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 						ofo_entry_get_dope( OFO_ENTRY( object_b )) :
 						get_bat_line_dope( self, OFO_BAT_LINE( object_b ));
 			cmp = my_date_compare( date_a, date_b );
+			break;
+		case COL_LEDGER:
+			str_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_ledger( OFO_ENTRY( object_a )) : empty;
+			str_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_ledger( OFO_ENTRY( object_b )) : empty;
+			cmp = my_collate( str_a, str_b );
 			break;
 		case COL_PIECE:
 			str_a = OFO_IS_ENTRY( object_a ) ?
