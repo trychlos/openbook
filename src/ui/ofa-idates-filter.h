@@ -131,6 +131,9 @@ gboolean     ofa_idates_filter_is_valid             ( ofaIDatesFilter *filter,
 															gint who,
 															gchar **message );
 
+GtkWidget   *ofa_idates_filter_get_entry            ( ofaIDatesFilter *filter,
+															gint who );
+
 GtkWidget   *ofa_idates_filter_get_frame_label      ( ofaIDatesFilter *filter );
 
 GtkWidget   *ofa_idates_filter_get_from_prompt      ( ofaIDatesFilter *filter );

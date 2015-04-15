@@ -588,6 +588,39 @@ ofa_idates_filter_is_valid( ofaIDatesFilter *filter, gint who, gchar **message )
 }
 
 /**
+ * ofa_idates_filter_get_entry:
+ * @filter:
+ * @who:
+ *
+ * Returns: a pointer to the GtkWidget which is used as en antry for the date.
+ */
+GtkWidget *
+ofa_idates_filter_get_entry( ofaIDatesFilter *filter, gint who )
+{
+	static const gchar *thisfn = "ofa_idates_filter_get_entry";
+	sIDatesFilter *sdata;
+	GtkWidget *entry;
+
+	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+
+	sdata = get_idates_filter_data( filter );
+	entry = NULL;
+
+	switch( who ){
+		case IDATES_FILTER_FROM:
+			entry = sdata->from_entry;
+			break;
+		case IDATES_FILTER_TO:
+			entry = sdata->to_entry;
+			break;
+		default:
+			g_warning( "%s: invalid date identifier: %d", thisfn, who );
+	}
+
+	return( entry );
+}
+
+/**
  * ofa_idates_filter_get_frame_label:
  * @filter:
  *
