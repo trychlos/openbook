@@ -32,6 +32,29 @@
  *
  * LCL Import Bank Account Transaction (BAT) files in tabulated text
  * format.
+ *
+ * As of 2014- 6- 1, lines are:
+ 02/03/2015	\t -150,0	\t Chèque		\t 9192244
+ 02/03/2015	\t -26,9	\t Carte		\t			\t CB  ASF              27/02/15	\t 0	\t Divers
+ 02/03/2015	\t -350,0	\t Virement		\t			\t VIR.PERMANENT WIESER, BORIS
+ 02/03/2015	\t -16,25	\t Prélèvement	\t			\t ABONNEMENT VOTRE FORMULE ZEN
+ 31/03/2015	\t 68198,61	\t				\t			\t 01800 904778Z
+ *
+ * Ref may be:
+ *  'Carte'        -> 'CB'
+ *  'Virement'     -> 'Vir.'
+ *  'Prélèvement'  -> 'Pr.'
+ *  'Chèque'       -> 'Ch.'
+ *  'TIP'          -> 'TIP'
+ *
+ * The '\t 0 \t Divers' seems to be a couple which comes with CB paiements.
+ * None of these two fields are imported here.
+ *
+ * PWI 2015- 4-15:
+ * At least in one case, a file has been downloaded with a badly formatted
+ * line as:
+ 31/12/2014	\t 310,52	\t				\t			\t INTERETS 2014\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00
+ * This made the file badly imported, though the error cannot be dete
  */
 
 #include <glib-object.h>

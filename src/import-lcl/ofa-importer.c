@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <api/my-date.h>
+#include <api/my-double.h>
 #include <api/my-utils.h>
 #include <api/ofa-file-format.h>
 #include <api/ofa-iimportable.h>
@@ -295,18 +296,48 @@ static GSList *
 get_file_content( ofaIImportable *lcl_importer, const gchar *uri )
 {
 	GFile *gfile;
-	gchar *contents;
+	gchar *contents, *buffer, *str;
 	gchar **lines, **iter;
 	GSList *list;
+	gsize length;
+	glong loaded_len, computed_len, i;
 
 	list = NULL;
 	gfile = g_file_new_for_uri( uri );
-	if( g_file_load_contents( gfile, NULL, &contents, NULL, NULL, NULL )){
+	if( g_file_load_contents( gfile, NULL, &contents, &length, NULL, NULL )){
+
+		/* if the returned length is greater that the computed one,
+		 * it is probable that we are facing a badly-formatted line
+		 * so remove '\00' chars */
+
+		loaded_len = ( glong ) length;
+		computed_len = g_utf8_strlen( contents, length );
+
+		/*g_debug( "contents='%s'", contents );
+		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
+
+		if( loaded_len > computed_len ){
+			for( i=computed_len ; contents[i] == '\0' && i<loaded_len ; ++i ){
+				/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
+				;
+			}
+			buffer = g_strdup_printf( "%s%s", contents, contents+i );
+			g_free( contents );
+			contents = buffer;
+		}
+
+		/*g_debug( "contents='%s'", contents );
+		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
+
 		lines = g_strsplit( contents, "\n", -1 );
 		g_free( contents );
 		iter = lines;
 		while( *iter ){
-			list = g_slist_prepend( list, g_strstrip( g_strdup( *iter )));
+			str = g_strstrip( g_strdup( *iter ));
+			list = g_slist_prepend( list, str );
+			/*g_debug( "get_file_content: str='%s'", str );*/
 			iter++;
 		}
 		g_strfreev( lines );
@@ -315,29 +346,6 @@ get_file_content( ofaIImportable *lcl_importer, const gchar *uri )
 	return( g_slist_reverse( list ));
 }
 
-/*
- * As of 2014- 6- 1:
- * ----------------
- * 17/04/2014 -> -80,0   -> Carte     ->->       CB  BUFFETTI STILO   15/04/14                          0       Divers
- * 18/04/2014 -> 10000,0 -> Virement  ->->-> VIREMENT WIESER
- * 23/04/2014 -> -12,0   -> Ch<E8>que -> 8341505 ->->->->->
- *
- * Last line is the balance of the account.
- *
- * Ref may be:
- *  'Carte'        -> 'CB'
- *  'Virement'     -> 'Vir.'
- *  'Prélèvement'  -> 'Pr.'
- *  'Chèque'       -> 'Ch.'
- *  'TIP'          -> 'TIP'
- *
- * There is an unknown field, maybe empty, most of time at zero
- *
- * The category may be empty. Most of time, it is set. When it is set,
- * it is always equal to 'Divers'.
- *
- * The unknown field and the category arealways set, or unset, together.
- */
 static gboolean
 lcl_tabulated_text_v1_check( ofaLCLImporter *lcl_importer )
 {
@@ -553,25 +561,19 @@ scan_date_dmyy( GDate *date, const gchar *str )
 	return( date );
 }
 
+/*
+ * amounts are expected to use comma as decimal separator
+ *  and no thousand separator
+ */
 static gdouble
 get_double( const gchar *str )
 {
-	static const gchar *thisfn = "ofa_lcl_importer_get_double";
-	gdouble amount1, amount2;
-	gdouble entier1, entier2;
+	gchar *dotsep;
+	gdouble amount;
 
-	amount1 = g_ascii_strtod( str, NULL );
-	entier1 = trunc( amount1 );
-	if( entier1 == amount1 ){
-		amount2 = strtod( str, NULL );
-		entier2 = trunc( amount2 );
-		if( entier2 == amount2 ){
-			if( entier1 != entier2 ){
-				g_warning( "%s: unable to get double from str='%s'", thisfn, str );
-				return( 0 );
-			}
-		}
-		return( amount2 );
-	}
-	return( amount1 );
+	dotsep = my_utils_str_replace( str, ",", "." );
+	amount = my_double_set_from_sql( dotsep );
+	g_free( dotsep );
+
+	return( amount );
 }
