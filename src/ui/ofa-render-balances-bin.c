@@ -53,6 +53,8 @@ struct _ofaRenderBalancesBinPrivate {
 	GtkWidget              *new_page_btn;
 	ofaDatesFilterHVBin    *dates_filter;
 	GtkWidget              *accounts_balance_btn;
+	GtkWidget              *from_prompt;
+	GtkWidget              *from_entry;
 
 	/* internals
 	 */
@@ -259,12 +261,17 @@ setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
 	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	check = gtk_check_button_new_with_mnemonic( _( "_Accounts balance" ));
+	check = gtk_check_button_new_with_mnemonic( _( "Acc_ounts balance" ));
 	ofa_idates_filter_add_widget( OFA_IDATES_FILTER( bin ), check, IDATES_FILTER_BEFORE );
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), self );
 	priv->accounts_balance_btn = check;
 
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), self );
+
+	priv->from_prompt =
+			ofa_idates_filter_get_prompt( OFA_IDATES_FILTER( bin ), IDATES_FILTER_FROM );
+	priv->from_entry =
+			ofa_idates_filter_get_entry( OFA_IDATES_FILTER( bin ), IDATES_FILTER_FROM );
 
 	priv->dates_filter = bin;
 }
@@ -331,7 +338,6 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self
 	gboolean active;
 	const GDate *begin;
 	ofoDossier *dossier;
-	GtkWidget *entry;
 
 	priv = self->priv;
 
@@ -341,10 +347,11 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );
-		ofa_idates_filter_set_date( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, begin );
+		ofa_idates_filter_set_date(
+				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, begin );
 	}
-	entry = ofa_idates_filter_get_entry( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM );
-	gtk_widget_set_sensitive( entry, !active );
+	gtk_widget_set_sensitive( priv->from_prompt, !active );
+	gtk_widget_set_sensitive( priv->from_entry, !active );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }

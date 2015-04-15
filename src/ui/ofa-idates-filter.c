@@ -635,17 +635,33 @@ ofa_idates_filter_get_frame_label( ofaIDatesFilter *filter )
 }
 
 /**
- * ofa_idates_filter_get_from_prompt:
+ * ofa_idates_filter_get_prompt:
  * @filter:
+ * @who:
  *
  * Returns: a pointer to the GtkWidget which is used as the "From" prompt.
  */
 GtkWidget *
-ofa_idates_filter_get_from_prompt( ofaIDatesFilter *filter )
+ofa_idates_filter_get_prompt( ofaIDatesFilter *filter, gint who )
 {
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	static const gchar *thisfn = "ofa_idates_filter_get_prompt";
+	const gchar *cstr;
 
-	return( my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" ));
+	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	cstr = NULL;
+
+	switch( who ){
+		case IDATES_FILTER_FROM:
+			cstr = "from-prompt";
+			break;
+		case IDATES_FILTER_TO:
+			cstr = "to-prompt";
+			break;
+		default:
+			g_warning( "%s: invalid date identifier: %d", thisfn, who );
+	}
+
+	return( cstr ? my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), cstr ) : NULL );
 }
 
 /*

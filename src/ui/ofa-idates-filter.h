@@ -136,7 +136,8 @@ GtkWidget   *ofa_idates_filter_get_entry            ( ofaIDatesFilter *filter,
 
 GtkWidget   *ofa_idates_filter_get_frame_label      ( ofaIDatesFilter *filter );
 
-GtkWidget   *ofa_idates_filter_get_from_prompt      ( ofaIDatesFilter *filter );
+GtkWidget   *ofa_idates_filter_get_prompt           ( ofaIDatesFilter *filter,
+															gint who );
 
 G_END_DECLS
 

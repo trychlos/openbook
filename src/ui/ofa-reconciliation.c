@@ -789,7 +789,8 @@ setup_size_group( ofaPage *page, GtkContainer *parent )
 	priv = OFA_RECONCILIATION( page )->priv;
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = ofa_idates_filter_get_from_prompt( OFA_IDATES_FILTER( priv->effect_filter ));
+	label = ofa_idates_filter_get_prompt(
+			OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
 	if( label ){
 		gtk_size_group_add_widget( group, label );
 	}
