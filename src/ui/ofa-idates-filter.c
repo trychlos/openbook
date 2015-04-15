@@ -234,6 +234,7 @@ ofa_idates_filter_setup_bin( ofaIDatesFilter *filter, const gchar *xml_name )
 
 	g_debug( "%s: filter=%p, xml_name=%s", thisfn, ( void * ) filter, xml_name );
 
+	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
 
 	sdata = get_idates_filter_data( filter );
@@ -329,6 +330,35 @@ setup_bin( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );
+}
+
+/**
+ * ofa_idates_filter_add_widget:
+ * @filter: this #ofaIDatesFilter instance.
+ * @widget: the widget to be added.
+ * @where: where the widget is to be added in the composite UI.
+ *
+ * Add an application-specific widget to the composite.
+ *
+ * Only one widget should be added to the implementation widget.
+ * But, unless otherwise specified, neither the interface nor by default
+ * the implementation class check than several widgets are successively
+ * added. So it is up to the application to only call this method once.
+ */
+void
+ofa_idates_filter_add_widget( ofaIDatesFilter *filter, GtkWidget *widget, gint where )
+{
+	static const gchar *thisfn = "ofa_idates_filter_add_widget";
+
+	g_debug( "%s: filter=%p, widget=%p, where=%d",
+			thisfn, ( void * ) filter, ( void * ) widget, where );
+
+	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( G_IS_OBJECT( filter ));
+
+	if( OFA_IDATES_FILTER_GET_INTERFACE( filter )->add_widget ){
+		OFA_IDATES_FILTER_GET_INTERFACE( filter )->add_widget( filter, widget, where );
+	}
 }
 
 static void

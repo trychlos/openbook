@@ -72,6 +72,19 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint ( *get_interface_version )( const ofaIDatesFilter *instance );
+
+	/**
+	 * add_widget:
+	 * @instance: the #ofaIDatesFilter instance.
+	 * @widget: the widget to be added.
+	 * @where: where the widget is to be added.
+	 *
+	 * Let the application customize the composite widget by adding its
+	 * own.
+	 */
+	void  ( *add_widget )           ( ofaIDatesFilter *instance,
+												GtkWidget *widget,
+												gint where );
 }
 	ofaIDatesFilterInterface;
 
@@ -83,6 +96,15 @@ enum {
 	IDATES_FILTER_TO
 };
 
+/**
+ * Where the added widget is to be inserted
+ */
+enum {
+	IDATES_FILTER_BEFORE = 1,
+	IDATES_FILTER_BETWEEN,
+	IDATES_FILTER_AFTER
+};
+
 GType        ofa_idates_filter_get_type             ( void );
 
 guint        ofa_idates_filter_get_interface_last_version
@@ -90,6 +112,10 @@ guint        ofa_idates_filter_get_interface_last_version
 
 void         ofa_idates_filter_setup_bin            ( ofaIDatesFilter *filter,
 															const gchar *xml_name );
+
+void         ofa_idates_filter_add_widget           ( ofaIDatesFilter *filter,
+															GtkWidget *widget,
+															gint where );
 
 void         ofa_idates_filter_set_prefs            ( ofaIDatesFilter *filter,
 															const gchar *prefs_key );
