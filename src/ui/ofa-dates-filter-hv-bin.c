@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <gtk/gtk.h>
+#include "api/my-utils.h"
 
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-idates-filter.h"
@@ -41,6 +41,7 @@ static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dates-filter-hv-bin.ui"
 
 static void  idates_filter_iface_init( ofaIDatesFilterInterface *iface );
 static guint idates_filter_get_interface_version( const ofaIDatesFilter *instance );
+static void  idates_filter_add_widget( ofaIDatesFilter *instance, GtkWidget *widget, gint where );
 
 G_DEFINE_TYPE_EXTENDED( ofaDatesFilterHVBin, ofa_dates_filter_hv_bin, GTK_TYPE_BIN, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDATES_FILTER, idates_filter_iface_init ))
@@ -134,10 +135,41 @@ idates_filter_iface_init( ofaIDatesFilterInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idates_filter_get_interface_version;
+	iface->add_widget = idates_filter_add_widget;
 }
 
 static guint
 idates_filter_get_interface_version( const ofaIDatesFilter *instance )
 {
 	return( 1 );
+}
+
+static void
+idates_filter_add_widget( ofaIDatesFilter *instance, GtkWidget *widget, gint where )
+{
+	static const gchar *thisfn = "ofa_dates_filter_hv_bin_idates_filter_add_widget";
+	GtkWidget *grid;
+	gint new_row;
+
+	switch( where ){
+		case IDATES_FILTER_BEFORE:
+			new_row = 0;
+			break;
+		case IDATES_FILTER_BETWEEN:
+			new_row = 1;
+			break;
+		case IDATES_FILTER_AFTER:
+			new_row = 2;
+			break;
+		default:
+			g_warning( "%s: unknown indicator where=%d", thisfn, where );
+			return;
+			break;
+	}
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	gtk_grid_insert_row( GTK_GRID( grid ), new_row );
+	gtk_grid_attach( GTK_GRID( grid ), widget, 1, new_row, 2, 1 );
 }
