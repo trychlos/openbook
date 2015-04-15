@@ -31,7 +31,12 @@
  * @include: ui/ofa-render-balances-bin.h
  *
  * Display a frame with let the user select the parameters needed to
- * print the balance of the accounts between two effect dates.
+ * print the balance of the entries between two effect dates.
+ *
+ * Have a checkbox which let the user select 'Accounts balance': the
+ * entries are so selected from the beginning of the exercice and
+ * really show the balances of the accounts at the specified effect
+ * date.
  */
 
 #include "ui/ofa-iaccounts-filter.h"
@@ -70,6 +75,9 @@ ofaRenderBalancesBin *ofa_render_balances_bin_new     ( ofaMainWindow *main_wind
 
 gboolean              ofa_render_balances_bin_is_valid( ofaRenderBalancesBin *bin,
 																		gchar **message );
+
+gboolean              ofa_render_balances_bin_get_accounts_balance
+                                                      ( const ofaRenderBalancesBin *bin );
 
 gboolean              ofa_render_balances_bin_get_subtotal_per_class
                                                       ( const ofaRenderBalancesBin *bin );

@@ -52,6 +52,7 @@ struct _ofaRenderBalancesBinPrivate {
 	GtkWidget              *per_class_btn;		/* subtotal per class */
 	GtkWidget              *new_page_btn;
 	ofaDatesFilterHVBin    *dates_filter;
+	GtkWidget              *accounts_balance_btn;
 
 	/* internals
 	 */
@@ -81,6 +82,7 @@ static void       setup_others( ofaRenderBalancesBin *self, GtkContainer *parent
 static void       on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaRenderBalancesBin *self );
 static void       on_per_class_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
 static void       on_new_page_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
+static void       on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
 static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaRenderBalancesBin *self );
 static void       load_settings( ofaRenderBalancesBin *bin );
 static void       set_settings( ofaRenderBalancesBin *bin );
@@ -243,6 +245,7 @@ setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
 	ofaRenderBalancesBinPrivate *priv;
 	GtkWidget *alignment, *label;
 	ofaDatesFilterHVBin *bin;
+	GtkWidget *check;
 
 	priv = self->priv;
 
@@ -255,6 +258,11 @@ setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
 	/* instead of "effect dates filter" */
 	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
+
+	check = gtk_check_button_new_with_mnemonic( _( "_Accounts balance" ));
+	ofa_idates_filter_add_widget( OFA_IDATES_FILTER( bin ), check, IDATES_FILTER_BEFORE );
+	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), self );
+	priv->accounts_balance_btn = check;
 
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), self );
 
@@ -312,6 +320,31 @@ on_new_page_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
 	priv = self->priv;
 
 	priv->new_page = gtk_toggle_button_get_active( button );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
+{
+	ofaRenderBalancesBinPrivate *priv;
+	gboolean active;
+	const GDate *begin;
+	ofoDossier *dossier;
+	GtkWidget *entry;
+
+	priv = self->priv;
+
+	active = gtk_toggle_button_get_active( button );
+	if( active ){
+		dossier = ofa_main_window_get_dossier( priv->main_window );
+		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+		begin = ofo_dossier_get_exe_begin( dossier );
+		ofa_idates_filter_set_date( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, begin );
+	}
+	entry = ofa_idates_filter_get_entry( OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM );
+	gtk_widget_set_sensitive( entry, !active );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -378,6 +411,28 @@ ofa_render_balances_bin_get_accounts_filter( const ofaRenderBalancesBin *bin )
 	}
 
 	return( filter );
+}
+
+/**
+ * ofa_render_balances_bin_get_accounts_balance:
+ */
+gboolean
+ofa_render_balances_bin_get_accounts_balance( const ofaRenderBalancesBin *bin )
+{
+	ofaRenderBalancesBinPrivate *priv;
+	gboolean acc_balance;
+
+	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), FALSE );
+
+	priv = bin->priv;
+	acc_balance = FALSE;
+
+	if( !priv->dispose_has_run ){
+
+		acc_balance = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ));
+	}
+
+	return( acc_balance );
 }
 
 /**
@@ -448,7 +503,7 @@ ofa_render_balances_bin_get_dates_filter( const ofaRenderBalancesBin *bin )
 
 /*
  * setttings:
- * account_from;account_to;all_accounts;effect_from;effect_to;subtotal_per_class;new_page_per_class;
+ * account_from;account_to;all_accounts;effect_from;effect_to;subtotal_per_class;new_page_per_class;accounts_balance;
  */
 static void
 load_settings( ofaRenderBalancesBin *bin )
@@ -514,6 +569,14 @@ load_settings( ofaRenderBalancesBin *bin )
 		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), bin );
 	}
 
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ), my_utils_boolean_from_str( cstr ));
+		on_accounts_balance_toggled( GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ), bin );
+	}
+
 	ofa_settings_free_string_list( list );
 }
 
@@ -523,7 +586,7 @@ set_settings( ofaRenderBalancesBin *bin )
 	ofaRenderBalancesBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 	const gchar *from_account, *to_account;
-	gboolean all_accounts;
+	gboolean all_accounts, acc_balance;
 
 	priv = bin->priv;
 
@@ -534,6 +597,8 @@ set_settings( ofaRenderBalancesBin *bin )
 	all_accounts = ofa_iaccounts_filter_get_all_accounts(
 			OFA_IACCOUNTS_FILTER( priv->accounts_filter ));
 
+	acc_balance = ofa_render_balances_bin_get_accounts_balance( bin );
+
 	sdfrom = my_date_to_str(
 			ofa_idates_filter_get_date(
 					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM ), MY_DATE_SQL );
@@ -541,14 +606,15 @@ set_settings( ofaRenderBalancesBin *bin )
 			ofa_idates_filter_get_date(
 					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO ), MY_DATE_SQL );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%s;",
 			from_account ? from_account : "",
 			to_account ? to_account : "",
 			all_accounts ? "True":"False",
 			my_strlen( sdfrom ) ? sdfrom : "",
 			my_strlen( sdto ) ? sdto : "",
 			priv->per_class ? "True":"False",
-			priv->new_page ? "True":"False" );
+			priv->new_page ? "True":"False",
+			acc_balance ? "True":"False" );
 
 	ofa_settings_set_string( st_settings, str );
 
