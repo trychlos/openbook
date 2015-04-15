@@ -233,7 +233,7 @@ static sThemeDef st_theme_defs[] = {
 				FALSE
 		},
 		{ THM_RENDER_BALANCES,
-				N_( "Accounts balance" ),
+				N_( "Entries balance" ),
 				ofa_render_balances_page_get_type,
 				FALSE
 		},

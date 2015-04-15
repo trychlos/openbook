@@ -495,10 +495,6 @@
                 RenderLedgers -> RenderLedgersBook
                 + update Bin composite widgets accordingly
 
- 802 2015- 4-13 importing lcl-01800_493012R_du_16-06-2014_au_19-12-2014.xls
-                doesn't take into account decimal fields (which are comma-
-                separated)
-
  805 2015- 4-13 add a check box to AccountsBalance to display the 
                 "accounts" balances (=> since the beginning of the exercice)
                 Else these are entries balance
@@ -3687,6 +3683,11 @@
 
  800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
      2015- 4-13 fixed - git #f95e872
+
+ 802 2015- 4-13 importing lcl-01800_493012R_du_16-06-2014_au_19-12-2014.xls
+                doesn't take into account decimal fields (which are comma-
+                separated)
+     2015- 4-15 fixed - git #9c64316
 
  803 2015- 4-13 Reconciliation: display the ledger
      2015- 4-14 done - git #ef267bb

@@ -21,10 +21,10 @@
                 <property name="can_focus">False</property>
                 <property name="margin_left">4</property>
                 <property name="margin_right">4</property>
-                <property name="margin_top">8</property>
-                <property name="margin_bottom">8</property>
+                <property name="margin_top">4</property>
                 <property name="xalign">0</property>
-                <property name="label" translatable="yes">Print the balances of all the entries whose effect date is between either from the beginning of the exercice or from the bottom limit, and less or equal to the upper limit.</property>
+                <property name="label" translatable="yes">Print the balances of all the entries whose effect date is between the specified limits.
+Please note that getting an accounts balance implies to start from the beginning of the exercice.</property>
                 <property name="wrap">True</property>
                 <property name="max_width_chars">28</property>
               </object>

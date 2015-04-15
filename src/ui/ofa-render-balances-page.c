@@ -63,6 +63,7 @@ struct _ofaRenderBalancesPagePrivate {
 	gboolean              new_page;
 	GDate                 from_date;
 	GDate                 to_date;
+	gboolean              accounts_balance;
 	GList                *totals;
 	gint                  count;					/* count of returned entries */
 
@@ -103,7 +104,8 @@ typedef struct {
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_PORTRAIT
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
-static const gchar *st_page_header_title = N_( "Entries Balance Summary" );
+static const gchar *st_page_header_title_entries  = N_( "Entries Balance Summary" );
+static const gchar *st_page_header_title_accounts = N_( "Accounts Balance Summary" );
 
 static const gchar *st_print_settings    = "RenderBalancesPrint";
 
@@ -403,6 +405,8 @@ irenderable_get_dataset( ofaIRenderable *instance )
 	priv->to_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_TO ));
 	priv->all_accounts = ofa_iaccounts_filter_get_all_accounts( accounts_filter );
 
+	priv->accounts_balance = ofa_render_balances_bin_get_accounts_balance( priv->args_bin );
+
 	dates_filter = ofa_render_balances_bin_get_dates_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
@@ -519,11 +523,17 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 static gchar *
 irenderable_get_page_header_title( const ofaIRenderable *instance )
 {
-	return( g_strdup( st_page_header_title ));
+	ofaRenderBalancesPagePrivate *priv;;
+
+	priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
+	return( g_strdup( priv->accounts_balance ?
+			st_page_header_title_accounts : st_page_header_title_entries ));
 }
 
 /*
  * From account xxx to account xxx - From date xxx to date xxx
+ * Accounts balance doesn't specify the beginning date as this one
+ * is mandatorily at the beginning of the exercice
  */
 static gchar *
 irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
@@ -549,8 +559,19 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 		}
 	}
 	stitle = g_string_append( stitle, " - " );
-	if( !my_date_is_valid( &priv->from_date ) && !my_date_is_valid( &priv->to_date )){
+
+	if( priv->accounts_balance ){
+		if( my_date_is_valid( &priv->to_date )){
+			sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display());
+			g_string_append_printf( stitle, _( "As of %s" ), sto_date );
+			g_free( sto_date );
+		} else {
+			stitle = g_string_append( stitle, _( "As of today" ));
+		}
+
+	} else if( !my_date_is_valid( &priv->from_date ) && !my_date_is_valid( &priv->to_date )){
 		stitle = g_string_append( stitle, "All effect dates" );
+
 	} else {
 		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display());
 		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display());
@@ -578,21 +599,22 @@ irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num )
 
 	if( page_num == 0 ){
 		priv = OFA_RENDER_BALANCES_PAGE( instance )->priv;
+		if( !priv->accounts_balance ){
 
-		y = ofa_irenderable_get_last_y( instance );
+			y = ofa_irenderable_get_last_y( instance );
+			y += ofa_irenderable_set_wrapped_text( instance,
+						priv->page_margin, y,
+						(priv->render_width-priv->page_margin)*PANGO_SCALE,
+						_( "Please note that this entries balance summary only "
+							"displays the balance of the entries whose effect "
+							"date is between the above date limits.\n"
+							"As such, it is not intended nor expected to reflect "
+							"the balance of the accounts at the end of the period." ),
+						PANGO_ALIGN_LEFT );
 
-		y += ofa_irenderable_set_wrapped_text( instance,
-					priv->page_margin, y,
-					(priv->render_width-priv->page_margin)*PANGO_SCALE,
-					_( "Please note that this entries balance printing only "
-						"displays the balance of the entries whose effect "
-						"date is between the above date limits.\n"
-						"As such, it is not intended to reflect the balances "
-						"of the accounts." ), PANGO_ALIGN_LEFT );
-
-		y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
-
-		ofa_irenderable_set_last_y( instance, y );
+			y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
+			ofa_irenderable_set_last_y( instance, y );
+		}
 	}
 }
 
