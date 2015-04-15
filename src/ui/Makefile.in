@@ -131,10 +131,12 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
-	ofa-accounts-book.$(OBJEXT) \
+	ofa-accounts-book.$(OBJEXT) ofa-accounts-book-bin.$(OBJEXT) \
+	ofa-accounts-book-render.$(OBJEXT) \
 	ofa-accounts-filter-vv-bin.$(OBJEXT) \
 	ofa-accounts-frame.$(OBJEXT) ofa-accounts-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
+	ofa-balance-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
 	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
 	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
 	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
@@ -163,8 +165,10 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
 	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-ledgers-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
-	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
+	ofa-ledgers-book-bin.$(OBJEXT) \
+	ofa-ledgers-book-render.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
+	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
+	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
@@ -174,13 +178,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-pdf-dialog.$(OBJEXT) ofa-pdf-reconcil.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
 	ofa-rates-page.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
-	ofa-render-balances-bin.$(OBJEXT) \
-	ofa-render-balances-page.$(OBJEXT) \
-	ofa-render-books-bin.$(OBJEXT) ofa-render-books-page.$(OBJEXT) \
-	ofa-render-ledgers-bin.$(OBJEXT) \
-	ofa-render-ledgers-page.$(OBJEXT) ofa-render-page.$(OBJEXT) \
-	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
-	ofa-tree-store.$(OBJEXT) ofa-view-entries.$(OBJEXT)
+	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
+	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
+	ofa-view-entries.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -493,6 +493,10 @@ openbook_SOURCES = \
 	ofa-account-store.h									\
 	ofa-accounts-book.c									\
 	ofa-accounts-book.h									\
+	ofa-accounts-book-bin.c								\
+	ofa-accounts-book-bin.h								\
+	ofa-accounts-book-render.c							\
+	ofa-accounts-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
 	ofa-accounts-filter-vv-bin.h						\
 	ofa-accounts-frame.c								\
@@ -504,6 +508,10 @@ openbook_SOURCES = \
 	ofa-application-def.h								\
 	ofa-backup.c										\
 	ofa-backup.h										\
+	ofa-balance-bin.c									\
+	ofa-balance-bin.h									\
+	ofa-balance-render.c								\
+	ofa-balance-render.h								\
 	ofa-balances-grid.c									\
 	ofa-balances-grid.h									\
 	ofa-bat-properties.c								\
@@ -607,6 +615,10 @@ openbook_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
+	ofa-ledgers-book-bin.c								\
+	ofa-ledgers-book-bin.h								\
+	ofa-ledgers-book-render.c							\
+	ofa-ledgers-book-render.h							\
 	ofa-ledgers-page.c									\
 	ofa-ledgers-page.h									\
 	ofa-list-store.c									\
@@ -644,18 +656,6 @@ openbook_SOURCES = \
 	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
-	ofa-render-balances-bin.c							\
-	ofa-render-balances-bin.h							\
-	ofa-render-balances-page.c							\
-	ofa-render-balances-page.h							\
-	ofa-render-books-bin.c								\
-	ofa-render-books-bin.h								\
-	ofa-render-books-page.c								\
-	ofa-render-books-page.h								\
-	ofa-render-ledgers-bin.c							\
-	ofa-render-ledgers-bin.h							\
-	ofa-render-ledgers-page.c							\
-	ofa-render-ledgers-page.h							\
 	ofa-render-page.c									\
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
@@ -685,7 +685,9 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
+	ofa-accounts-book-bin.ui							\
 	ofa-accounts-filter-vv-bin.ui						\
+	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\
@@ -713,15 +715,13 @@ ui_files = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
+	ofa-ledgers-book-bin.ui								\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
-	ofa-render-balances-bin.ui							\
-	ofa-render-books-bin.ui								\
-	ofa-render-ledgers-bin.ui							\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
@@ -872,12 +872,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-frame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balances-grid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties.Po@am__quote@
@@ -930,6 +934,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledgers-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledgers-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledgers-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-list-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
@@ -947,12 +953,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rates-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconciliation.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-balances-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-balances-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-books-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-books-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-ledgers-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-ledgers-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement.Po@am__quote@

@@ -490,14 +490,9 @@
                   debit ?
 
  801 2015- 4-13 rename:
-                RenderBalances -> RenderAccountsBalance
                 RenderBooks -> RenderAccountsBook
                 RenderLedgers -> RenderLedgersBook
                 + update Bin composite widgets accordingly
-
- 805 2015- 4-13 add a check box to AccountsBalance to display the 
-                "accounts" balances (=> since the beginning of the exercice)
-                Else these are entries balance
 
  806
 
@@ -3704,6 +3699,11 @@
                 this can be due to a dossier handler which doesn"t have 
                 been removed
      2015- 4-14 fixed - git #b246f59
+
+ 805 2015- 4-13 add a check box to AccountsBalance to display the 
+                "accounts" balances (=> since the beginning of the exercice)
+                Else these are entries balance
+     2015- 4-15 done - git #3c0b704
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

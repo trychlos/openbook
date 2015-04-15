@@ -2,7 +2,7 @@
 
 	* src/ui/ofa-render-ledgers-page.c: fix general summary (todo #800).
 
-	* src/ui/ofa-render-balances-page.c,
+	* src/ui/ofa-balance-render.c,
 	* src/ui/ofa-render-books-page.c,
 	* src/ui/ofa-render-ledgers-page.c: set attributes on needed (todo #794).
 
@@ -20,11 +20,11 @@
 	* src/ui/ofa-print-ledgers.ui: removed files.
 
 	* src/ui/ofa-render-ledgers-bin.c,
-	* src/ui/ofa-render-ledgers-bin.h,
-	* src/ui/ofa-render-ledgers-bin.ui: new ofaRenderLedgersBin class.
+	* src/ui/ofa-ledgers-book-bin.h,
+	* src/ui/ofa-ledgers-book-bin.ui: new ofaLedgersBookBin class.
 
 	* src/ui/ofa-render-ledgers-page.c,
-	* src/ui/ofa-render-ledgers-page.h: new ofaRenderLedgersPage class.
+	* src/ui/ofa-ledgers-book-render.h: new ofaLedgersBookRender class.
 
 	* src/ui/Makefile.am,
 	* src/ui/ofa-main-window.c: updated accordingly.
@@ -42,11 +42,11 @@
 	- define new want_groups() interface method
 	- reset sIRenderable data on begin_render(), freeing on end_render().
 
-	* src/ui/ofa-render-balances-page.c: updated accordingly.
+	* src/ui/ofa-balance-render.c: updated accordingly.
 
-	* src/ui/ofa-render-balances-bin.ui,
-	* src/ui/ofa-render-balances-page.c,
-	* src/ui/ofa-render-books-bin.ui,
+	* src/ui/ofa-balance-bin.ui,
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-accounts-book-bin.ui,
 	* src/ui/ofa-render-books-page.c: fix minor typos.
 
 	* src/ui/ofa-ledger-treeview.c,
@@ -57,16 +57,16 @@
 	* src/ui/ofa-print-books.ui: removed files.
 
 	* src/ui/ofa-render-books-bin.c,
-	* src/ui/ofa-render-books-bin.h,
-	* src/ui/ofa-render-books-bin.ui: new ofaRenderBooksBin class.
+	* src/ui/ofa-accounts-book-bin.h,
+	* src/ui/ofa-accounts-book-bin.ui: new ofaAccountsBookBin class.
 
 	* src/ui/ofa-render-books-page.c,
-	* src/ui/ofa-render-books-page.h: new ofaRenderBooksPage class. 
+	* src/ui/ofa-accounts-book-render.h: new ofaAccountsBookRender class. 
 
 	* src/ui/Makefile.am,
 	* src/ui/ofa-main-window.c: updated accordingly.
 
-	* src/ui/ofa-render-balances-page.c: remove useless include.
+	* src/ui/ofa-balance-render.c: remove useless include.
 
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h: new ofa_irenderable_is_paginating() method.
@@ -83,10 +83,10 @@
 	* src/ui/ofa-iaccounts-filter.h: new ofaIAccountsFilter interface.
 
 	* src/ui/Makefile.am,
-	* src/ui/ofa-render-balances-bin.c,
-	* src/ui/ofa-render-balances-bin.h,
-	* src/ui/ofa-render-balances-bin.ui,
-	* src/ui/ofa-render-balances-page.c: updated accordingly.
+	* src/ui/ofa-balance-bin.c,
+	* src/ui/ofa-balance-bin.h,
+	* src/ui/ofa-balance-bin.ui,
+	* src/ui/ofa-balance-render.c: updated accordingly.
 
 2015-04-11 Pierre Wieser <pwieser@trychlos.org>
 
@@ -97,20 +97,20 @@
 	* src/ui/ofa-iprintable2.h,
 	* src/ui/ofa-render-page.c,
 	* src/ui/ofa-render-page.h,
-	* src/ui/ofa-render-balances-page.c,
-	* src/ui/ofa-render-balances-page.h: get and save print settings.
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-balance-render.h: get and save print settings.
 
-	* src/ui/ofa-render-balances-page.c,
-	* src/ui/ofa-render-balances-page.h: new ofaRenderBalancesPage class.
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-balance-render.h: new ofaBalanceRender class.
 
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h: new ofaIRenderable interface.
 
 2015-04-10 Pierre Wieser <pwieser@trychlos.org>
 
-	* src/ui/ofa-render-balances-bin.c,
-	* src/ui/ofa-render-balances-bin.h,
-	* src/ui/ofa-render-balances-bin.ui: new ofaRenderBalancesBin class.
+	* src/ui/ofa-balance-bin.c,
+	* src/ui/ofa-balance-bin.h,
+	* src/ui/ofa-balance-bin.ui: new ofaBalanceBin class.
 
 	* src/ui/ofa-render-page.c,
 	* src/ui/ofa-render-page.h,

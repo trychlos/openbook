@@ -62,9 +62,9 @@
 #include "ui/ofa-pdf-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
-#include "ui/ofa-render-balances-page.h"
-#include "ui/ofa-render-books-page.h"
-#include "ui/ofa-render-ledgers-page.h"
+#include "ui/ofa-balance-render.h"
+#include "ui/ofa-accounts-book-render.h"
+#include "ui/ofa-ledgers-book-render.h"
 #include "ui/ofa-settlement.h"
 #include "ui/ofa-view-entries.h"
 
@@ -123,8 +123,8 @@ static void on_ope_exercice_close  ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_balances     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_books        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_ledgers      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_accounts_book        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_ledgers_book      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_reconcil        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -149,8 +149,8 @@ static const GActionEntry st_dos_entries[] = {
 		{ "import",           on_ope_import,           NULL, NULL, NULL },
 		{ "export",           on_ope_export,           NULL, NULL, NULL },
 		{ "render-balances",  on_render_balances,      NULL, NULL, NULL },
-		{ "render-books",     on_render_books,         NULL, NULL, NULL },
-		{ "render-ledgers",   on_render_ledgers,       NULL, NULL, NULL },
+		{ "render-books",     on_render_accounts_book,         NULL, NULL, NULL },
+		{ "render-ledgers",   on_render_ledgers_book,       NULL, NULL, NULL },
 		{ "render-reconcil",  on_pdf_reconcil,         NULL, NULL, NULL },
 		{ "accounts",         on_ref_accounts,         NULL, NULL, NULL },
 		{ "ledgers",          on_ref_ledgers,          NULL, NULL, NULL },
@@ -234,17 +234,17 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_RENDER_BALANCES,
 				N_( "Entries balance" ),
-				ofa_render_balances_page_get_type,
+				ofa_balance_render_get_type,
 				FALSE
 		},
-		{ THM_RENDER_BOOKS,
+		{ THM_RENDER_ACCOUNTS_BOOK,
 				N_( "Accounts book" ),
-				ofa_render_books_page_get_type,
+				ofa_accounts_book_render_get_type,
 				FALSE
 		},
-		{ THM_RENDER_LEDGERS,
+		{ THM_RENDER_LEDGERS_BOOK,
 				N_( "Ledgers book" ),
-				ofa_render_ledgers_page_get_type,
+				ofa_ledgers_book_render_get_type,
 				FALSE
 		},
 		{ THM_SETTLEMENT,
@@ -1399,29 +1399,29 @@ on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_da
 }
 
 static void
-on_render_books( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_render_accounts_book( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_render_books";
+	static const gchar *thisfn = "ofa_main_window_on_render_accounts_book";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_BOOKS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_ACCOUNTS_BOOK );
 }
 
 static void
-on_render_ledgers( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_render_ledgers_book( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_render_ledgers";
+	static const gchar *thisfn = "ofa_main_window_on_render_ledgers_book";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS_BOOK );
 }
 
 static void

@@ -23,6 +23,7 @@
 	- Have a 'About...' dialog (todo #8).
 	- Improve DossierProperties dialog box (todo #755).
 	- RestoreAssistant: add filter to file chooser (todo #742).
+	- Have both Accounts balance and Entries balance (todo #805).
 
  Bug fixes:
 
@@ -65,14 +66,14 @@
    - ofaIPrintable2: new interface.
    - ofaIRenderable: new interface.
    - ofaRenderPage: new base class.
-   - ofaRenderBalancesPage: new class.
-   - ofaRenderBalancesBin: new class.
-   - ofaRenderBooksBin: new class.
+   - ofaBalanceRender: new class.
+   - ofaBalanceBin: new class.
+   - ofaAccountsBookBin: new class.
    - ofaRenderBookPage: new class.
    - ofaAccountsFilterVVBin: new class.
    - ofaIAccountsFilter: new interface.
-   - ofaRenderLedgersBin: new class.
-   - ofaRenderLedgersPage: new class.
+   - ofaLedgersBookBin: new class.
+   - ofaLedgersBookRender: new class.
    - ofaPDFBalances: removed class.
    - ofaPDFBooks: removed class.
    - ofaPDFLedgers: removed class.

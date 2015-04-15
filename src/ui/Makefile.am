@@ -79,6 +79,10 @@ openbook_SOURCES = \
 	ofa-account-store.h									\
 	ofa-accounts-book.c									\
 	ofa-accounts-book.h									\
+	ofa-accounts-book-bin.c								\
+	ofa-accounts-book-bin.h								\
+	ofa-accounts-book-render.c							\
+	ofa-accounts-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
 	ofa-accounts-filter-vv-bin.h						\
 	ofa-accounts-frame.c								\
@@ -90,6 +94,10 @@ openbook_SOURCES = \
 	ofa-application-def.h								\
 	ofa-backup.c										\
 	ofa-backup.h										\
+	ofa-balance-bin.c									\
+	ofa-balance-bin.h									\
+	ofa-balance-render.c								\
+	ofa-balance-render.h								\
 	ofa-balances-grid.c									\
 	ofa-balances-grid.h									\
 	ofa-bat-properties.c								\
@@ -193,6 +201,10 @@ openbook_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
+	ofa-ledgers-book-bin.c								\
+	ofa-ledgers-book-bin.h								\
+	ofa-ledgers-book-render.c							\
+	ofa-ledgers-book-render.h							\
 	ofa-ledgers-page.c									\
 	ofa-ledgers-page.h									\
 	ofa-list-store.c									\
@@ -230,18 +242,6 @@ openbook_SOURCES = \
 	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
-	ofa-render-balances-bin.c							\
-	ofa-render-balances-bin.h							\
-	ofa-render-balances-page.c							\
-	ofa-render-balances-page.h							\
-	ofa-render-books-bin.c								\
-	ofa-render-books-bin.h								\
-	ofa-render-books-page.c								\
-	ofa-render-books-page.h								\
-	ofa-render-ledgers-bin.c							\
-	ofa-render-ledgers-bin.h							\
-	ofa-render-ledgers-page.c							\
-	ofa-render-ledgers-page.h							\
 	ofa-render-page.c									\
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
@@ -271,7 +271,9 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
+	ofa-accounts-book-bin.ui							\
 	ofa-accounts-filter-vv-bin.ui						\
+	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
 	ofa-bat-select.ui									\
@@ -299,15 +301,13 @@ ui_files = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
+	ofa-ledgers-book-bin.ui								\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-reconciliation.ui								\
-	ofa-render-balances-bin.ui							\
-	ofa-render-books-bin.ui								\
-	ofa-render-ledgers-bin.ui							\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\

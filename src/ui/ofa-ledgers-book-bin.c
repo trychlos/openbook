@@ -36,11 +36,11 @@
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-render-ledgers-bin.h"
+#include "ui/ofa-ledgers-book-bin.h"
 
 /* private instance data
  */
-struct _ofaRenderLedgersBinPrivate {
+struct _ofaLedgersBookBinPrivate {
 	gboolean             dispose_has_run;
 	ofaMainWindow       *main_window;
 
@@ -67,47 +67,47 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-render-ledgers-bin.ui";
-static const gchar *st_ui_id            = "RenderLedgersBin";
-static const gchar *st_settings         = "RenderLedgers";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-ledgers-book-bin.ui";
+static const gchar *st_ui_id            = "LedgersBookBin";
+static const gchar *st_settings         = "RenderLedgersBook";
 
-G_DEFINE_TYPE( ofaRenderLedgersBin, ofa_render_ledgers_bin, GTK_TYPE_BIN )
+G_DEFINE_TYPE( ofaLedgersBookBin, ofa_ledgers_book_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaRenderLedgersBin *bin );
-static void       setup_ledger_selection( ofaRenderLedgersBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaRenderLedgersBin *self, GtkContainer *parent );
-static void       setup_others( ofaRenderLedgersBin *self, GtkContainer *parent );
-static void       on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaRenderLedgersBin *self );
-static void       on_all_ledgers_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self );
-static void       on_new_page_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self );
-static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaRenderLedgersBin *self );
-static void       load_settings( ofaRenderLedgersBin *bin );
-static void       set_settings( ofaRenderLedgersBin *bin );
+static GtkWidget *load_dialog( ofaLedgersBookBin *bin );
+static void       setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent );
+static void       setup_date_selection( ofaLedgersBookBin *self, GtkContainer *parent );
+static void       setup_others( ofaLedgersBookBin *self, GtkContainer *parent );
+static void       on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgersBookBin *self );
+static void       on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
+static void       on_new_page_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
+static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgersBookBin *self );
+static void       load_settings( ofaLedgersBookBin *bin );
+static void       set_settings( ofaLedgersBookBin *bin );
 
 static void
-render_ledgers_bin_finalize( GObject *instance )
+ledgers_book_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_render_ledgers_bin_finalize";
+	static const gchar *thisfn = "ofa_ledgers_book_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_RENDER_LEDGERS_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGERS_BOOK_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_render_ledgers_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledgers_book_bin_parent_class )->finalize( instance );
 }
 
 static void
-render_ledgers_bin_dispose( GObject *instance )
+ledgers_book_bin_dispose( GObject *instance )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_RENDER_LEDGERS_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGERS_BOOK_BIN( instance ));
 
-	priv = OFA_RENDER_LEDGERS_BIN( instance )->priv;
+	priv = OFA_LEDGERS_BOOK_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -117,47 +117,47 @@ render_ledgers_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_render_ledgers_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledgers_book_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_render_ledgers_bin_init( ofaRenderLedgersBin *self )
+ofa_ledgers_book_bin_init( ofaLedgersBookBin *self )
 {
-	static const gchar *thisfn = "ofa_render_ledgers_bin_init";
+	static const gchar *thisfn = "ofa_ledgers_book_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_RENDER_LEDGERS_BIN( self ));
+	g_return_if_fail( self && OFA_IS_LEDGERS_BOOK_BIN( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_RENDER_LEDGERS_BIN, ofaRenderLedgersBinPrivate );
+						self, OFA_TYPE_LEDGERS_BOOK_BIN, ofaLedgersBookBinPrivate );
 }
 
 static void
-ofa_render_ledgers_bin_class_init( ofaRenderLedgersBinClass *klass )
+ofa_ledgers_book_bin_class_init( ofaLedgersBookBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_render_ledgers_bin_class_init";
+	static const gchar *thisfn = "ofa_ledgers_book_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = render_ledgers_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = render_ledgers_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledgers_book_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledgers_book_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaRenderLedgersBinPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaLedgersBookBinPrivate ));
 
 	/**
-	 * ofaRenderLedgersBin::ofa-changed:
+	 * ofaLedgersBookBin::ofa-changed:
 	 *
 	 * This signal is sent when a widget has changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaRenderLedgersBin *bin,
+	 * void ( *handler )( ofaLedgersBookBin *bin,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_RENDER_LEDGERS_BIN,
+				OFA_TYPE_LEDGERS_BOOK_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -169,18 +169,18 @@ ofa_render_ledgers_bin_class_init( ofaRenderLedgersBinClass *klass )
 }
 
 /**
- * ofa_render_ledgers_bin_new:
+ * ofa_ledgers_book_bin_new:
  * @main_window:
  *
- * Returns: a newly allocated #ofaRenderLedgersBin object.
+ * Returns: a newly allocated #ofaLedgersBookBin object.
  */
-ofaRenderLedgersBin *
-ofa_render_ledgers_bin_new( ofaMainWindow *main_window )
+ofaLedgersBookBin *
+ofa_ledgers_book_bin_new( ofaMainWindow *main_window )
 {
-	ofaRenderLedgersBin *self;
+	ofaLedgersBookBin *self;
 	GtkWidget *parent;
 
-	self = g_object_new( OFA_TYPE_RENDER_LEDGERS_BIN, NULL );
+	self = g_object_new( OFA_TYPE_LEDGERS_BOOK_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
@@ -200,7 +200,7 @@ ofa_render_ledgers_bin_new( ofaMainWindow *main_window )
  * returns: the GtkContainer parent
  */
 static GtkWidget *
-load_dialog( ofaRenderLedgersBin *bin )
+load_dialog( ofaLedgersBookBin *bin )
 {
 	GtkWidget *window;
 	GtkWidget *top_widget;
@@ -217,9 +217,9 @@ load_dialog( ofaRenderLedgersBin *bin )
 }
 
 static void
-setup_ledger_selection( ofaRenderLedgersBin *self, GtkContainer *parent )
+setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	GtkWidget *widget, *toggle;
 
 	priv = self->priv;
@@ -245,9 +245,9 @@ setup_ledger_selection( ofaRenderLedgersBin *self, GtkContainer *parent )
 }
 
 static void
-setup_date_selection( ofaRenderLedgersBin *self, GtkContainer *parent )
+setup_date_selection( ofaLedgersBookBin *self, GtkContainer *parent )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	GtkWidget *alignment, *label;
 	ofaDatesFilterHVBin *bin;
 
@@ -269,9 +269,9 @@ setup_date_selection( ofaRenderLedgersBin *self, GtkContainer *parent )
 }
 
 static void
-setup_others( ofaRenderLedgersBin *self, GtkContainer *parent )
+setup_others( ofaLedgersBookBin *self, GtkContainer *parent )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	GtkWidget *toggle;
 
 	priv = self->priv;
@@ -283,15 +283,15 @@ setup_others( ofaRenderLedgersBin *self, GtkContainer *parent )
 }
 
 static void
-on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaRenderLedgersBin *self )
+on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgersBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-on_all_ledgers_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self )
+on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgersBookBin *self )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 
 	priv = self->priv;
 
@@ -303,9 +303,9 @@ on_all_ledgers_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self )
 }
 
 static void
-on_new_page_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self )
+on_new_page_toggled( GtkToggleButton *button, ofaLedgersBookBin *self )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 
 	priv = self->priv;
 
@@ -315,26 +315,26 @@ on_new_page_toggled( GtkToggleButton *button, ofaRenderLedgersBin *self )
 }
 
 static void
-on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaRenderLedgersBin *self )
+on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgersBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_render_ledgers_bin_is_valid:
+ * ofa_ledgers_book_bin_is_valid:
  * @bin:
  * @message: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_render_ledgers_bin_is_valid( ofaRenderLedgersBin *bin, gchar **message )
+ofa_ledgers_book_bin_is_valid( ofaLedgersBookBin *bin, gchar **message )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	gboolean valid;
 	GList *selected;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_LEDGERS_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_LEDGERS_BOOK_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	valid = FALSE;
@@ -371,16 +371,16 @@ ofa_render_ledgers_bin_is_valid( ofaRenderLedgersBin *bin, gchar **message )
 }
 
 /**
- * ofa_render_ledgers_bin_get_treeview:
+ * ofa_ledgers_book_bin_get_treeview:
  * @bin:
  */
 ofaLedgerTreeview *
-ofa_render_ledgers_bin_get_treeview( const ofaRenderLedgersBin *bin )
+ofa_ledgers_book_bin_get_treeview( const ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	ofaLedgerTreeview *tview;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_LEDGERS_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_LEDGERS_BOOK_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	tview = NULL;
@@ -394,16 +394,16 @@ ofa_render_ledgers_bin_get_treeview( const ofaRenderLedgersBin *bin )
 }
 
 /**
- * ofa_render_ledgers_bin_get_all_ledgers:
+ * ofa_ledgers_book_bin_get_all_ledgers:
  * @bin:
  */
 gboolean
-ofa_render_ledgers_bin_get_all_ledgers( const ofaRenderLedgersBin *bin )
+ofa_ledgers_book_bin_get_all_ledgers( const ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	gboolean all_ledgers;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_LEDGERS_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_LEDGERS_BOOK_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	all_ledgers = FALSE;
@@ -417,16 +417,16 @@ ofa_render_ledgers_bin_get_all_ledgers( const ofaRenderLedgersBin *bin )
 }
 
 /**
- * ofa_render_ledgers_bin_get_new_page_per_ledger:
+ * ofa_ledgers_book_bin_get_new_page_per_ledger:
  * @bin:
  */
 gboolean
-ofa_render_ledgers_bin_get_new_page_per_ledger( const ofaRenderLedgersBin *bin )
+ofa_ledgers_book_bin_get_new_page_per_ledger( const ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	gboolean new_page;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_LEDGERS_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_LEDGERS_BOOK_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	new_page = FALSE;
@@ -440,15 +440,15 @@ ofa_render_ledgers_bin_get_new_page_per_ledger( const ofaRenderLedgersBin *bin )
 }
 
 /**
- * ofa_render_ledgers_bin_get_date_filter:
+ * ofa_ledgers_book_bin_get_date_filter:
  */
 ofaIDatesFilter *
-ofa_render_ledgers_bin_get_dates_filter( const ofaRenderLedgersBin *bin )
+ofa_ledgers_book_bin_get_dates_filter( const ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	ofaIDatesFilter *date_filter;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_LEDGERS_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_LEDGERS_BOOK_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	date_filter = NULL;
@@ -466,9 +466,9 @@ ofa_render_ledgers_bin_get_dates_filter( const ofaRenderLedgersBin *bin )
  * all_ledgers;from_date;to_date;new_page;
  */
 static void
-load_settings( ofaRenderLedgersBin *bin )
+load_settings( ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
 	GDate date;
@@ -512,9 +512,9 @@ load_settings( ofaRenderLedgersBin *bin )
 }
 
 static void
-set_settings( ofaRenderLedgersBin *bin )
+set_settings( ofaLedgersBookBin *bin )
 {
-	ofaRenderLedgersBinPrivate *priv;
+	ofaLedgersBookBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 
 	priv = bin->priv;

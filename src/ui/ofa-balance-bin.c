@@ -38,11 +38,11 @@
 #include "ui/ofa-accounts-filter-vv-bin.h"
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-render-balances-bin.h"
+#include "ui/ofa-balance-bin.h"
 
 /* private instance data
  */
-struct _ofaRenderBalancesBinPrivate {
+struct _ofaBalanceBinPrivate {
 	gboolean                dispose_has_run;
 	ofaMainWindow          *main_window;
 
@@ -71,48 +71,48 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-render-balances-bin.ui";
-static const gchar *st_ui_id            = "RenderBalancesBin";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-balance-bin.ui";
+static const gchar *st_ui_id            = "BalanceBin";
 static const gchar *st_settings         = "RenderBalances";
 
-G_DEFINE_TYPE( ofaRenderBalancesBin, ofa_render_balances_bin, GTK_TYPE_BIN )
+G_DEFINE_TYPE( ofaBalanceBin, ofa_balance_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaRenderBalancesBin *bin );
-static void       setup_account_selection( ofaRenderBalancesBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent );
-static void       setup_others( ofaRenderBalancesBin *self, GtkContainer *parent );
-static void       on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaRenderBalancesBin *self );
-static void       on_per_class_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
-static void       on_new_page_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
-static void       on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self );
-static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaRenderBalancesBin *self );
-static void       load_settings( ofaRenderBalancesBin *bin );
-static void       set_settings( ofaRenderBalancesBin *bin );
+static GtkWidget *load_dialog( ofaBalanceBin *bin );
+static void       setup_account_selection( ofaBalanceBin *self, GtkContainer *parent );
+static void       setup_date_selection( ofaBalanceBin *self, GtkContainer *parent );
+static void       setup_others( ofaBalanceBin *self, GtkContainer *parent );
+static void       on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaBalanceBin *self );
+static void       on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void       on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void       on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
+static void       load_settings( ofaBalanceBin *bin );
+static void       set_settings( ofaBalanceBin *bin );
 
 static void
-render_balances_bin_finalize( GObject *instance )
+balance_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_render_balances_bin_finalize";
+	static const gchar *thisfn = "ofa_balance_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_RENDER_BALANCES_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_BALANCE_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_render_balances_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_balance_bin_parent_class )->finalize( instance );
 }
 
 static void
-render_balances_bin_dispose( GObject *instance )
+balance_bin_dispose( GObject *instance )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_RENDER_BALANCES_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_BALANCE_BIN( instance ));
 
-	priv = OFA_RENDER_BALANCES_BIN( instance )->priv;
+	priv = OFA_BALANCE_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -122,47 +122,47 @@ render_balances_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_render_balances_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_balance_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_render_balances_bin_init( ofaRenderBalancesBin *self )
+ofa_balance_bin_init( ofaBalanceBin *self )
 {
-	static const gchar *thisfn = "ofa_render_balances_bin_init";
+	static const gchar *thisfn = "ofa_balance_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_RENDER_BALANCES_BIN( self ));
+	g_return_if_fail( self && OFA_IS_BALANCE_BIN( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_RENDER_BALANCES_BIN, ofaRenderBalancesBinPrivate );
+						self, OFA_TYPE_BALANCE_BIN, ofaBalanceBinPrivate );
 }
 
 static void
-ofa_render_balances_bin_class_init( ofaRenderBalancesBinClass *klass )
+ofa_balance_bin_class_init( ofaBalanceBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_render_balances_bin_class_init";
+	static const gchar *thisfn = "ofa_balance_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = render_balances_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = render_balances_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = balance_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = balance_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaRenderBalancesBinPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaBalanceBinPrivate ));
 
 	/**
-	 * ofaRenderBalancesBin::ofa-changed:
+	 * ofaBalanceBin::ofa-changed:
 	 *
 	 * This signal is sent when a widget has changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaRenderBalancesBin *bin,
+	 * void ( *handler )( ofaBalanceBin *bin,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_RENDER_BALANCES_BIN,
+				OFA_TYPE_BALANCE_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -174,18 +174,18 @@ ofa_render_balances_bin_class_init( ofaRenderBalancesBinClass *klass )
 }
 
 /**
- * ofa_render_balances_bin_new:
+ * ofa_balance_bin_new:
  * @main_window:
  *
- * Returns: a newly allocated #ofaRenderBalancesBin object.
+ * Returns: a newly allocated #ofaBalanceBin object.
  */
-ofaRenderBalancesBin *
-ofa_render_balances_bin_new( ofaMainWindow *main_window )
+ofaBalanceBin *
+ofa_balance_bin_new( ofaMainWindow *main_window )
 {
-	ofaRenderBalancesBin *self;
+	ofaBalanceBin *self;
 	GtkWidget *parent;
 
-	self = g_object_new( OFA_TYPE_RENDER_BALANCES_BIN, NULL );
+	self = g_object_new( OFA_TYPE_BALANCE_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
@@ -205,7 +205,7 @@ ofa_render_balances_bin_new( ofaMainWindow *main_window )
  * returns: the GtkContainer parent
  */
 static GtkWidget *
-load_dialog( ofaRenderBalancesBin *bin )
+load_dialog( ofaBalanceBin *bin )
 {
 	GtkWidget *window;
 	GtkWidget *top_widget;
@@ -222,9 +222,9 @@ load_dialog( ofaRenderBalancesBin *bin )
 }
 
 static void
-setup_account_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
+setup_account_selection( ofaBalanceBin *self, GtkContainer *parent )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	GtkWidget *alignment;
 	ofaAccountsFilterVVBin *bin;
 
@@ -242,9 +242,9 @@ setup_account_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
 }
 
 static void
-setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
+setup_date_selection( ofaBalanceBin *self, GtkContainer *parent )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	GtkWidget *alignment, *label;
 	ofaDatesFilterHVBin *bin;
 	GtkWidget *check;
@@ -277,9 +277,9 @@ setup_date_selection( ofaRenderBalancesBin *self, GtkContainer *parent )
 }
 
 static void
-setup_others( ofaRenderBalancesBin *self, GtkContainer *parent )
+setup_others( ofaBalanceBin *self, GtkContainer *parent )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	GtkWidget *toggle;
 
 	priv = self->priv;
@@ -298,15 +298,15 @@ setup_others( ofaRenderBalancesBin *self, GtkContainer *parent )
 }
 
 static void
-on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaRenderBalancesBin *self )
+on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaBalanceBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-on_per_class_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
+on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean bvalue;
 
 	priv = self->priv;
@@ -320,9 +320,9 @@ on_per_class_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
 }
 
 static void
-on_new_page_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
+on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 
 	priv = self->priv;
 
@@ -332,9 +332,9 @@ on_new_page_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
 }
 
 static void
-on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self )
+on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean active;
 	const GDate *begin;
 	ofoDossier *dossier;
@@ -357,25 +357,25 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaRenderBalancesBin *self
 }
 
 static void
-on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaRenderBalancesBin *self )
+on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_render_balances_bin_is_valid:
+ * ofa_balance_bin_is_valid:
  * @bin:
  * @message: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_render_balances_bin_is_valid( ofaRenderBalancesBin *bin, gchar **message )
+ofa_balance_bin_is_valid( ofaBalanceBin *bin, gchar **message )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean valid;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	valid = FALSE;
@@ -399,15 +399,15 @@ ofa_render_balances_bin_is_valid( ofaRenderBalancesBin *bin, gchar **message )
 }
 
 /**
- * ofa_render_balances_bin_get_accounts_filter:
+ * ofa_balance_bin_get_accounts_filter:
  */
 ofaIAccountsFilter *
-ofa_render_balances_bin_get_accounts_filter( const ofaRenderBalancesBin *bin )
+ofa_balance_bin_get_accounts_filter( const ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	ofaIAccountsFilter *filter;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	filter = NULL;
@@ -421,15 +421,15 @@ ofa_render_balances_bin_get_accounts_filter( const ofaRenderBalancesBin *bin )
 }
 
 /**
- * ofa_render_balances_bin_get_accounts_balance:
+ * ofa_balance_bin_get_accounts_balance:
  */
 gboolean
-ofa_render_balances_bin_get_accounts_balance( const ofaRenderBalancesBin *bin )
+ofa_balance_bin_get_accounts_balance( const ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean acc_balance;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	acc_balance = FALSE;
@@ -443,15 +443,15 @@ ofa_render_balances_bin_get_accounts_balance( const ofaRenderBalancesBin *bin )
 }
 
 /**
- * ofa_render_balances_bin_get_subtotal_per_class:
+ * ofa_balance_bin_get_subtotal_per_class:
  */
 gboolean
-ofa_render_balances_bin_get_subtotal_per_class( const ofaRenderBalancesBin *bin )
+ofa_balance_bin_get_subtotal_per_class( const ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean subtotal;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	subtotal = FALSE;
@@ -465,15 +465,15 @@ ofa_render_balances_bin_get_subtotal_per_class( const ofaRenderBalancesBin *bin 
 }
 
 /**
- * ofa_render_balances_bin_get_new_page_per_class:
+ * ofa_balance_bin_get_new_page_per_class:
  */
 gboolean
-ofa_render_balances_bin_get_new_page_per_class( const ofaRenderBalancesBin *bin )
+ofa_balance_bin_get_new_page_per_class( const ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gboolean new_page;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	new_page = FALSE;
@@ -487,15 +487,15 @@ ofa_render_balances_bin_get_new_page_per_class( const ofaRenderBalancesBin *bin 
 }
 
 /**
- * ofa_render_balances_bin_get_date_filter:
+ * ofa_balance_bin_get_date_filter:
  */
 ofaIDatesFilter *
-ofa_render_balances_bin_get_dates_filter( const ofaRenderBalancesBin *bin )
+ofa_balance_bin_get_dates_filter( const ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	ofaIDatesFilter *date_filter;
 
-	g_return_val_if_fail( bin && OFA_IS_RENDER_BALANCES_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	date_filter = NULL;
@@ -513,9 +513,9 @@ ofa_render_balances_bin_get_dates_filter( const ofaRenderBalancesBin *bin )
  * account_from;account_to;all_accounts;effect_from;effect_to;subtotal_per_class;new_page_per_class;accounts_balance;
  */
 static void
-load_settings( ofaRenderBalancesBin *bin )
+load_settings( ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
 	GDate date;
@@ -588,9 +588,9 @@ load_settings( ofaRenderBalancesBin *bin )
 }
 
 static void
-set_settings( ofaRenderBalancesBin *bin )
+set_settings( ofaBalanceBin *bin )
 {
-	ofaRenderBalancesBinPrivate *priv;
+	ofaBalanceBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 	const gchar *from_account, *to_account;
 	gboolean all_accounts, acc_balance;
@@ -604,7 +604,7 @@ set_settings( ofaRenderBalancesBin *bin )
 	all_accounts = ofa_iaccounts_filter_get_all_accounts(
 			OFA_IACCOUNTS_FILTER( priv->accounts_filter ));
 
-	acc_balance = ofa_render_balances_bin_get_accounts_balance( bin );
+	acc_balance = ofa_balance_bin_get_accounts_balance( bin );
 
 	sdfrom = my_date_to_str(
 			ofa_idates_filter_get_date(
