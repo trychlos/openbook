@@ -220,12 +220,17 @@ do_backup( ofaBackup *self )
 
 	priv = self->priv;
 
-	folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));
+	/* folder is nul while the user has not make it the current folder
+	 * by entering into the folder */
+	/*folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));*/
+
+	fname = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->dialog ));
+
+	folder = g_path_get_dirname( fname );
 	ofa_settings_dossier_set_string(
 				ofo_dossier_get_name( priv->dossier ), st_backup_folder, folder );
 	g_free( folder );
 
-	fname = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->dialog ));
 	ok = ofo_dossier_backup( priv->dossier, fname, TRUE );
 	g_free( fname );
 

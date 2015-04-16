@@ -43,6 +43,8 @@
    - GuidedInputEx:
      . make entries insensitive while no operation template is defined
      . fix dates check format (todo #789).
+   - Backup:
+     . fix default folder handling (todo #806).
 
  Other changes:
 

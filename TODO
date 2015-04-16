@@ -455,6 +455,7 @@
                   - last entry number from previous exercice
                   - row number in rate detail validities
                   - account number in bat file
+                  - last period closing date
 
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
 
@@ -489,12 +490,15 @@
                 - added to the account label or rigt-aligned before the
                   debit ?
 
- 801 2015- 4-13 rename:
-                RenderBooks -> RenderAccountsBook
-                RenderLedgers -> RenderLedgersBook
-                + update Bin composite widgets accordingly
+ 806 2014- 4-16 when backuping the dossier
+(openbook:543): OFA-DEBUG: ofa_settings_dossier_set_string: dname=Test pré-clôture, key=LastBackupFolder
+(openbook:543): GLib-CRITICAL **: g_key_file_set_string: assertion 'string != NULL' failed
+#2  0x00007ffff7da9d16 in ofa_settings_set_string_ex (target=<optimized out>, group=0xb5a090 "Dossier Test pré-clôture", key=0x495c6c "LastBackupFolder", svalue=0x0)
+    at ../../../src/core/ofa-settings.c:647
+#3  0x00007ffff7daa447 in ofa_settings_dossier_set_string (dname=<optimized out>, key=0x495c6c "LastBackupFolder", svalue=0x0) at ../../../src/core/ofa-settings.c:1055
+#4  0x000000000042ddfc in do_backup (self=0xcc5b60) at ../../../src/ui/ofa-backup.c:224
 
- 806
+ 807
 
 -----------------------------------------------------------------------
  DONE
@@ -3678,6 +3682,12 @@
 
  800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
      2015- 4-13 fixed - git #f95e872
+
+ 801 2015- 4-13 rename:
+                RenderBooks -> RenderAccountsBook
+                RenderLedgers -> RenderLedgersBook
+                + update Bin composite widgets accordingly
+     2015- 4-16 done - git #c1ed09e
 
  802 2015- 4-13 importing lcl-01800_493012R_du_16-06-2014_au_19-12-2014.xls
                 doesn't take into account decimal fields (which are comma-
