@@ -871,8 +871,8 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	/* may be NULL */
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = self->priv;
 	priv->current_page_w = page;
