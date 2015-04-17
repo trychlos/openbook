@@ -1,3 +1,8 @@
+2015-04-18 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/mysql/ofa-mysql-idbms.c: doesn't truncate last part of database
+	names which would have an underscore.
+
 2015-04-17 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-restore-assistant.c: accept that no dossier be opened.

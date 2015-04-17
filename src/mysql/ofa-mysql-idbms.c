@@ -430,6 +430,11 @@ find_new_database( mysqlInfos *infos, const gchar *dbname )
 	if( ofa_mysql_connect_with_infos( infos )){
 
 		p = g_strrstr( dbname, "_" );
+		/* if the original db name contains itself some underscores,
+		 * then ignore them */
+		if( atoi( p+1 ) == 0 ){
+			p = NULL;
+		}
 		if( p ){
 			prefix = g_strdup( dbname );
 			prefix[p-dbname] = '\0';
