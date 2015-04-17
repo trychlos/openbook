@@ -1,5 +1,7 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-settlement.c: settlement column header is right aligned. 
+
 	* src/ui/ofa-exercice-close-assistant.c:
 	- fix entries archiving (regression from reconciliation new model).
 	- fix bat files archiving (regression from reconciliation new model).

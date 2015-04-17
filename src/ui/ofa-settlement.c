@@ -607,6 +607,7 @@ setup_entries_treeview( ofaSettlement *self )
 			_( "Settlement" ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
