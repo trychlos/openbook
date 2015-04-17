@@ -1204,6 +1204,7 @@ p7_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			ofo_dossier_set_exe_begin( dossier, begin_next );
 			ofo_dossier_set_exe_end( dossier, end_next );
 			ofo_dossier_update( dossier );
+			g_signal_emit_by_name( main_window, "ofa-opened-dossier", dossier );
 			ofa_main_window_update_title( OFA_MAIN_WINDOW( main_window ));
 
 			ok = TRUE;
@@ -1250,30 +1251,48 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 	ok = ofa_dbms_query( dbms, query, TRUE );
 	g_free( query );
 
+	/* archive deleted (non-reported) entries
+	 * i.e. those which are tight to an unsettleable or an unreconcilable
+	 * account, or are not settled, or are not reconciliated
+	 */
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_ENTRIES" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "CREATE TABLE OFA_T_KEEP_ENTRIES "
+					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS "
+					"	WHERE ENT_ACCOUNT=ACC_NUMBER AND ("
+					"		(ACC_SETTLEABLE='S' AND ENT_STLMT_NUMBER IS NULL) OR "
+					"		(ACC_RECONCILIABLE='R' AND ENT_NUMBER NOT IN ("
+					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='E'))) AND "
+					"		ENT_STATUS!=%d AND ENT_STATUS!=%d",
+					ENT_STATUS_DELETED, ENT_STATUS_FUTURE );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_ENTRIES" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
-
 	if( ok ){
-		query = g_strdup_printf( "CREATE TABLE OFA_T_DELETED_ENTRIES "
-					"SELECT * FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS WHERE "
-					"	ENT_ACCOUNT=ACC_NUMBER AND "
-					"	(ACC_SETTLEABLE IS NULL OR ENT_STLMT_NUMBER IS NOT NULL) AND "
-					"	(ACC_RECONCILIABLE IS NULL OR ENT_CONCIL_DVAL IS NOT NULL) AND"
-					"	ENT_STATUS!=%d", ENT_STATUS_FUTURE );
+		query = g_strdup( "CREATE TABLE OFA_T_DELETED_ENTRIES "
+					"SELECT * FROM OFA_T_ENTRIES WHERE "
+					"	ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_ENTRIES "
-					"WHERE ENT_NUMBER IN (SELECT ENT_NUMBER FROM OFA_T_DELETED_ENTRIES)" );
+					"WHERE ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
 
+	/* set previous exercice entries status to 'past' */
 	if( ok ){
 		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
 					"ENT_STATUS=%d WHERE ENT_STATUS!=%d", ENT_STATUS_PAST, ENT_STATUS_FUTURE );
@@ -1281,33 +1300,40 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
+	/* keep bat files which are not fully reconciliated
+	 * and archived others
+	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_BATS" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
-
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_KEEP_BATS "
-					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES WHERE BAT_LINE_ENTRY IS NULL" );
+					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES "
+					"	WHERE BAT_LINE_ID NOT IN "
+					"		(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
+					"			WHERE REC_IDS_TYPE='B')" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
-
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BATS" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
-
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT "
+		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BATS "
 					"SELECT * FROM OFA_T_BAT "
 					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
 		ok = ofa_dbms_query( dbms, query, TRUE );
 		g_free( query );
 	}
-
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BAT_LINES" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT_LINES "
 					"SELECT * FROM OFA_T_BAT_LINES "
@@ -1330,6 +1356,8 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
+	/* reset to zero accounts and ledgers balances
+	 */
 	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_ACCOUNTS SET "
 					"ACC_VAL_DEBIT=0, ACC_VAL_CREDIT=0, "
@@ -1366,8 +1394,8 @@ p7_cleanup( ofaExerciceCloseAssistant *self )
 /*
  * apply generated carried forward entries
  *
- * they are inserted with 'rough' status, and the settlement number is
- * set if it has been previously set when generating the entry
+ * they are inserted with 'validated' status, and the settlement number
+ * is set if it has already been previously set when generating the entry
  *
  * + entries on reconciliable accounts are set reconciliated
  *   on the first day of the exercice (which is also the operation date
@@ -1406,6 +1434,7 @@ p7_forward( ofaExerciceCloseAssistant *self )
 	for( i=1, it=priv->p7_forwards ; it ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_insert( entry, dossier );
+
 		counter = ofo_entry_get_settlement_number( entry );
 		if( counter ){
 			ofo_entry_update_settlement( entry, dossier, counter );
@@ -1417,6 +1446,9 @@ p7_forward( ofaExerciceCloseAssistant *self )
 		if( ofo_account_is_reconciliable( account )){
 			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin, dossier );
 		}
+
+		g_signal_emit_by_name( dossier,
+				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );
@@ -1442,7 +1474,7 @@ p7_forward( ofaExerciceCloseAssistant *self )
  *
  * open=rough+validated, but at this time we only have:
  * - past entries (unreconciliated or unsettled from previous exercice)
- * - forward entries (which are in 'rough' status)
+ * - forward entries (which are in 'validated' status)
  */
 static gboolean
 p7_open( ofaExerciceCloseAssistant *self )
@@ -1510,12 +1542,14 @@ p7_future( ofaExerciceCloseAssistant *self )
 	gdouble progress;
 	gchar *text;
 	GtkWidget *label;
+	const GDate *dos_dend, *ent_deffect;
 
 	priv = self->priv;
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	dos_dend = ofo_dossier_get_exe_end( dossier );
 
 	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
@@ -1525,8 +1559,12 @@ p7_future( ofaExerciceCloseAssistant *self )
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		g_signal_emit_by_name( dossier,
-				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
+		ent_deffect = ofo_entry_get_deffect( entry );
+
+		if( my_date_compare( ent_deffect, dos_dend ) <= 0 ){
+			g_signal_emit_by_name( dossier,
+					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
+		}
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );

@@ -1,5 +1,11 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-exercice-close-assistant.c:
+	- fix entries archiving (regression from reconciliation new model).
+	- fix bat files archiving (regression from reconciliation new model).
+	- RAN entries are now created in validated status.
+	- previously future entries are only marked rough in in the new exercice.
+
 	* src/mysql/ofa-mysql-idbms.c: doesn't truncate last part of database
 	names which would have an underscore.
 

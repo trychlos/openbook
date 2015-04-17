@@ -24,6 +24,7 @@
 	- Improve DossierProperties dialog box (todo #755).
 	- RestoreAssistant: add filter to file chooser (todo #742).
 	- Have both Accounts balance and Entries balance (todo #805).
+	- Closing exercice: forward entries are created in validated status.
 
  Bug fixes:
 
