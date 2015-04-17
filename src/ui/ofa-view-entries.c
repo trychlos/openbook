@@ -992,6 +992,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_SETTLE;
 	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
