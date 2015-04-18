@@ -517,9 +517,6 @@
 
  815 2015- 4-17 ClosingLedger: have a checkbox 'All ledgers'
 
- 816 2015- 4-18 Rename AccountsBook -> AccountsChart to distinguish
-                book of entries by account (ofaAccountsBookRender)
-
  817
 
 -----------------------------------------------------------------------
@@ -3745,6 +3742,10 @@
 #3  0x00007ffff7daa447 in ofa_settings_dossier_set_string (dname=<optimized out>, key=0x495c6c "LastBackupFolder", svalue=0x0) at ../../../src/core/ofa-settings.c:1055
 #4  0x000000000042ddfc in do_backup (self=0xcc5b60) at ../../../src/ui/ofa-backup.c:224
      2014- 4-16 fixed - git #c81da22
+
+ 816 2015- 4-18 Rename AccountsBook -> AccountsChart to distinguish
+                book of entries by account (ofaAccountsBookRender)
+     2015- 4-18 done - git #501b573
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

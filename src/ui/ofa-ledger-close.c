@@ -32,6 +32,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -52,13 +53,14 @@ struct _ofaLedgerClosePrivate {
 	/* UI
 	 */
 	ofaLedgerTreeview *tview;
-	GtkButton          *do_close_btn;
-	GtkLabel           *date_label;
-	GtkLabel           *message_label;
+	GtkWidget          *do_close_btn;
+	GtkWidget          *message_label;
 	GtkWidget          *closing_entry;
+	GtkWidget          *all_ledgers_btn;
 
 	/* during the iteration on each selected ledger
 	 */
+	gboolean            all_ledgers;
 	gint                count;			/* count of ledgers */
 	gint                uncloseable;
 	GList              *handlers;
@@ -67,15 +69,20 @@ struct _ofaLedgerClosePrivate {
 	myProgressBar      *bar;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-ledger-close.ui";
-static const gchar  *st_ui_id  = "LedgerCloseDlg";
+static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-ledger-close.ui";
+static const gchar  *st_ui_id           = "LedgerCloseDlg";
+static const gchar  *st_settings        = "LedgerClose";
 
 G_DEFINE_TYPE( ofaLedgerClose, ofa_ledger_close, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
+static void      setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent );
+static void      setup_date( ofaLedgerClose *self, GtkContainer *parent );
+static void      setup_others( ofaLedgerClose *self, GtkContainer *parent );
 static void      connect_to_dossier( ofaLedgerClose *dialog );
 static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
 static void      on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
 static void      check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
 static gboolean  is_dialog_validable( ofaLedgerClose *self, GList *selected );
@@ -87,6 +94,8 @@ static gboolean  close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo,
 static void      do_end_close( ofaLedgerClose *self );
 static void      on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, guint count, ofaLedgerClose *self );
 static void      on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self );
+static void      load_settings( ofaLedgerClose *self );
+static void      set_settings( ofaLedgerClose *self );
 
 static void
 ledger_close_finalize( GObject *instance )
@@ -202,55 +211,85 @@ ofa_ledger_close_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaLedgerClosePrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkContainer *container;
-	GtkButton *button;
-	GtkLabel *label;
-	GtkWidget *parent;
-	GdkRGBA color;
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = OFA_LEDGER_CLOSE( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
-	button = ( GtkButton * )
-					my_utils_container_get_child_by_name( container, "btn-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	priv->do_close_btn = button;
+	setup_ledgers_treeview( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
+	setup_date( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
+	setup_others( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
+	connect_to_dossier( OFA_LEDGER_CLOSE( dialog ));
+	load_settings( OFA_LEDGER_CLOSE( dialog ));
+}
 
-	parent = my_utils_container_get_child_by_name( container, "treeview-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+static void
+setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
+{
+	ofaLedgerClosePrivate *priv;
+	GtkWidget *tview_parent;
+	GtkApplicationWindow *main_window;
+
+	priv = self->priv;
+
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	tview_parent = my_utils_container_get_child_by_name( parent, "treeview-parent" );
+	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
+
 	priv->tview = ofa_ledger_treeview_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
+	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), dialog );
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_rows_activated ), dialog );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), self );
+	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_rows_activated ), self );
+}
 
-	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
+static void
+setup_date( ofaLedgerClose *self, GtkContainer *parent )
+{
+	ofaLedgerClosePrivate *priv;
+	GtkWidget *label;
+
+	priv = self->priv;
+
+	priv->closing_entry = my_utils_container_get_child_by_name( parent, "p1-date" );
+	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
+
+	label = my_utils_container_get_child_by_name( parent, "p1-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check());
+
+	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), self );
+}
+
+static void
+setup_others( ofaLedgerClose *self, GtkContainer *parent )
+{
+	ofaLedgerClosePrivate *priv;
+	GtkWidget *button, *label;
+	GdkRGBA color;
+
+	priv = self->priv;
+
+	button = my_utils_container_get_child_by_name( parent, "all-ledgers-btn" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_all_ledgers_toggled ), self );
+	priv->all_ledgers_btn = button;
+
+	button = my_utils_container_get_child_by_name( parent, "btn-ok" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	priv->do_close_btn = button;
+
+	label = my_utils_container_get_child_by_name( parent, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 	gdk_rgba_parse( &color, "#ff0000" );
-	gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
-
-	priv->closing_entry = my_utils_container_get_child_by_name( container, "p1-date" );
-	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
-	my_editable_date_set_date( GTK_EDITABLE( priv->closing_entry ), &priv->closing );
-	priv->date_label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p1-label" ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), GTK_WIDGET( priv->date_label ), ofa_prefs_date_check());
-
-	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
-
-	connect_to_dossier( OFA_LEDGER_CLOSE( dialog ));
-
-	check_for_enable_dlg( OFA_LEDGER_CLOSE( dialog ), NULL );
+	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 }
 
 static void
@@ -300,6 +339,24 @@ on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self
 }
 
 static void
+on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self )
+{
+	ofaLedgerClosePrivate *priv;
+	GtkTreeSelection *selection;
+
+	priv = self->priv;
+
+	priv->all_ledgers = gtk_toggle_button_get_active( button );
+
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), !priv->all_ledgers );
+
+	if( priv->all_ledgers ){
+		selection = ofa_ledger_treeview_get_selection( priv->tview );
+		gtk_tree_selection_select_all( selection );
+	}
+}
+
+static void
 on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
@@ -315,9 +372,15 @@ on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 static void
 check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 {
-	gtk_widget_set_sensitive(
-				GTK_WIDGET( self->priv->do_close_btn ),
-				is_dialog_validable( self, selected ));
+	gboolean ok;
+
+	ok = is_dialog_validable( self, selected );
+
+	gtk_widget_set_sensitive( self->priv->do_close_btn, ok );
+
+	if( ok ){
+		set_settings( self );
+	}
 }
 
 /*
@@ -345,24 +408,24 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	gtk_label_set_text( priv->message_label, "" );
+	gtk_label_set_text( GTK_LABEL( priv->message_label ), "" );
 	ok = FALSE;
 
 	/* do we have a intrinsically valid proposed closing date
 	 * + compare it to the limits of the exercice */
 	if( !my_date_is_valid( &priv->closing )){
-		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
+		gtk_label_set_text( GTK_LABEL( priv->message_label ), _( "Invalid closing date" ));
 
 	} else {
 		exe_begin = ofo_dossier_get_exe_begin( dossier );
 		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) < 0 ){
-			gtk_label_set_text( priv->message_label,
+			gtk_label_set_text( GTK_LABEL( priv->message_label ),
 					_( "Closing date must be greater or equal to the beginning of exercice" ));
 
 		} else {
 			exe_end = ofo_dossier_get_exe_end( dossier );
 			if( my_date_is_valid( exe_end ) && my_date_compare( &priv->closing, exe_end ) >= 0 ){
-				gtk_label_set_text( priv->message_label,
+				gtk_label_set_text( GTK_LABEL( priv->message_label ),
 						_( "Closing date must be lesser than the end of exercice" ));
 
 			} else {
@@ -388,11 +451,11 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 		}
 
 		if( priv->count == 0 ){
-			gtk_label_set_text( priv->message_label,
+			gtk_label_set_text( GTK_LABEL( priv->message_label ),
 					_( "No selected ledger" ));
 
 		} else if( priv->uncloseable > 0 ){
-			gtk_label_set_text( priv->message_label,
+			gtk_label_set_text( GTK_LABEL( priv->message_label ),
 					_( "At least one of the selected ledgers is not closeable at the proposed date" ));
 
 		} else {
@@ -638,4 +701,45 @@ on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryS
 	text = g_strdup_printf( "%u/%u", priv->entries_num, priv->entries_count );
 	g_signal_emit_by_name( priv->bar, "ofa-text", text );
 	g_free( text );
+}
+
+/*
+ * settings: a string list:
+ * all_ledgers;
+ */
+static void
+load_settings( ofaLedgerClose *self )
+{
+	ofaLedgerClosePrivate *priv;
+	GList *list, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+	list = ofa_settings_get_string_list( st_settings );
+
+	it = list;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ), my_utils_boolean_from_str( cstr ));
+		on_all_ledgers_toggled( GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ), self );
+	}
+
+	ofa_settings_free_string_list( list );
+}
+
+static void
+set_settings( ofaLedgerClose *self )
+{
+	ofaLedgerClosePrivate *priv;
+	gchar *str;
+
+	priv = self->priv;
+
+	str = g_strdup_printf( "%s;",
+			priv->all_ledgers ? "True":"False" );
+
+	ofa_settings_set_string( st_settings, str );
+
+	g_free( str );
 }
