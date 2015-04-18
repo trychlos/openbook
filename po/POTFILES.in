@@ -39,7 +39,6 @@ src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ledgers-book-bin.ui
 src/ui/ofa-ope-template-help.ui
 src/ui/ofa-ope-template-properties.ui
-src/ui/ofa-print-reconcil.ui
 src/ui/ofa-rate-properties.ui
 src/ui/ofa-reconcil-bin.ui
 src/ui/ofa-reconciliation.ui

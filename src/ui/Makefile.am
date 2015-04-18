@@ -230,10 +230,6 @@ openbook_SOURCES = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
-	ofa-pdf-dialog.c									\
-	ofa-pdf-dialog.h									\
-	ofa-pdf-reconcil.c									\
-	ofa-pdf-reconcil.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-rate-properties.c								\
@@ -310,7 +306,6 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
-	ofa-print-reconcil.ui								\
 	ofa-reconcil-bin.ui									\
 	ofa-reconciliation.ui								\
 	ofa-render-page.ui									\

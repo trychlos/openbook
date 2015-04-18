@@ -83,6 +83,7 @@
    - ofaPDFBalances: removed class.
    - ofaPDFBooks: removed class.
    - ofaPDFLedgers: removed class.
+   - ofaPDFReconcil: removed class.
 
 -----------------------------------------------------------------------
  Version 0.38

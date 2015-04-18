@@ -1,5 +1,11 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-pdf-dialog.c,
+	* src/ui/ofa-pdf-dialog.h,
+	* src/ui/ofa-pdf-reconcil.c,
+	* src/ui/ofa-pdf-reconcil.h,
+	* src/ui/ofa-print-reconcil.ui: removed files.
+
 	* src/ui/ofa-irenderable.c,
 	* src/ui/ofa-irenderable.h:
 	- mainly, fix the computing of text dimensions by setting the font
