@@ -517,7 +517,10 @@
 
  815 2015- 4-17 ClosingLedger: have a checkbox 'All ledgers'
 
- 816
+ 816 2015- 4-18 Rename AccountsBook -> AccountsChart to distinguish
+                book of entries by account (ofaAccountsBookRender)
+
+ 817
 
 -----------------------------------------------------------------------
  DONE

@@ -1,5 +1,14 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-accounts-book.c: renamed as src/ui/ofa-accounts-chart.c
+	* src/ui/ofa-accounts-book.h: renamed as src/ui/ofa-accounts-chart.h
+
+	* src/ui/Makefile.am,
+	* src/ui/ofa-account-select.c,
+	* src/ui/ofa-accounts-frame.c,
+	* src/ui/ofa-accounts-frame.h,
+	* src/ui/ofa-accounts-page.c: updated accordingly.
+
 	* configure.ac: post-release version bump.
 
 	Releasing v0.39

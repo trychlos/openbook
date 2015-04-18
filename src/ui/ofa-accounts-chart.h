@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ACCOUNTS_BOOK_H__
-#define __OFA_ACCOUNTS_BOOK_H__
+#ifndef __OFA_ACCOUNTS_CHART_H__
+#define __OFA_ACCOUNTS_CHART_H__
 
 /**
- * SECTION: ofa_accounts_book
- * @short_description: #ofaAccountsBook class definition.
- * @include: ui/ofa-accounts-book.h
+ * SECTION: ofa_accounts_chart
+ * @short_description: #ofaAccountsChart class definition.
+ * @include: ui/ofa-accounts-chart.h
  *
  * This is a convenience class which manages the display of the accounts
  * inside of a notebook, with one class per page.
@@ -46,56 +46,56 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ACCOUNTS_BOOK                ( ofa_accounts_book_get_type())
-#define OFA_ACCOUNTS_BOOK( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNTS_BOOK, ofaAccountsBook ))
-#define OFA_ACCOUNTS_BOOK_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNTS_BOOK, ofaAccountsBookClass ))
-#define OFA_IS_ACCOUNTS_BOOK( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNTS_BOOK ))
-#define OFA_IS_ACCOUNTS_BOOK_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNTS_BOOK ))
-#define OFA_ACCOUNTS_BOOK_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNTS_BOOK, ofaAccountsBookClass ))
+#define OFA_TYPE_ACCOUNTS_CHART                ( ofa_accounts_chart_get_type())
+#define OFA_ACCOUNTS_CHART( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNTS_CHART, ofaAccountsChart ))
+#define OFA_ACCOUNTS_CHART_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNTS_CHART, ofaAccountsChartClass ))
+#define OFA_IS_ACCOUNTS_CHART( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNTS_CHART ))
+#define OFA_IS_ACCOUNTS_CHART_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNTS_CHART ))
+#define OFA_ACCOUNTS_CHART_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNTS_CHART, ofaAccountsChartClass ))
 
-typedef struct _ofaAccountsBookPrivate        ofaAccountsBookPrivate;
+typedef struct _ofaAccountsChartPrivate        ofaAccountsChartPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                  parent;
+	GtkBin                   parent;
 
 	/*< private members >*/
-	ofaAccountsBookPrivate *priv;
+	ofaAccountsChartPrivate *priv;
 }
-	ofaAccountsBook;
+	ofaAccountsChart;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass             parent;
+	GtkBinClass              parent;
 }
-	ofaAccountsBookClass;
+	ofaAccountsChartClass;
 
-GType            ofa_accounts_book_get_type            ( void ) G_GNUC_CONST;
+GType             ofa_accounts_chart_get_type            ( void ) G_GNUC_CONST;
 
-ofaAccountsBook *ofa_accounts_book_new                 ( void );
+ofaAccountsChart *ofa_accounts_chart_new                 ( void );
 
-void             ofa_accounts_book_set_cell_data_func  ( ofaAccountsBook *book,
+void              ofa_accounts_chart_set_cell_data_func  ( ofaAccountsChart *book,
 																GtkTreeCellDataFunc fn_cell,
 																void *user_data );
 
-void             ofa_accounts_book_set_main_window     ( ofaAccountsBook *book,
+void              ofa_accounts_chart_set_main_window     ( ofaAccountsChart *book,
 																ofaMainWindow *main_window );
 
-void             ofa_accounts_book_expand_all          ( ofaAccountsBook *book );
+void              ofa_accounts_chart_expand_all          ( ofaAccountsChart *book );
 
-gchar           *ofa_accounts_book_get_selected        ( ofaAccountsBook *book );
+gchar            *ofa_accounts_chart_get_selected        ( ofaAccountsChart *book );
 
-void             ofa_accounts_book_set_selected        ( ofaAccountsBook *book,
+void              ofa_accounts_chart_set_selected        ( ofaAccountsChart *book,
 																const gchar *number );
 
-void             ofa_accounts_book_toggle_collapse     ( ofaAccountsBook *book );
+void              ofa_accounts_chart_toggle_collapse     ( ofaAccountsChart *book );
 
-void             ofa_accounts_book_button_clicked      ( ofaAccountsBook *book,
+void              ofa_accounts_chart_button_clicked      ( ofaAccountsChart *book,
 																gint button_id );
 
-GtkWidget       *ofa_accounts_book_get_current_treeview( const ofaAccountsBook *book );
+GtkWidget        *ofa_accounts_chart_get_current_treeview( const ofaAccountsChart *book );
 
-void             ofa_accounts_book_cell_data_renderer  ( ofaAccountsBook *book,
+void              ofa_accounts_chart_cell_data_renderer  ( ofaAccountsChart *book,
 																GtkTreeViewColumn *tcolumn,
 																GtkCellRenderer *cell,
 																GtkTreeModel *tmodel,
@@ -103,4 +103,4 @@ void             ofa_accounts_book_cell_data_renderer  ( ofaAccountsBook *book,
 
 G_END_DECLS
 
-#endif /* __OFA_ACCOUNTS_BOOK_H__ */
+#endif /* __OFA_ACCOUNTS_CHART_H__ */

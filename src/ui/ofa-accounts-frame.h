@@ -37,7 +37,7 @@
  * sent by the underlying ofaAccountIStore interface.
  */
 
-#include "ui/ofa-accounts-book.h"
+#include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -76,7 +76,7 @@ void              ofa_accounts_frame_set_main_window( ofaAccountsFrame *frame,
 void              ofa_accounts_frame_set_buttons    ( ofaAccountsFrame *frame,
 															gboolean view_entries );
 
-ofaAccountsBook  *ofa_accounts_frame_get_book       ( const ofaAccountsFrame *frame );
+ofaAccountsChart *ofa_accounts_frame_get_chart      ( const ofaAccountsFrame *frame );
 
 G_END_DECLS
 

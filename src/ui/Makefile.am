@@ -77,8 +77,8 @@ openbook_SOURCES = \
 	ofa-account-selector-bin.h							\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
-	ofa-accounts-book.c									\
-	ofa-accounts-book.h									\
+	ofa-accounts-chart.c								\
+	ofa-accounts-chart.h								\
 	ofa-accounts-book-bin.c								\
 	ofa-accounts-book-bin.h								\
 	ofa-accounts-book-render.c							\
