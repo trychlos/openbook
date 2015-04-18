@@ -514,6 +514,29 @@ get_selected( ofaLedgerTreeview *self )
 }
 
 /**
+ * ofa_ledger_treeview_get_selection:
+ * @view:
+ *
+ * Returns: the #GtkTreeSelection object.
+ */
+GtkTreeSelection *
+ofa_ledger_treeview_get_selection( ofaLedgerTreeview *view )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( gtk_tree_view_get_selection( priv->tview ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_ledger_treeview_get_selected:
  *
  * Returns: the list of #ofoLedger ledgers selected mnemonics.

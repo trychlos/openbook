@@ -1,5 +1,9 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-ledger-treeview.c,
+	* src/ui/ofa-ledger-treeview.h:
+	- new ofa_ledger_treeview_get_selection() method.
+
 	* src/ui/ofa-accounts-book.c: renamed as src/ui/ofa-accounts-chart.c
 	* src/ui/ofa-accounts-book.h: renamed as src/ui/ofa-accounts-chart.h
 
