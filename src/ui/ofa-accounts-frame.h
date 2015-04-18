@@ -74,7 +74,9 @@ void              ofa_accounts_frame_set_main_window( ofaAccountsFrame *frame,
 															ofaMainWindow *main_window );
 
 void              ofa_accounts_frame_set_buttons    ( ofaAccountsFrame *frame,
-															gboolean view_entries );
+															gboolean view_entries,
+															gboolean settlement,
+															gboolean reconciliation );
 
 ofaAccountsChart *ofa_accounts_frame_get_chart      ( const ofaAccountsFrame *frame );
 

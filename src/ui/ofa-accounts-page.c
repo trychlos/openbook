@@ -130,7 +130,7 @@ v_setup_page( ofaPage *page )
 	gtk_grid_attach( grid, GTK_WIDGET( priv->accounts_frame ), 0, 0, 1, 1 );
 
 	ofa_accounts_frame_set_main_window( priv->accounts_frame, ofa_page_get_main_window( page ));
-	ofa_accounts_frame_set_buttons( priv->accounts_frame, TRUE );
+	ofa_accounts_frame_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
 
 	g_signal_connect(
 			G_OBJECT( priv->accounts_frame ),

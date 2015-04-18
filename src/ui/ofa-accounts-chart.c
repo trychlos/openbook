@@ -42,6 +42,8 @@
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-settlement.h"
+#include "ui/ofa-reconciliation.h"
 #include "ui/ofa-view-entries.h"
 
 /* private instance data
@@ -120,6 +122,9 @@ static void       do_insert_account( ofaAccountsChart *self );
 static void       do_update_account( ofaAccountsChart *self );
 static void       do_delete_account( ofaAccountsChart *self );
 static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
+static void       do_view_entries( ofaAccountsChart *self );
+static void       do_settlement( ofaAccountsChart *self );
+static void       do_reconciliation( ofaAccountsChart *self );
 static void       dossier_signals_connect( ofaAccountsChart *book );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsChart *book );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountsChart *book );
@@ -1204,6 +1209,38 @@ do_view_entries( ofaAccountsChart *self )
 }
 
 static void
+do_settlement( ofaAccountsChart *self )
+{
+	ofaAccountsChartPrivate *priv;
+	gchar *number;
+	ofaPage *page;
+
+	priv = self->priv;
+
+	number = ofa_accounts_chart_get_selected( self );
+	g_debug( "ofa_accounts_chart_do_settlement: number=%s", number );
+	page = ofa_main_window_activate_theme( priv->main_window, THM_SETTLEMENT );
+	ofa_settlement_set_account( OFA_SETTLEMENT( page ), number );
+	g_free( number );
+}
+
+static void
+do_reconciliation( ofaAccountsChart *self )
+{
+	ofaAccountsChartPrivate *priv;
+	gchar *number;
+	ofaPage *page;
+
+	priv = self->priv;
+
+	number = ofa_accounts_chart_get_selected( self );
+	g_debug( "ofa_accounts_chart_do_reconciliation: number=%s", number );
+	page = ofa_main_window_activate_theme( priv->main_window, THM_RECONCIL );
+	ofa_reconciliation_set_account( OFA_RECONCILIATION( page ), number );
+	g_free( number );
+}
+
+static void
 dossier_signals_connect( ofaAccountsChart *book )
 {
 	ofaAccountsChartPrivate *priv;
@@ -1644,6 +1681,12 @@ ofa_accounts_chart_button_clicked( ofaAccountsChart *book, gint button_id )
 				break;
 			case BUTTON_VIEW_ENTRIES:
 				do_view_entries( book );
+				break;
+			case BUTTON_SETTLEMENT:
+				do_settlement( book );
+				break;
+			case BUTTON_RECONCILIATION:
+				do_reconciliation( book );
 				break;
 		}
 	}

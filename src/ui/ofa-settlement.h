@@ -61,7 +61,14 @@ typedef struct {
 
 GType ofa_settlement_get_type       ( void ) G_GNUC_CONST;
 
-void  ofa_settlement_display_entries( ofaSettlement *self, GType type, const gchar *id, const GDate *begin, const GDate *end );
+void  ofa_settlement_display_entries( ofaSettlement *page,
+											GType type,
+											const gchar *id,
+											const GDate *begin,
+											const GDate *end );
+
+void  ofa_settlement_set_account    ( ofaSettlement *page,
+											const gchar *number );
 
 G_END_DECLS
 

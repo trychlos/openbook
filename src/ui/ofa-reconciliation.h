@@ -115,7 +115,10 @@ typedef struct {
 }
 	ofaReconciliationClass;
 
-GType ofa_reconciliation_get_type( void ) G_GNUC_CONST;
+GType ofa_reconciliation_get_type   ( void ) G_GNUC_CONST;
+
+void  ofa_reconciliation_set_account( ofaReconciliation *page,
+											const gchar *number );
 
 G_END_DECLS
 

@@ -234,7 +234,7 @@ v_init_dialog( myDialog *dialog )
 	ofa_accounts_chart_set_cell_data_func(
 			priv->accounts_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
 	ofa_accounts_frame_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
-	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE );
+	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE, FALSE, FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->accounts_frame ), "changed", G_CALLBACK( on_account_changed ), dialog );

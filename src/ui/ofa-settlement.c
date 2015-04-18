@@ -1570,3 +1570,22 @@ find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter entr
 
 	return( FALSE );
 }
+
+/**
+ * ofa_settlement_set_account:
+ * @page:
+ * @number:
+ */
+void
+ofa_settlement_set_account( ofaSettlement *page, const gchar *number )
+{
+	ofaSettlementPrivate *priv;
+
+	g_return_if_fail( page && OFA_IS_SETTLEMENT( page ));
+
+	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+
+		priv =page->priv;
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
+	}
+}

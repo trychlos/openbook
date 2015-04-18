@@ -18,7 +18,7 @@
 
  New features:
 
-	- 
+	- AccountsChart: open Settlement and Reconciliation page (todo #813).
 
  Bug fixes:
 
@@ -27,8 +27,10 @@
  Other changes:
 
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
-   - ofa_ledger_treeview_get_selection(): new method.
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
+   - ofa_ledger_treeview_get_selection(): new method.
+   - ofa_reconciliation_set_account(): new method.
+   - ofa_settlement_set_account(): new method.
 
 -----------------------------------------------------------------------
  Version 0.39

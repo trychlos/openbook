@@ -3368,3 +3368,22 @@ on_print_clicked( GtkButton *button, ofaReconciliation *self )
 	page = ofa_main_window_activate_theme( main_window, THM_RENDER_RECONCIL );
 	ofa_reconcil_render_set_account( OFA_RECONCIL_RENDER( page ), acc_number );
 }
+
+/**
+ * ofa_reconciliation_set_account:
+ * @page:
+ * @number:
+ */
+void
+ofa_reconciliation_set_account( ofaReconciliation *page, const gchar *number )
+{
+	ofaReconciliationPrivate *priv;
+
+	g_return_if_fail( page && OFA_IS_RECONCILIATION( page ));
+
+	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+
+		priv = page->priv;
+		gtk_entry_set_text( priv->account_entry, number );
+	}
+}

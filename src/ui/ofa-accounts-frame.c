@@ -51,6 +51,8 @@ struct _ofaAccountsFramePrivate {
 	GtkWidget       *update_btn;
 	GtkWidget       *delete_btn;
 	GtkWidget       *view_entries_btn;
+	GtkWidget       *settlement_btn;
+	GtkWidget       *reconciliation_btn;
 };
 
 /* signals defined here
@@ -70,6 +72,8 @@ static void on_new_clicked( GtkButton *button, ofaAccountsFrame *frame );
 static void on_properties_clicked( GtkButton *button, ofaAccountsFrame *frame );
 static void on_delete_clicked( GtkButton *button, ofaAccountsFrame *frame );
 static void on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_settlement_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void on_reconciliation_clicked( GtkButton *button, ofaAccountsFrame *frame );
 static void on_book_selection_changed( ofaAccountsChart *book, const gchar *number, ofaAccountsFrame *frame );
 static void on_book_selection_activated( ofaAccountsChart *book, const gchar *number, ofaAccountsFrame *frame );
 static void update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number );
@@ -310,11 +314,29 @@ on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame )
 	ofa_accounts_chart_button_clicked( priv->book, BUTTON_VIEW_ENTRIES );
 }
 
+static void
+on_settlement_clicked( GtkButton *button, ofaAccountsFrame *frame )
+{
+	ofaAccountsFramePrivate *priv;
+
+	priv = frame->priv;
+	ofa_accounts_chart_button_clicked( priv->book, BUTTON_SETTLEMENT );
+}
+
+static void
+on_reconciliation_clicked( GtkButton *button, ofaAccountsFrame *frame )
+{
+	ofaAccountsFramePrivate *priv;
+
+	priv = frame->priv;
+	ofa_accounts_chart_button_clicked( priv->book, BUTTON_RECONCILIATION );
+}
+
 /**
  * ofa_accounts_frame_set_buttons:
  */
 void
-ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries )
+ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries, gboolean settlement, gboolean reconciliation )
 {
 	ofaAccountsFramePrivate *priv;
 
@@ -340,6 +362,14 @@ ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries )
 			ofa_buttons_box_add_spacer( priv->box );
 			priv->view_entries_btn = ofa_buttons_box_add_button( priv->box,
 					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), frame );
+		}
+		if( settlement ){
+			priv->settlement_btn = ofa_buttons_box_add_button( priv->box,
+					BUTTON_SETTLEMENT, FALSE, G_CALLBACK( on_settlement_clicked ), frame );
+		}
+		if( reconciliation ){
+			priv->reconciliation_btn = ofa_buttons_box_add_button( priv->box,
+					BUTTON_RECONCILIATION, FALSE, G_CALLBACK( on_reconciliation_clicked ), frame );
 		}
 	}
 }
@@ -391,6 +421,7 @@ update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number )
 	gboolean has_account;
 
 	priv = self->priv;
+	account = NULL;
 	has_account = FALSE;
 	dossier = ofa_main_window_get_dossier( priv->main_window );
 
@@ -408,5 +439,15 @@ update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number )
 	if( priv->view_entries_btn ){
 		gtk_widget_set_sensitive( priv->view_entries_btn,
 				has_account && !ofo_account_is_root( account ));
+	}
+
+	if( priv->settlement_btn ){
+		gtk_widget_set_sensitive( priv->settlement_btn,
+				has_account && ofo_account_is_settleable( account ));
+	}
+
+	if( priv->reconciliation_btn ){
+		gtk_widget_set_sensitive( priv->reconciliation_btn,
+				has_account && ofo_account_is_reconciliable( account ));
 	}
 }

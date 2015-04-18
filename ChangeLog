@@ -1,5 +1,22 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-buttons-box.c,
+	* src/ui/ofa-buttons-box.h: define 'Settlement' and 'Reconciliation' buttons.
+
+	* src/ui/ofa-accounts-chart.c,
+	* src/ui/ofa-accounts-frame.c,
+	* src/ui/ofa-accounts-frame.h:
+	- open settlement (resp. reconciliation) page on button click (todo #813).
+
+	* src/ui/ofa-reconciliation.c,
+	* src/ui/ofa-reconciliation.h: new ofa_reconciliation_set_account() method.
+
+	* src/ui/ofa-settlement.c,
+	* src/ui/ofa-settlement.h: new ofa_settlement_set_account() method.
+
+	* src/ui/ofa-account-select.c,
+	* src/ui/ofa-accounts-page.c: updated accordingly.
+
 	* src/ui/ofa-ledger-close.c,
 	* src/ui/ofa-ledger-close.h: have a 'All ledgers' button (todo #815).
 
