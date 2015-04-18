@@ -177,7 +177,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-templates-page.$(OBJEXT) ofa-page.$(OBJEXT) \
 	ofa-pdf-dialog.$(OBJEXT) ofa-pdf-reconcil.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rates-page.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
+	ofa-rates-page.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
+	ofa-reconcil-render.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
 	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
 	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
 	ofa-view-entries.$(OBJEXT)
@@ -654,6 +655,10 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rates-page.c									\
 	ofa-rates-page.h									\
+	ofa-reconcil-bin.c									\
+	ofa-reconcil-bin.h									\
+	ofa-reconcil-render.c								\
+	ofa-reconcil-render.h								\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
 	ofa-render-page.c									\
@@ -721,6 +726,7 @@ ui_files = \
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-print-reconcil.ui								\
+	ofa-reconcil-bin.ui									\
 	ofa-reconciliation.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
@@ -952,6 +958,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rates-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconciliation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@

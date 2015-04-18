@@ -240,6 +240,10 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rates-page.c									\
 	ofa-rates-page.h									\
+	ofa-reconcil-bin.c									\
+	ofa-reconcil-bin.h									\
+	ofa-reconcil-render.c								\
+	ofa-reconcil-render.h								\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
 	ofa-render-page.c									\
@@ -307,6 +311,7 @@ ui_files = \
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-print-reconcil.ui								\
+	ofa-reconcil-bin.ui									\
 	ofa-reconciliation.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\

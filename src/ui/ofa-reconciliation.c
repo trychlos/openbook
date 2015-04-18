@@ -53,9 +53,10 @@
 #include "ui/ofa-bat-utils.h"
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-idates-filter.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-pdf-reconcil.h"
+#include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconciliation.h"
 
 /* private instance data
@@ -3358,8 +3359,12 @@ on_print_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 	const gchar *acc_number;
+	ofaMainWindow *main_window;
+	ofaPage *page;
 
 	priv = self->priv;
 	acc_number = gtk_entry_get_text( priv->account_entry );
-	ofa_pdf_reconcil_run( ofa_page_get_main_window( OFA_PAGE( self )), acc_number );
+	main_window = ofa_page_get_main_window( OFA_PAGE( self ));
+	page = ofa_main_window_activate_theme( main_window, THM_RENDER_RECONCIL );
+	ofa_reconcil_render_set_account( OFA_RECONCIL_RENDER( page ), acc_number );
 }

@@ -41,6 +41,7 @@ src/ui/ofa-ope-template-help.ui
 src/ui/ofa-ope-template-properties.ui
 src/ui/ofa-print-reconcil.ui
 src/ui/ofa-rate-properties.ui
+src/ui/ofa-reconcil-bin.ui
 src/ui/ofa-reconciliation.ui
 src/ui/ofa-balance-bin.ui
 src/ui/ofa-render-page.ui

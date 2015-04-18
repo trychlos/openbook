@@ -155,6 +155,16 @@ typedef struct {
 	gchar *            ( *get_body_font )           ( ofaIRenderable *instance );
 
 	/**
+	 * get_body_vspace_rate:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: the vspace rate to be applied to body line.
+	 *
+	 * Default is 0.35.
+	 */
+	gdouble            ( *get_body_vspace_rate )    ( ofaIRenderable *instance );
+
+	/**
 	 * draw_page_header:
 	 * @instance: the #ofaIRenderable instance.
 	 * @page_num: the page number, counted from zero.
@@ -489,6 +499,9 @@ void         ofa_irenderable_set_font             ( ofaIRenderable *instance,
 															const gchar *font_str );
 
 gdouble      ofa_irenderable_get_text_height      ( ofaIRenderable *instance );
+
+gdouble      ofa_irenderable_get_text_width       ( ofaIRenderable *instance,
+															const gchar *text );
 
 void         ofa_irenderable_set_color            ( ofaIRenderable *instance,
 															gdouble r,

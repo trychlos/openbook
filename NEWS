@@ -25,6 +25,7 @@
 	- RestoreAssistant: add filter to file chooser (todo #742).
 	- Have both Accounts balance and Entries balance (todo #805).
 	- Closing exercice: forward entries are created in validated status.
+	- Printings have a page view before actually print (todo #695).
 
  Bug fixes:
 
@@ -77,6 +78,8 @@
    - ofaIAccountsFilter: new interface.
    - ofaLedgersBookBin: new class.
    - ofaLedgersBookRender: new class.
+   - ofaReconcilBin: new class.
+   - ofaReconcilRender: new class.
    - ofaPDFBalances: removed class.
    - ofaPDFBooks: removed class.
    - ofaPDFLedgers: removed class.

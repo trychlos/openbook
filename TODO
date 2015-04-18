@@ -490,7 +490,34 @@
                 - added to the account label or rigt-aligned before the
                   debit ?
 
- 807
+ 807 2015- 4-17 close before restore
+
+ 808 2015- 4-17 when rendering, automatically computes the width of 
+                standard field as date or amount
+
+ 809 2015- 4-17 when computing the ODs, do not generate an OD for 
+                "forfait kilométrique BNC" when option is "FR"
+
+ 810 2015- 4-17 when computing the ODs, the "Frais réels du véhicule"
+                should distinguish HT and TVA (but, yes, compute on
+                TTC)
+
+ 811 2015- 4-17 Le compte d'équilibre de l'OD de régularisation de la
+                CSG non déductible ne devrait pas être un compte de
+                charge
+
+ 812 2015- 4-17 libellé des écritures d'amortissement: ajouter le numéro
+                d'annuité et le nb total (#7 - 3/4)
+
+ 813 2015- 4-17 Chart of accounts: enable a 'Settle' button on settleable
+                buttons + a 'Reconciliate' button on reconciliable ones
+
+ 814 2015- 4-17 Dossier: have list of classes allowed to be reconciliated
+                 + classes allowed to be settled
+
+ 815 2015- 4-17 ClosingLedger: have a checkbox 'All ledgers'
+
+ 816
 
 -----------------------------------------------------------------------
  DONE

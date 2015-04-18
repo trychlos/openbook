@@ -37,45 +37,43 @@
 /* data associated to each implementor object
  */
 typedef struct {
+	/* constant data
+	 * they are set on begin rendering, from #begin_render() unless
+	 * otherwise specified, and use through all the rest of the code
+	 */
 	gdouble      render_width;
 	gdouble      render_height;
-	gdouble      max_y;
-	gdouble      last_y;
-	gint         pages_count;
-	GList       *dataset;
-	GList       *last_printed;
-	cairo_t     *in_context;			/* save here the provided context with an associated layout */
-	PangoLayout *in_layout;
 	gchar       *body_font;
+	gdouble      body_vspace_rate;
+	gdouble      page_header_columns_height;
+	gdouble      page_footer_height;
+	gdouble      max_y;
+	gint         pages_count;
+	gboolean     want_groups;			/* whether the implementation manages groups */
+	gboolean     want_new_page;			/* whether if wants new page on new group */
+	GList       *dataset;
+
+	/* data reset from each entry point of the api:
+	 * #begin_render(), #render_page() and #end_render()
+	 */
+	cairo_t     *in_context;			/* the provided context with an associated layout */
+	PangoLayout *in_layout;
+	cairo_t     *temp_context;			/* new temp context and layout for pagination */
+	PangoLayout *temp_layout;
+
+	/* runtime data
+	 */
+	gboolean     paginating;
 	cairo_t     *current_context;
 	PangoLayout *current_layout;
-	gdouble      current_font_size;
-	gboolean     paginating;
+	gdouble      last_y;
+	GList       *last_printed;			/* reset_runtime */
 
-	/* groups management
-	 * @want_groups: is initialized to %FALSE on initialization,
-	 *  then set to %TRUE during the pagination phase, when the first
-	 *  line makes the implementation detect a new group (so tell us
-	 *  that it actually manages groups)
-	 * @group_footer_printed: is reset to %TRUE in #reset_runtime()
+	/* @group_footer_printed: is reset to %TRUE in #reset_runtime()
 	 *  so that we do not try to draw it if the implementation does
 	 *  not manage groups
 	 */
-	gboolean     want_groups;
-	gboolean     want_new_page;
-	gboolean     group_footer_printed;
-
-	/* these are height of various portions of the printed
-	 * they are computed only once (most probably while begin render)
-	 * and cached here
-	 */
-	gdouble      page_header_columns_height;
-	gdouble      page_footer_height;
-
-	/* temporary context and layout to be used during pagination
-	 */
-	cairo_t     *temp_context;
-	PangoLayout *temp_layout;
+	gboolean     group_footer_printed;	/* reset_runtime */
 }
 	sIRenderable;
 
@@ -116,7 +114,6 @@ static const gchar  *st_default_no_data_font               = "Sans 18";
 
 static const gdouble st_page_margin                        = 2.0;
 static const gdouble st_columns_vspace_rate_after          = 0.5;
-static const gdouble st_body_vspace_rate                   = 0.35;
 
 static guint st_initializations = 0;	/* interface initialization count */
 
@@ -124,10 +121,9 @@ static GType         register_type( void );
 static void          interface_base_init( ofaIRenderableInterface *klass );
 static void          interface_base_finalize( ofaIRenderableInterface *klass );
 static gchar        *irenderable_get_body_font( ofaIRenderable *instance );
-static gboolean      want_new_page( const ofaIRenderable *instance );
-static gboolean      irenderable_want_new_page( const ofaIRenderable *instance );
-static gboolean      want_groups( const ofaIRenderable *instance );
+static gdouble       irenderable_get_body_vspace_rate( ofaIRenderable *instance );
 static gboolean      irenderable_want_groups( const ofaIRenderable *instance );
+static gboolean      irenderable_want_new_page( const ofaIRenderable *instance );
 static gboolean      draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static void          irenderable_draw_page_header( ofaIRenderable *instance, gint page_num );
 static void          draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
@@ -160,7 +156,6 @@ static sIRenderable *get_irenderable_data( ofaIRenderable *instance );
 static void          set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
 static void          on_instance_finalized( sIRenderable *sdata, void *instance );
 static void          free_irenderable_data( sIRenderable *sdata );
-static cairo_t      *get_temp_context( ofaIRenderable *instance, sIRenderable *sdata );
 static void          set_font( PangoLayout *layout, const gchar *font_str, gdouble *size );
 static gdouble       set_text( PangoLayout *layout, cairo_t *context, gdouble x, gdouble y, const gchar *text, PangoAlignment align );
 
@@ -222,6 +217,7 @@ interface_base_init( ofaIRenderableInterface *klass )
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		klass->get_body_font = irenderable_get_body_font;
+		klass->get_body_vspace_rate = irenderable_get_body_vspace_rate;
 		klass->want_groups = irenderable_want_groups;
 		klass->want_new_page = irenderable_want_new_page;
 		klass->draw_page_header = irenderable_draw_page_header;
@@ -279,24 +275,26 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
 	sdata = get_irenderable_data( instance );
-	set_irenderable_input_context( instance, cr, sdata );
-
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
+	set_irenderable_input_context( instance, cr, sdata );
 
 	sdata->paginating = TRUE;
 	sdata->current_context = sdata->temp_context;
 	sdata->current_layout = sdata->temp_layout;
 
+	sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
+	sdata->body_vspace_rate = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_vspace_rate( instance );
 	sdata->page_header_columns_height = get_page_header_columns_height( instance, sdata );
 	sdata->page_footer_height = get_page_footer_height( instance, sdata );
 	sdata->max_y = render_height - sdata->page_footer_height;
 
-	sdata->want_groups = want_groups( instance );
+	sdata->want_groups = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_groups( instance );
 	if( sdata->want_groups ){
-		sdata->want_new_page = want_new_page( instance );
+		sdata->want_new_page = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_new_page( instance );
 	}
 
+	/* implementation may expect that this be called before #begin_render() */
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dataset ){
 		sdata->dataset = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dataset( instance );
 	}
@@ -305,6 +303,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 			thisfn, ( void * ) instance, ( void * ) cr, render_width, render_height, sdata->max_y,
 			g_list_length( sdata->dataset ));
 
+	/* implementation may expect that this be called after #get_dataset() */
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance, render_width, render_height );
 	}
@@ -324,7 +323,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 }
 
 /*
- * default implementation of #get_body_font() virtual
+ * default implementation of some virtuals
  */
 static gchar *
 irenderable_get_body_font( ofaIRenderable *instance )
@@ -332,22 +331,18 @@ irenderable_get_body_font( ofaIRenderable *instance )
 	return( g_strdup( st_default_body_font ));
 }
 
-static gboolean
-want_groups( const ofaIRenderable *instance )
+static gdouble
+irenderable_get_body_vspace_rate( ofaIRenderable *instance )
 {
-	return( OFA_IRENDERABLE_GET_INTERFACE( instance )->want_groups( instance ));
+	static const gdouble st_vspace_rate = 0.35;
+
+	return( st_vspace_rate );
 }
 
 static gboolean
 irenderable_want_groups( const ofaIRenderable *instance )
 {
 	return( FALSE );
-}
-
-static gboolean
-want_new_page( const ofaIRenderable *instance )
-{
-	return( OFA_IRENDERABLE_GET_INTERFACE( instance )->want_new_page( instance ));
 }
 
 static gboolean
@@ -440,6 +435,9 @@ draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 			/*g_debug( "draw_page: page_num=%d, is_last=%s", page_num, is_last ? "True":"False" );*/
 		}
 	}
+
+	/*g_debug( "draw_page: page_num=%d, is_last=%s, last_y=%lf, max_y=%lf",
+			page_num, is_last ? "True":"False", sdata->last_y, sdata->max_y );*/
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance, page_num );
@@ -567,14 +565,12 @@ draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *s
 static void
 draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 {
-	gdouble height;
-
 	/* draw and paint a rectangle
 	 * this must be done before writing the columns headers */
 	if( page_num >= 0 ){
 		ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_BG );
-		height = get_page_header_columns_height( instance, sdata );
-		cairo_rectangle( sdata->current_context, 0, sdata->last_y, sdata->render_width, height );
+		cairo_rectangle( sdata->current_context,
+				0, sdata->last_y, sdata->render_width, sdata->page_header_columns_height );
 		cairo_fill( sdata->current_context );
 	}
 
@@ -589,26 +585,21 @@ draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable 
 }
 
 /*
- * header columns have always the same height
+ * columns header is expected to have a fixed height
  * so it is worth to caching it
- * This is thus called once from begin_render() during pagination phase.
+ * so it is called once from begin_render() on start of the pagination phase.
  */
 static gdouble
 get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
 {
 	static gboolean in_function = FALSE;	/* against recursion */
 	gdouble prev_y, height;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
 
 	height = 0;
 
 	if( !in_function ){
 		in_function = TRUE;
-		prev_context = sdata->current_context;
-		sdata->current_context = sdata->temp_context;
-		prev_layout = sdata->current_layout;
-		sdata->current_layout = sdata->temp_layout;
+		g_return_val_if_fail( sdata->paginating, 0 );
 		prev_y = sdata->last_y;
 
 		draw_page_header_columns( instance, -1, sdata );
@@ -616,9 +607,6 @@ get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
 		height = sdata->last_y
 				- prev_y
 				- st_columns_vspace_rate_after * ofa_irenderable_get_text_height( instance );
-		sdata->last_y = prev_y;
-		sdata->current_context = prev_context;
-		sdata->current_layout = prev_layout;
 		in_function = FALSE;
 	}
 
@@ -633,6 +621,11 @@ get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
  *
  * This height is computed by just drawing on a context, and then
  * measuring the 'last_y' difference.
+ *
+ * It is expected this function returns 0 when called more or less
+ * directly from #draw_page_header_columns() while computing the height.
+ * This should happen only the first time it is called, only during the
+ * pagination phase.
  */
 gdouble
 ofa_irenderable_get_page_header_columns_height( ofaIRenderable *instance )
@@ -675,18 +668,19 @@ draw_line( ofaIRenderable *instance,
 	static const gchar *thisfn = "ofa_irenderable_draw_line";
 	gdouble y, req_height, end_height, line_height, font_height;
 
-	if( 0 ){
-		g_debug( "%s: page_num=%d, line_num=%d, line=%p, next=%p, count=%d",
-				thisfn, page_num, line_num, ( void * ) line, ( void * ) next,
-				g_list_length( sdata->dataset ));
-	}
-
 	/* must be set before any height computing as this is the main
 	 * parameter  */
 	ofa_irenderable_set_color( instance, COLOR_BODY );
 	ofa_irenderable_set_font( instance, sdata->body_font );
 	font_height = ofa_irenderable_get_text_height( instance );
-	line_height = font_height * ( 1+st_body_vspace_rate );
+	line_height = font_height * ( 1+sdata->body_vspace_rate );
+
+	if( 0 ){
+		g_debug( "%s: paginating=%s, page_num=%d, line_num=%d, line=%p, next=%p, last_y=%lf, font_height=%lf, line_height=%lf, count=%d",
+				thisfn, sdata->paginating ? "True":"False",
+				page_num, line_num, ( void * ) line, ( void * ) next,
+				sdata->last_y, font_height, line_height, g_list_length( sdata->dataset ));
+	}
 
 	/* this line + a group bottom report or a group footer or a page bottom report */
 	end_height =
@@ -706,7 +700,7 @@ draw_line( ofaIRenderable *instance,
 			draw_group_footer( instance, line_num, sdata );
 		}
 		/* is the group header requested on a new page ? */
-		if( line_num > 0 && want_new_page( instance )){
+		if( line_num > 0 && sdata->want_new_page ){
 			return( FALSE );
 		}
 		/* do we have enough vertical space for the group header,
@@ -739,8 +733,8 @@ draw_line( ofaIRenderable *instance,
 			} else {
 				draw_page_bottom_report( instance, page_num, sdata );
 			}
-			g_debug( "draw_line: last_y=%lf, font_height=%lf, line_height=%lf, req_height=%lf, max_y=%lf",
-					sdata->last_y, font_height, line_height, req_height, sdata->max_y );
+			/*g_debug( "draw_line: last_y=%lf, font_height=%lf, line_height=%lf, req_height=%lf, max_y=%lf",
+					sdata->last_y, font_height, line_height, req_height, sdata->max_y );*/
 			return( FALSE );
 		}
 	}
@@ -815,7 +809,7 @@ draw_group_header( ofaIRenderable *instance, gint line_num, GList *line, sIRende
 		cairo_move_to( sdata->current_context, 0, y );
 		cairo_line_to( sdata->current_context, sdata->render_width, y );
 		cairo_stroke( sdata->current_context );
-		y += st_body_vspace_rate * text_height;
+		y += sdata->body_vspace_rate * text_height;
 		sdata->last_y = y;
 	}
 
@@ -1080,18 +1074,14 @@ irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
  * the height of the default page footer is computed by just drawing it
  * at y=0, and then requiring Pango the layout height
  *
- * We consider here that the footer is of constant height, and so can
- * be cached. This is thus called once from begin_render() during
- * pagination phase.
- *
- * Computing is made only once, i.e. on the first call.
+ * page footer is expected to have a fixed height
+ * so it is worth to caching it
+ * so it is called once from begin_render() on start of the pagination phase.
  */
 static gdouble
 get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 {
 	gdouble prev_y, prev_render_height, height;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
 
 	if(( height = sdata->page_footer_height ) == 0 ){
 
@@ -1099,18 +1089,12 @@ get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 		sdata->last_y = 0;
 		prev_render_height = sdata->render_height;
 		sdata->render_height = 0;
-		prev_context = sdata->current_context;
-		sdata->current_context = sdata->temp_context;
-		prev_layout = sdata->current_layout;
-		sdata->current_layout = sdata->temp_layout;
 
 		draw_page_footer( instance, 0, sdata );
 
 		height = sdata->last_y;
 		sdata->last_y = prev_y;
 		sdata->render_height = prev_render_height;
-		sdata->current_context = prev_context;
-		sdata->current_layout = prev_layout;
 	}
 
 	return( height );
@@ -1180,10 +1164,6 @@ get_irenderable_data( ofaIRenderable *instance )
 		sdata = g_new0( sIRenderable, 1 );
 		g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
-
-		sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
-		sdata->temp_context = get_temp_context( instance, sdata );
-		sdata->temp_layout = pango_cairo_create_layout( sdata->temp_context );
 	}
 
 	return( sdata );
@@ -1193,16 +1173,46 @@ get_irenderable_data( ofaIRenderable *instance )
  * save the provided context, and create an associated layout
  * this is called on each entry point of the interface:
  * - begin_render(), render_page() and end_render().
+ *
+ * simultaneously create a temp context which is used:
+ * - first during pagination phase
+ * - then each time we need to compute some dimension without actually
+ *   drawing anything
  */
 static void
 set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata )
 {
+	cairo_surface_t *surface;
+
 	/* save the provided context */
 	sdata->in_context = context;
 
 	/* create an associated pango layout */
 	g_clear_object( &sdata->in_layout );
 	sdata->in_layout = pango_cairo_create_layout( sdata->in_context );
+
+	/* create a temp context */
+	if( sdata->temp_context ){
+		cairo_destroy( sdata->temp_context );
+	}
+	surface = cairo_pdf_surface_create( NULL, sdata->render_width, sdata->render_height );
+	sdata->temp_context = cairo_create( surface );
+	cairo_surface_destroy( surface );
+
+	/* create an associated temp pango layout */
+	g_clear_object( &sdata->temp_layout );
+	sdata->temp_layout = pango_cairo_create_layout( sdata->temp_context );
+
+	/* draw a text in input context/layout and get its dimensions
+	   => check that dimensions are same in both input and temp contexts */
+	/*
+	set_font( sdata->in_layout, "Sans 8", NULL );
+	gdouble height = set_text( sdata->in_layout, sdata->in_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
+	g_debug( "set_irenderable_input_context: input context/layout: height=%lf", height );
+	set_font( sdata->temp_layout, "Sans 8", NULL );
+	height = set_text( sdata->temp_layout, sdata->temp_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
+	g_debug( "set_irenderable_input_context: temp context/layout: height=%lf", height );
+	*/
 }
 
 static void
@@ -1229,23 +1239,6 @@ free_irenderable_data( sIRenderable *sdata )
 	g_clear_object( &sdata->temp_layout );
 
 	g_free( sdata );
-}
-
-/*
- * get a temporary context to be able to draw anything to compute its height
- * the returned context should be cairo_destroy() after use.
- */
-static cairo_t *
-get_temp_context( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	cairo_surface_t *surf;
-	cairo_t *new_cr;
-
-	surf = cairo_pdf_surface_create( NULL, sdata->render_width, sdata->render_height );
-	new_cr = cairo_create( surf );
-	cairo_surface_destroy( surf );
-
-	return( new_cr );
 }
 
 /**
@@ -1318,7 +1311,8 @@ ofa_irenderable_set_font( ofaIRenderable *instance, const gchar *font_str )
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
 	sdata = get_irenderable_data( instance );
-	set_font( sdata->current_layout, font_str, &sdata->current_font_size );
+	set_font( sdata->in_layout, font_str, NULL );
+	set_font( sdata->temp_layout, font_str, NULL );
 }
 
 /*
@@ -1371,6 +1365,41 @@ ofa_irenderable_get_text_height( ofaIRenderable *instance )
 	sdata->current_layout = prev_layout;
 
 	return( height );
+}
+
+/**
+ * ofa_irenderable_get_text_width:
+ * @instance: this #ofaIRenderable instance.
+ * @text:
+ *
+ * Returns: the width in cairo units used by a text drawn in the current font.
+ */
+gdouble
+ofa_irenderable_get_text_width( ofaIRenderable *instance, const gchar *text )
+{
+	sIRenderable *sdata;
+	gdouble cairo_width;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+	gint pango_width, pango_height;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_irenderable_data( instance );
+
+	prev_context = sdata->current_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_context = sdata->temp_context;
+	sdata->current_layout = sdata->temp_layout;
+
+	ofa_irenderable_set_text( instance, 0, 0, text, PANGO_ALIGN_LEFT );
+	pango_layout_get_size( sdata->current_layout, &pango_width, &pango_height );
+	cairo_width = ( gdouble ) pango_width / PANGO_SCALE;
+
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+
+	return( cairo_width );
 }
 
 /**

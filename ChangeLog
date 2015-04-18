@@ -1,5 +1,22 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-irenderable.c,
+	* src/ui/ofa-irenderable.h:
+	- mainly, fix the computing of text dimensions by setting the font
+	  simultaneously in both input and temp contexts.
+	- ofa_irenderable_get_text_width(): new method.
+
+	* src/ui/ofa-reconcil-bin.c,
+	* src/ui/ofa-reconcil-bin.h,
+	* src/ui/ofa-reconcil-bin.ui: new ofaReconcilBin class.
+
+	* src/ui/ofa-reconcil-render.c,
+	* src/ui/ofa-reconcil-render.h: new ofaReconcilRender class.
+
+	* src/ui/ofa-main-window.c,
+	* src/ui/Makefile.am,
+	* src/ui/ofa-reconciliation.c: updated accordingly.
+
 	* src/ui/ofa-view-entries.c: settlement cell is right aligned.
 
 	* src/ui/ofa-settlement.c: settlement column header is right aligned. 
