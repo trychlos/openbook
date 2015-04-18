@@ -1,5 +1,9 @@
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
+	* configure.ac: post-release version bump.
+
+	Releasing v0.39
+
 	* src/ui/ofa-pdf-dialog.c,
 	* src/ui/ofa-pdf-dialog.h,
 	* src/ui/ofa-pdf-reconcil.c,
