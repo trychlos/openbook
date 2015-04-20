@@ -1242,11 +1242,17 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 void
 ofa_main_window_close_dossier( ofaMainWindow *main_window )
 {
+	ofaMainWindowPrivate *priv;
+
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	if( !main_window->priv->dispose_has_run ){
+	priv = main_window->priv;
 
-		do_close_dossier( main_window );
+	if( !priv->dispose_has_run ){
+
+		if( priv->dossier ){
+			do_close_dossier( main_window );
+		}
 	}
 }
 

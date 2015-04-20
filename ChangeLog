@@ -1,3 +1,11 @@
+2015-04-20 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-application.c:
+	- close the current dossier before restoring (todo #807). 
+
+	* src/ui/ofa-main-window.c:
+	- make sure there is a dossier before closing it.
+
 2015-04-18 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-buttons-box.c,
