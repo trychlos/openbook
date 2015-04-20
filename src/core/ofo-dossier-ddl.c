@@ -59,6 +59,7 @@ static gboolean dbmodel_to_v22( ofoDossier *dossier, gint version );
 static gboolean dbmodel_to_v23( ofoDossier *dossier, gint version );
 static gboolean dbmodel_to_v24( ofoDossier *dossier, gint version );
 static gboolean dbmodel_to_v25( ofoDossier *dossier, gint version );
+static gboolean dbmodel_to_v26( ofoDossier *dossier, gint version );
 static gboolean insert_classes( ofoDossier *dossier );
 static gboolean insert_currencies( ofoDossier *dossier );
 static gboolean insert_ledgers( ofoDossier *dossier );
@@ -82,6 +83,7 @@ static sMigration st_migrates[] = {
 		{ 23, dbmodel_to_v23 },
 		{ 24, dbmodel_to_v24 },
 		{ 25, dbmodel_to_v25 },
+		{ 26, dbmodel_to_v26 },
 		{ 0 }
 };
 
@@ -226,7 +228,7 @@ dbmodel_to_v20( ofoDossier *dossier, gint version )
 	const ofaDbms *dbms;
 	gchar *query;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 
@@ -541,7 +543,7 @@ dbmodel_to_v21( ofoDossier *dossier, gint version )
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v21";
 	const ofaDbms *dbms;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 
@@ -573,7 +575,7 @@ dbmodel_to_v22( ofoDossier *dossier, gint version )
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v22";
 	const ofaDbms *dbms;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 
@@ -606,7 +608,7 @@ dbmodel_to_v23( ofoDossier *dossier, gint version )
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v23";
 	const ofaDbms *dbms;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 
@@ -633,7 +635,7 @@ dbmodel_to_v24( ofoDossier *dossier, gint version )
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v24";
 	const ofaDbms *dbms;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 
@@ -690,7 +692,7 @@ dbmodel_to_v25( ofoDossier *dossier, gint version )
 	ofxCounter last_concil, number, rec_id, bat_id;
 	gchar *query, *sdval, *user, *stamp;
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
 
 	dbms = ofo_dossier_get_dbms( dossier );
 	last_concil = 0;
@@ -813,6 +815,51 @@ dbmodel_to_v25( ofoDossier *dossier, gint version )
 			"	DROP COLUMN ENT_CONCIL_DVAL, "
 			"	DROP COLUMN ENT_CONCIL_USER, "
 			"	DROP COLUMN ENT_CONCIL_STAMP",
+			TRUE )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * ofo_dossier_dbmodel_to_v26:
+ *
+ * - archive the last entry number when opening an exercice as an audit
+ *   trace
+ * - add the row number in rate validity details in order to let the
+ *   user reorder the lines
+ * - associate the BAT file with an Openbook account
+ * - have a date in order to be able to close a period.
+ */
+static gboolean
+dbmodel_to_v26( ofoDossier *dossier, gint version )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v26";
+	const ofaDbms *dbms;
+
+	g_debug( "%s: dossier=%p, version=%d", thisfn, ( void * ) dossier, version );
+
+	dbms = ofo_dossier_get_dbms( dossier );
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN DOS_LAST_CLOSING DATE COMMENT 'Last closed period',"
+			"	ADD COLUMN DOS_PREVEXE_ENTRY BIGINT COMMENT 'last entry number of the previous exercice'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_RATES_VAL "
+			"	ADD COLUMN RAT_VAL_ROW INTEGER COMMENT 'Row number of the validity detail line'",
+			TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_dbms_query( dbms,
+			"ALTER TABLE OFA_T_BAT "
+			"	ADD COLUMN BAT_ACCOUNT VARCHAR(20) COMMENT 'Associated Openbook account'",
 			TRUE )){
 		return( FALSE );
 	}

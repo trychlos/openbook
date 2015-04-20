@@ -27,6 +27,7 @@
 
  Other changes:
 
+   - Upgrade DBMS to v26.
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
    - ofa_ledger_treeview_get_selection(): new method.

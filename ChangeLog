@@ -1,5 +1,7 @@
 2015-04-20 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/core/ofo-dossier-ddl.c: upgrade the DBMS to v26.
+
 	* src/ui/ofa-application.c:
 	- close the current dossier before restoring (todo #807). 
 

@@ -490,10 +490,11 @@
                 - added to the account label or rigt-aligned before the
                   debit ?
 
- 807 2015- 4-17 close before restore
-
  808 2015- 4-17 when rendering, automatically computes the width of 
                 standard field as date or amount
+     2015- 4-20 depending of the different headers and footers of the
+                current print, this should involve selecting the ad-hoc
+                font before commuting the size
 
  809 2015- 4-17 when computing the ODs, do not generate an OD for 
                 "forfait kilométrique BNC" when option is "FR"
@@ -3737,6 +3738,9 @@
 #3  0x00007ffff7daa447 in ofa_settings_dossier_set_string (dname=<optimized out>, key=0x495c6c "LastBackupFolder", svalue=0x0) at ../../../src/core/ofa-settings.c:1055
 #4  0x000000000042ddfc in do_backup (self=0xcc5b60) at ../../../src/ui/ofa-backup.c:224
      2014- 4-16 fixed - git #c81da22
+
+ 807 2015- 4-17 close before restore
+     2015- 4-20 done - git #c2c9f53
 
  813 2015- 4-17 Chart of accounts: enable a 'Settle' button on settleable
                 buttons + a 'Reconciliate' button on reconciliable ones
