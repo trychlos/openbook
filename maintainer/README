@@ -4,6 +4,7 @@
  =======
  
    maintainer/
+   run
 
 -----------------------------------------------------------------------
  maintainer/
@@ -15,4 +16,11 @@
  in the source repository.
 
 -----------------------------------------------------------------------
- P. Wieser - Last updated on 2014, may 2nd
+ run
+ ===
+
+ Run with:
+ $ G_DEBUG=fatal_warnings G_MESSAGES_DEBUG=OFA gdb ./_install/bin/openbook
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2015, apr. 23rd.
