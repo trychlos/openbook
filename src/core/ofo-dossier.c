@@ -81,6 +81,8 @@ struct _ofoDossierPrivate {
 	ofxCounter  last_settlement;
 	ofxCounter  last_concil;
 	gchar      *status;
+	GDate       last_closing;
+	ofxCounter  prev_exe_last_entry;
 
 	GList      *cur_details;			/* a list of details per currency */
 	GList      *datasets;				/* a list of datasets managed by ofaIDataset */
@@ -88,7 +90,7 @@ struct _ofoDossierPrivate {
 
 typedef struct {
 	gchar *currency;
-	gchar *sld_account;
+	gchar *sld_account;					/* balance account number for the currency */
 }
 	sCurrency;
 
@@ -129,6 +131,7 @@ static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter cou
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
@@ -1411,6 +1414,52 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 }
 
 /**
+ * ofo_dossier_get_last_closing_date:
+ * @dossier:
+ *
+ * Returns: the last period closing date.
+ */
+const GDate *
+ofo_dossier_get_last_closing_date( const ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		return(( const GDate * ) &priv->last_closing );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_prev_exe_last_entry:
+ * @dossier:
+ *
+ * Returns: the last entry number of the previous exercice.
+ */
+ofxCounter
+ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		return( priv->prev_exe_last_entry );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
  * ofo_dossier_get_min_deffect:
  * @date: [in-out]: the #GDate date to be set.
  * @dossier: this dossier.
@@ -1955,6 +2004,57 @@ ofo_dossier_set_status( ofoDossier *dossier, const gchar *status )
 }
 
 /**
+ * ofo_dossier_set_last_closing_date:
+ * @dossier:
+ * @last_closing: the last period closing date.
+ */
+void
+ofo_dossier_set_last_closing_date( ofoDossier *dossier, const GDate *last_closing )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		my_date_set_from_date( &priv->last_closing, last_closing );
+	}
+}
+
+/**
+ * ofo_dossier_set_prev_exe_last_entry:
+ * @dossier:
+ */
+void
+ofo_dossier_set_prev_exe_last_entry( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		dossier_set_prev_exe_last_entry( dossier, priv->prev_exe_last_entry );
+	}
+}
+
+/*
+ * dossier_set_prev_exe_last_entry:
+ * @dossier:
+ * @last_entry:
+ */
+static void
+dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter last_entry )
+{
+	ofoDossierPrivate *priv;
+
+	priv = dossier->priv;
+	priv->prev_exe_last_entry = last_entry;
+}
+
+/**
  * ofo_dossier_reset_currencies:
  * @dossier: this dossier.
  *
@@ -2074,10 +2174,9 @@ dossier_read_properties( ofoDossier *dossier )
 			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
 			"	DOS_FORW_OPE,DOS_IMPORT_LEDGER,"
 			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
-			"	DOS_SLD_OPE,"
-			"	DOS_UPD_USER,DOS_UPD_STAMP,"
+			"	DOS_SLD_OPE,DOS_UPD_USER,DOS_UPD_STAMP,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
-			"	DOS_LAST_CONCIL,DOS_STATUS "
+			"	DOS_LAST_CONCIL,DOS_STATUS,DOS_LAST_CLOSING,DOS_PREVEXE_ENTRY "
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -2177,6 +2276,16 @@ dossier_read_properties( ofoDossier *dossier )
 		if( my_strlen( cstr )){
 			ofo_dossier_set_status( dossier, cstr );
 		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( my_strlen( cstr )){
+			ofo_dossier_set_last_closing_date( dossier, my_date_set_from_sql( &date, cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( my_strlen( cstr )){
+			dossier_set_prev_exe_last_entry( dossier, atol( cstr ));
+		}
 
 		ok = TRUE;
 		ofa_dbms_free_results( result );
@@ -2246,6 +2355,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	gboolean ok;
 	const gchar *cstr;
 	const GDate *date;
+	ofxCounter number;
 
 	ok = FALSE;
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
@@ -2328,6 +2438,22 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_SLD_OPE=NULL," );
+	}
+
+	date = ofo_dossier_get_last_closing_date( dossier );
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_LAST_CLOSING='%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "DOS_LAST_CLOSING=NULL," );
+	}
+
+	number = ofo_dossier_get_prev_exe_last_entry( dossier );
+	if( number > 0 ){
+		g_string_append_printf( query, "DOS_PREVEXE_ENTRY=%ld,", number );
+	} else {
+		query = g_string_append( query, "DOS_PREVEXE_ENTRY=NULL," );
 	}
 
 	cstr = ofo_dossier_get_status( dossier );

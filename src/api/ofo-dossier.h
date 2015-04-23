@@ -94,6 +94,8 @@ ofxCounter       ofo_dossier_get_last_batline          ( const ofoDossier *dossi
 ofxCounter       ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_settlement       ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_concil           ( const ofoDossier *dossier );
+const GDate     *ofo_dossier_get_last_closing_date     ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_prev_exe_last_entry   ( const ofoDossier *dossier );
 
 ofxCounter       ofo_dossier_get_next_bat              ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );
@@ -130,6 +132,8 @@ void             ofo_dossier_set_label                 ( ofoDossier *dossier, co
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
 void             ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
+void             ofo_dossier_set_last_closing_date     ( ofoDossier *dossier, const GDate *last_closing );
+void             ofo_dossier_set_prev_exe_last_entry   ( ofoDossier *dossier );
 
 void             ofo_dossier_set_status                ( ofoDossier *dossier, const gchar *status );
 

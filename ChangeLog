@@ -1,3 +1,11 @@
+2015-04-23 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/api/ofo-dossier.h,
+	* src/core/ofo-dossier.c:
+	- ofo_dossier_get_last_closing_date(), ofo_dossier_get_prev_exe_last_entry(),
+	  ofo_dossier_set_last_closing_date(), ofo_dossier_set_prev_exe_last_entry():
+	  new methods.
+
 2015-04-20 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/core/ofo-dossier-ddl.c: upgrade the DBMS to v26.

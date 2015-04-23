@@ -33,6 +33,10 @@
    - ofa_ledger_treeview_get_selection(): new method.
    - ofa_reconciliation_set_account(): new method.
    - ofa_settlement_set_account(): new method.
+   - ofo_dossier_get_last_closing_date(): new method.
+   - ofo_dossier_set_last_closing_date(): new method.
+   - ofo_dossier_get_prev_exe_last_entry(): new method.
+   - ofo_dossier_set_prev_exe_last_entry(): new method.
 
 -----------------------------------------------------------------------
  Version 0.39
