@@ -60,6 +60,7 @@ struct _ofoBatPrivate {
 	ofxAmount  end_solde;
 	gboolean   end_solde_set;
 	gchar     *notes;
+	gchar     *account;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
 };
@@ -100,6 +101,7 @@ bat_finalize( GObject *instance )
 	g_free( priv->rib );
 	g_free( priv->currency );
 	g_free( priv->notes );
+	g_free( priv->account );
 	g_free( priv->upd_user );
 
 	/* chain up to the parent class */
@@ -174,7 +176,7 @@ bat_load_dataset( ofoDossier *dossier )
 	dbms = ofo_dossier_get_dbms( dossier );
 
 	if( ofa_dbms_query_ex( dbms,
-			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,"
+			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
 			"	FROM OFA_T_BAT "
@@ -189,6 +191,10 @@ bat_load_dataset( ofoDossier *dossier )
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_set_format( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_account( bat, ( const gchar * ) icol->data );
 			}
 			icol = icol->next;
 			if( icol->data ){
@@ -471,6 +477,23 @@ ofo_bat_get_notes( const ofoBat *bat )
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		return(( const gchar * ) bat->priv->notes );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_bat_get_account:
+ */
+const gchar *
+ofo_bat_get_account( const ofoBat *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return(( const gchar * ) bat->priv->account );
 	}
 
 	g_assert_not_reached();
@@ -837,6 +860,21 @@ ofo_bat_set_notes( ofoBat *bat, const gchar *notes )
 	}
 }
 
+/**
+ * ofo_bat_set_account:
+ */
+void
+ofo_bat_set_account( ofoBat *bat, const gchar *account )
+{
+	g_return_if_fail( OFO_IS_BAT( bat ));
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		g_free( bat->priv->account );
+		bat->priv->account = g_strdup( account );
+	}
+}
+
 /*
  * ofo_bat_set_upd_user:
  */
@@ -1046,6 +1084,7 @@ bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 	gboolean ok;
 	GTimeVal stamp;
 	gchar *stamp_str;
+	const gchar *caccount;
 
 	ok = FALSE;
 	notes = my_utils_quote( ofo_bat_get_notes( bat ));
@@ -1058,6 +1097,13 @@ bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 		g_string_append_printf( query, "BAT_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "BAT_NOTES=NULL," );
+	}
+
+	caccount = ofo_bat_get_account( bat );
+	if( my_strlen( caccount )){
+		g_string_append_printf( query, "BAT_ACCOUNT='%s',", notes );
+	} else {
+		query = g_string_append( query, "BAT_ACCOUNT=NULL," );
 	}
 
 	g_string_append_printf( query,

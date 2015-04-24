@@ -60,6 +60,7 @@ struct _ofaBatPropertiesBinPrivate {
 	GtkWidget    *bat_currency;
 	GtkWidget    *bat_solde_begin;
 	GtkWidget    *bat_solde_end;
+	GtkWidget    *bat_account;
 
 	GtkTreeView  *tview;
 
@@ -222,6 +223,9 @@ load_dialog( ofaBatPropertiesBin *bin )
 
 	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-end" );
 	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
+
+	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-account" );
+	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
 }
 
 static void
@@ -400,6 +404,14 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 		g_free( str );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), "" );
+	}
+
+	cstr = ofo_bat_get_account( bat );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), cstr );
+		g_free( str );
+	} else {
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}
 
 	priv->bat = bat;

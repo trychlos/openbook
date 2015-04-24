@@ -60,6 +60,7 @@ gboolean        ofo_bat_get_solde_begin_set( const ofoBat *bat );
 ofxAmount       ofo_bat_get_solde_end      ( const ofoBat *bat );
 gboolean        ofo_bat_get_solde_end_set  ( const ofoBat *bat );
 const gchar    *ofo_bat_get_notes          ( const ofoBat *bat );
+const gchar    *ofo_bat_get_account        ( const ofoBat *bat );
 const gchar    *ofo_bat_get_upd_user       ( const ofoBat *bat );
 const GTimeVal *ofo_bat_get_upd_stamp      ( const ofoBat *bat );
 
@@ -85,6 +86,7 @@ void            ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set );
 void            ofo_bat_set_solde_end      ( ofoBat *bat, ofxAmount solde );
 void            ofo_bat_set_solde_end_set  ( ofoBat *bat, gboolean set );
 void            ofo_bat_set_notes          ( ofoBat *bat, const gchar *notes );
+void            ofo_bat_set_account        ( ofoBat *bat, const gchar *account );
 
 gboolean        ofo_bat_insert             ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_update             ( ofoBat *bat, ofoDossier *dossier );
