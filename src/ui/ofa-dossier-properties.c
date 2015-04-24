@@ -289,6 +289,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofaLedgerCombo *l_combo;
 	const gchar *cstr;
 	gint ivalue;
+	const GDate *last_closed;
 
 	priv = self->priv;
 
@@ -376,9 +377,19 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gtk_widget_set_can_focus( entry, priv->is_current );
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
-	/* the end of the exercice cannot be rewinf back before the last
-	 * close of the ledgers */
+	entry = my_utils_container_get_child_by_name( container, "last-closed" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
+	my_editable_date_set_date( GTK_EDITABLE( entry ), last_closed );
+	gtk_widget_set_can_focus( entry, FALSE );
+
+	/* the end of the exercice cannot be rewinded back before the last
+	 * close of the ledgers or the last closed period */
 	ofo_ledger_get_max_last_close( &priv->min_end, priv->dossier );
+	if( my_date_is_valid( last_closed ) && my_date_compare( last_closed, &priv->min_end ) > 0 ){
+		my_date_set_from_date( &priv->min_end, last_closed );
+	}
 }
 
 static void
@@ -455,6 +466,12 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 	label = my_utils_container_get_child_by_name( container, "p4-last-concil" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_concil( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	label = my_utils_container_get_child_by_name( container, "p5-last-entry" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = my_bigint_to_str( ofo_dossier_get_prev_exe_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

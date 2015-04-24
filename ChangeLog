@@ -1,3 +1,12 @@
+2015-04-24 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-closing-parms-bin.c:
+	- slightly increase the width of the account number field.
+
+	* src/ui/ofa-dossier-properties.c,
+	* src/ui/ofa-dossier-properties.ui:
+	- display last closed period and last entry of previous exercice.
+
 2015-04-23 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/api/ofo-dossier.h,

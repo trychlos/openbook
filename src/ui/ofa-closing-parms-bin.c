@@ -429,7 +429,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	/* account number */
 	widget = gtk_entry_new();
 	g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 10 );
+	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 14 );
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
 	gtk_widget_set_can_focus( widget, priv->is_current );

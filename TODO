@@ -513,7 +513,9 @@
  814 2015- 4-17 Dossier: have list of classes allowed to be reconciliated
                  + classes allowed to be settled
 
- 817
+ 817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
+
+ 819
 
 -----------------------------------------------------------------------
  DONE
