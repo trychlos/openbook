@@ -60,41 +60,23 @@ typedef struct {
 	ofaSettingsClass;
 
 /* private instance data
- *
- * The #ofaSettings class manages the user and dossier settings as two
- * distinct singleton objects, with are both instanciated on the first
- * demand (see #settings_new()).
- *
- * In order to get the API as simple as possible, the one which
- * addresses the user preferences doesn't specifiy it: it is considered
- * the default use (and the more frequent).
- *
- * Contrarily, the API which addresses dossier configuration is always
- * qualified by at least the dossier name.
  */
 struct _ofaSettingsPrivate {
-	gboolean   dispose_has_run;
+	gboolean          dispose_has_run;
 
-	/* properties
-	 */
-	gchar     *bname;
-
-	/* user preferences or dossier configuration
-	 */
-	GKeyFile  *keyfile;
-	gchar     *kf_name;					/* settings filename, UTF-8 encoded */
+	ofaSettingsTarget target;
+	gchar            *fname;			/* configuration filename */
+	GKeyFile         *keyfile;			/* GKeyFile object */
 };
 
 /* properties
- * @PROP_BNAME: the basename of the keyfile.
+ * @PROP_TARGET: the settings target, set at instanciation time.
  */
-#define PROP_BNAME                      "ofa-settings-prop-bname"
+#define PROP_TARGET                     "ofa-settings-prop-target"
 
 enum {
-	PROP_BNAME_ID = 1,
+	PROP_TARGET_ID = 1,
 };
-
-#define BNAME_DOSSIER                   "dossier"
 
 GType ofa_settings_get_type( void ) G_GNUC_CONST;
 
@@ -105,6 +87,9 @@ G_DEFINE_TYPE( ofaSettings, ofa_settings, G_TYPE_OBJECT )
 
 static void         settings_new( void );
 static void         load_key_file( ofaSettings *settings );
+static gchar       *get_user_conf_filename( ofaSettings *settings );
+static gchar       *get_dossier_conf_filename( ofaSettings *settings );
+static gchar       *get_default_config_dir( ofaSettings *settings );
 static gboolean     write_key_file( ofaSettings *settings );
 static GKeyFile    *get_keyfile_from_target( ofaSettingsTarget target );
 static ofaSettings *get_settings_from_target( ofaSettingsTarget target );
@@ -125,9 +110,8 @@ settings_finalize( GObject *object )
 	/* free data members here */
 	priv = OFA_SETTINGS( object )->priv;
 
-	g_free( priv->bname );
+	g_free( priv->fname );
 	g_key_file_free( priv->keyfile );
-	g_free( priv->kf_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_settings_parent_class )->finalize( object );
@@ -190,8 +174,8 @@ settings_get_property( GObject *object, guint property_id, GValue *value, GParam
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case PROP_BNAME_ID:
-				g_value_set_string( value, priv->bname );
+			case PROP_TARGET_ID:
+				g_value_set_int( value, priv->target );
 				break;
 
 			default:
@@ -213,9 +197,8 @@ settings_set_property( GObject *object, guint property_id, const GValue *value, 
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case PROP_BNAME_ID:
-				g_free( priv->bname );
-				priv->bname = g_value_dup_string( value );
+			case PROP_TARGET_ID:
+				priv->target = g_value_get_int( value );
 				break;
 
 			default:
@@ -256,12 +239,12 @@ ofa_settings_class_init( ofaSettingsClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
-			PROP_BNAME_ID,
-			g_param_spec_string(
-					PROP_BNAME,
-					"Basename",
-					"The basename of this settings file",
-					"",
+			PROP_TARGET_ID,
+			g_param_spec_int(
+					PROP_TARGET,
+					"Target",
+					"Settings target identifier",
+					0, SETTINGS_TARGET_LAST, 	0,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
@@ -275,54 +258,45 @@ static void
 settings_new( void )
 {
 	if( !st_user_settings ){
-		st_user_settings = g_object_new( OFA_TYPE_SETTINGS, PROP_BNAME, PACKAGE, NULL );
+		st_user_settings = g_object_new(
+				OFA_TYPE_SETTINGS, PROP_TARGET, SETTINGS_TARGET_USER, NULL );
 	}
 	if( !st_dossier_settings ){
-		st_dossier_settings = g_object_new( OFA_TYPE_SETTINGS, PROP_BNAME, BNAME_DOSSIER, NULL );
+		st_dossier_settings = g_object_new(
+				OFA_TYPE_SETTINGS, PROP_TARGET, SETTINGS_TARGET_DOSSIER, NULL );
 	}
 }
 
 /**
- * ofa_settings_get_key_file:
+ * ofa_settings_get_filename:
  */
 const gchar *
-ofa_settings_get_key_file( ofaSettingsTarget target )
+ofa_settings_get_filename( ofaSettingsTarget target )
 {
+	ofaSettings *settings;
 	const gchar *fname;
 
-	fname = NULL;
 	settings_new();
-
-	switch( target ){
-		case SETTINGS_TARGET_USER:
-			fname = st_user_settings->priv->kf_name;
-			break;
-		case SETTINGS_TARGET_DOSSIER:
-			fname = st_dossier_settings->priv->kf_name;
-			break;
-	}
+	settings = get_settings_from_target( target );
+	fname = settings ? settings->priv->fname : NULL;
 
 	return( fname );
 }
 
 /**
- * ofa_settings_get_actual_keyfile:
+ * ofa_settings_get_keyfile:
  */
 GKeyFile *
-ofa_settings_get_actual_keyfile( ofaSettingsTarget target )
+ofa_settings_get_keyfile( ofaSettingsTarget target )
 {
+	ofaSettings *settings;
+	GKeyFile *keyfile;
+
 	settings_new();
+	settings = get_settings_from_target( target );
+	keyfile = settings ? settings->priv->keyfile : NULL;
 
-	switch( target ){
-		case SETTINGS_TARGET_USER:
-			return( st_user_settings->priv->keyfile );
-			break;
-		case SETTINGS_TARGET_DOSSIER:
-			return( st_dossier_settings->priv->keyfile );
-			break;
-	}
-
-	return( NULL );
+	return( keyfile );
 }
 
 static void
@@ -330,36 +304,93 @@ load_key_file( ofaSettings *settings )
 {
 	static const gchar *thisfn = "ofa_settings_load_key_file";
 	ofaSettingsPrivate *priv;
-	gchar *dir, *fname;
 	GError *error;
 
 	priv = settings->priv;
-
 	priv->keyfile = g_key_file_new();
+	priv->fname = NULL;
+
+	switch( priv->target ){
+		case SETTINGS_TARGET_USER:
+			priv->fname = get_user_conf_filename( settings );
+			break;
+		case SETTINGS_TARGET_DOSSIER:
+			priv->fname = get_dossier_conf_filename( settings );
+			break;
+		default:
+			break;
+	}
+
+	if( !my_strlen( priv->fname )){
+		g_warning( "%s: target=%d, unable to set configuration filename", thisfn, priv->target );
+		return;
+	}
+
+	g_debug( "%s: settings=%p, target=%d, fname=%s",
+			thisfn, ( void * ) settings, priv->target, priv->fname );
+
+	error = NULL;
+	if( !g_key_file_load_from_file(
+			priv->keyfile, priv->fname, G_KEY_FILE_KEEP_COMMENTS, &error )){
+
+		if( error->code != G_FILE_ERROR_NOENT ){
+			g_warning( "%s: %s (%d) %s",
+					thisfn, settings->priv->fname, error->code, error->message );
+		} else {
+			g_debug( "%s: %s: file doesn't exist", thisfn, settings->priv->fname );
+		}
+
+		g_error_free( error );
+	}
+}
+
+static gchar *
+get_user_conf_filename( ofaSettings *settings )
+{
+	const gchar *cstr;
+	gchar *dir, *bname, *fname;
+
+	cstr = g_getenv( "OFA_USER_CONF" );
+	if( my_strlen( cstr )){
+		fname = g_strdup( cstr );
+	} else {
+		dir = get_default_config_dir( settings );
+		bname = g_strdup_printf( "%s.conf", PACKAGE );
+		fname = g_build_filename( dir, bname, NULL );
+		g_free( bname );
+		g_free( dir );
+	}
+
+	return( fname );
+}
+
+static gchar *
+get_dossier_conf_filename( ofaSettings *settings )
+{
+	const gchar *cstr;
+	gchar *dir, *fname;
+
+	cstr = g_getenv( "OFA_DOSSIER_CONF" );
+	if( my_strlen( cstr )){
+		fname = g_strdup( cstr );
+	} else {
+		dir = get_default_config_dir( settings );
+		fname = g_build_filename( dir, "dossier.conf", NULL );
+		g_free( dir );
+	}
+
+	return( fname );
+}
+
+static gchar *
+get_default_config_dir( ofaSettings *settings )
+{
+	gchar *dir;
 
 	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
 	g_mkdir_with_parents( dir, 0750 );
 
-	fname = g_strdup_printf( "%s.conf", priv->bname );
-	priv->kf_name = g_build_filename( dir, fname, NULL );
-
-	g_debug( "%s: settings=%p, kf_name=%s", thisfn, ( void * ) settings, priv->kf_name );
-
-	g_free( fname );
-	g_free( dir );
-
-	error = NULL;
-	if( !g_key_file_load_from_file(
-			priv->keyfile,
-			priv->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
-		if( error->code != G_FILE_ERROR_NOENT ){
-			g_warning( "%s: %s (%d) %s",
-					thisfn, settings->priv->kf_name, error->code, error->message );
-		} else {
-			g_debug( "%s: %s: file doesn't exist", thisfn, settings->priv->kf_name );
-		}
-		g_error_free( error );
-	}
+	return( dir );
 }
 
 static gboolean
@@ -379,8 +410,7 @@ write_key_file( ofaSettings *settings )
 	ok = FALSE;
 	priv = settings->priv;
 	data = g_key_file_to_data( priv->keyfile, &length, NULL );
-
-	sysfname = my_utils_filename_from_utf8( priv->kf_name );
+	sysfname = my_utils_filename_from_utf8( priv->fname );
 	if( !sysfname ){
 		g_free( data );
 		return( FALSE );
@@ -392,19 +422,18 @@ write_key_file( ofaSettings *settings )
 	stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &error );
 	if( !stream ){
 		g_return_val_if_fail( error, FALSE );
-		g_warning( "%s: bname=%s, g_file_replace: %s", thisfn, priv->bname, error->message );
+		g_warning( "%s: bname=%s, g_file_replace: %s", thisfn, priv->fname, error->message );
 		g_error_free( error );
-
 	} else {
 		written = g_output_stream_write( G_OUTPUT_STREAM( stream ), data, length, NULL, &error );
 		if( written == -1 ){
 			g_return_val_if_fail( error, FALSE );
-			g_warning( "%s: bname=%s, g_output_stream_write: %s", thisfn, priv->bname, error->message );
+			g_warning( "%s: bname=%s, g_output_stream_write: %s", thisfn, priv->fname, error->message );
 			g_error_free( error );
 
 		} else if( !g_output_stream_close( G_OUTPUT_STREAM( stream ), NULL, &error )){
 			g_return_val_if_fail( error, FALSE );
-			g_warning( "%s: bname=%s, g_output_stream_close: %s", thisfn, priv->bname, error->message );
+			g_warning( "%s: bname=%s, g_output_stream_close: %s", thisfn, priv->fname, error->message );
 			g_error_free( error );
 
 		} else {
@@ -745,11 +774,9 @@ get_settings_from_target( ofaSettingsTarget target )
 		case SETTINGS_TARGET_USER:
 			return( st_user_settings );
 			break;
-
 		case SETTINGS_TARGET_DOSSIER:
 			return( st_dossier_settings );
 			break;
-
 		default:
 			break;
 	}

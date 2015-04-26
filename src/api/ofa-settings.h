@@ -31,6 +31,24 @@
  *
  * The #ofaSettings class manages both user preferences and dossiers
  * configuration in two distinct text files.
+ *
+ * The #ofaSettings class manages the user and dossier settings as two
+ * distinct singleton objects, with are both instanciated on the first
+ * demand (see #settings_new()).
+ *
+ * In order to get the API as simple as possible, the one which
+ * addresses the user preferences doesn't specifiy it: it is considered
+ * the default use (and the more frequent).
+ *
+ * Contrarily, the API which addresses dossier configuration is always
+ * qualified by at least the dossier name.
+ *
+ * Both configuration filenames may be overriden  by an environment
+ * variable:
+ * - OFA_USER_CONF may address the user configuration file
+ *   default is HOME/.config/PACKAGE/PACKAGE.conf
+ * - OFA_DOSSIER_CONF may address the dossier configuration file
+ *   default is XDG_USER_CONFIG/PACKAGE/dossier.conf
  */
 
 #include <glib.h>
@@ -53,7 +71,8 @@ typedef enum {
  */
 typedef enum {
 	SETTINGS_TARGET_USER = 1,
-	SETTINGS_TARGET_DOSSIER
+	SETTINGS_TARGET_DOSSIER,
+	SETTINGS_TARGET_LAST				/* used by property */
 }
 	ofaSettingsTarget;
 
@@ -75,9 +94,9 @@ typedef enum {
 /* called on application dispose */
 void         ofa_settings_free               ( void );
 
-const gchar *ofa_settings_get_key_file       ( ofaSettingsTarget target );
+const gchar *ofa_settings_get_filename       ( ofaSettingsTarget target );
 
-GKeyFile    *ofa_settings_get_actual_keyfile ( ofaSettingsTarget target );
+GKeyFile    *ofa_settings_get_keyfile        ( ofaSettingsTarget target );
 
 /* user preferences management */
 #define  ofa_settings_get_boolean(K)         ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))

@@ -307,7 +307,7 @@ v_get_page_orientation( ofaRenderPage *page )
 static void
 v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
-	*keyfile = ofa_settings_get_actual_keyfile( SETTINGS_TARGET_USER );
+	*keyfile = ofa_settings_get_keyfile( SETTINGS_TARGET_USER );
 	*group_name = g_strdup( st_print_settings );
 }
 

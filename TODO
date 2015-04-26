@@ -66,11 +66,6 @@
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present
 
- 187 2014- 6-10 TauxProperties - Validities page: should be sorted by
-                end date desc (most recent first)
-     2014- 6-13 no: this should be left sorted as the user entered the
-                data - so let him reorder the lines
-
  195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
                  times on a journal selection in journal_treeview from
@@ -515,7 +510,12 @@
 
  817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
 
- 819
+ 819 2015- 4-26 next dbms version:
+                - rename RAT_VAL_BEG as RAT_VAL_BEGIN
+                - move SIREN to SIRET
+
+ 820 2015- 4-26 have a special-development dossier.conf to not mix
+                development dossiers with production dossiers
 
 -----------------------------------------------------------------------
  DONE
@@ -1208,6 +1208,12 @@
                 in the treeview do not take into account all validity
                 records
      2014- 6-13 fixed
+
+ 187 2014- 6-10 TauxProperties - Validities page: should be sorted by
+                end date desc (most recent first)
+     2014- 6-13 no: this should be left sorted as the user entered the
+                data - so let him reorder the lines
+     2015- 4-26 done - git #ae3f800
 
  188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
      2014- 6-16 done - svn #3712

@@ -166,15 +166,12 @@ ofa_settings_monitor_new( ofaSettingsTarget target )
 
 	monitor = g_object_new( OFA_TYPE_SETTINGS_MONITOR, NULL );
 	priv = monitor->priv;
-
 	priv->target = target;
 
-	fname = ofa_settings_get_key_file( target );
+	fname = ofa_settings_get_filename( target );
 	file = g_file_new_for_path( fname );
 	priv->monitor = g_file_monitor_file( file, G_FILE_MONITOR_NONE, NULL, NULL );
-
 	g_signal_connect( priv->monitor, "changed", G_CALLBACK( on_monitor_changed ), monitor );
-
 	g_object_unref( file );
 
 	return( monitor );

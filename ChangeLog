@@ -1,5 +1,18 @@
 2015-04-26 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/api/ofa-settings.h,
+	* src/core/ofa-settings.c:
+	- ofa_settings_get_key_file() is renamed as ofa_settings_get_filename()
+	- ofa_settings_get_actual_keyfile() is renamed as ofa_settings_get_keyfile()
+	- introduce OFA_USER_CONF and OFA_DOSSIER_CONF environment variables (todo #820).
+
+	* maintainer/README,
+	* src/core/ofa-settings-monitor.c,
+	* src/ui/ofa-accounts-book-render.c,
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-ledgers-book-render.c,
+	* src/ui/ofa-reconcil-render.c: updated accordingly.
+
 	* src/ui/ofa-rate-properties.c,
 	* src/ui/ofa-rate-properties.ui:
 	- let the user order himself the rate validities (todo #187). 
