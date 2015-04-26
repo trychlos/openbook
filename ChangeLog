@@ -1,5 +1,14 @@
 2015-04-26 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-render-page.c,
+	* src/ui/ofa-render-page.h:
+	- ofa_render_page_set_args_valid() is renamed as ofa_render_page_set_args_changed().
+
+	* src/ui/ofa-accounts-book-render.c,
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-ledgers-book-render.c,
+	* src/ui/ofa-reconcil-render.c: updated accordingly.
+
 	* src/api/ofa-settings.h,
 	* src/core/ofa-settings.c:
 	- ofa_settings_get_key_file() is renamed as ofa_settings_get_filename()

@@ -355,7 +355,7 @@ on_args_changed( ofaAccountsBookBin *bin, ofaAccountsBookRender *page )
 	gchar *message;
 
 	valid = ofa_accounts_book_bin_is_valid( bin, &message );
-	ofa_render_page_set_args_valid( OFA_RENDER_PAGE( page ), valid, message );
+	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
 

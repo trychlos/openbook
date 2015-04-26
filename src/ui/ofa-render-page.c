@@ -349,7 +349,7 @@ v_init_view( ofaPage *page )
 }
 
 /**
- * ofa_render_page_set_args_valid:
+ * ofa_render_page_set_args_changed:
  * @page:
  * @is_valid:
  * @message:
@@ -358,7 +358,7 @@ v_init_view( ofaPage *page )
  * on each argument change, telling us if args are valid or not.
  */
 void
-ofa_render_page_set_args_valid( ofaRenderPage *page, gboolean is_valid, const gchar *message )
+ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const gchar *message )
 {
 	ofaRenderPagePrivate *priv;
 

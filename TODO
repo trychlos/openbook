@@ -489,7 +489,7 @@
                 standard field as date or amount
      2015- 4-20 depending of the different headers and footers of the
                 current print, this should involve selecting the ad-hoc
-                font before commuting the size
+                font before computing the size
 
  809 2015- 4-17 when computing the ODs, do not generate an OD for 
                 "forfait kilométrique BNC" when option is "FR"
@@ -513,9 +513,6 @@
  819 2015- 4-26 next dbms version:
                 - rename RAT_VAL_BEG as RAT_VAL_BEGIN
                 - move SIREN to SIRET
-
- 820 2015- 4-26 have a special-development dossier.conf to not mix
-                development dossiers with production dossiers
 
 -----------------------------------------------------------------------
  DONE
@@ -3760,6 +3757,10 @@
  816 2015- 4-18 Rename AccountsBook -> AccountsChart to distinguish
                 book of entries by account (ofaAccountsBookRender)
      2015- 4-18 done - git #501b573
+
+ 820 2015- 4-26 have a special-development dossier.conf to not mix
+                development dossiers with production dossiers
+     2015- 4-26 done - git #aadaccc
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

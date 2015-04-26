@@ -111,11 +111,11 @@ typedef struct {
 }
 	ofaRenderPageClass;
 
-GType ofa_render_page_get_type      ( void ) G_GNUC_CONST;
+GType ofa_render_page_get_type        ( void ) G_GNUC_CONST;
 
-void  ofa_render_page_set_args_valid( ofaRenderPage *page,
-											gboolean is_valid,
-											const gchar *message );
+void  ofa_render_page_set_args_changed( ofaRenderPage *page,
+												gboolean is_valid,
+												const gchar *message );
 
 G_END_DECLS
 
