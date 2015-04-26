@@ -23,7 +23,7 @@
 
  Bug fixes:
 
-   - 
+   - OpeTemplates: fix load order of detail rows.
 
  Other changes:
 

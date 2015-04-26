@@ -54,9 +54,10 @@ enum {
 	RAT_NOTES,
 	RAT_UPD_USER,
 	RAT_UPD_STAMP,
-	RAT_BEGIN,
-	RAT_END,
-	RAT_RATE,
+	RAT_VAL_ROW,
+	RAT_VAL_BEGIN,
+	RAT_VAL_END,
+	RAT_VAL_RATE,
 };
 
 /*
@@ -97,19 +98,25 @@ static const ofsBoxDef st_validities_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
-		{ RAT_BEGIN,
+		{ RAT_VAL_ROW,
+				"RAT_VAL_ROW",
+				"RatValidityRow",
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ RAT_VAL_BEGIN,
 				"RAT_VAL_BEG",
 				"RatValidityBegin",
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
-		{ RAT_END,
+		{ RAT_VAL_END,
 				"RAT_VAL_END",
 				"RatValidityEnd",
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
-		{ RAT_RATE,
+		{ RAT_VAL_RATE,
 				"RAT_VAL_RATE",
 				"RatRate",
 				OFA_TYPE_AMOUNT,
@@ -131,7 +138,7 @@ static GList    *rate_load_dataset( ofoDossier *dossier );
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
-static GList    *rate_val_new_detail( const gchar *mnemo, const GDate *begin, const GDate *end, ofxAmount value );
+static GList    *rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 static void      rate_val_add_detail( ofoRate *rate, GList *detail );
 static gboolean  rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
 static gboolean  rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
@@ -416,7 +423,7 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
 		for( min=NULL, it=rate->priv->validities ; it ; it=it->next ){
-			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
+			val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
 			if( !min ){
 				min = val_begin;
 			} else if( my_date_compare_ex( val_begin, min, TRUE ) < 0 ){
@@ -449,7 +456,7 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
 		for( max=NULL, it=rate->priv->validities ; it ; it=it->next ){
-			val_end = ofa_box_get_date( it->data, RAT_END );
+			val_end = ofa_box_get_date( it->data, RAT_VAL_END );
 			if( !max ){
 				max = val_end;
 			} else if( my_date_compare_ex( val_end, max, FALSE ) > 0 ){
@@ -496,7 +503,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			return( ofa_box_get_date( nth->data, RAT_BEGIN ));
+			return( ofa_box_get_date( nth->data, RAT_VAL_BEGIN ));
 		}
 	}
 
@@ -517,7 +524,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			return( ofa_box_get_date( nth->data, RAT_END ));
+			return( ofa_box_get_date( nth->data, RAT_VAL_END ));
 		}
 	}
 
@@ -538,7 +545,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			return( ofa_box_get_amount( nth->data, RAT_RATE ));
+			return( ofa_box_get_amount( nth->data, RAT_VAL_RATE ));
 		}
 	}
 
@@ -568,8 +575,8 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
 		for( it=rate->priv->validities ; it ; it=it->next ){
-			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
-			val_end = ofa_box_get_date( it->data, RAT_END );
+			val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
+			val_end = ofa_box_get_date( it->data, RAT_VAL_END );
 			sdate = my_date_to_str( date, ofa_prefs_date_display());
 			sbegin = my_date_to_str( val_begin, ofa_prefs_date_display());
 			send = my_date_to_str( val_end, ofa_prefs_date_display());
@@ -585,7 +592,7 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 			cmp = my_date_compare_ex( val_end, date, FALSE );
 			g_debug( "my_date_compare_ex( val_end, date, FALSE ): cmp=%d", cmp );
 			if( cmp >= 0 ){
-				amount = ofa_box_get_amount( it->data, RAT_RATE );
+				amount = ofa_box_get_amount( it->data, RAT_VAL_RATE );
 				/*g_debug( "amount=%.5lf", amount );*/
 				return( amount );
 			}
@@ -726,22 +733,23 @@ ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		fields = rate_val_new_detail( ofo_rate_get_mnemo( rate ), begin, end, value );
+		fields = rate_val_new_detail( rate, begin, end, value );
 		rate_val_add_detail( rate, fields );
 	}
 }
 
 static GList *
-rate_val_new_detail( const gchar *mnemo, const GDate *begin, const GDate *end, ofxAmount value )
+rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value )
 {
 	GList *fields;
 
 	fields = ofa_box_init_fields_list( st_validities_defs );
-	ofa_box_set_string( fields, RAT_MNEMO, mnemo );
-	ofa_box_set_date( fields, RAT_BEGIN, begin );
-	ofa_box_set_date( fields, RAT_END, end );
+	ofa_box_set_string( fields, RAT_MNEMO, ofo_rate_get_mnemo( rate ));
+	ofa_box_set_int( fields, RAT_VAL_ROW, 1+ofo_rate_get_val_count( rate ));
+	ofa_box_set_date( fields, RAT_VAL_BEGIN, begin );
+	ofa_box_set_date( fields, RAT_VAL_END, end );
 	g_debug( "ofo_rate_val_new_detail: ofa_box_set_amount with value=%.5lf", value );
-	ofa_box_set_amount( fields, RAT_RATE, value );
+	ofa_box_set_amount( fields, RAT_VAL_RATE, value );
 
 	return( fields );
 }
@@ -883,13 +891,13 @@ rate_insert_validity( ofoRate *rate, GList *fields, const ofaDbms *dbms )
 	ofxAmount amount;
 	gchar *sdbegin, *sdend, *samount;
 
-	dbegin = ofa_box_get_date( fields, RAT_BEGIN );
+	dbegin = ofa_box_get_date( fields, RAT_VAL_BEGIN );
 	sdbegin = my_date_to_str( dbegin, MY_DATE_SQL );
 
-	dend = ofa_box_get_date( fields, RAT_END );
+	dend = ofa_box_get_date( fields, RAT_VAL_END );
 	sdend = my_date_to_str( dend, MY_DATE_SQL );
 
-	amount = ofa_box_get_amount( fields, RAT_RATE );
+	amount = ofa_box_get_amount( fields, RAT_VAL_RATE );
 	samount = my_double_to_sql( amount );
 
 	query = g_string_new( "INSERT INTO OFA_T_RATES_VAL " );
@@ -1295,12 +1303,15 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  *
  * - 2:
  * - rate mnemo
+ * - row number (placeholder, not imported, but recomputed)
  * - begin validity (opt - yyyy-mm-dd)
  * - end validity (opt - yyyy-mm-dd)
  * - rate
  *
  * It is not required that the input csv files be sorted by mnemo. We
- * may have all 'rate' records, then all 'validity' records...
+ * may have all 'rate' records, then all 'validity' records.
+ * Contrarily, validity lines for a given rate are imported in the order
+ * they are found in the input file.
  *
  * Replace the whole table with the provided datas.
  *
@@ -1350,6 +1361,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				if( detail ){
 					rate = rate_find_by_mnemo( dataset, mnemo );
 					if( rate ){
+						ofa_box_set_int( detail, RAT_VAL_ROW, 1+ofo_rate_get_val_count( rate ));
 						rate_val_add_detail( rate, detail );
 					}
 					g_free( mnemo );
@@ -1446,10 +1458,10 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 	GList *detail;
 	const gchar *cstr;
 	GSList *itf;
-	GDate begin, end;
+	GDate date;
 	ofxAmount amount;
 
-	detail = NULL;
+	detail = ofa_box_init_fields_list( st_validities_defs );
 	itf = fields;
 
 	/* rate mnemo */
@@ -1463,23 +1475,26 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 		return( NULL );
 	}
 	*mnemo = g_strdup( cstr );
+	ofa_box_set_string( detail, RAT_MNEMO, cstr );
+
+	/* row number (placeholder) */
+	itf = itf ? itf->next : NULL;
 
 	/* rate begin validity */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	my_date_set_from_sql( &begin, cstr );
+	ofa_box_set_date( detail, RAT_VAL_BEGIN, my_date_set_from_sql( &date, cstr ));
 
 	/* rate end validity */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	my_date_set_from_sql( &end, cstr );
+	ofa_box_set_date( detail, RAT_VAL_END, my_date_set_from_sql( &date, cstr ));
 
 	/* rate rate */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	amount = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
-
-	detail = rate_val_new_detail( *mnemo, &begin, &end, amount );
+	ofa_box_set_amount( detail, RAT_VAL_RATE, amount );
 
 	return( detail );
 }

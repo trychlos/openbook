@@ -490,7 +490,7 @@ ope_template_load_dataset( ofoDossier *dossier )
 	for( it=dataset ; it ; it=it->next ){
 		template = OFO_OPE_TEMPLATE( it->data );
 		from = g_strdup_printf(
-				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s'",
+				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 				ofo_ope_template_get_mnemo( template ));
 		template->priv->details =
 				ofo_base_load_rows( st_details_defs, ofo_dossier_get_dbms( dossier ), from );
