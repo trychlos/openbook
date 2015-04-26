@@ -1,5 +1,7 @@
 2015-04-26 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/core/ofo-rate.c: read/write new RAT_VAL_ROW column.
+
 	* src/ui/ofa-ope-template-properties.c: minor code improvements.
 
 	* src/ui/ofa-ope-template-properties.ui: improve some UI details.

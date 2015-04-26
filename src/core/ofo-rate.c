@@ -144,7 +144,7 @@ static gboolean  rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar
 static gboolean  rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
 static gboolean  rate_delete_validities( ofoRate *rate, const ofaDbms *dbms );
 static gboolean  rate_insert_validities( ofoRate *rate, const ofaDbms *dbms );
-static gboolean  rate_insert_validity( ofoRate *rate, GList *detail, const ofaDbms *dbms );
+static gboolean  rate_insert_validity( ofoRate *rate, GList *detail, gint count, const ofaDbms *dbms );
 static gboolean  rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
 static gboolean  rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
 static gboolean  rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
@@ -304,7 +304,9 @@ rate_load_dataset( ofoDossier *dossier )
 
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
-		from = g_strdup_printf( "OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'", ofo_rate_get_mnemo( rate ));
+		from = g_strdup_printf(
+				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
+				ofo_rate_get_mnemo( rate ));
 		rate->priv->validities =
 				ofo_base_load_rows( st_validities_defs, ofo_dossier_get_dbms( dossier ), from );
 		g_free( from );
@@ -873,17 +875,20 @@ rate_insert_validities( ofoRate *rate, const ofaDbms *dbms )
 {
 	gboolean ok;
 	GList *it;
+	gint count;
 
 	ok = TRUE;
+	count = 0;
+
 	for( it=rate->priv->validities ; it ; it=it->next ){
-		ok &= rate_insert_validity( rate, it->data, dbms );
+		ok &= rate_insert_validity( rate, it->data, ++count, dbms );
 	}
 
 	return( ok );
 }
 
 static gboolean
-rate_insert_validity( ofoRate *rate, GList *fields, const ofaDbms *dbms )
+rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaDbms *dbms )
 {
 	gboolean ok;
 	GString *query;
@@ -903,10 +908,11 @@ rate_insert_validity( ofoRate *rate, GList *fields, const ofaDbms *dbms )
 	query = g_string_new( "INSERT INTO OFA_T_RATES_VAL " );
 
 	g_string_append_printf( query,
-			"	(RAT_MNEMO,"
+			"	(RAT_MNEMO,RAT_VAL_ROW,"
 			"	RAT_VAL_BEG,RAT_VAL_END,RAT_VAL_RATE) "
-			"	VALUES ('%s',",
-					ofo_rate_get_mnemo( rate ));
+			"	VALUES ('%s',%d,",
+					ofo_rate_get_mnemo( rate ),
+					count );
 
 	if( my_strlen( sdbegin )){
 		g_string_append_printf( query, "'%s',", sdbegin );
