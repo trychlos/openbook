@@ -1,5 +1,9 @@
 2015-04-26 Pierre Wieser <pwieser@trychlos.org>
 
+	* src/ui/ofa-rate-properties.c,
+	* src/ui/ofa-rate-properties.ui:
+	- let the user order himself the rate validities (todo #187). 
+
 	* src/core/ofo-rate.c: read/write new RAT_VAL_ROW column.
 
 	* src/ui/ofa-ope-template-properties.c: minor code improvements.

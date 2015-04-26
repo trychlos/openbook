@@ -20,6 +20,7 @@
 
 	- AccountsChart: open Settlement and Reconciliation page (todo #813).
 	- Restore: close the current dossier if any (todo #807).
+	- RateProperties: let the user reorder the lines (todo #187).
 
  Bug fixes:
 

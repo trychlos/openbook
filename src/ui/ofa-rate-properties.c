@@ -64,20 +64,24 @@ struct _ofaRatePropertiesPrivate {
 	gchar         *label;
 };
 
-#define DATA_COLUMN                  "ofa-data-column"
-#define DATA_ROW                     "ofa-data-row"
-#define DEFAULT_RATE_DECIMALS        3
+#define DATA_COLUMN                     "ofa-data-column"
+#define DATA_ROW                        "ofa-data-row"
+#define DEFAULT_RATE_DECIMALS           3
+#define RANG_WIDTH                      3
 
 /* the columns in the dynamic grid
  */
 enum {
 	COL_ADD = 0,
+	COL_ROW = 0,
 	COL_BEGIN,
 	COL_BEGIN_LABEL,
 	COL_END,
 	COL_END_LABEL,
 	COL_RATE,
 	COL_RATE_LABEL,
+	COL_UP,
+	COL_DOWN,
 	COL_REMOVE,
 	N_COLUMNS
 };
@@ -90,13 +94,17 @@ G_DEFINE_TYPE( ofaRateProperties, ofa_rate_properties, MY_TYPE_DIALOG )
 static void      v_init_dialog( myDialog *dialog );
 static void      insert_new_row( ofaRateProperties *self, gint idx );
 static void      add_empty_row( ofaRateProperties *self );
-static void      add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row );
+static void      add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row, gint right_margin );
+static void      update_detail_buttons( ofaRateProperties *self );
+static void      signal_row_added( ofaRateProperties *self );
+static void      signal_row_removed( ofaRateProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_date_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column );
 static void      on_button_clicked( GtkButton *button, ofaRateProperties *self );
+static void      exchange_rows( ofaRateProperties *self, gint row_a, gint row_b );
 static void      remove_row( ofaRateProperties *self, gint row );
 static void      check_for_enable_dlg( ofaRateProperties *self );
 static gboolean  is_dialog_validable( ofaRateProperties *self );
@@ -255,7 +263,7 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( container, "p2-grid" ));
-	add_button( self, "gtk-add", COL_ADD, 1 );
+	add_button( self, "gtk-add", COL_ADD, 1, 4 );
 
 	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
@@ -307,6 +315,7 @@ add_empty_row( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
 	GtkWidget *entry, *label;
+	gchar *str;
 	gint row;
 
 	priv = self->priv;
@@ -314,19 +323,33 @@ add_empty_row( ofaRateProperties *self )
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
+	str = g_strdup_printf( "%2d", row );
+	label = gtk_label_new( str );
+	g_object_set_data( G_OBJECT( label ), DATA_ROW, GINT_TO_POINTER( row ));
+	g_free( str );
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
+	gtk_widget_set_margin_right( label, 4 );
+	gtk_widget_set_margin_bottom( label, 2 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), COL_ROW, row, 1, 1 );
+
 	entry = gtk_entry_new();
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_alignment( GTK_ENTRY( entry ), 0.5 );
 	gtk_grid_attach( priv->grid, entry, COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
-	gtk_widget_set_hexpand( label, TRUE );
+	gtk_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_BEGIN_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
@@ -334,14 +357,17 @@ add_empty_row( ofaRateProperties *self )
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_alignment( GTK_ENTRY( entry ), 0.5 );
 	gtk_grid_attach( priv->grid, entry, COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
-	gtk_widget_set_hexpand( label, TRUE );
+	gtk_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_END_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
@@ -349,36 +375,79 @@ add_empty_row( ofaRateProperties *self )
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
 	gtk_grid_attach( priv->grid, entry, COL_RATE, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	gtk_widget_set_sensitive( label, FALSE );
 	gtk_widget_set_hexpand( label, TRUE );
+	gtk_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 7 );
 	gtk_grid_attach( priv->grid, label, COL_RATE_LABEL, row, 1, 1 );
 
-	add_button( self, "gtk-remove", COL_REMOVE, row );
-	add_button( self, "gtk-add", COL_ADD, row+1 );
+	add_button( self, "gtk-go-up", COL_UP, row, 0 );
+	add_button( self, "gtk-go-down", COL_DOWN, row, 0 );
+	add_button( self, "gtk-remove", COL_REMOVE, row, 0 );
+	add_button( self, "gtk-add", COL_ADD, row+1, 4 );
 
 	priv->count = row;
+	signal_row_added( self );
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 }
 
 static void
-add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row )
+add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row, gint right_margin )
 {
 	GtkWidget *image, *button;
 
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = gtk_button_new();
-	if( column == COL_REMOVE ){
-		gtk_widget_set_halign( button, GTK_ALIGN_END );
-	}
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_halign( button, GTK_ALIGN_END );
+	gtk_widget_set_margin_left( GTK_WIDGET( button ), 0 );
+	gtk_widget_set_margin_right( GTK_WIDGET( button ), right_margin );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
 	gtk_grid_attach( self->priv->grid, button, column, row, 1, 1 );
+}
+
+static void
+update_detail_buttons( ofaRateProperties *self )
+{
+	ofaRatePropertiesPrivate *priv;
+	GtkWidget *button;
+
+	priv = self->priv;
+	if( priv->count >= 1 ){
+
+		button = gtk_grid_get_child_at( priv->grid, COL_UP, 1 );
+		gtk_widget_set_sensitive( button, FALSE );
+
+		if( priv->count >= 2 ){
+			button = gtk_grid_get_child_at( priv->grid, COL_UP, 2 );
+			gtk_widget_set_sensitive( button, TRUE );
+
+			button = gtk_grid_get_child_at( priv->grid, COL_DOWN, priv->count-1 );
+			gtk_widget_set_sensitive( button, TRUE );
+		}
+
+		button = gtk_grid_get_child_at( priv->grid, COL_DOWN, priv->count );
+		gtk_widget_set_sensitive( button, FALSE );
+	}
+}
+
+static void
+signal_row_added( ofaRateProperties *self )
+{
+	update_detail_buttons( self );
+}
+
+static void
+signal_row_removed( ofaRateProperties *self )
+{
+	update_detail_buttons( self );
 }
 
 static void
@@ -460,10 +529,48 @@ on_button_clicked( GtkButton *button, ofaRateProperties *self )
 		case COL_ADD:
 			add_empty_row( self );
 			break;
+		case COL_UP:
+			g_return_if_fail( row > 1 );
+			exchange_rows( self, row, row-1 );
+			break;
+		case COL_DOWN:
+			g_return_if_fail( row < self->priv->count );
+			exchange_rows( self, row, row+1 );
+			break;
 		case COL_REMOVE:
 			remove_row( self, row );
 			break;
 	}
+}
+
+static void
+exchange_rows( ofaRateProperties *self, gint row_a, gint row_b )
+{
+	gint i;
+	GtkWidget *w_a, *w_b;
+
+	/* do not move the row number */
+	for( i=1 ; i<N_COLUMNS ; ++i ){
+
+		w_a = gtk_grid_get_child_at( self->priv->grid, i, row_a );
+		g_object_ref( w_a );
+		gtk_container_remove( GTK_CONTAINER( self->priv->grid ), w_a );
+
+		w_b = gtk_grid_get_child_at( self->priv->grid, i, row_b );
+		g_object_ref( w_b );
+		gtk_container_remove( GTK_CONTAINER( self->priv->grid ), w_b );
+
+		gtk_grid_attach( self->priv->grid, w_a, i, row_b, 1, 1 );
+		g_object_set_data( G_OBJECT( w_a ), DATA_ROW, GINT_TO_POINTER( row_b ));
+
+		gtk_grid_attach( self->priv->grid, w_b, i, row_a, 1, 1 );
+		g_object_set_data( G_OBJECT( w_b ), DATA_ROW, GINT_TO_POINTER( row_a ));
+
+		g_object_unref( w_a );
+		g_object_unref( w_b );
+	}
+
+	update_detail_buttons( self );
 }
 
 static void
@@ -497,10 +604,11 @@ remove_row( ofaRateProperties *self, gint row )
 		}
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
-
 	/* last update the lines count */
-	self->priv->count -= 1;
+	priv->count -= 1;
+	signal_row_removed( self );
+
+	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 }
 
 /*
