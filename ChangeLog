@@ -1,3 +1,8 @@
+2015-04-27 Pierre Wieser <pwieser@trychlos.org>
+
+	* src/ui/ofa-accounts-filter-vv-bin.ui,
+	* src/ui/ofa-reconcil-bin.ui: review alignments.
+
 2015-04-26 Pierre Wieser <pwieser@trychlos.org>
 
 	* src/ui/ofa-render-page.c,
