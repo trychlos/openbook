@@ -121,19 +121,19 @@ static void               reconcil_render_finalize( GObject *instance );
 static void               reconcil_render_dispose( GObject *instance );
 static void               reconcil_render_instance_init( ofaReconcilRender *self );
 static void               reconcil_render_class_init( ofaReconcilRenderClass *klass );
-static void               v_init_view( ofaPage *page );
-static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget         *v_get_args_widget( ofaRenderPage *page );
-static const gchar       *v_get_paper_name( ofaRenderPage *page );
-static GtkPageOrientation v_get_page_orientation( ofaRenderPage *page );
-static void               v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
+static void               page_init_view( ofaPage *page );
+static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
+static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
+static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
+static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
+static GList             *render_page_get_dataset( ofaRenderPage *page );
+static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaReconcilBin *bin, ofaReconcilRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static gchar             *irenderable_get_body_font( ofaIRenderable *instance );
 static gdouble            irenderable_get_body_vspace_rate( ofaIRenderable *instance );
-static GList             *irenderable_get_dataset( ofaIRenderable *instance );
-static void               irenderable_free_dataset( ofaIRenderable *instance, GList *elements );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
 static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
 static const gchar       *irenderable_get_dossier_name( const ofaIRenderable *instance );
@@ -249,19 +249,21 @@ reconcil_render_class_init( ofaReconcilRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = reconcil_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = reconcil_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
 
-	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = v_get_args_widget;
-	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = v_get_paper_name;
-	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = v_get_page_orientation;
-	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = v_get_print_settings;
+	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
+	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
+	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_get_page_orientation;
+	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
+	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
+	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
 
 	g_type_class_add_private( klass, sizeof( ofaReconcilRenderPrivate ));
 }
 
 static void
-v_init_view( ofaPage *page )
+page_init_view( ofaPage *page )
 {
 	ofaReconcilRenderPrivate *priv;
 
@@ -272,13 +274,13 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_get_top_focusable_widget( const ofaPage *page )
 {
 	return( NULL );
 }
 
 static GtkWidget *
-v_get_args_widget( ofaRenderPage *page )
+render_page_get_args_widget( ofaRenderPage *page )
 {
 	ofaReconcilRenderPrivate *priv;
 	ofaReconcilBin *bin;
@@ -293,22 +295,70 @@ v_get_args_widget( ofaRenderPage *page )
 }
 
 static const gchar *
-v_get_paper_name( ofaRenderPage *page )
+render_page_get_paper_name( ofaRenderPage *page )
 {
 	return( THIS_PAPER_NAME );
 }
 
 static GtkPageOrientation
-v_get_page_orientation( ofaRenderPage *page )
+render_page_get_page_orientation( ofaRenderPage *page )
 {
 	return( THIS_PAGE_ORIENTATION );
 }
 
 static void
-v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
+render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
 	*keyfile = ofa_settings_get_keyfile( SETTINGS_TARGET_USER );
 	*group_name = g_strdup( st_print_settings );
+}
+
+static GList *
+render_page_get_dataset( ofaRenderPage *page )
+{
+	ofaReconcilRenderPrivate *priv;
+	ofaMainWindow *main_window;
+	ofoDossier *dossier;
+	GList *dataset;
+	ofoCurrency *currency;
+
+	priv = OFA_RECONCIL_RENDER( page )->priv;
+
+	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_free( priv->account_number );
+	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
+	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
+	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
+
+	priv->account = ofo_account_get_by_number( dossier, priv->account_number );
+	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
+
+	priv->currency = ofo_account_get_currency( priv->account );
+	currency = ofo_currency_get_by_code( dossier, priv->currency );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+
+	priv->digits = ofo_currency_get_digits( currency );
+
+	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
+
+	dataset = ofo_entry_get_dataset_for_print_reconcil(
+					dossier,
+					ofo_account_get_number( priv->account ),
+					&priv->date );
+
+	priv->count = g_list_length( dataset );
+
+	return( dataset );
+}
+
+static void
+render_page_free_dataset( ofaRenderPage *page, GList *dataset )
+{
+	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 }
 
 /*
@@ -360,9 +410,7 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->get_interface_version = irenderable_get_interface_version;
 	iface->get_body_font = irenderable_get_body_font;
 	iface->get_body_vspace_rate = irenderable_get_body_vspace_rate;
-	iface->get_dataset = irenderable_get_dataset;
 	iface->begin_render = irenderable_begin_render;
-	iface->free_dataset = irenderable_free_dataset;
 	iface->reset_runtime = irenderable_reset_runtime;
 	iface->get_dossier_name = irenderable_get_dossier_name;
 	iface->get_page_header_title = irenderable_get_page_header_title;
@@ -389,54 +437,6 @@ static gdouble
 irenderable_get_body_vspace_rate( ofaIRenderable *instance )
 {
 	return( st_body_vspace_rate );
-}
-
-static GList *
-irenderable_get_dataset( ofaIRenderable *instance )
-{
-	ofaReconcilRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
-	GList *dataset;
-	ofoCurrency *currency;
-
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_free( priv->account_number );
-	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
-	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
-	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
-
-	priv->account = ofo_account_get_by_number( dossier, priv->account_number );
-	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
-
-	priv->currency = ofo_account_get_currency( priv->account );
-	currency = ofo_currency_get_by_code( dossier, priv->currency );
-	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
-
-	priv->digits = ofo_currency_get_digits( currency );
-
-	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
-
-	dataset = ofo_entry_get_dataset_for_print_reconcil(
-					dossier,
-					ofo_account_get_number( priv->account ),
-					&priv->date );
-
-	priv->count = g_list_length( dataset );
-
-	return( dataset );
-}
-
-static void
-irenderable_free_dataset( ofaIRenderable *instance, GList *elements )
-{
-	g_list_free_full( elements, ( GDestroyNotify ) g_object_unref );
 }
 
 static void

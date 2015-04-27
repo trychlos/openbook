@@ -1,5 +1,20 @@
 2015-04-27 Pierre Wieser <pwieser@trychlos.org>
 
+	Optimize loading the dataset on print.
+
+	* src/ui/ofa-render-page.c,
+	* src/ui/ofa-render-page.h:
+	- new get_dataset(), free_dataset() class virtual methods.
+
+	* src/ui/ofa-irenderable.c,
+	* src/ui/ofa-irenderable.h:
+	- remove get_dataset(), free_dataset() interface methods.
+
+	* src/ui/ofa-accounts-book-render.c,
+	* src/ui/ofa-balance-render.c,
+	* src/ui/ofa-ledgers-book-render.c,
+	* src/ui/ofa-reconcil-render.c: updated accordingly.
+
 	* src/ui/ofa-accounts-filter-vv-bin.ui,
 	* src/ui/ofa-reconcil-bin.ui: review alignments.
 

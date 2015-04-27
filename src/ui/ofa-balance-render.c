@@ -127,17 +127,17 @@ static void               balance_render_finalize( GObject *instance );
 static void               balance_render_dispose( GObject *instance );
 static void               balance_render_instance_init( ofaBalanceRender *self );
 static void               balance_render_class_init( ofaBalanceRenderClass *klass );
-static void               v_init_view( ofaPage *page );
-static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget         *v_get_args_widget( ofaRenderPage *page );
-static const gchar       *v_get_paper_name( ofaRenderPage *page );
-static GtkPageOrientation v_get_page_orientation( ofaRenderPage *page );
-static void               v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
+static void               page_init_view( ofaPage *page );
+static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
+static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
+static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
+static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
+static GList             *render_page_get_dataset( ofaRenderPage *page );
+static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static GList             *irenderable_get_dataset( ofaIRenderable *instance );
-static void               irenderable_free_dataset( ofaIRenderable *instance, GList *elements );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
 static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
 static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
@@ -271,19 +271,21 @@ balance_render_class_init( ofaBalanceRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = balance_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = balance_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
 
-	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = v_get_args_widget;
-	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = v_get_paper_name;
-	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = v_get_page_orientation;
-	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = v_get_print_settings;
+	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
+	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
+	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_get_page_orientation;
+	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
+	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
+	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
 
 	g_type_class_add_private( klass, sizeof( ofaBalanceRenderPrivate ));
 }
 
 static void
-v_init_view( ofaPage *page )
+page_init_view( ofaPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
 
@@ -294,13 +296,13 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_get_top_focusable_widget( const ofaPage *page )
 {
 	return( NULL );
 }
 
 static GtkWidget *
-v_get_args_widget( ofaRenderPage *page )
+render_page_get_args_widget( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
 	ofaBalanceBin *bin;
@@ -315,74 +317,26 @@ v_get_args_widget( ofaRenderPage *page )
 }
 
 static const gchar *
-v_get_paper_name( ofaRenderPage *page )
+render_page_get_paper_name( ofaRenderPage *page )
 {
 	return( THIS_PAPER_NAME );
 }
 
 static GtkPageOrientation
-v_get_page_orientation( ofaRenderPage *page )
+render_page_get_page_orientation( ofaRenderPage *page )
 {
 	return( THIS_PAGE_ORIENTATION );
 }
 
 static void
-v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
+render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
 	*keyfile = ofa_settings_get_keyfile( SETTINGS_TARGET_USER );
 	*group_name = g_strdup( st_print_settings );
 }
 
-/*
- * ofaBalanceBin "ofa-changed" handler
- */
-static void
-on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page )
-{
-	gboolean valid;
-	gchar *message;
-
-	valid = ofa_balance_bin_is_valid( bin, &message );
-	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
-	g_free( message );
-}
-
-static void
-irenderable_iface_init( ofaIRenderableInterface *iface )
-{
-	static const gchar *thisfn = "ofa_balance_render_irenderable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = irenderable_get_interface_version;
-	iface->get_dataset = irenderable_get_dataset;
-	iface->begin_render = irenderable_begin_render;
-	iface->free_dataset = irenderable_free_dataset;
-	iface->reset_runtime = irenderable_reset_runtime;
-	iface->want_groups = irenderable_want_groups;
-	iface->want_new_page = irenderable_want_new_page;
-	iface->get_dossier_name = irenderable_get_dossier_name;
-	iface->get_page_header_title = irenderable_get_page_header_title;
-	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
-	iface->draw_page_header_notes = irenderable_draw_page_header_notes;
-	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
-	iface->is_new_group = irenderable_is_new_group;
-	iface->draw_group_header = irenderable_draw_group_header;
-	iface->draw_group_top_report = irenderable_draw_group_top_report;
-	iface->draw_line = irenderable_draw_line;
-	iface->draw_group_bottom_report = irenderable_draw_group_bottom_report;
-	iface->draw_group_footer = irenderable_draw_group_footer;
-	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
-}
-
-static guint
-irenderable_get_interface_version( const ofaIRenderable *instance )
-{
-	return( 1 );
-}
-
 static GList *
-irenderable_get_dataset( ofaIRenderable *instance )
+render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
 	ofaMainWindow *main_window;
@@ -391,9 +345,9 @@ irenderable_get_dataset( ofaIRenderable *instance )
 	ofaIAccountsFilter *accounts_filter;
 	ofaIDatesFilter *dates_filter;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = OFA_BALANCE_RENDER( page )->priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
+	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
@@ -424,9 +378,55 @@ irenderable_get_dataset( ofaIRenderable *instance )
 }
 
 static void
-irenderable_free_dataset( ofaIRenderable *instance, GList *elements )
+render_page_free_dataset( ofaRenderPage *page, GList *dataset )
 {
-	ofs_account_balance_list_free( &elements );
+	ofs_account_balance_list_free( &dataset );
+}
+
+/*
+ * ofaBalanceBin "ofa-changed" handler
+ */
+static void
+on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page )
+{
+	gboolean valid;
+	gchar *message;
+
+	valid = ofa_balance_bin_is_valid( bin, &message );
+	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
+	g_free( message );
+}
+
+static void
+irenderable_iface_init( ofaIRenderableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_balance_render_irenderable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = irenderable_get_interface_version;
+	iface->begin_render = irenderable_begin_render;
+	iface->reset_runtime = irenderable_reset_runtime;
+	iface->want_groups = irenderable_want_groups;
+	iface->want_new_page = irenderable_want_new_page;
+	iface->get_dossier_name = irenderable_get_dossier_name;
+	iface->get_page_header_title = irenderable_get_page_header_title;
+	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
+	iface->draw_page_header_notes = irenderable_draw_page_header_notes;
+	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
+	iface->is_new_group = irenderable_is_new_group;
+	iface->draw_group_header = irenderable_draw_group_header;
+	iface->draw_group_top_report = irenderable_draw_group_top_report;
+	iface->draw_line = irenderable_draw_line;
+	iface->draw_group_bottom_report = irenderable_draw_group_bottom_report;
+	iface->draw_group_footer = irenderable_draw_group_footer;
+	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
+}
+
+static guint
+irenderable_get_interface_version( const ofaIRenderable *instance )
+{
+	return( 1 );
 }
 
 static void

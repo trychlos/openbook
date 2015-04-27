@@ -266,7 +266,7 @@ ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance )
  * Returns: the pages count.
  */
 gint
-ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height )
+ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
 {
 	static const gchar *thisfn = "ofa_irenderable_begin_render";
 	sIRenderable *sdata;
@@ -277,6 +277,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	sdata = get_irenderable_data( instance );
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
+	sdata->dataset = dataset;
 	set_irenderable_input_context( instance, cr, sdata );
 
 	sdata->paginating = TRUE;
@@ -294,16 +295,10 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 		sdata->want_new_page = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_new_page( instance );
 	}
 
-	/* implementation may expect that this be called before #begin_render() */
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dataset ){
-		sdata->dataset = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dataset( instance );
-	}
-
 	g_debug( "%s: instance=%p, cr=%p, render_width=%lf, render_height=%lf, max_y=%lf, dataset_count=%d",
 			thisfn, ( void * ) instance, ( void * ) cr, render_width, render_height, sdata->max_y,
 			g_list_length( sdata->dataset ));
 
-	/* implementation may expect that this be called after #get_dataset() */
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance, render_width, render_height );
 	}
@@ -1123,9 +1118,6 @@ ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render( instance );
-	}
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->free_dataset ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->free_dataset( instance, sdata->dataset );
 	}
 
 	/* #795 - sIRenderable struct should have the same life cycle

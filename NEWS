@@ -31,6 +31,7 @@
    - Upgrade DBMS to v26.
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
+   - Printings: optimize loading the dataset.
    - Settings: have a dossier.conf special development (todo #820).
    - ofo_bat_get_account(): new method.
    - ofo_bat_set_account(): new method.
@@ -38,8 +39,12 @@
    - ofo_dossier_set_last_closing_date(): new method.
    - ofo_dossier_get_prev_exe_last_entry(): new method.
    - ofo_dossier_set_prev_exe_last_entry(): new method.
+   - ofa_irenderable_free_dataset(): removed interface method.
+   - ofa_irenderable_get_dataset(): removed interface method.
    - ofa_ledger_treeview_get_selection(): new method.
    - ofa_reconciliation_set_account(): new method.
+   - ofa_render_page_free_dataset(): new virtual method.
+   - ofa_render_page_get_dataset(): new virtual method.
    - ofa_render_page_set_args_valid(): renamed as ofa_render_page_set_args_changed().
    - ofa_settings_get_key_file(): renamed as ofa_settings_get_filename().
    - ofa_settings_get_actual_keyfile(): renamed as ofa_settings_get_keyfile().

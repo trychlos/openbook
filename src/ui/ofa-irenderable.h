@@ -132,18 +132,6 @@ typedef struct {
 															gdouble render_height );
 
 	/**
-	 * get_dataset:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * This method is called by the interface in order to get the
-	 * #GList list of elements to be printed.
-	 *
-	 * It is an error for the implementation to not provide this method,
-	 * even if it returns an empty dataset.
-	 */
-	GList *            ( *get_dataset )             ( ofaIRenderable *instance );
-
-	/**
 	 * get_body_font:
 	 * @instance: the #ofaIRenderable instance.
 	 *
@@ -445,19 +433,6 @@ typedef struct {
 	 * @instance: the #ofaIRenderable instance.
 	 */
 	void               ( *end_render )              ( ofaIRenderable *instance );
-
-	/**
-	 * free_dataset:
-	 * @dataset: the dataset provided by the get_dataset() virtual.
-	 *
-	 * Frees the dataset.
-	 *
-	 * The interface code doesn't provide any suitable default, not
-	 * even g_list_free(). It is up to the implementation to free
-	 * the dataset it has provided at the beginning of the run.
-	 */
-	void               ( *free_dataset )            ( ofaIRenderable *instance,
-															GList *dataset );
 }
 	ofaIRenderableInterface;
 
@@ -471,7 +446,8 @@ guint        ofa_irenderable_get_interface_last_version
 gint         ofa_irenderable_begin_render         ( ofaIRenderable *instance,
 															cairo_t *cr,
 															gdouble render_width,
-															gdouble render_height );
+															gdouble render_height,
+															GList *dataset );
 
 void         ofa_irenderable_render_page          ( ofaIRenderable *instance,
 															cairo_t *cr,

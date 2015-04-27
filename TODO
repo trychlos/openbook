@@ -514,6 +514,20 @@
                 - rename RAT_VAL_BEG as RAT_VAL_BEGIN
                 - move SIREN to SIRET
 
+ 820 2015- 4-27 check that strings are valid utf-8
+
+ 821 2015- 4-27 check that concenating strings doesn't override the limit
+                (as the MySQL truncation may make the string invalid utf-8)
+                and take care to truncate to a valid utf-8
+
+ 822 2015- 4-27 Review "solde at 01/01": these are not accounts balances
+                after entries from 01/01, but opening exercice after 
+                carried forward entries *only*
+
+ 823 2015- 4-27 review mnemonic activation in all dialogs
+
+ 824
+
 -----------------------------------------------------------------------
  DONE
  ====

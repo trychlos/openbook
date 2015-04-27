@@ -58,10 +58,7 @@ struct _ofaRenderPagePrivate {
 	gdouble    paper_height;
 	gdouble    render_width;			/* in points */
 	gdouble    render_height;
-
-	/* pagination
-	 */
-	gint       pages_count;
+	GList     *dataset;
 	GList     *pdf_crs;					/* one pdf cairo context per printed page */
 };
 
@@ -96,11 +93,13 @@ static void               setup_actions_area( ofaRenderPage *page, GtkContainer 
 static void               setup_drawing_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_page_size( ofaRenderPage *page );
 static void               v_init_view( ofaPage *page );
+static GList             *get_dataset( ofaRenderPage *page );
 static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
 static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
 static gint               do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x );
 static void               draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y );
 static void               on_render_clicked( GtkButton *button, ofaRenderPage *page );
+static void               render_pdf( ofaRenderPage *page );
 static void               on_print_clicked( GtkButton *button, ofaRenderPage *page );
 static cairo_t           *create_context( ofaRenderPage *page, gdouble width, gdouble height );
 static void               set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name );
@@ -368,7 +367,44 @@ ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const 
 
 		priv = page->priv;
 		gtk_widget_set_sensitive( priv->render_btn, is_valid );
+		gtk_widget_set_sensitive( priv->print_btn, is_valid );
 		set_message( page, is_valid ? "" : message, COLOR_ERROR );
+		ofa_render_page_free_dataset( page );
+	}
+}
+
+static GList *
+get_dataset( ofaRenderPage *page )
+{
+	GList *dataset;
+
+	dataset = OFA_RENDER_PAGE_GET_CLASS( page )->get_dataset ?
+		OFA_RENDER_PAGE_GET_CLASS( page )->get_dataset( page ) :
+		NULL;
+
+	return( dataset );
+}
+
+/**
+ * ofa_render_page_free_dataset:
+ * @page:
+ *
+ * Free the current dataset after an argument has changed.
+ */
+void
+ofa_render_page_free_dataset( ofaRenderPage *page )
+{
+	ofaRenderPagePrivate *priv;
+
+	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
+
+	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+
+		if( OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset ){
+			priv = page->priv;
+			OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset( page, priv->dataset );
+			priv->dataset = NULL;
+		}
 	}
 }
 
@@ -481,35 +517,57 @@ static void
 on_render_clicked( GtkButton *button, ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
-	cairo_t *cr, *page_cr;
-	gint pages_count, i;
-	gchar *str;
 
 	priv = page->priv;
-	pdf_crs_free( &priv->pdf_crs );
+	render_pdf( page );
+	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
+	gtk_widget_queue_draw( priv->drawing_area );
+}
 
-	cr = create_context( page, priv->render_width, priv->render_height );
-	pages_count = ofa_irenderable_begin_render(
-			OFA_IRENDERABLE( page ), cr, priv->render_width, priv->render_height );
+static void
+render_pdf( ofaRenderPage *page )
+{
+	ofaRenderPagePrivate *priv;
+	gchar *str;
+	cairo_t *cr, *page_cr;
+	gint pages_count, i;
 
-	for( i=0 ; i<pages_count ; ++i ){
-		page_cr = create_context( page, priv->render_width, priv->render_height );
-		ofa_irenderable_render_page( OFA_IRENDERABLE( page ), page_cr, i );
-		priv->pdf_crs = g_list_append( priv->pdf_crs, page_cr );
+	priv = page->priv;
+
+	if( !priv->dataset ){
+		priv->dataset = get_dataset( page );
+		pdf_crs_free( &priv->pdf_crs );
+	}
+	if( !priv->pdf_crs ){
+		cr = create_context( page, priv->render_width, priv->render_height );
+		pages_count = ofa_irenderable_begin_render(
+				OFA_IRENDERABLE( page ), cr, priv->render_width, priv->render_height, priv->dataset );
+
+		for( i=0 ; i<pages_count ; ++i ){
+			page_cr = create_context( page, priv->render_width, priv->render_height );
+			ofa_irenderable_render_page( OFA_IRENDERABLE( page ), page_cr, i );
+			priv->pdf_crs = g_list_append( priv->pdf_crs, page_cr );
+		}
+
+		ofa_irenderable_end_render( OFA_IRENDERABLE( page ), cr );
+		cairo_destroy( cr );
 	}
 
-	ofa_irenderable_end_render( OFA_IRENDERABLE( page ), cr );
-	cairo_destroy( cr );
-	str = g_strdup_printf( "%d printed page(s).", pages_count );
+	str = g_strdup_printf( "%d printed page(s).", g_list_length( priv->pdf_crs ));
 	set_message( page, str, COLOR_INFO );
-
-	gtk_widget_queue_draw( priv->drawing_area );
-	gtk_widget_set_sensitive( priv->print_btn, TRUE );
 }
 
 static void
 on_print_clicked( GtkButton *button, ofaRenderPage *page )
 {
+	ofaRenderPagePrivate *priv;
+
+	priv = page->priv;
+
+	if( !priv->dataset ){
+		render_pdf( page );
+	}
+
 	ofa_iprintable2_print( OFA_IPRINTABLE2( page ));
 }
 
@@ -607,16 +665,20 @@ static void
 iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	static const gchar *thisfn = "ofa_render_page_iprintable2_begin_print";
+	ofaRenderPagePrivate *priv;
 	gint pages_count;
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 
+	priv = OFA_RENDER_PAGE( instance )->priv;
+
 	pages_count = ofa_irenderable_begin_render(
 			OFA_IRENDERABLE( instance ),
 			gtk_print_context_get_cairo_context( context ),
 			gtk_print_context_get_width( context ),
-			gtk_print_context_get_height( context ));
+			gtk_print_context_get_height( context ),
+			priv->dataset );
 
 	gtk_print_operation_set_n_pages( operation, pages_count );
 }
