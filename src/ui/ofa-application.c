@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include <gio/gio.h>
 #include <glib/gi18n.h>
 #include <string.h>
 
@@ -608,8 +609,9 @@ application_startup( GApplication *application )
 	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
 		if( menu ){
-			appli->priv->menu = menu;
-			/*gtk_application_set_menubar( GTK_APPLICATION( application ), menu );*/
+			appli->priv->menu = g_object_ref( menu );
+			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
+					thisfn, st_appmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_appmenu_id, st_appmenu_xml );
 		}

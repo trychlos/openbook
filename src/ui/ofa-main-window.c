@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include <gio/gio.h>
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
@@ -444,7 +445,9 @@ main_window_constructed( GObject *instance )
 		if( gtk_builder_add_from_file( builder, st_dosmenu_xml, &error )){
 			menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
 			if( menu ){
-				priv->menu = menu;
+				priv->menu = g_object_ref( menu );
+				g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
+						thisfn, st_dosmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
 			} else {
 				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
 			}
@@ -731,6 +734,7 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 static void
 extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group )
 {
+	static const gchar *thisfn = "ofa_main_window_extract_accels_rec";
 	GMenuLinkIter *lter;
 	GMenuAttributeIter *ater;
 	gint i;
@@ -739,6 +743,9 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
 	GVariant *av;
 	guint accel_key;
 	GdkModifierType accel_mods;
+
+	g_debug( "%s: window=%p, model=%p, accel_group=%p",
+			thisfn, ( void * ) window, ( void * ) model, ( void * ) accel_group );
 
 	/* only attribute of the two first items of the GMenuModel is 'label'
 	 * only link of the two first items of the GMenuModel are named 'submenu'
