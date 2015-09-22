@@ -31,7 +31,7 @@
    - Upgrade DBMS to v26.
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
-   - Printings: optimize loading the dataset.
+   - Printings: optimize dataset load.
    - Settings: have a dossier.conf special development (todo #820).
    - ofo_bat_get_account(): new method.
    - ofo_bat_set_account(): new method.
