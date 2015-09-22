@@ -527,7 +527,13 @@
 
  823 2015- 4-27 review mnemonic activation in all dialogs
 
- 824
+ 824 2015- 9-22 use AX_COMPILER_FLAGS
+
+ 825 2015- 9-22 use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
+
+ 826  2015- 9-22 use GResource
+
+ 827
 
 -----------------------------------------------------------------------
  DONE

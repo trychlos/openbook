@@ -44,12 +44,13 @@ fi
 maintainer_dir=$(cd ${0%/*}; pwd)
 top_srcdir="${maintainer_dir%/*}"
 
-PKG_NAME="openbook"
+PkgName=`autoconf --trace 'AC_INIT:$1' configure.ac`
+pkgname=$(echo $PkgName | tr '[[:upper:]]' '[[:lower:]]')
 
 # an openbook-x.y may remain after an aborted make distcheck
 # such a directory breaks gnome-autogen.sh generation
 # so clean it here
-for d in $(find ${top_srcdir} -maxdepth 2 -type d -name 'openbook-*'); do
+for d in $(find ${top_srcdir} -maxdepth 2 -type d -name "${pkgname}-*"); do
 	echo "> Removing $d"
 	chmod -R u+w $d
 	rm -fr $d
@@ -57,17 +58,16 @@ done
 
 REQUIRED_INTLTOOL_VERSION=0.35.5
 
+echo "> Running aclocal"
+aclocal --install || exit 1
+
 # requires gtk-doc package
 # used for Developer Reference Manual generation (devhelp)
+#echo "> Running gtkdocize"
 #gtkdocize || exit 1
 
-which gnome-autogen.sh 1>/dev/null 2>&1 || {
-	echo "> You need to install gnome-common package" 1>&2
-	exit 1
-}
-
-echo "> Running gnome-autogen.sh"
-NOCONFIGURE=1 USE_GNOME2_MACROS=1 . gnome-autogen.sh
+echo "> Running autoreconf"
+autoreconf --verbose --force --install -Wno-portability || exit 1
 
 runconf="${top_srcdir}/run-configure.sh"
 echo "> Generating ${runconf}"
@@ -114,7 +114,9 @@ cd \${heredir}/_build
 conf_cmd="../configure"
 conf_args="${conf_args}"
 conf_args="\${conf_args} --prefix=\${heredir}/_install"
-conf_args="\${conf_args} --enable-maintainer-mode --enable-iso-c --disable-as-needed"
+conf_args="\${conf_args} --enable-maintainer-mode"
+conf_args="\${conf_args} --enable-iso-c"
+conf_args="\${conf_args} --disable-as-needed"
 conf_args="\${conf_args} $*"
 conf_args="\${conf_args} \$*"
 

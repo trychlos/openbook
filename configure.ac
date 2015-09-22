@@ -23,14 +23,17 @@
 AC_PREREQ([2.53])
 
 AC_INIT([OpenBook],[0.40],[openbook@trychlos.org],,[http://trychlos.github.io/openbook/])
+AX_IS_RELEASE([git-directory])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 
+# Code coverage
+AX_CODE_COVERAGE()
+
 AC_CONFIG_SRCDIR([src/ui/main.c])
 AC_CONFIG_HEADERS([src/config.h])
-
 AC_CONFIG_MACRO_DIR([m4])
 
 # check for compiler characteristics and options
@@ -48,8 +51,7 @@ AC_SUBST([AM_CFLAGS],["${AM_CFLAGS} ${WARN_CFLAGS}"])
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-# Gnome stuff
-GNOME_COMMON_INIT
+# Maintainer mode
 PWI_MAINTAINER_CHECK_MODE
 
 # libtool
@@ -75,7 +77,7 @@ fi
 
 # Oldest supported distribution as of May 2014: ?
 glib_required=2.28
-gtk3_required=3.4
+gtk3_required=3.10
 PWI_CHECK_MODULE([GTK3],        [gtk+-3.0],    [${gtk3_required}])
 PWI_CHECK_MODULE([GLIB],        [glib-2.0],    [${glib_required}])
 PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0], [${glib_required}])
