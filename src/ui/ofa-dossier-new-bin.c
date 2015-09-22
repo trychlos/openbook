@@ -49,7 +49,6 @@ struct _ofaDossierNewBinPrivate {
 	GtkWidget      *connect_infos;
 	ofaDBMSRootBin *dbms_credentials;
 	GtkWidget      *msg_label;
-	GdkRGBA         color;
 
 	/* runtime data
 	 */
@@ -325,7 +324,6 @@ setup_dialog( ofaDossierNewBin *bin )
 
 	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-	gdk_rgba_parse( &priv->color, "#ff0000" );
 }
 
 /**
@@ -646,8 +644,7 @@ set_message( const ofaDossierNewBin *bin, const gchar *msg )
 	priv = bin->priv;
 
 	if( priv->msg_label ){
-
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg );
-		gtk_widget_override_color( priv->msg_label, GTK_STATE_FLAG_NORMAL, &priv->color );
+		my_utils_widget_set_style( priv->msg_label, "labelerror" );
 	}
 }

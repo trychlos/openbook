@@ -385,17 +385,17 @@ set_message( ofaDossierOpen *self, const gchar *msg )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
-	GdkRGBA color;
 
 	priv = self->priv;
 
 	if( !priv->message_label ){
 		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
 		priv->message_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
 		g_return_if_fail( priv->message_label && GTK_IS_LABEL( priv->message_label ));
-		gdk_rgba_parse( &color, "#ff0000" );
-		gtk_widget_override_color( priv->message_label, GTK_STATE_FLAG_NORMAL, &color );
+
+		my_utils_widget_set_style( priv->message_label, "labelerror" );
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->message_label ), msg );

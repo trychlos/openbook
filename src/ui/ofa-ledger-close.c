@@ -272,7 +272,6 @@ setup_others( ofaLedgerClose *self, GtkContainer *parent )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *button, *label;
-	GdkRGBA color;
 
 	priv = self->priv;
 
@@ -288,8 +287,7 @@ setup_others( ofaLedgerClose *self, GtkContainer *parent )
 	label = my_utils_container_get_child_by_name( parent, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
-	gdk_rgba_parse( &color, "#ff0000" );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 }
 
 static void

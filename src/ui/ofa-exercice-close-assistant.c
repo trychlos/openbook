@@ -126,8 +126,6 @@ enum {
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-exercice-close-assistant.ui";
 static const gchar *st_ui_id            = "ExerciceCloseAssistant";
 
-#define COLOR_ERROR                     "#ff0000"
-
 G_DEFINE_TYPE( ofaExerciceCloseAssistant, ofa_exercice_close_assistant, MY_TYPE_ASSISTANT )
 
 static void             p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -531,7 +529,6 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkWidget *parent, *label;
 	const gchar *dname;
-	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -558,8 +555,7 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gdk_rgba_parse( &color, COLOR_ERROR );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 	priv->p3_message = label;
 
 	gtk_widget_show_all( page_widget );

@@ -43,3 +43,39 @@ ofaTabLabel GtkGrid GtkButton {
 	-GtkWidget-focus-padding : 0px;
 	padding: 0px;
 }
+
+GtkLabel.labelnormal {
+	color: #ff0000;
+}
+
+GtkLabel.labelwarning {
+	color: #ff8000;
+}
+
+GtkLabel.labelerror {
+	color: #ff0000;
+}
+
+GtkLabel.labelinvalid {
+	color: #808080;
+}
+
+GtkLabel.labelinfo {
+	color: #0000ff;
+}
+
+GtkLabel.labelemphasis1 {
+	color: #0000ff;
+}
+
+GtkLabel.labelbalance {
+	color: #0000ff;
+}
+
+GtkLabel.labelaccount {
+	color: #0000ff;
+}
+
+GtkLabel.labelbatunconcil {
+	color: #00ff00;
+}

@@ -1456,16 +1456,11 @@ static void
 set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 {
 	ofaGuidedInputBinPrivate *priv;
-	GdkRGBA color;
 
 	priv = bin->priv;
 
 	gtk_label_set_text( GTK_LABEL( priv->message ), errmsg );
-
-	if( gdk_rgba_parse(
-			&color, my_strlen( errmsg ) ? "#ff0000":"#000000" )){
-		gtk_widget_override_color( priv->message, GTK_STATE_FLAG_NORMAL, &color );
-	}
+	my_utils_widget_set_style( priv->message, my_strlen( errmsg ) ? "labelerror" : "labelnormal" );
 }
 
 /*
@@ -1616,13 +1611,10 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label;
 	gchar *amount_str;
-	GdkRGBA color;
 	gboolean has_diff;
 
 	priv = bin->priv;
 	has_diff = FALSE;
-
-	gdk_rgba_parse( &color, "#FF0000" );
 
 	/* set the debit diff amount (or empty) */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, row );
@@ -1634,7 +1626,7 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
 	g_free( amount_str );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 
 	/* set the credit diff amount (or empty) */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, row );
@@ -1646,13 +1638,13 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
 	g_free( amount_str );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 
 	/* set the currency */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CURRENCY, row );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_text( GTK_LABEL( label ), has_diff ? currency : NULL );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 }
 
 /**

@@ -471,21 +471,12 @@ static void
 set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name )
 {
 	GtkWidget *label;
-	GdkRGBA color;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	gdk_rgba_parse( &color, ok ? "#000000" : "#ff0000" );
-
-	if( ok ){
-		gtk_label_set_text( GTK_LABEL( label ), _( "OK" ));
-
-	} else {
-		gtk_label_set_text( GTK_LABEL( label ), _( "NOT OK" ));
-	}
-
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "OK" ) : _( "NOT OK" ));
+	my_utils_widget_set_style( label, ok ? "labelnormal" : "labelerror" );
 }
 
 static myProgressBar *

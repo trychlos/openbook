@@ -142,8 +142,6 @@ static const gchar *st_prefs_import     = "RestoreAssistant-settings";
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-restore-assistant.ui";
 static const gchar *st_ui_id            = "RestoreAssistant";
 
-#define COLOR_ERROR                     "#ff0000"
-
 static void            p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p2_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser );
 static void            p2_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -573,7 +571,6 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p4_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *label, *parent, *infos;
-	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -609,8 +606,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gdk_rgba_parse( &color, COLOR_ERROR );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 	priv->p4_message = label;
 
 	gtk_widget_show_all( page );
@@ -688,7 +684,6 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p5_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *label, *parent, *toggle;
-	GdkRGBA color;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -720,8 +715,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gdk_rgba_parse( &color, COLOR_ERROR );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 	priv->p5_message = label;
 
 	gtk_widget_show_all( page );

@@ -165,8 +165,6 @@ typedef struct {
 #define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
 #define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
-#define RGBA_NORMAL                     "#0000ff"		/* blue */
-#define RGBA_WARNING                    "#ff8000"		/* orange */
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.ui";
@@ -1216,12 +1214,8 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	ofaSettlementPrivate *priv;
 	sEnumSelected ses;
 	gchar *samount;
-	GdkRGBA color_blue, color_warn;
 
 	priv = self->priv;
-
-	gdk_rgba_parse( &color_blue, RGBA_NORMAL );
-	gdk_rgba_parse( &color_warn, RGBA_WARNING );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -1230,28 +1224,24 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	gtk_widget_set_sensitive( priv->settle_btn, ses.unsettled > 0 );
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
 
-	gtk_widget_override_color(
-			priv->footer_label,
-			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	my_utils_widget_set_style(
+			priv->footer_label, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = my_double_to_str( ses.debit );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
-	gtk_widget_override_color(
-			priv->debit_balance,
-			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	my_utils_widget_set_style(
+			priv->debit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = my_double_to_str( ses.credit );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
-	gtk_widget_override_color(
-			priv->credit_balance,
-			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	my_utils_widget_set_style(
+			priv->credit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), priv->account_currency );
-	gtk_widget_override_color(
-			priv->currency_balance,
-			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	my_utils_widget_set_style(
+			priv->currency_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 }
 
 /*

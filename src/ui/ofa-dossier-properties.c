@@ -93,9 +93,9 @@ struct _ofaDossierPropertiesPrivate {
 	GList              *dos_handlers;
 };
 
-#define MSG_NORMAL                      "#000000"
-#define MSG_WARNING                     "#ff8000"
-#define MSG_ERROR                       "#ff0000"
+#define MSG_NORMAL                      "labelnormal"
+#define MSG_WARNING                     "labelwarning"
+#define MSG_ERROR                       "labelerror"
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-properties.ui";
 static const gchar *st_ui_id            = "DossierPropertiesDlg";
@@ -667,14 +667,12 @@ static void
 set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GdkRGBA color;
 
 	priv = self->priv;
 
 	if( priv->msgerr ){
 		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
-		gdk_rgba_parse( &color, spec );
-		gtk_widget_override_color( priv->msgerr, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( priv->msgerr, spec );
 	}
 }
 

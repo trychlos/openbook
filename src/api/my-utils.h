@@ -81,6 +81,7 @@ GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container,
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 
 GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
+void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );
 
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,

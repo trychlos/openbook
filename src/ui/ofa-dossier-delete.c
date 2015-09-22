@@ -303,9 +303,7 @@ static void
 check_for_dbserver_connection( ofaDossierDelete *self )
 {
 	ofaDossierDeletePrivate *priv;
-	/*ofoSgbd *sgbd;*/
 	const gchar *msg;
-	GdkRGBA color;
 
 	priv = self->priv;
 
@@ -330,9 +328,8 @@ check_for_dbserver_connection( ofaDossierDelete *self )
 		}
 
 		gtk_label_set_text( priv->p2_msg, msg );
-		if( gdk_rgba_parse( &color, priv->connect_ok ? "#000000" : "#FF0000" )){
-			gtk_widget_override_color( GTK_WIDGET( priv->p2_msg ), GTK_STATE_FLAG_NORMAL, &color );
-		}
+		my_utils_widget_set_style(
+				GTK_WIDGET( priv->p2_msg ), priv->connect_ok ? "labelnormal" : "labelerror" );
 	}
 }
 

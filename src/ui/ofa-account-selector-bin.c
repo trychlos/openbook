@@ -70,9 +70,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-account-selector-bin.ui";
 static const gchar *st_ui_id            = "AccountSelectorBin";
 
-#define COLOR_LABEL_NORMAL              "#000000"	/* black */
-#define COLOR_LABEL_INVALID             "#808080"	/* gray */
-
 G_DEFINE_TYPE( ofaAccountSelectorBin, ofa_account_selector_bin, GTK_TYPE_BIN )
 
 static void load_dialog( ofaAccountSelectorBin *bin );
@@ -272,7 +269,6 @@ on_entry_changed( GtkEntry *entry, ofaAccountSelectorBin *bin )
 	ofoAccount *account;
 	const gchar *label;
 	gchar *str;
-	GdkRGBA color;
 	gboolean ok;
 
 	priv = bin->priv;
@@ -289,18 +285,11 @@ on_entry_changed( GtkEntry *entry, ofaAccountSelectorBin *bin )
 
 		ok = ofo_account_is_allowed( account, priv->allowed );
 
-		if( ok ){
-			str = g_strdup( label );
-			gdk_rgba_parse( &color, COLOR_LABEL_NORMAL );
-
-		} else {
-			str = g_strdup_printf( "<i>%s</i>", label );
-			gdk_rgba_parse( &color, COLOR_LABEL_INVALID );
-		}
-
+		str = ok ? g_strdup( label ) : g_strdup_printf( "<i>%s</i>", label );
 		gtk_label_set_markup( GTK_LABEL( priv->acc_label ), str );
 		g_free( str );
-		gtk_widget_override_color( priv->acc_label, GTK_STATE_FLAG_NORMAL, &color );
+
+		my_utils_widget_set_style( priv->acc_label, ok ? "labelnormal" : "labelinvalid" );
 
 	} else {
 		gtk_label_set_text( GTK_LABEL( priv->acc_label ), "" );

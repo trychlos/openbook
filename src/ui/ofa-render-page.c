@@ -74,8 +74,8 @@ struct _ofaRenderPagePrivate {
 #define COLOR_WHITE                     1,       1,       1			/* page background: #ffffff */
 #define COLOR_BLACK                     0,       0,       0			/* #000000 */
 
-#define COLOR_ERROR                     "#ff0000"	/* red */
-#define COLOR_INFO                      "#0000ff"	/* blue */
+#define MSG_ERROR                       "labelerror"	/* red */
+#define MSG_INFO                        "labelinfo"		/* blue */
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
@@ -368,7 +368,7 @@ ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const 
 		priv = page->priv;
 		gtk_widget_set_sensitive( priv->render_btn, is_valid );
 		gtk_widget_set_sensitive( priv->print_btn, is_valid );
-		set_message( page, is_valid ? "" : message, COLOR_ERROR );
+		set_message( page, is_valid ? "" : message, MSG_ERROR );
 		ofa_render_page_free_dataset( page );
 	}
 }
@@ -554,7 +554,7 @@ render_pdf( ofaRenderPage *page )
 	}
 
 	str = g_strdup_printf( "%d printed page(s).", g_list_length( priv->pdf_crs ));
-	set_message( page, str, COLOR_INFO );
+	set_message( page, str, MSG_INFO );
 }
 
 static void
@@ -585,16 +585,14 @@ create_context( ofaRenderPage *page, gdouble width, gdouble height )
 }
 
 static void
-set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name )
+set_message( ofaRenderPage *page, const gchar *message, const gchar *spec )
 {
 	ofaRenderPagePrivate *priv;
-	GdkRGBA color;
 
 	priv = page->priv;
 
-	gdk_rgba_parse( &color, color_name );
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
-	gtk_widget_override_color( priv->msg_label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( priv->msg_label, spec );
 }
 
 static void

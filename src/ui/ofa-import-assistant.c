@@ -593,7 +593,6 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p5_do_display";
 	ofaImportAssistantPrivate *priv;
-	GdkRGBA color;
 	GtkWidget *label;
 	gchar *str;
 	gboolean complete;
@@ -605,16 +604,14 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	gdk_rgba_parse( &color, "#0000ff" );
-
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-fname" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelemphasis1" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p2_uri );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-type" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelemphasis1" );
 	str = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( priv->p3_type_btn )));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
@@ -622,39 +619,39 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	ffmt = ofa_file_format_get_fftype( priv->p4_import_settings );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-ffmt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelemphasis1" );
 	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_fftype_str( ffmt ));
 
 	if( ffmt != OFA_FFTYPE_OTHER ){
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-charmap" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_charmap( priv->p4_import_settings ));
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-date" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		format = ofa_file_format_get_date_format( priv->p4_import_settings );
 		gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-decimal" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->p4_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-field" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p4_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-headers" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		str = g_strdup_printf( "%d", ofa_file_format_get_headers_count( priv->p4_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );

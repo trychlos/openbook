@@ -211,7 +211,6 @@ enum {
 #define RGBA_VALIDATED                  "#ffe880"		/* pale gold background */
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
 #define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
-#define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.ui";
 static const gchar *st_ui_id            = "ViewEntriesWindow";
@@ -1837,12 +1836,10 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *box, *row, *label;
 	gchar *str;
-	GdkRGBA color;
 
 	if( pc->ldebit || pc->lcredit ){
 
 		priv = self->priv;
-		gdk_rgba_parse( &color, pc->ldebit == pc->lcredit ? RGBA_BALANCE : RGBA_WARNING );
 
 		box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
 		g_return_if_fail( box && GTK_IS_BOX( box ));
@@ -1851,12 +1848,12 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 		gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
 
 		label = gtk_label_new( pc->currency );
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = my_double_to_str( pc->credit );
@@ -1865,7 +1862,7 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
-		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = my_double_to_str( pc->debit );
@@ -2840,7 +2837,6 @@ display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter
 {
 	ofaViewEntriesPrivate *priv;
 	gchar *msgerr, *msgwarn;
-	GdkRGBA color;
 	const gchar *color_str, *text;
 
 	priv = self->priv;
@@ -2849,20 +2845,19 @@ display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter
 
 	if( my_strlen( msgerr )){
 		text = msgerr;
-		color_str = RGBA_ERROR;
+		color_str = "labelerror";
 
 	} else if( my_strlen( msgwarn )){
 		text = msgwarn;
-		color_str = RGBA_WARNING;
+		color_str = "labelwarning";
 
 	} else {
 		text = "";
-		color_str = RGBA_NORMAL;
+		color_str = "labelnormal";
 	}
 
 	gtk_label_set_text( priv->comment, text );
-	gdk_rgba_parse( &color, color_str );
-	gtk_widget_override_color( GTK_WIDGET( priv->comment ), GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( GTK_WIDGET( priv->comment ), color_str );
 
 	g_free( msgerr );
 	g_free( msgwarn );

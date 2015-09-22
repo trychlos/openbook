@@ -363,7 +363,6 @@ set_message( ofaAccountSelect *self, const gchar *str )
 {
 	ofaAccountSelectPrivate *priv;
 	GtkWindow *toplevel;
-	GdkRGBA color;
 
 	priv = self->priv;
 
@@ -376,6 +375,5 @@ set_message( ofaAccountSelect *self, const gchar *str )
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
-	gdk_rgba_parse( &color, "#ff0000" );
-	gtk_widget_override_color( priv->msg_label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( priv->msg_label, "labelerror" );
 }

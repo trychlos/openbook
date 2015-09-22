@@ -228,7 +228,6 @@ v_init_dialog( myDialog *dialog )
 	GtkWindow *toplevel;
 	GtkSizeGroup *group;
 	GtkWidget *parent, *toggle, *label;
-	GdkRGBA color;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
 	get_settings( OFA_DOSSIER_NEW( dialog ));
@@ -274,8 +273,7 @@ v_init_dialog( myDialog *dialog )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-msg" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gdk_rgba_parse( &color, "#ff0000" );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelerror" );
 	priv->msg_label = label;
 
 	check_for_enable_dlg( OFA_DOSSIER_NEW( dialog ));

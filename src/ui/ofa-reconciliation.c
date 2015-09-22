@@ -177,7 +177,6 @@ static const sConcil st_concils[] = {
 #define COLOR_LABEL_NORMAL              "#000000"	/* black */
 #define COLOR_LABEL_INVALID             "#808080"	/* gray */
 
-#define COLOR_ACCOUNT                   "#0000ff"	/* blue */
 #define COLOR_BAT_CONCIL_FONT           "#008000"	/* middle green */
 #define COLOR_BAT_UNCONCIL_FONT         "#00ff00"	/* pure green */
 #define COLOR_BAT_UNCONCIL_BACKGROUND   "#00ff00"	/* pure green */
@@ -409,24 +408,20 @@ setup_treeview_header( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
 	GtkWidget *label;
-	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
-	gdk_rgba_parse( &color, COLOR_ACCOUNT );
-
 	label = my_utils_container_get_child_by_name( parent, "header-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelaccount" );
 
 	label = my_utils_container_get_child_by_name( parent, "header-debit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 	priv->account_debit = GTK_LABEL( label );
 
 	label = my_utils_container_get_child_by_name( parent, "header-credit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelaccount" );
 	priv->account_credit = GTK_LABEL( label );
 }
 
@@ -643,24 +638,21 @@ setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
 	GtkWidget *label;
-	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
-	gdk_rgba_parse( &color, COLOR_ACCOUNT );
-
 	label = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelaccount" );
 
 	label = my_utils_container_get_child_by_name( parent, "footer-debit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelaccount" );
 	priv->bal_debit = GTK_LABEL( label );
 
 	label = my_utils_container_get_child_by_name( parent, "footer-credit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelaccount" );
 	priv->bal_credit = GTK_LABEL( label );
 }
 
@@ -807,7 +799,6 @@ setup_auto_rappro( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
 	GtkWidget *button, *label;
-	GdkRGBA color;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
@@ -834,8 +825,7 @@ setup_auto_rappro( ofaPage *page, GtkContainer *parent )
 
 	label = my_utils_container_get_child_by_name( parent, "assist-count2" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, "labelbatunconcil" );
 	priv->unused_label = label;
 
 	label = my_utils_container_get_child_by_name( parent, "assist-count3" );
@@ -1040,7 +1030,6 @@ get_reconciliable_account( ofaReconciliation *self )
 	ofoAccount *account;
 	const gchar *label;
 	gchar *str;
-	GdkRGBA color;
 
 	priv = self->priv;
 	ok = FALSE;
@@ -1057,18 +1046,12 @@ get_reconciliable_account( ofaReconciliation *self )
 				!ofo_account_is_closed( account ) &&
 				ofo_account_is_reconciliable( account );
 
-		if( ok ){
-			str = g_strdup( label );
-			gdk_rgba_parse( &color, COLOR_LABEL_NORMAL );
-
-		} else {
-			str = g_strdup_printf( "<i>%s</i>", label );
-			gdk_rgba_parse( &color, COLOR_LABEL_INVALID );
-		}
-
+		str = ok ? g_strdup( label ) : g_strdup_printf( "<i>%s</i>", label );
 		gtk_label_set_markup( priv->account_label, str );
 		g_free( str );
-		gtk_widget_override_color( GTK_WIDGET( priv->account_label ), GTK_STATE_FLAG_NORMAL, &color );
+
+		my_utils_widget_set_style(
+				GTK_WIDGET( priv->account_label ), ok ? "labelnormal" : "labelinvalid" );
 	}
 
 	set_settings( self );

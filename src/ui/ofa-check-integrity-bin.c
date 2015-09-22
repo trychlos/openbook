@@ -733,13 +733,10 @@ static void
 set_check_status( ofaCheckIntegrityBin *bin, gulong errs, const gchar *w_name )
 {
 	GtkWidget *label;
-	GdkRGBA color;
 	gchar *str;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-
-	gdk_rgba_parse( &color, errs == 0 ? "#000000" : "#ff0000" );
 
 	if( errs == 0 ){
 		gtk_label_set_text( GTK_LABEL( label ), _( "OK" ));
@@ -750,7 +747,7 @@ set_check_status( ofaCheckIntegrityBin *bin, gulong errs, const gchar *w_name )
 		g_free( str );
 	}
 
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+	my_utils_widget_set_style( label, errs == 0 ? "labelnormal" : "labelerror" );
 }
 
 static myProgressBar *

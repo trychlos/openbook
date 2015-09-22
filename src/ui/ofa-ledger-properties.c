@@ -272,7 +272,6 @@ init_balances_page( ofaLedgerProperties *self )
 	ofoCurrency *currency;
 	gint i, count, digits;
 	gchar *str;
-	GdkRGBA color;
 
 	priv = self->priv;
 
@@ -285,8 +284,6 @@ init_balances_page( ofaLedgerProperties *self )
 
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( container ), "p2-grid" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-
-	gdk_rgba_parse( &color, "#0000ff" );
 
 	currencies = ofo_ledger_get_currencies( priv->ledger );
 	count = g_list_length( currencies );
@@ -303,7 +300,7 @@ init_balances_page( ofaLedgerProperties *self )
 		str = g_strdup_printf( _( "%s balance" ), code );
 		label = gtk_label_new( str );
 		g_free( str );
-		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
+		my_utils_widget_set_style( label, "labelemphasis1" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+1, 1, 1 );
 

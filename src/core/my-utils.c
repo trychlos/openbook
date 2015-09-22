@@ -553,35 +553,7 @@ my_utils_entry_get_valid( GtkEntry *entry )
 void
 my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 {
-	static const gchar *thisfn = "my_utils_entry_set_valid";
-	static const gchar *cssfile = PKGCSSDIR "/ofa.css";
-	static GtkCssProvider *css_provider = NULL;
-	GError *error;
-	GtkStyleContext *style;
-
-	if( !css_provider ){
-		css_provider = gtk_css_provider_new();
-		error = NULL;
-		g_debug( "%s: css=%s", thisfn, cssfile );
-		if( !gtk_css_provider_load_from_path( css_provider, cssfile, &error )){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-			g_clear_object( &css_provider );
-		}
-	}
-
-	if( css_provider ){
-		style = gtk_widget_get_style_context( GTK_WIDGET( entry ));
-		if( valid ){
-			gtk_style_context_remove_class( style, "ofaInvalid" );
-			gtk_style_context_add_class( style, "ofaValid" );
-		} else {
-			gtk_style_context_remove_class( style, "ofaValid" );
-			gtk_style_context_add_class( style, "ofaInvalid" );
-		}
-		gtk_style_context_add_provider( style,
-				GTK_STYLE_PROVIDER( css_provider ), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
-	}
+	my_utils_widget_set_style( GTK_WIDGET( entry ), valid ? "ofaValid" : "ofaInvalid" );
 }
 
 /**
@@ -692,6 +664,42 @@ my_utils_widget_get_toplevel_window( GtkWidget *widget )
 		return( GTK_WINDOW( parent ));
 	}
 	return( my_utils_widget_get_toplevel_window( parent ));
+}
+
+/**
+ * my_utils_widget_set_style:
+ * @widget:
+ * @style:
+ *
+ * Set the desired @style on the given @widget.
+ */
+void
+my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
+{
+	static const gchar *thisfn = "my_utils_widget_set_style";
+	static const gchar *cssfile = PKGCSSDIR "/ofa.css";
+	static GtkCssProvider *css_provider = NULL;
+	GError *error;
+	GtkStyleContext *context;
+
+	if( !css_provider ){
+		css_provider = gtk_css_provider_new();
+		error = NULL;
+		g_debug( "%s: css=%s", thisfn, cssfile );
+		if( !gtk_css_provider_load_from_path( css_provider, cssfile, &error )){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+			g_clear_object( &css_provider );
+		}
+	}
+
+	if( css_provider ){
+		context = gtk_widget_get_style_context( widget );
+		gtk_style_context_add_class( context, style );
+		gtk_style_context_add_provider( context,
+				GTK_STYLE_PROVIDER( css_provider ),
+				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+	}
 }
 
 /**
