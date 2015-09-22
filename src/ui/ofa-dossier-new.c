@@ -382,6 +382,7 @@ v_quit_on_ok( myDialog *dialog )
 	ofaIDbms *prov_instance;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
+	prov_instance = NULL;
 
 	/* get the database name */
 	g_free( priv->database );
