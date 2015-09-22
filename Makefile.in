@@ -433,6 +433,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = \
 	data								\
+	docs								\
 	m4									\
 	maintainer							\
 	misc								\

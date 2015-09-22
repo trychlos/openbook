@@ -125,6 +125,7 @@ AC_CONFIG_FILES([
 	data/desktop/Makefile
 	data/icons/Makefile
 	data/init_utf8_comma_pipe_fr/Makefile
+	docs/Makefile
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
