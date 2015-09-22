@@ -509,6 +509,7 @@
                  + classes allowed to be settled
 
  817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
+     2015- 4-27 see. also todo #819
 
  819 2015- 4-26 next dbms version:
                 - rename RAT_VAL_BEG as RAT_VAL_BEGIN
