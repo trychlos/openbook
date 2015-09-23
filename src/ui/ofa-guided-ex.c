@@ -61,7 +61,7 @@ struct _ofaGuidedExPrivate {
 	GtkButton            *left_select;
 
 	/* UI - right part guided input
-	 *      most if not all elements are taken from ofa-guided-input-piece.ui
+	 *      most if not all elements are taken from ofa-guided-input-bin.ui
 	 *      dialog box definition
 	 */
 	GtkWidget            *ok_btn;
@@ -262,7 +262,7 @@ setup_view_left( ofaGuidedEx *self )
 	GtkWidget *frame, *grid, *tview, *box, *button;
 
 	frame = gtk_frame_new( _( " Per ledger " ));
-	my_utils_widget_set_margin( frame, 0, 4, 4, 0 );
+	my_utils_widget_set_margin( frame, 0, 4, 4, 2 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	grid = gtk_grid_new();
@@ -300,7 +300,7 @@ setup_view_right( ofaGuidedEx *self )
 	grid = gtk_grid_new();
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin_right( parent, 2 );
+	my_utils_widget_set_margin( parent, 0, 0, 2, 4 );
 	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
 
 	priv->input_bin = ofa_guided_input_bin_new();
