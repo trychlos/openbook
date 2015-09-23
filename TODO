@@ -516,6 +516,7 @@
                 - move SIREN to SIRET
 
  820 2015- 4-27 check that strings are valid utf-8
+     2015- 9-23 where ?
 
  821 2015- 4-27 check that concenating strings doesn't override the limit
                 (as the MySQL truncation may make the string invalid utf-8)
@@ -535,7 +536,15 @@
 
  827 2015- 9-23 review usage of ofa-import-ex.ui
 
- 828
+ 828 2015- 9-23 DossierManager: when selecting a dossier for opening,
+                we open the DossierOpen dialog. The selected dossier
+                should be pe-selected; the focus should be on login
+                name
+
+ 829 2015- 9-23 BatProperties: entries should be read-only, and this
+                should be visible for the user
+
+ 830
 
 -----------------------------------------------------------------------
  DONE

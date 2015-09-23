@@ -173,6 +173,7 @@ v_init_dialog( myDialog *dialog )
 
 	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
