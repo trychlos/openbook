@@ -528,22 +528,21 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	g_object_set_data( G_OBJECT( label ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	gtk_widget_set_margin_right( label, 4 );
-	gtk_widget_set_margin_bottom( label, 2 );
+	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), DET_COL_ROW, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
 	gtk_widget_grab_focus( GTK_WIDGET( entry ));
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 20 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
@@ -556,7 +555,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 20 );
@@ -568,7 +567,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_DEBIT, row, 1, 1 );
@@ -579,7 +578,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_CREDIT, row, 1, 1 );
@@ -608,8 +607,7 @@ add_button( ofaOpeTemplateProperties *self, const gchar *stock_id, gint column, 
 	button = GTK_BUTTON( gtk_button_new());
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( button ), left_margin );
-	gtk_widget_set_margin_right( GTK_WIDGET( button ), right_margin );
+	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, left_margin, right_margin );
 	gtk_button_set_image( button, image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
 	gtk_grid_attach( self->priv->grid, GTK_WIDGET( button ), column, row, 1, 1 );

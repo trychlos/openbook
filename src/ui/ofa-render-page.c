@@ -229,7 +229,7 @@ v_setup_view( ofaPage *page )
 {
 	GtkWidget *window, *widget, *page_widget;
 
-	page_widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_name );
 	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );

@@ -49,10 +49,10 @@ ofa_mysql_connect_display_bin_new( const ofaIDbms *instance, const gchar *dname 
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
 	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
 
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-decorated" );
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
 
-	new_parent = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	new_parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_widget_reparent( top_widget, new_parent );
 	gtk_widget_destroy( window );
 

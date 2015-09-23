@@ -160,15 +160,15 @@ static GtkWidget *
 setup_tree_view( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
-	GtkWidget *alignment;
+	GtkWidget *parent;
 
 	priv = OFA_LEDGERS_PAGE( page )->priv;
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 4, 0 );
+	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin( parent, 4, 4, 4, 0 );
 
 	priv->tview = ofa_ledger_treeview_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->tview ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
@@ -179,7 +179,7 @@ setup_tree_view( ofaPage *page )
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-insert", G_CALLBACK( on_insert_key ), page );
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-delete", G_CALLBACK( on_delete_key ), page );
 
-	return( alignment );
+	return( parent );
 }
 
 static GtkWidget *

@@ -224,8 +224,8 @@ setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent )
 
 	priv = self->priv;
 
-	widget = my_utils_container_get_child_by_name( parent, "p1-alignment" );
-	g_return_if_fail( widget && GTK_IS_ALIGNMENT( widget ));
+	widget = my_utils_container_get_child_by_name( parent, "p1-ledger" );
+	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();

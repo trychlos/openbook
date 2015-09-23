@@ -221,7 +221,7 @@ load_dialog( ofaClosingParmsBin *bin )
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 	g_return_if_fail( window && GTK_IS_WINDOW( window ));
 
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "closing-top" );
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
 	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
@@ -414,7 +414,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
 	/* currency combo box */
-	widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
 	combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
@@ -647,7 +647,7 @@ get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 	if( !align ){
 		return( NULL );
 	}
-	g_return_val_if_fail( GTK_IS_ALIGNMENT( align ), NULL );
+	g_return_val_if_fail( GTK_IS_CONTAINER( align ), NULL );
 
 	combo = g_object_get_data( G_OBJECT( align ), DATA_COMBO );
 	g_return_val_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ), NULL );

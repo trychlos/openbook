@@ -227,9 +227,7 @@ setup_tree_view( ofaRatesPage *self )
 	GtkTreeSelection *select;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_top( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
+	my_utils_widget_set_margin( GTK_WIDGET( frame ), 4, 4, 4, 0 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));

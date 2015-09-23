@@ -1913,7 +1913,7 @@ set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
 	}
 
 	if( GTK_IS_BOX( widget )){
-		gtk_widget_set_margin_right( widget, margin );
+		my_utils_widget_set_margin_right( widget, margin );
 	}
 }
 

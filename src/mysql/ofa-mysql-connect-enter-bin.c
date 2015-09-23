@@ -110,9 +110,8 @@ setup_widget( const ofaIDbms *instance, sPrivate *priv, GtkSizeGroup *group )
 	top = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
 
-	widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_widget_reparent( top, widget );
-
 
 	if( group ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-host" );

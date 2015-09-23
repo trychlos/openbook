@@ -425,7 +425,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-alignment-parent" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-settings-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	priv->p3_export_settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );

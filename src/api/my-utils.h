@@ -82,6 +82,9 @@ GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container,
 
 GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
 void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );
+void          my_utils_widget_set_margin              ( GtkWidget *widget, guint top, guint bottom, guint left, guint right );
+void          my_utils_widget_set_margin_left         ( GtkWidget *widget, guint left );
+void          my_utils_widget_set_margin_right        ( GtkWidget *widget, guint right );
 
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,

@@ -258,7 +258,7 @@ init_delete_prefs( ofaDossierDelete *self )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	parent = my_utils_container_get_child_by_name( container, "alignment3-parent" );
+	parent = my_utils_container_get_child_by_name( container, "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->prefs = ofa_dossier_delete_prefs_bin_new();

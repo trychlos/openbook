@@ -119,24 +119,22 @@ window_set_parent( const ofaIPreferences *instance, GtkNotebook *book )
 {
 	GtkWidget *window;
 	GtkWidget *label;
-	GtkWidget *grid, *alignment;
+	GtkWidget *top, *box;
 
 	/* attach our sgdb provider grid */
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
 	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
 
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-grid" );
-	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), NULL );
+	top = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 4, 4 );
-	gtk_widget_reparent( grid, alignment );
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	gtk_widget_reparent( top, box );
 
 	label = gtk_label_new( ofa_mysql_idbms_get_provider_name( NULL ));
-	gtk_notebook_append_page( book, alignment, label );
+	gtk_notebook_append_page( book, box, label );
 
-
-	return( alignment );
+	return( box );
 }
 
 /*

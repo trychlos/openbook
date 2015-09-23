@@ -160,8 +160,8 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "alignment-parent" );
-	g_return_if_fail( parent && GTK_IS_ALIGNMENT( parent ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->bin = ofa_check_balances_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));

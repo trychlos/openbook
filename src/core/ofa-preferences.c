@@ -339,7 +339,7 @@ init_dossier_delete_page( ofaPreferences *self, GtkContainer *toplevel )
 	GtkWidget *parent;
 
 	priv = self->priv;
-	parent = my_utils_container_get_child_by_name( toplevel, "alignment2-parent" );
+	parent = my_utils_container_get_child_by_name( toplevel, "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new();
@@ -369,12 +369,12 @@ init_locales_page( ofaPreferences *self, GtkContainer *toplevel )
 	/*get_locales();*/
 
 	init_locale_date( self, toplevel,
-			&priv->p3_display_combo, "l-display", "p3-alignment-display", ofa_prefs_date_display());
+			&priv->p3_display_combo, "l-display", "p3-box-display", ofa_prefs_date_display());
 	g_signal_connect( priv->p3_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
 	on_display_date_changed( GTK_COMBO_BOX( priv->p3_display_combo ), self );
 
 	init_locale_date( self, toplevel,
-			&priv->p3_check_combo,   "l-visual",  "p3-alignment-check",   ofa_prefs_date_check());
+			&priv->p3_check_combo,   "l-visual",  "p3-box-check",   ofa_prefs_date_check());
 	g_signal_connect( priv->p3_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
 	on_check_date_changed( GTK_COMBO_BOX( priv->p3_check_combo ), self );
 
@@ -493,7 +493,7 @@ init_export_page( ofaPreferences *self, GtkContainer *toplevel )
 
 	priv = self->priv;
 
-	target = my_utils_container_get_child_by_name( toplevel, "alignment5-parent" );
+	target = my_utils_container_get_child_by_name( toplevel, "export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );

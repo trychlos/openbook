@@ -403,7 +403,7 @@ load_dialog( ofaGuidedInputBin *bin )
 	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
 	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
 	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
@@ -637,8 +637,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	gtk_widget_set_margin_right( label, 4 );
-	gtk_widget_set_margin_bottom( label, 2 );
+	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_RANG, row, 1, 1 );
@@ -1589,12 +1588,12 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 
 	label = gtk_label_new( NULL );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
-	gtk_widget_set_margin_right( label, 2 );
+	my_utils_widget_set_margin_right( label, 2 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_DEBIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
-	gtk_widget_set_margin_right( label, 2 );
+	my_utils_widget_set_margin_right( label, 2 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CREDIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );

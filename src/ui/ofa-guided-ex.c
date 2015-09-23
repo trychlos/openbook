@@ -262,8 +262,7 @@ setup_view_left( ofaGuidedEx *self )
 	GtkWidget *frame, *grid, *tview, *box, *button;
 
 	frame = gtk_frame_new( _( " Per ledger " ));
-	gtk_widget_set_margin_left( frame, 4 );
-	gtk_widget_set_margin_bottom( frame, 4 );
+	my_utils_widget_set_margin( frame, 0, 4, 4, 0 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	grid = gtk_grid_new();
@@ -277,8 +276,7 @@ setup_view_left( ofaGuidedEx *self )
 	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
 
 	button = gtk_button_new_with_mnemonic( _( "_Select" ));
-	gtk_widget_set_margin_bottom( button, 4 );
-	gtk_widget_set_margin_right( button, 4 );
+	my_utils_widget_set_margin( button, 0, 4, 0, 4 );
 	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
 	self->priv->left_select = GTK_BUTTON( button );
@@ -301,8 +299,8 @@ setup_view_right( ofaGuidedEx *self )
 
 	grid = gtk_grid_new();
 
-	parent = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( parent ), 0, 0, 0, 2 );
+	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin_right( parent, 2 );
 	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
 
 	priv->input_bin = ofa_guided_input_bin_new();
@@ -315,8 +313,7 @@ setup_view_right( ofaGuidedEx *self )
 	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
 
 	button = gtk_button_new_with_mnemonic( _( "_Validate" ));
-	gtk_widget_set_margin_bottom( button, 4 );
-	gtk_widget_set_margin_right( button, 6 );
+	my_utils_widget_set_margin( button, 0, 4, 0, 6 );
 	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
 	image = gtk_image_new_from_icon_name( "gtk-ok", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
@@ -324,8 +321,7 @@ setup_view_right( ofaGuidedEx *self )
 	priv->ok_btn = button;
 
 	button = gtk_button_new_with_mnemonic( _( "  _Reset  " ));
-	gtk_widget_set_margin_bottom( button, 4 );
-	gtk_widget_set_margin_right( button, 4 );
+	my_utils_widget_set_margin( button, 0, 4, 0, 4 );
 	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
 	image = gtk_image_new_from_icon_name( "gtk-cancel", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( button ), image );

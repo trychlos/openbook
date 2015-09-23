@@ -217,8 +217,8 @@ attach_top_widget( ofaBatTreeview *self )
 
 	priv = self->priv;
 
-	top_widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( top_widget ), 4, 4, 4, 4 );
+	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin( top_widget, 4, 4, 4, 4 );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );

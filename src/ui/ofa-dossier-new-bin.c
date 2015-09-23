@@ -224,7 +224,7 @@ ofa_dossier_new_bin_attach_to( ofaDossierNewBin *bin, GtkContainer *parent, GtkS
 		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-alignment" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
 		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 		gtk_widget_reparent( widget, GTK_WIDGET( bin ));

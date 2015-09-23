@@ -328,8 +328,7 @@ add_empty_row( ofaRateProperties *self )
 	g_object_set_data( G_OBJECT( label ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	gtk_widget_set_margin_right( label, 4 );
-	gtk_widget_set_margin_bottom( label, 2 );
+	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), COL_ROW, row, 1, 1 );
@@ -347,7 +346,7 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
-	gtk_widget_set_margin_right( label, 4 );
+	my_utils_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_BEGIN_LABEL, row, 1, 1 );
@@ -365,7 +364,7 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
-	gtk_widget_set_margin_right( label, 4 );
+	my_utils_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_END_LABEL, row, 1, 1 );
@@ -381,7 +380,7 @@ add_empty_row( ofaRateProperties *self )
 	label = gtk_label_new( "" );
 	gtk_widget_set_sensitive( label, FALSE );
 	gtk_widget_set_hexpand( label, TRUE );
-	gtk_widget_set_margin_right( label, 4 );
+	my_utils_widget_set_margin_right( label, 4 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 7 );
 	gtk_grid_attach( priv->grid, label, COL_RATE_LABEL, row, 1, 1 );
@@ -406,8 +405,7 @@ add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint ro
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_widget_set_halign( button, GTK_ALIGN_END );
-	gtk_widget_set_margin_left( GTK_WIDGET( button ), 0 );
-	gtk_widget_set_margin_right( GTK_WIDGET( button ), right_margin );
+	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, 0, right_margin );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
 	gtk_grid_attach( self->priv->grid, button, column, row, 1, 1 );

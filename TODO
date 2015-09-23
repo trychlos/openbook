@@ -531,9 +531,11 @@
 
  825 2015- 9-22 use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
 
- 826  2015- 9-22 use GResource
+ 826 2015- 9-22 use GResource
 
- 827
+ 827 2015- 9-23 review usage of ofa-import-ex.ui
+
+ 828
 
 -----------------------------------------------------------------------
  DONE

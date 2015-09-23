@@ -778,7 +778,7 @@ static void
 display_progress_init( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *content, *grid, *alignment;
+	GtkWidget *content, *grid, *widget;
 	gulong handler;
 
 	priv = self->priv;
@@ -802,12 +802,12 @@ display_progress_init( ofaDossierProperties *self )
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), grid );
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 10, 10 );
-	gtk_grid_attach( GTK_GRID( grid ), alignment, 0, 0, 1, 1 );
+	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin( widget, 2, 2, 10, 10 );
+	gtk_grid_attach( GTK_GRID( grid ), widget, 0, 0, 1, 1 );
 
 	priv->bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->bar ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->bar ));
 
 	handler = g_signal_connect( priv->dossier,
 			SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_entry_status_count ), self );

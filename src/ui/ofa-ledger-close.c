@@ -579,7 +579,7 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
 	ofaLedgerClosePrivate *priv;
 	gchar *str;
-	GtkWidget *label, *alignment;
+	GtkWidget *label, *parent;
 	myProgressBar *bar;
 
 	priv = self->priv;
@@ -590,11 +590,11 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 0, 10 );
-	gtk_grid_attach( GTK_GRID( grid ), alignment, 1, priv->count, 1, 1 );
+	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin( parent, 2, 2, 0, 10 );
+	gtk_grid_attach( GTK_GRID( grid ), parent, 1, priv->count, 1, 1 );
 	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bar ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
 
 	priv->count += 1;
 }

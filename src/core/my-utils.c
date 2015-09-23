@@ -703,6 +703,65 @@ my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
 }
 
 /**
+ * my_utils_widget_set_margin:
+ * @widget:
+ * @top:
+ * @bottom:
+ * @left:
+ * @right:
+ *
+ * Set the desired margins on the given @widget.
+ */
+void
+my_utils_widget_set_margin( GtkWidget *widget, guint top, guint bottom, guint left, guint right )
+{
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+	gtk_widget_set_margin_top( widget, top );
+	gtk_widget_set_margin_bottom( widget, bottom );
+	my_utils_widget_set_margin_left( widget, left );
+	my_utils_widget_set_margin_right( widget, right );
+}
+
+/**
+ * my_utils_widget_set_margin_left:
+ * @widget:
+ * @left:
+ *
+ * Set the desired left/start margin on the given @widget.
+ */
+void
+my_utils_widget_set_margin_left( GtkWidget *widget, guint left )
+{
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+#if GTK_MAJOR_VERSION > 3 || GTK_MINOR_VERSION >= 12
+		gtk_widget_set_margin_start( widget, left );
+#else
+		gtk_widget_set_margin_left( widget, left );
+#endif
+}
+
+/**
+ * my_utils_widget_set_margin_right:
+ * @widget:
+ * @left:
+ *
+ * Set the desired right/end margin on the given @widget.
+ */
+void
+my_utils_widget_set_margin_right( GtkWidget *widget, guint right )
+{
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+#if GTK_MAJOR_VERSION > 3 || GTK_MINOR_VERSION >= 12
+		gtk_widget_set_margin_end( widget, right );
+#else
+		gtk_widget_set_margin_right( widget, right );
+#endif
+}
+
+/**
  * my_utils_init_notes:
  *
  * This function is mostly used through the "my_utils_init_notes_ex()"

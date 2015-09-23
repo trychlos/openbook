@@ -124,17 +124,17 @@ v_setup_page( ofaPage *page )
 {
 	ofaOpeTemplatesPagePrivate *priv;
 	GtkGrid *grid;
-	GtkWidget *alignment;
+	GtkWidget *widget;
 
 	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
 
 	grid = ofa_page_get_top_grid( page );
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_grid_attach( grid, alignment, 0, 0, 1, 1 );
+	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	gtk_grid_attach( grid, widget, 0, 0, 1, 1 );
 
 	priv->ope_frame = ofa_ope_templates_frame_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( priv->ope_frame ));
+	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ope_frame ));
 	ofa_ope_templates_frame_set_main_window( priv->ope_frame, ofa_page_get_main_window( page ));
 	ofa_ope_templates_frame_set_buttons( priv->ope_frame, TRUE );
 

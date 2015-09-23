@@ -28,6 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
+
 #include "ui/ofa-buttons-box.h"
 
 /* private instance data
@@ -134,16 +136,16 @@ static void
 setup_top_grid( ofaButtonsBox *box )
 {
 	ofaButtonsBoxPrivate *priv;
-	GtkWidget *alignment, *grid;
+	GtkWidget *top_widget, *grid;
 
 	priv = box->priv;
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_container_add( GTK_CONTAINER( box ), alignment );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 0, 0, 8, 8 );
+	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margin( top_widget, 0, 0, 8, 8 );
+	gtk_container_add( GTK_CONTAINER( box ), top_widget );
 
 	grid = gtk_grid_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), grid );
+	gtk_container_add( GTK_CONTAINER( top_widget ), grid );
 	gtk_grid_set_row_spacing( GTK_GRID( grid ), STYLE_ROW_MARGIN );
 
 	priv->grid = GTK_GRID( grid );
@@ -191,7 +193,7 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 {
 	static const gchar *thisfn = "ofa_buttons_box_add_button";
 	ofaButtonsBoxPrivate *priv;
-	GtkWidget *alignment, *button;
+	GtkWidget *parent, *button;
 
 	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
 
@@ -249,8 +251,8 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 		}
 
 		if( button ){
-			alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-			gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), priv->spacers*STYLE_SPACER, 0, 0, 0 );
+			parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+			my_utils_widget_set_margin( parent, priv->spacers*STYLE_SPACER, 0, 0, 0 );
 			priv->spacers = 0;
 
 			g_object_set_data( G_OBJECT( button ), BUTTON_ID, GINT_TO_POINTER( button_id ));
@@ -260,9 +262,8 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 				g_signal_connect( G_OBJECT( button ), "clicked", cb, user_data );
 			}
 
-			gtk_container_add( GTK_CONTAINER( alignment ), button );
-
-			gtk_grid_attach( priv->grid, alignment, 0, priv->rows, 1, 1 );
+			gtk_container_add( GTK_CONTAINER( parent ), button );
+			gtk_grid_attach( priv->grid, parent, 0, priv->rows, 1, 1 );
 			priv->rows += 1;
 		}
 	}
