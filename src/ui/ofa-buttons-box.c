@@ -35,13 +35,13 @@
 /* private instance data
  */
 struct _ofaButtonsBoxPrivate {
-	gboolean   dispose_has_run;
+	gboolean      dispose_has_run;
 
 	/* internals
 	 */
-	GtkGrid   *grid;
-	gint       rows;
-	gint       spacers;
+	GtkGrid      *grid;
+	gint          rows;
+	gint          spacers;
 };
 
 #define BUTTON_ID                       "button-id"
@@ -193,7 +193,7 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 {
 	static const gchar *thisfn = "ofa_buttons_box_add_button";
 	ofaButtonsBoxPrivate *priv;
-	GtkWidget *parent, *button;
+	GtkWidget *button;
 
 	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
 
@@ -251,8 +251,7 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 		}
 
 		if( button ){
-			parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-			my_utils_widget_set_margin( parent, priv->spacers*STYLE_SPACER, 0, 0, 0 );
+			my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
 			priv->spacers = 0;
 
 			g_object_set_data( G_OBJECT( button ), BUTTON_ID, GINT_TO_POINTER( button_id ));
@@ -262,8 +261,7 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 				g_signal_connect( G_OBJECT( button ), "clicked", cb, user_data );
 			}
 
-			gtk_container_add( GTK_CONTAINER( parent ), button );
-			gtk_grid_attach( priv->grid, parent, 0, priv->rows, 1, 1 );
+			gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
 			priv->rows += 1;
 		}
 	}
