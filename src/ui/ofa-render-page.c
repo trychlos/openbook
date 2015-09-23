@@ -227,17 +227,11 @@ render_page_class_init( ofaRenderPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	GtkWidget *window, *widget, *page_widget;
+	GtkWidget *widget, *page_widget;
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_name );
-	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
-
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( page_widget ), st_ui_xml, st_ui_name, "top" );
 	g_return_val_if_fail( widget && GTK_IS_CONTAINER( widget ), NULL );
-
-	gtk_widget_reparent( widget, page_widget );
 
 	setup_args_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 	setup_actions_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));

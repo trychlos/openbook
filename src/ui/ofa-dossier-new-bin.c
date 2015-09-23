@@ -211,7 +211,7 @@ void
 ofa_dossier_new_bin_attach_to( ofaDossierNewBin *bin, GtkContainer *parent, GtkSizeGroup *group )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *window, *widget;
+	GtkWidget *widget;
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -221,13 +221,9 @@ ofa_dossier_new_bin_attach_to( ofaDossierNewBin *bin, GtkContainer *parent, GtkS
 
 	if( !priv->dispose_has_run ){
 
-		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+		widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
 		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
 		gtk_container_add( parent, GTK_WIDGET( bin ));
 
 		priv->group = group;

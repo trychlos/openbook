@@ -99,19 +99,13 @@ on_widget_finalized( sPrivate *priv, GObject *finalized_widget )
 static GtkWidget *
 setup_widget( const ofaIDbms *instance, sPrivate *priv, GtkSizeGroup *group )
 {
-	GtkWidget *window;
 	GtkWidget *top, *widget;
 	GtkWidget *label, *entry;
 
 	/* attach our sgdb provider grid */
-	window = my_utils_builder_load_from_path( st_newui_xml, st_newui_mysql );
-	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
-
-	top = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
-	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
-
 	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	gtk_widget_reparent( top, widget );
+	top = my_utils_container_attach_from_ui( GTK_CONTAINER( widget ), st_newui_xml, st_newui_mysql, "top" );
+	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
 
 	if( group ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-host" );

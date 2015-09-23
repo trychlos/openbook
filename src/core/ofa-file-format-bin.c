@@ -225,15 +225,10 @@ ofa_file_format_bin_new( ofaFileFormat *settings )
 static void
 load_dialog( ofaFileFormatBin *bin )
 {
-	GtkWidget *window, *widget;
+	GtkWidget *widget;
 
-	window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
-	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_window_xml, st_window_id, "top" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
-
-	gtk_widget_reparent( widget, GTK_WIDGET( bin ));
 }
 
 static void

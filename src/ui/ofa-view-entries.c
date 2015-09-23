@@ -444,19 +444,13 @@ v_setup_view( ofaPage *page )
 static void
 reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent )
 {
-	GtkWidget *dialog;
 	GtkWidget *box;
 
 	/* load our dialog */
-	dialog = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-	g_return_if_fail( dialog && GTK_IS_WINDOW( dialog ));
+	box = my_utils_container_attach_from_ui( GTK_CONTAINER( parent ), st_ui_xml, st_ui_id, "px-box" );
+	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-box" );
-	g_return_if_fail( box && GTK_IS_BOX( box ));
 	self->priv->top_box = GTK_CONTAINER( box );
-
-	/* attach our box to the parent's frame */
-	gtk_widget_reparent( box, GTK_WIDGET( parent ));
 }
 
 static void

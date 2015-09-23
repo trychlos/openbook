@@ -215,16 +215,10 @@ ofa_closing_parms_bin_new( void )
 static void
 load_dialog( ofaClosingParmsBin *bin )
 {
-	GtkWidget *window;
 	GtkWidget *top_widget;
 
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
 }
 
 /**

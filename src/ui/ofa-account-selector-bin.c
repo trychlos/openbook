@@ -198,16 +198,10 @@ ofa_account_selector_bin_new( const gchar *pref_name, gint allowed )
 static void
 load_dialog( ofaAccountSelectorBin *bin )
 {
-	GtkWidget *window;
 	GtkWidget *top_widget;
 
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
 }
 
 static void

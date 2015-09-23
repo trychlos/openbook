@@ -40,21 +40,14 @@ static const gchar *st_ui_mysql         = "MySQLConnectDisplayBin";
 GtkWidget *
 ofa_mysql_connect_display_bin_new( const ofaIDbms *instance, const gchar *dname )
 {
-	GtkWidget *window;
 	GtkWidget *top_widget, *new_parent;
 	GtkWidget *label;
 	gchar *text;
 	gint port_num;
 
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
-	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
-	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
-
 	new_parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	gtk_widget_reparent( top_widget, new_parent );
-	gtk_widget_destroy( window );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( new_parent ), st_ui_xml, st_ui_mysql, "top" );
+	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "provider" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );

@@ -187,18 +187,12 @@ static void
 setup_composite( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
-	GtkWidget *window, *top_widget, *label;
+	GtkWidget *top_widget, *label;
 
 	priv =bin->priv;
 
-	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
-	gtk_widget_destroy( window );
 
 	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-account" );
 	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));

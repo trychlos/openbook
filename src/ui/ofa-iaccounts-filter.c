@@ -273,17 +273,11 @@ on_widget_finalized( ofaIAccountsFilter *filter, void *finalized_widget )
 static void
 setup_bin( ofaIAccountsFilter *filter, sIAccountsFilter *sdata )
 {
-	GtkWidget *window;
 	GtkWidget *top_widget, *entry, *label, *button;
 	GtkWidget *check;
 
-	window = my_utils_builder_load_from_path( sdata->xml_name, st_ui_id );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( filter ), sdata->xml_name, st_ui_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-	gtk_widget_reparent( top_widget, GTK_WIDGET( filter ));
 
 	/* From: block */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-prompt" );

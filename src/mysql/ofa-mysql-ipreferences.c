@@ -117,19 +117,13 @@ on_container_weak_notify( sPrivate *priv, GObject *was_the_container )
 static GtkWidget *
 window_set_parent( const ofaIPreferences *instance, GtkNotebook *book )
 {
-	GtkWidget *window;
 	GtkWidget *label;
 	GtkWidget *top, *box;
 
 	/* attach our sgdb provider grid */
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
-	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
-
-	top = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
-	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
-
 	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	gtk_widget_reparent( top, box );
+	top = my_utils_container_attach_from_ui( GTK_CONTAINER( box ), st_ui_xml, st_ui_mysql, "top" );
+	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
 
 	label = gtk_label_new( ofa_mysql_idbms_get_provider_name( NULL ));
 	gtk_notebook_append_page( book, box, label );

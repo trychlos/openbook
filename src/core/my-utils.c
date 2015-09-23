@@ -649,6 +649,42 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 }
 
 /**
+ * my_utils_container_attach_from_ui:
+ * @container: the target container
+ * @ui: the path to the .xml file
+ * @window: the name of the top window in the .xml file
+ * @widget: the name of the widget to be attached to the @container.
+ *
+ * Read the named .xml file @ui, load the named @window, extract the
+ * named @widget from the @window, attaching this @widget to the
+ * @container.
+ *
+ * Returns: the loaded @widget, or %NULL.
+ */
+GtkWidget *
+my_utils_container_attach_from_ui( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget )
+{
+	GtkWidget *window_widget, *top_widget;
+
+	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+
+	window_widget = my_utils_builder_load_from_path( ui, window );
+	g_return_val_if_fail( window_widget && GTK_IS_CONTAINER( window_widget ), NULL );
+
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window_widget ), widget );
+	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
+
+	g_object_ref( top_widget );
+	gtk_container_remove( GTK_CONTAINER( window_widget ), top_widget );
+	gtk_widget_destroy( window_widget );
+
+	gtk_container_add( container, top_widget );
+	g_object_unref( top_widget );
+
+	return( top_widget );
+}
+
+/**
  * my_utils_widget_get_toplevel_window:
  * @widget:
  *

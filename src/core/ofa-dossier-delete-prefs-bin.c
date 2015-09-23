@@ -146,18 +146,12 @@ static void
 setup_composite( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
-	GtkWidget *window, *top_widget, *radio, *check;
+	GtkWidget *top_widget, *radio, *check;
 
 	priv = bin->priv;
 
-	window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
-	g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top" );
+	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-
-	gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
-	gtk_widget_destroy( window );
 
 	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-drop" );
 	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
