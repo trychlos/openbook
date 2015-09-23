@@ -638,7 +638,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_RANG, row, 1, 1 );
 
@@ -763,7 +763,7 @@ row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	GtkWidget *widget;
 
 	widget = gtk_label_new( "" );
-	gtk_misc_set_alignment( GTK_MISC( widget ), col_def->xalign, 0.5 );
+	my_utils_widget_set_xalign( widget, col_def->xalign );
 	if( col_def->width ){
 		gtk_label_set_width_chars( GTK_LABEL( widget ), col_def->width );
 	}
@@ -1565,7 +1565,7 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 
 	label = gtk_label_new( NULL );
 	gtk_widget_set_margin_top( label, TOTAUX_TOP_MARGIN );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
@@ -1583,21 +1583,21 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_CREDIT, row, 1, 1 );
 
 	label = gtk_label_new( _( "Diff :" ));
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	my_utils_widget_set_margin_right( label, 2 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_DEBIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	my_utils_widget_set_margin_right( label, 2 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CREDIT, row+1, 1, 1 );
 
 	label = gtk_label_new( NULL );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	my_utils_widget_set_xalign( label, 0 );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_CURRENCY, row+1, 1, 1 );
 
 	gtk_widget_show_all( GTK_WIDGET( priv->entries_grid ));

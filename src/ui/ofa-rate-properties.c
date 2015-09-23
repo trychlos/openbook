@@ -329,7 +329,7 @@ add_empty_row( ofaRateProperties *self )
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), COL_ROW, row, 1, 1 );
 
@@ -347,7 +347,7 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_BEGIN_LABEL, row, 1, 1 );
 
@@ -365,7 +365,7 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
 	gtk_grid_attach( priv->grid, label, COL_END_LABEL, row, 1, 1 );
 
@@ -381,7 +381,7 @@ add_empty_row( ofaRateProperties *self )
 	gtk_widget_set_sensitive( label, FALSE );
 	gtk_widget_set_hexpand( label, TRUE );
 	my_utils_widget_set_margin_right( label, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 7 );
 	gtk_grid_attach( priv->grid, label, COL_RATE_LABEL, row, 1, 1 );
 

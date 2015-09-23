@@ -27,6 +27,7 @@
 #endif
 
 #include "api/my-double.h"
+#include "api/my-utils.h"
 
 #include "ui/ofa-balances-grid.h"
 
@@ -207,19 +208,19 @@ on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble 
 
 	if( !found ){
 		widget = gtk_label_new( NULL );
-		gtk_misc_set_alignment( GTK_MISC( widget ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( widget, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
 		gtk_grid_attach( priv->grid, widget, 0, i, 1, 1 );
 		write_double( self, debit, 0, i );
 
 		widget = gtk_label_new( NULL );
-		gtk_misc_set_alignment( GTK_MISC( widget ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( widget, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
 		gtk_grid_attach( priv->grid, widget, 1, i, 1, 1 );
 		write_double( self, credit, 1, i );
 
 		widget = gtk_label_new( NULL );
-		gtk_misc_set_alignment( GTK_MISC( widget ), 0, 0.5 );
+		my_utils_widget_set_xalign( widget, 0 );
 		gtk_grid_attach( priv->grid, widget, 2, i, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( widget ), currency );
 

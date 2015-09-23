@@ -85,6 +85,7 @@ void          my_utils_widget_set_style               ( GtkWidget *widget, const
 void          my_utils_widget_set_margin              ( GtkWidget *widget, guint top, guint bottom, guint left, guint right );
 void          my_utils_widget_set_margin_left         ( GtkWidget *widget, guint left );
 void          my_utils_widget_set_margin_right        ( GtkWidget *widget, guint right );
+void          my_utils_widget_set_xalign              ( GtkWidget *widget, gfloat xalign );
 
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,

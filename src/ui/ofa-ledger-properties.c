@@ -301,15 +301,15 @@ init_balances_page( ofaLedgerProperties *self )
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_style( label, "labelemphasis1" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+		my_utils_widget_set_xalign( label, 0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+1, 1, 1 );
 
 		label = gtk_label_new( _( "      Validated balance :" ));
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+2, 1, 1 );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+2, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_val_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -320,7 +320,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+2, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_val_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -331,11 +331,11 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( _( "Rough balance :" ));
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+3, 1, 1 );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+3, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_rough_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -346,7 +346,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+3, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_rough_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -357,11 +357,11 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( _( "Future balance :" ));
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+4, 1, 1 );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+4, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_futur_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -372,7 +372,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+4, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_futur_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );

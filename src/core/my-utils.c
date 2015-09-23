@@ -762,6 +762,27 @@ my_utils_widget_set_margin_right( GtkWidget *widget, guint right )
 }
 
 /**
+ * my_utils_widget_set_xalign:
+ * @widget:
+ * @xalign:
+ *
+ * Set the desired horizontal alignment on the given @widget.
+ */
+void
+my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
+{
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+#if GTK_MAJOR_VERSION > 3 || GTK_MINOR_VERSION >= 16
+		g_object_set( widget, "xalign", xalign, NULL );
+#else
+		if( GTK_IS_MISC( widget )){
+			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
+		}
+#endif
+}
+
+/**
  * my_utils_init_notes:
  *
  * This function is mostly used through the "my_utils_init_notes_ex()"

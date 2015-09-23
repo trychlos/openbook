@@ -1849,12 +1849,12 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 
 		label = gtk_label_new( pc->currency );
 		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+		my_utils_widget_set_xalign( label, 0 );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
 		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = my_double_to_str( pc->credit );
 		gtk_label_set_text( GTK_LABEL( label ), str );
@@ -1863,7 +1863,7 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 
 		label = gtk_label_new( NULL );
 		my_utils_widget_set_style( label, pc->ldebit == pc->lcredit ? "labelbalance" : "labelwarning" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = my_double_to_str( pc->debit );
 		gtk_label_set_text( GTK_LABEL( label ), str );

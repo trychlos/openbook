@@ -529,7 +529,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), DET_COL_ROW, row, 1, 1 );
 

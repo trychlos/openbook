@@ -587,7 +587,7 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	str = g_strdup_printf( "%s :", mnemo );
 	label = gtk_label_new( str );
 	g_free( str );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
