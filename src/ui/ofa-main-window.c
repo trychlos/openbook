@@ -990,7 +990,7 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	gint i;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	my_utils_widget_set_margin( GTK_WIDGET( frame ), 0, 4, 4, 0 );
+	my_utils_widget_set_margin( GTK_WIDGET( frame ), 4, 4, 4, 2 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 	gtk_paned_pack1( window->priv->pane, GTK_WIDGET( frame ), FALSE, FALSE );
 
@@ -1081,7 +1081,7 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 	GtkNotebook *book;
 
 	book = GTK_NOTEBOOK( gtk_notebook_new());
-	my_utils_widget_set_margin( GTK_WIDGET( book ), 0, 4, 0, 4 );
+	my_utils_widget_set_margin( GTK_WIDGET( book ), 4, 4, 2, 4 );
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
 
