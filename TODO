@@ -536,10 +536,9 @@
 
  831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
 
- 832 2015- 9-24 DossierStore should be a singleton, and maitain itself
-                up to date
+ 833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
 
- 833
+ 834
 
 -----------------------------------------------------------------------
  DONE
@@ -3809,6 +3808,10 @@
  829 2015- 9-23 BatProperties: entries should be read-only, and this
                 should be visible for the user
      2015- 9-24 introduce my_utils_widget_set_editable
+
+ 832 2015- 9-24 DossierStore should be a singleton, and maitain itself
+                up to date
+     2015- 9-24 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

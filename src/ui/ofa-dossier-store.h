@@ -37,6 +37,10 @@
  *
  * The #ofaDossierStore is kept sorted in ascending alphabetical order
  * of dossier name, and ascending exercice order.
+ *
+ * This class defines a singleton. Only one instance of this class is
+ * allocated the first time #ofa_dossier_store_new() is called. The
+ * same instance is then returned on successive calls.
  */
 
 #include <gtk/gtk.h>
@@ -121,9 +125,7 @@ GType            ofa_dossier_store_get_type       ( void );
 
 ofaDossierStore *ofa_dossier_store_new            ( void );
 
-void             ofa_dossier_store_add_row        ( ofaDossierStore *store,
-														const gchar *dname,
-														const gchar *dbms );
+void             ofa_dossier_store_reload         ( ofaDossierStore *store );
 
 void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
 														const gchar *dname,

@@ -467,27 +467,6 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 }
 
 /**
- * ofa_dossier_treeview_add_row:
- */
-void
-ofa_dossier_treeview_add_row( ofaDossierTreeview *view, const gchar *dname )
-{
-	ofaDossierTreeviewPrivate *priv;
-	gchar *dbms;
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = view->priv;
-
-	if( !priv->dispose_has_run ){
-
-		dbms = ofa_settings_get_dossier_provider( dname );
-		ofa_dossier_store_add_row( priv->store, dname, dbms );
-		g_free( dbms );
-	}
-}
-
-/**
  * ofa_dossier_treeview_get_store:
  */
 ofaDossierStore *

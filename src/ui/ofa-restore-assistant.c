@@ -519,7 +519,6 @@ p3_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 		g_free( priv->p4_password );
 		priv->p4_password = password;
 
-		ofa_dossier_treeview_add_row( priv->p3_dossier_treeview, dname );
 		ofa_dossier_treeview_set_selected( priv->p3_dossier_treeview, dname );
 	}
 }

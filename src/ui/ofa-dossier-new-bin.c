@@ -35,6 +35,7 @@
 #include "core/ofa-dbms-root-bin.h"
 
 #include "ui/ofa-dossier-new-bin.h"
+#include "ui/ofa-dossier-store.h"
 
 /* private instance data
  */
@@ -90,6 +91,7 @@ static void     on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDo
 static void     on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self );
 static void     check_for_enable_dlg( ofaDossierNewBin *bin );
 static void     set_message( const ofaDossierNewBin *bin, const gchar *msg );
+static void     update_dossier_store( const ofaDossierNewBin *bin );
 
 static void
 dossier_new_bin_finalize( GObject *instance )
@@ -547,7 +549,8 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 /**
  * ofa_dossier_new_bin_apply:
  *
- * Define the dossier in user settings
+ * Define the dossier in user settings, updating the ofaDossierStore
+ * simultaneously.
  */
 gboolean
 ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
@@ -561,7 +564,10 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		ok = ofa_idbms_connect_enter_apply( priv->prov_module, priv->dname, priv->infos );
+		if( ofa_idbms_connect_enter_apply( priv->prov_module, priv->dname, priv->infos )){
+			update_dossier_store( bin );
+			ok = TRUE;
+		}
 
 		return( ok );
 	}
@@ -643,4 +649,14 @@ set_message( const ofaDossierNewBin *bin, const gchar *msg )
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg );
 		my_utils_widget_set_style( priv->msg_label, "labelerror" );
 	}
+}
+
+static void
+update_dossier_store( const ofaDossierNewBin *bin )
+{
+	ofaDossierStore *store;
+
+	store = ofa_dossier_store_new();
+	ofa_dossier_store_reload( store );
+	g_object_unref( store );
 }

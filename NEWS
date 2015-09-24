@@ -38,6 +38,7 @@
    - Printings: optimize dataset load.
    - Settings: have a dossier.conf special development (todo #820).
    - BatProperties: make the entries be read-only (todo #829).
+   - DossierStore: is an auto-maintained singleton (todo #832).
    - my_utils_container_attach_from_ui(): new function.
    - my_utils_widget_set_editable(): new function.
    - my_utils_widget_set_style(): new function.
@@ -52,6 +53,9 @@
    - ofo_dossier_get_prev_exe_last_entry(): new method.
    - ofo_dossier_set_prev_exe_last_entry(): new method.
    - ofa_application_get_copyright(): new method.
+   - ofa_dossier_treeview_add_row(): removed method.
+   - ofa_dossier_store_add_row(): removed method.
+   - ofa_dossier_store_reload(): new method.
    - ofa_exercice_combo_set_selected(): new method.
    - ofa_irenderable_free_dataset(): removed interface method.
    - ofa_irenderable_get_dataset(): removed interface method.

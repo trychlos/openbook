@@ -45,9 +45,11 @@ struct _ofaDossierStorePrivate {
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dname, dbms, dbname */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* end, begin, disp status */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* end, begin, displayable status */
 		G_TYPE_STRING									/* code status */
 };
+
+static ofaDossierStore *st_store        = NULL;
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
 static void     load_dataset( ofaDossierStore *store );
@@ -121,26 +123,35 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
+ *
+ * The #ofaDossierStore class implements a singleton. Each returned
+ * pointer is a new reference to the same instance of the class.
+ * This unique instance is allocated on demand, when the
+ * #ofa_dossier_store_new() method is called for the first time.
+ *
+ * Returns: the #ofaDossierStore instance.
  */
 ofaDossierStore *
 ofa_dossier_store_new( void )
 {
-	ofaDossierStore *store;
+	if( !st_store ){
 
-	store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
+		st_store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
 
-	gtk_list_store_set_column_types(
-			GTK_LIST_STORE( store ), DOSSIER_N_COLUMNS, st_col_types );
+		gtk_list_store_set_column_types(
+				GTK_LIST_STORE( st_store ), DOSSIER_N_COLUMNS, st_col_types );
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( store ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+		gtk_tree_sortable_set_default_sort_func(
+				GTK_TREE_SORTABLE( st_store ), ( GtkTreeIterCompareFunc ) on_sort_model, st_store, NULL );
 
-	load_dataset( store );
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( st_store ),
+				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	return( store );
+		load_dataset( st_store );
+	}
+
+	return( g_object_ref( st_store ));
 }
 
 /*
@@ -245,18 +256,15 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 }
 
 /**
- * ofa_dossier_store_add_row:
+ * ofa_dossier_store_reload:
  * @store: this #ofaDossierStore instance
- * @dname: the dossier name
- * @dbms: the DBMS provider name.
  *
- * Insert a new row in the @store.
+ * Reset and reload the datastore content.
  */
 void
-ofa_dossier_store_add_row( ofaDossierStore *store, const gchar *dname, const gchar *dbms )
+ofa_dossier_store_reload( ofaDossierStore *store )
 {
 	ofaDossierStorePrivate *priv;
-	GtkTreeIter iter;
 
 	g_return_if_fail( store && OFA_IS_DOSSIER_STORE( store ));
 
@@ -264,13 +272,8 @@ ofa_dossier_store_add_row( ofaDossierStore *store, const gchar *dname, const gch
 
 	if( !priv->dispose_has_run ){
 
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( store ),
-				&iter,
-				-1,
-				DOSSIER_COL_DNAME, dname,
-				DOSSIER_COL_DBMS,  dbms,
-				-1 );
+		gtk_list_store_clear( GTK_LIST_STORE( store ));
+		load_dataset( store );
 	}
 }
 

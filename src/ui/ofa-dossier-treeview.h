@@ -90,9 +90,6 @@ void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
 																ofaDossierShow show );
 
-void                ofa_dossier_treeview_add_row     ( ofaDossierTreeview *view,
-																const gchar *dname );
-
 ofaDossierStore    *ofa_dossier_treeview_get_store   ( const ofaDossierTreeview *view );
 
 gchar              *ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,
