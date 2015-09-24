@@ -27,6 +27,8 @@ Press Continue.</property>
           <object class="GtkFileChooserWidget" id="p2-filechooser">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="create_folders">False</property>
           </object>
           <packing>
@@ -49,6 +51,7 @@ Press Continue.</property>
           <object class="GtkFrame" id="frame31">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
@@ -91,6 +94,7 @@ Press Continue.</property>
           <object class="GtkFrame" id="frame32">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>

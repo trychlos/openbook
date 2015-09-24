@@ -542,12 +542,6 @@
                 dossier stays recorded even if the restoration is cancelled
                 by the user (with an non-existent database)
 
- 835 2015- 9-24 closing the restore assistant makes _g_dbus_worker_unref()
-                segfault (whether we have cancelled the restore or not)
-                this is reproductible :(
-
- 837 2015- 9-24 initialization of the assistants is very long
-
  838 2015- 9-24 ImportAssistant: data type page has a Finish button
                 when we arrive on this page from format settings back
                 button
@@ -3827,9 +3821,19 @@
                 up to date
      2015- 9-24 done
 
+ 835 2015- 9-24 closing the restore assistant makes _g_dbus_worker_unref()
+                segfault (whether we have cancelled the restore or not)
+                this is reproductible :(
+     2015- 9-24 this behavior disappears after a reboot
+     2015- 9-24 closed
+
  836 2015- 9-24 ImportAssistant: recall the imported filename at the
                 top of 'type of data' and format settings' pages
      2015- 9-24 done
+
+ 837 2015- 9-24 initialization of the assistants is very long
+     2015- 9-24 this behavior disappears after a reboot
+     2015- 9-24 closed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
