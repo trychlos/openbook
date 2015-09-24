@@ -125,7 +125,7 @@ GType            ofa_dossier_store_get_type       ( void );
 
 ofaDossierStore *ofa_dossier_store_new            ( void );
 
-void             ofa_dossier_store_reload         ( ofaDossierStore *store );
+void             ofa_dossier_store_reload         ( void );
 
 void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
 														const gchar *dname,

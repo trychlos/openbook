@@ -87,6 +87,7 @@ struct _ofaRestoreAssistantPrivate {
 	gchar                  *p3_dossier;
 	gchar                  *p3_database;
 	ofaIDbms               *p3_dbms;
+	gboolean                p3_is_new_dossier;
 
 	/* p3: DBMS root account
 	 */
@@ -480,6 +481,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_signal_connect( priv->p3_new_dossier_btn, "clicked", G_CALLBACK( p3_on_dossier_new ), self );
 
+	priv->p3_is_new_dossier = FALSE;
 	p3_check_for_complete( self );
 }
 
@@ -519,6 +521,7 @@ p3_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 		g_free( priv->p4_password );
 		priv->p4_password = password;
 
+		priv->p3_is_new_dossier = TRUE;
 		ofa_dossier_treeview_set_selected( priv->p3_dossier_treeview, dname );
 	}
 }
@@ -871,6 +874,10 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->current_page_w = page;
 
 	if( !p7_restore_confirmed( self )){
+		if( priv->p3_is_new_dossier ){
+			ofa_settings_remove_dossier( priv->p3_dossier );
+			ofa_dossier_store_reload();
+		}
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-label1" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		gtk_label_set_text(

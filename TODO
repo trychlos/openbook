@@ -538,14 +538,6 @@
 
  833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
 
- 834 2015- 9-24 when creating a new dossier when restoring a database, the
-                dossier stays recorded even if the restoration is cancelled
-                by the user (with an non-existent database)
-
- 838 2015- 9-24 ImportAssistant: data type page has a Finish button
-                when we arrive on this page from format settings back
-                button
-
  839
 
 -----------------------------------------------------------------------
@@ -3821,6 +3813,11 @@
                 up to date
      2015- 9-24 done
 
+ 834 2015- 9-24 when creating a new dossier when restoring a database, the
+                dossier stays recorded even if the restoration is cancelled
+                by the user (with an non-existent database)
+     2015- 9-24 fixed
+
  835 2015- 9-24 closing the restore assistant makes _g_dbus_worker_unref()
                 segfault (whether we have cancelled the restore or not)
                 this is reproductible :(
@@ -3833,6 +3830,15 @@
 
  837 2015- 9-24 initialization of the assistants is very long
      2015- 9-24 this behavior disappears after a reboot
+     2015- 9-24 closed
+
+ 838 2015- 9-24 ImportAssistant: data type page has a Finish button
+                when we arrive on this page from format settings back
+                button
+     2015- 9-24 idem for RestoreAssistant 'root credentials' page
+     2015- 9-24 This is normal GtkAssistant behavior as long as
+                following pages are set as completed; the Finish button
+                is just a shortcut to the Summary page.
      2015- 9-24 closed
 
 -----------------------------------------------------------------------

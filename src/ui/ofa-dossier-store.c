@@ -257,24 +257,16 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 
 /**
  * ofa_dossier_store_reload:
- * @store: this #ofaDossierStore instance
  *
  * Reset and reload the datastore content.
  */
 void
-ofa_dossier_store_reload( ofaDossierStore *store )
+ofa_dossier_store_reload( void )
 {
-	ofaDossierStorePrivate *priv;
-
-	g_return_if_fail( store && OFA_IS_DOSSIER_STORE( store ));
-
-	priv = store->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store );
-	}
+	ofaDossierStore *store = ofa_dossier_store_new();
+	gtk_list_store_clear( GTK_LIST_STORE( store ));
+	load_dataset( store );
+	g_object_unref( store );
 }
 
 /**
