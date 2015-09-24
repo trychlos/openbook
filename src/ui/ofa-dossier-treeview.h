@@ -30,8 +30,12 @@
  * @short_description: #ofaDossierTreeview class definition.
  * @include: ui/ofa-dossier-treeview.h
  *
- * Manage a treeview with the list of the dossiers which are defined in
- * the settings.
+ * Manage a treeview with the list of the dossiers which are defined
+ * in the settings.
+ *
+ * The #ofaDossierTreeview class defines two messages "changed" and
+ * "activated". These signals hold the currently selected dossier and
+ * database names.
  */
 
 #include "ui/ofa-dossier-store.h"

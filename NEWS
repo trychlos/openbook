@@ -18,13 +18,14 @@
 
  New features:
 
-	- display application version (todo #6).
-	- AccountsChart: open Settlement and Reconciliation page (todo #813).
-	- Restore: close the current dossier if any (todo #807).
-	- RateProperties: let the user reorder the lines (todo #187).
+   - display application version (todo #6).
+   - AccountsChart: open Settlement and Reconciliation page (todo #813).
+   - Restore: close the current dossier if any (todo #807).
+   - RateProperties: let the user reorder the lines (todo #187).
 
  Bug fixes:
 
+   - DossierManager to DossierOpen: keep the current selection (todo #828).
    - OpeTemplates: fix load order of detail rows.
 
  Other changes:
@@ -51,6 +52,7 @@
    - ofo_dossier_get_prev_exe_last_entry(): new method.
    - ofo_dossier_set_prev_exe_last_entry(): new method.
    - ofa_application_get_copyright(): new method.
+   - ofa_exercice_combo_set_selected(): new method.
    - ofa_irenderable_free_dataset(): removed interface method.
    - ofa_irenderable_get_dataset(): removed interface method.
    - ofa_ledger_treeview_get_selection(): new method.

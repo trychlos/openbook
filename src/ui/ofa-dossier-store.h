@@ -32,10 +32,11 @@
  * @include: ui/ofa-accounts-store.h
  *
  * The #ofaDossierStore derived from #GtkListStore. It is populated
- * with all the known dossiers at time of the creation.
+ * with all the known dossiers and exercices at time of the creation,
+ * with one row per dossier/exercice.
  *
  * The #ofaDossierStore is kept sorted in ascending alphabetical order
- * of dossier name.
+ * of dossier name, and ascending exercice order.
  */
 
 #include <gtk/gtk.h>
@@ -71,6 +72,15 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ * @DOSSIER_COL_DNAME:  dossier name
+ * @DOSSIER_COL_DBMS:   dbms provider
+ * @DOSSIER_COL_DBNAME: database name
+ * @DOSSIER_COL_END:    end of exercice
+ * @DOSSIER_COL_BEGIN:  begin of exercice
+ * @DOSSIER_COL_STATUS: localized status of the exercice
+ * @DOSSIER_COL_CODE:   status code (from api/ofo-dossier.h) of the exercice
+ *
+ * Cf. also #ofa_dossier_misc_get_exercices().
  */
 enum {
 	DOSSIER_COL_DNAME = 0,
@@ -85,7 +95,16 @@ enum {
 
 /**
  * ofaDossierColumns:
+ * @DOSSIER_DISP_DNAME:  dossier name
+ * @DOSSIER_DISP_DBMS:   dbms provider
+ * @DOSSIER_DISP_DBNAME: database name
+ * @DOSSIER_DISP_END:    end of exercice
+ * @DOSSIER_DISP_BEGIN:  begin of exercice
+ * @DOSSIER_DISP_STATUS: localized status of the exercice
+ * @DOSSIER_DISP_CODE:   status code (from api/ofo-dossier.h) of the exercice
+ *
  * The columns displayed in the views.
+ * Cf. also #ofa_dossier_misc_get_exercices().
  */
 typedef enum {
 	DOSSIER_DISP_DNAME = 1,

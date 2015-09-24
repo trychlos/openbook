@@ -108,7 +108,7 @@ ofa_dossier_misc_get_dossiers( void )
  * The strings are semi-colon separated.
  */
 GSList *
-ofa_dossier_misc_get_exercices ( const gchar *dname )
+ofa_dossier_misc_get_exercices( const gchar *dname )
 {
 	GSList *keys_list, *it;
 	GSList *out_list;

@@ -61,12 +61,16 @@ typedef struct {
 }
 	ofaExerciceComboClass;
 
-GType             ofa_exercice_combo_get_type   ( void ) G_GNUC_CONST;
+GType             ofa_exercice_combo_get_type    ( void ) G_GNUC_CONST;
 
-ofaExerciceCombo *ofa_exercice_combo_new        ( void );
+ofaExerciceCombo *ofa_exercice_combo_new         ( void );
 
-void              ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo,
+void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
 															const gchar *dname );
+
+void              ofa_exercice_combo_set_selected( ofaExerciceCombo *combo,
+															guint column,
+															const gchar *value );
 
 G_END_DECLS
 

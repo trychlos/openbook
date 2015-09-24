@@ -37,6 +37,7 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-exercice-combo.h"
+#include "ui/ofa-exercice-store.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -47,9 +48,10 @@ struct _ofaDossierOpenPrivate {
 	 */
 	gchar              *dname;			/* name of the dossier (from settings) */
 	gchar              *label;			/* label of the exercice (from settings) */
-	char               *dbname;
+	gchar              *dbname;			/* database name (from last selection) */
 	gchar              *account;
 	gchar              *password;
+	gchar              *open_db;		/* database name on ofa_dossier_open_run() */
 
 	/* UI
 	 */
@@ -71,7 +73,7 @@ static const gchar  *st_ui_id  = "DossierOpenDlg";
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, const gchar *dbname, ofaDossierOpen *self );
 static void      on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self );
 static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
@@ -100,6 +102,7 @@ dossier_open_finalize( GObject *instance )
 	g_free( priv->dname );
 	g_free( priv->account );
 	g_free( priv->password );
+	g_free( priv->open_db );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_open_parent_class )->finalize( instance );
@@ -151,11 +154,14 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 /**
  * ofa_dossier_open_run:
  * @main: the main window of the application.
+ * @dname: the name of the dossier to be opened, or %NULL.
+ * @dbname: the name of the database, or %NULL.
  *
- * Run the selection dialog to choose a dossier to be opened
+ * Run the selection dialog to choose a dossier to be opened, and
+ * get the user's credentials.
  */
 ofsDossierOpen *
-ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname )
+ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname, const gchar *dbname )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
@@ -164,7 +170,8 @@ ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname )
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_debug( "%s: main_window=%p, dname=%s, dbname=%s",
+			thisfn, ( void * ) main_window, dname, dbname );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
@@ -175,6 +182,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname )
 
 	priv = self->priv;
 	priv->dname = g_strdup( dname );
+	priv->open_db = g_strdup( dbname );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -189,7 +197,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *container, *entry, *button;
+	GtkWidget *container, *entry, *button, *focus, *account_entry;
 	static ofaDossierColumns st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
@@ -203,6 +211,8 @@ v_init_dialog( myDialog *dialog )
 	 * triggers */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-open" );
 	priv->ok_btn = button;
+
+	account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account" );
 
 	/* setup exercice combobox (before dossier) */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-exercice" );
@@ -222,13 +232,23 @@ v_init_dialog( myDialog *dialog )
 	ofa_dossier_treeview_set_show( priv->dossier_tview, DOSSIER_SHOW_CURRENT );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
+	focus = GTK_WIDGET( priv->dossier_tview );
+
 	if( priv->dname ){
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
+		focus = GTK_WIDGET( priv->exercice_combo );
+
+		if( priv->open_db ){
+			ofa_exercice_combo_set_selected( priv->exercice_combo, EXERCICE_COL_DBNAME, priv->open_db );
+			focus = account_entry;
+		}
+	}
+	if( focus ){
+		gtk_widget_grab_focus( focus );
 	}
 
 	/* setup account and password */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account" );
-	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
+	g_signal_connect(G_OBJECT( account_entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "password" );
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
@@ -237,12 +257,13 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, const gchar *dbname, ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_on_dossier_changed";
 	ofaDossierOpenPrivate *priv;
 
-	g_debug( "%s: tview=%p, name=%s, self=%p", thisfn, ( void * ) tview, name, ( void * ) self );
+	g_debug( "%s: tview=%p, name=%s, dbname=%s, self=%p",
+			thisfn, ( void * ) tview, name, dbname, ( void * ) self );
 
 	priv = self->priv;
 

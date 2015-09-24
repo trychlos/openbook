@@ -268,3 +268,52 @@ ofa_exercice_combo_get_selected( ofaExerciceCombo *self )
 	return( label );
 }
 #endif
+
+/**
+ * ofa_exercice_combo_set_selected:
+ * @combo: this #ofaExerciceCombo box.
+ * @column: the #ofaExerciceStoreColumn column identifier as defined in
+ *  ofa-exercice-store.h
+ * @value: the value to be selected
+ *
+ * Select the first row where the specified @column holds the specified
+ * @value.
+ */
+void
+ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, guint column, const gchar *value )
+{
+	static const gchar *thisfn = "ofa_exercice_combo_set_selected";
+	ofaExerciceComboPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gchar *string;
+	gint cmp;
+
+	g_debug( "%s: combo=%p, column=%u, value=%s", thisfn, ( void * ) combo, column, value );
+
+	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
+
+	priv = combo->priv;
+
+	if( !priv->dispose_has_run ){
+
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tmodel, &iter, column, &string, -1 );
+				cmp = g_utf8_collate( string, value );
+				g_free( string );
+
+				if( cmp == 0 ){
+					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
+	}
+}

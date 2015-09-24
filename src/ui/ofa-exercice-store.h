@@ -63,19 +63,33 @@ typedef struct {
 	ofaExerciceStoreClass;
 
 /**
- * The columns stored in the subjacent #GtkListStore.
+ * ofaExerciceStoreColumn:
+ * @EXERCICE_COL_STATUS: localized status string
+ * @EXERCICE_COL_BEGIN:  begin of exercice
+ * @EXERCICE_COL_END:    end of exercice
+ * @EXERCICE_COL_DBNAME: database name
+ * @EXERCICE_COL_LABEL:  localized exercice description string
+ *
+ * The identifiers of the columns stored in the subjacent #GtkListStore.
  */
-enum {
+typedef enum {
 	EXERCICE_COL_STATUS = 0,
 	EXERCICE_COL_BEGIN,
 	EXERCICE_COL_END,
 	EXERCICE_COL_DBNAME,
 	EXERCICE_COL_LABEL,
 	EXERCICE_N_COLUMNS
-};
+}
+	ofaExerciceStoreColumn;
 
 /**
- * ofaExerciceColumns:
+ * ofaExerciceDispColumn:
+ * @EXERCICE_DISP_STATUS: localized status string
+ * @EXERCICE_DISP_BEGIN:  begin of exercice
+ * @EXERCICE_DISP_END:    end of exercice
+ * @EXERCICE_DISP_LABEL:  localized exercice description string
+ * @EXERCICE_DISP_DBNAME: database name
+ *
  * The columns displayed in the views.
  */
 typedef enum {
@@ -85,7 +99,7 @@ typedef enum {
 	EXERCICE_DISP_LABEL     = 1 << 3,
 	EXERCICE_DISP_DBNAME    = 1 << 4,
 }
-	ofaExerciceColumns;
+	ofaExerciceDispColumn;
 
 GType             ofa_exercice_store_get_type    ( void ) G_GNUC_CONST;
 

@@ -150,8 +150,8 @@ static void            p2_on_file_activated( GtkFileChooser *chooser, ofaRestore
 static void            p2_check_for_complete( ofaRestoreAssistant *self );
 static void            p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void            p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p3_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, ofaRestoreAssistant *assistant );
-static void            p3_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, ofaRestoreAssistant *assistant );
+static void            p3_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
+static void            p3_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
 static void            p3_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant );
 static void            p3_check_for_complete( ofaRestoreAssistant *self );
 static void            p3_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
@@ -484,13 +484,13 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p3_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, ofaRestoreAssistant *assistant )
+p3_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant )
 {
 	p3_check_for_complete( assistant );
 }
 
 static void
-p3_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, ofaRestoreAssistant *assistant )
+p3_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant )
 {
 	p3_check_for_complete( assistant );
 }

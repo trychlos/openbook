@@ -63,11 +63,11 @@ G_DEFINE_TYPE( ofaDossierManager, ofa_dossier_manager, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
-static void      on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self );
-static void      on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self );
+static void      on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self );
+static void      on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
-static void      open_dossier( ofaDossierManager *self, const gchar *dname );
+static void      open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
 static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
@@ -215,23 +215,23 @@ setup_treeview( ofaDossierManager *self )
 }
 
 static void
-on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self )
+on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok;
 
 	priv = self->priv;
-	ok = my_strlen( dname );
+	ok = my_strlen( dname ) && my_strlen( dbname );
 
 	gtk_widget_set_sensitive( priv->open_btn, ok );
 	gtk_widget_set_sensitive( priv->delete_btn, ok );
 }
 
 static void
-on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self )
+on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self )
 {
-	if( my_strlen( dname )){
-		open_dossier( self, dname );
+	if( my_strlen( dname ) && my_strlen( dbname )){
+		open_dossier( self, dname, dbname );
 	}
 }
 
@@ -257,16 +257,18 @@ static void
 on_open_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
-	gchar *dname;
+	gchar *dname, *dbname;
 
 	priv = self->priv;
 	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DNAME );
-	open_dossier( self, dname );
+	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
+	open_dossier( self, dname, dbname );
 	g_free( dname );
+	g_free( dbname );
 }
 
 static void
-open_dossier( ofaDossierManager *self, const gchar *dname )
+open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
 {
 	GtkApplicationWindow *main_window;
 	ofsDossierOpen *sdo;
@@ -274,7 +276,7 @@ open_dossier( ofaDossierManager *self, const gchar *dname )
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	sdo = ofa_dossier_open_run( OFA_MAIN_WINDOW( main_window ), dname );
+	sdo = ofa_dossier_open_run( OFA_MAIN_WINDOW( main_window ), dname, dbname );
 
 	if( sdo ){
 		g_signal_emit_by_name(

@@ -140,11 +140,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments is the selected dossier name.
+	 * Arguments are the selected dossier + database names.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
 	 * 						const gchar      *dname,
+	 * 						const gchar      *dbname,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -156,8 +157,8 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_STRING );
+				2,
+				G_TYPE_STRING, G_TYPE_STRING );
 
 	/**
 	 * ofaDossierTreeview::activated:
@@ -165,11 +166,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments is the selected ledger mnemo.
+	 * Arguments are the selected dossier + database names.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
 	 * 						const gchar      *dname,
+	 * 						const gchar      *dbname,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -181,8 +183,8 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_STRING );
+				2,
+				G_TYPE_STRING, G_TYPE_STRING );
 }
 
 /**
@@ -364,8 +366,7 @@ create_treeview_columns( ofaDossierTreeview *view, ofaDossierColumns *columns )
 }
 
 /*
- * create the store as soon as we add both the treeview and the columns
- * which will automatically load the dataset
+ * create the store which automatically loads the dataset
  */
 static void
 create_treeview_store( ofaDossierTreeview *view )
@@ -452,12 +453,16 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 {
 	GtkTreeIter iter;
 	GtkTreeModel *model;
-	gchar *dname;
+	gchar *dname, *dbname;
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		gtk_tree_model_get( model, &iter, DOSSIER_COL_DNAME, &dname, -1 );
-		g_signal_emit_by_name( self, signal, dname );
+		gtk_tree_model_get( model, &iter,
+				DOSSIER_COL_DNAME, &dname,
+				DOSSIER_COL_DBNAME, &dbname,
+				-1 );
+		g_signal_emit_by_name( self, signal, dname, dbname );
 		g_free( dname );
+		g_free( dbname );
 	}
 }
 
@@ -539,10 +544,13 @@ ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, gint column_i
 
 /**
  * ofa_dossier_treeview_set_selected:
+ *
+ * Only a visible row may be selected, so iterate on the filter store.
  */
 void
 ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *dname )
 {
+	static const gchar *thisfn = "ofa_dossier_treeview_set_selected";
 	ofaDossierTreeviewPrivate *priv;
 	GtkTreeIter iter;
 	gchar *str;
@@ -550,28 +558,30 @@ ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *
 	GtkTreeSelection *select;
 	GtkTreePath *path;
 
+	g_debug( "%s: view=%p, dname=%s", thisfn, ( void * ) view, dname );
+
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
 	priv = view->priv;
 
 	if( !priv->dispose_has_run ){
 
-		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
+		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->tfilter ), &iter )){
 			while( TRUE ){
 				gtk_tree_model_get(
-						GTK_TREE_MODEL( priv->store ), &iter, DOSSIER_COL_DNAME, &str, -1 );
+						GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DNAME, &str, -1 );
 				cmp = g_utf8_collate( str, dname );
 				g_free( str );
-				if( !cmp ){
+				if( cmp == 0 ){
 					select = gtk_tree_view_get_selection( priv->tview );
-					path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->store ), &iter );
+					path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->tfilter ), &iter );
 					gtk_tree_selection_select_path( select, path );
 					/* move the cursor so that it is visible */
 					gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
 					gtk_tree_path_free( path );
 					break;
 				}
-				if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
+				if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->tfilter ), &iter )){
 					break;
 				}
 			}

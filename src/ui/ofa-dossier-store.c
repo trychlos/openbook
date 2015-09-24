@@ -246,6 +246,11 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 
 /**
  * ofa_dossier_store_add_row:
+ * @store: this #ofaDossierStore instance
+ * @dname: the dossier name
+ * @dbms: the DBMS provider name.
+ *
+ * Insert a new row in the @store.
  */
 void
 ofa_dossier_store_add_row( ofaDossierStore *store, const gchar *dname, const gchar *dbms )
