@@ -219,7 +219,7 @@ v_run_dialog( myDialog *self )
 
 	do {
 		code = gtk_dialog_run( dialog );
-		g_debug( "%s: gtk_dialog_run return code=%d", thisfn, code );
+		g_debug( "%s: gtk_dialog_run returns code=%d", thisfn, code );
 		/* pressing Escape key makes gtk_dialog_run returns -4 GTK_RESPONSE_DELETE_EVENT */
 	}
 	while( !ok_to_terminate( self, code ));
