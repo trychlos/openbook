@@ -34,7 +34,7 @@
  *
  * The #ofaCollection class is a base class for classes which wish
  * maintain a dossier-wide collection of objects. These collection
- * classes share common common point:
+ * classes share some common points:
  *
  * - they are thought to handle a collection of data both class-wide
  *   while keeping attached to the dossier
