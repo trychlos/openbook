@@ -532,8 +532,6 @@
 
  826 2015- 9-22 use GResource
 
- 827 2015- 9-23 review usage of ofa-import-ex.ui
-
  828 2015- 9-23 DossierManager: when selecting a dossier for opening,
                 we open the DossierOpen dialog. The selected dossier
                 should be pe-selected; the focus should be on login
@@ -555,7 +553,7 @@
      2015- 3- 8 use Github issues page at https://github.com/pwieser/openbook/issues
 
    6 2014- 5- 2 ofa_application_on_version: to be written
-     2015- 9-23 done in v 0.40
+     2015- 9-24 done in v 0.40
 
    8 2014- 5- 2 ofa_application_on_about: to be written
      2015- 3-31 done - git #f30593a
@@ -3794,6 +3792,9 @@
  820 2015- 4-26 have a special-development dossier.conf to not mix
                 development dossiers with production dossiers
      2015- 4-26 done - git #aadaccc
+
+ 827 2015- 9-23 review usage of ofa-import-ex.ui
+     2015- 9-24 delete file
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
