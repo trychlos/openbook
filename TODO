@@ -537,9 +537,6 @@
                 should be pe-selected; the focus should be on login
                 name
 
- 829 2015- 9-23 BatProperties: entries should be read-only, and this
-                should be visible for the user
-
  830
 
 -----------------------------------------------------------------------
@@ -3795,6 +3792,10 @@
 
  827 2015- 9-23 review usage of ofa-import-ex.ui
      2015- 9-24 delete file
+
+ 829 2015- 9-23 BatProperties: entries should be read-only, and this
+                should be visible for the user
+     2015- 9-24 introduce my_utils_widget_set_editable
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -36,7 +36,9 @@
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
    - Printings: optimize dataset load.
    - Settings: have a dossier.conf special development (todo #820).
+   - BatProperties: make the entries be read-only (todo #829).
    - my_utils_container_attach_from_ui(): new function.
+   - my_utils_widget_set_editable(): new function.
    - my_utils_widget_set_style(): new function.
    - my_utils_widget_set_margin(): new function.
    - my_utils_widget_set_margin_left(): new function.

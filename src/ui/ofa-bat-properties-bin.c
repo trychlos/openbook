@@ -190,36 +190,47 @@ load_dialog( ofaBatPropertiesBin *bin )
 	/* identify the widgets for the properties */
 	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-id" );
 	g_return_if_fail( priv->bat_id && GTK_IS_ENTRY( priv->bat_id ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_id ), FALSE );
 
 	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-format" );
 	g_return_if_fail( priv->bat_format && GTK_IS_ENTRY( priv->bat_format ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_format ), FALSE );
 
 	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_count ), FALSE );
 
 	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-unused" );
 	g_return_if_fail( priv->bat_unused && GTK_IS_ENTRY( priv->bat_unused ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_unused ), FALSE );
 
 	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-begin" );
 	g_return_if_fail( priv->bat_begin && GTK_IS_ENTRY( priv->bat_begin ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_begin ), FALSE );
 
 	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-end" );
 	g_return_if_fail( priv->bat_end && GTK_IS_ENTRY( priv->bat_end ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_end ), FALSE );
 
 	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-rib" );
 	g_return_if_fail( priv->bat_rib && GTK_IS_ENTRY( priv->bat_rib ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_rib ), FALSE );
 
 	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-currency" );
 	g_return_if_fail( priv->bat_currency && GTK_IS_ENTRY( priv->bat_currency ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_currency ), FALSE );
 
 	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-begin" );
 	g_return_if_fail( priv->bat_solde_begin && GTK_IS_ENTRY( priv->bat_solde_begin ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_begin ), FALSE );
 
 	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-end" );
 	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_end ), FALSE );
 
 	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
+	my_utils_widget_set_editable( G_OBJECT( priv->bat_account ), FALSE );
 }
 
 static void
