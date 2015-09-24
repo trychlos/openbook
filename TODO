@@ -538,7 +538,21 @@
 
  833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
 
- 834
+ 834 2015- 9-24 when creating a new dossier when restoring a database, the
+                dossier stays recorded even if the restoration is cancelled
+                by the user (with an non-existent database)
+
+ 835 2015- 9-24 closing the restore assistant makes _g_dbus_worker_unref()
+                segfault (whether we have cancelled the restore or not)
+                this is reproductible :(
+
+ 837 2015- 9-24 initialization of the assistants is very long
+
+ 838 2015- 9-24 ImportAssistant: data type page has a Finish button
+                when we arrive on this page from format settings back
+                button
+
+ 839
 
 -----------------------------------------------------------------------
  DONE
@@ -3811,6 +3825,10 @@
 
  832 2015- 9-24 DossierStore should be a singleton, and maitain itself
                 up to date
+     2015- 9-24 done
+
+ 836 2015- 9-24 ImportAssistant: recall the imported filename at the
+                top of 'type of data' and format settings' pages
      2015- 9-24 done
 
 -----------------------------------------------------------------------

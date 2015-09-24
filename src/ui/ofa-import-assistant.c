@@ -455,13 +455,17 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_import_assistant_p3_do_init";
 	ofaImportAssistantPrivate *priv;
 	gint i;
-	GtkWidget *button;
+	GtkWidget *button, *widget;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
 	priv->current_page_w = page;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-filename" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	gtk_label_set_text( GTK_LABEL( widget ), priv->p2_uri );
 
 	for( i=0 ; st_radios[i].type_id ; ++i ){
 		button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), st_radios[i].w_name );
@@ -535,6 +539,10 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 	priv->current_page_w = page;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-filename" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	gtk_label_set_text( GTK_LABEL( widget ), priv->p2_uri );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-settings-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));

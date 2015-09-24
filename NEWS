@@ -16,10 +16,11 @@
 
  Released on 
 
- New features:
+ New features and improvements:
 
    - display application version (todo #6).
    - AccountsChart: open Settlement and Reconciliation page (todo #813).
+   - ImportAssistant: recall the loaded file on top of the pages (todo #836).
    - Restore: close the current dossier if any (todo #807).
    - RateProperties: let the user reorder the lines (todo #187).
 
