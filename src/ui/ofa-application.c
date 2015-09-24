@@ -920,9 +920,8 @@ on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_version( ofaApplication *application )
 {
-	static const gchar *thisfn = "ofa_application_on_version";
-
-	g_warning( "%s: application=%p: TO BE WRITTEN", thisfn, application );
+	g_print( "%s %s\n", PACKAGE_NAME, PACKAGE_VERSION );
+	g_print( "%s\n", ofa_application_get_copyright( application ));
 }
 
 /**
@@ -931,11 +930,28 @@ on_version( ofaApplication *application )
 GMenuModel *
 ofa_application_get_menu_model( const ofaApplication *application )
 {
-	g_return_val_if_fail( OFA_IS_APPLICATION( application ), NULL );
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
 
 	if( !application->priv->dispose_has_run ){
 
 		return( application->priv->menu );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_application_get_copyright:
+ * @application:
+ */
+const gchar *
+ofa_application_get_copyright( const ofaApplication *application )
+{
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+
+	if( !application->priv->dispose_has_run ){
+
+		return( _( "Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)" ));
 	}
 
 	return( NULL );

@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "ui/ofa-about.h"
+#include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -110,13 +111,20 @@ ofa_about_class_init( ofaAboutClass *klass )
 
 /**
  * ofa_about_run:
+ * @main_window: the main window.
+ *
+ * Display the About... dialog box.
  */
 void
 ofa_about_run( ofaMainWindow *main_window )
 {
+	GtkApplication *application;
 	ofaAbout *about;
 	GdkPixbuf *pixbuf;
 	GtkWidget *button;
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
 
 	static const gchar *authors[] = {
 		"Pierre Wieser <pwieser@trychlos.org>",
@@ -129,7 +137,7 @@ ofa_about_run( ofaMainWindow *main_window )
 			"comments", _( "A double-entry, multi-currencies, accounting software.\n"
 							"Primarily designed with french rules in mind, adapted "
 							"to several european countries." ),
-			"copyright", _( "Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)" ),
+			"copyright", ofa_application_get_copyright( OFA_APPLICATION( application )),
 			"license-type", GTK_LICENSE_GPL_3_0,
 			"version", PACKAGE_VERSION,
 			"website", "http://trychlos.github.io/openbook/",

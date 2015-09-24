@@ -18,6 +18,7 @@
 
  New features:
 
+	- display application version (todo #6).
 	- AccountsChart: open Settlement and Reconciliation page (todo #813).
 	- Restore: close the current dossier if any (todo #807).
 	- RateProperties: let the user reorder the lines (todo #187).
@@ -28,11 +29,20 @@
 
  Other changes:
 
+   - Upgrade to Gtk+ 3.16.
+   - Upgrade to Fedora 22 build chain.
    - Upgrade DBMS to v26.
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
    - Printings: optimize dataset load.
    - Settings: have a dossier.conf special development (todo #820).
+   - my_utils_container_attach_from_ui(): new function.
+   - my_utils_widget_set_style(): new function.
+   - my_utils_widget_set_margin(): new function.
+   - my_utils_widget_set_margin_left(): new function.
+   - my_utils_widget_set_margin_right(): new function.
+   - my_utils_widget_set_xalign(): new function.
+   - ofa_application_get_copyright(): new method.
    - ofo_bat_get_account(): new method.
    - ofo_bat_set_account(): new method.
    - ofo_dossier_get_last_closing_date(): new method.

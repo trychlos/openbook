@@ -107,6 +107,8 @@ int             ofa_application_run_with_args ( ofaApplication *application, int
 
 GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
 
+const gchar    *ofa_application_get_copyright ( const ofaApplication *application );
+
 G_END_DECLS
 
 #endif /* __OFA_APPLICATION_H__ */

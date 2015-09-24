@@ -17,8 +17,6 @@
 
    5 2014- 5- 2 ofa.doap: have a mailing list
 
-   6 2014- 5- 2 ofa_application_on_version: to be written
-
    7 2014- 5- 2 have a preference to set the application menu on the
                 top bar (gnome-shell) or on the main windows
 
@@ -555,6 +553,9 @@
 
    4 2014- 5- 2 ofa.doap: have a bug system
      2015- 3- 8 use Github issues page at https://github.com/pwieser/openbook/issues
+
+   6 2014- 5- 2 ofa_application_on_version: to be written
+     2015- 9-23 done in v 0.40
 
    8 2014- 5- 2 ofa_application_on_about: to be written
      2015- 3-31 done - git #f30593a
