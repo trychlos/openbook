@@ -920,8 +920,16 @@ on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_version( ofaApplication *application )
 {
-	g_print( "%s %s\n", PACKAGE_NAME, PACKAGE_VERSION );
-	g_print( "%s\n", ofa_application_get_copyright( application ));
+	g_print( "%s v %s\n", PACKAGE_NAME, PACKAGE_VERSION );
+	g_print( "%s.\n", ofa_application_get_copyright( application ));
+
+	g_print( "%s is free software, and is provided without any warranty.\n", PACKAGE_NAME );
+	g_print( "You may redistribute copies of %s under the terms of the\n", PACKAGE_NAME );
+	g_print( "GNU General Public License (see COPYING).\n" );
+
+	g_debug( "Program has been compiled against Glib %d.%d.%d, Gtk+ %d.%d.%d",
+			GLIB_MAJOR_VERSION, GLIB_MINOR_VERSION, GLIB_MICRO_VERSION,
+			GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION );
 }
 
 /**
