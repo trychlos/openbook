@@ -263,10 +263,10 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 void
 ofa_dossier_store_reload( void )
 {
-	ofaDossierStore *store = ofa_dossier_store_new();
-	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	load_dataset( store );
-	g_object_unref( store );
+	if( st_store ){
+		gtk_list_store_clear( GTK_LIST_STORE( st_store ));
+		load_dataset( st_store );
+	}
 }
 
 /**
