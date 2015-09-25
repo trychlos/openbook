@@ -40,8 +40,6 @@ struct _ofaSettingsMonitorPrivate {
 
 	ofaSettingsTarget target;
 	GFileMonitor     *monitor;
-	gboolean          empty;
-
 };
 
 /* signals defined here
@@ -134,8 +132,8 @@ ofa_settings_monitor_class_init( ofaSettingsMonitorClass *klass )
 	 * Handler is of type:
 	 * void ( *handler )( ofaSettingsMonitor *monitor,
 	 * 						ofaSettingsTarget target,
-	 * 						gboolean          empty,
-	 * 						gpointer     user_data );
+	 * 						guint             count,
+	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
@@ -147,7 +145,7 @@ ofa_settings_monitor_class_init( ofaSettingsMonitorClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				2,
-				G_TYPE_UINT, G_TYPE_BOOLEAN );
+				G_TYPE_UINT, G_TYPE_UINT );
 }
 
 /**
@@ -186,23 +184,10 @@ on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFile
 {
 	ofaSettingsMonitorPrivate *priv;
 	GSList *list;
-	guint count;
 
 	priv = self->priv;
 	list = ofa_dossier_misc_get_dossiers();
-	count = g_slist_length( list );
-
-	if( g_slist_length( list ) == 0 ){
-		if( !priv->empty ){
-			g_signal_emit_by_name( self, "changed", priv->target, TRUE );
-		}
-	} else {
-		if( priv->empty ){
-			g_signal_emit_by_name( self, "changed", priv->target, FALSE );
-		}
-	}
-
-	priv->empty = ( count == 0 );
+	g_signal_emit_by_name( self, "changed", priv->target, g_slist_length( list ));
 	ofa_dossier_misc_free_dossiers( list );
 }
 
@@ -226,8 +211,7 @@ ofa_settings_monitor_is_target_empty( const ofaSettingsMonitor *monitor )
 		list = ofa_dossier_misc_get_dossiers();
 		count = g_slist_length( list );
 		ofa_dossier_misc_free_dossiers( list );
-		priv->empty = ( count == 0 );
 	}
 
-	return( priv->empty );
+	return( count == 0 );
 }

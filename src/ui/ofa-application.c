@@ -135,7 +135,7 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     maintainer_test_function( void );
 
 static void     setup_settings_monitor( ofaApplication *application );
-static void     on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, gboolean empty, ofaApplication *application );
+static void     on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, guint count, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -753,10 +753,10 @@ setup_settings_monitor( ofaApplication *application )
 }
 
 static void
-on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, gboolean empty, ofaApplication *application )
+on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, guint count, ofaApplication *application )
 {
 	if( target == SETTINGS_TARGET_DOSSIER ){
-		enable_action_open( application, !empty );
+		enable_action_open( application, count > 0 );
 	}
 }
 
