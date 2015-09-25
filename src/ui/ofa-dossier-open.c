@@ -198,7 +198,7 @@ v_init_dialog( myDialog *dialog )
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *container, *entry, *button, *focus, *account_entry;
-	static ofaDossierColumns st_columns[] = {
+	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
 

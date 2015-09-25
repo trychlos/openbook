@@ -82,7 +82,7 @@ GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
 ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
 
 void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
-																ofaDossierColumns *columns );
+																ofaDossierDispColumn *columns );
 
 void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
 																gboolean visible );

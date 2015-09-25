@@ -62,7 +62,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void     attach_top_widget( ofaDossierTreeview *self );
-static void     create_treeview_columns( ofaDossierTreeview *view, ofaDossierColumns *columns );
+static void     create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns );
 static void     create_treeview_store( ofaDossierTreeview *view );
 static gboolean is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaDossierTreeview *tview );
 static void     on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
@@ -247,7 +247,7 @@ attach_top_widget( ofaDossierTreeview *self )
  * @columns: a zero-terminated list of columns id.
  */
 void
-ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierColumns *columns )
+ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns )
 {
 	ofaDossierTreeviewPrivate *priv;
 
@@ -302,7 +302,7 @@ ofa_dossier_treeview_set_show( ofaDossierTreeview *view, ofaDossierShow show )
 }
 
 static void
-create_treeview_columns( ofaDossierTreeview *view, ofaDossierColumns *columns )
+create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns )
 {
 	ofaDossierTreeviewPrivate *priv;
 	GtkCellRenderer *cell;

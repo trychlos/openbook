@@ -536,8 +536,6 @@
 
  831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
 
- 833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
-
  839
 
 -----------------------------------------------------------------------
@@ -3812,6 +3810,16 @@
  832 2015- 9-24 DossierStore should be a singleton, and maitain itself
                 up to date
      2015- 9-24 done
+
+ 833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
+     2015- 9-25 - this was due to several occurrences of 'changed' event
+                  settings GFileMonitor
+                - this is fixed by:
+                  1/ set a timeout on settings 'changed' event
+                  2/ make ofaDossierStore a proxy to settings changed
+                  3/ reload once the store on 'changed' timeout
+                  4/ make ofaDossierStore a proxy to application actions
+                     monitoring
 
  834 2015- 9-24 when creating a new dossier when restoring a database, the
                 dossier stays recorded even if the restoration is cancelled

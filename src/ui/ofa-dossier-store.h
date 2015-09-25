@@ -28,19 +28,29 @@
 /**
  * SECTION: dossier_store
  * @title: ofaDossierStore
- * @short_description: The DossierStore class description
- * @include: ui/ofa-accounts-store.h
+ * @short_description: The ofaDossierStore class description
+ * @include: ui/ofa-dossier-store.h
  *
  * The #ofaDossierStore derived from #GtkListStore. It is populated
  * with all the known dossiers and exercices at time of the creation,
  * with one row per dossier/exercice.
  *
  * The #ofaDossierStore is kept sorted in ascending alphabetical order
- * of dossier name, and ascending exercice order.
+ * of dossier name, and descending exercice order (the most recent
+ * first).
  *
  * This class defines a singleton. Only one instance of this class is
- * allocated the first time #ofa_dossier_store_new() is called. The
- * same instance is then returned on successive calls.
+ * allocated the first time #ofa_dossier_store_new() is called. A new
+ * reference to the same instance is then returned on successive calls.
+ *
+ * Actually the first #ofaDossierStore instance is allocated when
+ * opening the application, in order to be able to enable the 'open'
+ * action. As a consequence, the application also takes care of
+ * releasing the last reference to the #ofaDossierStore instance.
+ *
+ * The #ofaDossierStore instance monitors the dossier configuration
+ * file, in order to maintain itself up to date. This is because this
+ * configuration file is updated directly by DBMS providers.
  */
 
 #include <gtk/gtk.h>
@@ -75,7 +85,7 @@ typedef struct {
 	ofaDossierStoreClass;
 
 /**
- * The columns stored in the subjacent #GtkListStore.
+ * ofaDossierStoreColumn:
  * @DOSSIER_COL_DNAME:  dossier name
  * @DOSSIER_COL_DBMS:   dbms provider
  * @DOSSIER_COL_DBNAME: database name
@@ -84,9 +94,10 @@ typedef struct {
  * @DOSSIER_COL_STATUS: localized status of the exercice
  * @DOSSIER_COL_CODE:   status code (from api/ofo-dossier.h) of the exercice
  *
+ * The columns stored in the subjacent #GtkListStore.
  * Cf. also #ofa_dossier_misc_get_exercices().
  */
-enum {
+typedef enum {
 	DOSSIER_COL_DNAME = 0,
 	DOSSIER_COL_DBMS,
 	DOSSIER_COL_DBNAME,
@@ -95,10 +106,11 @@ enum {
 	DOSSIER_COL_STATUS,					/* the displayable status */
 	DOSSIER_COL_CODE,					/* the status as a single-char code */
 	DOSSIER_N_COLUMNS
-};
+}
+	ofaDossierStoreColumn;
 
 /**
- * ofaDossierColumns:
+ * ofaDossierDispColumn:
  * @DOSSIER_DISP_DNAME:  dossier name
  * @DOSSIER_DISP_DBMS:   dbms provider
  * @DOSSIER_DISP_DBNAME: database name
@@ -119,13 +131,15 @@ typedef enum {
 	DOSSIER_DISP_STATUS,
 	DOSSIER_DISP_CODE
 }
-	ofaDossierColumns;
+	ofaDossierDispColumn;
 
 GType            ofa_dossier_store_get_type       ( void );
 
 ofaDossierStore *ofa_dossier_store_new            ( void );
 
-void             ofa_dossier_store_reload         ( void );
+void             ofa_dossier_store_free           ( void );
+
+gboolean         ofa_dossier_store_is_empty       ( ofaDossierStore *store );
 
 void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
 														const gchar *dname,

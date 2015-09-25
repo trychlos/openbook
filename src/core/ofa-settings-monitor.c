@@ -29,7 +29,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 
-#include "api/ofa-dossier-misc.h"
+#include "api/my-timeout.h"
 
 #include "core/ofa-settings-monitor.h"
 
@@ -38,9 +38,14 @@
 struct _ofaSettingsMonitorPrivate {
 	gboolean          dispose_has_run;
 
+	/* runtime data
+	 */
 	ofaSettingsTarget target;
 	GFileMonitor     *monitor;
+	myTimeout        *timeout;
 };
+
+#define RATE_LIMIT                      250		/* ms */
 
 /* signals defined here
  */
@@ -54,6 +59,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 G_DEFINE_TYPE( ofaSettingsMonitor, ofa_settings_monitor, G_TYPE_OBJECT )
 
 static void on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, ofaSettingsMonitor *self );
+static void on_monitor_changed_timeout( void *p_monitor );
 
 static void
 settings_monitor_finalize( GObject *object )
@@ -71,6 +77,9 @@ settings_monitor_finalize( GObject *object )
 
 	if( priv->monitor ){
 		g_clear_object( &priv->monitor );
+	}
+	if( priv->timeout ){
+		g_free( priv->timeout );
 	}
 
 	/* chain up to the parent class */
@@ -132,7 +141,6 @@ ofa_settings_monitor_class_init( ofaSettingsMonitorClass *klass )
 	 * Handler is of type:
 	 * void ( *handler )( ofaSettingsMonitor *monitor,
 	 * 						ofaSettingsTarget target,
-	 * 						guint             count,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -144,8 +152,8 @@ ofa_settings_monitor_class_init( ofaSettingsMonitorClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				2,
-				G_TYPE_UINT, G_TYPE_UINT );
+				1,
+				G_TYPE_UINT );
 }
 
 /**
@@ -169,6 +177,14 @@ ofa_settings_monitor_new( ofaSettingsTarget target )
 	fname = ofa_settings_get_filename( target );
 	file = g_file_new_for_path( fname );
 	priv->monitor = g_file_monitor_file( file, G_FILE_MONITOR_NONE, NULL, NULL );
+
+	/*g_file_monitor_set_rate_limit( priv->monitor, RATE_LIMIT );*/
+	/* rather use our myTimeout struct */
+	priv->timeout = g_new0( myTimeout, 1 );
+	priv->timeout->timeout = RATE_LIMIT;
+	priv->timeout->handler = ( myTimeoutFunc ) on_monitor_changed_timeout;
+	priv->timeout->user_data = monitor;
+
 	g_signal_connect( priv->monitor, "changed", G_CALLBACK( on_monitor_changed ), monitor );
 	g_object_unref( file );
 
@@ -178,40 +194,68 @@ ofa_settings_monitor_new( ofaSettingsTarget target )
 /*
  * for now, only sends a message to say that the list of dossier is
  * empty or not empty
+ *
+ * Without any rate limit, we are receiving four notifications when the
+ * dossier.conf file is opened, :
+ *   time=35891920971, event_type=1 (G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT)
+ *   time=35891921737, event_type=3 (G_FILE_MONITOR_EVENT_CREATED)
+ *   time=35891922172, event_type=1 (G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT)
+ *   time=35891922555, event_type=1 (G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT)
+ * All (but maybe the last) are obviously useless:
+ * - at least because the file already existed
+ * - because the file has not actually changed, but only the date of last
+ *   access has been set; this is an attribute change we don't care about.
+ *
+ * With a 100ms rate limit, we receive the four same notifications :(
+ * Note that the default is 800ms according to the doc, and is not more
+ * respected.
  */
 static void
 on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, ofaSettingsMonitor *self )
 {
-	ofaSettingsMonitorPrivate *priv;
-	GSList *list;
+	static const gchar* thisfn = "ofa_settings_monitor_on_monitor_changed";
+	const gchar *event_str = "";
 
-	priv = self->priv;
-	list = ofa_dossier_misc_get_dossiers();
-	g_signal_emit_by_name( self, "changed", priv->target, g_slist_length( list ));
-	ofa_dossier_misc_free_dossiers( list );
-}
-
-/**
- * ofa_settings_monitor_is_target_empty:
- */
-gboolean
-ofa_settings_monitor_is_target_empty( const ofaSettingsMonitor *monitor )
-{
-	ofaSettingsMonitorPrivate *priv;
-	GSList *list;
-	guint count;
-
-	g_return_val_if_fail( monitor && OFA_IS_SETTINGS_MONITOR( monitor ), FALSE );
-
-	priv = monitor->priv;
-	count = 0;
-
-	if( !priv->dispose_has_run ){
-
-		list = ofa_dossier_misc_get_dossiers();
-		count = g_slist_length( list );
-		ofa_dossier_misc_free_dossiers( list );
+	switch( event_type ){
+		case G_FILE_MONITOR_EVENT_CHANGED:
+			event_str = "G_FILE_MONITOR_EVENT_CHANGED";
+			break;
+		case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
+			event_str = "G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT";
+			break;
+		case G_FILE_MONITOR_EVENT_DELETED:
+			event_str = "G_FILE_MONITOR_EVENT_DELETED";
+			break;
+		case G_FILE_MONITOR_EVENT_CREATED:
+			event_str = "G_FILE_MONITOR_EVENT_CREATED";
+			break;
+		case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
+			event_str = "G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED";
+			break;
+		case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
+			event_str = "G_FILE_MONITOR_EVENT_PRE_UNMOUNT";
+			break;
+		case G_FILE_MONITOR_EVENT_UNMOUNTED:
+			event_str = "G_FILE_MONITOR_EVENT_UNMOUNTED";
+			break;
+		case G_FILE_MONITOR_EVENT_MOVED:
+			event_str = "G_FILE_MONITOR_EVENT_MOVED";
+			break;
 	}
 
-	return( count == 0 );
+	g_debug( "%s: time=%lu, event_type=%d (%s)",
+			thisfn, g_get_monotonic_time(), event_type, event_str );
+
+	my_timeout_event( self->priv->timeout );
+}
+
+static void
+on_monitor_changed_timeout( void *p_monitor )
+{
+	static const gchar *thisfn = "ofa_settings_monitor_on_monitor_changed_timeout";
+	ofaSettingsMonitor *monitor = OFA_SETTINGS_MONITOR( p_monitor );
+	ofaSettingsMonitorPrivate *priv = monitor->priv;
+
+	g_debug( "%s: emitting signal: target=%d", thisfn, priv->target );
+	g_signal_emit_by_name( monitor, "changed", priv->target );
 }

@@ -563,10 +563,7 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		if( ofa_idbms_connect_enter_apply( priv->prov_module, priv->dname, priv->infos )){
-			ofa_dossier_store_reload();
-			ok = TRUE;
-		}
+		ok = ofa_idbms_connect_enter_apply( priv->prov_module, priv->dname, priv->infos );
 
 		return( ok );
 	}

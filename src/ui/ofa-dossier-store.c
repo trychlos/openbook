@@ -30,17 +30,22 @@
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings-monitor.h"
 
 #include "ui/ofa-dossier-store.h"
 
 /* private instance data
  */
 struct _ofaDossierStorePrivate {
-	gboolean    dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* runtime data
 	 */
+	ofaSettingsMonitor *settings_monitor;
+	guint               rows_count;
 };
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
@@ -51,11 +56,22 @@ static GType st_col_types[DOSSIER_N_COLUMNS] = {
 
 static ofaDossierStore *st_store        = NULL;
 
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+static void     on_dossier_settings_changed( ofaSettingsMonitor *monitor, guint target, ofaDossierStore *store );
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
-static void     load_dataset( ofaDossierStore *store );
+static guint    load_dataset( ofaDossierStore *store );
 static void     insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist );
 static void     set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter );
 static gboolean get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter );
+static guint    dossier_store_reload( void );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
 
@@ -89,6 +105,9 @@ dossier_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( priv->settings_monitor ){
+			g_object_unref( priv->settings_monitor );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -119,6 +138,28 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_store_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaDossierStorePrivate ));
+
+	/**
+	 * ofaDossierStore:
+	 *
+	 * This signal is sent when the content of the store has changed.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaDossierStore *store,
+	 * 						guint          rows_count,
+	 * 						gpointer       user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"changed",
+				OFA_TYPE_DOSSIER_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_UINT );
 }
 
 /**
@@ -136,6 +177,7 @@ ofa_dossier_store_new( void )
 {
 	if( !st_store ){
 
+		/* define the store */
 		st_store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
 
 		gtk_list_store_set_column_types(
@@ -148,10 +190,57 @@ ofa_dossier_store_new( void )
 				GTK_TREE_SORTABLE( st_store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
+		/* load the data */
 		load_dataset( st_store );
+
+		/* monitor the settings */
+		st_store->priv->settings_monitor = ofa_settings_monitor_new( SETTINGS_TARGET_DOSSIER );
+
+		g_signal_connect(
+				st_store->priv->settings_monitor,
+				"changed",
+				G_CALLBACK( on_dossier_settings_changed ),
+				st_store );
 	}
 
 	return( g_object_ref( st_store ));
+}
+
+/*
+ * callback triggered when the dossier settings has changed
+ */
+static void
+on_dossier_settings_changed( ofaSettingsMonitor *monitor, guint target, ofaDossierStore *store )
+{
+	static const gchar *thisfn = "ofa_dossier_store_on_dossier_settings_changed";
+	guint count;
+
+	g_debug( "%s: target=%u", thisfn, target );
+
+	g_return_if_fail( target == SETTINGS_TARGET_DOSSIER );
+
+	count = dossier_store_reload();
+
+	g_signal_emit_by_name( store, "changed", count );
+}
+
+/**
+ * ofa_dossier_store_free:
+ *
+ * This function is expected to be only called from application dispose.
+ * It unrefs all left references on the ofaDossierStore singleton.
+ */
+void
+ofa_dossier_store_free( void )
+{
+	guint i, count;
+
+	if( st_store ){
+		count = G_OBJECT( st_store )->ref_count;
+		for( i=count ; i>0 ; --i ){
+			g_object_unref( st_store );
+		}
+	}
 }
 
 /*
@@ -177,15 +266,17 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 /*
  * load the dataset
  */
-static void
+static guint
 load_dataset( ofaDossierStore *store )
 {
 	GSList *dataset, *it;
 	gchar **array;
 	const gchar *dname, *provider;
 	GSList *exeset, *ite;
+	guint count;
 
 	dataset = ofa_dossier_misc_get_dossiers();
+	count = 0;
 
 	for( it=dataset ; it ; it=it->next ){
 		array = g_strsplit(( const gchar * ) it->data, ";", -1 );
@@ -195,6 +286,7 @@ load_dataset( ofaDossierStore *store )
 		exeset = ofa_dossier_misc_get_exercices( dname );
 		for( ite=exeset ; ite ; ite=ite->next ){
 			insert_row( store, dname, provider, ( const gchar * ) ite->data );
+			count += 1;
 		}
 		ofa_dossier_misc_free_exercices( exeset );
 
@@ -202,6 +294,9 @@ load_dataset( ofaDossierStore *store )
 	}
 
 	ofa_dossier_misc_free_dossiers( dataset );
+	store->priv->rows_count = count;
+
+	return( count );
 }
 
 static void
@@ -255,18 +350,46 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 	g_strfreev( array );
 }
 
-/**
+/*
  * ofa_dossier_store_reload:
  *
  * Reset and reload the datastore content.
  */
-void
-ofa_dossier_store_reload( void )
+static guint
+dossier_store_reload( void )
 {
+	guint count = 0;
+
 	if( st_store ){
 		gtk_list_store_clear( GTK_LIST_STORE( st_store ));
-		load_dataset( st_store );
+		count = load_dataset( st_store );
 	}
+
+	return( count );
+}
+
+/*
+ * ofa_dossier_store_is_empty:
+ * @store: the #ofaDossierStore instance.
+ *
+ * Returns: %TRUE if the store is empty, %FALSE else
+ */
+gboolean
+ofa_dossier_store_is_empty( ofaDossierStore *store )
+{
+	ofaDossierStorePrivate *priv;
+	gboolean is_empty;
+
+	g_return_val_if_fail( store && OFA_IS_DOSSIER_STORE( store ), TRUE );
+
+	priv = store->priv;
+	is_empty = TRUE;
+
+	if( !priv->dispose_has_run ){
+		is_empty = ( priv->rows_count == 0 );
+	}
+
+	return( is_empty );
 }
 
 /**

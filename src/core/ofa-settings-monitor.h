@@ -63,11 +63,9 @@ typedef struct {
 }
 	ofaSettingsMonitorClass;
 
-GType               ofa_settings_monitor_get_type       ( void ) G_GNUC_CONST;
+GType               ofa_settings_monitor_get_type( void ) G_GNUC_CONST;
 
-ofaSettingsMonitor *ofa_settings_monitor_new            ( ofaSettingsTarget target );
-
-gboolean            ofa_settings_monitor_is_target_empty( const ofaSettingsMonitor *monitor );
+ofaSettingsMonitor *ofa_settings_monitor_new     ( ofaSettingsTarget target );
 
 G_END_DECLS
 

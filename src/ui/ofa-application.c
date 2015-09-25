@@ -36,14 +36,13 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-settings-monitor.h"
-
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-dossier-store.h"
 #include "api/ofa-preferences.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore-assistant.h"
@@ -71,7 +70,7 @@ struct _ofaApplicationPrivate {
 	int                 code;
 	ofaMainWindow      *main_window;
 	GMenuModel         *menu;
-	ofaSettingsMonitor *settings_monitor;
+	ofaDossierStore    *dos_store;
 
 	/* menu items
 	 */
@@ -134,8 +133,8 @@ static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void     maintainer_test_function( void );
 
-static void     setup_settings_monitor( ofaApplication *application );
-static void     on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, guint count, ofaApplication *application );
+static void     setup_actions_monitor( ofaApplication *application );
+static void     on_dossier_store_changed( ofaDossierStore *store, guint count, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -194,8 +193,8 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( priv->settings_monitor ){
-			g_object_unref( priv->settings_monitor );
+		if( priv->dos_store ){
+			ofa_dossier_store_free();
 		}
 		if( priv->menu ){
 			g_object_unref( priv->menu );
@@ -622,7 +621,7 @@ application_startup( GApplication *application )
 	g_object_unref( builder );
 
 	/* setup the monitoring of action items */
-	setup_settings_monitor( OFA_APPLICATION( application ));
+	setup_actions_monitor( OFA_APPLICATION( application ));
 }
 
 /*
@@ -737,27 +736,31 @@ maintainer_test_function( void )
 /*                                                                   */
 /*                                                                   */
 static void
-setup_settings_monitor( ofaApplication *application )
+setup_actions_monitor( ofaApplication *application )
 {
 	ofaApplicationPrivate *priv;
 
 	priv = application->priv;
 
-	priv->settings_monitor = ofa_settings_monitor_new( SETTINGS_TARGET_DOSSIER );
+	/* ofaDossierStore monitoring
+	 */
+	priv->dos_store = ofa_dossier_store_new();
 
 	g_signal_connect(
-			priv->settings_monitor, "changed", G_CALLBACK( on_settings_changed ), application );
+			priv->dos_store, "changed", G_CALLBACK( on_dossier_store_changed ), application );
 
 	enable_action_open(
-			application, !ofa_settings_monitor_is_target_empty( priv->settings_monitor ));
+			application, !ofa_dossier_store_is_empty( priv->dos_store ));
 }
 
 static void
-on_settings_changed( ofaSettingsMonitor *monitor, ofaSettingsTarget target, guint count, ofaApplication *application )
+on_dossier_store_changed( ofaDossierStore *store, guint count, ofaApplication *application )
 {
-	if( target == SETTINGS_TARGET_DOSSIER ){
-		enable_action_open( application, count > 0 );
-	}
+	static const gchar *thisfn = "ofa_application_on_dossier_store_changed";
+
+	g_debug( "%s: count=%u", thisfn, count );
+
+	enable_action_open( application, count > 0 );
 }
 
 static void

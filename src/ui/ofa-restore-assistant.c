@@ -451,7 +451,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent, *label;
-	static ofaDossierColumns st_columns[] = {
+	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
 
@@ -876,7 +876,6 @@ p7_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	if( !p7_restore_confirmed( self )){
 		if( priv->p3_is_new_dossier ){
 			ofa_settings_remove_dossier( priv->p3_dossier );
-			ofa_dossier_store_reload();
 		}
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-label1" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
