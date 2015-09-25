@@ -36,6 +36,7 @@ api_include_HEADERS = \
 	my-date.h											\
 	my-dialog.h											\
 	my-double.h											\
+	my-timeout.h										\
 	my-utils.h											\
 	my-window.h											\
 	my-window-prot.h									\

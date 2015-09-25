@@ -166,7 +166,7 @@ libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = ofo-marshal.lo
 am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-dialog.lo my-double.lo \
-	my-field-combo.lo my-utils.lo my-window.lo \
+	my-field-combo.lo my-timeout.lo my-utils.lo my-window.lo \
 	ofa-admin-credentials-bin.lo ofa-box.lo ofa-collection.lo \
 	ofa-concil-collection.lo ofa-dbms-root-bin.lo ofa-dbms.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-dossier-misc.lo \
@@ -451,6 +451,7 @@ libofa_core_la_SOURCES = \
 	my-double.c											\
 	my-field-combo.c									\
 	my-field-combo.h									\
+	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\
 	\
@@ -624,6 +625,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-dialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-timeout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-window.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@

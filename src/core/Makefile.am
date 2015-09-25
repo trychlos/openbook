@@ -57,6 +57,7 @@ libofa_core_la_SOURCES = \
 	my-double.c											\
 	my-field-combo.c									\
 	my-field-combo.h									\
+	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\
 	\
