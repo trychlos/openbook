@@ -57,11 +57,14 @@ static void    free_lines( GSList *lines );
 GSList *
 ofa_dossier_misc_get_dossiers( void )
 {
+	static const gchar *thisfn = "ofa_dossier_misc_get_dossiers";
 	GSList *slist_in, *it;
 	GSList *slist_out;
 	gchar *prefix, *dname, *dbms, *out_str;
 	gint spfx;
 	const gchar *cstr;
+
+	g_debug( "%s", thisfn );
 
 	prefix = g_strdup_printf( "%s ", SETTINGS_GROUP_DOSSIER );
 	spfx = my_strlen( prefix );
