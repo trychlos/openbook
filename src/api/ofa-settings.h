@@ -48,7 +48,7 @@
  * - OFA_USER_CONF may address the user configuration file
  *   default is HOME/.config/PACKAGE/PACKAGE.conf
  * - OFA_DOSSIER_CONF may address the dossier configuration file
- *   default is XDG_USER_CONFIG/PACKAGE/dossier.conf
+ *   default is HOME/.config/PACKAGE/dossier.conf
  */
 
 #include <glib.h>
@@ -116,59 +116,91 @@ GKeyFile    *ofa_settings_get_keyfile        ( ofaSettingsTarget target );
 
 /* multi-usage functions */
 gboolean ofa_settings_get_boolean_ex         ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key );
+														const gchar *group,
+														const gchar *key );
+
 void     ofa_settings_set_boolean_ex         ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key,
+														const gchar *group,
+														const gchar *key,
 														gboolean bvalue );
 
 gint     ofa_settings_get_int_ex             ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key );
+														const gchar *group,
+														const gchar *key );
+
 void     ofa_settings_set_int_ex             ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key,
+														const gchar *group,
+														const gchar *key,
 														gint ivalue );
 
 GList   *ofa_settings_get_int_list_ex        ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key );
+														const gchar *group,
+														const gchar *key );
+
 void     ofa_settings_set_int_list_ex        ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key,
+														const gchar *group,
+														const gchar *key,
 														const GList *int_list );
+
 #define  ofa_settings_free_int_list(L)       g_list_free( L )
 
 gchar   *ofa_settings_get_string_ex          ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key );
+														const gchar *group,
+														const gchar *key );
+
 void     ofa_settings_set_string_ex          ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key,
+														const gchar *group,
+														const gchar *key,
 														const gchar *svalue );
 
 GList   *ofa_settings_get_string_list_ex     ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key );
+														const gchar *group,
+														const gchar *key );
+
 void     ofa_settings_set_string_list_ex     ( ofaSettingsTarget target,
-														const gchar *group, const gchar *key,
+														const gchar *group,
+														const gchar *key,
 														const GList *str_list );
+
 #define  ofa_settings_free_string_list(L)    g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
 GSList  *ofa_settings_get_groups             ( ofaSettingsTarget target );
+
 #define  ofa_settings_free_groups(L)         g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 /* dossiers configuration management */
 
 GSList  *ofa_settings_dossier_get_keys       ( const gchar *dname );
+
 #define  ofa_settings_dossier_free_keys(L)   g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 gboolean ofa_settings_create_dossier         ( const gchar *dname, ... );
+
 void     ofa_settings_remove_dossier         ( const gchar *dname );
-void     ofa_settings_remove_exercice        ( const gchar *dname, const gchar *dbname );
+
+void     ofa_settings_remove_exercice        ( const gchar *dname,
+														const gchar *dbname );
+
 gchar   *ofa_settings_get_dossier_provider   ( const gchar *dname );
 
 gboolean ofa_settings_has_dossier            ( const gchar *dname );
 
-gint     ofa_settings_dossier_get_int        ( const gchar *dname, const gchar *key );
+gint     ofa_settings_dossier_get_int        ( const gchar *dname,
+														const gchar *key );
 
-gchar   *ofa_settings_dossier_get_string     ( const gchar *dname, const gchar *key );
-void     ofa_settings_dossier_set_string     ( const gchar *dname, const gchar *key, const gchar *svalue );
+gchar   *ofa_settings_dossier_get_string     ( const gchar *dname,
+														const gchar *key );
 
-GList   *ofa_settings_dossier_get_string_list( const gchar *dname, const gchar *key );
-void     ofa_settings_dossier_set_string_list( const gchar *dname, const gchar *key, const GList *list );
+void     ofa_settings_dossier_set_string     ( const gchar *dname,
+														const gchar *key,
+														const gchar *svalue );
+
+GList   *ofa_settings_dossier_get_string_list( const gchar *dname,
+														const gchar *key );
+
+void     ofa_settings_dossier_set_string_list( const gchar *dname,
+														const gchar *key,
+														const GList *list );
 
 G_END_DECLS
 
