@@ -244,21 +244,37 @@ ofa_dossier_store_free( void )
 }
 
 /*
- * sorting the store per dossier name
+ * sorting the store per:
+ * - dossier name ascending
+ * - exercice descending
+ *
+ * The result is visible in the dossier manager which displays both
+ * dossier names and dates of exercices
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store )
 {
-	gchar *adname, *bdname;
+	gchar *adname, *abegin, *bdname, *bbegin;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, DOSSIER_COL_DNAME, &adname, -1 );
-	gtk_tree_model_get( tmodel, b, DOSSIER_COL_DNAME, &bdname, -1 );
+	gtk_tree_model_get( tmodel, a, DOSSIER_COL_DNAME, &adname, DOSSIER_COL_BEGIN, &abegin, -1 );
+	gtk_tree_model_get( tmodel, b, DOSSIER_COL_DNAME, &bdname, DOSSIER_COL_BEGIN, &bbegin, -1 );
 
 	cmp = g_utf8_collate( adname, bdname );
+	if( cmp == 0 ){
+		if( !my_strlen( abegin )){
+			cmp = +1;
+		} else if( !my_strlen( bbegin )){
+			cmp = -1;
+		} else {
+			cmp = -1 * g_utf8_collate( abegin, bbegin );
+		}
+	}
 
 	g_free( adname );
+	g_free( abegin );
 	g_free( bdname );
+	g_free( bbegin );
 
 	return( cmp );
 }

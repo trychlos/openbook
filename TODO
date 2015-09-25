@@ -534,8 +534,6 @@
 
  830 2015- 9-24 keep the ExerciceStore sorted
 
- 831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
-
  839
 
 -----------------------------------------------------------------------
@@ -3806,6 +3804,9 @@
  829 2015- 9-23 BatProperties: entries should be read-only, and this
                 should be visible for the user
      2015- 9-24 introduce my_utils_widget_set_editable
+
+ 831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
+     2015- 9-25 done
 
  832 2015- 9-24 DossierStore should be a singleton, and maitain itself
                 up to date
