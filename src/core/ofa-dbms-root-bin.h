@@ -73,22 +73,23 @@ typedef struct {
 }
 	ofaDBMSRootBinClass;
 
-GType           ofa_dbms_root_bin_get_type         ( void ) G_GNUC_CONST;
+GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
 
-ofaDBMSRootBin *ofa_dbms_root_bin_new              ( void );
+ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
 
-GtkWidget      *ofa_dbms_root_bin_get_longest_label( const ofaDBMSRootBin *bin );
+GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( const ofaDBMSRootBin *bin,
+																guint column );
 
-void            ofa_dbms_root_bin_set_dossier      ( ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
 																const gchar *dname );
 
-gboolean        ofa_dbms_root_bin_is_valid         ( const ofaDBMSRootBin *bin,
+gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
 																gchar **error_message );
 
-void            ofa_dbms_root_bin_set_valid        ( const ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
 																gboolean valid );
 
-void            ofa_dbms_root_bin_set_credentials  ( ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
 																const gchar *account,
 																const gchar *password );
 

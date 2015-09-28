@@ -46,8 +46,8 @@ struct _ofaDBMSRootBinPrivate {
 	 */
 	GtkWidget    *account_entry;
 	GtkWidget    *password_entry;
-	GtkWidget    *longest;
 	GtkWidget    *msg_label;
+	GtkSizeGroup *group0;
 
 	/* runtime data
 	 */
@@ -65,7 +65,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dbms-root-bin.ui";
-static const gchar *st_bin_id           = "DBMSRootBin";
 
 G_DEFINE_TYPE( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN )
 
@@ -109,6 +108,9 @@ dbms_root_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		/* unref object members here */
+		if( priv->group0 ){
+			g_object_unref( priv->group0 );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -187,72 +189,82 @@ static void
 setup_composite( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
-	GtkWidget *top_widget, *label;
-	glong long11, long12;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *label;
 
 	priv =bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	object = gtk_builder_get_object( builder, "drb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "drb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
 	/* connect to the 'changed' signal of the entry */
-	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-account" );
+	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-account-entry" );
 	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
 	g_signal_connect(
 			G_OBJECT( priv->account_entry ), "changed", G_CALLBACK( on_account_changed ), bin );
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label11" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->account_entry );
-	/* compute the longest label */
-	long11 = my_strlen( gtk_label_get_text( GTK_LABEL( label )));
-	priv->longest = label;
 
 	/* connect to the 'changed' signal of the entry */
-	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-password" );
+	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-password-entry" );
 	g_return_if_fail( priv->password_entry && GTK_IS_ENTRY( priv->password_entry ));
 	g_signal_connect(
 			G_OBJECT( priv->password_entry ), "changed", G_CALLBACK( on_password_changed ), bin );
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label12" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-password-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
-	/* compute the longest label */
-	long12 = my_strlen( gtk_label_get_text( GTK_LABEL( label )));
-	if( long12 > long11 ){
-		priv->longest = label;
-	}
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-message" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->msg_label = label;
 }
 
 /**
- * ofa_dbms_root_bin_get_longest_label:
+ * ofa_dbms_root_bin_get_size_group:
  * @bin: this #ofaDBMSRootBin instance.
+ * @column: the desired column number, counted from zero.
  *
- * Returns: the longest label from the column 0
- * (use case: let the container build a #GtkSizeGroup).
+ * Returns: the #GtkSizeGroup used to horizontally align the @column.
+ *
+ * As this is a composite widget, it is probable that we will want align
+ * it with other composites or widgets in a dialog box. Having a size
+ * group prevents us to have to determine the longest label, which
+ * should be computed dynamically as this may depend of the translation.
+ *
+ * Here, the .xml UI definition defines a dedicated GtkSizeGroup that
+ * we have just to return as is.
  */
-GtkWidget *
-ofa_dbms_root_bin_get_longest_label( const ofaDBMSRootBin *bin )
+GtkSizeGroup *
+ofa_dbms_root_bin_get_size_group( const ofaDBMSRootBin *bin, guint column )
 {
+	static const gchar *thisfn = "ofa_dbms_root_bin_get_size_group";
 	ofaDBMSRootBinPrivate *priv;
-	GtkWidget *label;
+
+	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
 
 	g_return_val_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ), NULL );
 
 	priv = bin->priv;
-	label = NULL;
 
 	if( !priv->dispose_has_run ){
-
-		label = priv->longest;
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+		if( column == 0 ){
+			return( priv->group0 );
+		}
 	}
 
-	return( label );
+	g_return_val_if_reached( NULL );
 }
 
 /**

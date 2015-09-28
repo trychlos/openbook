@@ -53,7 +53,8 @@
    - my_utils_widget_set_margin_left(): new function.
    - my_utils_widget_set_margin_right(): new function.
    - my_utils_widget_set_xalign(): new function.
-   - ofa_admin_credentials_get_size_group(): new method.
+   - ofa_admin_credentials_bin_get_size_group(): new method.
+   - ofa_dbms_root_bin_get_size_group(): new method.
    - ofo_bat_get_account(): new method.
    - ofo_bat_set_account(): new method.
    - ofo_dossier_get_last_closing_date(): new method.
