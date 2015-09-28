@@ -198,64 +198,6 @@
                 have one entry per account
      2014-12- 7 maybe in a next version...
 
- 512 2014-12- 9 have an error message in all dialog box to say why it
-                is not validable
-     2015- 4- 1 -> review api, signals, readonly, err_ message, settings
-                src/core/ofa-admin-credentials-bin.ui       : #d69d42d
-                src/core/ofa-dbms-root-bin.ui               : #366e131
-                src/core/ofa-dossier-delete-prefs.piece.ui  : #bd9c322
-                src/core/ofa-file-format-bin.ui             : ok
-                src/core/ofa-preferences.ui                 : #d2f554b
-                src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
-                src/mysql/ofa-mysql-connect-enter-piece.ui  : d53ac94
-                src/mysql/ofa-mysql-prefs.piece.ui
-                src/ui/ofa-account-properties.ui
-                src/ui/ofa-account-select.ui
-                src/ui/ofa-account-selector-bin.ui
-                src/ui/ofa-app-menubar.ui
-                src/ui/ofa-bat-properties-bin.ui
-                src/ui/ofa-bat-properties.ui
-                src/ui/ofa-bat-select.ui
-                src/ui/ofa-check-balances-bin.ui
-                src/ui/ofa-check-balances.ui
-                src/ui/ofa-check-integrity-bin.ui
-                src/ui/ofa-check-integrity.ui
-                src/ui/ofa-class-properties.ui
-                src/ui/ofa-closing-parms-bin.ui
-                src/ui/ofa-currency-properties.ui
-                src/ui/ofa-date-filter-bin.ui
-                src/ui/ofa-dos-menubar.ui
-                src/ui/ofa-dossier-delete.ui
-                src/ui/ofa-dossier-display-notes.ui
-                src/ui/ofa-dossier-login.ui
-                src/ui/ofa-dossier-manager.ui
-                src/ui/ofa-dossier-new-bin.ui
-                src/ui/ofa-dossier-new-mini.ui
-                src/ui/ofa-dossier-new.ui
-                src/ui/ofa-dossier-open.ui
-                src/ui/ofa-dossier-properties.ui
-                src/ui/ofa-exercice-close-assistant.ui
-                src/ui/ofa-export-assistant.ui
-                src/ui/ofa-guided-input-bin.ui
-                src/ui/ofa-guided-input.ui
-                src/ui/ofa-import-assistant.ui
-                src/ui/ofa-import-ex.ui
-                src/ui/ofa-ledger-close.ui
-                src/ui/ofa-ledger-properties.ui
-                src/ui/ofa-ope-template-help.ui
-                src/ui/ofa-ope-template-properties.ui
-                src/ui/ofa-ope-template-select.ui
-                src/ui/ofa-plugin-manager.ui
-                src/ui/ofa-print-balances.ui                : cancelled
-                src/ui/ofa-print-books.ui
-                src/ui/ofa-print-ledgers.ui
-                src/ui/ofa-print-reconcil.ui
-                src/ui/ofa-rate-properties.ui
-                src/ui/ofa-reconciliation.ui
-                src/ui/ofa-restore-assistant.ui
-                src/ui/ofa-settlement.ui
-                src/ui/ofa-view-entries.ui
-
  513 2014-12- 9 whether balancing accounts are settleable or 
                 reconciliable (and shouldn't) has to be checked when 
                 setting these accounts for balance
@@ -524,17 +466,74 @@
                 after entries from 01/01, but opening exercice after 
                 carried forward entries *only*
 
- 823 2015- 4-27 review mnemonic activation in all dialogs
-
  824 2015- 9-22 use AX_COMPILER_FLAGS
 
  825 2015- 9-22 use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
 
  826 2015- 9-22 use GResource
 
- 830 2015- 9-24 keep the ExerciceStore sorted
+ 839 2015- 9-25 review all dialog boxes
+                - provide an error message if not validable 
+                  > via a is_valid() method (todo #512)
+                  > with a ofa-changed signal
+                - review mnemonic activation (todo #823)
+                src/core/ofa-admin-credentials-bin.ui       OK
+                src/core/ofa-dbms-root-bin.ui
+                src/core/ofa-dossier-delete-prefs-bin.ui
+                src/core/ofa-file-format-bin.ui
+                src/core/ofa-preferences.ui
+                src/mysql/ofa-mysql-connect-display-bin.ui
+                src/mysql/ofa-mysql-connect-enter-bin.ui
+                src/mysql/ofa-mysql-prefs.piece.ui
+                src/ui/ofa-account-properties.ui
+                src/ui/ofa-accounts-book-bin.ui
+                src/ui/ofa-account-selector-bin.ui
+                src/ui/ofa-account-select.ui
+                src/ui/ofa-accounts-filter-vv-bin.ui
+                src/ui/ofa-app-menubar.ui
+                src/ui/ofa-balance-bin.ui
+                src/ui/ofa-bat-properties-bin.ui
+                src/ui/ofa-bat-properties.ui
+                src/ui/ofa-bat-select.ui
+                src/ui/ofa-check-balances-bin.ui
+                src/ui/ofa-check-balances.ui
+                src/ui/ofa-check-integrity-bin.ui
+                src/ui/ofa-check-integrity.ui
+                src/ui/ofa-class-properties.ui
+                src/ui/ofa-closing-parms-bin.ui
+                src/ui/ofa-currency-properties.ui
+                src/ui/ofa-dates-filter-hv-bin.ui
+                src/ui/ofa-dos-menubar.ui
+                src/ui/ofa-dossier-delete.ui
+                src/ui/ofa-dossier-display-notes.ui
+                src/ui/ofa-dossier-login.ui
+                src/ui/ofa-dossier-manager.ui
+                src/ui/ofa-dossier-new-bin.ui
+                src/ui/ofa-dossier-new-mini.ui
+                src/ui/ofa-dossier-new.ui
+                src/ui/ofa-dossier-open.ui
+                src/ui/ofa-dossier-properties.ui
+                src/ui/ofa-exercice-close-assistant.ui
+                src/ui/ofa-export-assistant.ui
+                src/ui/ofa-guided-input-bin.ui
+                src/ui/ofa-guided-input.ui
+                src/ui/ofa-import-assistant.ui
+                src/ui/ofa-ledger-close.ui
+                src/ui/ofa-ledger-properties.ui
+                src/ui/ofa-ledgers-book-bin.ui
+                src/ui/ofa-ope-template-help.ui
+                src/ui/ofa-ope-template-properties.ui
+                src/ui/ofa-ope-template-select.ui
+                src/ui/ofa-plugin-manager.ui
+                src/ui/ofa-rate-properties.ui
+                src/ui/ofa-reconcil-bin.ui
+                src/ui/ofa-reconciliation.ui
+                src/ui/ofa-render-page.ui
+                src/ui/ofa-restore-assistant.ui
+                src/ui/ofa-settlement.ui
+                src/ui/ofa-view-entries.ui
 
- 839
+ 840
 
 -----------------------------------------------------------------------
  DONE
@@ -2632,6 +2631,65 @@
                 have currencies disabled (idem for root account)
      2014-12- 9 done - svn #4267
 
+ 512 2014-12- 9 have an error message in all dialog box to say why it
+                is not validable
+     2015- 4- 1 -> review api, signals, readonly, err_ message, settings
+                src/core/ofa-admin-credentials-bin.ui       : #d69d42d
+                src/core/ofa-dbms-root-bin.ui               : #366e131
+                src/core/ofa-dossier-delete-prefs.piece.ui  : #bd9c322
+                src/core/ofa-file-format-bin.ui             : ok
+                src/core/ofa-preferences.ui                 : #d2f554b
+                src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
+                src/mysql/ofa-mysql-connect-enter-piece.ui  : d53ac94
+                src/mysql/ofa-mysql-prefs.piece.ui
+                src/ui/ofa-account-properties.ui
+                src/ui/ofa-account-select.ui
+                src/ui/ofa-account-selector-bin.ui
+                src/ui/ofa-app-menubar.ui
+                src/ui/ofa-bat-properties-bin.ui
+                src/ui/ofa-bat-properties.ui
+                src/ui/ofa-bat-select.ui
+                src/ui/ofa-check-balances-bin.ui
+                src/ui/ofa-check-balances.ui
+                src/ui/ofa-check-integrity-bin.ui
+                src/ui/ofa-check-integrity.ui
+                src/ui/ofa-class-properties.ui
+                src/ui/ofa-closing-parms-bin.ui
+                src/ui/ofa-currency-properties.ui
+                src/ui/ofa-date-filter-bin.ui
+                src/ui/ofa-dos-menubar.ui
+                src/ui/ofa-dossier-delete.ui
+                src/ui/ofa-dossier-display-notes.ui
+                src/ui/ofa-dossier-login.ui
+                src/ui/ofa-dossier-manager.ui
+                src/ui/ofa-dossier-new-bin.ui
+                src/ui/ofa-dossier-new-mini.ui
+                src/ui/ofa-dossier-new.ui
+                src/ui/ofa-dossier-open.ui
+                src/ui/ofa-dossier-properties.ui
+                src/ui/ofa-exercice-close-assistant.ui
+                src/ui/ofa-export-assistant.ui
+                src/ui/ofa-guided-input-bin.ui
+                src/ui/ofa-guided-input.ui
+                src/ui/ofa-import-assistant.ui
+                src/ui/ofa-import-ex.ui
+                src/ui/ofa-ledger-close.ui
+                src/ui/ofa-ledger-properties.ui
+                src/ui/ofa-ope-template-help.ui
+                src/ui/ofa-ope-template-properties.ui
+                src/ui/ofa-ope-template-select.ui
+                src/ui/ofa-plugin-manager.ui
+                src/ui/ofa-print-balances.ui                : cancelled
+                src/ui/ofa-print-books.ui
+                src/ui/ofa-print-ledgers.ui
+                src/ui/ofa-print-reconcil.ui
+                src/ui/ofa-rate-properties.ui
+                src/ui/ofa-reconciliation.ui
+                src/ui/ofa-restore-assistant.ui
+                src/ui/ofa-settlement.ui
+                src/ui/ofa-view-entries.ui
+     2015- 9-25 closed - see #839
+
  514 2014-12- 9 current exercice has no ending date (but should)
      2014-12- 9 done - svn #4266
 
@@ -3787,6 +3845,9 @@
                 development dossiers with production dossiers
      2015- 4-26 done - git #aadaccc
 
+ 823 2015- 4-27 review mnemonic activation in all dialogs
+     2015- 9-25 closed - see #839
+
  827 2015- 9-23 review usage of ofa-import-ex.ui
      2015- 9-24 delete file
 
@@ -3804,6 +3865,9 @@
  829 2015- 9-23 BatProperties: entries should be read-only, and this
                 should be visible for the user
      2015- 9-24 introduce my_utils_widget_set_editable
+
+ 830 2015- 9-24 keep the ExerciceStore sorted
+     2015- 9-25 already sorted by descending exercice
 
  831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
      2015- 9-25 done

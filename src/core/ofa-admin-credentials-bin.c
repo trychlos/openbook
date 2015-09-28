@@ -179,7 +179,7 @@ ofa_admin_credentials_bin_new( void )
 static void
 setup_composite( ofaAdminCredentialsBin *bin )
 {
-	GtkWidget *top_widget, *entry;
+	GtkWidget *top_widget, *entry, *label;
 
 	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
@@ -188,16 +188,25 @@ setup_composite( ofaAdminCredentialsBin *bin )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label11" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-password" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label12" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-bis" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-passbis" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_bis_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label13" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 }
 
 static void
