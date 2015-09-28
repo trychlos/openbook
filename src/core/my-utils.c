@@ -33,6 +33,12 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
+typedef struct {
+	gchar        *name;
+	GtkBuildable *buildable;
+}
+	sBuildableByName;
+
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
@@ -557,38 +563,6 @@ my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 }
 
 /**
- * my_utils_container_get_buildable_by_name:
- *
- * This has been written to be able to get back a GtkSizeGroup from
- * Glade via the builder - but this doesn't work out of the box..
- */
-GtkBuildable *
-my_utils_container_get_buildable_by_name( GtkContainer *container, const gchar *name )
-{
-	GList *children = gtk_container_get_children( container );
-	GList *ic;
-	GtkBuildable *found = NULL;
-	const gchar *child_name;
-
-	for( ic = children ; ic && !found ; ic = ic->next ){
-
-		if( GTK_IS_BUILDABLE( ic->data )){
-			child_name = gtk_buildable_get_name( GTK_BUILDABLE( ic->data ));
-			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
-				found = GTK_BUILDABLE( ic->data );
-				break;
-			}
-			if( GTK_IS_CONTAINER( ic->data )){
-				found = my_utils_container_get_buildable_by_name( GTK_CONTAINER( ic->data ), name );
-			}
-		}
-	}
-
-	g_list_free( children );
-	return( found );
-}
-
-/**
  * my_utils_container_get_child_by_name:
  */
 GtkWidget *
@@ -664,20 +638,43 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 GtkWidget *
 my_utils_container_attach_from_ui( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget )
 {
-	GtkWidget *window_widget, *top_widget;
+	GtkWidget *toplevel, *top_widget;
 
 	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
 
-	window_widget = my_utils_builder_load_from_path( ui, window );
-	g_return_val_if_fail( window_widget && GTK_IS_CONTAINER( window_widget ), NULL );
+	toplevel = my_utils_builder_load_from_path( ui, window );
+	g_return_val_if_fail( toplevel && GTK_IS_WINDOW( toplevel ), NULL );
+	top_widget = my_utils_container_attach_from_window( container, GTK_WINDOW( toplevel ), widget );
+	gtk_widget_destroy( toplevel );
 
-	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window_widget ), widget );
+	return( top_widget );
+}
+
+/**
+ * my_utils_container_attach_from_window:
+ * @container: the target container
+ * @window: a #GtkWindow, most probably loaded from a .xml UI definition file
+ * @widget: the name of the top widget inside of @window, to be attached
+ *  to the @container.
+ *
+ * Extract the named @widget from the @window, attaching this @widget to the
+ * @container.
+ *
+ * Returns: the loaded @widget, or %NULL.
+ */
+GtkWidget *
+my_utils_container_attach_from_window( GtkContainer *container, GtkWindow *window, const gchar *widget )
+{
+	GtkWidget *top_widget;
+
+	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
+
+	top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), widget );
 	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
 
 	g_object_ref( top_widget );
-	gtk_container_remove( GTK_CONTAINER( window_widget ), top_widget );
-	gtk_widget_destroy( window_widget );
-
+	gtk_container_remove( GTK_CONTAINER( window ), top_widget );
 	gtk_container_add( container, top_widget );
 	g_object_unref( top_widget );
 

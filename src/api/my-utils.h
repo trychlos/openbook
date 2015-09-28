@@ -76,10 +76,10 @@ gboolean      my_utils_dialog_question                ( const gchar *msg, const 
 gboolean      my_utils_entry_get_valid                ( GtkEntry *entry );
 void          my_utils_entry_set_valid                ( GtkEntry *entry, gboolean valid );
 
-GtkBuildable *my_utils_container_get_buildable_by_name( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );
+GtkWidget    *my_utils_container_attach_from_window   ( GtkContainer *container, GtkWindow *window, const gchar *widget );
 
 GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
 void          my_utils_widget_set_editable            ( GObject *widget, gboolean editable );

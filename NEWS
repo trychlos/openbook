@@ -45,12 +45,15 @@
    - DossierStore: is an auto-maintained singleton (todo #832).
    - myTimeout: new structure.
    - my_utils_container_attach_from_ui(): new function.
+   - my_utils_container_attach_from_window(): new function.
+   - my_utils_container_get_buildable_by_name: removed function.
    - my_utils_widget_set_editable(): new function.
    - my_utils_widget_set_style(): new function.
    - my_utils_widget_set_margin(): new function.
    - my_utils_widget_set_margin_left(): new function.
    - my_utils_widget_set_margin_right(): new function.
    - my_utils_widget_set_xalign(): new function.
+   - ofa_admin_credentials_get_size_group(): new method.
    - ofo_bat_get_account(): new method.
    - ofo_bat_set_account(): new method.
    - ofo_dossier_get_last_closing_date(): new method.

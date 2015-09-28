@@ -72,12 +72,15 @@ typedef struct {
 }
 	ofaAdminCredentialsBinClass;
 
-GType                   ofa_admin_credentials_bin_get_type ( void ) G_GNUC_CONST;
+GType                   ofa_admin_credentials_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaAdminCredentialsBin *ofa_admin_credentials_bin_new      ( void );
+ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( void );
 
-gboolean                ofa_admin_credentials_bin_is_valid ( const ofaAdminCredentialsBin *bin,
-																		gchar **error_message );
+GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin,
+																			guint column );
+
+gboolean                ofa_admin_credentials_bin_is_valid      ( const ofaAdminCredentialsBin *bin,
+																			gchar **error_message );
 
 G_END_DECLS
 

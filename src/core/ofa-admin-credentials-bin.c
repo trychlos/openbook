@@ -37,6 +37,10 @@
 struct _ofaAdminCredentialsBinPrivate {
 	gboolean      dispose_has_run;
 
+	/* UI
+	 */
+	GtkSizeGroup *group0;
+
 	/* runtime data
 	 */
 	gchar        *account;
@@ -54,7 +58,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-admin-credentials-bin.ui";
-static const gchar *st_bin_id           = "AdminCredentialsBin";
 
 G_DEFINE_TYPE( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN )
 
@@ -101,6 +104,9 @@ admin_credentials_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( priv->group0 ){
+			g_object_unref( priv->group0 );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -179,34 +185,84 @@ ofa_admin_credentials_bin_new( void )
 static void
 setup_composite( ofaAdminCredentialsBin *bin )
 {
-	GtkWidget *top_widget, *entry, *label;
+	ofaAdminCredentialsBinPrivate *priv;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *label;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-account" );
+	object = gtk_builder_get_object( builder, "acb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "acb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label11" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-password" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label12" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-passbis" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-passbis-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_bis_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "adm-label13" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-passbis-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
+}
+
+/**
+ * ofa_admin_credentials_bin_get_size_group:
+ * @bin: this #ofaAdminCredentialsBin instance.
+ * @column: the desired column number, counted from zero.
+ *
+ * Returns: the #GtkSizeGroup used to horizontally align the @column.
+ *
+ * As this is a composite widget, it is probable that we will want align
+ * it with other composites or widgets in a dialog box. Having a size
+ * group prevents us to have to determine the longest label, which
+ * should be computed dynamically as this may depend of the translation.
+ *
+ * Here, the .xml UI definition defines a dedicated GtkSizeGroup that
+ * we have just to return as is.
+ */
+GtkSizeGroup *
+ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin, guint column )
+{
+	static const gchar *thisfn = "ofa_admin_credentials_bin_get_size_group";
+	ofaAdminCredentialsBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+		if( column == 0 ){
+			return( priv->group0 );
+		}
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
 static void
@@ -290,7 +346,7 @@ ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **e
 		}
 	}
 
-	return( is_valid );
+	g_return_val_if_reached( FALSE );
 }
 
 static gboolean
