@@ -44,7 +44,7 @@ struct _ofaDossierNewBinPrivate {
 
 	/* UI
 	 */
-	GtkSizeGroup   *group;
+	GtkSizeGroup   *group0;
 	GtkWidget      *dbms_combo;
 	GtkWidget      *connect_infos_parent;
 	GtkWidget      *connect_infos;
@@ -79,7 +79,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-new-bin.ui";
-static const gchar *st_bin_id           = "DossierNewBin";
 
 G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
@@ -128,6 +127,9 @@ dossier_new_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( priv->group0 ){
+			g_clear_object( &priv->group0 );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -216,29 +218,45 @@ static void
 setup_composite( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *parent, *entry, *credentials_parent, *label;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *parent, *label;
 
 	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	parent = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	object = gtk_builder_get_object( builder, "dnb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( parent ), "dn-dname" );
+	object = gtk_builder_get_object( builder, "dnb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	/* dossier name */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), bin );
-	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label1" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	setup_dbms_provider( bin );
 
-	credentials_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dbms-credentials" );
-	g_return_if_fail( credentials_parent && GTK_IS_CONTAINER( credentials_parent ));
+	/* administrative credentials */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dbms-credentials" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dbms_credentials = ofa_dbms_root_bin_new();
-	gtk_container_add( GTK_CONTAINER( credentials_parent ), GTK_WIDGET( priv->dbms_credentials ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dbms_credentials ));
+	my_utils_size_group_add_size_group(
+			priv->group0, ofa_dbms_root_bin_get_size_group( priv->dbms_credentials, 0 ));
 	g_signal_connect(
 			priv->dbms_credentials, "ofa-changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void
@@ -253,7 +271,7 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 
 	priv = bin->priv;
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-provider" );
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-provider-combo" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 	priv->dbms_combo = combo;
 
@@ -285,57 +303,41 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), bin );
 
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label2" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-provider-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
 	/* take a pointer on the parent container of the DBMS widget before
 	 *  selecting the default */
-	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-connect-infos" );
+	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-connect-infos" );
 	g_return_if_fail( priv->connect_infos_parent && GTK_IS_CONTAINER( priv->connect_infos_parent ));
 
-	/* doesn't try to set a default selection before giving a chance
-	 * to set the size group */
-	/*gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );*/
+	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }
 
 /**
- * ofa_dossier_new_bin_set_size_group:
+ * ofa_dossier_new_bin_get_size_group:
  * @bin: this #ofaDossierNewBin instance.
- * @group: a #GtkSizeGroup to get fields horizontally aligned.
+ * @column: the desire column.
  *
- * This function horizontally aligns controls on the specified @group.
- * It is expected to be called once, right after the creation of the
- * composite widget.
- * The reference to the #GtkSizeGroup may be released by the caller on
- * return.
+ * Returns: the #GtkSizeGroup which handles the desired @column.
  */
-void
-ofa_dossier_new_bin_set_size_group( ofaDossierNewBin *bin, GtkSizeGroup *group )
+GtkSizeGroup *
+ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *label;
 
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-	g_return_if_fail( group && GTK_IS_SIZE_GROUP( group ));
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
 	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label1" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( group, label );
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label2" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( group, label );
-
-		label = ofa_dbms_root_bin_get_longest_label( priv->dbms_credentials );
-		gtk_size_group_add_widget( group, label );
-
-		priv->group = group;
+		if( column == 0 ){
+			return( priv->group0 );
+		}
 	}
+
+	g_return_val_if_reached( NULL );
 }
 
 /**
@@ -364,27 +366,6 @@ ofa_dossier_new_bin_set_frame( ofaDossierNewBin *bin, gboolean visible )
 		gtk_label_set_markup( GTK_LABEL( label ), visible ? _( " Dossier properties " ) : "" );
 
 		gtk_widget_show_all( GTK_WIDGET( bin ));
-	}
-}
-
-/**
- * ofa_dossier_new_bin_set_default_provider:
- * @bin: this #ofaDossierNewBin instance.
- *
- * Setup the first provider of the list as the default.
- */
-void
-ofa_dossier_new_bin_set_default_provider( ofaDossierNewBin *bin )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->dbms_combo ), 0 );
 	}
 }
 
@@ -467,12 +448,11 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 
 			if( priv->prov_module ){
 				/* let the DBMS initialize its own part */
-				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module, priv->group );
-				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), priv->connect_infos );
-
 				priv->prov_handler =
 						g_signal_connect( priv->prov_module,
 								"dbms-changed" , G_CALLBACK( on_connect_infos_changed ), self );
+				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module, priv->group0 );
+				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), priv->connect_infos );
 
 			} else {
 				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->prov_name );

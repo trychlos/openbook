@@ -81,6 +81,8 @@ GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container,
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );
 GtkWidget    *my_utils_container_attach_from_window   ( GtkContainer *container, GtkWindow *window, const gchar *widget );
 
+void          my_utils_size_group_add_size_group      ( GtkSizeGroup *target, GtkSizeGroup *source );
+
 GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
 void          my_utils_widget_set_editable            ( GObject *widget, gboolean editable );
 void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );

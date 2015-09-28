@@ -235,7 +235,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierNewPrivate *priv;
 	GtkWindow *toplevel;
-	GtkSizeGroup *group;
+	GtkSizeGroup *group0, *group1;
 	GtkWidget *parent, *toggle, *label;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
@@ -250,16 +250,12 @@ v_init_dialog( myDialog *dialog )
 	priv->new_bin = ofa_dossier_new_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	/* define the size group */
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	ofa_dossier_new_bin_set_size_group( priv->new_bin, group );
-	g_object_unref( group );
+	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	my_utils_size_group_add_size_group(
+			group0, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
+	g_object_unref( group0 );
 	/* display the frame */
 	ofa_dossier_new_bin_set_frame( priv->new_bin, TRUE );
-	/* there is no case where provider name may be set here
-	if( my_strlen( priv->prov_name )){
-		ofa_dossier_new_bin_set_provider( priv->new_bin, priv->prov_name );
-	}*/
-	ofa_dossier_new_bin_set_default_provider( priv->new_bin );
 
 	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
@@ -267,6 +263,10 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->admin_credentials = ofa_admin_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_credentials ));
+	group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	my_utils_size_group_add_size_group(
+			group1, ofa_admin_credentials_bin_get_size_group( priv->admin_credentials, 0 ));
+	g_object_unref( group1 );
 
 	g_signal_connect( priv->admin_credentials,
 			"ofa-changed", G_CALLBACK( on_admin_credentials_changed ), dialog );

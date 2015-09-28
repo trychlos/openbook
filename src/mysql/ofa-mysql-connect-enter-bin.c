@@ -80,6 +80,8 @@ ofa_mysql_connect_enter_bin_new( ofaIDbms *instance, GtkSizeGroup *group )
 
 	g_debug( "%s: widget=%p (%s)", thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ));
 
+	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
+
 	return( widget );
 }
 

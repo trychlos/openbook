@@ -201,9 +201,9 @@ v_init_dialog( myDialog *dialog )
 	priv->new_bin = ofa_dossier_new_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	ofa_dossier_new_bin_set_size_group( priv->new_bin, group );
+	my_utils_size_group_add_size_group(
+			group, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
 	g_object_unref( group );
-	ofa_dossier_new_bin_set_default_provider( priv->new_bin );
 
 	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 

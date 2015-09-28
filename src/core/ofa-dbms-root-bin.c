@@ -109,7 +109,7 @@ dbms_root_bin_dispose( GObject *instance )
 
 		/* unref object members here */
 		if( priv->group0 ){
-			g_object_unref( priv->group0 );
+			g_clear_object( &priv->group0 );
 		}
 	}
 
@@ -227,8 +227,12 @@ setup_composite( ofaDBMSRootBin *bin )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-message" );
+	my_utils_widget_set_style( label, "labelinfo" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->msg_label = label;
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**

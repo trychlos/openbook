@@ -74,8 +74,8 @@ GType             ofa_dossier_new_bin_get_type            ( void ) G_GNUC_CONST;
 
 ofaDossierNewBin *ofa_dossier_new_bin_new                 ( void );
 
-void              ofa_dossier_new_bin_set_size_group      ( ofaDossierNewBin *bin,
-																	GtkSizeGroup *group );
+GtkSizeGroup     *ofa_dossier_new_bin_get_size_group      ( const ofaDossierNewBin *bin,
+																	guint column );
 
 void              ofa_dossier_new_bin_set_frame           ( ofaDossierNewBin *bin,
 																	gboolean visible );

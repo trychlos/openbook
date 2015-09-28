@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkWindow" id="DossierNewBin">
+  <object class="GtkWindow" id="dnb-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid" id="top">
@@ -24,7 +24,7 @@
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="dn-label1">
+                  <object class="GtkLabel" id="dnb-dossier-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Dossier _name :</property>
@@ -37,7 +37,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="dn-dname">
+                  <object class="GtkEntry" id="dnb-dossier-entry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </object>
@@ -47,7 +47,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="dn-label2">
+                  <object class="GtkLabel" id="dnb-provider-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">DBMS _provider :</property>
@@ -60,7 +60,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="dn-provider">
+                  <object class="GtkComboBox" id="dnb-provider-combo">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
@@ -85,7 +85,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="dn-connect-infos">
+          <object class="GtkBox" id="dnb-connect-infos">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -99,7 +99,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="dn-dbms-credentials">
+          <object class="GtkBox" id="dnb-dbms-credentials">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -114,5 +114,11 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="dnb-col0-hsize">
+    <widgets>
+      <widget name="dnb-dossier-label"/>
+      <widget name="dnb-provider-label"/>
+    </widgets>
   </object>
 </interface>

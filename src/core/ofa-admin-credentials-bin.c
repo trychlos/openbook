@@ -105,7 +105,7 @@ admin_credentials_bin_dispose( GObject *instance )
 
 		/* unref object members here */
 		if( priv->group0 ){
-			g_object_unref( priv->group0 );
+			g_clear_object( &priv->group0 );
 		}
 	}
 
@@ -346,7 +346,7 @@ ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **e
 		}
 	}
 
-	g_return_val_if_reached( FALSE );
+	return( is_valid );
 }
 
 static gboolean
