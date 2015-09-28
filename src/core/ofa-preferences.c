@@ -492,14 +492,17 @@ init_export_page( ofaPreferences *self, GtkContainer *toplevel )
 	ofaFileFormat *settings;
 
 	priv = self->priv;
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	target = my_utils_container_get_child_by_name( toplevel, "export-parent" );
+	target = my_utils_container_get_child_by_name( toplevel, "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
 	priv->export_settings = ofa_file_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
+	my_utils_size_group_add_size_group(
+			group, ofa_file_format_bin_get_size_group( priv->export_settings, 0 ));
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( toplevel, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
@@ -508,24 +511,9 @@ init_export_page( ofaPreferences *self, GtkContainer *toplevel )
 	}
 	g_free( str );
 
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-
-	label = my_utils_container_get_child_by_name( toplevel, "label1x" );
-	gtk_size_group_add_widget( group, label );
-
-	label = my_utils_container_get_child_by_name( toplevel, "label2x" );
-	gtk_size_group_add_widget( group, label );
-
-	label = my_utils_container_get_child_by_name( toplevel, "label3x" );
-	gtk_size_group_add_widget( group, label );
-
-	label = my_utils_container_get_child_by_name( toplevel, "label4x" );
-	gtk_size_group_add_widget( group, label );
-
-	label = my_utils_container_get_child_by_name( toplevel, "p5-field-label" );
-	gtk_size_group_add_widget( group, label );
-
 	label = my_utils_container_get_child_by_name( toplevel, "p52-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p5_chooser ));
 	gtk_size_group_add_widget( group, label );
 
 	g_object_unref( group );

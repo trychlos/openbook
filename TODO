@@ -477,10 +477,11 @@
                   > via a is_valid() method (todo #512)
                   > with a ofa-changed signal
                 - review mnemonic activation (todo #823)
+                - manage an horizontal size group
                 src/core/ofa-admin-credentials-bin.ui       OK
                 src/core/ofa-dbms-root-bin.ui               OK
                 src/core/ofa-dossier-delete-prefs-bin.ui    OK
-                src/core/ofa-file-format-bin.ui
+                src/core/ofa-file-format-bin.ui             OK
                 src/core/ofa-preferences.ui
                 src/mysql/ofa-mysql-connect-display-bin.ui
                 src/mysql/ofa-mysql-connect-enter-bin.ui

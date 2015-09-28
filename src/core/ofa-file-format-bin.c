@@ -59,6 +59,8 @@ struct _ofaFileFormatBinPrivate {
 	GtkWidget      *dispo_frame;
 	GtkWidget      *headers_btn;
 	GtkWidget      *headers_count;
+	GtkSizeGroup   *group0;
+	GtkSizeGroup   *group1;
 
 	/* runtime data
 	 */
@@ -89,13 +91,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_window_xml       = PKGUIDIR "/ofa-file-format-bin.ui";
-static const gchar *st_window_id        = "FileFormatBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-file-format-bin.ui";
 
 G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
 
-static void     load_dialog( ofaFileFormatBin *bin );
-static void     setup_bin( ofaFileFormatBin *bin );
+static void     setup_composite( ofaFileFormatBin *bin );
 static void     init_file_format( ofaFileFormatBin *self );
 static void     on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self );
 static void     init_encoding( ofaFileFormatBin *self );
@@ -109,7 +109,7 @@ static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, o
 static void     init_headers( ofaFileFormatBin *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
 static void     on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self );
-static gboolean is_validable( ofaFileFormatBin *self );
+static gboolean is_validable( ofaFileFormatBin *self, gchar **error_message );
 static gint     get_file_format( ofaFileFormatBin *self );
 static gchar   *get_charmap( ofaFileFormatBin *self );
 static gboolean do_apply( ofaFileFormatBin *self );
@@ -145,6 +145,12 @@ file_format_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( priv->group0 ){
+			g_clear_object( &priv->group0 );
+		}
+		if( priv->group1 ){
+			g_clear_object( &priv->group1 );
+		}
 
 		g_clear_object( &priv->settings );
 	}
@@ -190,7 +196,7 @@ ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_FILE_FORMAT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -204,18 +210,22 @@ ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 
 /**
  * ofa_file_format_bin_new:
+ * @format: a #ofaFileFormat instance, usually read from settings.
+ *
+ * Returns: a new #ofaFileFormatBin instance.
  */
 ofaFileFormatBin *
-ofa_file_format_bin_new( ofaFileFormat *settings )
+ofa_file_format_bin_new( ofaFileFormat *format )
 {
 	ofaFileFormatBin *self;
 
+	g_return_val_if_fail( format && OFA_IS_FILE_FORMAT( format ), NULL );
+
 	self = g_object_new( OFA_TYPE_FILE_FORMAT_BIN, NULL );
 
-	self->priv->settings = g_object_ref( settings );
+	self->priv->settings = g_object_ref( format );
 
-	load_dialog( self );
-	setup_bin( self );
+	setup_composite( self );
 
 	return( self );
 }
@@ -223,22 +233,29 @@ ofa_file_format_bin_new( ofaFileFormat *settings )
 /*
  */
 static void
-load_dialog( ofaFileFormatBin *bin )
-{
-	GtkWidget *widget;
-
-	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_window_xml, st_window_id, "top" );
-	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
-}
-
-static void
-setup_bin( ofaFileFormatBin *bin )
+setup_composite( ofaFileFormatBin *bin )
 {
 	ofaFileFormatBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
 	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "ffb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "ffb-col1-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group1 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "ffb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
 	priv->settings_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "settings-frame" );
 	priv->dispo_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dispo-frame" );
@@ -253,6 +270,8 @@ setup_bin( ofaFileFormatBin *bin )
 	   precomputed widgets */
 	init_file_format( bin );
 
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
@@ -266,11 +285,16 @@ init_file_format( ofaFileFormatBin *self )
 	gint i, idx;
 	ofaFFtype fmt;
 	const gchar *cstr;
+	GtkWidget *label;
 
 	priv = self->priv;
 
 	priv->format_combo =
 			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-export-format" );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-format-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->format_combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			EXP_N_COLUMNS,
@@ -336,7 +360,7 @@ on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self )
 	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFTYPE_CSV );
 	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_FFTYPE_OTHER );
 
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -356,7 +380,7 @@ init_encoding( ofaFileFormatBin *self )
 	priv->encoding_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
 	g_return_if_fail( priv->encoding_combo && GTK_IS_COMBO_BOX( priv->encoding_combo ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label2x" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-encoding-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->encoding_combo );
 
@@ -402,7 +426,7 @@ init_encoding( ofaFileFormatBin *self )
 static void
 on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -418,7 +442,7 @@ init_date_format( ofaFileFormatBin *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-parent-date" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label3x" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-date-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->date_combo ));
 
@@ -431,7 +455,7 @@ init_date_format( ofaFileFormatBin *self )
 static void
 on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -449,7 +473,7 @@ init_decimal_dot( ofaFileFormatBin *self )
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->decimal_combo ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-decimal-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->decimal_combo ));
 
@@ -463,7 +487,7 @@ init_decimal_dot( ofaFileFormatBin *self )
 static void
 on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -476,7 +500,6 @@ init_field_separator( ofaFileFormatBin *self )
 	priv = self->priv;
 
 	priv->field_combo = my_field_combo_new();
-	priv->field_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
 	priv->field_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-parent" );
 	g_return_if_fail( priv->field_parent && GTK_IS_CONTAINER( priv->field_parent ));
 
@@ -485,6 +508,7 @@ init_field_separator( ofaFileFormatBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->field_combo ));
+	priv->field_label = label;
 
 	sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
 	/*g_debug( "init_field_dot: sep='%s'", sep );*/
@@ -497,7 +521,7 @@ init_field_separator( ofaFileFormatBin *self )
 static void
 on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -523,7 +547,7 @@ init_headers( ofaFileFormatBin *self )
 				G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x1" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-label4x1" );
 		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 		gtk_widget_destroy( widget );
 
@@ -532,7 +556,7 @@ init_headers( ofaFileFormatBin *self )
 		gtk_widget_destroy( widget );
 
 	} else {
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label1x1" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-label1x1" );
 		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 		gtk_widget_destroy( widget );
 
@@ -560,50 +584,87 @@ init_headers( ofaFileFormatBin *self )
 static void
 on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
 on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_file_format_bin_is_validable:
+ * ofa_file_format_bin_get_size_group:
+ * @bin: this #ofaFileFormatBin instance.
+ * @column: the desired column number.
+ *
+ * Returns: the #GtkSizeGroup which managed the @column.
+ */
+GtkSizeGroup *
+ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
+{
+	ofaFileFormatBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), FALSE );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+		if( column == 0 ){
+			return( priv->group0 );
+		}
+		if( column == 1 ){
+			return( priv->group1 );
+		}
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofa_file_format_bin_is_valid:
+ * @bin: this #ofaFileFormatBin instance.
+ * @error_message: [allow-none]: pointer to an error message.
+ *  If set, then this is a newly allocated string which should be
+ *  g_free() by the caller.
  *
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_file_format_bin_is_validable( ofaFileFormatBin *settings )
+ofa_file_format_bin_is_valid( ofaFileFormatBin *bin, gchar **error_message )
 {
 	ofaFileFormatBinPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_BIN( settings ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), FALSE );
 
-	priv = settings->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		return( is_validable( settings ));
+		return( is_validable( bin, error_message ));
 	}
 
 	g_return_val_if_reached( FALSE );
-	return( FALSE );
 }
 
 static gboolean
-is_validable( ofaFileFormatBin *self )
+is_validable( ofaFileFormatBin *self, gchar **error_message )
 {
 	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iformat, ivalue;
 
 	priv = self->priv;
+	if( error_message ){
+		*error_message = NULL;
+	}
 
 	/* import/export format */
 	iformat = get_file_format( self );
 	if( iformat < 1 ){
+		if( error_message ){
+			*error_message = g_strdup( _( "Invalid or unknown file format" ));
+		}
 		return( FALSE );
 	}
 	/* doesn't check configuration when the import/export is 'other' format */
@@ -615,6 +676,9 @@ is_validable( ofaFileFormatBin *self )
 	charmap = get_charmap( self );
 	if( !my_strlen( charmap )){
 		g_free( charmap );
+		if( error_message ){
+			*error_message = g_strdup( _( "Invalid or unknown characters encoding type" ));
+		}
 		return( FALSE );
 	}
 	g_free( charmap );
@@ -622,6 +686,9 @@ is_validable( ofaFileFormatBin *self )
 	/* date format */
 	ivalue = my_date_combo_get_selected( priv->date_combo );
 	if( ivalue < MY_DATE_FIRST ){
+		if( error_message ){
+			*error_message = g_strdup( _( "Invalid or unknown date format" ));
+		}
 		return( FALSE );
 	}
 
@@ -629,6 +696,9 @@ is_validable( ofaFileFormatBin *self )
 	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
 	if( !my_strlen( decimal_sep )){
 		g_free( decimal_sep );
+		if( error_message ){
+			*error_message = g_strdup( _( "Invalid or unknown decimal separator" ));
+		}
 		return( FALSE );
 	}
 	g_free( decimal_sep );
@@ -637,6 +707,9 @@ is_validable( ofaFileFormatBin *self )
 	field_sep = my_field_combo_get_selected( priv->field_combo );
 	if( !my_strlen( field_sep )){
 		g_free( field_sep );
+		if( error_message ){
+			*error_message = g_strdup( _( "Invalid or unknown field separator" ));
+		}
 		return( FALSE );
 	}
 	g_free( field_sep );
@@ -703,7 +776,7 @@ ofa_file_format_bin_apply( ofaFileFormatBin *settings )
 
 	if( !priv->dispose_has_run ){
 
-		if( !is_validable( settings )){
+		if( !is_validable( settings, NULL )){
 			return( FALSE );
 		}
 

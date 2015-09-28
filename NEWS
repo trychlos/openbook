@@ -47,6 +47,7 @@
    - my_utils_container_attach_from_ui(): new function.
    - my_utils_container_attach_from_window(): new function.
    - my_utils_container_get_buildable_by_name: removed function.
+   - my_utils_size_group_add_size_group(): new function.
    - my_utils_widget_set_editable(): new function.
    - my_utils_widget_set_style(): new function.
    - my_utils_widget_set_margin(): new function.

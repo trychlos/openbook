@@ -98,6 +98,7 @@ struct _ofaImportAssistantPrivate {
 	 */
 	ofaFileFormat    *p4_import_settings;
 	ofaFileFormatBin *p4_settings_prefs;
+	GtkWidget        *p4_message;
 
 	/* p5: confirm
 	 */
@@ -552,7 +553,13 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->p4_settings_prefs ));
 
 	g_signal_connect(
-			G_OBJECT( priv->p4_settings_prefs ), "changed", G_CALLBACK( p4_on_settings_changed ), self );
+			G_OBJECT( priv->p4_settings_prefs ),
+			"ofa-changed", G_CALLBACK( p4_on_settings_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->p4_message = widget;
+	my_utils_widget_set_style( widget, "labelerror" );
 }
 
 static void
@@ -572,9 +579,13 @@ p4_check_for_complete( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
 	gboolean ok;
+	gchar *message;
 
 	priv = self->priv;
-	ok = ofa_file_format_bin_is_validable( priv->p4_settings_prefs );
+	ok = ofa_file_format_bin_is_valid( priv->p4_settings_prefs, &message );
+
+	gtk_label_set_text( GTK_LABEL( priv->p4_message ), my_strlen( message ) ? message : "" );
+	g_free( message );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }

@@ -33,6 +33,14 @@
  * A convenience class which let the user manages its own export
  * and import settings. It is to be used as a #GtkBin in user
  * preferences.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
+ * - do not manage its own settings.
  */
 
 #include "api/ofa-file-format.h"
@@ -63,13 +71,17 @@ typedef struct {
 }
 	ofaFileFormatBinClass;
 
-GType             ofa_file_format_bin_get_type    ( void ) G_GNUC_CONST;
+GType             ofa_file_format_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaFileFormatBin *ofa_file_format_bin_new         ( ofaFileFormat *settings );
+ofaFileFormatBin *ofa_file_format_bin_new           ( ofaFileFormat *format );
 
-gboolean          ofa_file_format_bin_is_validable( ofaFileFormatBin *bin );
+GtkSizeGroup     *ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin,
+																guint col_number );
 
-gboolean          ofa_file_format_bin_apply       ( ofaFileFormatBin *bin );
+gboolean          ofa_file_format_bin_is_valid      ( ofaFileFormatBin *bin,
+																gchar **error_message );
+
+gboolean          ofa_file_format_bin_apply         ( ofaFileFormatBin *bin );
 
 G_END_DECLS
 

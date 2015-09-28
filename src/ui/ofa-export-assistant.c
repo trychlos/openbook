@@ -73,6 +73,7 @@ struct _ofaExportAssistantPrivate {
 	 */
 	ofaFileFormat    *p3_export_settings;
 	ofaFileFormatBin *p3_settings_prefs;
+	GtkWidget        *p3_message;
 
 	/* p4: output file
 	 */
@@ -168,8 +169,10 @@ static void      p2_display( ofaExportAssistant *self, gint page_num, GtkWidget 
 static gboolean  p2_is_complete( ofaExportAssistant *self );
 static void      p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p3_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void      p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void      p3_on_settings_changed( ofaFileFormatBin *bin, ofaExportAssistant *self );
 static void      p3_on_new_profile_clicked( GtkButton *button, ofaExportAssistant *self );
+static void      p3_check_for_complete( ofaExportAssistant *self );
 static void      p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
@@ -196,7 +199,7 @@ static const ofsAssistant st_pages_cb [] = {
 				( myAssistantCb ) p2_do_forward },
 		{ ASSIST_PAGE_FORMAT,
 				( myAssistantCb ) p3_do_init,
-				( myAssistantCb ) p3_display,
+				( myAssistantCb ) p3_do_display,
 				( myAssistantCb ) p3_do_forward },
 		{ ASSIST_PAGE_OUTPUT,
 				( myAssistantCb ) p4_do_init,
@@ -424,6 +427,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
+	priv->current_page_w = page;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-settings-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
@@ -432,21 +436,52 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_settings_prefs = ofa_file_format_bin_new( priv->p3_export_settings );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->p3_settings_prefs ));
 
+	g_signal_connect( priv->p3_settings_prefs, "ofa-changed", G_CALLBACK( p3_on_settings_changed ), self );
+
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( p3_on_new_profile_clicked ), self );
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->p3_message = widget;
+	my_utils_widget_set_style( widget, "labelerror" );
+
+	p3_check_for_complete( self );
 }
 
 static void
-p3_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
+p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, TRUE );
+	p3_check_for_complete( self );
+}
+
+static void
+p3_on_settings_changed( ofaFileFormatBin *bin, ofaExportAssistant *self )
+{
+	p3_check_for_complete( self );
 }
 
 static void
 p3_on_new_profile_clicked( GtkButton *button, ofaExportAssistant *self )
 {
 	g_warning( "ofa_export_assistant_p3_on_new_profile_clicked: TO BE MANAGED" );
+}
+
+static void
+p3_check_for_complete( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	gboolean ok;
+	gchar *message;
+
+	priv = self->priv;
+	ok = ofa_file_format_bin_is_valid( priv->p3_settings_prefs, &message );
+
+	gtk_label_set_text( GTK_LABEL( priv->p3_message ), my_strlen( message ) ? message : "" );
+	g_free( message );
+
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }
 
 static void

@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkWindow" id="FileFormatBin">
+  <object class="GtkWindow" id="ffb-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid" id="top">
@@ -28,7 +28,7 @@
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="label3x">
+                  <object class="GtkLabel" id="ffb-date-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Date format :</property>
@@ -41,7 +41,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label4x">
+                  <object class="GtkLabel" id="ffb-decimal-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">De_cimal dot :</property>
@@ -54,7 +54,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label2x">
+                  <object class="GtkLabel" id="ffb-encoding-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Character _encoding :</property>
@@ -181,7 +181,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label1x1">
+                  <object class="GtkLabel" id="ffb-label1x1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
@@ -191,7 +191,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label4x1">
+                  <object class="GtkLabel" id="ffb-label4x1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Headers count :</property>
@@ -260,9 +260,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label1x">
+                  <object class="GtkLabel" id="ffb-format-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">_File format :</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">1</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -288,16 +291,24 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="ExportSettingsSizeGroup">
+  <object class="GtkSizeGroup" id="ffb-col0-hsize">
     <widgets>
-      <widget name="label1x"/>
-      <widget name="label2x"/>
-      <widget name="label3x"/>
-      <widget name="label4x"/>
+      <widget name="ffb-format-label"/>
+      <widget name="ffb-encoding-label"/>
+      <widget name="ffb-date-label"/>
+      <widget name="ffb-decimal-label"/>
       <widget name="p5-field-label"/>
-      <widget name="label1x1"/>
-      <widget name="label4x1"/>
+      <widget name="ffb-label1x1"/>
+      <widget name="ffb-label4x1"/>
     </widgets>
   </object>
-  <object class="GtkSizeGroup" id="comboSizeGroup"/>
+  <object class="GtkSizeGroup" id="ffb-col1-hsize">
+    <widgets>
+      <widget name="p5-encoding"/>
+      <widget name="p5-parent-date"/>
+      <widget name="p5-decimal-parent"/>
+      <widget name="p5-field-parent"/>
+      <widget name="p1-export-format"/>
+    </widgets>
+  </object>
 </interface>
