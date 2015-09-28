@@ -568,6 +568,7 @@ init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 	priv = self->priv;
 
 	page = ofa_ipreferences_do_init( instance, GTK_NOTEBOOK( priv->book ));
+	my_utils_widget_set_margin( page, 4, 4, 4, 4 );
 
 	splug = g_new0( sPagePlugin, 1 );
 	splug->object = instance;
