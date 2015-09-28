@@ -219,7 +219,16 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 }
 
 /*
- * the provided 'page' is the toplevel widget of the asistant's page
+ * the dialog is composed with:
+ *
+ * - DossierNewBin composite widget
+ *   which includes dossier name, provider selection, connection
+ *   informations and dbms root credentials
+ *
+ * - AdminCredentialsBin composite widget
+ *   which includes administrative credentials
+ *
+ * - toggle buttons for actions on opening
  */
 static void
 v_init_dialog( myDialog *dialog )
@@ -235,18 +244,24 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->new_bin = ofa_dossier_new_bin_new();
-	ofa_dossier_new_bin_attach_to( priv->new_bin, GTK_CONTAINER( parent ), group );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
+	/* define the size group */
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	ofa_dossier_new_bin_set_size_group( priv->new_bin, group );
 	g_object_unref( group );
+	/* display the frame */
 	ofa_dossier_new_bin_set_frame( priv->new_bin, TRUE );
+	/* there is no case where provider name may be set here
 	if( my_strlen( priv->prov_name )){
 		ofa_dossier_new_bin_set_provider( priv->new_bin, priv->prov_name );
-	}
+	}*/
+	ofa_dossier_new_bin_set_default_provider( priv->new_bin );
 
-	g_signal_connect( priv->new_bin, "changed", G_CALLBACK( on_new_bin_changed ), dialog );
+	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "admin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -354,18 +369,13 @@ check_for_enable_dlg( ofaDossierNew *self )
 	gchar *message;
 
 	priv = self->priv;
-	set_message( self, "" );
-	enabled = FALSE;
+	message = NULL;
 
-	if( ofa_dossier_new_bin_is_valid( priv->new_bin )){
+	enabled = ofa_dossier_new_bin_is_valid( priv->new_bin, &message ) &&
+		ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message );
 
-		if( ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message )){
-			enabled = TRUE;
-		} else {
-			set_message( self, message );
-			g_free( message );
-		}
-	}
+	set_message( self, message );
+	g_free( message );
 
 	if( priv->ok_btn ){
 		gtk_widget_set_sensitive( priv->ok_btn, enabled );
@@ -503,6 +513,6 @@ set_message( ofaDossierNew *self, const gchar *message )
 	priv = self->priv;
 
 	if( priv->msg_label ){
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), my_strlen( message ) ? message : "" );
 	}
 }

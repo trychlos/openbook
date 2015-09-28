@@ -83,14 +83,13 @@ static const gchar *st_bin_id           = "DossierNewBin";
 
 G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
+static void     setup_composite( ofaDossierNewBin *bin );
 static void     setup_dbms_provider( ofaDossierNewBin *bin );
-static void     setup_dialog( ofaDossierNewBin *bin );
 static void     on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
 static void     on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *self );
 static void     on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self );
-static void     check_for_enable_dlg( ofaDossierNewBin *bin );
-static void     set_message( const ofaDossierNewBin *bin, const gchar *msg );
+static void     changed_composite( ofaDossierNewBin *bin );
 
 static void
 dossier_new_bin_finalize( GObject *instance )
@@ -180,7 +179,7 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_DOSSIER_NEW_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -202,45 +201,51 @@ ofa_dossier_new_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
 
+	setup_composite( bin );
+
 	return( bin );
 }
 
-/**
- * ofa_dossier_new_bin_attach_to:
+/*
+ * setup_composite:
+ * At initialization time, only setup the providers combo box
+ * because the other parts of this windows depend of the selected
+ * provider
  */
-void
-ofa_dossier_new_bin_attach_to( ofaDossierNewBin *bin, GtkContainer *parent, GtkSizeGroup *group )
+static void
+setup_composite( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *widget;
-
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	g_return_if_fail( !group || GTK_IS_SIZE_GROUP( group ));
+	GtkWidget *parent, *entry, *credentials_parent, *label;
 
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run ){
+	parent = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-		widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( parent ), "dn-dname" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), bin );
+	/* setup the mnemonic widget on the label */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label1" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-		gtk_container_add( parent, GTK_WIDGET( bin ));
+	setup_dbms_provider( bin );
 
-		priv->group = group;
-
-		setup_dbms_provider( bin );
-		setup_dialog( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
+	credentials_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dbms-credentials" );
+	g_return_if_fail( credentials_parent && GTK_IS_CONTAINER( credentials_parent ));
+	priv->dbms_credentials = ofa_dbms_root_bin_new();
+	gtk_container_add( GTK_CONTAINER( credentials_parent ), GTK_WIDGET( priv->dbms_credentials ));
+	g_signal_connect(
+			priv->dbms_credentials, "ofa-changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
 }
 
 static void
 setup_dbms_provider( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *combo;
+	GtkWidget *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
@@ -279,48 +284,58 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), bin );
 
+	/* setup the mnemonic widget on the label */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label2" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
+
 	/* take a pointer on the parent container of the DBMS widget before
 	 *  selecting the default */
 	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-connect-infos" );
 	g_return_if_fail( priv->connect_infos_parent && GTK_IS_CONTAINER( priv->connect_infos_parent ));
 
-	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
+	/* doesn't try to set a default selection before giving a chance
+	 * to set the size group */
+	/*gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );*/
 }
 
-static void
-setup_dialog( ofaDossierNewBin *bin )
+/**
+ * ofa_dossier_new_bin_set_size_group:
+ * @bin: this #ofaDossierNewBin instance.
+ * @group: a #GtkSizeGroup to get fields horizontally aligned.
+ *
+ * This function horizontally aligns controls on the specified @group.
+ * It is expected to be called once, right after the creation of the
+ * composite widget.
+ * The reference to the #GtkSizeGroup may be released by the caller on
+ * return.
+ */
+void
+ofa_dossier_new_bin_set_size_group( ofaDossierNewBin *bin, GtkSizeGroup *group )
 {
 	ofaDossierNewBinPrivate *priv;
-	GtkWidget *label, *entry, *parent;
+	GtkWidget *label;
 
-	priv =bin->priv;
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
+	g_return_if_fail( group && GTK_IS_SIZE_GROUP( group ));
 
-	if( priv->group ){
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label1" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( priv->group, label );
+		gtk_size_group_add_widget( group, label );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label2" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_size_group_add_widget( priv->group, label );
+		gtk_size_group_add_widget( group, label );
+
+		label = ofa_dbms_root_bin_get_longest_label( priv->dbms_credentials );
+		gtk_size_group_add_widget( group, label );
+
+		priv->group = group;
 	}
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dname" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), bin );
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dbms-credentials" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dbms_credentials = ofa_dbms_root_bin_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dbms_credentials ));
-	label = ofa_dbms_root_bin_get_longest_label( priv->dbms_credentials );
-	gtk_size_group_add_widget( priv->group, label );
-
-	g_signal_connect(
-			priv->dbms_credentials, "ofa-changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
-
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-message" );
-	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 }
 
 /**
@@ -346,9 +361,30 @@ ofa_dossier_new_bin_set_frame( ofaDossierNewBin *bin, gboolean visible )
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-frame-label" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_label_set_markup( GTK_LABEL( label ), visible ? _( "<b> Dossier properties </b>" ) : "" );
+		gtk_label_set_markup( GTK_LABEL( label ), visible ? _( " Dossier properties " ) : "" );
 
 		gtk_widget_show_all( GTK_WIDGET( bin ));
+	}
+}
+
+/**
+ * ofa_dossier_new_bin_set_default_provider:
+ * @bin: this #ofaDossierNewBin instance.
+ *
+ * Setup the first provider of the list as the default.
+ */
+void
+ofa_dossier_new_bin_set_default_provider( ofaDossierNewBin *bin )
+{
+	ofaDossierNewBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->dbms_combo ), 0 );
 	}
 }
 
@@ -363,10 +399,11 @@ ofa_dossier_new_bin_set_provider( ofaDossierNewBin *bin, const gchar *provider )
 	ofaDossierNewBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
+	g_return_if_fail( my_strlen( provider ));
 
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run && my_strlen( provider )){
+	if( !priv->dispose_has_run ){
 
 		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->dbms_combo ), provider );
 	}
@@ -382,7 +419,7 @@ on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin )
 	g_free( priv->dname );
 	priv->dname = g_strdup( gtk_entry_get_text( GTK_ENTRY( editable )));
 
-	check_for_enable_dlg( bin );
+	changed_composite( bin );
 }
 
 static void
@@ -392,13 +429,12 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 	ofaDossierNewBinPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	GtkWidget *child;
+	GtkWidget *child, *label;
 	gchar *str;
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
 
 	priv = self->priv;
-	set_message( self, "" );
 
 	/* do we have finished with the initialization ? */
 	if( priv->connect_infos_parent ){
@@ -440,12 +476,14 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 
 			} else {
 				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->prov_name );
-				set_message( self, str );
+				label = gtk_label_new( str );
 				g_free( str );
+				gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
+				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), label );
 			}
 		}
 
-		check_for_enable_dlg( self );
+		changed_composite( self );
 	}
 }
 
@@ -466,7 +504,7 @@ on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *sel
 	priv = self->priv;
 	priv->infos = infos;
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 static void
@@ -482,28 +520,30 @@ on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gc
 	g_free( priv->password );
 	priv->password = g_strdup( password );
 
-	check_for_enable_dlg( self );
+	changed_composite( self );
 }
 
 static void
-check_for_enable_dlg( ofaDossierNewBin *bin )
+changed_composite( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 
 	priv = bin->priv;
 
-	g_signal_emit_by_name( bin, "changed", priv->dname, priv->infos, priv->account, priv->password );
+	g_signal_emit_by_name( bin, "ofa-changed", priv->dname, priv->infos, priv->account, priv->password );
 }
 
 /**
  * ofa_dossier_new_bin_is_valid:
+ * @bin: this #ofaDossierNewBin instance.
+ * @error_message: [allow-none]: the error message to be displayed.
  *
  * The bin of dialog is valid if :
  * - the dossier name is set and doesn't exist yet
  * - the connection informations and the DBMS root credentials are valid
  */
 gboolean
-ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
+ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message )
 {
 	ofaDossierNewBinPrivate *priv;
 	gboolean ok, root_ok;
@@ -513,23 +553,20 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 
 	priv = bin->priv;
 	ok = FALSE;
-	set_message( bin, "" );
+	str = NULL;
 
 	if( !priv->dispose_has_run ){
 
 		/* check for dossier name */
 		if( !my_strlen( priv->dname )){
-			set_message( bin, _( "Dossier name is not set" ));
+			str = g_strdup( _( "Dossier name is not set" ));
 
 		} else if( ofa_settings_has_dossier( priv->dname )){
 			str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dname );
-			set_message( bin, str );
-			g_free( str );
 
 		/* check for connection informations */
-		} else if( !ofa_idbms_connect_enter_is_valid( priv->prov_module, priv->connect_infos, &str )){
-			set_message( bin, str );
-			g_free( str );
+		} else {
+			ok = ofa_idbms_connect_enter_is_valid( priv->prov_module, priv->connect_infos, &str );
 		}
 
 		/* check for DBMS root credentials in all cases s that the DBMS
@@ -538,9 +575,15 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 		 * ofa_dbms_root_credential_bin_is_valid() can only be called
 		 * when the dossier has already been registered */
 		root_ok = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
-		set_message( bin, root_ok ? "" : _( "DBMS root credentials are not valid" ));
 		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, root_ok );
+		if( ok && !root_ok ){
+			str = g_strdup( _( "DBMS root credentials are not valid" ));
+		}
 		ok &= root_ok;
+	}
+
+	if( error_message ){
+		*error_message = str;
 	}
 
 	return( ok );
@@ -632,18 +675,5 @@ ofa_dossier_new_bin_get_credentials( const ofaDossierNewBin *bin, gchar **accoun
 
 		*account = g_strdup( priv->account );
 		*password = g_strdup( priv->password );
-	}
-}
-
-static void
-set_message( const ofaDossierNewBin *bin, const gchar *msg )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	priv = bin->priv;
-
-	if( priv->msg_label ){
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg );
-		my_utils_widget_set_style( priv->msg_label, "labelerror" );
 	}
 }

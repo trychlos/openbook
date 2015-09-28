@@ -32,6 +32,14 @@
  *
  * Let the user define a new dossier, selecting the DBMS provider and
  * its connection properties, registering it in the settings.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
+ * - do not manage its own settings.
  */
 
 #include <gtk/gtk.h>
@@ -62,31 +70,33 @@ typedef struct {
 }
 	ofaDossierNewBinClass;
 
-GType             ofa_dossier_new_bin_get_type       ( void ) G_GNUC_CONST;
+GType             ofa_dossier_new_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaDossierNewBin *ofa_dossier_new_bin_new            ( void );
+ofaDossierNewBin *ofa_dossier_new_bin_new                 ( void );
 
-void              ofa_dossier_new_bin_attach_to      ( ofaDossierNewBin *piece,
-																	GtkContainer *parent,
+void              ofa_dossier_new_bin_set_size_group      ( ofaDossierNewBin *bin,
 																	GtkSizeGroup *group );
 
-void              ofa_dossier_new_bin_set_frame      ( ofaDossierNewBin *piece,
+void              ofa_dossier_new_bin_set_frame           ( ofaDossierNewBin *bin,
 																	gboolean visible );
 
-void              ofa_dossier_new_bin_set_provider   ( ofaDossierNewBin *piece,
+void              ofa_dossier_new_bin_set_default_provider( ofaDossierNewBin *bin );
+
+void              ofa_dossier_new_bin_set_provider        ( ofaDossierNewBin *bin,
 																	const gchar *provider );
 
-gboolean          ofa_dossier_new_bin_is_valid       ( const ofaDossierNewBin *piece );
+gboolean          ofa_dossier_new_bin_is_valid            ( const ofaDossierNewBin *bin,
+																	gchar **error_message );
 
-gboolean          ofa_dossier_new_bin_apply          ( const ofaDossierNewBin *piece );
+gboolean          ofa_dossier_new_bin_apply               ( const ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_get_dname      ( const ofaDossierNewBin *piece,
+void              ofa_dossier_new_bin_get_dname           ( const ofaDossierNewBin *bin,
 																	gchar **dname );
 
-void              ofa_dossier_new_bin_get_database   ( const ofaDossierNewBin *piece,
+void              ofa_dossier_new_bin_get_database        ( const ofaDossierNewBin *bin,
 																	gchar **database );
 
-void              ofa_dossier_new_bin_get_credentials( const ofaDossierNewBin *piece,
+void              ofa_dossier_new_bin_get_credentials     ( const ofaDossierNewBin *bin,
 																	gchar **account,
 																	gchar **password );
 

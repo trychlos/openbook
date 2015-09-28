@@ -48,6 +48,7 @@ struct _ofaDossierNewMiniPrivate {
 	 */
 	ofaDossierNewBin *new_bin;
 	GtkWidget        *ok_btn;
+	GtkWidget        *msg_label;
 
 	/* result
 	 */
@@ -67,6 +68,7 @@ static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, 
 static void      check_for_enable_dlg( ofaDossierNewMini *self );
 static gboolean  is_validable( ofaDossierNewMini *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
+static void      set_message( ofaDossierNewMini *self, const gchar *message );
 
 static void
 dossier_new_mini_finalize( GObject *instance )
@@ -186,7 +188,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierNewMiniPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *parent;
+	GtkWidget *parent, *label;
 	GtkSizeGroup *group;
 
 	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
@@ -194,17 +196,24 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->new_bin = ofa_dossier_new_bin_new();
-	ofa_dossier_new_bin_attach_to( priv->new_bin, GTK_CONTAINER( parent ), group );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	ofa_dossier_new_bin_set_size_group( priv->new_bin, group );
 	g_object_unref( group );
+	ofa_dossier_new_bin_set_default_provider( priv->new_bin );
 
-	g_signal_connect( priv->new_bin, "changed", G_CALLBACK( on_new_bin_changed ), dialog );
+	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "err-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	my_utils_widget_set_style( label, "labelerror" );
+	priv->msg_label = label;
 
 	check_for_enable_dlg( OFA_DOSSIER_NEW_MINI( dialog ));
 }
@@ -236,9 +245,11 @@ is_validable( ofaDossierNewMini *self )
 {
 	ofaDossierNewMiniPrivate *priv;
 	gboolean ok;
+	gchar *str;
 
 	priv = self->priv;
-	ok = ofa_dossier_new_bin_is_valid( priv->new_bin );
+	ok = ofa_dossier_new_bin_is_valid( priv->new_bin, &str );
+	set_message( self, str );
 
 	return( ok );
 }
@@ -257,4 +268,16 @@ v_quit_on_ok( myDialog *dialog )
 	}
 
 	return( TRUE );
+}
+
+static void
+set_message( ofaDossierNewMini *self, const gchar *message )
+{
+	ofaDossierNewMiniPrivate *priv;
+
+	priv = self->priv;
+
+	if( priv->msg_label ){
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
+	}
 }
