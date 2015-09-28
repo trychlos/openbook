@@ -44,9 +44,9 @@ struct _ofaDBMSRootBinPrivate {
 
 	/* UI
 	 */
-	GtkSizeGroup *group;
 	GtkWidget    *account_entry;
 	GtkWidget    *password_entry;
+	GtkWidget    *longest;
 	GtkWidget    *msg_label;
 
 	/* runtime data
@@ -188,21 +188,40 @@ setup_composite( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
 	GtkWidget *top_widget, *label;
+	glong long11, long12;
 
 	priv =bin->priv;
 
 	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
 	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
+	/* connect to the 'changed' signal of the entry */
 	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-account" );
 	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
 	g_signal_connect(
 			G_OBJECT( priv->account_entry ), "changed", G_CALLBACK( on_account_changed ), bin );
+	/* setup the mnemonic widget on the label */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label11" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->account_entry );
+	/* compute the longest label */
+	long11 = my_strlen( gtk_label_get_text( GTK_LABEL( label )));
+	priv->longest = label;
 
+	/* connect to the 'changed' signal of the entry */
 	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-password" );
 	g_return_if_fail( priv->password_entry && GTK_IS_ENTRY( priv->password_entry ));
 	g_signal_connect(
 			G_OBJECT( priv->password_entry ), "changed", G_CALLBACK( on_password_changed ), bin );
+	/* setup the mnemonic widget on the label */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label12" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
+	/* compute the longest label */
+	long12 = my_strlen( gtk_label_get_text( GTK_LABEL( label )));
+	if( long12 > long11 ){
+		priv->longest = label;
+	}
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -210,14 +229,14 @@ setup_composite( ofaDBMSRootBin *bin )
 }
 
 /**
- * ofa_dbms_root_bin_get_label:
- * @bin:
+ * ofa_dbms_root_bin_get_longest_label:
+ * @bin: this #ofaDBMSRootBin instance.
  *
- * Returns: a label of the column 0
+ * Returns: the longest label from the column 0
  * (use case: let the container build a #GtkSizeGroup).
  */
 GtkWidget *
-ofa_dbms_root_bin_get_label( const ofaDBMSRootBin *bin )
+ofa_dbms_root_bin_get_longest_label( const ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
 	GtkWidget *label;
@@ -229,7 +248,7 @@ ofa_dbms_root_bin_get_label( const ofaDBMSRootBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dra-label2" );
+		label = priv->longest;
 		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	}
 
@@ -238,7 +257,7 @@ ofa_dbms_root_bin_get_label( const ofaDBMSRootBin *bin )
 
 /**
  * ofa_dbms_root_bin_set_dossier:
- * @bin:
+ * @bin: this #ofaDBMSRootBin instance.
  * @dname: the name of the dossier.
  *
  * When set, this let the composite widget validate the account and the
@@ -303,14 +322,23 @@ changed_composite( ofaDBMSRootBin *self )
 
 /**
  * ofa_dbms_root_bin_is_valid:
- * @bin:
+ * @bin: this #ofaDBMSRootBin instance.
  * @error_message: [allow-none]: set to the error message as a newly
  *  allocated string which should be g_free() by the caller.
  *
- * Returns: %TRUE if the composite widget is valid: both account and
- * password are set. If dossier is set and is defined in the settings,
- * then check that account and password let have a successful connection
- * to the DBMS.
+ * Returns: %TRUE if both account and password are set without actually
+ * validating these credentials againt the DBMS.
+ * If dossier is set and is registered in the settings, then check the
+ * account and password credentials are validated gainst a successful
+ * connection to the DBMS.
+ *
+ * If dossier name has been set, the returns code indicates a valid
+ * connection against the DBMS. In this case, the DBMS status message
+ * is automatically set.
+ *
+ * If dossier name has not been set, the returns code indicates that
+ * both account and password credentials has been filled up by the user.
+ * The DBMS status message has to be set by the caller.
  */
 gboolean
 ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
@@ -329,10 +357,8 @@ ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
 		if( error_message ){
 			*error_message = ok ?
 					NULL :
-					g_strdup( _( "Unable to connect to DB server" ));
+					g_strdup( _( "DBMS root credentials are not valid" ));
 		}
-
-		ofa_dbms_root_bin_set_valid( bin, ok );
 	}
 
 	return( ok );
@@ -348,16 +374,17 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 	priv = bin->priv;
 	ok = FALSE;
 
-	if( my_strlen( priv->dname ) && my_strlen( priv->account )){
+	if( my_strlen( priv->account ) && my_strlen( priv->password )){
+		ok = TRUE;
 
+		/* this only works if the dossier is already registered */
 		if( my_strlen( priv->dname )){
 			dbms = ofa_dbms_new();
 			ok = ofa_dbms_connect(
 							dbms, priv->dname, NULL, priv->account, priv->password, FALSE );
 			g_object_unref( dbms );
 
-		} else {
-			ok = TRUE;
+			ofa_dbms_root_bin_set_valid( bin, ok );
 		}
 	}
 
@@ -366,8 +393,8 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 
 /**
  * ofa_dbms_root_bin_set_valid:
- * @bin:
- * @valid:
+ * @bin: this #ofaDBMSRootBin instance.
+ * @valid: %TRUE if the credentials has been validated, %FALSE else.
  *
  * This let us turn the 'connection ok' message on, which is useful
  * when checking for a connection which is not yet referenced in the
@@ -389,9 +416,9 @@ ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
 
 /**
  * ofa_dbms_root_bin_set_credentials:
- * @bin:
- * @account:
- * @password:
+ * @bin: this #ofaDBMSRootBin instance.
+ * @account: the root account of the DBMS.
+ * @password: the password of the root account.
  */
 void
 ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin, const gchar *account, const gchar *password )

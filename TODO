@@ -478,7 +478,7 @@
                   > with a ofa-changed signal
                 - review mnemonic activation (todo #823)
                 src/core/ofa-admin-credentials-bin.ui       OK
-                src/core/ofa-dbms-root-bin.ui
+                src/core/ofa-dbms-root-bin.ui               OK
                 src/core/ofa-dossier-delete-prefs-bin.ui
                 src/core/ofa-file-format-bin.ui
                 src/core/ofa-preferences.ui

@@ -313,7 +313,7 @@ setup_dialog( ofaDossierNewBin *bin )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dbms_credentials ));
-	label = ofa_dbms_root_bin_get_label( priv->dbms_credentials );
+	label = ofa_dbms_root_bin_get_longest_label( priv->dbms_credentials );
 	gtk_size_group_add_widget( priv->group, label );
 
 	g_signal_connect(
@@ -506,7 +506,7 @@ gboolean
 ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	gboolean ok;
+	gboolean ok, root_ok;
 	gchar *str;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
@@ -530,16 +530,17 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 		} else if( !ofa_idbms_connect_enter_is_valid( priv->prov_module, priv->connect_infos, &str )){
 			set_message( bin, str );
 			g_free( str );
-
-			/* check for DBMS root credentials */
-		} else if( !ofa_idbms_connect_ex(
-				priv->prov_module, priv->infos, priv->account, priv->password )){
-			set_message( bin, _( "DBMS root credentials are not valid" ));
-
-		} else {
-			ofa_dbms_root_bin_set_valid( priv->dbms_credentials, TRUE );
-			ok = TRUE;
 		}
+
+		/* check for DBMS root credentials in all cases s that the DBMS
+		 * status message is erased when credentials are no longer valid
+		 * (and even another error message is displayed)
+		 * ofa_dbms_root_credential_bin_is_valid() can only be called
+		 * when the dossier has already been registered */
+		root_ok = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
+		set_message( bin, root_ok ? "" : _( "DBMS root credentials are not valid" ));
+		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, root_ok );
+		ok &= root_ok;
 	}
 
 	return( ok );

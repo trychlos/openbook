@@ -36,9 +36,12 @@
  * set, and - if the dossier is set - valid to connect to an unnamed
  * database.
  *
- * This is a composite widget, so:
- * - have a "top" container
- * - do not manage its own error message display
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
  * - do not manage its own settings.
  */
 
@@ -70,22 +73,22 @@ typedef struct {
 }
 	ofaDBMSRootBinClass;
 
-GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
+GType           ofa_dbms_root_bin_get_type         ( void ) G_GNUC_CONST;
 
-ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
+ofaDBMSRootBin *ofa_dbms_root_bin_new              ( void );
 
-GtkWidget      *ofa_dbms_root_bin_get_label      ( const ofaDBMSRootBin *bin );
+GtkWidget      *ofa_dbms_root_bin_get_longest_label( const ofaDBMSRootBin *bin );
 
-void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_dossier      ( ofaDBMSRootBin *bin,
 																const gchar *dname );
 
-gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
+gboolean        ofa_dbms_root_bin_is_valid         ( const ofaDBMSRootBin *bin,
 																gchar **error_message );
 
-void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_valid        ( const ofaDBMSRootBin *bin,
 																gboolean valid );
 
-void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_credentials  ( ofaDBMSRootBin *bin,
 																const gchar *account,
 																const gchar *password );
 
