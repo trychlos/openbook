@@ -88,7 +88,7 @@
                 <property name="margin_bottom">4</property>
                 <child>
                   <object class="GtkCheckButton" id="p3-account-drop">
-                    <property name="label" translatable="yes">_Drop the accounts</property>
+                    <property name="label" translatable="yes">D_rop the accounts</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>

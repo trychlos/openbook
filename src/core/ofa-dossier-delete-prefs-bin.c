@@ -51,6 +51,15 @@ struct _ofaDossierDeletePrefsBinPrivate {
 	GtkWidget *p3_account;
 };
 
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-delete-prefs-bin.ui";
 static const gchar *st_bin_id           = "DossierDeletePrefsBin";
 
@@ -61,6 +70,7 @@ G_DEFINE_TYPE( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_
 static void setup_composite( ofaDossierDeletePrefsBin *bin );
 static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
 static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
+static void changed_composite( ofaDossierDeletePrefsBin *bin );
 static void setup_settings( ofaDossierDeletePrefsBin *bin );
 
 static void
@@ -124,6 +134,30 @@ ofa_dossier_delete_prefs_bin_class_init( ofaDossierDeletePrefsBinClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_delete_prefs_bin_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrefsBinPrivate ));
+
+	/**
+	 * ofaDossierDeletePrefsBin::changed:
+	 *
+	 * This signal is sent on the #ofaDossierDeletePrefsBin when the
+	 * content has changed.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaDossierDeletePrefsBin *bin,
+	 * 						guint                   db_mode,
+	 * 						gboolean                account_mode,
+	 * 						gpointer                user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-changed",
+				OFA_TYPE_DOSSIER_DELETE_PREFS_BIN,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_UINT, G_TYPE_BOOLEAN );
 }
 
 /**
@@ -190,6 +224,8 @@ on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
 			priv->db_mode = DBMODE_KEEP;
 		}
 	}
+
+	changed_composite( bin );
 }
 
 static void
@@ -200,6 +236,17 @@ on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
 	priv = bin->priv;
 
 	priv->account_mode = gtk_toggle_button_get_active( btn );
+
+	changed_composite( bin );
+}
+
+static void
+changed_composite( ofaDossierDeletePrefsBin *bin )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	priv = bin->priv;
+	g_signal_emit_by_name( bin, "ofa-changed", priv->db_mode, priv->account_mode );
 }
 
 /**

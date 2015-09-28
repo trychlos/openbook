@@ -479,7 +479,7 @@
                 - review mnemonic activation (todo #823)
                 src/core/ofa-admin-credentials-bin.ui       OK
                 src/core/ofa-dbms-root-bin.ui               OK
-                src/core/ofa-dossier-delete-prefs-bin.ui
+                src/core/ofa-dossier-delete-prefs-bin.ui    OK
                 src/core/ofa-file-format-bin.ui
                 src/core/ofa-preferences.ui
                 src/mysql/ofa-mysql-connect-display-bin.ui
@@ -508,7 +508,7 @@
                 src/ui/ofa-dossier-display-notes.ui
                 src/ui/ofa-dossier-login.ui
                 src/ui/ofa-dossier-manager.ui
-                src/ui/ofa-dossier-new-bin.ui
+                src/ui/ofa-dossier-new-bin.ui               OK
                 src/ui/ofa-dossier-new-mini.ui
                 src/ui/ofa-dossier-new.ui
                 src/ui/ofa-dossier-open.ui
