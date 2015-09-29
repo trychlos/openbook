@@ -192,7 +192,7 @@ setup_composite( ofaMySQLPrefsBin *bin )
 	ofaMySQLPrefsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry;
+	GtkWidget *toplevel, *entry, *label;
 	gchar *cmdline;
 
 	priv = bin->priv;
@@ -211,6 +211,9 @@ setup_composite( ofaMySQLPrefsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "backup" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_backup_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-backup" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
@@ -222,6 +225,9 @@ setup_composite( ofaMySQLPrefsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "restore" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-restore" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
