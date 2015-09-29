@@ -71,23 +71,22 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-balance-bin.ui";
-static const gchar *st_ui_id            = "BalanceBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-balance-bin.ui";
 static const gchar *st_settings         = "RenderBalances";
 
 G_DEFINE_TYPE( ofaBalanceBin, ofa_balance_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaBalanceBin *bin );
-static void       setup_account_selection( ofaBalanceBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaBalanceBin *self, GtkContainer *parent );
-static void       setup_others( ofaBalanceBin *self, GtkContainer *parent );
-static void       on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaBalanceBin *self );
-static void       on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self );
-static void       on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self );
-static void       on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self );
-static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
-static void       load_settings( ofaBalanceBin *bin );
-static void       set_settings( ofaBalanceBin *bin );
+static void setup_composite( ofaBalanceBin *bin );
+static void setup_account_selection( ofaBalanceBin *bin );
+static void setup_date_selection( ofaBalanceBin *bin );
+static void setup_others( ofaBalanceBin *bin );
+static void on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaBalanceBin *self );
+static void on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self );
+static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
+static void load_settings( ofaBalanceBin *bin );
+static void set_settings( ofaBalanceBin *bin );
 
 static void
 balance_bin_finalize( GObject *instance )
@@ -183,111 +182,113 @@ ofaBalanceBin *
 ofa_balance_bin_new( ofaMainWindow *main_window )
 {
 	ofaBalanceBin *self;
-	GtkWidget *parent;
 
 	self = g_object_new( OFA_TYPE_BALANCE_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
-	parent = load_dialog( self );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
-
-	setup_account_selection( self, GTK_CONTAINER( parent ));
-	setup_date_selection( self, GTK_CONTAINER( parent ));
-	setup_others( self, GTK_CONTAINER( parent ));
+	setup_composite( self );
+	setup_account_selection( self );
+	setup_date_selection( self );
+	setup_others( self );
 
 	load_settings( self );
 
 	return( self );
 }
 
-/*
- * returns: the GtkContainer parent
- */
-static GtkWidget *
-load_dialog( ofaBalanceBin *bin )
+static void
+setup_composite( ofaBalanceBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	return( top_widget );
+	object = gtk_builder_get_object( builder, "bb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void
-setup_account_selection( ofaBalanceBin *self, GtkContainer *parent )
+setup_account_selection( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
-	GtkWidget *alignment;
-	ofaAccountsFilterVVBin *bin;
+	GtkWidget *parent;
+	ofaAccountsFilterVVBin *filter;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	alignment = my_utils_container_get_child_by_name( parent, "accounts-filter" );
-	g_return_if_fail( alignment && GTK_IS_CONTAINER( alignment ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "accounts-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_accounts_filter_vv_bin_new( priv->main_window );
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bin ));
+	filter = ofa_accounts_filter_vv_bin_new( priv->main_window );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_accounts_filter_changed ), self );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_accounts_filter_changed ), bin );
 
-	priv->accounts_filter = bin;
+	priv->accounts_filter = filter;
 }
 
 static void
-setup_date_selection( ofaBalanceBin *self, GtkContainer *parent )
+setup_date_selection( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
-	GtkWidget *alignment, *label;
-	ofaDatesFilterHVBin *bin;
+	GtkWidget *parent, *label;
+	ofaDatesFilterHVBin *filter;
 	GtkWidget *check;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	alignment = my_utils_container_get_child_by_name( parent, "dates-filter" );
-	g_return_if_fail( alignment && GTK_IS_CONTAINER( alignment ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dates-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_dates_filter_hv_bin_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bin ));
+	filter = ofa_dates_filter_hv_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */
-	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
+	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
 	check = gtk_check_button_new_with_mnemonic( _( "Acc_ounts balance" ));
-	ofa_idates_filter_add_widget( OFA_IDATES_FILTER( bin ), check, IDATES_FILTER_BEFORE );
-	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), self );
+	ofa_idates_filter_add_widget( OFA_IDATES_FILTER( filter ), check, IDATES_FILTER_BEFORE );
+	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), bin );
 	priv->accounts_balance_btn = check;
 
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), self );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), bin );
 
 	priv->from_prompt =
-			ofa_idates_filter_get_prompt( OFA_IDATES_FILTER( bin ), IDATES_FILTER_FROM );
+			ofa_idates_filter_get_prompt( OFA_IDATES_FILTER( filter ), IDATES_FILTER_FROM );
 	priv->from_entry =
-			ofa_idates_filter_get_entry( OFA_IDATES_FILTER( bin ), IDATES_FILTER_FROM );
+			ofa_idates_filter_get_entry( OFA_IDATES_FILTER( filter ), IDATES_FILTER_FROM );
 
-	priv->dates_filter = bin;
+	priv->dates_filter = filter;
 }
 
 static void
-setup_others( ofaBalanceBin *self, GtkContainer *parent )
+setup_others( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	GtkWidget *toggle;
 
-	priv = self->priv;
+	priv = bin->priv;
 
 	/* setup the new_page btn before the per_class one in order to be
 	 * safely updated when setting the later preference */
-	toggle = my_utils_container_get_child_by_name( parent, "p3-new-page" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-new-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
+	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 	priv->new_page_btn = toggle;
 
-	toggle = my_utils_container_get_child_by_name( parent, "p3-per-class" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-per-class" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_per_class_toggled ), self );
+	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_per_class_toggled ), bin );
 	priv->per_class_btn = toggle;
 }
 
