@@ -30,14 +30,23 @@
  * @short_description: #ofaAccountsFilterVVBin class definition.
  * @include: ui/ofa-accounts-filter-vv-bin.h
  *
- * Display a frame with a starting and an ending accounts to be used as
- * filters.
- *
- * Each entry comes with a check label which displays the entered
- * account. This label may come either besides the entry, or below it.
- *
+ * Display a frame with a starting and an ending accounts to be used
+ * as filters.
+ * Each entry comes with a control label which displays the label of
+ * the entered account. This label may come either besides the entry,
+ * or below it.
  * The two entries may also come either besides each one (horizontally
  * aligned), or one below the other (vertically aligned).
+ *
+ * This composite widget implements the ofaIAccountsFilter interface.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
+ * - do not manage its own settings.
  */
 
 #include "ui/ofa-main-window-def.h"

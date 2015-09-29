@@ -490,7 +490,7 @@
                 src/ui/ofa-accounts-book-bin.ui             OK
                 src/ui/ofa-account-selector-bin.ui          OK
                 src/ui/ofa-account-select.ui                OK
-                src/ui/ofa-accounts-filter-vv-bin.ui
+                src/ui/ofa-accounts-filter-vv-bin.ui        OK
                 src/ui/ofa-app-menubar.ui
                 src/ui/ofa-balance-bin.ui
                 src/ui/ofa-bat-properties-bin.ui
@@ -536,7 +536,10 @@
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
 
- 841
+ 841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
+                the print
+
+ 842
 
 -----------------------------------------------------------------------
  DONE

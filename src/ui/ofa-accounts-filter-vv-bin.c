@@ -36,7 +36,7 @@ struct _ofaAccountsFilterVVBinPrivate {
 	gboolean       dispose_has_run;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-accounts-filter-vv-bin.ui";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-accounts-filter-vv-bin.ui";
 
 static void  iaccounts_filter_iface_init( ofaIAccountsFilterInterface *iface );
 static guint iaccounts_filter_get_interface_version( const ofaIAccountsFilter *instance );
@@ -121,7 +121,7 @@ ofa_accounts_filter_vv_bin_new( ofaMainWindow *main_window )
 	bin = g_object_new( OFA_TYPE_ACCOUNTS_FILTER_VV_BIN, NULL );
 
 	ofa_iaccounts_filter_setup_bin(
-			OFA_IACCOUNTS_FILTER( bin ), st_ui_xml, main_window );
+			OFA_IACCOUNTS_FILTER( bin ), st_bin_xml, main_window );
 
 	return( bin );
 }

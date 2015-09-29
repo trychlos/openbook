@@ -45,6 +45,7 @@ typedef struct {
 	ofaMainWindow *main_window;
 	ofoDossier    *dossier;
 	gchar         *prefs_key;
+	GtkSizeGroup  *group0;
 
 	GtkWidget     *from_prompt;
 	GtkWidget     *from_entry;
@@ -75,8 +76,6 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_id            = "AccountsFilterBin";
-
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType             register_type( void );
@@ -84,7 +83,7 @@ static void              interface_base_init( ofaIAccountsFilterInterface *klass
 static void              interface_base_finalize( ofaIAccountsFilterInterface *klass );
 static sIAccountsFilter *get_iaccounts_filter_data( ofaIAccountsFilter *filter );
 static void              on_widget_finalized( ofaIAccountsFilter *iaccounts_filter, void *finalized_widget );
-static void              setup_bin( ofaIAccountsFilter *filter, sIAccountsFilter *sdata );
+static void              setup_composite( ofaIAccountsFilter *filter, sIAccountsFilter *sdata );
 static void              on_from_changed( GtkEntry *entry, ofaIAccountsFilter *filter );
 static void              on_to_changed( GtkEntry *entry, ofaIAccountsFilter *filter );
 static void              on_account_changed( ofaIAccountsFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountsFilter *sdata );
@@ -214,7 +213,8 @@ ofa_iaccounts_filter_setup_bin( ofaIAccountsFilter *filter, const gchar *xml_nam
 	static const gchar *thisfn = "ofa_iaccounts_filter_setup_bin";
 	sIAccountsFilter *sdata;
 
-	g_debug( "%s: filter=%p, xml_name=%s", thisfn, ( void * ) filter, xml_name );
+	g_debug( "%s: filter=%p, xml_name=%s, main_window=%p",
+			thisfn, ( void * ) filter, xml_name, ( void * ) main_window );
 
 	g_return_if_fail( filter && G_IS_OBJECT( filter ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -224,7 +224,7 @@ ofa_iaccounts_filter_setup_bin( ofaIAccountsFilter *filter, const gchar *xml_nam
 	sdata->main_window = main_window;
 	sdata->dossier = ofa_main_window_get_dossier( main_window );
 
-	setup_bin( filter, sdata );
+	setup_composite( filter, sdata );
 }
 
 static sIAccountsFilter *
@@ -261,6 +261,7 @@ on_widget_finalized( ofaIAccountsFilter *filter, void *finalized_widget )
 
 	sdata = get_iaccounts_filter_data( filter );
 
+	g_clear_object( &sdata->group0 );
 	g_free( sdata->xml_name );
 	g_free( sdata->prefs_key );
 	g_free( sdata->from_account );
@@ -271,61 +272,78 @@ on_widget_finalized( ofaIAccountsFilter *filter, void *finalized_widget )
 }
 
 static void
-setup_bin( ofaIAccountsFilter *filter, sIAccountsFilter *sdata )
+setup_composite( ofaIAccountsFilter *filter, sIAccountsFilter *sdata )
 {
-	GtkWidget *top_widget, *entry, *label, *button;
-	GtkWidget *check;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *label, *button, *check;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( filter ), sdata->xml_name, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	builder = gtk_builder_new_from_file( sdata->xml_name );
+
+	object = gtk_builder_get_object( builder, "afb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	sdata->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "afb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( filter ), GTK_WINDOW( toplevel ), "top" );
 
 	/* From: block */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-prompt" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	sdata->from_prompt = label;
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
 
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-select" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-select" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	sdata->from_select = button;
 
 	g_signal_connect( button, "clicked", G_CALLBACK( on_from_select_clicked ), filter );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	sdata->from_label = label;
 
 	/* To: block */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-prompt" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	sdata->to_prompt = label;
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
 
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-select" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-select" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	sdata->to_select = button;
 
 	g_signal_connect( button, "clicked", G_CALLBACK( on_to_select_clicked ), filter );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	sdata->to_label = label;
 
-	check = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "all-accounts" );
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "all-accounts" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	sdata->all_btn = check;
 
 	g_signal_connect( check, "toggled", G_CALLBACK( on_all_accounts_toggled ), filter );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void
