@@ -76,12 +76,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-check-integrity-bin.ui";
-static const gchar *st_ui_id            = "CheckIntegrityBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-integrity-bin.ui";
 
 G_DEFINE_TYPE( ofaCheckIntegrityBin, ofa_check_integrity_bin, GTK_TYPE_BIN )
 
-static void           load_dialog( ofaCheckIntegrityBin *self );
+static void           setup_composite( ofaCheckIntegrityBin *self );
 static gboolean       do_run( ofaCheckIntegrityBin *bin );
 static void           check_dossier_run( ofaCheckIntegrityBin *bin );
 static void           check_bat_lines_run( ofaCheckIntegrityBin *bin );
@@ -192,18 +191,28 @@ ofa_check_integrity_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
-	load_dialog( self );
+	setup_composite( self );
 
 	return( self );
 }
 
 static void
-load_dialog( ofaCheckIntegrityBin *bin )
+setup_composite( ofaCheckIntegrityBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "cib-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**
@@ -741,7 +750,7 @@ set_check_status( ofaCheckIntegrityBin *bin, gulong errs, const gchar *w_name )
 		g_free( str );
 	}
 
-	my_utils_widget_set_style( label, errs == 0 ? "labelnormal" : "labelerror" );
+	my_utils_widget_set_style( label, errs == 0 ? "labelinfo" : "labelerror" );
 }
 
 static myProgressBar *
@@ -809,10 +818,12 @@ set_checks_result( ofaCheckIntegrityBin *bin )
 		if( priv->total_errs == 0 ){
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "Your DBMS is right. Good !" ));
+			my_utils_widget_set_style( label, "labelinfo" );
 
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "Detected integrity errors have to be fixed." ));
+			my_utils_widget_set_style( label, "labelerror" );
 		}
 	}
 }

@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
+
 #include "ui/my-progress-bar.h"
 
 /* private instance data
@@ -196,7 +198,7 @@ my_progress_bar_new( void )
 	self = g_object_new( MY_TYPE_PROGRESS_BAR, NULL );
 
 	gtk_widget_set_hexpand( GTK_WIDGET( self ), TRUE );
-	g_object_set( G_OBJECT( self ), "min-horizontal-bar-height", 12, NULL );
+	my_utils_widget_set_style( GTK_WIDGET( self ), "bar12" );
 
 	g_signal_connect( G_OBJECT( self ), "ofa-double", G_CALLBACK( on_double ), NULL );
 	g_signal_connect( G_OBJECT( self ), "ofa-text", G_CALLBACK( on_text ), NULL );

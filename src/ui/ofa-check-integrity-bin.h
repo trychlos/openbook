@@ -35,9 +35,12 @@
  * Please note that the checks are started when setting the dossier,
  * and run asynchronously. So they are most probably still running
  * when #ofa_check_integrity_bin_set_dossier() method returns.
- *
  * Caller should connect to "ofa-done" signal in order to be signaled
  * when the checks are done.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container.
  */
 
 #include <gtk/gtk.h>

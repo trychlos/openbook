@@ -79,3 +79,7 @@ GtkLabel.labelaccount {
 GtkLabel.labelbatunconcil {
 	color: #00ff00;
 }
+
+myProgressBar.bar12 {
+	-GtkProgressBar-min-horizontal-bar-height: 12;
+}
