@@ -158,7 +158,7 @@ ofa_account_selector_bin_class_init( ofaAccountSelectorBinClass *klass )
 	 * 						gpointer             user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_ACCOUNT_SELECTOR_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -288,6 +288,8 @@ on_entry_changed( GtkEntry *entry, ofaAccountSelectorBin *bin )
 	} else {
 		gtk_label_set_text( GTK_LABEL( priv->acc_label ), "" );
 	}
+
+	g_signal_emit_by_name( bin, "ofa-changed", priv->acc_number );
 
 	set_settings( bin );
 }

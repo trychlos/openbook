@@ -488,7 +488,7 @@
                 src/mysql/ofa-mysql-prefs.piece.ui          OK
                 src/ui/ofa-account-properties.ui            OK
                 src/ui/ofa-accounts-book-bin.ui             OK
-                src/ui/ofa-account-selector-bin.ui
+                src/ui/ofa-account-selector-bin.ui          OK
                 src/ui/ofa-account-select.ui
                 src/ui/ofa-accounts-filter-vv-bin.ui
                 src/ui/ofa-app-menubar.ui
@@ -534,7 +534,9 @@
                 src/ui/ofa-settlement.ui
                 src/ui/ofa-view-entries.ui
 
- 840
+ 840 2015- 9-29 ofaAccountSelectorBin: is unused
+
+ 841
 
 -----------------------------------------------------------------------
  DONE
