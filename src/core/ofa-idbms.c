@@ -221,6 +221,35 @@ ofa_idbms_close( const ofaIDbms *instance, void *handle )
 }
 
 /**
+ * ofa_idbms_get_provider_from_dossier:
+ * @dossier_name: the name of the dossier as published in the settings.
+ *
+ * Returns: a new reference to the #ofaIDbms module instance which
+ * manages this dossier.
+ * This new reference should be g_object_unref() by the caller after
+ * usage.
+ */
+ofaIDbms *
+ofa_idbms_get_provider_from_dossier( const gchar *dossier_name )
+{
+	gchar *prov_name;
+	ofaIDbms *prov_module;
+
+	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
+
+	prov_module = NULL;
+	prov_name = ofa_settings_get_dossier_provider( dossier_name );
+
+	if( my_strlen( prov_name )){
+		prov_module = ofa_idbms_get_provider_by_name( prov_name );
+	}
+
+	g_free( prov_name );
+
+	return( prov_module );
+}
+
+/**
  * ofa_idbms_get_provider_by_name:
  * @pname: the name of the provider as published in the settings.
  *
@@ -268,6 +297,12 @@ get_provider_by_name( GList *modules, const gchar *name )
 
 /**
  * ofa_idbms_get_provider_name:
+ * @instance: this #ofaIDbms instance.
+ *
+ * Returns: the identifier of the @instance.
+ *
+ * The returned identifier is owned by the ofaIDbms instance, and should
+ * not be released by the caller.
  */
 const gchar *
 ofa_idbms_get_provider_name( const ofaIDbms *instance )
@@ -394,39 +429,52 @@ ofa_idbms_last_error( const ofaIDbms *instance, void *handle )
 
 /**
  * ofa_idbms_connect_display_new:
+ * @instance: this #ofaIDbms instance.
  * @dname: the name of the dossier.
  *
  * Ask the DBMS provider associated to the named dossier to display
  * its connect informations.
  */
 GtkWidget *
-ofa_idbms_connect_display_new( const gchar *dname )
+ofa_idbms_connect_display_new( const ofaIDbms *instance, const gchar *dname )
 {
-	GList *modules;
-	ofaIDbms *instance;
-	gchar *provider;
-	GtkWidget *widget;
+	GtkWidget *bin;
 
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
 	g_return_val_if_fail( my_strlen( dname ), NULL );
 
-	widget = NULL;
-	provider = ofa_settings_get_dossier_provider( dname );
-	if( my_strlen( provider )){
+	bin = NULL;
 
-		modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
-		instance = get_provider_by_name( modules, provider );
-		ofa_plugin_free_extensions( modules );
-
-		if( instance &&
-				OFA_IS_IDBMS( instance ) &&
-				OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new ){
-
-			widget = OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new( instance, dname );
-		}
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new ){
+		bin = OFA_IDBMS_GET_INTERFACE( instance )->connect_display_new( instance, dname );
 	}
 
-	g_free( provider );
-	return( widget );
+	return( bin );
+}
+
+/**
+ * ofa_idbms_connect_display_get_size_group:
+ * @instance: this #ofaIDbms instance.
+ * @bin: the GtkBin returned by #ofa_idbms_connect_display_new().
+ * @column: the desired column.
+ *
+ * Returns: the #GtkSizeGroup of the specified @column.
+ */
+GtkSizeGroup *
+ofa_idbms_connect_display_get_size_group( const ofaIDbms *instance, GtkWidget *bin, guint column )
+{
+	GtkSizeGroup *group;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( bin && GTK_IS_WIDGET( bin ), NULL );
+
+	group = NULL;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_display_get_size_group ){
+		group = OFA_IDBMS_GET_INTERFACE( instance )->connect_display_get_size_group( instance, bin, column );
+	}
+
+	return( group );
 }
 
 /**

@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
-  <object class="GtkWindow" id="MySQLConnectDisplayBin">
+  <object class="GtkWindow" id="mcdb-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkFrame" id="top">
@@ -153,5 +153,14 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="mcdb-col0-hsize">
+    <widgets>
+      <widget name="label11"/>
+      <widget name="label12"/>
+      <widget name="label13"/>
+      <widget name="label14"/>
+      <widget name="label15"/>
+    </widgets>
   </object>
 </interface>

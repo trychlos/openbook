@@ -56,8 +56,6 @@ struct _ofaDbmsPrivate {
 G_DEFINE_TYPE( ofaDbms, ofa_dbms, G_TYPE_OBJECT )
 
 static gboolean  dbms_connect( ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account, const gchar *password, gboolean display_error );
-static ofaIDbms *get_provider_module_from_provider_name( ofaDbms *dbms, const gchar *name, const gchar *provider_name, gboolean display_error );
-static ofaIDbms *get_provider_module_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboolean display_error );
 static void      error_already_connected( const ofaDbms *dbms );
 static void      error_connect( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account );
 static void      error_with_infos( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account, const gchar *provider, const gchar *msg );
@@ -205,6 +203,7 @@ dbms_connect( ofaDbms *dbms,
 	ofaDbmsPrivate *priv;
 	ofaIDbms *module;
 	void *handle;
+	gchar *str;
 
 	priv = dbms->priv;
 
@@ -215,11 +214,19 @@ dbms_connect( ofaDbms *dbms,
 		return( priv->connected );
 	}
 
-	module = get_provider_module_from_dossier_name( dbms, dname, display_error );
+	module = ofa_idbms_get_provider_from_dossier( dname );
 	if( !module ){
+		if( display_error ){
+			str = g_strdup_printf( _( "Unable to get a module instance for '%s' dossier" ), dname );
+			my_utils_dialog_warning( str );
+			g_free( str );
+		}
 		return( FALSE );
 	}
 	g_return_val_if_fail( OFA_IS_IDBMS( module ), FALSE );
+
+	g_free( priv->pname );
+	priv->pname = g_strdup( ofa_idbms_get_provider_name( module ));
 
 	handle = ofa_idbms_connect( module, dname, dbname, account, password );
 	if( !handle ){
@@ -238,68 +245,6 @@ dbms_connect( ofaDbms *dbms,
 	priv->connected = TRUE;
 
 	return( priv->connected );
-}
-
-/*
- * returns the IDbms provider module from its name
- */
-static ofaIDbms *
-get_provider_module_from_provider_name( ofaDbms *dbms, const gchar *dname, const gchar *provider_name, gboolean display_error )
-{
-	static const gchar *thisfn = "ofa_dbms_get_provider_module_from_provider_name";
-	ofaIDbms *provider_module;
-	gchar *str;
-
-	provider_module = ofa_idbms_get_provider_by_name( provider_name );
-	if( !provider_module ){
-		if( display_error ){
-			str = g_strdup_printf( _( "Unable to get a module instance for '%s' provider" ), provider_name );
-			my_utils_dialog_warning( str );
-			g_free( str );
-		} else {
-			g_warning( "%s: dname=%s, provider=%s: module not found",
-					thisfn, dname, provider_name );
-		}
-		return( NULL );
-	}
-
-	return( provider_module );
-}
-
-/*
- * returns the IDbms provider module from the dossier name
- *
- * stores the provider name in the ofaDbms object so that it is
- * available in error messages
- */
-static ofaIDbms *
-get_provider_module_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboolean display_error )
-{
-	ofaDbmsPrivate *priv;
-	gchar *prov_name;
-	ofaIDbms *prov_module;
-	gchar *str;
-
-	priv = dbms->priv;
-
-	prov_name = ofa_settings_get_dossier_provider( dname );
-	if( !my_strlen( prov_name )){
-		str = g_strdup_printf( _( "Provider is not defined for '%s' dossier" ), dname );
-		my_utils_dialog_warning( str );
-		g_free( str );
-		return( NULL );
-	}
-
-	g_free( priv->pname );
-	priv->pname = prov_name;
-
-	prov_module = get_provider_module_from_provider_name( dbms, dname, prov_name, display_error );
-	if( !prov_module ){
-		return( NULL );
-	}
-	g_return_val_if_fail( OFA_IS_IDBMS( prov_module ), NULL );
-
-	return( prov_module );
 }
 
 static void

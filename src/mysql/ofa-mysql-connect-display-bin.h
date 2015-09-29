@@ -31,6 +31,11 @@
  *
  * Display the connection informations read for the named dossier
  * from the settings.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - do not manage its own settings.
  */
 
 #include <gtk/gtk.h>
@@ -39,8 +44,38 @@
 
 G_BEGIN_DECLS
 
-GtkWidget *ofa_mysql_connect_display_bin_new( const ofaIDbms *instance,
-															const gchar *dname );
+#define OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN                ( ofa_mysql_connect_display_bin_get_type())
+#define OFA_MYSQL_CONNECT_DISPLAY_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN, ofaMySQLConnectDisplayBin ))
+#define OFA_MYSQL_CONNECT_DISPLAY_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN, ofaMySQLConnectDisplayBinClass ))
+#define OFA_IS_MYSQL_CONNECT_DISPLAY_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN ))
+#define OFA_IS_MYSQL_CONNECT_DISPLAY_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN ))
+#define OFA_MYSQL_CONNECT_DISPLAY_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT_DISPLAY_BIN, ofaMySQLConnectDisplayBinClass ))
+
+typedef struct _ofaMySQLConnectDisplayBinPrivate          ofaMySQLConnectDisplayBinPrivate;
+
+typedef struct {
+	/*< public members >*/
+	GtkBin                            parent;
+
+	/*< private members >*/
+	ofaMySQLConnectDisplayBinPrivate *priv;
+}
+	ofaMySQLConnectDisplayBin;
+
+typedef struct {
+	/*< public members >*/
+	GtkBinClass                       parent;
+}
+	ofaMySQLConnectDisplayBinClass;
+
+GType         ofa_mysql_connect_display_bin_get_type      ( void ) G_GNUC_CONST;
+
+GtkWidget    *ofa_mysql_connect_display_bin_new           ( const ofaIDbms *instance,
+																	const gchar *dname );
+
+GtkSizeGroup *ofa_mysql_connect_display_bin_get_size_group( const ofaIDbms *instance,
+																	GtkWidget *bin,
+																	guint column );
 
 G_END_DECLS
 

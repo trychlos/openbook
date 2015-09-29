@@ -145,13 +145,8 @@ file_format_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( priv->group0 ){
-			g_clear_object( &priv->group0 );
-		}
-		if( priv->group1 ){
-			g_clear_object( &priv->group1 );
-		}
-
+		g_clear_object( &priv->group0 );
+		g_clear_object( &priv->group1 );
 		g_clear_object( &priv->settings );
 	}
 

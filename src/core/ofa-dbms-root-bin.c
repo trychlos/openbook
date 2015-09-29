@@ -108,9 +108,7 @@ dbms_root_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		/* unref object members here */
-		if( priv->group0 ){
-			g_clear_object( &priv->group0 );
-		}
+		g_clear_object( &priv->group0 );
 	}
 
 	/* chain up to the parent class */
@@ -172,6 +170,8 @@ ofa_dbms_root_bin_class_init( ofaDBMSRootBinClass *klass )
 
 /**
  * ofa_dbms_root_bin_new:
+ *
+ * Returns: a new #ofaDBMSRootBin instance.
  */
 ofaDBMSRootBin *
 ofa_dbms_root_bin_new( void )

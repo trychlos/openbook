@@ -27,7 +27,7 @@
 
 /**
  * SECTION: ofa_dossier_Misc
- * @short_description: Dossier mmiscellaneous functions
+ * @short_description: Dossier miscellaneous functions
  * @include: openbook/ofa-dossier-misc.h
  *
  * Delete a dossier.

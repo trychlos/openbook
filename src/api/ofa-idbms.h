@@ -72,7 +72,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint         ( *get_interface_version )     ( const ofaIDbms *instance );
+	guint          ( *get_interface_version )         ( const ofaIDbms *instance );
 
 	/**
 	 * connect:
@@ -89,11 +89,11 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void        * ( *connect )                   ( const ofaIDbms *instance,
-															const gchar *dname,
-															const gchar *dbname,
-															const gchar *account,
-															const gchar *password );
+	void         * ( *connect )                       ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *dbname,
+																const gchar *account,
+																const gchar *password );
 
 	/**
 	 * connect_ex:
@@ -110,10 +110,10 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *connect_ex )                ( const ofaIDbms *instance,
-															void *infos,
-															const gchar *account,
-															const gchar *password );
+	gboolean       ( *connect_ex )                    ( const ofaIDbms *instance,
+																void *infos,
+																const gchar *account,
+																const gchar *password );
 
 	/**
 	 * close:
@@ -124,8 +124,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void          ( *close )                     ( const ofaIDbms *instance,
-															void *handle );
+	void           ( *close )                         ( const ofaIDbms *instance,
+																void *handle );
 
 	/**
 	 * get_provider_name:
@@ -139,9 +139,12 @@ typedef struct {
 	 *
 	 * Return value: the name of this DBMS provider.
 	 *
+	 * The returned value is owned by the DBMS provider, and should not
+	 * be released by the caller.
+	 *
 	 * Since: version 1
 	 */
-	const gchar * ( *get_provider_name )         ( const ofaIDbms *instance );
+	const gchar  * ( *get_provider_name )             ( const ofaIDbms *instance );
 
 	/**
 	 * query:
@@ -157,8 +160,9 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *query )                     ( const ofaIDbms *instance,
-															void *handle, const gchar *query );
+	gboolean       ( *query )                         ( const ofaIDbms *instance,
+																void *handle,
+																const gchar *query );
 
 	/**
 	 * query_ex:
@@ -178,9 +182,10 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *query_ex )                  ( const ofaIDbms *instance,
-															void *handle, const gchar *query,
-															GSList **result );
+	gboolean       ( *query_ex )                      ( const ofaIDbms *instance,
+																void *handle,
+																const gchar *query,
+																GSList **result );
 
 	/**
 	 * last_error:
@@ -192,8 +197,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar       * ( *last_error )                ( const ofaIDbms *instance,
-															void *handle );
+	gchar        * ( *last_error )                    ( const ofaIDbms *instance,
+																void *handle );
 
 	/**
 	 * connect_display_new:
@@ -208,8 +213,22 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget   * ( *connect_display_new )       ( const ofaIDbms *instance,
-															const gchar *dname );
+	GtkWidget    * ( *connect_display_new )           ( const ofaIDbms *instance,
+																const gchar *dname );
+
+	/**
+	 * connect_display_get_size_group:
+	 * @instance: the #ofaIDbms provider.
+	 * @bin: the #GtkWidget returned by connect_display_new().
+	 * @column: the desired column.
+	 *
+	 * Returns: the #GtkSizeGroup for the desired @column.
+	 *
+	 * Since: version 1
+	 */
+	GtkSizeGroup * ( *connect_display_get_size_group )( const ofaIDbms *instance,
+																GtkWidget *bin,
+																guint column );
 
 	/**
 	 * connect_enter_new:
@@ -226,13 +245,13 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget   * ( *connect_enter_new )         ( ofaIDbms *instance,
-															GtkSizeGroup *group );
+	GtkWidget    * ( *connect_enter_new )             ( ofaIDbms *instance,
+																GtkSizeGroup *group );
 
 	/**
 	 * connect_enter_is_valid:
 	 * @instance: the #ofaIDbms provider.
-	 * @piece: the #GtkContainer to which the dialog piece is attached.
+	 * @bin: the #GtkContainer to which the dialog piece is attached.
 	 * @message: [allow-none]: a message to be set.
 	 *
 	 * Returns: %TRUE if the entered connection informations are valid.
@@ -242,22 +261,22 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *connect_enter_is_valid )    ( const ofaIDbms *instance,
-															GtkWidget *piece,
-															gchar **message );
+	gboolean       ( *connect_enter_is_valid )        ( const ofaIDbms *instance,
+																GtkWidget *bin,
+																gchar **message );
 
 	/**
 	 * connect_enter_get_database:
 	 * @instance: the #ofaIDbms provider.
-	 * @piece: the #GtkContainer to which the dialog piece is attached.
+	 * @bin: the #GtkContainer to which the dialog piece is attached.
 	 *
 	 * Returns: the database name as a newly allocated string which
 	 * should be g_free() by the caller.
 	 *
 	 * Since: version 1
 	 */
-	gchar *       ( *connect_enter_get_database )( const ofaIDbms *instance,
-															GtkWidget *piece );
+	gchar        * ( *connect_enter_get_database )    ( const ofaIDbms *instance,
+																GtkWidget *bin );
 
 	/**
 	 * connect_enter_apply:
@@ -270,9 +289,9 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *connect_enter_apply )       ( const ofaIDbms *instance,
-															const gchar *dname,
-															void *infos );
+	gboolean       ( *connect_enter_apply )           ( const ofaIDbms *instance,
+																const gchar *dname,
+																void *infos );
 
 	/**
 	 * new_dossier:
@@ -289,10 +308,10 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *new_dossier )               ( const ofaIDbms *instance,
-															const gchar *dname,
-															const gchar *root_account,
-															const gchar *root_password );
+	gboolean       ( *new_dossier )                   ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *root_account,
+																const gchar *root_password );
 
 	/**
 	 * grant_user:
@@ -315,12 +334,12 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *grant_user )                ( const ofaIDbms *instance,
-															const gchar *dname,
-															const gchar *root_account,
-															const gchar *root_password,
-															const gchar *user_account,
-															const gchar *user_password );
+	gboolean       ( *grant_user )                    ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *root_account,
+																const gchar *root_password,
+																const gchar *user_account,
+																const gchar *user_password );
 
 	/**
 	 * backup:
@@ -335,10 +354,10 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *backup )                    ( const ofaIDbms *instance,
-															void *handle,
-															const gchar *fname,
-															gboolean verbose );
+	gboolean       ( *backup )                        ( const ofaIDbms *instance,
+																void *handle,
+																const gchar *fname,
+																gboolean verbose );
 
 	/**
 	 * restore:
@@ -362,11 +381,11 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *restore )                   ( const ofaIDbms *instance,
-															const gchar *dname,
-															const gchar *fname,
-															const gchar *root_account,
-															const gchar *root_password );
+	gboolean       ( *restore )                       ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *fname,
+																const gchar *root_account,
+																const gchar *root_password );
 
 	/**
 	 * archive:
@@ -390,13 +409,13 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *archive )                   ( const ofaIDbms *instance,
-															const gchar *dname,
-															const gchar *root_account,
-															const gchar *root_password,
-															const gchar *user_account,
-															const GDate *begin_next,
-															const GDate *end_next );
+	gboolean       ( *archive )                       ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *root_account,
+																const gchar *root_password,
+																const gchar *user_account,
+																const GDate *begin_next,
+																const GDate *end_next );
 
 	/* ... */
 
@@ -500,82 +519,89 @@ typedef enum {
 }
 	ofnDBDeleteMode;
 
-GType        ofa_idbms_get_type                  ( void );
+GType         ofa_idbms_get_type                      ( void );
 
-void        *ofa_idbms_connect                   ( const ofaIDbms *instance,
+void         *ofa_idbms_connect                       ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *dbname,
 															const gchar *account,
 															const gchar *password );
 
-gboolean     ofa_idbms_connect_ex                ( const ofaIDbms *instance,
+gboolean      ofa_idbms_connect_ex                    ( const ofaIDbms *instance,
 															void *infos,
 															const gchar *account,
 															const gchar *password );
 
-void         ofa_idbms_close                     ( const ofaIDbms *instance,
+void          ofa_idbms_close                         ( const ofaIDbms *instance,
 															void *handle );
 
-ofaIDbms    *ofa_idbms_get_provider_by_name      ( const gchar *pname );
+ofaIDbms     *ofa_idbms_get_provider_from_dossier     ( const gchar *dossier_name );
 
-const gchar *ofa_idbms_get_provider_name         ( const ofaIDbms *instance );
+ofaIDbms     *ofa_idbms_get_provider_by_name          ( const gchar *pname );
 
-GSList      *ofa_idbms_get_providers_list        ( void );
+const gchar  *ofa_idbms_get_provider_name             ( const ofaIDbms *instance );
 
-void         ofa_idbms_free_providers_list       ( GSList *list );
+GSList       *ofa_idbms_get_providers_list            ( void );
 
-gboolean     ofa_idbms_query                     ( const ofaIDbms *instance,
+void          ofa_idbms_free_providers_list           ( GSList *list );
+
+gboolean      ofa_idbms_query                         ( const ofaIDbms *instance,
 															void *handle,
 															const gchar *query );
 
-gboolean     ofa_idbms_query_ex                  ( const ofaIDbms *instance,
+gboolean      ofa_idbms_query_ex                      ( const ofaIDbms *instance,
 															void *handle,
 															const gchar *query,
 															GSList **result );
 
-gchar       *ofa_idbms_last_error                ( const ofaIDbms *instance,
+gchar        *ofa_idbms_last_error                    ( const ofaIDbms *instance,
 															void *handle );
 
-GtkWidget   *ofa_idbms_connect_display_new       ( const gchar *dname );
+GtkWidget    *ofa_idbms_connect_display_new           ( const ofaIDbms *instance,
+															const gchar *dname );
 
-GtkWidget   *ofa_idbms_connect_enter_new         ( ofaIDbms *instance,
+GtkSizeGroup *ofa_idbms_connect_display_get_size_group( const ofaIDbms *instance,
+															GtkWidget *bin,
+															guint column );
+
+GtkWidget    *ofa_idbms_connect_enter_new             ( ofaIDbms *instance,
 															GtkSizeGroup *group );
 
-gboolean     ofa_idbms_connect_enter_is_valid    ( const ofaIDbms *instance,
+gboolean      ofa_idbms_connect_enter_is_valid        ( const ofaIDbms *instance,
 															GtkWidget *piece,
 															gchar **message );
 
-gchar       *ofa_idbms_connect_enter_get_database( const ofaIDbms *instance,
+gchar        *ofa_idbms_connect_enter_get_database    ( const ofaIDbms *instance,
 															GtkWidget *piece );
 
-gboolean     ofa_idbms_connect_enter_apply       ( const ofaIDbms *instance,
+gboolean      ofa_idbms_connect_enter_apply           ( const ofaIDbms *instance,
 															const gchar *dname,
 															void *infos );
 
-gboolean     ofa_idbms_new_dossier               ( const ofaIDbms *instance,
+gboolean      ofa_idbms_new_dossier                   ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *root_account,
 															const gchar *root_password );
 
-gboolean     ofa_idbms_set_admin_credentials     ( const ofaIDbms *instance,
+gboolean      ofa_idbms_set_admin_credentials         ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *root_account,
 															const gchar *root_password,
 															const gchar *adm_account,
 															const gchar *adm_password );
 
-gboolean     ofa_idbms_backup                    ( const ofaIDbms *instance,
+gboolean      ofa_idbms_backup                        ( const ofaIDbms *instance,
 															void *handle,
 															const gchar *fname,
 															gboolean verbose );
 
-gboolean     ofa_idbms_restore                   ( const ofaIDbms *instance,
+gboolean      ofa_idbms_restore                       ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *fname,
 															const gchar *root_account,
 															const gchar *root_password );
 
-gboolean     ofa_idbms_archive                   ( const ofaIDbms *instance,
+gboolean      ofa_idbms_archive                       ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *root_account,
 															const gchar *root_password,
@@ -584,13 +610,18 @@ gboolean     ofa_idbms_archive                   ( const ofaIDbms *instance,
 															const GDate *end_next );
 
 #if 0
-gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
+gchar *ofa_idbms_get_dossier_host  ( const ofaIDbms *instance, const gchar *label );
 
-gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
+gchar *ofa_idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
 #endif
 
-gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
-												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
+gboolean      ofa_idbms_delete_dossier                ( const ofaIDbms *instance,
+															const gchar *label,
+															const gchar *account,
+															const gchar *password,
+															gboolean drop_db,
+															gboolean drop_accounts,
+															gboolean with_confirm );
 
 G_END_DECLS
 

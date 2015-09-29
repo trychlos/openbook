@@ -127,9 +127,7 @@ dossier_new_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( priv->group0 ){
-			g_clear_object( &priv->group0 );
-		}
+		g_clear_object( &priv->group0 );
 	}
 
 	/* chain up to the parent class */

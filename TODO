@@ -482,7 +482,7 @@
                 src/core/ofa-dbms-root-bin.ui               OK
                 src/core/ofa-dossier-delete-prefs-bin.ui    OK
                 src/core/ofa-file-format-bin.ui             OK
-                src/core/ofa-preferences.ui
+                src/core/ofa-preferences.ui                 OK
                 src/mysql/ofa-mysql-connect-display-bin.ui
                 src/mysql/ofa-mysql-connect-enter-bin.ui
                 src/mysql/ofa-mysql-prefs.piece.ui
