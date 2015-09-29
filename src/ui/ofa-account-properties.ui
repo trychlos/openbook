@@ -75,7 +75,7 @@
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">5</property>
                     <child>
-                      <object class="GtkLabel" id="p1-label1">
+                      <object class="GtkLabel" id="p1-account-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Account _number :</property>
@@ -104,7 +104,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-label2">
+                      <object class="GtkLabel" id="p1-label-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Label :</property>
@@ -133,7 +133,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-label3">
+                      <object class="GtkLabel" id="p1-currency-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Currency :</property>

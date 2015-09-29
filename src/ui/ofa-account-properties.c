@@ -223,7 +223,7 @@ v_init_dialog( myDialog *dialog )
 	GtkEntry *entry;
 	ofaCurrencyCombo *combo;
 	GtkContainer *container;
-	GtkWidget *w_root, *w_detail, *parent;
+	GtkWidget *w_root, *w_detail, *parent, *label;
 	gboolean is_current;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
@@ -261,6 +261,9 @@ v_init_dialog( myDialog *dialog )
 	 *  impacted records  */
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->w_number ), !priv->has_entries );
 	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
+	label = my_utils_container_get_child_by_name( container, "p1-account-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->w_number ));
 
 	/* account label */
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
@@ -271,6 +274,9 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
+	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	/* whether the account is closed */
 	priv->closed_btn = my_utils_container_get_child_by_name( container, "p1-closed" );
@@ -291,6 +297,11 @@ v_init_dialog( myDialog *dialog )
 		ofa_currency_combo_set_selected( combo, priv->currency );
 	}
 	gtk_widget_set_sensitive( GTK_WIDGET( combo ), is_current && !priv->has_entries );
+	label = my_utils_container_get_child_by_name( container, "p1-currency-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( combo ));
+	priv->currency_etiq = label;
+	priv->currency_combo = parent;
 
 	/* type of account */
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
@@ -309,20 +320,18 @@ v_init_dialog( myDialog *dialog )
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 	if( my_strlen( priv->type )){
 		if( ofo_account_is_root( priv->account )){
-			g_debug( "%s: set root account", thisfn );
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
+			on_root_toggled( GTK_RADIO_BUTTON( w_root ), self );
 		} else if( !g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL )){
-			g_debug( "%s: set detail account", thisfn );
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
+			on_detail_toggled( GTK_RADIO_BUTTON( w_detail ), self );
 		} else {
 			g_warning( "%s: account has type %s", thisfn, priv->type );
 		}
 	} else {
-		g_debug( "%s: set detail account", thisfn );
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
+		g_debug( "%s: set detail account as a default", thisfn );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
+		on_detail_toggled( GTK_RADIO_BUTTON( w_detail ), self );
 	}
 	gtk_widget_set_sensitive( priv->type_frame, is_current );
 
@@ -337,9 +346,6 @@ v_init_dialog( myDialog *dialog )
 	priv->forward_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-forward" ));
 	gtk_toggle_button_set_active( priv->forward_btn, ofo_account_is_forward( priv->account ));
 	gtk_widget_set_can_focus( GTK_WIDGET( priv->forward_btn ), is_current );
-
-	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
-	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 
 	if( ofo_account_is_root( priv->account )){
 		remove_balances_page( self, container );
