@@ -182,7 +182,6 @@ openbook_SOURCES = \
 	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-ipreferences.c									\
 	ofa-iprintable.c									\
 	ofa-iprintable.h									\
 	ofa-iprintable2.c									\

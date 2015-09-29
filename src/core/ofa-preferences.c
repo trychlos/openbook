@@ -562,13 +562,17 @@ static void
 init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *page;
+	GtkWidget *page, *wlabel;
 	sPagePlugin *splug;
+	gchar *label;
 
 	priv = self->priv;
 
-	page = ofa_ipreferences_do_init( instance, GTK_NOTEBOOK( priv->book ));
+	page = ofa_ipreferences_do_init( instance, &label );
 	my_utils_widget_set_margin( page, 4, 4, 4, 4 );
+	wlabel = gtk_label_new( label );
+	g_free( label );
+	gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), page, wlabel );
 
 	splug = g_new0( sPagePlugin, 1 );
 	splug->object = instance;

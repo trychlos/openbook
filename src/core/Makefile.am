@@ -87,6 +87,7 @@ libofa_core_la_SOURCES = \
 	ofa-iexportable.c									\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
+	ofa-ipreferences.c									\
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\

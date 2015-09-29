@@ -180,13 +180,14 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-connect-display-bin.h ofa-mysql-connect-enter-bin.c \
 	ofa-mysql-connect-enter-bin.h ofa-mysql-idbms.c \
 	ofa-mysql-idbms.h ofa-mysql-ipreferences.c \
-	ofa-mysql-ipreferences.h ofa-module.c
+	ofa-mysql-ipreferences.h ofa-mysql-prefs-bin.c \
+	ofa-mysql-prefs-bin.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.lo ofa-mysql-ipreferences.lo \
-@HAVE_MYSQL_TRUE@	ofa-module.lo
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo ofa-module.lo
 libofa_mysql_la_OBJECTS = $(am_libofa_mysql_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -453,6 +454,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.c						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.h						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.h							\
 @HAVE_MYSQL_TRUE@	ofa-module.c									\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
@@ -469,7 +472,7 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@ui_files = \
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.ui				\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.ui					\
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs.piece.ui						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@images_files = \
@@ -572,6 +575,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-enter-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ipreferences.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql.Plo@am__quote@
 
 .c.o:

@@ -84,26 +84,26 @@ typedef struct {
 	/**
 	 * do_init:
 	 * @instance: the #ofaIPreferences provider.
-	 * @book: the #GtkNotebook to which the new page must be added.
 	 *
 	 * Initialize the Preferences dialog.
 	 *
 	 * The IPreferences provider may use the ofa_settings_xxx_() API to
 	 * get its value from the user's configuration file.
-	 * It must append the page to the #GtkNotebook @book.
 	 *
-	 * Returns: the newly created page.
+	 * Returns: a newly created page to be added to the User's
+	 * preferences notebook.
 	 *
 	 * Since: version 1
 	 */
 	GtkWidget * ( *do_init )             ( const ofaIPreferences *instance,
-													GtkNotebook *book );
+													gchar **label );
 
 	/**
 	 * do_check:
 	 * @instance: the #ofaIPreferences provider.
 	 * @page: the GtkNotebook page which handles these preferences, as
 	 *  returned by #do_init().
+	 * @message: a message to be returned.
 	 *
 	 * Checks for the Preferences dialog.
 	 *
@@ -113,7 +113,8 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean    ( *do_check )            ( const ofaIPreferences *instance,
-													GtkWidget *page );
+													GtkWidget *page,
+													gchar **message );
 
 	/**
 	 * do_apply:
@@ -138,10 +139,11 @@ GType      ofa_ipreferences_get_type      ( void );
 guint      ofa_ipreferences_get_interface_last_version( void );
 
 GtkWidget *ofa_ipreferences_do_init       ( const ofaIPreferences *instance,
-													GtkNotebook *book );
+													gchar **label );
 
 gboolean   ofa_ipreferences_do_check      ( const ofaIPreferences *instance,
-													GtkWidget *page );
+													GtkWidget *page,
+													gchar **message );
 
 void       ofa_ipreferences_do_apply      ( const ofaIPreferences *instance,
 													GtkWidget *page );

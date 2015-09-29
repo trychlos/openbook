@@ -125,26 +125,25 @@ ofa_ipreferences_get_interface_last_version( void )
 /**
  * ofa_ipreferences_do_init:
  * @importer: this #ofaIPreferences instance.
- * @book: the #GtkNotebook to which the new page will be added.
+ * @label: the label to be set on the notebook page
  *
  * Initialize the page to let the user configure his preferences.
  */
 GtkWidget *
-ofa_ipreferences_do_init( const ofaIPreferences *instance, GtkNotebook *book )
+ofa_ipreferences_do_init( const ofaIPreferences *instance, gchar **label )
 {
 	static const gchar *thisfn = "ofa_ipreferences_do_init";
 	GtkWidget *page;
 
 	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), NULL );
-	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 
-	g_debug( "%s: instance=%p (%s), book=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) book );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	page = NULL;
 
 	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init ){
-		page = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init( instance, book );
+		page = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init( instance, label );
 	}
 
 	return( page );
@@ -154,11 +153,12 @@ ofa_ipreferences_do_init( const ofaIPreferences *instance, GtkNotebook *book )
  * ofa_ipreferences_do_check:
  * @importer: this #ofaIPreferences instance.
  * @page: the preferences page.
+ * @message: [allow-none]: a message to be returned.
  *
  * Check that the page is valid.
  */
 gboolean
-ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page )
+ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page, gchar **message )
 {
 	static const gchar *thisfn = "ofa_ipreferences_do_check";
 	gboolean ok;
@@ -172,7 +172,7 @@ ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
 
 	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check ){
-		ok = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check( instance, page );
+		ok = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check( instance, page, message );
 	}
 
 	return( ok );

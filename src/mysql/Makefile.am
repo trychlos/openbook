@@ -52,6 +52,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-idbms.h								\
 	ofa-mysql-ipreferences.c						\
 	ofa-mysql-ipreferences.h						\
+	ofa-mysql-prefs-bin.c							\
+	ofa-mysql-prefs-bin.h							\
 	ofa-module.c									\
 	$(NULL)
 
@@ -68,7 +70,7 @@ libofa_mysql_la_LDFLAGS = \
 ui_files = \
 	ofa-mysql-connect-display-bin.ui				\
 	ofa-mysql-connect-enter-bin.ui					\
-	ofa-mysql-prefs.piece.ui						\
+	ofa-mysql-prefs-bin.ui							\
 	$(NULL)
 
 images_files = \
