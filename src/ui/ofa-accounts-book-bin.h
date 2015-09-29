@@ -32,6 +32,14 @@
  *
  * Display a frame with let the user select the parameters needed to
  * print the entries books between two effect dates.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
+ * - do not manage its own settings.
  */
 
 #include "ui/ofa-iaccounts-filter.h"
@@ -69,7 +77,7 @@ GType               ofa_accounts_book_bin_get_type( void ) G_GNUC_CONST;
 ofaAccountsBookBin *ofa_accounts_book_bin_new     ( ofaMainWindow *main_window );
 
 gboolean            ofa_accounts_book_bin_is_valid( ofaAccountsBookBin *bin,
-																		gchar **message );
+															gchar **message );
 
 gboolean            ofa_accounts_book_bin_get_new_page_per_account
                                                   ( const ofaAccountsBookBin *bin );

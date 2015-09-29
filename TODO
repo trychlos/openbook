@@ -486,8 +486,8 @@
                 src/mysql/ofa-mysql-connect-display-bin.ui  OK
                 src/mysql/ofa-mysql-connect-enter-bin.ui    OK
                 src/mysql/ofa-mysql-prefs.piece.ui          OK
-                src/ui/ofa-account-properties.ui
-                src/ui/ofa-accounts-book-bin.ui
+                src/ui/ofa-account-properties.ui            OK
+                src/ui/ofa-accounts-book-bin.ui             OK
                 src/ui/ofa-account-selector-bin.ui
                 src/ui/ofa-account-select.ui
                 src/ui/ofa-accounts-filter-vv-bin.ui
