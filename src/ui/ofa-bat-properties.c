@@ -186,8 +186,7 @@ v_init_dialog( myDialog *dialog )
 	priv = self->priv;
 	is_current = ofo_dossier_is_current( dossier );
 
-	container = my_utils_container_get_child_by_name(
-			GTK_CONTAINER( toplevel ), "containing-frame" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	priv->bat_bin = ofa_bat_properties_bin_new();

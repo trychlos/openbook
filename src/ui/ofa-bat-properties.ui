@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkDialog" id="BatPropertiesDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -51,15 +52,11 @@
           </packing>
         </child>
         <child>
-          <object class="GtkFrame" id="containing-frame">
+          <object class="GtkBox" id="properties-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label_xalign">0</property>
-            <property name="shadow_type">none</property>
+            <property name="orientation">vertical</property>
             <child>
-              <placeholder/>
-            </child>
-            <child type="label_item">
               <placeholder/>
             </child>
           </object>
