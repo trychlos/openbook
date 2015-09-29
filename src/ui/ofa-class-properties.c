@@ -179,6 +179,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *str;
 	GtkWindow *toplevel;
 	gboolean is_current;
+	GtkWidget *label;
 
 	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
@@ -199,10 +200,10 @@ v_init_dialog( myDialog *dialog )
 
 	is_current = ofo_dossier_is_current( dossier );
 
+	/* class number */
 	priv->number = number;
 	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-number" ));
+				my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-number" ));
 	if( priv->is_new ){
 		str = g_strdup( "" );
 	} else {
@@ -211,7 +212,11 @@ v_init_dialog( myDialog *dialog )
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-class-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	/* class label */
 	priv->label = g_strdup( ofo_class_get_label( priv->class ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
@@ -220,6 +225,9 @@ v_init_dialog( myDialog *dialog )
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	my_utils_init_notes_ex( toplevel, class, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, class );
