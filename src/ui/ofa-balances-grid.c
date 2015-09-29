@@ -41,6 +41,15 @@ struct _ofaBalancesGridPrivate {
 	GtkGrid *grid;						/* top grid */
 };
 
+/* columns of the balance grid
+ */
+enum {
+	COL_DEBIT = 0,
+	COL_SPACE,
+	COL_CREDIT,
+	COL_CURRENCY
+};
+
 /* signals defined here
  */
 enum {
@@ -194,7 +203,7 @@ on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble 
 	found = FALSE;
 
 	for( i=0 ; ; ++i ){
-		widget = gtk_grid_get_child_at( priv->grid, 2, i );
+		widget = gtk_grid_get_child_at( priv->grid, COL_CURRENCY, i );
 		if( !widget ){
 			break;
 		}
@@ -210,23 +219,27 @@ on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble 
 		widget = gtk_label_new( NULL );
 		my_utils_widget_set_xalign( widget, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
-		gtk_grid_attach( priv->grid, widget, 0, i, 1, 1 );
-		write_double( self, debit, 0, i );
+		gtk_grid_attach( priv->grid, widget, COL_DEBIT, i, 1, 1 );
+		write_double( self, debit, COL_DEBIT, i );
+
+		widget = gtk_label_new( "" );
+		gtk_widget_set_hexpand( widget, TRUE );
+		gtk_grid_attach( priv->grid, widget, COL_SPACE, i, 1, 1 );
 
 		widget = gtk_label_new( NULL );
 		my_utils_widget_set_xalign( widget, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
-		gtk_grid_attach( priv->grid, widget, 1, i, 1, 1 );
-		write_double( self, credit, 1, i );
+		gtk_grid_attach( priv->grid, widget, COL_CREDIT, i, 1, 1 );
+		write_double( self, credit, COL_CREDIT, i );
 
 		widget = gtk_label_new( NULL );
 		my_utils_widget_set_xalign( widget, 0 );
-		gtk_grid_attach( priv->grid, widget, 2, i, 1, 1 );
+		gtk_grid_attach( priv->grid, widget, COL_CURRENCY, i, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( widget ), currency );
 
 	} else {
-		write_double( self, debit, 0, i );
-		write_double( self, credit, 1, i );
+		write_double( self, debit, COL_DEBIT, i );
+		write_double( self, credit, COL_CREDIT, i );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
@@ -247,6 +260,8 @@ write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top )
 	priv = self->priv;
 
 	widget = gtk_grid_get_child_at( priv->grid, left, top );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+
 	str = my_double_to_str( amount );
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );

@@ -69,12 +69,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-check-balances-bin.ui";
-static const gchar *st_ui_id            = "CheckBalancesBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-balances-bin.ui";
 
 G_DEFINE_TYPE( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN )
 
-static void             load_dialog( ofaCheckBalancesBin *self );
+static void             setup_composite( ofaCheckBalancesBin *self );
 static gboolean         do_run( ofaCheckBalancesBin *bin );
 static void             check_entries_balance_run( ofaCheckBalancesBin *bin );
 static void             check_ledgers_balance_run( ofaCheckBalancesBin *bin );
@@ -191,18 +190,28 @@ ofa_check_balances_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CHECK_BALANCES_BIN, NULL );
 
-	load_dialog( self );
+	setup_composite( self );
 
 	return( self );
 }
 
 static void
-load_dialog( ofaCheckBalancesBin *bin )
+setup_composite( ofaCheckBalancesBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "cbb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**
@@ -470,7 +479,7 @@ set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "OK" ) : _( "NOT OK" ));
-	my_utils_widget_set_style( label, ok ? "labelnormal" : "labelerror" );
+	my_utils_widget_set_style( label, ok ? "labelinfo" : "labelerror" );
 }
 
 static myProgressBar *
@@ -548,6 +557,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 		if( priv->result ){
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "Your books are rightly balanced. Good !" ));
+			my_utils_widget_set_style( label, "labelinfo" );
 
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
@@ -555,6 +565,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 						"that some distorsion has happened among them.\n"
 						"In this current state, we will be unable to close this "
 						"exercice until you fix your balances." ));
+			my_utils_widget_set_style( label, "labelerror" );
 		}
 	}
 }

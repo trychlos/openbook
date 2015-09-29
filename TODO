@@ -495,7 +495,7 @@
                 src/ui/ofa-balance-bin.ui                   OK
                 src/ui/ofa-bat-properties-bin.ui            OK
                 src/ui/ofa-bat-properties.ui                OK
-                src/ui/ofa-bat-select.ui
+                src/ui/ofa-bat-select.ui                    --
                 src/ui/ofa-check-balances-bin.ui
                 src/ui/ofa-check-balances.ui
                 src/ui/ofa-check-integrity-bin.ui
