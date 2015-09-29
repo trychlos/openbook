@@ -186,7 +186,7 @@ setup_composite( ofaMySQLConnectEnterBin *bin )
 	ofaMySQLConnectEnterBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry;
+	GtkWidget *toplevel, *entry, *label;
 
 	priv = bin->priv;
 	builder = gtk_builder_new_from_file( st_bin_xml );
@@ -204,18 +204,30 @@ setup_composite( ofaMySQLConnectEnterBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-host" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_host_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-host" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-port" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-port" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-socket" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_socket_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-socket" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), bin );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-database" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
