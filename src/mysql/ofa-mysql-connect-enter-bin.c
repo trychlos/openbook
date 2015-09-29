@@ -38,128 +38,209 @@
 #include "ofa-mysql-idbms.h"
 #include "ofa-mysql-connect-enter-bin.h"
 
-/*
- * this structure is attached to the returned GtkWidget
+/* private instance data
  */
-typedef struct {
-	ofaIDbms   *module;
-	mysqlInfos  sInfos;
-}
-	sPrivate;
+struct _ofaMySQLConnectEnterBinPrivate {
+	gboolean      dispose_has_run;
 
-#define IDBMS_DATA                      "mysql-IDBMS-data"
+	/* runtime data
+	 */
+	ofaIDbms     *instance;
+	mysqlInfos    sInfos;
 
-static const gchar *st_newui_xml        = PROVIDER_DATADIR "/ofa-mysql-connect-enter-bin.ui";
-static const gchar *st_newui_mysql      = "MySQLConnectEnterBin";
+	/* UI
+	 */
+	GtkSizeGroup *group0;
+};
 
-static void       on_widget_finalized( sPrivate *priv, GObject *finalized_widget );
-static GtkWidget *setup_widget( const ofaIDbms *instance, sPrivate *priv, GtkSizeGroup *group );
-static void       on_host_changed( GtkEntry *entry, sPrivate *priv );
-static void       on_port_changed( GtkEntry *entry, sPrivate *priv );
-static void       on_socket_changed( GtkEntry *entry, sPrivate *priv );
-static void       on_database_changed( GtkEntry *entry, sPrivate *priv );
-
-/*
- * @parent: the GtkContainer in the DossierNewDlg dialog box which will
- *  contain the provider properties grid
+/* signals defined here
  */
-GtkWidget *
-ofa_mysql_connect_enter_bin_new( ofaIDbms *instance, GtkSizeGroup *group )
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-connect-enter-bin.ui";
+
+G_DEFINE_TYPE( ofaMySQLConnectEnterBin, ofa_mysql_connect_enter_bin, GTK_TYPE_BIN )
+
+static void setup_composite( ofaMySQLConnectEnterBin *bin );
+static void on_host_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
+static void on_port_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
+static void on_socket_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
+static void on_database_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
+
+static void
+mysql_connect_enter_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_enter_bin_new";
-	GtkWidget *widget;
-	sPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_connect_enter_bin_finalize";
 
-	priv = g_new0( sPrivate, 1 );
-	priv->module = instance;
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	widget = setup_widget( instance, priv, group );
+	g_return_if_fail( instance && OFA_IS_MYSQL_CONNECT_ENTER_BIN( instance ));
 
-	g_object_set_data( G_OBJECT( widget ), IDBMS_DATA, priv );
-	g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, priv );
+	/* free data members here */
 
-	g_debug( "%s: widget=%p (%s)", thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ));
-
-	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
-
-	return( widget );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_mysql_connect_enter_bin_parent_class )->finalize( instance );
 }
 
 static void
-on_widget_finalized( sPrivate *priv, GObject *finalized_widget )
+mysql_connect_enter_bin_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_enter_bin_on_widget_finalized";
+	ofaMySQLConnectEnterBinPrivate *priv;
 
-	g_debug( "%s: priv=%p, finalized_widget=%p",
-			thisfn, ( void * ) priv, ( void * ) finalized_widget );
+	g_return_if_fail( instance && OFA_IS_MYSQL_CONNECT_ENTER_BIN( instance ));
 
-	ofa_mysql_free_connect_infos( &priv->sInfos );
+	priv = OFA_MYSQL_CONNECT_ENTER_BIN( instance )->priv;
 
-	g_free( priv );
-}
+	if( !priv->dispose_has_run ){
 
-static GtkWidget *
-setup_widget( const ofaIDbms *instance, sPrivate *priv, GtkSizeGroup *group )
-{
-	GtkWidget *top, *widget;
-	GtkWidget *label, *entry;
-
-	/* attach our sgdb provider grid */
-	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	top = my_utils_container_attach_from_ui( GTK_CONTAINER( widget ), st_newui_xml, st_newui_mysql, "top" );
-	g_return_val_if_fail( top && GTK_IS_CONTAINER( top ), NULL );
-
-	if( group ){
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-host" );
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-		gtk_size_group_add_widget( group, label );
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-port" );
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-		gtk_size_group_add_widget( group, label );
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-socket" );
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-		gtk_size_group_add_widget( group, label );
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "pl-database" );
-		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-		gtk_size_group_add_widget( group, label );
+		/* unref object members here */
+		g_clear_object( &priv->group0 );
 	}
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "p2-host" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_host_changed ), priv );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "p2-port" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), priv );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "p2-socket" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_socket_changed ), priv );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top ), "p2-database" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), priv );
-
-	return( widget );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_mysql_connect_enter_bin_parent_class )->dispose( instance );
 }
 
 static void
-on_host_changed( GtkEntry *entry, sPrivate *priv )
+ofa_mysql_connect_enter_bin_init( ofaMySQLConnectEnterBin *self )
 {
+	static const gchar *thisfn = "ofa_mysql_connect_enter_bin_instance_init";
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_MYSQL_CONNECT_ENTER_BIN( self ));
+
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+							self, OFA_TYPE_MYSQL_CONNECT_ENTER_BIN, ofaMySQLConnectEnterBinPrivate );
+}
+
+static void
+ofa_mysql_connect_enter_bin_class_init( ofaMySQLConnectEnterBinClass *klass )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_enter_bin_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = mysql_connect_enter_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_connect_enter_bin_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaMySQLConnectEnterBinPrivate ));
+
+	/**
+	 * ofaMySQLConnectEnterBin::changed:
+	 *
+	 * This signal is sent on the #ofaMySQLConnectEnterBin widget when
+	 * any of the content changes.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMySQLConnectEnterBin *bin,
+	 * 						gpointer               user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-changed",
+				OFA_TYPE_MYSQL_CONNECT_ENTER_BIN,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+}
+
+/**
+ * ofa_mysql_connect_enter_bin_new:
+ * @instance: the provider instance
+ *
+ * Returns: a new #ofaMySQLConnectEnterBin instance as a #GtkWidget.
+ */
+GtkWidget *
+ofa_mysql_connect_enter_bin_new( ofaIDbms *instance )
+{
+	ofaMySQLConnectEnterBin *bin;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+
+	bin = g_object_new( OFA_TYPE_MYSQL_CONNECT_ENTER_BIN, NULL );
+
+	bin->priv->instance = instance;
+
+	setup_composite( bin );
+
+	g_signal_emit_by_name( instance, "dbms-changed", &bin->priv->sInfos );
+
+	return( GTK_WIDGET( bin ));
+}
+
+static void
+setup_composite( ofaMySQLConnectEnterBin *bin )
+{
+	ofaMySQLConnectEnterBinPrivate *priv;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry;
+
+	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "mceb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "mceb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-host" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_host_changed ), bin );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-port" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), bin );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-socket" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_socket_changed ), bin );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), bin );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
+}
+
+static void
+on_host_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin )
+{
+	ofaMySQLConnectEnterBinPrivate *priv;
+
+	priv = bin->priv;
 	g_free( priv->sInfos.host );
 	priv->sInfos.host = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( priv->instance, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( bin, "ofa-changed" );
 }
 
 static void
-on_port_changed( GtkEntry *entry, sPrivate *priv )
+on_port_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin )
 {
+	ofaMySQLConnectEnterBinPrivate *priv;
 	const gchar *port;
 
+	priv = bin->priv;
 	port = gtk_entry_get_text( entry );
 	if( my_strlen( port )){
 		priv->sInfos.port = atoi( port );
@@ -167,71 +248,129 @@ on_port_changed( GtkEntry *entry, sPrivate *priv )
 		priv->sInfos.port = 0;
 	}
 
-	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( priv->instance, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( bin, "ofa-changed" );
 }
 
 static void
-on_socket_changed( GtkEntry *entry, sPrivate *priv )
+on_socket_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin )
 {
+	ofaMySQLConnectEnterBinPrivate *priv;
+
+	priv = bin->priv;
 	g_free( priv->sInfos.socket );
 	priv->sInfos.socket = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( priv->instance, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( bin, "ofa-changed" );
 }
 
 static void
-on_database_changed( GtkEntry *entry, sPrivate *priv )
+on_database_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin )
 {
+	ofaMySQLConnectEnterBinPrivate *priv;
+
+	priv = bin->priv;
 	g_free( priv->sInfos.dbname );
 	priv->sInfos.dbname = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( priv->module, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( priv->instance, "dbms-changed", &priv->sInfos );
+	g_signal_emit_by_name( bin, "ofa-changed" );
 }
 
-/*
+/**
+ * ofa_mysql_connect_enter_bin_get_size_group:
+ * @instance: the provider instance
+ * @bin: this #ofaMySQLConnectEnterBin composite widget
+ * @column: the desired column.
+ *
+ * Returns: the #GtkSizeGroup for the specified @column.
+ */
+GtkSizeGroup *
+ofa_mysql_connect_enter_bin_get_size_group( const ofaIDbms *instance, GtkWidget *bin, guint column )
+{
+	ofaMySQLConnectEnterBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_CONNECT_ENTER_BIN( bin ), NULL );
+
+	priv = OFA_MYSQL_CONNECT_ENTER_BIN( bin )->priv;
+
+	if( !priv->dispose_has_run ){
+		if( column == 0 ){
+			return( priv->group0 );
+		}
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofa_mysql_connect_enter_bin_is_valid:
+ * @instance:
+ * @bin:
+ * @message: [allow-none]:
+ *
  * check the entered connection informations
  * as we do not have any credentials, we can only check here whether
  * a database name is set
  */
 gboolean
-ofa_mysql_connect_enter_bin_is_valid( const ofaIDbms *instance, GtkWidget *piece, gchar **message )
+ofa_mysql_connect_enter_bin_is_valid( const ofaIDbms *instance, GtkWidget *bin, gchar **message )
 {
-	sPrivate *priv;
+	ofaMySQLConnectEnterBinPrivate *priv;
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( piece && GTK_IS_WIDGET( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_CONNECT_ENTER_BIN( bin ), FALSE );
 
-	priv = ( sPrivate * ) g_object_get_data( G_OBJECT( piece ), IDBMS_DATA );
-	g_return_val_if_fail( priv, FALSE );
+	priv = OFA_MYSQL_CONNECT_ENTER_BIN( bin )->priv;
 
-	ok = my_strlen( priv->sInfos.dbname ) > 0;
+	if( !priv->dispose_has_run ){
 
-	if( message ){
-		*message = ok ? NULL : g_strdup( _( "Database name is not set" ));
+		ok = my_strlen( priv->sInfos.dbname ) > 0;
+
+		if( message ){
+			*message = ok ? NULL : g_strdup( _( "Database name is not set" ));
+		}
+
+		return( ok );
 	}
 
-	return( ok );
+	g_return_val_if_reached( FALSE );
 }
 
-/*
- * returns the database name
+/**
+ * ofa_mysql_connect_enter_bin_get_database:
+ * @instance:
+ * @bin:
+ *
+ * Returns: the database name as a newly allocated string which should
+ * be g_free() by the caller.
  */
 gchar *
-ofa_mysql_connect_enter_bin_get_database( const ofaIDbms *instance, GtkWidget *piece )
+ofa_mysql_connect_enter_bin_get_database( const ofaIDbms *instance, GtkWidget *bin )
 {
-	sPrivate *priv;
+	ofaMySQLConnectEnterBinPrivate *priv;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( piece && GTK_IS_WIDGET( piece ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_CONNECT_ENTER_BIN( bin ), FALSE );
 
-	priv = ( sPrivate * ) g_object_get_data( G_OBJECT( piece ), IDBMS_DATA );
-	g_return_val_if_fail( priv, NULL );
+	priv = OFA_MYSQL_CONNECT_ENTER_BIN( bin )->priv;
 
-	return( g_strdup( priv->sInfos.dbname ));
+	if( !priv->dispose_has_run ){
+		return( g_strdup( priv->sInfos.dbname ));
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
-/*
+/**
+ * ofa_mysql_connect_enter_bin_apply:
+ * @instance:
+ * @dname:
+ * @infos:
+ *
  * Record the newly defined dossier in settings
  */
 gboolean

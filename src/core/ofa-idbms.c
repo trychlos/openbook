@@ -480,13 +480,12 @@ ofa_idbms_connect_display_get_size_group( const ofaIDbms *instance, GtkWidget *b
 /**
  * ofa_idbms_connect_enter_new:
  * @instance: this #ofaIDbms instance.
- * @group: [allow-none]: a #GtkSizeGroup.
  *
  * Create a piece of dialog which will let the user enter connection
  * informations.
  */
 GtkWidget *
-ofa_idbms_connect_enter_new( ofaIDbms *instance, GtkSizeGroup *group )
+ofa_idbms_connect_enter_new( ofaIDbms *instance )
 {
 	GtkWidget *widget;
 
@@ -495,10 +494,35 @@ ofa_idbms_connect_enter_new( ofaIDbms *instance, GtkSizeGroup *group )
 	widget = NULL;
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_new ){
-		widget = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_new( instance, group );
+		widget = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_new( instance );
 	}
 
 	return( widget );
+}
+
+/**
+ * ofa_idbms_connect_enter_get_size_group:
+ * @instance: this #ofaIDbms instance.
+ * @bin: the GtkBin returned by #ofa_idbms_connect_display_new().
+ * @column: the desired column.
+ *
+ * Returns: the #GtkSizeGroup of the specified @column.
+ */
+GtkSizeGroup *
+ofa_idbms_connect_enter_get_size_group( const ofaIDbms *instance, GtkWidget *bin, guint column )
+{
+	GtkSizeGroup *group;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( bin && GTK_IS_WIDGET( bin ), NULL );
+
+	group = NULL;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_size_group ){
+		group = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_size_group( instance, bin, column );
+	}
+
+	return( group );
 }
 
 /**

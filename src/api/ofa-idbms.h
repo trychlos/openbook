@@ -245,8 +245,21 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget    * ( *connect_enter_new )             ( ofaIDbms *instance,
-																GtkSizeGroup *group );
+	GtkWidget    * ( *connect_enter_new )             ( ofaIDbms *instance );
+
+	/**
+	 * connect_enter_get_size_group:
+	 * @instance: the #ofaIDbms provider.
+	 * @bin: the #GtkWidget returned by connect_display_new().
+	 * @column: the desired column.
+	 *
+	 * Returns: the #GtkSizeGroup for the desired @column.
+	 *
+	 * Since: version 1
+	 */
+	GtkSizeGroup * ( *connect_enter_get_size_group )  ( const ofaIDbms *instance,
+																GtkWidget *bin,
+																guint column );
 
 	/**
 	 * connect_enter_is_valid:
@@ -564,15 +577,18 @@ GtkSizeGroup *ofa_idbms_connect_display_get_size_group( const ofaIDbms *instance
 															GtkWidget *bin,
 															guint column );
 
-GtkWidget    *ofa_idbms_connect_enter_new             ( ofaIDbms *instance,
-															GtkSizeGroup *group );
+GtkWidget    *ofa_idbms_connect_enter_new             ( ofaIDbms *instance );
+
+GtkSizeGroup *ofa_idbms_connect_enter_get_size_group  ( const ofaIDbms *instance,
+															GtkWidget *bin,
+															guint column );
 
 gboolean      ofa_idbms_connect_enter_is_valid        ( const ofaIDbms *instance,
-															GtkWidget *piece,
+															GtkWidget *bin,
 															gchar **message );
 
 gchar        *ofa_idbms_connect_enter_get_database    ( const ofaIDbms *instance,
-															GtkWidget *piece );
+															GtkWidget *bin );
 
 gboolean      ofa_idbms_connect_enter_apply           ( const ofaIDbms *instance,
 															const gchar *dname,

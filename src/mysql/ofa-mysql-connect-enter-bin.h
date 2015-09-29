@@ -29,24 +29,60 @@
  * SECTION: ofa_mysql_idbms
  * @short_description: #ofaMysql class definition.
  *
- * #ofaIDbms interface management.
+ * Let the user enter connection informations.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - send an 'ofa-changed' signal when the content changes
+ * - do not manage its own error message, but provide it via the interface
+ * - do not manage its own settings.
  */
 
 #include <api/ofa-idbms.h>
 
 G_BEGIN_DECLS
 
-GtkWidget *ofa_mysql_connect_enter_bin_new         ( ofaIDbms *instance,
-																GtkSizeGroup *group );
+#define OFA_TYPE_MYSQL_CONNECT_ENTER_BIN                ( ofa_mysql_connect_enter_bin_get_type())
+#define OFA_MYSQL_CONNECT_ENTER_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_CONNECT_ENTER_BIN, ofaMySQLConnectEnterBin ))
+#define OFA_MYSQL_CONNECT_ENTER_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_CONNECT_ENTER_BIN, ofaMySQLConnectEnterBinClass ))
+#define OFA_IS_MYSQL_CONNECT_ENTER_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_CONNECT_ENTER_BIN ))
+#define OFA_IS_MYSQL_CONNECT_ENTER_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_CONNECT_ENTER_BIN ))
+#define OFA_MYSQL_CONNECT_ENTER_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT_ENTER_BIN, ofaMySQLConnectEnterBinClass ))
 
-gboolean   ofa_mysql_connect_enter_bin_is_valid    ( const ofaIDbms *instance,
-																GtkWidget *piece,
+typedef struct _ofaMySQLConnectEnterBinPrivate          ofaMySQLConnectEnterBinPrivate;
+
+typedef struct {
+	/*< public members >*/
+	GtkBin                          parent;
+
+	/*< private members >*/
+	ofaMySQLConnectEnterBinPrivate *priv;
+}
+	ofaMySQLConnectEnterBin;
+
+typedef struct {
+	/*< public members >*/
+	GtkBinClass                     parent;
+}
+	ofaMySQLConnectEnterBinClass;
+
+GType         ofa_mysql_connect_enter_bin_get_type      ( void ) G_GNUC_CONST;
+
+GtkWidget    *ofa_mysql_connect_enter_bin_new           ( ofaIDbms *instance );
+
+GtkSizeGroup *ofa_mysql_connect_enter_bin_get_size_group( const ofaIDbms *instance,
+																GtkWidget *bin,
+																guint column );
+
+gboolean      ofa_mysql_connect_enter_bin_is_valid      ( const ofaIDbms *instance,
+																GtkWidget *bin,
 																gchar **message );
 
-gchar     *ofa_mysql_connect_enter_bin_get_database( const ofaIDbms *instance,
-																GtkWidget *piece );
+gchar        *ofa_mysql_connect_enter_bin_get_database  ( const ofaIDbms *instance,
+																GtkWidget *bin );
 
-gboolean   ofa_mysql_connect_enter_bin_apply       ( const ofaIDbms *instance,
+gboolean      ofa_mysql_connect_enter_bin_apply         ( const ofaIDbms *instance,
 																const gchar *dname,
 																void *infos );
 

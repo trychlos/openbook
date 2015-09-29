@@ -449,8 +449,12 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 				priv->prov_handler =
 						g_signal_connect( priv->prov_module,
 								"dbms-changed" , G_CALLBACK( on_connect_infos_changed ), self );
-				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module, priv->group0 );
+				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module );
 				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), priv->connect_infos );
+				my_utils_size_group_add_size_group(
+						priv->group0,
+						ofa_idbms_connect_enter_get_size_group(
+								priv->prov_module, priv->connect_infos, 0 ));
 
 			} else {
 				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->prov_name );

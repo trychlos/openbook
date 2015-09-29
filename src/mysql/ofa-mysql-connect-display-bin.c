@@ -87,9 +87,7 @@ mysql_connect_display_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		/* unref object members here */
-		if( priv->group0 ){
-			g_clear_object( &priv->group0 );
-		}
+		g_clear_object( &priv->group0 );
 	}
 
 	/* chain up to the parent class */
@@ -128,7 +126,7 @@ ofa_mysql_connect_display_bin_class_init( ofaMySQLConnectDisplayBinClass *klass 
  * @instance: the provider instance
  * @dname: the dossier name
  *
- * Returns: a new #ofaMySQLConnectDisplayBin instance as a #GtkBin.
+ * Returns: a new #ofaMySQLConnectDisplayBin instance as a #GtkWidget.
  */
 GtkWidget *
 ofa_mysql_connect_display_bin_new( const ofaIDbms *instance, const gchar *dname )

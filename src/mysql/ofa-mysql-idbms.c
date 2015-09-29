@@ -97,6 +97,7 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->connect_display_new = ofa_mysql_connect_display_bin_new;
 	iface->connect_display_get_size_group = ofa_mysql_connect_display_bin_get_size_group;
 	iface->connect_enter_new = ofa_mysql_connect_enter_bin_new;
+	iface->connect_enter_get_size_group = ofa_mysql_connect_enter_bin_get_size_group;
 	iface->connect_enter_is_valid = ofa_mysql_connect_enter_bin_is_valid;
 	iface->connect_enter_get_database = ofa_mysql_connect_enter_bin_get_database;
 	iface->connect_enter_apply = ofa_mysql_connect_enter_bin_apply;

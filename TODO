@@ -483,8 +483,8 @@
                 src/core/ofa-dossier-delete-prefs-bin.ui    OK
                 src/core/ofa-file-format-bin.ui             OK
                 src/core/ofa-preferences.ui                 OK
-                src/mysql/ofa-mysql-connect-display-bin.ui
-                src/mysql/ofa-mysql-connect-enter-bin.ui
+                src/mysql/ofa-mysql-connect-display-bin.ui  OK
+                src/mysql/ofa-mysql-connect-enter-bin.ui    OK
                 src/mysql/ofa-mysql-prefs.piece.ui
                 src/ui/ofa-account-properties.ui
                 src/ui/ofa-accounts-book-bin.ui
