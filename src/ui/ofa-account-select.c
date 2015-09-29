@@ -49,7 +49,7 @@ struct _ofaAccountSelectPrivate {
 	/* UI
 	 */
 	ofaAccountsFrame *accounts_frame;
-	ofaAccountsChart  *accounts_chart;
+	ofaAccountsChart *accounts_chart;
 	GtkWidget        *ok_btn;
 	GtkWidget        *msg_label;
 
@@ -372,8 +372,9 @@ set_message( ofaAccountSelect *self, const gchar *str )
 
 		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p-message" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+
+		my_utils_widget_set_style( priv->msg_label, "labelerror" );
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
-	my_utils_widget_set_style( priv->msg_label, "labelerror" );
 }

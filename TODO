@@ -489,7 +489,7 @@
                 src/ui/ofa-account-properties.ui            OK
                 src/ui/ofa-accounts-book-bin.ui             OK
                 src/ui/ofa-account-selector-bin.ui          OK
-                src/ui/ofa-account-select.ui
+                src/ui/ofa-account-select.ui                OK
                 src/ui/ofa-accounts-filter-vv-bin.ui
                 src/ui/ofa-app-menubar.ui
                 src/ui/ofa-balance-bin.ui
