@@ -86,12 +86,11 @@ enum {
 	N_COLUMNS
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-bat-properties-bin.ui";
-static const gchar *st_ui_id            = "BatPropertiesBinWindow";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-bat-properties-bin.ui";
 
 G_DEFINE_TYPE( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN )
 
-static void  load_dialog( ofaBatPropertiesBin *bin );
+static void  setup_composite( ofaBatPropertiesBin *bin );
 static void  setup_treeview( ofaBatPropertiesBin *bin );
 static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable );
 static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
@@ -170,67 +169,76 @@ ofa_bat_properties_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
 
-	load_dialog( bin );
+	setup_composite( bin );
 	setup_treeview( bin );
 
 	return( bin );
 }
 
 static void
-load_dialog( ofaBatPropertiesBin *bin )
+setup_composite( ofaBatPropertiesBin *bin )
 {
 	ofaBatPropertiesBinPrivate *priv;
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
 	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	object = gtk_builder_get_object( builder, "bpb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
 	/* identify the widgets for the properties */
-	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-id" );
+	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-id" );
 	g_return_if_fail( priv->bat_id && GTK_IS_ENTRY( priv->bat_id ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_id ), FALSE );
 
-	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-format" );
+	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-format" );
 	g_return_if_fail( priv->bat_format && GTK_IS_ENTRY( priv->bat_format ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_format ), FALSE );
 
-	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-count" );
+	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_count ), FALSE );
 
-	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-unused" );
+	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-unused" );
 	g_return_if_fail( priv->bat_unused && GTK_IS_ENTRY( priv->bat_unused ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_unused ), FALSE );
 
-	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-begin" );
+	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-begin" );
 	g_return_if_fail( priv->bat_begin && GTK_IS_ENTRY( priv->bat_begin ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_begin ), FALSE );
 
-	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-end" );
+	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-end" );
 	g_return_if_fail( priv->bat_end && GTK_IS_ENTRY( priv->bat_end ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_end ), FALSE );
 
-	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-rib" );
+	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-rib" );
 	g_return_if_fail( priv->bat_rib && GTK_IS_ENTRY( priv->bat_rib ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_rib ), FALSE );
 
-	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-currency" );
+	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-currency" );
 	g_return_if_fail( priv->bat_currency && GTK_IS_ENTRY( priv->bat_currency ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_currency ), FALSE );
 
-	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-begin" );
+	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-begin" );
 	g_return_if_fail( priv->bat_solde_begin && GTK_IS_ENTRY( priv->bat_solde_begin ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_begin ), FALSE );
 
-	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-solde-end" );
+	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-end" );
 	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_end ), FALSE );
 
-	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "p1-account" );
+	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
 	my_utils_widget_set_editable( G_OBJECT( priv->bat_account ), FALSE );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void

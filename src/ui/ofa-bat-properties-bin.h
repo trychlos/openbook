@@ -33,6 +33,12 @@
  * A convenience class which manages BAT properties. It is used both
  * for displaying the properties both from BatProperties and from
  * BatSelect.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - is read-only, so does not have any 'ofa-changed' signal, nor
+ *   validation, or error message or settings.
  */
 
 #include <gtk/gtk.h>

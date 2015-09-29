@@ -493,7 +493,7 @@
                 src/ui/ofa-accounts-filter-vv-bin.ui        OK
                 src/ui/ofa-app-menubar.ui                   --
                 src/ui/ofa-balance-bin.ui                   OK
-                src/ui/ofa-bat-properties-bin.ui
+                src/ui/ofa-bat-properties-bin.ui            
                 src/ui/ofa-bat-properties.ui
                 src/ui/ofa-bat-select.ui
                 src/ui/ofa-check-balances-bin.ui
