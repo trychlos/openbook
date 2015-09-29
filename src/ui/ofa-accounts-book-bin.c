@@ -66,21 +66,20 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-accounts-book-bin.ui";
-static const gchar *st_ui_id            = "AccountsBookBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-accounts-book-bin.ui";
 static const gchar *st_settings         = "RenderAccountsBook";
 
 G_DEFINE_TYPE( ofaAccountsBookBin, ofa_accounts_book_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaAccountsBookBin *bin );
-static void       setup_account_selection( ofaAccountsBookBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaAccountsBookBin *self, GtkContainer *parent );
-static void       setup_others( ofaAccountsBookBin *self, GtkContainer *parent );
-static void       on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountsBookBin *self );
-static void       on_new_page_toggled( GtkToggleButton *button, ofaAccountsBookBin *self );
-static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountsBookBin *self );
-static void       load_settings( ofaAccountsBookBin *bin );
-static void       set_settings( ofaAccountsBookBin *bin );
+static void setup_composite( ofaAccountsBookBin *bin );
+static void setup_account_selection( ofaAccountsBookBin *bin );
+static void setup_date_selection( ofaAccountsBookBin *bin );
+static void setup_others( ofaAccountsBookBin *bin );
+static void on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountsBookBin *self );
+static void on_new_page_toggled( GtkToggleButton *button, ofaAccountsBookBin *self );
+static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountsBookBin *self );
+static void load_settings( ofaAccountsBookBin *bin );
+static void set_settings( ofaAccountsBookBin *bin );
 
 static void
 accounts_book_bin_finalize( GObject *instance )
@@ -176,94 +175,97 @@ ofaAccountsBookBin *
 ofa_accounts_book_bin_new( ofaMainWindow *main_window )
 {
 	ofaAccountsBookBin *self;
-	GtkWidget *parent;
 
 	self = g_object_new( OFA_TYPE_ACCOUNTS_BOOK_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
-	parent = load_dialog( self );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
-
-	setup_account_selection( self, GTK_CONTAINER( parent ));
-	setup_date_selection( self, GTK_CONTAINER( parent ));
-	setup_others( self, GTK_CONTAINER( parent ));
+	setup_composite( self );
+	setup_account_selection( self );
+	setup_date_selection( self );
+	setup_others( self );
 
 	load_settings( self );
 
 	return( self );
 }
 
-/*
- * returns: the GtkContainer parent
- */
-static GtkWidget *
-load_dialog( ofaAccountsBookBin *bin )
+static void
+setup_composite( ofaAccountsBookBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	return( top_widget );
+	object = gtk_builder_get_object( builder, "abb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void
-setup_account_selection( ofaAccountsBookBin *self, GtkContainer *parent )
+setup_account_selection( ofaAccountsBookBin *bin )
 {
 	ofaAccountsBookBinPrivate *priv;
-	GtkWidget *alignment;
-	ofaAccountsFilterVVBin *bin;
+	GtkWidget *parent;
+	ofaAccountsFilterVVBin *filter;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	alignment = my_utils_container_get_child_by_name( parent, "accounts-filter" );
-	g_return_if_fail( alignment && GTK_IS_CONTAINER( alignment ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "accounts-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_accounts_filter_vv_bin_new( priv->main_window );
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bin ));
+	filter = ofa_accounts_filter_vv_bin_new( priv->main_window );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
+	priv->accounts_filter = filter;
 
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_accounts_filter_changed ), self );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_accounts_filter_changed ), bin );
 
-	priv->accounts_filter = bin;
 }
 
 static void
-setup_date_selection( ofaAccountsBookBin *self, GtkContainer *parent )
+setup_date_selection( ofaAccountsBookBin *bin )
 {
 	ofaAccountsBookBinPrivate *priv;
-	GtkWidget *alignment, *label;
-	ofaDatesFilterHVBin *bin;
+	GtkWidget *parent, *label;
+	ofaDatesFilterHVBin *filter;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	alignment = my_utils_container_get_child_by_name( parent, "dates-filter" );
-	g_return_if_fail( alignment && GTK_IS_CONTAINER( alignment ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dates-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_dates_filter_hv_bin_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bin ));
+	filter = ofa_dates_filter_hv_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
+	priv->dates_filter = filter;
 
 	/* instead of "effect dates filter" */
-	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
+	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), self );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), bin );
 
-	priv->dates_filter = bin;
 }
 
 static void
-setup_others( ofaAccountsBookBin *self, GtkContainer *parent )
+setup_others( ofaAccountsBookBin *bin )
 {
 	ofaAccountsBookBinPrivate *priv;
 	GtkWidget *toggle;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	toggle = my_utils_container_get_child_by_name( parent, "p3-one-page" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-one-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = toggle;
+
+	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 }
 
 static void
