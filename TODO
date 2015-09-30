@@ -501,7 +501,7 @@
                 src/ui/ofa-check-integrity-bin.ui           OK
                 src/ui/ofa-check-integrity.ui               --
                 src/ui/ofa-class-properties.ui              OK
-                src/ui/ofa-closing-parms-bin.ui
+                src/ui/ofa-closing-parms-bin.ui             OK
                 src/ui/ofa-currency-properties.ui
                 src/ui/ofa-dates-filter-hv-bin.ui
                 src/ui/ofa-dos-menubar.ui

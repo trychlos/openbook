@@ -410,7 +410,9 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	priv->p2_closing_parms = ofa_closing_parms_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_closing_parms ));
 	ofa_closing_parms_bin_set_main_window( priv->p2_closing_parms, OFA_MAIN_WINDOW( main_window ));
-	g_signal_connect( G_OBJECT( priv->p2_closing_parms ), "changed", G_CALLBACK( p2_on_closing_parms_changed ), self );
+	g_signal_connect(
+			G_OBJECT( priv->p2_closing_parms ),
+			"ofa-changed", G_CALLBACK( p2_on_closing_parms_changed ), self );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }

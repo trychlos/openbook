@@ -193,7 +193,7 @@ setup_composite( ofaDBMSRootBin *bin )
 	GObject *object;
 	GtkWidget *toplevel, *label;
 
-	priv =bin->priv;
+	priv = bin->priv;
 	builder = gtk_builder_new_from_file( st_bin_xml );
 
 	object = gtk_builder_get_object( builder, "drb-col0-hsize" );

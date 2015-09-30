@@ -32,6 +32,14 @@
  *
  * The configuration of balancing account carried forward entries when
  * closing the exercice.
+ *
+ * This is a standard composite widget, so:
+ * - have a "top" container which is to be attached to (added to) a
+ *  'parent' container
+ * - defines an 'ofa-changed' message when the content changes
+ * - do not manage its own error message display field, but returns an
+ *   error message to be displayed by the parent
+ * - do not manage its own settings.
  */
 
 #include "ui/ofa-main-window-def.h"

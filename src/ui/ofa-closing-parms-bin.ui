@@ -2,7 +2,8 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkWindow" id="ClosingParmsBin">
+  <object class="GtkSizeGroup" id="LabelSizeGroup"/>
+  <object class="GtkWindow" id="cpb-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid" id="top">
@@ -123,7 +124,7 @@
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="label5">
+                  <object class="GtkLabel" id="p-bal-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Balancing accounts operation :</property>
@@ -163,10 +164,10 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label7">
+                  <object class="GtkLabel" id="p-for-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Carried forward entries operation :</property>
+                    <property name="label" translatable="yes">_Carried forward entries operation :</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">1</property>
                   </object>
@@ -221,5 +222,4 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="LabelSizeGroup"/>
 </interface>

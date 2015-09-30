@@ -410,8 +410,8 @@ init_forward_page( ofaDossierProperties *self, GtkContainer *container )
 	priv->closing_parms = ofa_closing_parms_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->closing_parms ));
 	ofa_closing_parms_bin_set_main_window( priv->closing_parms, OFA_MAIN_WINDOW( main_window ));
-
-	g_signal_connect( priv->closing_parms, "changed", G_CALLBACK( on_closing_parms_changed ), self );
+	g_signal_connect(
+			priv->closing_parms, "ofa-changed", G_CALLBACK( on_closing_parms_changed ), self );
 }
 
 static void

@@ -56,7 +56,9 @@ struct _ofaClosingParmsBinPrivate {
 	/* the closing operations
 	 */
 	GtkWidget      *sld_ope;
+	GtkWidget      *bope_select_button;
 	GtkWidget      *for_ope;
+	GtkWidget      *fope_select_button;
 
 	/* the balancing accounts per currency
 	 */
@@ -88,13 +90,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-closing-parms-bin.ui";
-static const gchar *st_ui_id            = "ClosingParmsBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-closing-parms-bin.ui";
 
 G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
 
-static void     load_dialog( ofaClosingParmsBin *self );
-static void     setup_dialog( ofaClosingParmsBin *self );
+static void     setup_composite( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
 static void     on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
@@ -186,7 +186,7 @@ ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_CLOSING_PARMS_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -207,18 +207,66 @@ ofa_closing_parms_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
-	load_dialog( self );
+	setup_composite( self );
 
 	return( self );
 }
 
 static void
-load_dialog( ofaClosingParmsBin *bin )
+setup_composite( ofaClosingParmsBin *bin )
 {
-	GtkWidget *top_widget;
+	ofaClosingParmsBinPrivate *priv;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *label, *button, *image;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "cpb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	/* balancing accounts operation */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p-bal-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	g_signal_connect(
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_ope_changed ), bin );
+	priv->sld_ope = entry;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_sld_ope_select ), bin );
+	priv->bope_select_button = button;
+
+	/* carried forward entries operation */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p-for-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	g_signal_connect(
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_ope_changed ), bin );
+	priv->for_ope = entry;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	g_signal_connect(
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_for_ope_select ), bin );
+	priv->fope_select_button = button;
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**
@@ -240,23 +288,13 @@ ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *m
 		priv->dossier = ofa_main_window_get_dossier( main_window );
 		priv->is_current = ofo_dossier_is_current( priv->dossier );
 
-		setup_dialog( bin );
+		if( priv->dossier ){
+			setup_closing_opes( bin );
+			setup_currency_accounts( bin );
+		}
+
+		gtk_widget_show_all( GTK_WIDGET( bin ));
 	}
-}
-
-static void
-setup_dialog( ofaClosingParmsBin *bin )
-{
-	ofaClosingParmsBinPrivate *priv;
-
-	priv = bin->priv;
-
-	if( priv->dossier ){
-		setup_closing_opes( bin );
-		setup_currency_accounts( bin );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
 static void
@@ -264,49 +302,27 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 {
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
-	GtkWidget *widget, *image;
 
 	priv = bin->priv;
 
 	/* operation mnemo for closing entries
 	 * - have a default value */
-	priv->sld_ope = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
-	g_return_if_fail( priv->sld_ope && GTK_IS_ENTRY( priv->sld_ope ));
-	g_signal_connect(
-			G_OBJECT( priv->sld_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
-
 	cstr = ofo_dossier_get_sld_ope( priv->dossier );
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 	}
-	gtk_widget_set_can_focus( priv->sld_ope, priv->is_current );
+	my_utils_widget_set_editable( priv->sld_ope, priv->is_current );
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( widget ), image );
-	g_signal_connect(
-			G_OBJECT( widget ), "clicked", G_CALLBACK( on_sld_ope_select ), bin );
-	gtk_widget_set_sensitive( widget, priv->is_current );
+	my_utils_widget_set_editable( priv->bope_select_button, priv->is_current );
 
 	/* forward ope template */
-	priv->for_ope = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
-	g_return_if_fail( priv->for_ope && GTK_IS_ENTRY( priv->for_ope ));
-	g_signal_connect(
-			G_OBJECT( priv->for_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
-
 	cstr = ofo_dossier_get_forward_ope( priv->dossier );
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 	}
-	gtk_widget_set_can_focus( priv->for_ope, priv->is_current );
+	my_utils_widget_set_editable( priv->for_ope, priv->is_current );
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( widget ), image );
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_for_ope_select ), bin );
-	gtk_widget_set_sensitive( widget, priv->is_current );
+	my_utils_widget_set_editable( priv->fope_select_button, priv->is_current );
 }
 
 static void
@@ -652,7 +668,7 @@ get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 static void
 check_bin( ofaClosingParmsBin *self )
 {
-	g_signal_emit_by_name( self, "changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
