@@ -30,10 +30,12 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
+#include "api/ofo-dossier.h"
 
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
@@ -47,6 +49,10 @@
 /* private instance data
  */
 struct _ofaBatsPagePrivate {
+
+	/* runtime data
+	 */
+	gboolean        is_current;
 
 	/* UI
 	 */
@@ -133,6 +139,7 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	ofaBatsPagePrivate *priv;
+	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
 			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END, BAT_DISP_COUNT,
 			BAT_DISP_FORMAT, BAT_DISP_RIB,
@@ -140,6 +147,10 @@ v_setup_view( ofaPage *page )
 			0 };
 
 	priv = OFA_BATS_PAGE( page )->priv;
+
+	dossier = ofa_page_get_dossier( page );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	priv->tview = ofa_bat_treeview_new();
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
@@ -155,14 +166,16 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaBatsPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
+	GtkWidget *btn;
 
 	priv = OFA_BATS_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	ofa_buttons_box_add_button(
+	btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_NEW, FALSE, NULL, NULL );
+	my_utils_widget_set_editable( btn, priv->is_current );
 	priv->update_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
 	priv->delete_btn = ofa_buttons_box_add_button(

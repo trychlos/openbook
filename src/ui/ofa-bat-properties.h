@@ -30,7 +30,13 @@
  * @short_description: #ofaBatProperties class definition.
  * @include: ui/ofa-bat-properties.h
  *
- * Display the BAT properties. Only the notes can be updated.
+ * Display the BAT properties. Only the notes can be updated when the
+ * opened dossier is not an archive.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

@@ -165,7 +165,7 @@ gboolean       my_dialog_init_dialog         ( myDialog *dialog );
 
 gint           my_dialog_run_dialog          ( myDialog *dialog );
 
-void           my_dialog_set_readonly_buttons( myDialog *dialog );
+GtkWidget     *my_dialog_set_readonly_buttons( myDialog *dialog );
 
 G_END_DECLS
 

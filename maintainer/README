@@ -4,6 +4,7 @@
  =======
  
    maintainer/
+   development rules
    run
 
 -----------------------------------------------------------------------
@@ -14,6 +15,43 @@
  be used only by the maintainer.
  These tools are not distributed in the tarball, and are only present
  in the source repository.
+
+-----------------------------------------------------------------------
+ development rules
+ =================
+
+ Development rules are written on top on each UI header.
+
+ type:
+   part_of: also said as 'composite' widget, this is expected to be
+            included in another, more toplevel, widget;
+            also said as a piece - or a part - of a bigger widget or
+            dialog
+   dialog:  a dialog box
+
+ parent:
+   type='part_of': the name of the widget which is to be extracted from
+                   the definition, to be added to the toplevel parent
+                   widget
+
+ change:
+   type='part_of': the composite widget should send an 'ofa-changed'
+                   signal when a field is modified
+
+ validation:
+   type='part_of': if subject to validation, then the composite widget
+                   should have a 'is_valid' method which:
+                   - returns a boolean
+                   - takes a gchar ** argument to return an error
+                     message
+
+ settings:
+   whether this widget reads or writes its arguments to settings
+   type='part_of': settings key should be provided by the caller
+
+ current:
+   whether this widget is subject to special display (typically read-
+   only) depending if the dossier is current or archived.
 
 -----------------------------------------------------------------------
  run

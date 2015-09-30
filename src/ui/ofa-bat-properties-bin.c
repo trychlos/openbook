@@ -92,7 +92,7 @@ G_DEFINE_TYPE( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN )
 
 static void  setup_composite( ofaBatPropertiesBin *bin );
 static void  setup_treeview( ofaBatPropertiesBin *bin );
-static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable );
+static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
 static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
 static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, ofoDossier *dossier );
 
@@ -191,51 +191,41 @@ setup_composite( ofaBatPropertiesBin *bin )
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_set_editable( GTK_CONTAINER( bin ), FALSE );
 
 	/* identify the widgets for the properties */
 	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-id" );
 	g_return_if_fail( priv->bat_id && GTK_IS_ENTRY( priv->bat_id ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_id ), FALSE );
 
 	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-format" );
 	g_return_if_fail( priv->bat_format && GTK_IS_ENTRY( priv->bat_format ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_format ), FALSE );
 
 	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_count ), FALSE );
 
 	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-unused" );
 	g_return_if_fail( priv->bat_unused && GTK_IS_ENTRY( priv->bat_unused ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_unused ), FALSE );
 
 	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-begin" );
 	g_return_if_fail( priv->bat_begin && GTK_IS_ENTRY( priv->bat_begin ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_begin ), FALSE );
 
 	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-end" );
 	g_return_if_fail( priv->bat_end && GTK_IS_ENTRY( priv->bat_end ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_end ), FALSE );
 
 	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-rib" );
 	g_return_if_fail( priv->bat_rib && GTK_IS_ENTRY( priv->bat_rib ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_rib ), FALSE );
 
 	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-currency" );
 	g_return_if_fail( priv->bat_currency && GTK_IS_ENTRY( priv->bat_currency ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_currency ), FALSE );
 
 	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-begin" );
 	g_return_if_fail( priv->bat_solde_begin && GTK_IS_ENTRY( priv->bat_solde_begin ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_begin ), FALSE );
 
 	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-end" );
 	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_solde_end ), FALSE );
 
 	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
-	my_utils_widget_set_editable( G_OBJECT( priv->bat_account ), FALSE );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -349,7 +339,7 @@ setup_treeview( ofaBatPropertiesBin *bin )
 }
 
 static void
-display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable )
+display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	ofxCounter bat_id;
@@ -428,7 +418,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	}
 
 	priv->bat = bat;
-	my_utils_init_notes_ex( bin, bat, editable );
+	my_utils_init_notes_ex( bin, bat, ofo_dossier_is_current( dossier ));
 	my_utils_init_upd_user_stamp_ex( bin, bat );
 }
 
@@ -517,13 +507,13 @@ display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, 
  * ofa_bat_properties_bin_set_bat:
  */
 void
-ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier, gboolean editable )
+ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofa_bat_properties_bin_set_bat";
 	ofaBatPropertiesBinPrivate *priv;
 
-	g_debug( "%s: bin=%p, bat=%p, dossier=%p, editable=%s",
-			thisfn, ( void * ) bin, ( void * ) bat, ( void * ) dossier, editable ? "True":"False" );
+	g_debug( "%s: bin=%p, bat=%p, dossier=%p",
+			thisfn, ( void * ) bin, ( void * ) bat, ( void * ) dossier );
 
 	g_return_if_fail( OFA_IS_BAT_PROPERTIES_BIN( bin ));
 	g_return_if_fail( OFO_IS_BAT( bat ));
@@ -532,7 +522,7 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossie
 
 	if( !priv->dispose_has_run ){
 
-		display_bat_properties( bin, bat, dossier, editable );
+		display_bat_properties( bin, bat, dossier );
 		display_bat_lines( bin, bat, dossier );
 	}
 }

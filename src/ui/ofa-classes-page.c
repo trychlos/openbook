@@ -47,6 +47,7 @@ struct _ofaClassesPagePrivate {
 	/* internals
 	 */
 	GList       *handlers;
+	gboolean     is_current;
 
 	/* UI
 	 */
@@ -180,6 +181,7 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_CLASSES_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
@@ -303,14 +305,16 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaClassesPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
+	GtkWidget *btn;
 
 	priv = OFA_CLASSES_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	ofa_buttons_box_add_button(
+	btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	my_utils_widget_set_editable( btn, priv->is_current );
 	priv->update_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
 	priv->delete_btn = ofa_buttons_box_add_button(

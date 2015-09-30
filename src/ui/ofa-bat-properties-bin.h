@@ -34,11 +34,13 @@
  * for displaying the properties both from BatProperties and from
  * BatSelect.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - is read-only, so does not have any 'ofa-changed' signal, nor
- *   validation, or error message or settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     no
+ * - validation: no
+ * - settings:   no
+ * - current:    no
  */
 
 #include <gtk/gtk.h>
@@ -77,8 +79,7 @@ ofaBatPropertiesBin *ofa_bat_properties_bin_new     ( void );
 
 void                 ofa_bat_properties_bin_set_bat ( ofaBatPropertiesBin *bin,
 																ofoBat *bat,
-																ofoDossier *dossier,
-																gboolean editable );
+																ofoDossier *dossier );
 
 G_END_DECLS
 

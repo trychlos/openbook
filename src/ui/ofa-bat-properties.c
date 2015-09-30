@@ -41,15 +41,21 @@
  */
 struct _ofaBatPropertiesPrivate {
 
+	/* initialization
+	 */
+	ofaMainWindow       *main_window;
+
 	/* internals
 	 */
 	ofoBat              *bat;
 	gboolean             is_new;		/* always FALSE here */
 	gboolean             updated;
 	ofaBatPropertiesBin *bat_bin;
+	ofoDossier          *dossier;
 
-	/* data
+	/* UI
 	 */
+	GtkWidget           *btn_ok;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-bat-properties.ui";
@@ -128,7 +134,8 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
  * ofa_bat_properties_run:
  * @main: the main window of the application.
  *
- * Update the properties of an bat
+ * Display the properties of a bat file.
+ * Let update the notes if the dossier is not an archive.
  */
 gboolean
 ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
@@ -149,6 +156,7 @@ ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->bat = bat;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -164,52 +172,44 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *title;
 	GtkWindow *toplevel;
-	GtkWidget *container;
+	GtkWidget *parent;
 	gboolean is_current;
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	self = OFA_BAT_PROPERTIES( dialog );
+	priv = self->priv;
 
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	is_current = ofo_dossier_is_current( priv->dossier );
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	title = g_strdup( _( "Updating the BAT properties" ));
 	gtk_window_set_title( toplevel, title );
 
-	self = OFA_BAT_PROPERTIES( dialog );
-	priv = self->priv;
-	is_current = ofo_dossier_is_current( dossier );
-
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-parent" );
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new();
-	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
-	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat, dossier, is_current );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
+	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat, priv->dossier );
 
-	check_for_enable_dlg( self );
+	priv->btn_ok = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		priv->btn_ok = my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( self );
 }
 
 static void
 check_for_enable_dlg( ofaBatProperties *self )
 {
-	GtkWidget *button;
-
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-
-	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
+	gtk_widget_set_sensitive( self->priv->btn_ok, is_dialog_validable( self ));
 }
 
 static gboolean
@@ -228,22 +228,15 @@ static gboolean
 do_update( ofaBatProperties *self )
 {
 	ofaBatPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 	g_return_val_if_fail( !self->priv->is_new, FALSE );
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	priv = self->priv;
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
 
-	priv->updated = ofo_bat_update( priv->bat, dossier );
+	priv->updated = ofo_bat_update( priv->bat, priv->dossier );
 
 	return( priv->updated );
 }

@@ -31,6 +31,11 @@
  * @include: ui/ofa-account-properties.h
  *
  * Update properties of an account.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

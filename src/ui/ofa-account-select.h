@@ -31,6 +31,11 @@
  * @include: ui/ofa-account-select.h
  *
  * Display the chart of accounts, letting the user edit it.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

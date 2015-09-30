@@ -41,16 +41,25 @@
  */
 struct _ofaClassPropertiesPrivate {
 
+	/* initialization
+	 */
+	ofaMainWindow *main_window;
+
 	/* internals
 	 */
 	ofoClass      *class;
 	gboolean       is_new;
 	gboolean       updated;
+	ofoDossier    *dossier;
 
 	/* data
 	 */
 	gint           number;
 	gchar         *label;
+
+	/* UI
+	 */
+	GtkWidget     *btn_ok;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-class-properties.ui";
@@ -156,6 +165,7 @@ ofa_class_properties_run( ofaMainWindow *main_window, ofoClass *class )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->class = class;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -171,8 +181,6 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaClassPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
@@ -184,10 +192,9 @@ v_init_dialog( myDialog *dialog )
 	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	is_current = ofo_dossier_is_current( priv->dossier );
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -197,8 +204,6 @@ v_init_dialog( myDialog *dialog )
 		title = g_strdup_printf( _( "Updating class « %d »" ), number );
 	}
 	gtk_window_set_title( toplevel, title );
-
-	is_current = ofo_dossier_is_current( dossier );
 
 	/* class number */
 	priv->number = number;
@@ -235,6 +240,7 @@ v_init_dialog( myDialog *dialog )
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
 
 	/* if not the current exercice, then only have a 'Close' button */
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 	if( !is_current ){
 		my_dialog_set_readonly_buttons( dialog );
 	}

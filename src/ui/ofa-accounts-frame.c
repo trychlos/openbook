@@ -48,6 +48,7 @@ struct _ofaAccountsFramePrivate {
 	ofaAccountsChart *book;
 	ofaButtonsBox   *box;
 
+	GtkWidget       *new_btn;
 	GtkWidget       *update_btn;
 	GtkWidget       *delete_btn;
 	GtkWidget       *view_entries_btn;
@@ -351,7 +352,7 @@ ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries, 
 
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-		ofa_buttons_box_add_button( priv->box,
+		priv->new_btn = ofa_buttons_box_add_button( priv->box,
 				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), frame );
 		priv->update_btn = ofa_buttons_box_add_button( priv->box,
 				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), frame );
@@ -429,6 +430,9 @@ update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number )
 		account = ofo_account_get_by_number( dossier, number );
 		has_account = ( account && OFO_IS_ACCOUNT( account ));
 	}
+
+	gtk_widget_set_sensitive( priv->new_btn,
+				ofo_dossier_is_current( dossier ));
 
 	gtk_widget_set_sensitive( priv->update_btn,
 				has_account );

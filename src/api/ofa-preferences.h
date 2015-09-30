@@ -32,6 +32,11 @@
  *
  * Manage the general user preferences,
  * i.e. user preferences which are not attached to any dossier.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/my-date.h"

@@ -270,7 +270,7 @@ on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 
 	if( bat ){
 		priv->bat_id = ofo_bat_get_id( bat );
-		ofa_bat_properties_bin_set_bat( priv->bat_bin, bat, dossier, FALSE );
+		ofa_bat_properties_bin_set_bat( priv->bat_bin, bat, dossier );
 	}
 }
 

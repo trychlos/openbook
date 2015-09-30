@@ -32,10 +32,13 @@
  * Display the connection informations read for the named dossier
  * from the settings.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - do not manage its own settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     no
+ * - validation: no
+ * - settings:   no
+ * - current:    no
  */
 
 #include <gtk/gtk.h>

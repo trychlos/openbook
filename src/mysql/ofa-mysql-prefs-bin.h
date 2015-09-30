@@ -31,12 +31,13 @@
  *
  * Let the user enter MySQL preferences.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - send an 'ofa-changed' signal when the content changes
- * - do not manage its own error message, but provide it via the interface
- * - do not manage its own settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: yes
+ * - settings:   yes
+ * - current:    no
  */
 
 #include <api/ofa-ipreferences.h>

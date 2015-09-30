@@ -542,7 +542,12 @@
  842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
                 aligned
 
- 843
+ 843 2015- 9-30 account number should be renamed as account identifier
+
+ 844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
+                idem for ledgers, ope-templates, etc.
+
+ 845
 
 -----------------------------------------------------------------------
  DONE

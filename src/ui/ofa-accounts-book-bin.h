@@ -33,13 +33,13 @@
  * Display a frame with let the user select the parameters needed to
  * print the entries books between two effect dates.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - do not manage its own error message display field, but returns an
- *   error message to be displayed by the parent
- * - do not manage its own settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: yes
+ * - settings:   no
+ * - current:    no
  */
 
 #include "ui/ofa-iaccounts-filter.h"

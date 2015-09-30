@@ -40,6 +40,7 @@ typedef struct {
 	sBuildableByName;
 
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
+static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 static gboolean is_readable_gfile( GFile *file );
@@ -682,6 +683,39 @@ my_utils_container_attach_from_window( GtkContainer *container, GtkWindow *windo
 }
 
 /**
+ * my_utils_container_set_editable:
+ * @container: the target container
+ * @editable: whether the container may be edited.
+ *
+ * Set all widgets of @container editable.
+ *
+ * Note that gtk_container_foreach() is not recursive by itself.
+ */
+void
+my_utils_container_set_editable( GtkContainer *container, gboolean editable )
+{
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	gtk_container_foreach(
+			container,
+			( GtkCallback ) child_set_editable_cb,
+			GUINT_TO_POINTER(( guint ) editable ));
+}
+
+static void
+child_set_editable_cb( GtkWidget *widget, gpointer data )
+{
+	gboolean editable = ( gboolean ) GPOINTER_TO_UINT( data );
+
+	/*g_debug( "child_set_editable_cb: %s", G_OBJECT_TYPE_NAME( widget ));*/
+
+	if( GTK_IS_CONTAINER( widget ) && !GTK_IS_BUTTON( widget ) && !GTK_IS_TEXT_VIEW( widget )){
+		my_utils_container_set_editable( GTK_CONTAINER( widget ), editable );
+	} else {
+		my_utils_widget_set_editable( widget, editable );
+	}
+}
+
+/**
  * my_utils_size_group_add_size_group:
  * @target: the target #GtkSizeGroup
  * @source: the source #GtkSizeGroup.
@@ -737,55 +771,72 @@ my_utils_widget_get_toplevel_window( GtkWidget *widget )
  * - sensitive: whether the value is relevant (has a sense in this context)
  */
 void
-my_utils_widget_set_editable( GObject *widget, gboolean editable )
+my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 {
+	GList *columns, *it;
 	GList *renderers, *irender;
+	GtkWidget *editable_widget;
+
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+	/*g_debug( "%s: GTK_IS_BUTTON=%s",
+			G_OBJECT_TYPE_NAME( widget ), GTK_IS_BUTTON( widget ) ? "True":"False" );*/
 
 	/* GtkComboBoxEntry is deprecated from Gtk+3
 	 * see. http://git.gnome.org/browse/gtk+/commit/?id=9612c648176378bf237ad0e1a8c6c995b0ca7c61
 	 * while 'has_entry' property exists since 2.24
 	 */
+	editable_widget = widget;
 	if( GTK_IS_COMBO_BOX( widget ) && gtk_combo_box_get_has_entry( GTK_COMBO_BOX( widget ))){
-		/* idem as GtkEntry */
-		gtk_editable_set_editable( GTK_EDITABLE( gtk_bin_get_child( GTK_BIN( widget ))), editable );
-		g_object_set( G_OBJECT( gtk_bin_get_child( GTK_BIN( widget ))), "can-focus", editable, NULL );
-		/* disable the listbox button itself */
-		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( widget ), editable ? GTK_SENSITIVITY_ON : GTK_SENSITIVITY_OFF );
+		editable_widget = gtk_bin_get_child( GTK_BIN( widget ));
+	}
+
+	/* can focus */
+	if( GTK_IS_WIDGET( widget )){
+		g_object_set( G_OBJECT( widget ), "can-focus", editable, NULL );
+	}
+	if( editable_widget != widget && GTK_IS_WIDGET( editable_widget )){
+		g_object_set( G_OBJECT( editable_widget ), "can-focus", editable, NULL );
+	}
+
+	/* set editable */
+	if( GTK_IS_EDITABLE( widget )){
+		gtk_editable_set_editable( GTK_EDITABLE( widget ), editable );
+	}
+	if( editable_widget != widget && GTK_IS_WIDGET( editable_widget )){
+		gtk_editable_set_editable( GTK_EDITABLE( editable_widget ), editable );
+	}
+
+	/* others */
+	if( GTK_IS_BUTTON( widget )){
+		gtk_widget_set_sensitive( widget, editable );
 
 	} else if( GTK_IS_COMBO_BOX( widget )){
-		/* disable the listbox button itself */
-		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( widget ), editable ? GTK_SENSITIVITY_ON : GTK_SENSITIVITY_OFF );
+		gtk_combo_box_set_button_sensitivity(
+				GTK_COMBO_BOX( widget ), editable ? GTK_SENSITIVITY_ON : GTK_SENSITIVITY_OFF );
 
 	} else if( GTK_IS_ENTRY( widget )){
-		gtk_editable_set_editable( GTK_EDITABLE( widget ), editable );
-		/* removing the frame leads to a disturbing modification of the
-		 * height of the control */
-		/*g_object_set( G_OBJECT( widget ), "has-frame", editable, NULL );*/
-		/* this prevents the caret to be displayed when we click in the entry */
-		g_object_set( G_OBJECT( widget ), "can-focus", editable, NULL );
+		gtk_widget_set_sensitive( widget, editable );
+
+	} else if( GTK_IS_FRAME( widget )){
+		gtk_widget_set_sensitive( widget, editable );
 
 	} else if( GTK_IS_TEXT_VIEW( widget )){
-		g_object_set( G_OBJECT( widget ), "can-focus", editable, NULL );
 		gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
+		my_utils_widget_set_style( widget, "textviewinsensitive" );
 
-	} else if( GTK_IS_TOGGLE_BUTTON( widget )){
-		/* transforms to a quasi standard GtkButton */
-		/*g_object_set( G_OBJECT( widget ), "draw-indicator", editable, NULL );*/
-		/* this at least prevent the keyboard focus to go to the button
-		 * (which is better than nothing) */
-		g_object_set( G_OBJECT( widget ), "can-focus", editable, NULL );
-
-	} else if( GTK_IS_TREE_VIEW_COLUMN( widget )){
-		renderers = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( GTK_TREE_VIEW_COLUMN( widget )));
-		for( irender = renderers ; irender ; irender = irender->next ){
-			if( GTK_IS_CELL_RENDERER_TEXT( irender->data )){
-				g_object_set( G_OBJECT( irender->data ), "editable", editable, "editable-set", TRUE, NULL );
+	} else if( GTK_IS_TREE_VIEW( widget )){
+		columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( widget ));
+		for( it=columns ; it ; it=it->next ){
+			renderers = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( GTK_TREE_VIEW_COLUMN( it->data )));
+			for( irender = renderers ; irender ; irender = irender->next ){
+				if( GTK_IS_CELL_RENDERER_TEXT( irender->data )){
+					g_object_set( G_OBJECT( irender->data ), "editable", editable, "editable-set", TRUE, NULL );
+				}
 			}
+			g_list_free( renderers );
 		}
-		g_list_free( renderers );
-
-	} else if( GTK_IS_BUTTON( widget )){
-		gtk_widget_set_sensitive( GTK_WIDGET( widget ), editable );
+		g_list_free( columns );
 	}
 }
 
@@ -912,7 +963,7 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
  * macro.
  */
 GObject *
-my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean is_current )
+my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean editable )
 {
 	GtkTextView *text;
 	GtkTextBuffer *buffer;
@@ -933,7 +984,7 @@ my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gc
 	g_object_unref( buffer );
 	g_free( str );
 
-	gtk_widget_set_can_focus( GTK_WIDGET( text ), is_current );
+	my_utils_widget_set_editable( GTK_WIDGET( text ), editable );
 
 	return( G_OBJECT( buffer ));
 }

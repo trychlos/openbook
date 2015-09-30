@@ -38,9 +38,13 @@
  * Caller should connect to "ofa-done" signal in order to be signaled
  * when the checks are done.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     no
+ * - validation: no
+ * - settings:   no
+ * - current:    no
  */
 
 #include <gtk/gtk.h>

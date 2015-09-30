@@ -291,6 +291,7 @@ ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *m
 		if( priv->dossier ){
 			setup_closing_opes( bin );
 			setup_currency_accounts( bin );
+			my_utils_container_set_editable( GTK_CONTAINER( bin ), priv->is_current );
 		}
 
 		gtk_widget_show_all( GTK_WIDGET( bin ));
@@ -442,7 +443,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 14 );
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	gtk_widget_set_can_focus( widget, priv->is_current );
+	my_utils_widget_set_editable( widget, priv->is_current );
 
 	/* account select */
 	add_button( self, "gtk-index", COL_SELECT, row );

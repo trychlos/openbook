@@ -34,11 +34,13 @@
  * number, or by opening an AccountSelect dialog. The account label is
  * displayed in this same frame.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - generically manages the settings for the caller.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: no
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-main-window-def.h"

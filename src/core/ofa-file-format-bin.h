@@ -34,13 +34,13 @@
  * and import settings. It is to be used as a #GtkBin in user
  * preferences.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - do not manage its own error message display field, but returns an
- *   error message to be displayed by the parent
- * - do not manage its own settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: yes
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/ofa-file-format.h"

@@ -46,38 +46,48 @@
  */
 struct _ofaAccountPropertiesPrivate {
 
-	/* internals
+	/* initialization
 	 */
-	ofoAccount      *account;
-	gboolean         is_new;
-	gboolean         updated;
-	gboolean         number_ok;
-	gboolean         has_entries;
-	gboolean         balances_displayed;
+	ofaMainWindow *main_window;
+	ofoAccount    *account;
+
+	/* runtime data
+	 */
+	ofoDossier    *dossier;
+	gboolean       is_current;
+	gboolean       is_new;
+	gboolean       updated;
+	gboolean       number_ok;
+	gboolean       has_entries;
+	gboolean       balances_displayed;
 
 	/* UI
 	 */
-	GtkEntry        *w_number;
-	GtkWidget       *closed_btn;
-	GtkWidget       *type_frame;
-	GtkWidget       *p1_exe_frame;
-	GtkToggleButton *settleable_btn;
-	GtkToggleButton *reconciliable_btn;
-	GtkToggleButton *forward_btn;
-	GtkWidget       *currency_etiq;
-	GtkWidget       *currency_combo;
-	GtkWidget       *btn_ok;
+	GtkWidget     *number_entry;
+	GtkWidget     *label_entry;
+	GtkWidget     *closed_btn;
+	GtkWidget     *type_frame;
+	GtkWidget     *root_btn;
+	GtkWidget     *detail_btn;
+	GtkWidget     *p1_exe_frame;
+	GtkWidget     *settleable_btn;
+	GtkWidget     *reconciliable_btn;
+	GtkWidget     *forward_btn;
+	GtkWidget     *currency_etiq;
+	GtkWidget     *currency_parent;
+	GtkWidget     *currency_combo;
+	GtkWidget     *btn_ok;
 
 	/* account data
 	 */
-	gchar           *number;
-	gchar           *label;
-	gchar           *currency;
-	gint             cur_digits;
-	const gchar     *cur_symbol;
-	gchar           *type;
-	gchar           *upd_user;
-	GTimeVal         upd_stamp;
+	gchar         *number;
+	gchar         *label;
+	gchar         *currency;
+	gint           cur_digits;
+	const gchar   *cur_symbol;
+	gchar         *type;
+	gchar         *upd_user;
+	GTimeVal       upd_stamp;
 };
 
 typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
@@ -90,6 +100,7 @@ static const gchar  *st_ui_id  = "AccountPropertiesDlg";
 G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
+static void      init_ui( ofaAccountProperties *dialog, GtkContainer *container );
 static void      remove_balances_page( ofaAccountProperties *self, GtkContainer *container );
 static void      init_balances_page( ofaAccountProperties *self );
 static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur );
@@ -200,6 +211,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->account = account;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -210,160 +222,201 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 	return( updated );
 }
 
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
 static void
 v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_properties_v_init_dialog";
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
 	gchar *title;
 	const gchar *acc_number;
-	GtkEntry *entry;
-	ofaCurrencyCombo *combo;
-	GtkContainer *container;
-	GtkWidget *w_root, *w_detail, *parent, *label;
-	gboolean is_current;
+	GtkWindow *toplevel;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
+	/* dialog title */
 	acc_number = ofo_account_get_number( priv->account );
 	if( !acc_number ){
 		priv->is_new = TRUE;
 		title = g_strdup( _( "Defining a new account" ));
 	} else {
+		priv->is_new = FALSE;
 		title = g_strdup_printf( _( "Updating account %s" ), acc_number );
 	}
-	gtk_window_set_title( GTK_WINDOW( container ), title );
+	gtk_window_set_title( toplevel, title );
 
-	is_current = ofo_dossier_is_current( dossier );
+	/* dossier */
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
-	priv->has_entries = ofo_entry_use_account( dossier, acc_number );
+	/* account */
+	priv->has_entries = ofo_entry_use_account( priv->dossier, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
-
-	/* account number */
 	priv->number = g_strdup( acc_number );
-	priv->w_number = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-number" ));
+	priv->label = g_strdup( ofo_account_get_label( priv->account ));
+	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
+	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
+
+	init_ui( self, GTK_CONTAINER( toplevel ));
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
+
+	/* account number
+	 * set read-only if not empty though we would be able to remediate
+	 * to all impacted records  */
 	if( priv->number ){
-		gtk_entry_set_text( priv->w_number, priv->number );
+		gtk_entry_set_text( GTK_ENTRY( priv->number_entry ), priv->number );
 	}
-	g_signal_connect(
-			G_OBJECT( priv->w_number ), "changed", G_CALLBACK( on_number_changed ), dialog );
-	/* set insensitive though we would be able to remediate to all
-	 *  impacted records  */
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->w_number ), !priv->has_entries );
-	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
-	label = my_utils_container_get_child_by_name( container, "p1-account-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->w_number ));
 
 	/* account label */
-	priv->label = g_strdup( ofo_account_get_label( priv->account ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
-		gtk_entry_set_text( entry, priv->label );
+		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), priv->label );
 	}
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
-	gtk_widget_set_can_focus( GTK_WIDGET( priv->w_number ), is_current );
-	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	/* whether the account is closed */
-	priv->closed_btn = my_utils_container_get_child_by_name( container, "p1-closed" );
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->closed_btn ), ofo_account_is_closed( priv->account ));
-	gtk_widget_set_can_focus( priv->closed_btn, is_current );
-
-	/* account currency */
-	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
-	combo = ofa_currency_combo_new();
-	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_main_window( combo, OFA_MAIN_WINDOW( main_window ));
-	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
-	if( my_strlen( priv->currency )){
-		ofa_currency_combo_set_selected( combo, priv->currency );
-	}
-	gtk_widget_set_sensitive( GTK_WIDGET( combo ), is_current && !priv->has_entries );
-	label = my_utils_container_get_child_by_name( container, "p1-currency-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( combo ));
-	priv->currency_etiq = label;
-	priv->currency_combo = parent;
 
 	/* type of account */
-	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
-	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );
-
-	w_root = my_utils_container_get_child_by_name( container, "p1-root-account" );
-	g_return_if_fail( w_root && GTK_IS_RADIO_BUTTON( w_root ));
-	g_signal_connect(
-			G_OBJECT( w_root ), "toggled", G_CALLBACK( on_root_toggled ), dialog );
-
-	w_detail = my_utils_container_get_child_by_name( container, "p1-detail-account" );
-	g_return_if_fail( w_detail && GTK_IS_RADIO_BUTTON( w_detail ));
-	g_signal_connect(
-			G_OBJECT( w_detail ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
-
-	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 	if( my_strlen( priv->type )){
 		if( ofo_account_is_root( priv->account )){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
-			on_root_toggled( GTK_RADIO_BUTTON( w_root ), self );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->root_btn ), TRUE );
+			on_root_toggled( GTK_RADIO_BUTTON( priv->root_btn ), self );
 		} else if( !g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL )){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
-			on_detail_toggled( GTK_RADIO_BUTTON( w_detail ), self );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->detail_btn ), TRUE );
+			on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), self );
 		} else {
 			g_warning( "%s: account has type %s", thisfn, priv->type );
 		}
 	} else {
 		g_debug( "%s: set detail account as a default", thisfn );
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
-		on_detail_toggled( GTK_RADIO_BUTTON( w_detail ), self );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->detail_btn ), TRUE );
+		on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), self );
 	}
-	gtk_widget_set_sensitive( priv->type_frame, is_current );
 
-	priv->settleable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-settleable" ));
-	gtk_toggle_button_set_active( priv->settleable_btn, ofo_account_is_settleable( priv->account ));
-	gtk_widget_set_can_focus( GTK_WIDGET( priv->settleable_btn ), is_current );
+	/* when closing exercice */
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->settleable_btn ), ofo_account_is_settleable( priv->account ));
 
-	priv->reconciliable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-reconciliable" ));
-	gtk_toggle_button_set_active( priv->reconciliable_btn, ofo_account_is_reconciliable( priv->account ));
-	gtk_widget_set_can_focus( GTK_WIDGET( priv->reconciliable_btn ), is_current );
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->reconciliable_btn ), ofo_account_is_reconciliable( priv->account ));
 
-	priv->forward_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-forward" ));
-	gtk_toggle_button_set_active( priv->forward_btn, ofo_account_is_forward( priv->account ));
-	gtk_widget_set_can_focus( GTK_WIDGET( priv->forward_btn ), is_current );
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->forward_btn ), ofo_account_is_forward( priv->account ));
+
+	/* account currency
+	 * set read-only if has entries */
+	if( my_strlen( priv->currency )){
+		ofa_currency_combo_set_selected(
+				OFA_CURRENCY_COMBO( priv->currency_combo ), priv->currency );
+	}
 
 	if( ofo_account_is_root( priv->account )){
-		remove_balances_page( self, container );
+		remove_balances_page( self, GTK_CONTAINER( toplevel ));
 	} else {
 		init_balances_page( self );
 	}
 
-	my_utils_init_notes_ex( container, account, is_current );
-	my_utils_init_upd_user_stamp_ex( container, account );
+	my_utils_init_notes_ex( GTK_CONTAINER( toplevel ), account, priv->is_current );
+	my_utils_init_upd_user_stamp_ex( GTK_CONTAINER( toplevel ), account );
 
-	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );
+	/* setup fields editability, depending of
+	 * - whether the dossier is current
+	 * - whether account has entries or is empty
+	 */
+	my_utils_widget_set_editable( priv->number_entry, priv->is_current && !priv->has_entries );
+	my_utils_widget_set_editable( priv->root_btn, priv->is_current && !priv->has_entries );
+	my_utils_widget_set_editable( priv->detail_btn, priv->is_current && !priv->has_entries );
+	my_utils_widget_set_editable( priv->currency_combo, priv->is_current && !priv->has_entries );
 
-	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
-
-	/* if not the current exercice, then only have a 'Close' button */
-	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+	if( !priv->is_current ){
+		priv->btn_ok = my_dialog_set_readonly_buttons( dialog );
 	}
+}
+
+/*
+ * static initialization, i.e. which does not depend of current status
+ */
+static void
+init_ui( ofaAccountProperties *dialog, GtkContainer *container )
+{
+	ofaAccountPropertiesPrivate *priv;
+	ofaCurrencyCombo *combo;
+	GtkWidget *label;
+
+	priv = dialog->priv;
+
+	/* account number */
+	priv->number_entry = my_utils_container_get_child_by_name( container, "p1-number" );
+	g_return_if_fail( priv->number_entry && GTK_IS_ENTRY( priv->number_entry ));
+	g_signal_connect(
+			G_OBJECT( priv->number_entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
+	label = my_utils_container_get_child_by_name( container, "p1-account-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->number_entry ));
+
+	/* account label */
+	priv->label_entry = my_utils_container_get_child_by_name( container, "p1-label" );
+	g_return_if_fail( priv->label_entry && GTK_IS_ENTRY( priv->label_entry ));
+	g_signal_connect(
+			G_OBJECT( priv->label_entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->label_entry ));
+
+	/* closed account */
+	priv->closed_btn = my_utils_container_get_child_by_name( container, "p1-closed" );
+
+	/* account type */
+	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
+
+	priv->root_btn = my_utils_container_get_child_by_name( container, "p1-root-account" );
+	g_return_if_fail( priv->root_btn && GTK_IS_RADIO_BUTTON( priv->root_btn ));
+	g_signal_connect(
+			G_OBJECT( priv->root_btn ), "toggled", G_CALLBACK( on_root_toggled ), dialog );
+
+	priv->detail_btn = my_utils_container_get_child_by_name( container, "p1-detail-account" );
+	g_return_if_fail( priv->detail_btn && GTK_IS_RADIO_BUTTON( priv->detail_btn ));
+	g_signal_connect(
+			G_OBJECT( priv->detail_btn ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
+
+	/* account behavior when closing exercice */
+	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );
+
+	priv->settleable_btn = my_utils_container_get_child_by_name( container, "p1-settleable" );
+	g_return_if_fail( priv->settleable_btn && GTK_IS_TOGGLE_BUTTON( priv->settleable_btn ));
+
+	priv->reconciliable_btn = my_utils_container_get_child_by_name( container, "p1-reconciliable" );
+	g_return_if_fail( priv->reconciliable_btn && GTK_IS_TOGGLE_BUTTON( priv->reconciliable_btn ));
+
+	priv->forward_btn = my_utils_container_get_child_by_name( container, "p1-forward" );
+	g_return_if_fail( priv->forward_btn && GTK_IS_TOGGLE_BUTTON( priv->forward_btn ));
+
+	/* currency */
+	combo = ofa_currency_combo_new();
+	priv->currency_parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
+	g_return_if_fail( priv->currency_parent && GTK_IS_CONTAINER( priv->currency_parent ));
+	gtk_container_add( GTK_CONTAINER( priv->currency_parent ), GTK_WIDGET( combo ));
+	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
+	ofa_currency_combo_set_main_window( combo, priv->main_window );
+	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
+	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-currency-label" );
+	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->currency_etiq ), GTK_WIDGET( combo ));
+	priv->currency_combo = GTK_WIDGET( combo );
+
+	/* buttons */
+	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );
 }
 
 /*
@@ -468,8 +521,6 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 {
 	static const gchar *thisfn = "ofa_account_properties_on_currency_changed";
 	ofaAccountPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	ofoCurrency *cur_obj;
 	const gchar *iso3a;
 
@@ -478,18 +529,14 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
 
-	cur_obj = ofo_currency_get_by_code( dossier, code );
+	cur_obj = ofo_currency_get_by_code( priv->dossier, code );
 
 	if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
-		iso3a = ofo_dossier_get_default_currency( dossier );
-		cur_obj = ofo_currency_get_by_code( dossier, iso3a );
+		iso3a = ofo_dossier_get_default_currency( priv->dossier );
+		cur_obj = ofo_currency_get_by_code( priv->dossier, iso3a );
 	}
 	priv->cur_digits = 2;
 	priv->cur_symbol = NULL;
@@ -540,61 +587,40 @@ static void
 check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
-	gboolean is_root, is_current;
+	gboolean is_root;
 	gboolean ok_enabled;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	is_current = ofo_dossier_is_current( dossier );
-	if( !is_current ){
+	if( !priv->is_current ){
 		ok_enabled = TRUE;
 
 	} else {
 		is_root = ( priv->type && !g_utf8_collate( priv->type, ACCOUNT_TYPE_ROOT ));
 
-		if( priv->type_frame ){
-			gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
-			/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
-		}
-		if( priv->p1_exe_frame ){
-			gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
-		}
-		if( priv->currency_combo ){
-			gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
-			gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_combo ), !is_root && !priv->has_entries );
-		}
+		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
+		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
+
+		gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
+
+		gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_parent ), !is_root && !priv->has_entries );
 
 		ok_enabled = is_dialog_validable( self );
 	}
 
-	if( priv->btn_ok ){
-		gtk_widget_set_sensitive( priv->btn_ok, ok_enabled );
-	}
+	gtk_widget_set_sensitive( priv->btn_ok, ok_enabled );
 }
 
 static gboolean
 is_dialog_validable( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gboolean ok;
 	ofoAccount *exists;
 	const gchar *prev;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-
 	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->type );
 
 	/* intrinsec validity is ok
@@ -605,7 +631,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !priv->number_ok ){
 
-		exists = ofo_account_get_by_number( dossier, priv->number );
+		exists = ofo_account_get_by_number( priv->dossier, priv->number );
 		if( exists ){
 			prev = ofo_account_get_number( priv->account );
 			priv->number_ok = prev && g_utf8_collate( prev, priv->number ) == 0;
@@ -628,29 +654,22 @@ static gboolean
 do_update( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *prev_number;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-
 	prev_number = g_strdup( ofo_account_get_number( self->priv->account ));
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
 	ofo_account_set_type_account( priv->account, priv->type );
 	ofo_account_set_settleable(
-			priv->account, gtk_toggle_button_get_active( priv->settleable_btn ));
+			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->settleable_btn )));
 	ofo_account_set_reconciliable(
-			priv->account, gtk_toggle_button_get_active( priv->reconciliable_btn ));
+			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->reconciliable_btn )));
 	ofo_account_set_forward(
-			priv->account, gtk_toggle_button_get_active( priv->forward_btn ));
+			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->forward_btn )));
 	ofo_account_set_closed(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));
 	ofo_account_set_currency( priv->account, priv->currency );
@@ -658,10 +677,10 @@ do_update( ofaAccountProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_account_insert( priv->account, dossier );
+				ofo_account_insert( priv->account, priv->dossier );
 	} else {
 		priv->updated =
-				ofo_account_update( priv->account, dossier, prev_number );
+				ofo_account_update( priv->account, priv->dossier, prev_number );
 	}
 
 	g_free( prev_number );

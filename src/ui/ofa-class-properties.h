@@ -28,9 +28,14 @@
 /**
  * SECTION: ofa_class_properties
  * @short_description: #ofaClassProperties class definition.
- * @include: ui/ofa-devise-properties.h
+ * @include: ui/ofa-class-properties.h
  *
- * Update the devise properties.
+ * Update the class properties.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

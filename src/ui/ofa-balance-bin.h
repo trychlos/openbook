@@ -38,11 +38,13 @@
  * really show the balances of the accounts at the specified effect
  * date.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - generically manages settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: yes
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-iaccounts-filter.h"

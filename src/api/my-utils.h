@@ -80,11 +80,12 @@ GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container,
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );
 GtkWidget    *my_utils_container_attach_from_window   ( GtkContainer *container, GtkWindow *window, const gchar *widget );
+void          my_utils_container_set_editable         ( GtkContainer *container, gboolean editable );
 
 void          my_utils_size_group_add_size_group      ( GtkSizeGroup *target, GtkSizeGroup *source );
 
 GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
-void          my_utils_widget_set_editable            ( GObject *widget, gboolean editable );
+void          my_utils_widget_set_editable            ( GtkWidget *widget, gboolean editable );
 void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );
 void          my_utils_widget_set_margin              ( GtkWidget *widget, guint top, guint bottom, guint left, guint right );
 void          my_utils_widget_set_margin_left         ( GtkWidget *widget, guint left );
@@ -94,11 +95,11 @@ void          my_utils_widget_set_xalign              ( GtkWidget *widget, gfloa
 GObject      *my_utils_init_notes                     ( GtkContainer *container,
 																const gchar *widget_name,
 																const gchar *notes,
-																gboolean is_current );
+																gboolean editable );
 
 #define       my_utils_init_notes_ex( C,T,I )         my_utils_init_notes( \
 																GTK_CONTAINER(C),"pn-notes", \
-																ofo_ ## T ## _get_notes( priv->T ), ( I ))
+																ofo_ ## T ## _get_notes( priv->T ), (I))
 
 #define       my_utils_getback_notes_ex( C,T )        GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( \
 																GTK_CONTAINER( C ), "pn-notes" )); GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); \

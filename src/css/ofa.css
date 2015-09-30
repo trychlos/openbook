@@ -83,3 +83,7 @@ GtkLabel.labelbatunconcil {
 myProgressBar.bar12 {
 	-GtkProgressBar-min-horizontal-bar-height: 12;
 }
+
+GtkTextView.textviewinsensitive {
+	background-color: #f6f6f6;
+}

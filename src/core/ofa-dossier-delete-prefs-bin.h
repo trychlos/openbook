@@ -30,14 +30,15 @@
  * @short_description: #ofaDossierDeletePrefsBin class definition.
  * @include: core/ofa-dossier-delete-prefs-bin.h
  *
- * Manage the preferences when deleting a dossier as a composite widget.
+ * Manage the preferences when deleting a dossier.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - do not manage here any error message
- * - manage its own settings.
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     ofa-changed
+ * - validation: no
+ * - settings:   yes
+ * - current:    no
  */
 
 #include <gtk/gtk.h>

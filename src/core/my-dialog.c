@@ -375,19 +375,21 @@ v_quit_on_code( myDialog *dialog, gint code )
  * my_dialog_set_readonly_buttons:
  *
  * Replace the OK/Cancel buttons with a Close one.
+ *
+ * Returns: the newly added button.
  */
-void
+GtkWidget *
 my_dialog_set_readonly_buttons( myDialog *dialog )
 {
 	GtkWindow *toplevel;
 	GtkWidget *button;
 
-	g_return_if_fail( dialog && MY_IS_DIALOG( dialog ));
+	g_return_val_if_fail( dialog && MY_IS_DIALOG( dialog ), NULL );
 
 	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
 
 		toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+		g_return_val_if_fail( toplevel && GTK_IS_WINDOW( toplevel ), NULL );
 
 		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( toplevel ), GTK_RESPONSE_OK );
 		if( button ){
@@ -399,6 +401,8 @@ my_dialog_set_readonly_buttons( myDialog *dialog )
 			gtk_widget_destroy( button );
 		}
 
-		gtk_dialog_add_button( GTK_DIALOG( toplevel ), _( "Close" ), GTK_RESPONSE_CANCEL );
+		return( gtk_dialog_add_button( GTK_DIALOG( toplevel ), _( "Close" ), GTK_RESPONSE_CANCEL ));
 	}
+
+	g_return_val_if_reached( NULL );
 }
