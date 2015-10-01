@@ -512,8 +512,8 @@
                 src/ui/ofa-dossier-new-bin.ui               OK
                 src/ui/ofa-dossier-new-mini.ui              OK
                 src/ui/ofa-dossier-new.ui                   --
-                src/ui/ofa-dossier-open.ui
-                src/ui/ofa-dossier-properties.ui
+                src/ui/ofa-dossier-open.ui                  OK
+                src/ui/ofa-dossier-properties.ui            OK
                 src/ui/ofa-exercice-close-assistant.ui
                 src/ui/ofa-export-assistant.ui
                 src/ui/ofa-guided-input-bin.ui
@@ -561,7 +561,14 @@
  848 2015-10- 1 DossierNewBin: having a frame with its label, even if
                 hidden, leaves a vertical space above the dossier name
 
- 849
+ 849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
+                there would be so a *ghost* data stored in dbms and
+                displayed in properties, but absolutely useless
+                NB: if restored to some use, check in DossierProperties
+                if this data is updatable by the user, or should be
+                read-only. 
+
+ 850
 
 -----------------------------------------------------------------------
  DONE

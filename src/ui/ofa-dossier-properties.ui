@@ -131,12 +131,14 @@
                           <object class="GtkGrid" id="grid11">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_left">12</property>
+                            <property name="margin_right">4</property>
                             <property name="margin_top">4</property>
                             <property name="margin_bottom">4</property>
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="label111">
+                              <object class="GtkLabel" id="pl-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Label :</property>
@@ -161,11 +163,10 @@
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="top_attach">0</property>
-                                <property name="width">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label112">
+                              <object class="GtkLabel" id="pl-siren">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_SIREN :</property>
@@ -191,7 +192,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label113">
+                              <object class="GtkLabel" id="pl-currency">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Default _currency :</property>
@@ -204,7 +205,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label114">
+                              <object class="GtkLabel" id="pl-ledger">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Default _import ledger :</property>
@@ -220,6 +221,7 @@
                               <object class="GtkBox" id="p1-currency-parent">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="orientation">vertical</property>
                                 <child>
                                   <placeholder/>
@@ -234,6 +236,7 @@
                               <object class="GtkBox" id="p1-ledger-parent">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="orientation">vertical</property>
                                 <child>
                                   <placeholder/>
@@ -243,15 +246,6 @@
                                 <property name="left_attach">1</property>
                                 <property name="top_attach">3</property>
                               </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
                             </child>
                           </object>
                         </child>
@@ -280,64 +274,12 @@
                           <object class="GtkGrid" id="grid12">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_left">12</property>
+                            <property name="margin_right">4</property>
                             <property name="margin_top">4</property>
                             <property name="margin_bottom">4</property>
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
-                            <child>
-                              <object class="GtkLabel" id="label124">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">_From date :</property>
-                                <property name="use_underline">True</property>
-                                <property name="xalign">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="pexe-begin">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="halign">start</property>
-                                <property name="max_length">10</property>
-                                <property name="invisible_char">●</property>
-                                <property name="width_chars">10</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="label125">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">_To date :</property>
-                                <property name="use_underline">True</property>
-                                <property name="xalign">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">2</property>
-                                <property name="top_attach">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="pexe-end">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="halign">start</property>
-                                <property name="max_length">10</property>
-                                <property name="invisible_char">●</property>
-                                <property name="width_chars">10</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">3</property>
-                                <property name="top_attach">2</property>
-                              </packing>
-                            </child>
                             <child>
                               <object class="GtkLabel" id="label121">
                                 <property name="visible">True</property>
@@ -351,9 +293,35 @@
                               </packing>
                             </child>
                             <child>
+                              <object class="GtkLabel" id="p1-status">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="xalign">0</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="pl-exe-length">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">E_xercice length :</property>
+                                <property name="use_underline">True</property>
+                                <property name="xalign">1</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">1</property>
+                              </packing>
+                            </child>
+                            <child>
                               <object class="GtkGrid" id="grid5">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="row_spacing">3</property>
+                                <property name="column_spacing">4</property>
                                 <child>
                                   <object class="GtkEntry" id="p1-exe-length">
                                     <property name="visible">True</property>
@@ -363,6 +331,7 @@
                                     <property name="max_length">2</property>
                                     <property name="invisible_char">●</property>
                                     <property name="width_chars">3</property>
+                                    <property name="max_width_chars">3</property>
                                     <property name="xalign">1</property>
                                     <property name="input_purpose">digits</property>
                                   </object>
@@ -389,36 +358,79 @@
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="top_attach">1</property>
-                                <property name="width">3</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label122">
+                              <object class="GtkLabel" id="pl-exe-begin">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">E_xercice length :</property>
+                                <property name="label" translatable="yes">_From date :</property>
                                 <property name="use_underline">True</property>
                                 <property name="xalign">1</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
-                                <property name="top_attach">1</property>
+                                <property name="top_attach">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="p1-status">
+                              <object class="GtkGrid" id="grid2">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="xalign">0</property>
+                                <property name="row_spacing">3</property>
+                                <property name="column_spacing">4</property>
+                                <child>
+                                  <object class="GtkEntry" id="pexe-begin">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="halign">start</property>
+                                    <property name="max_length">10</property>
+                                    <property name="invisible_char">●</property>
+                                    <property name="width_chars">10</property>
+                                    <property name="max_width_chars">10</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">0</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="pl-exe-end">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <property name="margin_left">18</property>
+                                    <property name="label" translatable="yes">_To date :</property>
+                                    <property name="use_underline">True</property>
+                                    <property name="xalign">1</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">1</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkEntry" id="pexe-end">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="halign">start</property>
+                                    <property name="max_length">10</property>
+                                    <property name="invisible_char">●</property>
+                                    <property name="width_chars">10</property>
+                                    <property name="max_width_chars">10</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">2</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
-                                <property name="top_attach">0</property>
-                                <property name="width">2</property>
+                                <property name="top_attach">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label126">
+                              <object class="GtkLabel" id="pl-exe-closed">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Last closed period :</property>
@@ -438,20 +450,12 @@
                                 <property name="max_length">10</property>
                                 <property name="invisible_char">●</property>
                                 <property name="width_chars">10</property>
+                                <property name="max_width_chars">10</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="top_attach">3</property>
                               </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
                             </child>
                           </object>
                         </child>
@@ -475,17 +479,22 @@
                         <property name="can_focus">False</property>
                         <property name="row_spacing">3</property>
                         <property name="column_spacing">4</property>
-                        <property name="column_homogeneous">True</property>
                         <child>
                           <object class="GtkFrame" id="frame14">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="halign">start</property>
                             <property name="label_xalign">0</property>
                             <property name="shadow_type">in</property>
                             <child>
                               <object class="GtkGrid" id="grid14">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="margin_left">12</property>
+                                <property name="margin_right">4</property>
+                                <property name="margin_top">4</property>
+                                <property name="margin_bottom">4</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
                                 <child>
@@ -540,7 +549,7 @@
                                   <object class="GtkLabel" id="p4-last-bat">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -552,7 +561,7 @@
                                   <object class="GtkLabel" id="p4-last-batline">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -564,7 +573,7 @@
                                   <object class="GtkLabel" id="p4-last-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -576,7 +585,7 @@
                                   <object class="GtkLabel" id="p4-last-settlement">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -600,7 +609,7 @@
                                   <object class="GtkLabel" id="p4-last-concil">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -634,13 +643,17 @@
                               <object class="GtkGrid" id="grid15">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="margin_left">12</property>
+                                <property name="margin_right">4</property>
+                                <property name="margin_top">4</property>
+                                <property name="margin_bottom">4</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
                                 <child>
                                   <object class="GtkLabel" id="p5-version">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -652,6 +665,7 @@
                                   <object class="GtkLabel" id="label152">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="hexpand">True</property>
                                     <property name="label" translatable="yes">DBMS version :</property>
                                     <property name="xalign">1</property>
                                   </object>
@@ -664,8 +678,9 @@
                                   <object class="GtkLabel" id="label151">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Last entry from
- previous exercice :</property>
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">Last entry from previous exercice :</property>
+                                    <property name="wrap">True</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -677,7 +692,7 @@
                                   <object class="GtkLabel" id="p5-last-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="hexpand">True</property>
+                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                     <property name="yalign">1</property>
                                   </object>
@@ -830,11 +845,14 @@
   </object>
   <object class="GtkSizeGroup" id="sizegroup1">
     <widgets>
-      <widget name="label111"/>
-      <widget name="label112"/>
-      <widget name="label113"/>
-      <widget name="label114"/>
+      <widget name="pl-label"/>
+      <widget name="pl-siren"/>
+      <widget name="pl-currency"/>
+      <widget name="pl-ledger"/>
+      <widget name="label121"/>
+      <widget name="pl-exe-length"/>
+      <widget name="pl-exe-begin"/>
+      <widget name="pl-exe-closed"/>
     </widgets>
   </object>
-  <object class="GtkSizeGroup" id="sizegroup2"/>
 </interface>

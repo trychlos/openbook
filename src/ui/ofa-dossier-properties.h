@@ -30,7 +30,12 @@
  * @short_description: #ofaDossierProperties class definition.
  * @include: ui/ofa-dossier-properties.h
  *
- * Update the dossier properties.
+ * Display/update the dossier properties.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"
