@@ -511,7 +511,7 @@
                 src/ui/ofa-dossier-manager.ui               --
                 src/ui/ofa-dossier-new-bin.ui               OK
                 src/ui/ofa-dossier-new-mini.ui              OK
-                src/ui/ofa-dossier-new.ui                   
+                src/ui/ofa-dossier-new.ui                   --
                 src/ui/ofa-dossier-open.ui
                 src/ui/ofa-dossier-properties.ui
                 src/ui/ofa-exercice-close-assistant.ui

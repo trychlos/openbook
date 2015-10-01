@@ -28,9 +28,14 @@
 /**
  * SECTION: ofa_dossier_open
  * @short_description: #ofaDossierOpen class definition.
- * @include: ui/ofa-dossier-new.h
+ * @include: ui/ofa-dossier-open.h
  *
- * Guide the user through the process of creating a new dossier.
+ * Open an existing dossier.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

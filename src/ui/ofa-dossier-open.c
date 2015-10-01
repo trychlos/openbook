@@ -197,7 +197,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *container, *entry, *button, *focus, *account_entry;
+	GtkWidget *container, *entry, *button, *focus, *account_entry, *label;
 	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
@@ -222,6 +222,10 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect(
 			G_OBJECT( priv->exercice_combo ), "ofa-changed", G_CALLBACK( on_exercice_changed ), dialog );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-exercice" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->exercice_combo ));
+
 	/* setup dossier treeview */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-dossier" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -233,6 +237,11 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
 	focus = GTK_WIDGET( priv->dossier_tview );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-dossier" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget(
+			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
 
 	if( priv->dname ){
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
@@ -250,8 +259,16 @@ v_init_dialog( myDialog *dialog )
 	/* setup account and password */
 	g_signal_connect(G_OBJECT( account_entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-account" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), account_entry );
+
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "password" );
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-password" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
 }

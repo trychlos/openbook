@@ -90,6 +90,8 @@ void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
 																ofaDossierShow show );
 
+GtkWidget          *ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view );
+
 ofaDossierStore    *ofa_dossier_treeview_get_store   ( const ofaDossierTreeview *view );
 
 gchar              *ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,

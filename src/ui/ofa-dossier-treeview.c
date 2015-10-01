@@ -467,7 +467,34 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 }
 
 /**
+ * ofa_dossier_treeview_get_treeview:
+ * @view: this #ofaDossierTreeview instance.
+ *
+ * Returns: the underlying #GtkTreeView widget.
+ */
+GtkWidget *
+ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view )
+{
+	ofaDossierTreeviewPrivate *priv;
+	GtkWidget *tview;
+
+	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
+
+	priv = view->priv;
+	tview = NULL;
+
+	if( !priv->dispose_has_run ){
+		tview = GTK_WIDGET( priv->tview );
+	}
+
+	return( tview );
+}
+
+/**
  * ofa_dossier_treeview_get_store:
+ * @view: this #ofaDossierTreeview instance.
+ *
+ * Returns: the underlying #ofaDossierStore store.
  */
 ofaDossierStore *
 ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )

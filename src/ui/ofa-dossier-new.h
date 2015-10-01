@@ -46,6 +46,11 @@
  * - creating minimal tables as root in order the administrative
  *   account is allowed to connect to the dossier
  * - create the data model, updating it to last known version
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

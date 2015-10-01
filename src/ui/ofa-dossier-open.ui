@@ -66,7 +66,7 @@
             <property name="row_spacing">3</property>
             <property name="column_spacing">4</property>
             <child>
-              <object class="GtkLabel" id="label1">
+              <object class="GtkLabel" id="pl-dossier">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_top">4</property>
@@ -81,7 +81,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="label4">
+              <object class="GtkLabel" id="pl-exercice">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Exercice :</property>
@@ -94,7 +94,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="label2">
+              <object class="GtkLabel" id="pl-account">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Account :</property>
@@ -122,7 +122,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="label3">
+              <object class="GtkLabel" id="pl-password">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Password :</property>
