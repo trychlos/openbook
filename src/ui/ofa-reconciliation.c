@@ -684,7 +684,7 @@ static void
 setup_entries_filter( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
-	GtkWidget *combo;
+	GtkWidget *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
@@ -695,6 +695,10 @@ setup_entries_filter( ofaPage *page, GtkContainer *parent )
 	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 	priv->mode_combo = GTK_COMBO_BOX( combo );
+
+	label = my_utils_container_get_child_by_name( parent, "entries-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new( ENT_N_COLUMNS, G_TYPE_INT, G_TYPE_STRING ));
 	gtk_combo_box_set_model( priv->mode_combo, tmodel );
@@ -749,6 +753,10 @@ setup_manual_rappro( ofaPage *page, GtkContainer *parent )
 	entry = my_utils_container_get_child_by_name( parent, "manual-date" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->date_concil = GTK_ENTRY( entry );
+
+	label = my_utils_container_get_child_by_name( parent, "manual-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	label = my_utils_container_get_child_by_name( parent, "manual-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

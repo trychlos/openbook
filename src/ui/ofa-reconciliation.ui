@@ -262,7 +262,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label10">
+                      <object class="GtkLabel" id="entries-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Mode :</property>
@@ -312,6 +312,7 @@
                         <property name="tooltip_text" translatable="yes">The date to which the entry will be set as reconciliated if no account transaction is proposed.</property>
                         <property name="max_length">10</property>
                         <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>

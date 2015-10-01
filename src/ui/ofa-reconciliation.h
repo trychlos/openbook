@@ -85,6 +85,11 @@
  *
  * The OFA_T_CONCIL table records the conciliation groups, gathering
  * them by concil identifier.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-page-def.h"

@@ -535,6 +535,8 @@
                 src/ui/ofa-view-entries.ui
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
+     2015-10- 1 but see ofaReconciliation which needs a single account
+                selection
 
  841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
                 the print
