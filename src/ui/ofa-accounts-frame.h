@@ -34,7 +34,7 @@
  * and the buttons box on the right.
  *
  * The class also acts as a proxy for "changed" and "activated" messages
- * sent by the underlying ofaAccountIStore interface.
+ * sent by the underlying ofaAccountStore class.
  */
 
 #include "ui/ofa-accounts-chart.h"

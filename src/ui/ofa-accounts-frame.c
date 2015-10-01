@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -239,7 +240,7 @@ setup_top_grid( ofaAccountsFrame *frame )
 	gtk_container_add( GTK_CONTAINER( frame ), grid );
 
 	priv->grid = GTK_GRID( grid );
-	gtk_widget_set_margin_left( grid, 4 );
+	my_utils_widget_set_margin_left( grid, 4 );
 	gtk_widget_set_margin_bottom( grid, 4 );
 
 	/* create the accounts notebook

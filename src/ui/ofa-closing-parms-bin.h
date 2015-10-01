@@ -39,7 +39,7 @@
  * - change:     ofa-changed
  * - validation: yes
  * - settings:   no
- * - current:    yes
+ * - current:    no
  */
 
 #include "ui/ofa-main-window-def.h"

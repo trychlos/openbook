@@ -268,6 +268,7 @@ v_init_dialog( myDialog *dialog )
 	/* these are main notes of the dossier */
 	my_utils_init_notes_ex( container, dossier, priv->is_current );
 	my_utils_init_upd_user_stamp_ex( container, dossier );
+	my_utils_container_set_editable( container, priv->is_current );
 
 	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );
 
@@ -303,7 +304,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
-	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	entry = my_utils_container_get_child_by_name( container, "p1-siren" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -312,7 +312,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		gtk_entry_set_text( GTK_ENTRY( entry ), priv->siren );
 	}
 	priv->siren_entry = entry;
-	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -322,9 +321,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofa_currency_combo_set_main_window( c_combo, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
-	if( !priv->is_current ){
-		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( c_combo ), GTK_SENSITIVITY_OFF );
-	}
 
 	parent = my_utils_container_get_child_by_name( container, "p1-ledger-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -334,9 +330,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofa_ledger_combo_set_main_window( l_combo, OFA_MAIN_WINDOW( main_window ));
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
-	if( !priv->is_current ){
-		gtk_combo_box_set_button_sensitivity( GTK_COMBO_BOX( l_combo ), GTK_SENSITIVITY_OFF );
-	}
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -349,7 +342,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	str = g_strdup_printf( "%d", ivalue );
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
-	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-begin" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -362,8 +354,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	/* beginning date of the exercice cannot be modified if at least one
 	 * account has an opening balance (main reason is that we do not know
 	 * how to remediate this ;) */
-	gtk_widget_set_can_focus( entry,
-			priv->is_current || ofo_account_has_open_balance( priv->dossier ));
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-end" );
@@ -374,7 +364,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	priv->end_empty = !my_date_is_valid( &priv->end );
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
-	gtk_widget_set_can_focus( entry, priv->is_current );
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
 	entry = my_utils_container_get_child_by_name( container, "last-closed" );
@@ -382,7 +371,6 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), last_closed );
-	gtk_widget_set_can_focus( entry, FALSE );
 
 	/* the end of the exercice cannot be rewinded back before the last
 	 * close of the ledgers or the last closed period */

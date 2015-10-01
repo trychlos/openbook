@@ -40,7 +40,7 @@
  * - change:     no
  * - validation: no
  * - settings:   no
- * - current:    no
+ * - current:    yes
  */
 
 #include <gtk/gtk.h>

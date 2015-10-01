@@ -708,7 +708,8 @@ child_set_editable_cb( GtkWidget *widget, gpointer data )
 
 	/*g_debug( "child_set_editable_cb: %s", G_OBJECT_TYPE_NAME( widget ));*/
 
-	if( GTK_IS_CONTAINER( widget ) && !GTK_IS_BUTTON( widget ) && !GTK_IS_TEXT_VIEW( widget )){
+	if( GTK_IS_CONTAINER( widget ) &&
+			!GTK_IS_BUTTON( widget ) && !GTK_IS_COMBO_BOX( widget ) && !GTK_IS_TEXT_VIEW( widget )){
 		my_utils_container_set_editable( GTK_CONTAINER( widget ), editable );
 	} else {
 		my_utils_widget_set_editable( widget, editable );

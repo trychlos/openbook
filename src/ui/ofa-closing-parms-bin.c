@@ -49,7 +49,6 @@ struct _ofaClosingParmsBinPrivate {
 	 */
 	GtkWidget      *forward;
 	ofaMainWindow  *main_window;
-	gboolean        is_current;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
 
@@ -286,12 +285,10 @@ ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *m
 
 		priv->main_window = main_window;
 		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 		if( priv->dossier ){
 			setup_closing_opes( bin );
 			setup_currency_accounts( bin );
-			my_utils_container_set_editable( GTK_CONTAINER( bin ), priv->is_current );
 		}
 
 		gtk_widget_show_all( GTK_WIDGET( bin ));
@@ -312,18 +309,12 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 	}
-	my_utils_widget_set_editable( priv->sld_ope, priv->is_current );
-
-	my_utils_widget_set_editable( priv->bope_select_button, priv->is_current );
 
 	/* forward ope template */
 	cstr = ofo_dossier_get_forward_ope( priv->dossier );
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 	}
-	my_utils_widget_set_editable( priv->for_ope, priv->is_current );
-
-	my_utils_widget_set_editable( priv->fope_select_button, priv->is_current );
 }
 
 static void
@@ -434,8 +425,6 @@ add_empty_row( ofaClosingParmsBin *self )
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
-	gtk_combo_box_set_button_sensitivity(
-			GTK_COMBO_BOX( combo ), priv->is_current ? GTK_SENSITIVITY_AUTO : GTK_SENSITIVITY_OFF );
 
 	/* account number */
 	widget = gtk_entry_new();
@@ -443,7 +432,6 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 14 );
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	my_utils_widget_set_editable( widget, priv->is_current );
 
 	/* account select */
 	add_button( self, "gtk-index", COL_SELECT, row );
@@ -473,9 +461,7 @@ add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint r
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->priv->grid, button, column, row, 1, 1 );
-
-	gtk_widget_set_sensitive( button, priv->is_current );
+	gtk_grid_attach( priv->grid, button, column, row, 1, 1 );
 }
 
 static void
