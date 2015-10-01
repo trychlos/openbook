@@ -71,12 +71,12 @@ struct _ofaPreferencesPrivate {
 
 	/* UI - Locales
 	 */
-	myDateCombo              *p3_display_combo;
-	myDateCombo              *p3_check_combo;
-	myDecimalCombo           *p3_decimal_sep;
-	GtkWidget                *p3_thousand_sep;
-	GtkWidget                *p3_accept_dot;
-	GtkWidget                *p3_accept_comma;
+	myDateCombo              *p4_display_combo;
+	myDateCombo              *p4_check_combo;
+	myDecimalCombo           *p4_decimal_sep;
+	GtkWidget                *p4_thousand_sep;
+	GtkWidget                *p4_accept_dot;
+	GtkWidget                *p4_accept_comma;
 
 	/* Export settings
 	 */
@@ -369,47 +369,47 @@ init_locales_page( ofaPreferences *self, GtkContainer *toplevel )
 	/*get_locales();*/
 
 	init_locale_date( self, toplevel,
-			&priv->p3_display_combo, "l-display", "p3-box-display", ofa_prefs_date_display());
-	g_signal_connect( priv->p3_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
-	on_display_date_changed( GTK_COMBO_BOX( priv->p3_display_combo ), self );
+			&priv->p4_display_combo, "p4-display-label", "p4-display-parent", ofa_prefs_date_display());
+	g_signal_connect( priv->p4_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
+	on_display_date_changed( GTK_COMBO_BOX( priv->p4_display_combo ), self );
 
 	init_locale_date( self, toplevel,
-			&priv->p3_check_combo,   "l-visual",  "p3-box-check",   ofa_prefs_date_check());
-	g_signal_connect( priv->p3_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
-	on_check_date_changed( GTK_COMBO_BOX( priv->p3_check_combo ), self );
+			&priv->p4_check_combo,   "p4-check-label",  "p4-check-parent",   ofa_prefs_date_check());
+	g_signal_connect( priv->p4_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
+	on_check_date_changed( GTK_COMBO_BOX( priv->p4_check_combo ), self );
 
 	/* decimal display */
-	priv->p3_decimal_sep = my_decimal_combo_new();
+	priv->p4_decimal_sep = my_decimal_combo_new();
 
-	parent = my_utils_container_get_child_by_name( toplevel, "p3-decimal-parent" );
+	parent = my_utils_container_get_child_by_name( toplevel, "p4-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_decimal_sep ));
-	my_decimal_combo_set_selected( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_decimal_sep ));
+	my_decimal_combo_set_selected( priv->p4_decimal_sep, ofa_prefs_amount_decimal_sep());
 
-	label = my_utils_container_get_child_by_name( toplevel, "l-decimal" );
+	label = my_utils_container_get_child_by_name( toplevel, "p4-decimal-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p3_decimal_sep ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->p4_decimal_sep ));
 
 	/* accept dot decimal separator */
-	check = my_utils_container_get_child_by_name( toplevel, "p3-accept-dot" );
+	check = my_utils_container_get_child_by_name( toplevel, "p4-accept-dot" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
-	priv->p3_accept_dot = check;
+	priv->p4_accept_dot = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_dot_toggled ), self );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_dot());
 	on_accept_dot_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* accept comma decimal separator */
-	check = my_utils_container_get_child_by_name( toplevel, "p3-accept-comma" );
+	check = my_utils_container_get_child_by_name( toplevel, "p4-accept-comma" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
-	priv->p3_accept_comma = check;
+	priv->p4_accept_comma = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_comma_toggled ), self );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_comma());
 	on_accept_comma_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* thousand separator */
 	init_locale_sep( self, toplevel,
-			&priv->p3_thousand_sep, "l-thousand", "p3-thousand-sep", ofa_prefs_amount_thousand_sep());
+			&priv->p4_thousand_sep, "l-thousand", "p4-thousand-sep", ofa_prefs_amount_thousand_sep());
 }
 
 #if 0
@@ -619,13 +619,13 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 static void
 on_display_date_changed( GtkComboBox *box, ofaPreferences *self )
 {
-	on_date_changed( self, box, "p3-display-sample" );
+	on_date_changed( self, box, "p4-display-sample" );
 }
 
 static void
 on_check_date_changed( GtkComboBox *box, ofaPreferences *self )
 {
-	on_date_changed( self, box, "p3-check-sample" );
+	on_date_changed( self, box, "p4-check-sample" );
 }
 
 static void
@@ -681,11 +681,11 @@ check_for_activable_dlg( ofaPreferences *self )
 	priv = self->priv;
 	activable = TRUE;
 
-	if( !priv->p3_accept_dot || !priv->p3_accept_comma ){
+	if( !priv->p4_accept_dot || !priv->p4_accept_comma ){
 		activable = FALSE;
 	} else {
-		accept_dot = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_dot ));
-		accept_comma = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_comma ));
+		accept_dot = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_dot ));
+		accept_comma = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma ));
 		activable &= ( accept_dot || accept_comma );
 	}
 
@@ -844,23 +844,23 @@ do_update_locales_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	list = g_list_append( NULL, GINT_TO_POINTER( my_date_combo_get_selected( priv->p3_display_combo )));
-	list = g_list_append( list, GINT_TO_POINTER( my_date_combo_get_selected( priv->p3_check_combo )));
+	list = g_list_append( NULL, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_display_combo )));
+	list = g_list_append( list, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_check_combo )));
 	ofa_settings_set_int_list( SETTINGS_DATE, list );
 	ofa_settings_free_int_list( list );
 
-	decimal_sep = my_decimal_combo_get_selected( priv->p3_decimal_sep );
+	decimal_sep = my_decimal_combo_get_selected( priv->p4_decimal_sep );
 	list = g_list_append( NULL, decimal_sep );
 
-	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p3_thousand_sep ));
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p4_thousand_sep ));
 	list = g_list_append( list, g_strdup( cstr ));
 
 	str = g_strdup_printf( "%s",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_dot )) ? "True" : "False" );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_dot )) ? "True" : "False" );
 	list = g_list_append( list, str );
 
 	str = g_strdup_printf( "%s",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_accept_comma )) ? "True" : "False" );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma )) ? "True" : "False" );
 	list = g_list_append( list, str );
 
 	ofa_settings_set_string_list( SETTINGS_AMOUNT, list );

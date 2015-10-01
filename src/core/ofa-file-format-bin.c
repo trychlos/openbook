@@ -542,7 +542,7 @@ init_headers( ofaFileFormatBin *self )
 				G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-label4x1" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-count-label" );
 		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 		gtk_widget_destroy( widget );
 
@@ -562,7 +562,7 @@ init_headers( ofaFileFormatBin *self )
 		priv->headers_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
 		g_return_if_fail( priv->headers_count && GTK_IS_SPIN_BUTTON( priv->headers_count ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "label4x1" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-count-label" );
 		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 		gtk_label_set_mnemonic_widget( GTK_LABEL( widget ), priv->headers_count );
 

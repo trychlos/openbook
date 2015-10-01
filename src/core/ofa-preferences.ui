@@ -2,19 +2,6 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
-  <object class="GtkSizeGroup" id="LanguageComboSizeGroup">
-    <widgets>
-      <widget name="p3-decimal-parent"/>
-    </widgets>
-  </object>
-  <object class="GtkSizeGroup" id="LanguageLabelSizeGroup">
-    <widgets>
-      <widget name="l-display"/>
-      <widget name="l-visual"/>
-      <widget name="l-decimal"/>
-      <widget name="l-thousand"/>
-    </widgets>
-  </object>
   <object class="GtkDialog" id="PreferencesDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -66,7 +53,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="grid1">
+          <object class="GtkGrid" id="grid0">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
@@ -76,7 +63,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <child>
-                  <object class="GtkGrid" id="grid2">
+                  <object class="GtkGrid" id="grid1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
@@ -150,7 +137,7 @@
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label13">
+                          <object class="GtkLabel" id="label11">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes"> Quitting an assistant </property>
@@ -240,7 +227,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="grid3">
+                  <object class="GtkGrid" id="grid2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
@@ -292,7 +279,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="grid4">
+                  <object class="GtkGrid" id="grid3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
@@ -300,14 +287,14 @@
                     <property name="margin_top">4</property>
                     <property name="margin_bottom">4</property>
                     <child>
-                      <object class="GtkFrame" id="frame2">
+                      <object class="GtkFrame" id="frame31">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid7">
+                          <object class="GtkGrid" id="grid31">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -332,7 +319,7 @@
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label12">
+                          <object class="GtkLabel" id="label31">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes"> Deleting an account </property>
@@ -351,7 +338,7 @@
                   </packing>
                 </child>
                 <child type="tab">
-                  <object class="GtkLabel" id="label4">
+                  <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Account</property>
@@ -362,7 +349,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="grid5">
+                  <object class="GtkGrid" id="grid4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
@@ -372,14 +359,14 @@
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkFrame" id="frame1">
+                      <object class="GtkFrame" id="frame41">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid31">
+                          <object class="GtkGrid" id="grid41">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -389,7 +376,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="l-display">
+                              <object class="GtkLabel" id="p4-display-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Display format :</property>
@@ -402,7 +389,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="l-visual">
+                              <object class="GtkLabel" id="p4-check-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Visual _check format :</property>
@@ -415,7 +402,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="p3-display-sample">
+                              <object class="GtkLabel" id="p4-display-sample">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="xalign">0</property>
@@ -426,7 +413,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="p3-check-sample">
+                              <object class="GtkLabel" id="p4-check-sample">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="xalign">0</property>
@@ -437,7 +424,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox" id="p3-box-display">
+                              <object class="GtkBox" id="p4-display-parent">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="orientation">vertical</property>
@@ -451,7 +438,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox" id="p3-box-check">
+                              <object class="GtkBox" id="p4-check-parent">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="orientation">vertical</property>
@@ -467,7 +454,7 @@
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label31">
+                          <object class="GtkLabel" id="label41">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes"> Date formats </property>
@@ -481,14 +468,14 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkFrame" id="frame4">
+                      <object class="GtkFrame" id="frame42">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid326">
+                          <object class="GtkGrid" id="grid42">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -498,7 +485,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="l-decimal">
+                              <object class="GtkLabel" id="p4-decimal-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Display de_cimal separator :</property>
@@ -511,7 +498,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="l-thousand">
+                              <object class="GtkLabel" id="p4-thousand-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Display _thousand separator :</property>
@@ -524,7 +511,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p3-thousand-sep">
+                              <object class="GtkEntry" id="p4-thousand-sep">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
@@ -538,7 +525,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="p3-accept-dot">
+                              <object class="GtkCheckButton" id="p4-accept-dot">
                                 <property name="label" translatable="yes">Accept _dot decimal separator on enter</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -554,7 +541,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="p3-accept-comma">
+                              <object class="GtkCheckButton" id="p4-accept-comma">
                                 <property name="label" translatable="yes">Accept co_mma decimal separator on enter</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -570,7 +557,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox" id="p3-decimal-parent">
+                              <object class="GtkBox" id="p4-decimal-parent">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
@@ -599,7 +586,7 @@
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label10">
+                          <object class="GtkLabel" id="label42">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes"> Amounts separators </property>
@@ -618,7 +605,7 @@
                   </packing>
                 </child>
                 <child type="tab">
-                  <object class="GtkLabel" id="label3">
+                  <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Language</property>
@@ -629,7 +616,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="grid6">
+                  <object class="GtkGrid" id="grid5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
@@ -809,10 +796,23 @@
       <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
   </object>
+  <object class="GtkSizeGroup" id="LanguageComboSizeGroup">
+    <widgets>
+      <widget name="p4-decimal-parent"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup" id="LanguageLabelSizeGroup">
+    <widgets>
+      <widget name="p4-display-label"/>
+      <widget name="p4-check-label"/>
+      <widget name="p4-decimal-label"/>
+      <widget name="p4-thousand-label"/>
+    </widgets>
+  </object>
   <object class="GtkSizeGroup" id="SepsSizeGroup">
     <widgets>
-      <widget name="p3-decimal-parent"/>
-      <widget name="p3-thousand-sep"/>
+      <widget name="p4-decimal-parent"/>
+      <widget name="p4-thousand-sep"/>
     </widgets>
   </object>
 </interface>

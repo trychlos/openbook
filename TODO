@@ -520,7 +520,7 @@
                 src/ui/ofa-guided-input.ui                  --
                 src/ui/ofa-import-assistant.ui              --
                 src/ui/ofa-ledger-close.ui                  --
-                src/ui/ofa-ledger-properties.ui
+                src/ui/ofa-ledger-properties.ui             OK
                 src/ui/ofa-ledgers-book-bin.ui
                 src/ui/ofa-ope-template-help.ui
                 src/ui/ofa-ope-template-properties.ui
