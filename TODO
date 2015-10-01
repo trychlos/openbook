@@ -515,8 +515,8 @@
                 src/ui/ofa-dossier-open.ui                  OK
                 src/ui/ofa-dossier-properties.ui            OK
                 src/ui/ofa-exercice-close-assistant.ui      OK
-                src/ui/ofa-export-assistant.ui
-                src/ui/ofa-guided-input-bin.ui
+                src/ui/ofa-export-assistant.ui              --
+                src/ui/ofa-guided-input-bin.ui              OK
                 src/ui/ofa-guided-input.ui
                 src/ui/ofa-import-assistant.ui
                 src/ui/ofa-ledger-close.ui

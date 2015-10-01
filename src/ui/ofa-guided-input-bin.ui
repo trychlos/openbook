@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
-  <object class="GtkWindow" id="GuidedInputBin">
+  <object class="GtkWindow" id="gib-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid" id="top">
@@ -33,7 +33,7 @@
                     <property name="halign">start</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label3">
+                      <object class="GtkLabel" id="lab-opedate">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">O_peration date :</property>
@@ -84,7 +84,7 @@
                     <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label4">
+                      <object class="GtkLabel" id="lab-effdate">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Effect date :</property>
@@ -134,7 +134,7 @@
                     <property name="halign">end</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label5">
+                      <object class="GtkLabel" id="lab-ref">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Piece ref. :</property>
@@ -172,7 +172,7 @@
                     <property name="halign">end</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label10">
+                      <object class="GtkLabel" id="lab-ledger">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">end</property>

@@ -307,7 +307,7 @@ setup_view_right( ofaGuidedEx *self )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
 	ofa_guided_input_bin_set_main_window( priv->input_bin, ofa_page_get_main_window( OFA_PAGE( self )));
 
-	g_signal_connect( priv->input_bin, "changed", G_CALLBACK( on_right_piece_changed ), self );
+	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( on_right_piece_changed ), self );
 
 	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
 	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );

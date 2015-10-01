@@ -214,11 +214,10 @@ static GDate st_last_deff               = { 0 };
 static const gchar *st_image_empty      = PKGUIDIR "/filler.png";
 static const gchar *st_image_check      = PKGUIDIR "/green-checkmark.png";
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-guided-input-bin.ui";
-static const gchar *st_bin_id           = "GuidedInputBin";
 
 G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
 
-static void              load_dialog( ofaGuidedInputBin *bin );
+static void              setup_bin( ofaGuidedInputBin *bin );
 static void              setup_dialog( ofaGuidedInputBin *bin );
 static void              init_model_data( ofaGuidedInputBin *bin );
 static void              add_entry_row( ofaGuidedInputBin *bin, gint i );
@@ -368,7 +367,7 @@ ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_GUIDED_INPUT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -390,18 +389,28 @@ ofa_guided_input_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
-	load_dialog( self );
+	setup_bin( self );
 
 	return( self );
 }
 
 static void
-load_dialog( ofaGuidedInputBin *bin )
+setup_bin( ofaGuidedInputBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "gib-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**
@@ -459,7 +468,6 @@ setup_dialog( ofaGuidedInputBin *bin )
 
 	/* set ledger combo */
 	priv->ledger_combo = ofa_ledger_combo_new();
-
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
@@ -470,10 +478,16 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), bin );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-ledger" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
+
 	/* when opening the window, dates are set to the last used (from the
 	 * global static variables)
 	 * if the window stays alive after a validation (the case of the main
-	 * page), then the dates stays untouched */
+	 * page), then the dates stays untouched
+	 */
+	/* operation date */
 	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
@@ -486,6 +500,11 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), bin );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-opedate" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->dope_entry ));
+
+	/* effect date */
 	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect" ));
 	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
@@ -502,11 +521,20 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), bin );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-effdate" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->deffect_entry ));
+
+	/* piece ref */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), bin );
 	gtk_widget_set_sensitive( widget, FALSE );
 	priv->ref_entry = widget;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-ref" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
 
 	/* setup other widgets */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-model-label" );
@@ -1244,7 +1272,7 @@ check_for_enable_dlg( ofaGuidedInputBin *bin )
 		priv->check_allowed = FALSE;
 
 		ok = is_dialog_validable( bin );
-		g_signal_emit_by_name( bin, "changed", ok );
+		g_signal_emit_by_name( bin, "ofa-changed", ok );
 
 		priv->check_allowed = TRUE;
 	}

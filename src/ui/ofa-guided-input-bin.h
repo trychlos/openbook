@@ -38,6 +38,12 @@
  * - main page: is opened first, then receives a model, take input,
  *   validate the entries, and stays opened (though resetted); then
  *   receives another model, and so on
+ *
+ * Development rules:
+ * - type:       bin (parent='top')
+ * - validation: yes (has 'ofa-changed' signal)
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/ofo-ope-template-def.h"
