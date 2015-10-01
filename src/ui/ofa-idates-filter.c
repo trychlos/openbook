@@ -40,15 +40,16 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	gchar     *xml_name;
-	gboolean   mandatory;
-	gchar     *prefs_key;
+	gchar        *xml_name;
+	gboolean      mandatory;
+	gchar        *prefs_key;
+	GtkSizeGroup *group0;
 
-	GtkWidget *from_entry;
-	GDate      from_date;
+	GtkWidget    *from_entry;
+	GDate         from_date;
 
-	GtkWidget *to_entry;
-	GDate      to_date;
+	GtkWidget    *to_entry;
+	GDate         to_date;
 }
 	sIDatesFilter;
 
@@ -67,8 +68,6 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_id            = "DatesFilterBin";
-
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType          register_type( void );
@@ -76,7 +75,7 @@ static void           interface_base_init( ofaIDatesFilterInterface *klass );
 static void           interface_base_finalize( ofaIDatesFilterInterface *klass );
 static sIDatesFilter *get_idates_filter_data( ofaIDatesFilter *filter );
 static void           on_widget_finalized( ofaIDatesFilter *idates_filter, void *finalized_widget );
-static void           setup_bin( ofaIDatesFilter *filter, sIDatesFilter *sdata );
+static void           setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata );
 static void           on_from_changed( GtkEntry *entry, ofaIDatesFilter *filter );
 static gboolean       on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDatesFilter *filter );
 static void           on_to_changed( GtkEntry *entry, ofaIDatesFilter *filter );
@@ -241,7 +240,7 @@ ofa_idates_filter_setup_bin( ofaIDatesFilter *filter, const gchar *xml_name )
 	sdata->xml_name = g_strdup( xml_name );
 	sdata->mandatory = DEFAULT_MANDATORY;
 
-	setup_bin( filter, sdata );
+	setup_composite( filter, sdata );
 }
 
 static sIDatesFilter *
@@ -278,6 +277,7 @@ on_widget_finalized( ofaIDatesFilter *filter, void *finalized_widget )
 
 	sdata = get_idates_filter_data( filter );
 
+	g_clear_object( &sdata->group0 );
 	g_free( sdata->xml_name );
 	g_free( sdata->prefs_key );
 	g_free( sdata );
@@ -286,19 +286,30 @@ on_widget_finalized( ofaIDatesFilter *filter, void *finalized_widget )
 }
 
 static void
-setup_bin( ofaIDatesFilter *filter, sIDatesFilter *sdata )
+setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 {
-	GtkWidget *top_widget, *entry, *label;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *label;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( filter ), sdata->xml_name, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	builder = gtk_builder_new_from_file( sdata->xml_name );
+
+	object = gtk_builder_get_object( builder, "dfb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	sdata->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
+
+	object = gtk_builder_get_object( builder, "dfb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( filter ), GTK_WINDOW( toplevel ), "top" );
 
 	/* From: block */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "from-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
@@ -309,12 +320,16 @@ setup_bin( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
 	/* To: block */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( top_widget ), "to-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
@@ -324,6 +339,13 @@ setup_bin( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**

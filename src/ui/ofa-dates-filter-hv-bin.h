@@ -39,6 +39,14 @@
  *
  * The two entries may also come either besides each one (horizontally
  * aligned), or one below the other (vertically aligned).
+ *
+ * Development rules:
+ * - type:       part_of
+ * - parent:     top
+ * - change:     no
+ * - validation: no
+ * - settings:   no
+ * - current:    no
  */
 
 #include <gtk/gtk.h>

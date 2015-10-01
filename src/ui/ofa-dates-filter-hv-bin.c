@@ -37,7 +37,7 @@ struct _ofaDatesFilterHVBinPrivate {
 	gboolean dispose_has_run;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dates-filter-hv-bin.ui";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dates-filter-hv-bin.ui";
 
 static void  idates_filter_iface_init( ofaIDatesFilterInterface *iface );
 static guint idates_filter_get_interface_version( const ofaIDatesFilter *instance );
@@ -122,7 +122,7 @@ ofa_dates_filter_hv_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DATES_FILTER_HV_BIN, NULL );
 
-	ofa_idates_filter_setup_bin( OFA_IDATES_FILTER( bin ), st_ui_xml );
+	ofa_idates_filter_setup_bin( OFA_IDATES_FILTER( bin ), st_bin_xml );
 
 	return( bin );
 }
