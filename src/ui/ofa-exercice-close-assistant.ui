@@ -64,10 +64,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label2111">
+                      <object class="GtkLabel" id="lab-closing-begin">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Beginning date :</property>
+                        <property name="label" translatable="yes">_Beginning date :</property>
+                        <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -81,7 +82,8 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="max_length">10</property>
-                        <property name="width_chars">12</property>
+                        <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -89,10 +91,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label2112">
+                      <object class="GtkLabel" id="lab-closing-end">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Closing date :</property>
+                        <property name="label" translatable="yes">_Closing date :</property>
+                        <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -106,7 +109,8 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="max_length">10</property>
-                        <property name="width_chars">12</property>
+                        <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -146,10 +150,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label2121">
+                      <object class="GtkLabel" id="lab-next-begin">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Beginning date :</property>
+                        <property name="label" translatable="yes">B_eginning date :</property>
+                        <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -163,7 +168,8 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="max_length">10</property>
-                        <property name="width_chars">12</property>
+                        <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -171,10 +177,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label2122">
+                      <object class="GtkLabel" id="lab-next-end">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Closing date :</property>
+                        <property name="label" translatable="yes">C_losing date :</property>
+                        <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -188,7 +195,8 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="max_length">10</property>
-                        <property name="width_chars">12</property>
+                        <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>

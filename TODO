@@ -514,7 +514,7 @@
                 src/ui/ofa-dossier-new.ui                   --
                 src/ui/ofa-dossier-open.ui                  OK
                 src/ui/ofa-dossier-properties.ui            OK
-                src/ui/ofa-exercice-close-assistant.ui
+                src/ui/ofa-exercice-close-assistant.ui      OK
                 src/ui/ofa-export-assistant.ui
                 src/ui/ofa-guided-input-bin.ui
                 src/ui/ofa-guided-input.ui
@@ -568,7 +568,13 @@
                 if this data is updatable by the user, or should be
                 read-only. 
 
- 850
+ 850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
+                GtkBin-derived widgets ?
+
+ 851 2015-10- 1 segfault when closing the exercice
+                database trest6 restored from PWIConsultants-20150319.gz
+
+ 852
 
 -----------------------------------------------------------------------
  DONE

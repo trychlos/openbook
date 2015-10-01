@@ -330,7 +330,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkWidget *parent;
+	GtkWidget *parent, *label;
 	ofoDossier *dossier;
 	const GDate *begin_cur, *end_cur;
 	GDate begin, end;
@@ -344,6 +344,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	exe_length = ofo_dossier_get_exe_length( dossier );
 
+	/* closing exercice - beginning date */
 	priv->p2_begin_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-begin" );
 	g_return_if_fail( priv->p2_begin_cur && GTK_IS_ENTRY( priv->p2_begin_cur ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_begin_cur ));
@@ -353,6 +354,11 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_editable_date_set_date( GTK_EDITABLE( priv->p2_begin_cur ), begin_cur );
 	g_signal_connect( G_OBJECT( priv->p2_begin_cur ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-closing-begin" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_begin_cur );
+
+	/* closing exercice - ending date */
 	priv->p2_end_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-end" );
 	g_return_if_fail( priv->p2_end_cur && GTK_IS_ENTRY( priv->p2_end_cur ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_end_cur ));
@@ -361,6 +367,10 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	end_cur = ofo_dossier_get_exe_end( dossier );
 	my_editable_date_set_date( GTK_EDITABLE( priv->p2_end_cur ), end_cur );
 	g_signal_connect( G_OBJECT( priv->p2_end_cur ), "changed", G_CALLBACK( p2_on_date_changed ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-closing-end" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_end_cur );
 
 	/* set a date if the other is valid */
 	if( !my_date_is_valid( begin_cur ) && my_date_is_valid( end_cur ) && exe_length > 0 ){
@@ -380,6 +390,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 		my_date_set_from_date( &end, end_cur );
 	}
 
+	/* next exercice - beginning date */
 	priv->p2_begin_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-begin" );
 	g_return_if_fail( priv->p2_begin_next && GTK_IS_ENTRY( priv->p2_begin_next ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_begin_next ));
@@ -387,18 +398,27 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_begin_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_begin_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-next-begin" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_begin_next );
+
 	if( my_date_is_valid( &end )){
 		my_date_set_from_date( &begin, &end );
 		g_date_add_days( &begin, 1 );
 		my_editable_date_set_date( GTK_EDITABLE( priv->p2_begin_next ), &begin );
 	}
 
+	/* next exercice - ending date */
 	priv->p2_end_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-end" );
 	g_return_if_fail( priv->p2_end_next && GTK_IS_ENTRY( priv->p2_end_next ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_end_next ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->p2_end_next ), ofa_prefs_date_display());
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_end_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_end_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-next-end" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_end_next );
 
 	if( my_date_is_valid( &end ) && exe_length > 0 ){
 		g_date_add_months( &end, exe_length );
