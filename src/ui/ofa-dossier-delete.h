@@ -31,6 +31,11 @@
  * @include: ui/ofa-dossier-delete.h
  *
  * Delete a dossier.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/my-dialog.h"
@@ -65,8 +70,9 @@ typedef struct {
 
 GType    ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_dossier_delete_run     ( ofaMainWindow *parent, const gchar *label,
-										const gchar *provider, const gchar *host, const gchar *dbname );
+gboolean ofa_dossier_delete_run     ( ofaMainWindow *parent,
+											const gchar *dname,
+											const gchar *dbname );
 
 G_END_DECLS
 
