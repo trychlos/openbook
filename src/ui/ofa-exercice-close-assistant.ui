@@ -64,7 +64,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-closing-begin">
+                      <object class="GtkLabel" id="p2-closing-begin-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Beginning date :</property>
@@ -77,7 +77,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-closing-begin">
+                      <object class="GtkEntry" id="p2-closing-begin-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -91,7 +91,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="lab-closing-end">
+                      <object class="GtkLabel" id="p2-closing-end-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Closing date :</property>
@@ -104,7 +104,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-closing-end">
+                      <object class="GtkEntry" id="p2-closing-end-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -150,7 +150,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-next-begin">
+                      <object class="GtkLabel" id="p2-next-begin-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">B_eginning date :</property>
@@ -163,7 +163,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-next-begin">
+                      <object class="GtkEntry" id="p2-next-begin-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -177,7 +177,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="lab-next-end">
+                      <object class="GtkLabel" id="p2-next-end-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">C_losing date :</property>
@@ -190,7 +190,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-next-end">
+                      <object class="GtkEntry" id="p2-next-end-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>

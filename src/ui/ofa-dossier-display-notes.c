@@ -156,8 +156,8 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "pl-dossier", "main-text", priv->main_notes );
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "pl-exercice", "exe-text", priv->exe_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "main-label", "main-text", priv->main_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "exe-label", "exe-text", priv->exe_notes );
 
 	my_utils_container_set_editable(
 			GTK_CONTAINER( toplevel ),

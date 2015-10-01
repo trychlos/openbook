@@ -86,7 +86,7 @@
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label2">
+                      <object class="GtkLabel" id="dl-account-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Account :</property>
@@ -99,7 +99,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label3">
+                      <object class="GtkLabel" id="dl-password-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Password :</property>
@@ -112,7 +112,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="account">
+                      <object class="GtkEntry" id="dl-account-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
@@ -123,7 +123,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="password">
+                      <object class="GtkEntry" id="dl-password-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="visibility">False</property>

@@ -478,7 +478,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), bin );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-ledger" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-ledger-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
 
@@ -488,29 +488,29 @@ setup_dialog( ofaGuidedInputBin *bin )
 	 * page), then the dates stays untouched
 	 */
 	/* operation date */
-	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope" ));
+	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-entry" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->dope_entry ), FALSE );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
 
 	g_signal_connect(
 			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), bin );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-opedate" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->dope_entry ));
 
 	/* effect date */
-	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect" ));
+	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-entry" ));
 	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->deffect_entry ), FALSE );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
 
@@ -521,18 +521,18 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), bin );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-effdate" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->deffect_entry ));
 
 	/* piece ref */
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), bin );
 	gtk_widget_set_sensitive( widget, FALSE );
 	priv->ref_entry = widget;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "lab-ref" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
 

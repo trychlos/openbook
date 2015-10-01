@@ -124,7 +124,7 @@
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="p-bal-label">
+                  <object class="GtkLabel" id="p2-bope-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Balancing accounts operation :</property>
@@ -164,7 +164,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p-for-label">
+                  <object class="GtkLabel" id="p2-fope-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Carried forward entries operation :</property>

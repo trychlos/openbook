@@ -209,12 +209,12 @@ v_init_dialog( myDialog *dialog )
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-code" ));
+						GTK_CONTAINER( toplevel ), "p1-code-entry" ));
 	if( priv->code ){
 		gtk_entry_set_text( entry, priv->code );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-code" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-code-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -222,12 +222,12 @@ v_init_dialog( myDialog *dialog )
 	priv->label = g_strdup( ofo_currency_get_label( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-label" ));
+						GTK_CONTAINER( toplevel ), "p1-label-entry" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -235,12 +235,12 @@ v_init_dialog( myDialog *dialog )
 	priv->symbol = g_strdup( ofo_currency_get_symbol( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-symbol" ));
+						GTK_CONTAINER( toplevel ), "p1-symbol-entry" ));
 	if( priv->symbol ){
 		gtk_entry_set_text( entry, priv->symbol );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-symbol" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-symbol-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -248,25 +248,25 @@ v_init_dialog( myDialog *dialog )
 	priv->digits = ofo_currency_get_digits( priv->currency );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-digits" ));
+						GTK_CONTAINER( toplevel ), "p1-digits-entry" ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
 	str = g_strdup_printf( "%d", priv->digits );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-digits" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-digits-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 	my_utils_init_notes_ex( toplevel, currency, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, currency );
-
-	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
 		my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));
 }
 
 static void

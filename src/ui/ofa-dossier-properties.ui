@@ -138,7 +138,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="pl-label">
+                              <object class="GtkLabel" id="p1-label-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Label :</property>
@@ -151,7 +151,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-label">
+                              <object class="GtkEntry" id="p1-label-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
@@ -166,7 +166,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-siren">
+                              <object class="GtkLabel" id="p1-siren-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_SIREN :</property>
@@ -179,7 +179,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-siren">
+                              <object class="GtkEntry" id="p1-siren-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
@@ -192,7 +192,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-currency">
+                              <object class="GtkLabel" id="p1-currency-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Default _currency :</property>
@@ -205,7 +205,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-ledger">
+                              <object class="GtkLabel" id="p1-ledger-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Default _import ledger :</property>
@@ -304,7 +304,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-exe-length">
+                              <object class="GtkLabel" id="p1-exe-length-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">E_xercice length :</property>
@@ -323,7 +323,7 @@
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
                                 <child>
-                                  <object class="GtkEntry" id="p1-exe-length">
+                                  <object class="GtkEntry" id="p1-exe-length-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="tooltip_text" translatable="yes">The exercice length is only used to propose beginning and ending dates for the exercice.</property>
@@ -361,7 +361,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-exe-begin">
+                              <object class="GtkLabel" id="p1-exe-begin-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_From date :</property>
@@ -380,7 +380,7 @@
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
                                 <child>
-                                  <object class="GtkEntry" id="pexe-begin">
+                                  <object class="GtkEntry" id="p1-exe-begin-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="halign">start</property>
@@ -395,7 +395,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="pl-exe-end">
+                                  <object class="GtkLabel" id="p1-exe-end-label">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="margin_left">18</property>
@@ -409,7 +409,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkEntry" id="pexe-end">
+                                  <object class="GtkEntry" id="p1-exe-end-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="halign">start</property>
@@ -430,7 +430,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="pl-exe-closed">
+                              <object class="GtkLabel" id="p1-exe-closed-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Last closed period :</property>
@@ -443,7 +443,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="last-closed">
+                              <object class="GtkEntry" id="p1-exe-closed-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
@@ -845,14 +845,14 @@
   </object>
   <object class="GtkSizeGroup" id="sizegroup1">
     <widgets>
-      <widget name="pl-label"/>
-      <widget name="pl-siren"/>
-      <widget name="pl-currency"/>
-      <widget name="pl-ledger"/>
+      <widget name="p1-label-label"/>
+      <widget name="p1-siren-label"/>
+      <widget name="p1-currency-label"/>
+      <widget name="p1-ledger-label"/>
       <widget name="label121"/>
-      <widget name="pl-exe-length"/>
-      <widget name="pl-exe-begin"/>
-      <widget name="pl-exe-closed"/>
+      <widget name="p1-exe-length-label"/>
+      <widget name="p1-exe-begin-label"/>
+      <widget name="p1-exe-closed-label"/>
     </widgets>
   </object>
 </interface>

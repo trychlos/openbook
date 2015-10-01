@@ -298,7 +298,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	/* dossier name */
-	entry = my_utils_container_get_child_by_name( container, "p1-label" );
+	entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 	cstr = ofo_dossier_get_label( priv->dossier );
@@ -306,12 +306,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
 
-	label = my_utils_container_get_child_by_name( container, "pl-label" );
+	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* siren identifier */
-	entry = my_utils_container_get_child_by_name( container, "p1-siren" );
+	entry = my_utils_container_get_child_by_name( container, "p1-siren-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->siren = g_strdup( ofo_dossier_get_siren( priv->dossier ));
 	if( priv->siren ){
@@ -319,7 +319,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	}
 	priv->siren_entry = entry;
 
-	label = my_utils_container_get_child_by_name( container, "pl-siren" );
+	label = my_utils_container_get_child_by_name( container, "p1-siren-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -333,7 +333,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "pl-currency" );
+	label = my_utils_container_get_child_by_name( container, "p1-currency-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( c_combo ));
 
@@ -347,7 +347,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "pl-ledger" );
+	label = my_utils_container_get_child_by_name( container, "p1-ledger-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( l_combo ));
 
@@ -357,7 +357,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gtk_label_set_text( GTK_LABEL( label ), ofo_dossier_get_status_str( priv->dossier ));
 
 	/* exercice length */
-	entry = my_utils_container_get_child_by_name( container, "p1-exe-length" );
+	entry = my_utils_container_get_child_by_name( container, "p1-exe-length-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), self );
 	ivalue = ofo_dossier_get_exe_length( priv->dossier );
@@ -365,12 +365,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "pl-exe-length" );
+	label = my_utils_container_get_child_by_name( container, "p1-exe-length-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* beginning date */
-	entry = my_utils_container_get_child_by_name( container, "pexe-begin" );
+	entry = my_utils_container_get_child_by_name( container, "p1-exe-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
@@ -383,12 +383,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	 * how to remediate this ;) */
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "pl-exe-begin" );
+	label = my_utils_container_get_child_by_name( container, "p1-exe-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* ending date */
-	entry = my_utils_container_get_child_by_name( container, "pexe-end" );
+	entry = my_utils_container_get_child_by_name( container, "p1-exe-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
@@ -398,18 +398,18 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "pl-exe-end" );
+	label = my_utils_container_get_child_by_name( container, "p1-exe-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* last closed periode */
-	entry = my_utils_container_get_child_by_name( container, "last-closed" );
+	entry = my_utils_container_get_child_by_name( container, "p1-exe-closed-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), last_closed );
 
-	label = my_utils_container_get_child_by_name( container, "pl-exe-closed" );
+	label = my_utils_container_get_child_by_name( container, "p1-exe-closed-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 

@@ -33,7 +33,7 @@
                     <property name="halign">start</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-opedate">
+                      <object class="GtkLabel" id="p1-dope-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">O_peration date :</property>
@@ -46,7 +46,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p1-dope">
+                      <object class="GtkEntry" id="p1-dope-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -60,7 +60,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-dope-label">
+                      <object class="GtkLabel" id="p1-dope-check">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -84,7 +84,7 @@
                     <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-effdate">
+                      <object class="GtkLabel" id="p1-deffect-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Effect date :</property>
@@ -97,7 +97,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p1-deffect">
+                      <object class="GtkEntry" id="p1-deffect-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -111,7 +111,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-deffect-label">
+                      <object class="GtkLabel" id="p1-deffect-check">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -134,7 +134,7 @@
                     <property name="halign">end</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-ref">
+                      <object class="GtkLabel" id="p1-piece-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Piece ref. :</property>
@@ -147,7 +147,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p1-piece">
+                      <object class="GtkEntry" id="p1-piece-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="max_length">20</property>
@@ -172,7 +172,7 @@
                     <property name="halign">end</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="lab-ledger">
+                      <object class="GtkLabel" id="p1-ledger-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">end</property>

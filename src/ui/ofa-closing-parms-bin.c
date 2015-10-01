@@ -231,7 +231,7 @@ setup_bin( ofaClosingParmsBin *bin )
 	/* balancing accounts operation */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p-bal-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	g_signal_connect(
@@ -249,7 +249,7 @@ setup_bin( ofaClosingParmsBin *bin )
 	/* carried forward entries operation */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p-for-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	g_signal_connect(

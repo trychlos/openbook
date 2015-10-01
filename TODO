@@ -575,10 +575,18 @@
                 database trest6 restored from PWIConsultants-20150319.gz
 
  852 2015-10- 1 myDate: set width and max width (unless otherwise
-                specified) + set placeholder text
+                specified) + set placeholder text + center
                 + remove corresponding specs from .xml UI definitions
 
- 853
+ 853 2015-10- 1 review v_init_dialog's:
+                - only store GtkWidget when needed
+                - store object data members
+                - set data before connecting the signal
+                  (so is not triggered now)
+                - set container editable after notes
+                - have ok_btn instead of btn_ok
+                - update ok_btn when setting readonly buttons
+                - call check_enable_dlg at the very end
 
 -----------------------------------------------------------------------
  DONE

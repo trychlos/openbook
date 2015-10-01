@@ -345,7 +345,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	exe_length = ofo_dossier_get_exe_length( dossier );
 
 	/* closing exercice - beginning date */
-	priv->p2_begin_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-begin" );
+	priv->p2_begin_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-begin-entry" );
 	g_return_if_fail( priv->p2_begin_cur && GTK_IS_ENTRY( priv->p2_begin_cur ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_begin_cur ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->p2_begin_cur ), ofa_prefs_date_display());
@@ -354,12 +354,12 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_editable_date_set_date( GTK_EDITABLE( priv->p2_begin_cur ), begin_cur );
 	g_signal_connect( G_OBJECT( priv->p2_begin_cur ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-closing-begin" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_begin_cur );
 
 	/* closing exercice - ending date */
-	priv->p2_end_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-end" );
+	priv->p2_end_cur = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-end-entry" );
 	g_return_if_fail( priv->p2_end_cur && GTK_IS_ENTRY( priv->p2_end_cur ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_end_cur ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->p2_end_cur ), ofa_prefs_date_display());
@@ -368,7 +368,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_editable_date_set_date( GTK_EDITABLE( priv->p2_end_cur ), end_cur );
 	g_signal_connect( G_OBJECT( priv->p2_end_cur ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-closing-end" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-closing-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_end_cur );
 
@@ -391,14 +391,14 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	}
 
 	/* next exercice - beginning date */
-	priv->p2_begin_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-begin" );
+	priv->p2_begin_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-begin-entry" );
 	g_return_if_fail( priv->p2_begin_next && GTK_IS_ENTRY( priv->p2_begin_next ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_begin_next ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->p2_begin_next ), ofa_prefs_date_display());
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_begin_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_begin_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-next-begin" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_begin_next );
 
@@ -409,14 +409,14 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	}
 
 	/* next exercice - ending date */
-	priv->p2_end_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-end" );
+	priv->p2_end_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-end-entry" );
 	g_return_if_fail( priv->p2_end_next && GTK_IS_ENTRY( priv->p2_end_next ));
 	my_editable_date_init( GTK_EDITABLE( priv->p2_end_next ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->p2_end_next ), ofa_prefs_date_display());
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_end_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_end_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "lab-next-end" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->p2_end_next );
 

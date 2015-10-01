@@ -66,7 +66,7 @@
             <property name="row_spacing">3</property>
             <property name="column_spacing">4</property>
             <child>
-              <object class="GtkLabel" id="pl-dossier">
+              <object class="GtkLabel" id="do-dossier-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_top">4</property>
@@ -81,7 +81,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="pl-exercice">
+              <object class="GtkLabel" id="do-exercice-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Exercice :</property>
@@ -94,7 +94,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="pl-account">
+              <object class="GtkLabel" id="do-account-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Account :</property>
@@ -107,7 +107,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="account">
+              <object class="GtkEntry" id="do-account-entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="halign">start</property>
@@ -122,7 +122,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="pl-password">
+              <object class="GtkLabel" id="do-password-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Password :</property>
@@ -135,7 +135,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="password">
+              <object class="GtkEntry" id="do-password-entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="halign">start</property>
@@ -162,7 +162,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="parent-exercice">
+              <object class="GtkBox" id="do-exercice-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
@@ -176,7 +176,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="parent-dossier">
+              <object class="GtkBox" id="do-dossier-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>

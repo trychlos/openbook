@@ -184,14 +184,14 @@ v_init_dialog( myDialog *dialog )
 	gtk_label_set_text( GTK_LABEL( label ), msg );
 	g_free( msg );
 
-	entry = my_utils_container_get_child_by_name( container, "account" );
+	entry = my_utils_container_get_child_by_name( container, "dl-account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
 	if( priv->account ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), priv->account );
 	}
 
-	entry = my_utils_container_get_child_by_name( container, "password" );
+	entry = my_utils_container_get_child_by_name( container, "dl-password-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
 	if( priv->password ){
