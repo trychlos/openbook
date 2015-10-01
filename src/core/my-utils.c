@@ -824,7 +824,9 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 
 	} else if( GTK_IS_TEXT_VIEW( widget )){
 		gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
-		my_utils_widget_set_style( widget, "textviewinsensitive" );
+		if( !editable ){
+			my_utils_widget_set_style( widget, "textviewinsensitive" );
+		}
 
 	} else if( GTK_IS_TREE_VIEW( widget )){
 		columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( widget ));

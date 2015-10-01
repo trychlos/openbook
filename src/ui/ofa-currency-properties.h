@@ -30,7 +30,12 @@
  * @short_description: #ofaCurrencyProperties class definition.
  * @include: ui/ofa-currency-properties.h
  *
- * Update the currency properties.
+ * Update/display the currency properties.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

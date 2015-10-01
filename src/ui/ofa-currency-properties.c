@@ -181,6 +181,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
+	GtkWidget *label;
 	gchar *str;
 	GtkWindow *toplevel;
 	gboolean is_current;
@@ -204,6 +205,7 @@ v_init_dialog( myDialog *dialog )
 
 	is_current = ofo_dossier_is_current( dossier );
 
+	/* iso 3a code */
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
@@ -212,7 +214,11 @@ v_init_dialog( myDialog *dialog )
 		gtk_entry_set_text( entry, priv->code );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), dialog );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-code" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	/* label */
 	priv->label = g_strdup( ofo_currency_get_label( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
@@ -221,7 +227,11 @@ v_init_dialog( myDialog *dialog )
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	/* symbol */
 	priv->symbol = g_strdup( ofo_currency_get_symbol( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
@@ -230,7 +240,11 @@ v_init_dialog( myDialog *dialog )
 		gtk_entry_set_text( entry, priv->symbol );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-symbol" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	/* digits */
 	priv->digits = ofo_currency_get_digits( priv->currency );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
@@ -239,7 +253,11 @@ v_init_dialog( myDialog *dialog )
 	str = g_strdup_printf( "%d", priv->digits );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "pl-digits" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 	my_utils_init_notes_ex( toplevel, currency, is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, currency );
 
