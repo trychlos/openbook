@@ -31,6 +31,11 @@
  * @include: ui/ofa-ledger-close.h
  *
  * Run an intermediate closing on the selected ledgers.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

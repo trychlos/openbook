@@ -91,7 +91,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="label111">
+                              <object class="GtkLabel" id="p1-mnemo-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Mnemonic :</property>
@@ -104,7 +104,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-mnemo">
+                              <object class="GtkEntry" id="p1-mnemo-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
@@ -119,7 +119,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label112">
+                              <object class="GtkLabel" id="p1-label-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Label :</property>
@@ -132,7 +132,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-label">
+                              <object class="GtkEntry" id="p1-label-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
@@ -149,7 +149,7 @@
                               <object class="GtkLabel" id="label113">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Last _closing date :</property>
+                                <property name="label" translatable="yes">Last closing date :</property>
                                 <property name="use_underline">True</property>
                                 <property name="xalign">1</property>
                               </object>
@@ -175,7 +175,7 @@
                           <object class="GtkLabel" id="label11">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Characteristics &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Characteristics </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -202,6 +202,9 @@
                   <object class="GtkGrid" id="grid2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="margin_left">4</property>
+                    <property name="margin_right">4</property>
+                    <property name="margin_bottom">4</property>
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
@@ -274,7 +277,7 @@
                           <object class="GtkLabel" id="label21">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">&lt;b&gt; Balances by currency &lt;/b&gt;</property>
+                            <property name="label" translatable="yes"> Balances by currency </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>

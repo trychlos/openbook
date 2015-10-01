@@ -46,17 +46,23 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoLedger *ledger;
-	gboolean   is_new;
-	gboolean   updated;
+	ofaMainWindow *main_window;
+	ofoDossier    *dossier;
+	ofoLedger     *ledger;
+	gboolean       is_new;
+	gboolean       updated;
 
 	/* data
 	 */
-	gchar      *mnemo;
-	gchar      *label;
-	gchar      *upd_user;
-	GTimeVal    upd_stamp;
-	GDate       closing;
+	gchar         *mnemo;
+	gchar         *label;
+	gchar         *upd_user;
+	GTimeVal       upd_stamp;
+	GDate          closing;
+
+	/* UI
+	 */
+	GtkWidget     *ok_btn;
 };
 
 /* columns displayed in the exercice combobox
@@ -175,6 +181,7 @@ ofa_ledger_properties_run( ofaMainWindow *main_window, ofoLedger *ledger )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->ledger = ledger;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -190,8 +197,6 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
@@ -201,10 +206,9 @@ v_init_dialog( myDialog *dialog )
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	is_current = ofo_dossier_is_current( priv->dossier );
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
@@ -217,21 +221,29 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
-	is_current = ofo_dossier_is_current( dossier );
-
+	/* mnemonic */
 	priv->mnemo = g_strdup( jou_mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo-entry" ));
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), dialog );
 
+	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
+	/* label */
 	priv->label = g_strdup( ofo_ledger_get_label( priv->ledger ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label-entry" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+
+	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
 	label = my_utils_container_get_child_by_name( container, "p1-last-close" );
@@ -244,13 +256,15 @@ v_init_dialog( myDialog *dialog )
 
 	my_utils_init_notes_ex( container, ledger, is_current );
 	my_utils_init_upd_user_stamp_ex( container, ledger );
-
-	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));
+	my_utils_container_set_editable( container, is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
+	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
 	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));
 }
 
 /*
@@ -405,13 +419,11 @@ on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
 static void
 check_for_enable_dlg( ofaLedgerProperties *self )
 {
-	GtkWidget *button;
+	ofaLedgerPropertiesPrivate *priv;
 
-	button = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-						"btn-ok" );
+	priv = self->priv;
 
-	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
+	gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 }
 
 static gboolean

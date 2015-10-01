@@ -187,6 +187,7 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
+	GtkWidget *btn;
 
 	g_return_val_if_fail( OFA_IS_LEDGERS_PAGE( page ), NULL );
 
@@ -195,8 +196,11 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	ofa_buttons_box_add_button(
+	btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	my_utils_widget_set_editable(
+			btn,
+			ofo_dossier_is_current( ofa_main_window_get_dossier( ofa_page_get_main_window( page ))));
 	priv->update_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
 	priv->delete_btn = ofa_buttons_box_add_button(

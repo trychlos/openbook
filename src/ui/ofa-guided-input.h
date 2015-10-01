@@ -33,7 +33,12 @@
  * #ofaGuidedInput implements a dialog box to enter an operation based
  * on a operation template.
  *
- * It internally implements an #ofaGuidedInputPiece convenience class.
+ * It internally implements an #ofaGuidedInputBin convenience class.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

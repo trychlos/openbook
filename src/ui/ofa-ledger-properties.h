@@ -30,7 +30,12 @@
  * @short_description: #ofaLedgerProperties class definition.
  * @include: ui/ofa-ledger-properties.h
  *
- * Update the ledger properties.
+ * Display/update the ledger properties.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

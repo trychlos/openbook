@@ -517,9 +517,9 @@
                 src/ui/ofa-exercice-close-assistant.ui      OK
                 src/ui/ofa-export-assistant.ui              --
                 src/ui/ofa-guided-input-bin.ui              OK
-                src/ui/ofa-guided-input.ui
-                src/ui/ofa-import-assistant.ui
-                src/ui/ofa-ledger-close.ui
+                src/ui/ofa-guided-input.ui                  --
+                src/ui/ofa-import-assistant.ui              --
+                src/ui/ofa-ledger-close.ui                  --
                 src/ui/ofa-ledger-properties.ui
                 src/ui/ofa-ledgers-book-bin.ui
                 src/ui/ofa-ope-template-help.ui
@@ -574,7 +574,11 @@
  851 2015-10- 1 segfault when closing the exercice
                 database trest6 restored from PWIConsultants-20150319.gz
 
- 852
+ 852 2015-10- 1 myDate: set width and max width (unless otherwise
+                specified) + set placeholder text
+                + remove corresponding specs from .xml UI definitions
+
+ 853
 
 -----------------------------------------------------------------------
  DONE

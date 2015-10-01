@@ -141,6 +141,7 @@
                         <property name="max_length">10</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">10</property>
+                        <property name="max_width_chars">10</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
