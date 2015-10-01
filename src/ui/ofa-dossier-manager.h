@@ -30,7 +30,12 @@
  * @short_description: #ofaDossierManager class definition.
  * @include: ui/ofa-dossier-manager.h
  *
- * Manage the existing dossiers.
+ * Manage (open/delete) the existing dossiers, or create a new one.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

@@ -33,13 +33,11 @@
  * Let the user define a new dossier, selecting the DBMS provider and
  * its connection properties, registering it in the settings.
  *
- * This is a standard composite widget, so:
- * - have a "top" container which is to be attached to (added to) a
- *  'parent' container
- * - defines an 'ofa-changed' message when the content changes
- * - do not manage its own error message display field, but returns an
- *   error message to be displayed by the parent
- * - do not manage its own settings.
+ * Development rules:
+ * - type:       bin (parent='top')
+ * - validation: yes (has 'ofa-changed' signal)
+ * - settings:   no
+ * - current:    no
  */
 
 #include <gtk/gtk.h>

@@ -506,12 +506,12 @@
                 src/ui/ofa-dates-filter-hv-bin.ui           OK
                 src/ui/ofa-dos-menubar.ui                   --
                 src/ui/ofa-dossier-delete.ui                OK
-                src/ui/ofa-dossier-display-notes.ui
-                src/ui/ofa-dossier-login.ui
-                src/ui/ofa-dossier-manager.ui
+                src/ui/ofa-dossier-display-notes.ui         OK
+                src/ui/ofa-dossier-login.ui                 --
+                src/ui/ofa-dossier-manager.ui               --
                 src/ui/ofa-dossier-new-bin.ui               OK
-                src/ui/ofa-dossier-new-mini.ui
-                src/ui/ofa-dossier-new.ui
+                src/ui/ofa-dossier-new-mini.ui              OK
+                src/ui/ofa-dossier-new.ui                   
                 src/ui/ofa-dossier-open.ui
                 src/ui/ofa-dossier-properties.ui
                 src/ui/ofa-exercice-close-assistant.ui
@@ -547,7 +547,21 @@
  844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
                 idem for ledgers, ope-templates, etc.
 
- 845
+ 845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
+                and DossierOpen
+
+ 846 2015-10- 1 opening a dossier from DossierManager should be equal
+                to opening a dossier from the command-line (i.e. rather
+                use DossierLogin than DosserOpen)
+
+ 847 2015-10- 1 ConnectDisplay/ConnectEnter: the port number should be
+                a fixed size (eg. 6 chars) while hostname, socket path
+                and database name should horizontally expand
+
+ 848 2015-10- 1 DossierNewBin: having a frame with its label, even if
+                hidden, leaves a vertical space above the dossier name
+
+ 849
 
 -----------------------------------------------------------------------
  DONE

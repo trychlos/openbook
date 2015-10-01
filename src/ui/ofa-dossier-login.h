@@ -30,7 +30,12 @@
  * @short_description: #ofaDossierLogin class definition.
  * @include: ui/ofa-dossier-login.h
  *
- * Let the user enter DBMS administrator account and password.
+ * Let the user enter its account and password for the dossier.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/my-dialog.h"

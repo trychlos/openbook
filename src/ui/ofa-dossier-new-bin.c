@@ -82,7 +82,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-new-bin.ui";
 
 G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
-static void     setup_composite( ofaDossierNewBin *bin );
+static void     setup_bin( ofaDossierNewBin *bin );
 static void     setup_dbms_provider( ofaDossierNewBin *bin );
 static void     on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
@@ -201,19 +201,18 @@ ofa_dossier_new_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
 
-	setup_composite( bin );
+	setup_bin( bin );
 
 	return( bin );
 }
 
 /*
- * setup_composite:
  * At initialization time, only setup the providers combo box
  * because the other parts of this windows depend of the selected
  * provider
  */
 static void
-setup_composite( ofaDossierNewBin *bin )
+setup_bin( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 	GtkBuilder *builder;

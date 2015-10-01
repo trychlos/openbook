@@ -39,10 +39,15 @@
  * The dialog returns with a newly defined dossier in user settings if
  * %TRUE.
  *
- * #ofaDossierNewMini dialog works by implementing the
- * #ofaDossierNewPiece piece of dialog, which itself encapsulates both
- * the #ofaIDbmsConnectEnterPiece and the #ofaDbmsRootPiece pieces of
+ * #ofaDossierNewMini dialog is built by combining the
+ * #ofaDossierNewBin piece of dialog, which itself encapsulates both
+ * the #ofaIDbmsConnectEnter and the #ofaRootCredentialsBin pieces of
  * dialog.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    no
  */
 
 #include "api/my-dialog.h"
