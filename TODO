@@ -528,15 +528,15 @@
                 src/ui/ofa-plugin-manager.ui                --
                 src/ui/ofa-rate-properties.ui               OK
                 src/ui/ofa-reconcil-bin.ui                  OK
-                src/ui/ofa-reconciliation.ui
-                src/ui/ofa-render-page.ui
-                src/ui/ofa-restore-assistant.ui
-                src/ui/ofa-settlement.ui
+                src/ui/ofa-reconciliation.ui                OK
+                src/ui/ofa-render-page.ui                   --
+                src/ui/ofa-restore-assistant.ui             --
+                src/ui/ofa-settlement.ui                    OK
                 src/ui/ofa-view-entries.ui
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
-     2015-10- 1 but see ofaReconciliation which needs a single account
-                selection
+     2015-10- 1 but see ofaReconciliation and ofaSettlement which both
+                need a single account selection
 
  841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
                 the print
@@ -554,7 +554,7 @@
 
  846 2015-10- 1 opening a dossier from DossierManager should be equal
                 to opening a dossier from the command-line (i.e. rather
-                use DossierLogin than DosserOpen)
+                use DossierLogin than DossierOpen)
 
  847 2015-10- 1 ConnectDisplay/ConnectEnter: the port number should be
                 a fixed size (eg. 6 chars) while hostname, socket path
@@ -601,7 +601,12 @@
  856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
                 current
 
- 857
+ 857 2015-10- 2 on widgets which do not have a label as a mnemonic
+                widget, set the surounding frame (as an exception)
+                These must be frames with only one single addressable
+                child
+
+ 858
 
 -----------------------------------------------------------------------
  DONE

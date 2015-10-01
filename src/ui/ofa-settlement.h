@@ -29,6 +29,11 @@
  * SECTION: ofa_settlement
  * @short_description: #ofaSettlement class definition.
  * @include: ui/ofa-settlement.h
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-page-def.h"

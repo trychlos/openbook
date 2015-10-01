@@ -655,7 +655,7 @@ static void
 setup_settlement_selection( ofaSettlement *self )
 {
 	ofaSettlementPrivate *priv;
-	GtkWidget *combo;
+	GtkWidget *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	gint i, idx;
@@ -665,6 +665,10 @@ setup_settlement_selection( ofaSettlement *self )
 
 	combo = my_utils_container_get_child_by_name( priv->top_box, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+
+	label = my_utils_container_get_child_by_name( priv->top_box, "entries-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 					SET_N_COLUMNS,
