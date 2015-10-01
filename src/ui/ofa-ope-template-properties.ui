@@ -104,7 +104,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="label5">
+                              <object class="GtkLabel" id="p1-mnemo-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Mnemonic :</property>
@@ -117,7 +117,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-mnemo">
+                              <object class="GtkEntry" id="p1-mnemo-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
@@ -132,7 +132,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label6">
+                              <object class="GtkLabel" id="p1-label-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Label :</property>
@@ -145,7 +145,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-label">
+                              <object class="GtkEntry" id="p1-label-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
@@ -159,7 +159,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label7">
+                              <object class="GtkLabel" id="p1-ledger-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Ledger :</property>
@@ -187,7 +187,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label18">
+                              <object class="GtkLabel" id="p1-ref-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_Ref :</property>
@@ -215,7 +215,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-ref">
+                              <object class="GtkEntry" id="p1-ref-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                               </object>

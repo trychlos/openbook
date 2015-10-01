@@ -522,8 +522,8 @@
                 src/ui/ofa-ledger-close.ui                  --
                 src/ui/ofa-ledger-properties.ui             OK
                 src/ui/ofa-ledgers-book-bin.ui              OK
-                src/ui/ofa-ope-template-help.ui
-                src/ui/ofa-ope-template-properties.ui
+                src/ui/ofa-ope-template-help.ui             --
+                src/ui/ofa-ope-template-properties.ui       OK
                 src/ui/ofa-ope-template-select.ui
                 src/ui/ofa-plugin-manager.ui
                 src/ui/ofa-rate-properties.ui

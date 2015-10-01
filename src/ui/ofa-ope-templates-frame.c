@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -47,6 +48,7 @@ struct _ofaOpeTemplatesFramePrivate {
 	ofaOpeTemplatesBook *book;
 	ofaButtonsBox       *box;
 
+	GtkWidget           *new_btn;
 	GtkWidget           *update_btn;
 	GtkWidget           *duplicate_btn;
 	GtkWidget           *delete_btn;
@@ -257,7 +259,7 @@ setup_top_grid( ofaOpeTemplatesFrame *frame )
 	priv = frame->priv;
 
 	grid = gtk_grid_new();
-	gtk_widget_set_margin_left( grid, 4 );
+	my_utils_widget_set_margin_left( grid, 4 );
 	gtk_widget_set_margin_bottom( grid, 4 );
 	gtk_container_add( GTK_CONTAINER( frame ), grid );
 	priv->grid = GTK_GRID( grid );
@@ -362,7 +364,7 @@ ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guide
 
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-		ofa_buttons_box_add_button( priv->box,
+		priv->new_btn = ofa_buttons_box_add_button( priv->box,
 				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), frame );
 		priv->update_btn = ofa_buttons_box_add_button( priv->box,
 				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), frame );
@@ -424,11 +426,13 @@ update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
 	ofoOpeTemplate *ope;
 	gboolean has_ope;
 	ofoDossier *dossier;
+	gboolean is_current;
 
 	priv = self->priv;
 
 	has_ope = FALSE;
 	dossier = ofa_main_window_get_dossier( priv->main_window );
+	is_current = ofo_dossier_is_current( dossier );
 
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( dossier, mnemo );
@@ -436,12 +440,16 @@ update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
 	}
 
 	gtk_widget_set_sensitive(
+				priv->new_btn,
+				is_current );
+
+	gtk_widget_set_sensitive(
 				priv->update_btn,
 				has_ope );
 
 	gtk_widget_set_sensitive(
 				priv->duplicate_btn,
-				has_ope );
+				has_ope && is_current );
 
 	gtk_widget_set_sensitive(
 				priv->delete_btn,
@@ -451,7 +459,7 @@ update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
 	if( priv->guided_input_btn ){
 		gtk_widget_set_sensitive(
 					priv->guided_input_btn,
-					has_ope );
+					has_ope && is_current );
 	}
 }
 

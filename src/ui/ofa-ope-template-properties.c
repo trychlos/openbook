@@ -62,6 +62,9 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* internals
 	 */
+	ofaMainWindow      *main_window;
+	ofoDossier         *dossier;
+	gboolean            is_current;
 	ofoOpeTemplate     *ope_template;
 	ofaLedgerCombo     *ledger_combo;
 	GtkWidget          *ledger_parent;
@@ -88,6 +91,7 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	/* UI
 	 */
 	ofaOpeTemplateHelp *help_dlg;
+	GtkWidget          *ok_btn;
 };
 
 /* columns in the detail treeview
@@ -260,6 +264,7 @@ ofa_ope_template_properties_run( ofaMainWindow *main_window, ofoOpeTemplate *mod
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->ope_template = model;
 	self->priv->ledger = g_strdup( ledger );
 
@@ -277,26 +282,24 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
-	GtkWidget *button;
-	gboolean is_current;
+	GtkWidget *button, *label;
 
 	self = OFA_OPE_TEMPLATE_PROPERTIES( dialog );
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
-	is_current = ofo_dossier_is_current( dossier );
 	init_dialog_title( self );
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
 	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 	priv->is_new = !my_strlen( mnemo );
@@ -306,7 +309,7 @@ v_init_dialog( myDialog *dialog )
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_main_window( priv->ledger_combo, OFA_MAIN_WINDOW( main_window ));
+	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
@@ -314,11 +317,15 @@ v_init_dialog( myDialog *dialog )
 	ofa_ledger_combo_set_selected( priv->ledger_combo,
 			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
+
 	init_dialog_ledger_locked( self );
 
 	init_dialog_ref( self );
 
-	my_utils_init_notes_ex( toplevel, ope_template, is_current );
+	my_utils_init_notes_ex( toplevel, ope_template, priv->is_current );
 	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
 	init_dialog_detail( self );
@@ -328,13 +335,15 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), dialog );
 
-	gtk_widget_grab_focus(
-			my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-mnemo" ));
+	if( priv->is_current ){
+		gtk_widget_grab_focus(
+				my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-mnemo-entry" ));
+	}
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
+	if( !priv->is_current ){
+		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
 }
 
@@ -363,17 +372,23 @@ init_dialog_mnemo( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkEntry *entry;
+	GtkWidget *label;
 
 	priv = self->priv;
 
 	priv->mnemo = g_strdup( ofo_ope_template_get_mnemo( priv->ope_template ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-mnemo" ));
+			GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-mnemo-entry" ));
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+
+	label = my_utils_container_get_child_by_name(
+			GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 }
 
 static void
@@ -381,17 +396,23 @@ init_dialog_label( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkEntry *entry;
+	GtkWidget *label;
 
 	priv = self->priv;
 
 	priv->label = g_strdup( ofo_ope_template_get_label( priv->ope_template ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-label" ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-label-entry" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
+
+	label = my_utils_container_get_child_by_name(
+			GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 }
 
 static void
@@ -415,7 +436,7 @@ init_dialog_ref( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *btn;
+	GtkWidget *btn, *label;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -423,7 +444,7 @@ init_dialog_ref( ofaOpeTemplateProperties *self )
 	priv->ref = g_strdup( ofo_ope_template_get_ref( priv->ope_template ));
 	priv->ref_locked = ofo_ope_template_get_ref_locked( priv->ope_template );
 
-	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref" );
+	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-entry" );
 	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
 
 	if( priv->ref ){
@@ -436,6 +457,10 @@ init_dialog_ref( ofaOpeTemplateProperties *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
 }
 
 /*
@@ -538,7 +563,9 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
-	gtk_widget_grab_focus( GTK_WIDGET( entry ));
+	if( priv->is_current ){
+		gtk_widget_grab_focus( GTK_WIDGET( entry ));
+	}
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -849,15 +876,13 @@ on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 static void
 check_for_enable_dlg( ofaOpeTemplateProperties *self )
 {
-	GtkWidget *button;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	gboolean ok;
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-
+	priv = self->priv;
 	ok = is_dialog_validable( self );
 
-	gtk_widget_set_sensitive( button, ok );
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 /*

@@ -64,6 +64,11 @@
  *
  * - the formula '=IDEM' says that the given entry will take the same
  *   value than those of the previous row, same column.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"
