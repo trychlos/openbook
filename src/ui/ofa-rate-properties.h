@@ -49,6 +49,11 @@
  *                     is no place
  * (null)   31/12/2013 it is possible to create a new period starting
  *                     with 01/01/2014
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   yes
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

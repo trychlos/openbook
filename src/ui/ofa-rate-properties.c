@@ -57,6 +57,7 @@ struct _ofaRatePropertiesPrivate {
 	/* UI
 	 */
 	GtkGrid       *grid;				/* the grid which handles the validity rows */
+	GtkWidget     *ok_btn;
 
 	/* data
 	 */
@@ -225,6 +226,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
+	GtkWidget *label;
 	GtkContainer *container;
 	gboolean is_current;
 
@@ -248,19 +250,31 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
+	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	/* mnemonic */
 	priv->mnemo = g_strdup( mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo-entry" ));
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
 
+	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
 	priv->label = g_strdup( ofo_rate_get_label( priv->rate ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label-entry" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
+
+	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( container, "p2-grid" ));
 	add_button( self, "gtk-add", COL_ADD, 1, 4 );
@@ -272,12 +286,13 @@ v_init_dialog( myDialog *dialog )
 
 	my_utils_init_notes_ex( container, rate, is_current );
 	my_utils_init_upd_user_stamp_ex( container, rate );
+	my_utils_container_set_editable( container, is_current );
 
 	check_for_enable_dlg( self );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
 }
 
@@ -615,15 +630,13 @@ remove_row( ofaRateProperties *self, gint row )
 static void
 check_for_enable_dlg( ofaRateProperties *self )
 {
-	GtkWidget *button;
+	ofaRatePropertiesPrivate *priv;
 	gboolean ok;
 
+	priv = self->priv;
 	ok = is_dialog_validable( self );
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-
-	gtk_widget_set_sensitive( button, ok );
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 /*

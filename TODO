@@ -524,9 +524,9 @@
                 src/ui/ofa-ledgers-book-bin.ui              OK
                 src/ui/ofa-ope-template-help.ui             --
                 src/ui/ofa-ope-template-properties.ui       OK
-                src/ui/ofa-ope-template-select.ui
-                src/ui/ofa-plugin-manager.ui
-                src/ui/ofa-rate-properties.ui
+                src/ui/ofa-ope-template-select.ui           --
+                src/ui/ofa-plugin-manager.ui                --
+                src/ui/ofa-rate-properties.ui               
                 src/ui/ofa-reconcil-bin.ui
                 src/ui/ofa-reconciliation.ui
                 src/ui/ofa-render-page.ui
@@ -596,7 +596,10 @@
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
 
- 856
+ 856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
+                current
+
+ 857
 
 -----------------------------------------------------------------------
  DONE

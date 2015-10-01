@@ -48,11 +48,13 @@ struct _ofaRatesPagePrivate {
 	/* internals
 	 */
 	GList        *handlers;
+	gboolean      is_current;
 
 	/* UI
 	 */
 	GtkTreeView  *tview;
 	GtkTreeModel *tmodel;
+	GtkWidget    *new_btn;
 	GtkWidget    *update_btn;
 	GtkWidget    *delete_btn;
 };
@@ -311,7 +313,7 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	ofa_buttons_box_add_button(
+	priv->new_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
 	priv->update_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
@@ -324,6 +326,11 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
+	ofaRatesPagePrivate *priv;
+
+	priv = OFA_RATES_PAGE( page )->priv;
+	priv->is_current = ofo_dossier_is_current( ofa_page_get_dossier( page ));
+
 	insert_dataset( OFA_RATES_PAGE( page ));
 }
 
@@ -562,6 +569,12 @@ on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 	if( gtk_tree_selection_get_selected( selection, NULL, &iter )){
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
 		g_object_unref( rate );
+	}
+
+	if( priv->new_btn ){
+		gtk_widget_set_sensitive(
+				priv->new_btn,
+				rate && OFO_IS_RATE( rate ) && priv->is_current );
 	}
 
 	if( priv->update_btn ){
