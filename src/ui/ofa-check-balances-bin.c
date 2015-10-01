@@ -73,7 +73,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-balances-bin.ui";
 
 G_DEFINE_TYPE( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN )
 
-static void             setup_composite( ofaCheckBalancesBin *self );
+static void             setup_bin( ofaCheckBalancesBin *self );
 static gboolean         do_run( ofaCheckBalancesBin *bin );
 static void             check_entries_balance_run( ofaCheckBalancesBin *bin );
 static void             check_ledgers_balance_run( ofaCheckBalancesBin *bin );
@@ -190,13 +190,13 @@ ofa_check_balances_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CHECK_BALANCES_BIN, NULL );
 
-	setup_composite( self );
+	setup_bin( self );
 
 	return( self );
 }
 
 static void
-setup_composite( ofaCheckBalancesBin *bin )
+setup_bin( ofaCheckBalancesBin *bin )
 {
 	GtkBuilder *builder;
 	GObject *object;

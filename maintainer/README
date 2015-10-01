@@ -23,35 +23,37 @@
  Development rules are written on top on each UI header.
 
  type:
-   part_of: also said as 'composite' widget, this is expected to be
-            included in another, more toplevel, widget;
-            also said as a piece - or a part - of a bigger widget or
-            dialog
-   dialog:  a dialog box
+   bin:    a GtkBin-derived class which embeds a 'top' toplevel widget;
+           it is expected to be used as a component/part/piece of a 
+           more toplevel widget or dialog.
+   dialog: a dialog box
 
  parent:
-   type='part_of': the name of the widget which is to be extracted from
-                   the definition, to be added to the toplevel parent
-                   widget
-
- change:
-   type='part_of': the composite widget should send an 'ofa-changed'
-                   signal when a field is modified
+   type='bin': the name of the toplevel widget which is to be extracted
+               from the .xml UI definition to be added to the parent
+               container;
+               this is usually a GtkGrid named 'top'.
 
  validation:
-   type='part_of': if subject to validation, then the composite widget
-                   should have a 'is_valid' method which:
-                   - returns a boolean
-                   - takes a gchar ** argument to return an error
-                     message
+   type='bin': if subject to validation, then the GtkBin-derived widget
+               should have a 'is_valid' method which:
+               - returns a boolean
+               - takes a gchar ** argument to return an error message;
+               the mention 'with 'ofa-changed' signal' specifies the
+               signal sent on the GtkBin-derived widget when its content
+               changes.
 
  settings:
-   whether this widget reads or writes its arguments to settings
-   type='part_of': settings key should be provided by the caller
+   whether this widget reads or writes its arguments to settings;
+   this is usually not the case of the GtkBin-derived widgets but - this
+   should happen - the settings key should be provided by the caller.
 
  current:
    whether this widget is subject to special display (typically read-
-   only) depending if the dossier is current or archived.
+   only) depending of runtime conditions (eg. whether the dossier is
+   current or archived);
+   this is usually not the case of GtkBin-derived widgets, whose
+   editability status is taking care by the embedding dialog.
 
 -----------------------------------------------------------------------
  run

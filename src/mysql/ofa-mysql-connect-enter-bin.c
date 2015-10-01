@@ -66,7 +66,7 @@ static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-connect-e
 
 G_DEFINE_TYPE( ofaMySQLConnectEnterBin, ofa_mysql_connect_enter_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaMySQLConnectEnterBin *bin );
+static void setup_bin( ofaMySQLConnectEnterBin *bin );
 static void on_host_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
 static void on_port_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
 static void on_socket_changed( GtkEntry *entry, ofaMySQLConnectEnterBin *bin );
@@ -173,7 +173,7 @@ ofa_mysql_connect_enter_bin_new( ofaIDbms *instance )
 
 	bin->priv->instance = instance;
 
-	setup_composite( bin );
+	setup_bin( bin );
 
 	g_signal_emit_by_name( instance, "dbms-changed", &bin->priv->sInfos );
 
@@ -181,7 +181,7 @@ ofa_mysql_connect_enter_bin_new( ofaIDbms *instance )
 }
 
 static void
-setup_composite( ofaMySQLConnectEnterBin *bin )
+setup_bin( ofaMySQLConnectEnterBin *bin )
 {
 	ofaMySQLConnectEnterBinPrivate *priv;
 	GtkBuilder *builder;

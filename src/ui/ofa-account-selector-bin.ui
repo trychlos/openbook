@@ -2,37 +2,61 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkWindow" id="AccountSelectorBin">
+  <object class="GtkWindow" id="asb-window">
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkFrame" id="top">
+      <object class="GtkGrid" id="top">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label_xalign">0</property>
-        <property name="shadow_type">in</property>
         <child>
-          <object class="GtkGrid" id="grid3">
+          <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">12</property>
-            <property name="margin_right">4</property>
-            <property name="margin_top">4</property>
-            <property name="margin_bottom">4</property>
-            <property name="row_spacing">3</property>
-            <property name="column_spacing">4</property>
+            <property name="label_xalign">0</property>
+            <property name="shadow_type">in</property>
             <child>
-              <object class="GtkGrid" id="grid9">
+              <object class="GtkGrid" id="grid3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="column_spacing">2</property>
+                <property name="margin_left">12</property>
+                <property name="margin_right">4</property>
+                <property name="margin_top">4</property>
+                <property name="margin_bottom">4</property>
+                <property name="row_spacing">3</property>
+                <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkEntry" id="account-number">
+                  <object class="GtkGrid" id="grid9">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="tooltip_text" translatable="yes">Enter here the number of the account to be reconciliated.</property>
-                    <property name="halign">start</property>
-                    <property name="max_length">20</property>
-                    <property name="width_chars">10</property>
+                    <property name="can_focus">False</property>
+                    <property name="column_spacing">2</property>
+                    <child>
+                      <object class="GtkEntry" id="account-number">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="tooltip_text" translatable="yes">Enter here the number of the account to be reconciliated.</property>
+                        <property name="halign">start</property>
+                        <property name="max_length">20</property>
+                        <property name="width_chars">10</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="account-select">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Select the account to be reconciliated.</property>
+                        <property name="halign">start</property>
+                        <property name="image">image1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -40,52 +64,38 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="account-select">
+                  <object class="GtkLabel" id="account-label">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Select the account to be reconciliated.</property>
-                    <property name="halign">start</property>
-                    <property name="image">image1</property>
+                    <property name="can_focus">False</property>
+                    <property name="ellipsize">end</property>
+                    <property name="width_chars">28</property>
+                    <property name="max_width_chars">28</property>
+                    <property name="xalign">0</property>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                    <property name="width">2</property>
                   </packing>
                 </child>
+                <child>
+                  <placeholder/>
+                </child>
               </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
             </child>
-            <child>
-              <object class="GtkLabel" id="account-label">
+            <child type="label">
+              <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="ellipsize">end</property>
-                <property name="width_chars">28</property>
-                <property name="max_width_chars">28</property>
-                <property name="xalign">0</property>
+                <property name="label" translatable="yes"> Account selection </property>
+                <property name="use_markup">True</property>
               </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">2</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
             </child>
           </object>
-        </child>
-        <child type="label">
-          <object class="GtkLabel" id="label3">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes"> Account selection </property>
-            <property name="use_markup">True</property>
-          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
+          </packing>
         </child>
       </object>
     </child>

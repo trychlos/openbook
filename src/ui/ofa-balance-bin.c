@@ -72,11 +72,12 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-balance-bin.ui";
+
 static const gchar *st_settings         = "RenderBalances";
 
 G_DEFINE_TYPE( ofaBalanceBin, ofa_balance_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaBalanceBin *bin );
+static void setup_bin( ofaBalanceBin *bin );
 static void setup_account_selection( ofaBalanceBin *bin );
 static void setup_date_selection( ofaBalanceBin *bin );
 static void setup_others( ofaBalanceBin *bin );
@@ -187,7 +188,7 @@ ofa_balance_bin_new( ofaMainWindow *main_window )
 
 	self->priv->main_window = main_window;
 
-	setup_composite( self );
+	setup_bin( self );
 	setup_account_selection( self );
 	setup_date_selection( self );
 	setup_others( self );
@@ -198,7 +199,7 @@ ofa_balance_bin_new( ofaMainWindow *main_window )
 }
 
 static void
-setup_composite( ofaBalanceBin *bin )
+setup_bin( ofaBalanceBin *bin )
 {
 	GtkBuilder *builder;
 	GObject *object;

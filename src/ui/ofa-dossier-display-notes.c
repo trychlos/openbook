@@ -42,8 +42,9 @@ struct _ofaDossierDisplayNotesPrivate {
 
 	/* runtime data
 	 */
-	const gchar *main_notes;
-	const gchar *exe_notes;
+	ofaMainWindow *main_window;
+	const gchar   *main_notes;
+	const gchar   *exe_notes;
 
 	/* result
 	 */
@@ -55,7 +56,7 @@ static const gchar *st_ui_id            = "DossierDisplayNotesDlg";
 G_DEFINE_TYPE( ofaDossierDisplayNotes, ofa_dossier_display_notes, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *w_name, const gchar *notes );
+static void      set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *label_name, const gchar *note_name, const gchar *notes );
 
 static void
 dossier_display_notes_finalize( GObject *instance )
@@ -135,6 +136,7 @@ ofa_dossier_display_notes_run( ofaMainWindow *main_window, const gchar *main_not
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->main_notes = main_notes;
 	self->priv->exe_notes = exe_notes;
 
@@ -154,14 +156,18 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "main-text", priv->main_notes );
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "exe-text", priv->exe_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "pl-dossier", "main-text", priv->main_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "pl-exercice", "exe-text", priv->exe_notes );
+
+	my_utils_container_set_editable(
+			GTK_CONTAINER( toplevel ),
+			ofo_dossier_is_current( ofa_main_window_get_dossier( priv->main_window )));
 }
 
 static void
-set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *w_name, const gchar *notes )
+set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *label_name, const gchar *w_name, const gchar *notes )
 {
-	GtkWidget *textview;
+	GtkWidget *textview, *label;
 	GtkTextBuffer *buffer;
 	gchar *str;
 
@@ -175,4 +181,8 @@ set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *w_nam
 
 	g_object_unref( buffer );
 	g_free( str );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), textview );
 }

@@ -71,7 +71,7 @@ static const gchar *st_settings         = "RenderAccountsBook";
 
 G_DEFINE_TYPE( ofaAccountsBookBin, ofa_accounts_book_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaAccountsBookBin *bin );
+static void setup_bin( ofaAccountsBookBin *bin );
 static void setup_account_selection( ofaAccountsBookBin *bin );
 static void setup_date_selection( ofaAccountsBookBin *bin );
 static void setup_others( ofaAccountsBookBin *bin );
@@ -180,7 +180,7 @@ ofa_accounts_book_bin_new( ofaMainWindow *main_window )
 
 	self->priv->main_window = main_window;
 
-	setup_composite( self );
+	setup_bin( self );
 	setup_account_selection( self );
 	setup_date_selection( self );
 	setup_others( self );
@@ -191,7 +191,7 @@ ofa_accounts_book_bin_new( ofaMainWindow *main_window )
 }
 
 static void
-setup_composite( ofaAccountsBookBin *bin )
+setup_bin( ofaAccountsBookBin *bin )
 {
 	GtkBuilder *builder;
 	GObject *object;

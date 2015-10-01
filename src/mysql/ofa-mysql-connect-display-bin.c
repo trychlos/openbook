@@ -53,7 +53,7 @@ static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-connect-d
 
 G_DEFINE_TYPE( ofaMySQLConnectDisplayBin, ofa_mysql_connect_display_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaMySQLConnectDisplayBin *bin );
+static void setup_bin( ofaMySQLConnectDisplayBin *bin );
 
 static void
 mysql_connect_display_bin_finalize( GObject *instance )
@@ -141,13 +141,13 @@ ofa_mysql_connect_display_bin_new( const ofaIDbms *instance, const gchar *dname 
 	bin->priv->instance = instance;
 	bin->priv->dname = g_strdup( dname );
 
-	setup_composite( bin );
+	setup_bin( bin );
 
 	return( GTK_WIDGET( bin ));
 }
 
 static void
-setup_composite( ofaMySQLConnectDisplayBin *bin )
+setup_bin( ofaMySQLConnectDisplayBin *bin )
 {
 	ofaMySQLConnectDisplayBinPrivate *priv;
 	GtkBuilder *builder;

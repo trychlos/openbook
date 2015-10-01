@@ -67,13 +67,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-account-selector-bin.ui";
-static const gchar *st_ui_id            = "AccountSelectorBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-account-selector-bin.ui";
 
 G_DEFINE_TYPE( ofaAccountSelectorBin, ofa_account_selector_bin, GTK_TYPE_BIN )
 
-static void load_dialog( ofaAccountSelectorBin *bin );
-static void setup_dialog( ofaAccountSelectorBin *bin );
+static void setup_bin( ofaAccountSelectorBin *bin );
 static void on_entry_changed( GtkEntry *entry, ofaAccountSelectorBin *bin );
 static void on_select_clicked( GtkButton *button, ofaAccountSelectorBin *bin );
 static void get_settings( ofaAccountSelectorBin *bin );
@@ -187,30 +185,28 @@ ofa_account_selector_bin_new( const gchar *pref_name, gint allowed )
 	self->priv->pref_name = g_strdup( pref_name );
 	self->priv->allowed = allowed;
 
-	load_dialog( self );
-	setup_dialog( self );
-
+	setup_bin( self );
 	get_settings( self );
 
 	return( self );
 }
 
 static void
-load_dialog( ofaAccountSelectorBin *bin )
-{
-	GtkWidget *top_widget;
-
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
-}
-
-static void
-setup_dialog( ofaAccountSelectorBin *bin )
+setup_bin( ofaAccountSelectorBin *bin )
 {
 	ofaAccountSelectorBinPrivate *priv;
-	GtkWidget *entry, *button, *label;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *entry, *button, *label;
 
 	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
+
+	object = gtk_builder_get_object( builder, "asb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-number" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -227,6 +223,9 @@ setup_dialog( ofaAccountSelectorBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->acc_label = label;
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 /**

@@ -95,7 +95,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-file-format-bin.ui";
 
 G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
 
-static void     setup_composite( ofaFileFormatBin *bin );
+static void     setup_bin( ofaFileFormatBin *bin );
 static void     init_file_format( ofaFileFormatBin *self );
 static void     on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self );
 static void     init_encoding( ofaFileFormatBin *self );
@@ -220,7 +220,7 @@ ofa_file_format_bin_new( ofaFileFormat *format )
 
 	self->priv->settings = g_object_ref( format );
 
-	setup_composite( self );
+	setup_bin( self );
 
 	return( self );
 }
@@ -228,7 +228,7 @@ ofa_file_format_bin_new( ofaFileFormat *format )
 /*
  */
 static void
-setup_composite( ofaFileFormatBin *bin )
+setup_bin( ofaFileFormatBin *bin )
 {
 	ofaFileFormatBinPrivate *priv;
 	GtkBuilder *builder;

@@ -61,7 +61,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-admin-credentials-bin.u
 
 G_DEFINE_TYPE( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN )
 
-static void     setup_composite( ofaAdminCredentialsBin *bin );
+static void     setup_bin( ofaAdminCredentialsBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
@@ -175,13 +175,13 @@ ofa_admin_credentials_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_ADMIN_CREDENTIALS_BIN, NULL );
 
-	setup_composite( bin );
+	setup_bin( bin );
 
 	return( bin );
 }
 
 static void
-setup_composite( ofaAdminCredentialsBin *bin )
+setup_bin( ofaAdminCredentialsBin *bin )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 	GtkBuilder *builder;

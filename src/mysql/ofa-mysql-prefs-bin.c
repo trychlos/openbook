@@ -67,7 +67,7 @@ static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-prefs-bin
 
 G_DEFINE_TYPE( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaMySQLPrefsBin *bin );
+static void setup_bin( ofaMySQLPrefsBin *bin );
 static void on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
 static void on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
 
@@ -177,7 +177,7 @@ ofa_mysql_prefs_bin_new( const ofaIPreferences *instance, gchar **label )
 	bin = g_object_new( OFA_TYPE_MYSQL_PREFS_BIN, NULL );
 
 	bin->priv->instance = instance;
-	setup_composite( bin );
+	setup_bin( bin );
 
 	if( label ){
 		*label = g_strdup( ofa_mysql_idbms_get_provider_name( OFA_IDBMS( instance )));
@@ -187,7 +187,7 @@ ofa_mysql_prefs_bin_new( const ofaIPreferences *instance, gchar **label )
 }
 
 static void
-setup_composite( ofaMySQLPrefsBin *bin )
+setup_bin( ofaMySQLPrefsBin *bin )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 	GtkBuilder *builder;

@@ -90,7 +90,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-bat-properties-bin.ui";
 
 G_DEFINE_TYPE( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN )
 
-static void  setup_composite( ofaBatPropertiesBin *bin );
+static void  setup_bin( ofaBatPropertiesBin *bin );
 static void  setup_treeview( ofaBatPropertiesBin *bin );
 static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
 static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
@@ -169,14 +169,14 @@ ofa_bat_properties_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
 
-	setup_composite( bin );
+	setup_bin( bin );
 	setup_treeview( bin );
 
 	return( bin );
 }
 
 static void
-setup_composite( ofaBatPropertiesBin *bin )
+setup_bin( ofaBatPropertiesBin *bin )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GtkBuilder *builder;

@@ -68,7 +68,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dbms-root-bin.ui";
 
 G_DEFINE_TYPE( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN )
 
-static void     setup_composite( ofaDBMSRootBin *bin );
+static void     setup_bin( ofaDBMSRootBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     changed_composite( ofaDBMSRootBin *self );
@@ -180,13 +180,13 @@ ofa_dbms_root_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DBMS_ROOT_BIN, NULL );
 
-	setup_composite( bin );
+	setup_bin( bin );
 
 	return( bin );
 }
 
 static void
-setup_composite( ofaDBMSRootBin *bin )
+setup_bin( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
 	GtkBuilder *builder;

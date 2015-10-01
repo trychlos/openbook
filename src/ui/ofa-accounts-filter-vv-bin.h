@@ -41,10 +41,8 @@
  * This composite widget implements the ofaIAccountsFilter interface.
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     ofa-changed
- * - validation: no
+ * - type:       bin (parent='top')
+ * - validation: no  (has 'ofa-changed' signal)
  * - settings:   no
  * - current:    no
  */

@@ -93,7 +93,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-closing-parms-bin.ui";
 
 G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
 
-static void     setup_composite( ofaClosingParmsBin *self );
+static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
 static void     on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
@@ -206,13 +206,13 @@ ofa_closing_parms_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
-	setup_composite( self );
+	setup_bin( self );
 
 	return( self );
 }
 
 static void
-setup_composite( ofaClosingParmsBin *bin )
+setup_bin( ofaClosingParmsBin *bin )
 {
 	ofaClosingParmsBinPrivate *priv;
 	GtkBuilder *builder;

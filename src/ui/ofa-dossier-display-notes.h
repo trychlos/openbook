@@ -29,6 +29,13 @@
  * SECTION: ofa_dossier_display_notes
  * @short_description: #ofaDossierDisplayNotes class definition.
  * @include: ui/ofa-dossier-display-notes.h
+ *
+ * Display both dossier and exercice notes.
+ *
+ * Development rules:
+ * - type:       dialog
+ * - settings:   no
+ * - current:    yes
  */
 
 #include "api/my-dialog.h"

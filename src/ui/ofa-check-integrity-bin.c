@@ -80,7 +80,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-integrity-bin.ui"
 
 G_DEFINE_TYPE( ofaCheckIntegrityBin, ofa_check_integrity_bin, GTK_TYPE_BIN )
 
-static void           setup_composite( ofaCheckIntegrityBin *self );
+static void           setup_bin( ofaCheckIntegrityBin *self );
 static gboolean       do_run( ofaCheckIntegrityBin *bin );
 static void           check_dossier_run( ofaCheckIntegrityBin *bin );
 static void           check_bat_lines_run( ofaCheckIntegrityBin *bin );
@@ -191,13 +191,13 @@ ofa_check_integrity_bin_new( void )
 
 	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
-	setup_composite( self );
+	setup_bin( self );
 
 	return( self );
 }
 
 static void
-setup_composite( ofaCheckIntegrityBin *bin )
+setup_bin( ofaCheckIntegrityBin *bin )
 {
 	GtkBuilder *builder;
 	GObject *object;

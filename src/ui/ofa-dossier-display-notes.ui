@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.16.1 -->
+<!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <object class="GtkDialog" id="DossierDisplayNotesDlg">
@@ -45,32 +45,30 @@
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
             <child>
-              <object class="GtkLabel" id="label1">
+              <object class="GtkLabel" id="pl-dossier">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Notes for the _dossier :</property>
+                <property name="use_underline">True</property>
                 <property name="xalign">0</property>
-                <property name="label" translatable="yes">Notes for the dossier :</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="label2">
+              <object class="GtkLabel" id="pl-exercice">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_top">8</property>
+                <property name="label" translatable="yes">Notes for the _exercice :</property>
+                <property name="use_underline">True</property>
                 <property name="xalign">0</property>
-                <property name="label" translatable="yes">Notes for the exercice :</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">2</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
               </packing>
             </child>
             <child>
@@ -90,8 +88,6 @@
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
               </packing>
             </child>
             <child>
@@ -111,8 +107,6 @@
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">3</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
               </packing>
             </child>
           </object>

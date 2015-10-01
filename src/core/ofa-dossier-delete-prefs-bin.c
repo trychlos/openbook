@@ -61,13 +61,12 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-delete-prefs-bin.ui";
-static const gchar *st_bin_id           = "DossierDeletePrefsBin";
 
 static const gchar *st_delete_prefs     = "DossierDeletePrefs";
 
 G_DEFINE_TYPE( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_BIN )
 
-static void setup_composite( ofaDossierDeletePrefsBin *bin );
+static void setup_bin( ofaDossierDeletePrefsBin *bin );
 static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
 static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
 static void changed_composite( ofaDossierDeletePrefsBin *bin );
@@ -170,22 +169,28 @@ ofa_dossier_delete_prefs_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, NULL );
 
-	setup_composite( bin );
+	setup_bin( bin );
 	setup_settings( bin );
 
 	return( bin );
 }
 
 static void
-setup_composite( ofaDossierDeletePrefsBin *bin )
+setup_bin( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
-	GtkWidget *top_widget, *radio, *check;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *radio, *check;
 
 	priv = bin->priv;
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_bin_xml, st_bin_id, "top" );
-	g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+	object = gtk_builder_get_object( builder, "acb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
 	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-drop" );
 	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
@@ -204,6 +209,9 @@ setup_composite( ofaDossierDeletePrefsBin *bin )
 
 	/* #303: unable to remove administrative accounts */
 	gtk_widget_set_sensitive( check, FALSE );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void

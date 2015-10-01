@@ -39,10 +39,8 @@
  * date.
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     ofa-changed
- * - validation: yes
+ * - type:       bin (parent='top')
+ * - validation: yes (has 'ofa-changed' signal)
  * - settings:   yes
  * - current:    no
  */

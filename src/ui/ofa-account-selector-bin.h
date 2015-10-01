@@ -35,10 +35,8 @@
  * displayed in this same frame.
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     ofa-changed
- * - validation: no
+ * - type:       bin (parent='top')
+ * - validation: no  (has 'ofa-changed' signal)
  * - settings:   yes
  * - current:    no
  */

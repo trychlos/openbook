@@ -39,9 +39,7 @@
  * when the checks are done.
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     no
+ * - type:       bin (parent='top')
  * - validation: no
  * - settings:   no
  * - current:    no

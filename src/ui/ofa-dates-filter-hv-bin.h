@@ -41,10 +41,8 @@
  * aligned), or one below the other (vertically aligned).
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     no
- * - validation: no
+ * - type:       bin (parent='top')
+ * - validation: no  (has 'ofa-changed' signal)
  * - settings:   no
  * - current:    no
  */

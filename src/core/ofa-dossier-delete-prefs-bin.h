@@ -33,10 +33,8 @@
  * Manage the preferences when deleting a dossier.
  *
  * Development rules:
- * - type:       part_of
- * - parent:     top
- * - change:     ofa-changed
- * - validation: no
+ * - type:       bin (parent='top')
+ * - validation: no  (has 'ofa-changed' signal)
  * - settings:   yes
  * - current:    no
  */
@@ -68,14 +66,6 @@ typedef struct {
 	GtkBinClass                      parent;
 }
 	ofaDossierDeletePrefsBinClass;
-
-/**
- * What to do with the database when deleting a dossier ?
- */
-enum {
-	DOSSIER_PREFS_DROP_DB = 1,
-	DOSSIER_PREFS_KEEP_DB
-};
 
 GType                     ofa_dossier_delete_prefs_bin_get_type        ( void ) G_GNUC_CONST;
 
