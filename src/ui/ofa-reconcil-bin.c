@@ -68,21 +68,20 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-reconcil-bin.ui";
-static const gchar *st_ui_id            = "ReconcilBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-reconcil-bin.ui";
 static const gchar *st_settings         = "RenderReconciliation";
 
 G_DEFINE_TYPE( ofaReconcilBin, ofa_reconcil_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaReconcilBin *bin );
-static void       setup_account_selection( ofaReconcilBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaReconcilBin *self, GtkContainer *parent );
-static void       setup_others( ofaReconcilBin *self, GtkContainer *parent );
-static void       on_account_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void       on_account_select_clicked( GtkButton *button, ofaReconcilBin *self );
-static void       on_date_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void       load_settings( ofaReconcilBin *bin );
-static void       set_settings( ofaReconcilBin *bin );
+static void setup_bin( ofaReconcilBin *bin );
+static void setup_account_selection( ofaReconcilBin *bin );
+static void setup_date_selection( ofaReconcilBin *bin );
+static void setup_others( ofaReconcilBin *bin );
+static void on_account_changed( GtkEntry *entry, ofaReconcilBin *self );
+static void on_account_select_clicked( GtkButton *button, ofaReconcilBin *self );
+static void on_date_changed( GtkEntry *entry, ofaReconcilBin *self );
+static void load_settings( ofaReconcilBin *bin );
+static void set_settings( ofaReconcilBin *bin );
 
 static void
 reconcil_bin_finalize( GObject *instance )
@@ -178,73 +177,80 @@ ofaReconcilBin *
 ofa_reconcil_bin_new( ofaMainWindow *main_window )
 {
 	ofaReconcilBin *self;
-	GtkWidget *parent;
 
 	self = g_object_new( OFA_TYPE_RECONCIL_BIN, NULL );
 
 	self->priv->main_window = main_window;
 	self->priv->dossier = ofa_main_window_get_dossier( main_window );
 
-	parent = load_dialog( self );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
-
-	setup_account_selection( self, GTK_CONTAINER( parent ));
-	setup_date_selection( self, GTK_CONTAINER( parent ));
-	setup_others( self, GTK_CONTAINER( parent ));
+	setup_bin( self );
+	setup_account_selection( self );
+	setup_date_selection( self );
+	setup_others( self );
 
 	load_settings( self );
 
 	return( self );
 }
 
-/*
- * returns: the GtkContainer parent
- */
-static GtkWidget *
-load_dialog( ofaReconcilBin *bin )
+static void
+setup_bin( ofaReconcilBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	return( top_widget );
+	object = gtk_builder_get_object( builder, "rb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 }
 
 static void
-setup_account_selection( ofaReconcilBin *self, GtkContainer *parent )
+setup_account_selection( ofaReconcilBin *bin )
 {
 	ofaReconcilBinPrivate *priv;
 	GtkWidget *entry, *label, *button;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	entry = my_utils_container_get_child_by_name( parent, "account-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), bin );
 	priv->account_entry = entry;
 
-	label = my_utils_container_get_child_by_name( parent, "account-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->account_label = label;
 
-	button = my_utils_container_get_child_by_name( parent, "account-select" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-select" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_account_select_clicked ), self );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_account_select_clicked ), bin );
 }
 
 static void
-setup_date_selection( ofaReconcilBin *self, GtkContainer *parent )
+setup_date_selection( ofaReconcilBin *bin )
 {
 	ofaReconcilBinPrivate *priv;
 	GtkWidget *entry, *label;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	entry = my_utils_container_get_child_by_name( parent, "date-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 
-	label = my_utils_container_get_child_by_name( parent, "date-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
@@ -252,13 +258,13 @@ setup_date_selection( ofaReconcilBin *self, GtkContainer *parent )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), TRUE );
 
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), bin );
 	priv->date_entry = entry;
 
 }
 
 static void
-setup_others( ofaReconcilBin *self, GtkContainer *parent )
+setup_others( ofaReconcilBin *bin )
 {
 }
 

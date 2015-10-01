@@ -526,8 +526,8 @@
                 src/ui/ofa-ope-template-properties.ui       OK
                 src/ui/ofa-ope-template-select.ui           --
                 src/ui/ofa-plugin-manager.ui                --
-                src/ui/ofa-rate-properties.ui               
-                src/ui/ofa-reconcil-bin.ui
+                src/ui/ofa-rate-properties.ui               OK
+                src/ui/ofa-reconcil-bin.ui                  OK
                 src/ui/ofa-reconciliation.ui
                 src/ui/ofa-render-page.ui
                 src/ui/ofa-restore-assistant.ui

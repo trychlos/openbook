@@ -32,6 +32,12 @@
  *
  * Display a frame with let the user select the parameters needed to
  * print the reconciliation summary.
+ *
+ * Development rules:
+ * - type:       bin (parent='top')
+ * - validation: yes (has 'ofa-changed' signal)
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-main-window-def.h"
