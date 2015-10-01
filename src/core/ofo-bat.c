@@ -610,12 +610,13 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
  * ofo_bat_is_deletable:
  *
  * An imported BAT file may be removed from the database if none of its
- * lines has been yet reconciliated.
+ * lines has been yet reconciliated (and the dossier is current).
  */
 gboolean
 ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 {
 	gint count;
+	gboolean is_current;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -623,7 +624,8 @@ ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		count = ofo_bat_get_used_count( bat, dossier );
-		return( count == 0 );
+		is_current = ofo_dossier_is_current( dossier );
+		return( is_current && count == 0 );
 	}
 
 	return( FALSE );

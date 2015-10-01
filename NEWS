@@ -81,6 +81,8 @@
    - ofa_settings_get_actual_keyfile(): renamed as ofa_settings_get_keyfile().
    - ofa_settlement_set_account(): new method.
    - src/ui/ofa-import-ex.ui: removed file.
+   - set mnemonic widgets on all dialogs (todo #839).
+   - ofo_xxx_is_deletable(): check that the dossier is current (todo #856).
 
 -----------------------------------------------------------------------
  Version 0.39

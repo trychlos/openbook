@@ -370,13 +370,14 @@ ofo_class_is_valid_label( const gchar *label )
  * Though the class in only used as tabs title in the accounts notebook,
  * and though we are providing default values, a class stay a reference
  * table. A row is only deletable if it is not referenced by any other
- * object.
+ * object (and the dossier is current).
  */
 gboolean
 ofo_class_is_deletable( const ofoClass *class, ofoDossier *dossier )
 {
 	gboolean used_by_accounts;
 	gboolean deletable;
+	gboolean is_current;
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -384,7 +385,8 @@ ofo_class_is_deletable( const ofoClass *class, ofoDossier *dossier )
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
 		used_by_accounts = ofo_account_use_class( dossier, ofo_class_get_number( class ));
-		deletable = !used_by_accounts;
+		is_current = ofo_dossier_is_current( dossier );
+		deletable = is_current && !used_by_accounts;
 
 		return( deletable );
 	}

@@ -472,68 +472,6 @@
 
  826 2015- 9-22 use GResource
 
- 839 2015- 9-25 review all dialog boxes
-                - provide an error message if not validable 
-                  > via a is_valid() method (todo #512)
-                  > with a ofa-changed signal
-                - review mnemonic activation (todo #823)
-                - manage an horizontal size group
-                src/core/ofa-admin-credentials-bin.ui       OK
-                src/core/ofa-dbms-root-bin.ui               OK
-                src/core/ofa-dossier-delete-prefs-bin.ui    OK
-                src/core/ofa-file-format-bin.ui             OK
-                src/core/ofa-preferences.ui                 OK
-                src/mysql/ofa-mysql-connect-display-bin.ui  OK
-                src/mysql/ofa-mysql-connect-enter-bin.ui    OK
-                src/mysql/ofa-mysql-prefs.piece.ui          OK
-                src/ui/ofa-account-properties.ui            OK
-                src/ui/ofa-accounts-book-bin.ui             OK
-                src/ui/ofa-account-selector-bin.ui          OK
-                src/ui/ofa-account-select.ui                OK
-                src/ui/ofa-accounts-filter-vv-bin.ui        OK
-                src/ui/ofa-app-menubar.ui                   --
-                src/ui/ofa-balance-bin.ui                   OK
-                src/ui/ofa-bat-properties-bin.ui            OK
-                src/ui/ofa-bat-properties.ui                OK
-                src/ui/ofa-bat-select.ui                    --
-                src/ui/ofa-check-balances-bin.ui            OK
-                src/ui/ofa-check-balances.ui                --
-                src/ui/ofa-check-integrity-bin.ui           OK
-                src/ui/ofa-check-integrity.ui               --
-                src/ui/ofa-class-properties.ui              OK
-                src/ui/ofa-closing-parms-bin.ui             OK
-                src/ui/ofa-currency-properties.ui           OK
-                src/ui/ofa-dates-filter-hv-bin.ui           OK
-                src/ui/ofa-dos-menubar.ui                   --
-                src/ui/ofa-dossier-delete.ui                OK
-                src/ui/ofa-dossier-display-notes.ui         OK
-                src/ui/ofa-dossier-login.ui                 --
-                src/ui/ofa-dossier-manager.ui               --
-                src/ui/ofa-dossier-new-bin.ui               OK
-                src/ui/ofa-dossier-new-mini.ui              OK
-                src/ui/ofa-dossier-new.ui                   --
-                src/ui/ofa-dossier-open.ui                  OK
-                src/ui/ofa-dossier-properties.ui            OK
-                src/ui/ofa-exercice-close-assistant.ui      OK
-                src/ui/ofa-export-assistant.ui              --
-                src/ui/ofa-guided-input-bin.ui              OK
-                src/ui/ofa-guided-input.ui                  --
-                src/ui/ofa-import-assistant.ui              --
-                src/ui/ofa-ledger-close.ui                  --
-                src/ui/ofa-ledger-properties.ui             OK
-                src/ui/ofa-ledgers-book-bin.ui              OK
-                src/ui/ofa-ope-template-help.ui             --
-                src/ui/ofa-ope-template-properties.ui       OK
-                src/ui/ofa-ope-template-select.ui           --
-                src/ui/ofa-plugin-manager.ui                --
-                src/ui/ofa-rate-properties.ui               OK
-                src/ui/ofa-reconcil-bin.ui                  OK
-                src/ui/ofa-reconciliation.ui                OK
-                src/ui/ofa-render-page.ui                   --
-                src/ui/ofa-restore-assistant.ui             --
-                src/ui/ofa-settlement.ui                    OK
-                src/ui/ofa-view-entries.ui
-
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
                 need a single account selection
@@ -597,9 +535,6 @@
 
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
-
- 856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
-                current
 
  857 2015-10- 2 on widgets which do not have a label as a mnemonic
                 widget, set the surounding frame (as an exception)
@@ -3986,6 +3921,73 @@
                 following pages are set as completed; the Finish button
                 is just a shortcut to the Summary page.
      2015- 9-24 closed
+
+ 839 2015- 9-25 review all dialog boxes
+                - provide an error message if not validable 
+                  > via a is_valid() method (todo #512)
+                  > with a ofa-changed signal
+                - review mnemonic activation (todo #823)
+                - manage an horizontal size group
+                src/core/ofa-admin-credentials-bin.ui       OK
+                src/core/ofa-dbms-root-bin.ui               OK
+                src/core/ofa-dossier-delete-prefs-bin.ui    OK
+                src/core/ofa-file-format-bin.ui             OK
+                src/core/ofa-preferences.ui                 OK
+                src/mysql/ofa-mysql-connect-display-bin.ui  OK
+                src/mysql/ofa-mysql-connect-enter-bin.ui    OK
+                src/mysql/ofa-mysql-prefs.piece.ui          OK
+                src/ui/ofa-account-properties.ui            OK
+                src/ui/ofa-accounts-book-bin.ui             OK
+                src/ui/ofa-account-selector-bin.ui          OK
+                src/ui/ofa-account-select.ui                OK
+                src/ui/ofa-accounts-filter-vv-bin.ui        OK
+                src/ui/ofa-app-menubar.ui                   --
+                src/ui/ofa-balance-bin.ui                   OK
+                src/ui/ofa-bat-properties-bin.ui            OK
+                src/ui/ofa-bat-properties.ui                OK
+                src/ui/ofa-bat-select.ui                    --
+                src/ui/ofa-check-balances-bin.ui            OK
+                src/ui/ofa-check-balances.ui                --
+                src/ui/ofa-check-integrity-bin.ui           OK
+                src/ui/ofa-check-integrity.ui               --
+                src/ui/ofa-class-properties.ui              OK
+                src/ui/ofa-closing-parms-bin.ui             OK
+                src/ui/ofa-currency-properties.ui           OK
+                src/ui/ofa-dates-filter-hv-bin.ui           OK
+                src/ui/ofa-dos-menubar.ui                   --
+                src/ui/ofa-dossier-delete.ui                OK
+                src/ui/ofa-dossier-display-notes.ui         OK
+                src/ui/ofa-dossier-login.ui                 --
+                src/ui/ofa-dossier-manager.ui               --
+                src/ui/ofa-dossier-new-bin.ui               OK
+                src/ui/ofa-dossier-new-mini.ui              OK
+                src/ui/ofa-dossier-new.ui                   --
+                src/ui/ofa-dossier-open.ui                  OK
+                src/ui/ofa-dossier-properties.ui            OK
+                src/ui/ofa-exercice-close-assistant.ui      OK
+                src/ui/ofa-export-assistant.ui              --
+                src/ui/ofa-guided-input-bin.ui              OK
+                src/ui/ofa-guided-input.ui                  --
+                src/ui/ofa-import-assistant.ui              --
+                src/ui/ofa-ledger-close.ui                  --
+                src/ui/ofa-ledger-properties.ui             OK
+                src/ui/ofa-ledgers-book-bin.ui              OK
+                src/ui/ofa-ope-template-help.ui             --
+                src/ui/ofa-ope-template-properties.ui       OK
+                src/ui/ofa-ope-template-select.ui           --
+                src/ui/ofa-plugin-manager.ui                --
+                src/ui/ofa-rate-properties.ui               OK
+                src/ui/ofa-reconcil-bin.ui                  OK
+                src/ui/ofa-reconciliation.ui                OK
+                src/ui/ofa-render-page.ui                   --
+                src/ui/ofa-restore-assistant.ui             --
+                src/ui/ofa-settlement.ui                    OK
+                src/ui/ofa-view-entries.ui                  --
+     2015-10- 2 done
+
+ 856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
+                current
+     2015-10- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

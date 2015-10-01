@@ -412,12 +412,13 @@ ofo_currency_get_upd_stamp( const ofoCurrency *currency )
  * ofo_currency_is_deletable:
  *
  * A currency should not be deleted while it is referenced by an
- * account, a journal, an entry.
+ * account, a journal, an entry (or the dossier is an archive).
  */
 gboolean
 ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 {
 	const gchar *dev_code;
+	gboolean is_current;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -425,8 +426,10 @@ ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
 		dev_code = ofo_currency_get_code( currency );
+		is_current = ofo_dossier_is_current( dossier );
 
-		return( !ofo_dossier_use_currency( dossier, dev_code ) &&
+		return( is_current &&
+				!ofo_dossier_use_currency( dossier, dev_code ) &&
 				!ofo_entry_use_currency( dossier, dev_code ) &&
 				!ofo_ledger_use_currency( dossier, dev_code ) &&
 				!ofo_account_use_currency( dossier, dev_code ));

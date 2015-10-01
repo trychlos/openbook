@@ -606,19 +606,27 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 
 /**
  * ofo_rate_is_deletable:
+ * @rate: the rate
+ * @dossier: the dossier
  *
  * A rate cannot be deleted if it is referenced in the debit or the
  * credit formulas of a model detail line.
+ *
+ * Returns: %TRUE if the rate is deletable.
  */
 gboolean
 ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
 {
+	gboolean is_current;
+
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return( !ofo_ope_template_use_rate( dossier, ofo_rate_get_mnemo( rate )));
+		is_current = ofo_dossier_is_current( dossier );
+		return( is_current &&
+				!ofo_ope_template_use_rate( dossier, ofo_rate_get_mnemo( rate )));
 	}
 
 	g_assert_not_reached();

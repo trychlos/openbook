@@ -1065,13 +1065,15 @@ ofo_ledger_has_entries( const ofoLedger *ledger, ofoDossier *dossier )
  * any entries recorded on the ledger.
  *
  * More: a ledger should not be deleted while it is referenced by a
- * model or an entry or the dossier itself.
+ * model or an entry or the dossier itself (or the dossier is an
+ * archive).
  */
 gboolean
 ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 {
 	gboolean ok;
 	const gchar *mnemo;
+	gboolean is_current;
 
 	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
 
@@ -1079,8 +1081,10 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 
 		ok = TRUE;
 		mnemo = ofo_ledger_get_mnemo( ledger );
+		is_current = ofo_dossier_is_current( dossier );
 
-		ok &= !ofo_dossier_use_ledger( dossier, mnemo ) &&
+		ok &= is_current &&
+				!ofo_dossier_use_ledger( dossier, mnemo ) &&
 				!ofo_entry_use_ledger( dossier, mnemo ) &&
 				!ofo_ope_template_use_ledger( dossier, mnemo );
 

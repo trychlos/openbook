@@ -789,11 +789,16 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 
 /**
  * ofo_ope_template_is_deletable:
+ * @model: the operation template
+ * @dossier: the dossier.
+ *
+ * Returns: %TRUE if the operation template is deletable.
  */
 gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier )
 {
 	const gchar *mnemo;
+	gboolean is_current;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -801,8 +806,10 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
 		mnemo = ofo_ope_template_get_mnemo( model );
+		is_current = ofo_dossier_is_current( dossier );
 
-		return( !ofo_entry_use_ope_template( dossier, mnemo ) &&
+		return( is_current &&
+				!ofo_entry_use_ope_template( dossier, mnemo ) &&
 				!ofo_dossier_use_ope_template( dossier, mnemo ));
 	}
 
