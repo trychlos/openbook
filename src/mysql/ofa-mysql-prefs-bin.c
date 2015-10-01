@@ -208,10 +208,10 @@ setup_bin( ofaMySQLPrefsBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "backup" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_backup_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-backup" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
@@ -222,10 +222,10 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	}
 	g_free( cmdline );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "restore" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-restore" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
@@ -318,17 +318,16 @@ ofa_mysql_prefs_bin_apply( const ofaIPreferences *instance, GtkWidget *bin )
 
 	if( !priv->dispose_has_run ){
 
-		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "backup" );
+		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		ofa_settings_set_string_ex(
 				SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE,
 				gtk_entry_get_text( GTK_ENTRY( entry )));
 
-		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "restore" );
+		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		ofa_settings_set_string_ex(
 				SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE,
 				gtk_entry_get_text( GTK_ENTRY( entry )));
-
 	}
 }

@@ -201,31 +201,31 @@ setup_bin( ofaMySQLConnectEnterBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-host" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-host-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_host_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-host" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-host-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-port" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-port-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-port" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-port-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-socket" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-socket-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_socket_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-socket" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-socket-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "pl-database" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 

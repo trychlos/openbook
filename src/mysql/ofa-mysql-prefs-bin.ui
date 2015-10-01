@@ -21,7 +21,7 @@
             <property name="row_spacing">3</property>
             <property name="column_spacing">4</property>
             <child>
-              <object class="GtkLabel" id="pl-backup">
+              <object class="GtkLabel" id="mpb-backup-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Backup command-line :</property>
@@ -34,7 +34,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="backup">
+              <object class="GtkEntry" id="mpb-backup-entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -46,7 +46,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="pl-restore">
+              <object class="GtkLabel" id="mpb-restore-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Restore command-line :</property>
@@ -59,7 +59,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="restore">
+              <object class="GtkEntry" id="mpb-restore-entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -219,8 +219,8 @@
   </object>
   <object class="GtkSizeGroup" id="mpb-col0-hsize">
     <widgets>
-      <widget name="pl-backup"/>
-      <widget name="pl-restore"/>
+      <widget name="mpb-backup-label"/>
+      <widget name="mpb-restore-label"/>
       <widget name="label10"/>
     </widgets>
   </object>
