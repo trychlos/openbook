@@ -67,22 +67,21 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-ledgers-book-bin.ui";
-static const gchar *st_ui_id            = "LedgersBookBin";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-ledgers-book-bin.ui";
 static const gchar *st_settings         = "RenderLedgersBook";
 
 G_DEFINE_TYPE( ofaLedgersBookBin, ofa_ledgers_book_bin, GTK_TYPE_BIN )
 
-static GtkWidget *load_dialog( ofaLedgersBookBin *bin );
-static void       setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent );
-static void       setup_date_selection( ofaLedgersBookBin *self, GtkContainer *parent );
-static void       setup_others( ofaLedgersBookBin *self, GtkContainer *parent );
-static void       on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgersBookBin *self );
-static void       on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
-static void       on_new_page_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
-static void       on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgersBookBin *self );
-static void       load_settings( ofaLedgersBookBin *bin );
-static void       set_settings( ofaLedgersBookBin *bin );
+static void setup_bin( ofaLedgersBookBin *bin );
+static void setup_ledger_selection( ofaLedgersBookBin *bin );
+static void setup_date_selection( ofaLedgersBookBin *bin );
+static void setup_others( ofaLedgersBookBin *bin );
+static void on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgersBookBin *self );
+static void on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
+static void on_new_page_toggled( GtkToggleButton *button, ofaLedgersBookBin *self );
+static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgersBookBin *self );
+static void load_settings( ofaLedgersBookBin *bin );
+static void set_settings( ofaLedgersBookBin *bin );
 
 static void
 ledgers_book_bin_finalize( GObject *instance )
@@ -178,47 +177,49 @@ ofaLedgersBookBin *
 ofa_ledgers_book_bin_new( ofaMainWindow *main_window )
 {
 	ofaLedgersBookBin *self;
-	GtkWidget *parent;
 
 	self = g_object_new( OFA_TYPE_LEDGERS_BOOK_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
-	parent = load_dialog( self );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
-
-	setup_ledger_selection( self, GTK_CONTAINER( parent ));
-	setup_date_selection( self, GTK_CONTAINER( parent ));
-	setup_others( self, GTK_CONTAINER( parent ));
+	setup_bin( self );
+	setup_ledger_selection( self );
+	setup_date_selection( self );
+	setup_others( self );
 
 	load_settings( self );
 
 	return( self );
 }
 
-/*
- * returns: the GtkContainer parent
- */
-static GtkWidget *
-load_dialog( ofaLedgersBookBin *bin )
+static void
+setup_bin( ofaLedgersBookBin *bin )
 {
-	GtkWidget *top_widget;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel;
 
-	top_widget = my_utils_container_attach_from_ui( GTK_CONTAINER( bin ), st_ui_xml, st_ui_id, "top" );
-	g_return_val_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ), NULL );
+	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	return( top_widget );
+	object = gtk_builder_get_object( builder, "lbb-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
 }
 
 static void
-setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent )
+setup_ledger_selection( ofaLedgersBookBin *bin )
 {
 	ofaLedgersBookBinPrivate *priv;
 	GtkWidget *widget, *toggle;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	widget = my_utils_container_get_child_by_name( parent, "p1-ledger" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-ledger" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
@@ -230,49 +231,49 @@ setup_ledger_selection( ofaLedgersBookBin *self, GtkContainer *parent )
 	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, priv->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 
-	g_signal_connect( priv->ledgers_tview, "ofa-changed", G_CALLBACK( on_tview_selection_changed ), self );
+	g_signal_connect( priv->ledgers_tview, "ofa-changed", G_CALLBACK( on_tview_selection_changed ), bin );
 
-	toggle = my_utils_container_get_child_by_name( parent, "p1-all-ledgers" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-all-ledgers" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_all_ledgers_toggled ), self );
+	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_all_ledgers_toggled ), bin );
 	priv->all_ledgers_btn = toggle;
 }
 
 static void
-setup_date_selection( ofaLedgersBookBin *self, GtkContainer *parent )
+setup_date_selection( ofaLedgersBookBin *bin )
 {
 	ofaLedgersBookBinPrivate *priv;
-	GtkWidget *alignment, *label;
-	ofaDatesFilterHVBin *bin;
+	GtkWidget *parent, *label;
+	ofaDatesFilterHVBin *filter;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	alignment = my_utils_container_get_child_by_name( parent, "dates-filter" );
-	g_return_if_fail( alignment && GTK_IS_CONTAINER( alignment ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dates-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	bin = ofa_dates_filter_hv_bin_new();
-	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bin ));
+	filter = ofa_dates_filter_hv_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */
-	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( bin ));
+	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), self );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), bin );
 
-	priv->dates_filter = bin;
+	priv->dates_filter = filter;
 }
 
 static void
-setup_others( ofaLedgersBookBin *self, GtkContainer *parent )
+setup_others( ofaLedgersBookBin *bin )
 {
 	ofaLedgersBookBinPrivate *priv;
 	GtkWidget *toggle;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	toggle = my_utils_container_get_child_by_name( parent, "p3-new-page" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-new-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), self );
+	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 	priv->new_page_btn = toggle;
 }
 

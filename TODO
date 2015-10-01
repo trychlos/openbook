@@ -521,7 +521,7 @@
                 src/ui/ofa-import-assistant.ui              --
                 src/ui/ofa-ledger-close.ui                  --
                 src/ui/ofa-ledger-properties.ui             OK
-                src/ui/ofa-ledgers-book-bin.ui
+                src/ui/ofa-ledgers-book-bin.ui              OK
                 src/ui/ofa-ope-template-help.ui
                 src/ui/ofa-ope-template-properties.ui
                 src/ui/ofa-ope-template-select.ui
@@ -587,6 +587,16 @@
                 - have ok_btn instead of btn_ok
                 - update ok_btn when setting readonly buttons
                 - call check_enable_dlg at the very end
+
+ 854 2015-10- 1 when restoring a dossier, insertions in dbms continue
+                long after having acknowledged the good restore !
+                (see debug messages) -> this should be done before the
+                acknowledge, or have a spinner, or have a progress bar
+
+ 855 2015-10- 1 render page should have a pane between the drawing area
+                and the args zone
+
+ 856
 
 -----------------------------------------------------------------------
  DONE

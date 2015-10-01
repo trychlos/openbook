@@ -41,6 +41,7 @@
                 <property name="halign">start</property>
                 <property name="max_length">10</property>
                 <property name="width_chars">10</property>
+                <property name="max_width_chars">10</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -80,6 +81,7 @@
                 <property name="halign">start</property>
                 <property name="max_length">10</property>
                 <property name="width_chars">10</property>
+                <property name="max_width_chars">10</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>

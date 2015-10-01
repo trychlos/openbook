@@ -32,6 +32,12 @@
  *
  * Display a frame with let the user select the parameters needed to
  * print the entries ledgers between two effect dates.
+ *
+ * Development rules:
+ * - type:       bin (parent='top')
+ * - validation: yes (has 'ofa-changed' signal)
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "ui/ofa-idates-filter.h"
