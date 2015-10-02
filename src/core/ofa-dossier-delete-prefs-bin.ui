@@ -73,7 +73,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkFrame" id="frame2">
+          <object class="GtkFrame" id="frame-account-drop">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label_xalign">0</property>

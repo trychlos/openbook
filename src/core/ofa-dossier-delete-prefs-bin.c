@@ -181,12 +181,12 @@ setup_bin( ofaDossierDeletePrefsBin *bin )
 	ofaDossierDeletePrefsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *radio, *check;
+	GtkWidget *toplevel, *radio, *check, *frame;
 
 	priv = bin->priv;
 	builder = gtk_builder_new_from_file( st_bin_xml );
 
-	object = gtk_builder_get_object( builder, "acb-window" );
+	object = gtk_builder_get_object( builder, "ddpb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
@@ -208,7 +208,9 @@ setup_bin( ofaDossierDeletePrefsBin *bin )
 	priv->p3_account = check;
 
 	/* #303: unable to remove administrative accounts */
-	gtk_widget_set_sensitive( check, FALSE );
+	frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "frame-account-drop" );
+	g_return_if_fail( frame && GTK_IS_FRAME( frame ));
+	gtk_widget_set_sensitive( frame, FALSE );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );

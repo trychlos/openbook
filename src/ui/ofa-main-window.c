@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -889,11 +890,20 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 		warning_exercice_unset( window );
 	}
 
-	/* display dossier notes if not empty */
-	main_notes = ofo_dossier_get_notes( priv->dossier );
-	exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
-	if( my_strlen( main_notes ) || my_strlen( exe_notes )){
-		ofa_dossier_display_notes_run( window, main_notes, exe_notes );
+	/* display dossier notes */
+	if( ofa_prefs_dossier_open_notes()){
+		main_notes = ofo_dossier_get_notes( priv->dossier );
+		exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
+		if( my_strlen( main_notes ) ||
+				my_strlen( exe_notes ) ||
+				ofa_prefs_dossier_open_notes_if_empty()){
+			ofa_dossier_display_notes_run( window, main_notes, exe_notes );
+		}
+	}
+
+	/* display dossier properties */
+	if( ofa_prefs_dossier_open_properties()){
+		g_signal_emit_by_name(( gpointer ) window, OFA_SIGNAL_DOSSIER_PROPERTIES );
 	}
 
 	g_signal_emit_by_name( window, "ofa-opened-dossier", g_object_ref( priv->dossier ));

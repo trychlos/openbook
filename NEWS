@@ -18,13 +18,16 @@
 
  New features and improvements:
 
-   - display application version (todo #6).
+   - Display application version (todo #6).
    - AccountsChart: open Settlement and Reconciliation page (todo #813).
    - DossierManager: rows are sorted by ascending dossier name, descending exercice (todo #831).
    - ImportAssistant: recall the loaded file on top of the pages (todo #836).
    - Restore: close the current dossier if any (todo #807).
    - RestoreAssistant: remove a newly created dossier on cancel (todo #834).
    - RateProperties: let the user reorder the lines (todo #187).
+   - Add user preferences to open dossier notes or properties at startup.
+   - Set mnemonic widgets on all dialogs (todo #839).
+   - Have a mnemonic widget even in frames with a single child (todo #857).
 
  Bug fixes:
 
@@ -81,9 +84,7 @@
    - ofa_settings_get_actual_keyfile(): renamed as ofa_settings_get_keyfile().
    - ofa_settlement_set_account(): new method.
    - src/ui/ofa-import-ex.ui: removed file.
-   - set mnemonic widgets on all dialogs (todo #839).
    - ofo_xxx_is_deletable(): check that the dossier is current (todo #856).
-   - Have a mnemonic widget even in frames with a single child (todo #857).
    - Review my_utils_init_notes/my_utils_getback_notes (todo #859).
 
 -----------------------------------------------------------------------

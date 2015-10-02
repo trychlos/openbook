@@ -62,8 +62,11 @@ struct _ofaPreferencesPrivate {
 	 */
 	GtkCheckButton           *confirm_on_escape_btn;
 
-	/* UI - Dossier delete page
+	/* UI - Dossier page
 	 */
+	GtkWidget                *open_notes_btn;
+	GtkWidget                *open_notes_empty_btn;
+	GtkWidget                *open_properties_btn;
 	ofaDossierDeletePrefsBin *dd_prefs;
 
 	/* UI - Account delete page
@@ -111,6 +114,9 @@ static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscap
 static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
 static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
 static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
+static const gchar *st_dossier_open_notes             = "DossierOpenNotes";
+static const gchar *st_dossier_open_notes_if_empty    = "DossierOpenNotesIfEmpty";
+static const gchar *st_dossier_open_properties        = "DossierOpenProperties";
 static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
 
 static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferences.ui";
@@ -128,7 +134,7 @@ G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
 static void       v_init_dialog( myDialog *dialog );
 static void       init_quitting_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       init_dossier_delete_page( ofaPreferences *self, GtkContainer *toplevel );
+static void       init_dossier_page( ofaPreferences *self, GtkContainer *toplevel );
 static void       init_account_page( ofaPreferences *self, GtkContainer *toplevel );
 static void       init_locales_page( ofaPreferences *self, GtkContainer *toplevel );
 /*static void       get_locales( void );*/
@@ -140,6 +146,7 @@ static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       activate_first_page( ofaPreferences *self );
 static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void       on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void       on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void       on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
@@ -149,6 +156,7 @@ static void       check_for_activable_dlg( ofaPreferences *self );
 static gboolean   v_quit_on_ok( myDialog *dialog );
 static gboolean   do_update( ofaPreferences *self );
 static void       do_update_quitting_page( ofaPreferences *self );
+static void       do_update_dossier_page( ofaPreferences *self );
 static void       do_update_account_page( ofaPreferences *self );
 static gboolean   do_update_locales_page( ofaPreferences *self );
 /*static void       error_decimal_sep( ofaPreferences *self );*/
@@ -282,7 +290,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
 	init_quitting_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
-	init_dossier_delete_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
+	init_dossier_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
 	init_account_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
 	init_locales_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
 	init_export_page( OFA_PREFERENCES( dialog ), GTK_CONTAINER( toplevel ));
@@ -304,7 +312,6 @@ init_quitting_page( ofaPreferences *self, GtkContainer *toplevel )
 	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_escape();
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->confirm_on_escape_btn = GTK_CHECK_BUTTON( button );
 
@@ -312,13 +319,12 @@ init_quitting_page( ofaPreferences *self, GtkContainer *toplevel )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
 	bvalue = ofa_prefs_assistant_quit_on_escape();
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	on_quit_on_escape_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_cancel();
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	button = my_utils_container_get_child_by_name( toplevel, "p1-confirm-altf4" );
@@ -333,15 +339,33 @@ init_quitting_page( ofaPreferences *self, GtkContainer *toplevel )
 }
 
 static void
-init_dossier_delete_page( ofaPreferences *self, GtkContainer *toplevel )
+init_dossier_page( ofaPreferences *self, GtkContainer *toplevel )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *parent;
 
 	priv = self->priv;
+
+	priv->open_notes_btn = my_utils_container_get_child_by_name( toplevel, "pdo-opnotes" );
+	g_return_if_fail( priv->open_notes_btn && GTK_IS_CHECK_BUTTON( priv->open_notes_btn ));
+	g_signal_connect( priv->open_notes_btn, "clicked", G_CALLBACK( on_open_notes_toggled ), self );
+
+	priv->open_notes_empty_btn = my_utils_container_get_child_by_name( toplevel, "pdo-opnotes-nonempty" );
+	g_return_if_fail( priv->open_notes_empty_btn && GTK_IS_CHECK_BUTTON( priv->open_notes_empty_btn ));
+
+	priv->open_properties_btn = my_utils_container_get_child_by_name( toplevel, "pdo-opproperties" );
+	g_return_if_fail( priv->open_properties_btn && GTK_IS_CHECK_BUTTON( priv->open_properties_btn ));
+
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->open_notes_btn ), ofa_prefs_dossier_open_notes());
+	on_open_notes_toggled( GTK_TOGGLE_BUTTON( priv->open_notes_btn ), self );
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn ), !ofa_prefs_dossier_open_notes_if_empty());
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->open_properties_btn ), ofa_prefs_dossier_open_properties());
+
 	parent = my_utils_container_get_child_by_name( toplevel, "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
 	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dd_prefs ));
 }
@@ -409,7 +433,7 @@ init_locales_page( ofaPreferences *self, GtkContainer *toplevel )
 
 	/* thousand separator */
 	init_locale_sep( self, toplevel,
-			&priv->p4_thousand_sep, "l-thousand", "p4-thousand-sep", ofa_prefs_amount_thousand_sep());
+			&priv->p4_thousand_sep, "p4-thousand-label", "p4-thousand-sep", ofa_prefs_amount_thousand_sep());
 }
 
 #if 0
@@ -617,6 +641,13 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 }
 
 static void
+on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+	gtk_widget_set_sensitive(
+			self->priv->open_notes_empty_btn, gtk_toggle_button_get_active( button ));
+}
+
+static void
 on_display_date_changed( GtkComboBox *box, ofaPreferences *self )
 {
 	on_date_changed( self, box, "p4-display-sample" );
@@ -713,7 +744,7 @@ do_update( ofaPreferences *self )
 	priv = self->priv;
 
 	do_update_quitting_page( self );
-	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
+	do_update_dossier_page( self );
 	do_update_account_page( self );
 	ok = do_update_locales_page( self );
 	do_update_export_page( self );
@@ -807,6 +838,55 @@ gboolean
 ofa_prefs_appli_confirm_on_quit( void )
 {
 	return( ofa_settings_get_boolean( st_appli_confirm_on_quit ));
+}
+
+static void
+do_update_dossier_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_settings_set_boolean(
+			st_dossier_open_notes,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_btn )));
+
+	ofa_settings_set_boolean(
+			st_dossier_open_notes_if_empty,
+			!gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn )));
+
+	ofa_settings_set_boolean(
+			st_dossier_open_properties,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_properties_btn )));
+
+	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
+}
+
+/**
+ * ofa_prefs_dossier_open_notes:
+ */
+gboolean
+ofa_prefs_dossier_open_notes( void )
+{
+	return( ofa_settings_get_boolean( st_dossier_open_notes ));
+}
+
+/**
+ * ofa_prefs_dossier_open_notes_if_empty:
+ */
+gboolean
+ofa_prefs_dossier_open_notes_if_empty( void )
+{
+	return( ofa_settings_get_boolean( st_dossier_open_notes_if_empty ));
+}
+
+/**
+ * ofa_prefs_dossier_open_properties:
+ */
+gboolean
+ofa_prefs_dossier_open_properties( void )
+{
+	return( ofa_settings_get_boolean( st_dossier_open_properties ));
 }
 
 static void

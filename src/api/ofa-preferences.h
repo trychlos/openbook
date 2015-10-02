@@ -82,6 +82,10 @@ gboolean     ofa_prefs_assistant_confirm_on_cancel      ( void );
 gboolean     ofa_prefs_appli_confirm_on_quit            ( void );
 gboolean     ofa_prefs_appli_confirm_on_altf4           ( void );
 
+gboolean     ofa_prefs_dossier_open_notes               ( void );
+gboolean     ofa_prefs_dossier_open_notes_if_empty      ( void );
+gboolean     ofa_prefs_dossier_open_properties          ( void );
+
 gboolean     ofa_prefs_account_delete_root_with_children( void );
 
 myDateFormat ofa_prefs_date_display                     ( void );
