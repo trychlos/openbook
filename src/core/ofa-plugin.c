@@ -508,15 +508,23 @@ ofa_plugin_get_modules( void )
 }
 
 /**
- * ofa_plugin_implements_type:
+ * ofa_plugin_get_object_for_type:
+ * @plugin: this #ofaPlugin module
+ * @type: the searched type.
+ *
+ * Returns: the #GObject which implements the requested @type, or %NULL.
+ *
+ * The returned reference is owned by the #ofaPlugin class, and should
+ * not be released by the caller. The #ofaPlugin class makes sure that
+ * the reference will be valid during the program execution.
  */
-gboolean
-ofa_plugin_implements_type( const ofaPlugin *plugin, GType type )
+GObject *
+ofa_plugin_get_object_for_type( const ofaPlugin *plugin, GType type )
 {
 	ofaPluginPrivate *priv;
 	GList *io;
 
-	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), FALSE );
+	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
 
 	priv = plugin->priv;
 
@@ -524,12 +532,12 @@ ofa_plugin_implements_type( const ofaPlugin *plugin, GType type )
 
 		for( io = priv->objects ; io ; io = io->next ){
 			if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( io->data ), type )){
-				return( TRUE );
+				return( G_OBJECT( io->data ));
 			}
 		}
 	}
 
-	return( FALSE );
+	return( NULL );
 }
 
 /**

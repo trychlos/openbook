@@ -105,7 +105,7 @@ void         ofa_plugin_free_extensions        ( GList *extensions );
 const GList *ofa_plugin_get_modules            ( void );
 
 /* requesting a plugin */
-gboolean     ofa_plugin_implements_type        ( const ofaPlugin *plugin, GType type );
+GObject     *ofa_plugin_get_object_for_type    ( const ofaPlugin *plugin, GType type );
 gboolean     ofa_plugin_has_object             ( const ofaPlugin *plugin, GObject *instance );
 
 const gchar *ofa_plugin_get_name               ( ofaPlugin *plugin );

@@ -28,6 +28,7 @@
    - Add user preferences to open dossier notes or properties at startup.
    - Set mnemonic widgets on all dialogs (todo #839).
    - Have a mnemonic widget even in frames with a single child (todo #857).
+   - Defines the ofaIAbout interface for the plugins (todo #858).
 
  Bug fixes:
 

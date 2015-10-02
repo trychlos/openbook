@@ -32,7 +32,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
-#include "api/ofa-ipreferences.h"
+#include "api/ofa-iabout.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -284,22 +284,22 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer us
 static void
 on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 {
-	gboolean ok;
+	GObject *object;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofaPlugin *plugin;
 
-	ok = FALSE;
+	object = NULL;
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		ok = ofa_plugin_implements_type( plugin, OFA_TYPE_IPREFERENCES );
+		object = ofa_plugin_get_object_for_type( plugin, OFA_TYPE_IABOUT );
 	}
 
-	gtk_widget_set_sensitive( self->priv->properties_btn, ok );
+	gtk_widget_set_sensitive( self->priv->properties_btn, object != NULL );
 }
 
 /*
@@ -314,17 +314,35 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofaPlugin *plugin;
+	GObject *object;
+	GtkWidget *page, *dialog, *content;
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	selection = gtk_tree_view_get_selection( self->priv->tview );
-
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		ofa_preferences_run( main_window, plugin );
+		object = ofa_plugin_get_object_for_type( plugin, OFA_TYPE_IABOUT );
+		g_return_if_fail( object && OFA_IS_IABOUT( object ));
+		page = ofa_iabout_do_init( OFA_IABOUT( object ));
+
+		if( page && GTK_IS_WIDGET( page )){
+			dialog = gtk_dialog_new_with_buttons(
+					_( "Properties" ),
+					GTK_WINDOW( main_window ),
+					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+					_( "Close" ),
+					GTK_RESPONSE_ACCEPT,
+					NULL );
+			content = gtk_dialog_get_content_area( GTK_DIALOG( dialog ));
+			g_return_if_fail( content && GTK_IS_CONTAINER( content ));
+			gtk_container_add( GTK_CONTAINER( content ), page );
+			g_signal_connect_swapped(
+					dialog, "response", G_CALLBACK( gtk_widget_destroy ), dialog );
+			gtk_widget_show_all( dialog );
+		}
 	}
 }

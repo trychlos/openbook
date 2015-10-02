@@ -537,9 +537,6 @@
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
 
- 858 2015-10- 2 PluginManager: the properties of a plugin should be
-                distinct from its preferences -> have another interface
-
  860
 
 -----------------------------------------------------------------------
@@ -3997,6 +3994,10 @@
                 src/ui/ofa-account-selector-bin: done
                 src/ui/ofa-ledger-close:         done
                 src/ui/ofa-ledgers-book-bin:     done
+
+ 858 2015-10- 2 PluginManager: the properties of a plugin should be
+                distinct from its preferences -> have another interface
+     2015-10- 2 new ofaIAbout interface defined
 
  859 2015-10- 2 my_utils_init_notes:
                 - common case is with same editability than the dialog

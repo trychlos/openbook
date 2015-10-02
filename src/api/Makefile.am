@@ -26,6 +26,7 @@ api_include_HEADERS = \
 	ofa-extension.h										\
 	\
 	ofa-file-format.h									\
+	ofa-iabout.h										\
 	ofa-idataset.h										\
 	ofa-idbms.h											\
 	ofa-iexportable.h									\

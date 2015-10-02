@@ -78,6 +78,7 @@ libofa_core_la_SOURCES = \
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
+	ofa-iabout.c										\
 	ofa-icollector.c									\
 	ofa-icollector.h									\
 	ofa-iconcil.c										\
