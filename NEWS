@@ -83,6 +83,8 @@
    - src/ui/ofa-import-ex.ui: removed file.
    - set mnemonic widgets on all dialogs (todo #839).
    - ofo_xxx_is_deletable(): check that the dossier is current (todo #856).
+   - Have a mnemonic widget even in frames with a single child (todo #857).
+   - Review my_utils_init_notes/my_utils_getback_notes (todo #859).
 
 -----------------------------------------------------------------------
  Version 0.39

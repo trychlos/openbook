@@ -234,7 +234,7 @@ do_update( ofaBatProperties *self )
 
 	priv = self->priv;
 
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), bat );
 
 	priv->updated = ofo_bat_update( priv->bat, priv->dossier );
 

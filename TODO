@@ -519,9 +519,10 @@
                 + remove corresponding specs from .xml UI definitions
 
  853 2015-10- 1 review v_init_dialog's:
-                - only store GtkWidget when needed
+                - only store GtkWidget (as GtkWidget) when needed
                 - store object data members
                 - set data before connecting the signal
+                  (or after the end of init ?)
                   (so is not triggered now)
                 - set container editable after notes
                 - have ok_btn instead of btn_ok
@@ -539,7 +540,7 @@
  858 2015-10- 2 PluginManager: the properties of a plugin should be
                 distinct from its preferences -> have another interface
 
- 859
+ 860
 
 -----------------------------------------------------------------------
  DONE
@@ -3996,6 +3997,15 @@
                 src/ui/ofa-account-selector-bin: done
                 src/ui/ofa-ledger-close:         done
                 src/ui/ofa-ledgers-book-bin:     done
+
+ 859 2015-10- 2 my_utils_init_notes:
+                - common case is with same editability than the dialog
+                  > my_utils_init_notes
+                - one single case is have two notes (dossier)
+                  > my_utils_init_notes_fn
+                - another single case is have distinct editability (bat)
+                  > my_utils_init_notes_ex
+     2015-10- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

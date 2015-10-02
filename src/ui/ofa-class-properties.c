@@ -234,16 +234,16 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
-	my_utils_init_notes_ex( toplevel, class, is_current );
+	my_utils_container_notes_init( toplevel, class );
 	my_utils_init_upd_user_stamp_ex( toplevel, class );
-
-	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 	if( !is_current ){
 		my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
 }
 
 static void
@@ -330,7 +330,7 @@ do_update( ofaClassProperties *self )
 
 	ofo_class_set_number( priv->class, priv->number );
 	ofo_class_set_label( priv->class, priv->label );
-	my_utils_getback_notes_ex( toplevel, class );
+	my_utils_container_notes_get( toplevel, class );
 
 	if( priv->is_new ){
 		priv->updated = ofo_class_insert( priv->class, dossier );

@@ -325,11 +325,10 @@ v_init_dialog( myDialog *dialog )
 
 	init_dialog_ref( self );
 
-	my_utils_init_notes_ex( toplevel, ope_template, priv->is_current );
+	my_utils_container_notes_init( toplevel, ope_template );
 	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
 	init_dialog_detail( self );
-	check_for_enable_dlg( self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-help" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -345,6 +344,8 @@ v_init_dialog( myDialog *dialog )
 	if( !priv->is_current ){
 		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -952,7 +953,7 @@ do_update( ofaOpeTemplateProperties *self )
 	ofo_ope_template_set_ledger_locked( priv->ope_template, priv->ledger_locked );
 	ofo_ope_template_set_ref( priv->ope_template, gtk_entry_get_text( GTK_ENTRY( priv->ref_entry )));
 	ofo_ope_template_set_ref_locked( priv->ope_template, priv->ref_locked );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), ope_template );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), ope_template );
 
 	ofo_ope_template_free_detail_all( priv->ope_template );
 	for( i=1 ; i<=priv->count ; ++i ){

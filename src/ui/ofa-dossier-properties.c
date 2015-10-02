@@ -266,7 +266,7 @@ v_init_dialog( myDialog *dialog )
 	init_counters_page( self, container );
 
 	/* these are main notes of the dossier */
-	my_utils_init_notes_ex( container, dossier, priv->is_current );
+	my_utils_container_notes_init( container, dossier );
 	my_utils_init_upd_user_stamp_ex( container, dossier );
 	my_utils_container_set_editable( container, priv->is_current );
 
@@ -447,14 +447,18 @@ static void
 init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GObject *buffer;
+	GtkWidget *textview;
+	GtkTextBuffer *buffer;
 
 	priv = self->priv;
 	priv->exe_notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier ));
-	buffer = my_utils_init_notes( container, "pexe-notes", priv->exe_notes, priv->is_current );
-	g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
+	textview = my_utils_container_notes_setup_full(
+			container, "pexe-notes", priv->exe_notes, priv->is_current );
+	g_return_if_fail( textview && GTK_IS_TEXT_VIEW( textview ));
 
 	if( priv->is_current ){
+		buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( textview ));
+		g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
 		g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
 	}
 }
@@ -739,7 +743,7 @@ do_update( ofaDossierProperties *self )
 	ofa_closing_parms_bin_apply( priv->closing_parms );
 
 	ofo_dossier_set_exe_notes( priv->dossier, priv->exe_notes );
-	my_utils_getback_notes_ex( container, dossier );
+	my_utils_container_notes_get( container, dossier );
 
 	/* have begin or end exe dates changed ? */
 	date_has_changed = FALSE;

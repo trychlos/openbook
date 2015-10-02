@@ -284,16 +284,16 @@ v_init_dialog( myDialog *dialog )
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex( container, rate, is_current );
+	my_utils_container_notes_init( container, rate );
 	my_utils_init_upd_user_stamp_ex( container, rate );
 	my_utils_container_set_editable( container, is_current );
-
-	check_for_enable_dlg( self );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
 		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
+
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -735,7 +735,7 @@ do_update( ofaRateProperties *self )
 
 	ofo_rate_set_mnemo( priv->rate, priv->mnemo );
 	ofo_rate_set_label( priv->rate, priv->label );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), rate );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), rate );
 
 	ofo_rate_free_all_val( priv->rate );
 

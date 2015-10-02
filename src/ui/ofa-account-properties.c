@@ -269,7 +269,6 @@ v_init_dialog( myDialog *dialog )
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
 	init_ui( self, GTK_CONTAINER( toplevel ));
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
 
 	/* account number
 	 * set read-only if not empty though we would be able to remediate
@@ -327,8 +326,9 @@ v_init_dialog( myDialog *dialog )
 		init_balances_page( self );
 	}
 
-	my_utils_init_notes_ex( GTK_CONTAINER( toplevel ), account, priv->is_current );
+	my_utils_container_notes_init( GTK_CONTAINER( toplevel ), account );
 	my_utils_init_upd_user_stamp_ex( GTK_CONTAINER( toplevel ), account );
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
 
 	/* setup fields editability, depending of
 	 * - whether the dossier is current
@@ -673,7 +673,7 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_closed(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));
 	ofo_account_set_currency( priv->account, priv->currency );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), account );
 
 	if( priv->is_new ){
 		priv->updated =

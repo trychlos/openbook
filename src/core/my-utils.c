@@ -39,7 +39,6 @@ typedef struct {
 }
 	sBuildableByName;
 
-static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
@@ -717,6 +716,67 @@ child_set_editable_cb( GtkWidget *widget, gpointer data )
 }
 
 /**
+ * my_utils_container_notes_setup_full:
+ * @container: the #GtkContainer which contains the widget.
+ * @widget_name: the name of the #GtkTextView widget.
+ * @content: the current 'notes' content.
+ * @editable: whether the widget must be set editable.
+ *
+ * Setup the @content in the widget and the editability status.
+ *
+ * This function is mostly used through the
+ * my_utils_container_notes_init() macro when the data members of the
+ * caller are normalized:
+ * - the widget is named 'pn-notes'
+ * - the source object is stored with its canonical name.
+ *
+ * Returns: the #GtkTextView widget.
+ */
+GtkWidget *
+my_utils_container_notes_setup_full(
+		GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean editable )
+{
+	GtkWidget *view;
+	GtkTextBuffer *buffer;
+	gchar *str;
+
+	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+
+	str = g_strdup( my_strlen( notes ) ? notes : "" );
+	buffer = gtk_text_buffer_new( NULL );
+	gtk_text_buffer_set_text( buffer, str, -1 );
+	g_free( str );
+
+	view = my_utils_container_get_child_by_name( container, widget_name );
+	g_return_val_if_fail( view && GTK_IS_TEXT_VIEW( view ), NULL );
+	gtk_text_view_set_buffer( GTK_TEXT_VIEW( view ), buffer );
+	g_object_unref( buffer );
+
+	my_utils_widget_set_editable( view, editable );
+
+#if 0
+	if( editable ){
+		g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), NULL );
+	}
+#endif
+	return( view );
+}
+
+#if 0
+static void
+on_notes_changed( GtkTextBuffer *buffer, void *user_data )
+{
+	GtkTextIter start, end;
+	gchar *notes;
+
+	gtk_text_buffer_get_start_iter( buffer, &start );
+	gtk_text_buffer_get_end_iter( buffer, &end );
+	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+	g_free( notes );
+}
+#endif
+
+/**
  * my_utils_size_group_add_size_group:
  * @target: the target #GtkSizeGroup
  * @source: the source #GtkSizeGroup.
@@ -957,51 +1017,6 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
 			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
 		}
 #endif
-}
-
-/**
- * my_utils_init_notes:
- *
- * This function is mostly used through the "my_utils_init_notes_ex()"
- * macro.
- */
-GObject *
-my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean editable )
-{
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	gchar *str;
-
-	if( notes ){
-		str = g_strdup( notes );
-	} else {
-		str = g_strdup( "" );
-	}
-
-	text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( container, widget_name ));
-	buffer = gtk_text_buffer_new( NULL );
-	gtk_text_buffer_set_text( buffer, str, -1 );
-	gtk_text_view_set_buffer( text, buffer );
-	g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), NULL );
-
-	g_object_unref( buffer );
-	g_free( str );
-
-	my_utils_widget_set_editable( GTK_WIDGET( text ), editable );
-
-	return( G_OBJECT( buffer ));
-}
-
-static void
-on_notes_changed( GtkTextBuffer *buffer, void *user_data )
-{
-	/*GtkTextIter start, end;
-	gchar *notes;
-
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	g_free( notes );*/
 }
 
 /**

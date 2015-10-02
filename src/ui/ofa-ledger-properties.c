@@ -254,7 +254,7 @@ v_init_dialog( myDialog *dialog )
 
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
-	my_utils_init_notes_ex( container, ledger, is_current );
+	my_utils_container_notes_init( container, ledger );
 	my_utils_init_upd_user_stamp_ex( container, ledger );
 	my_utils_container_set_editable( container, is_current );
 
@@ -489,7 +489,7 @@ do_update( ofaLedgerProperties *self )
 	 */
 	ofo_ledger_set_mnemo( priv->ledger, priv->mnemo );
 	ofo_ledger_set_label( priv->ledger, priv->label );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), ledger );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), ledger );
 
 	if( priv->is_new ){
 		priv->updated =

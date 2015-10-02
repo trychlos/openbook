@@ -191,7 +191,6 @@ setup_bin( ofaBatPropertiesBin *bin )
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
-	my_utils_container_set_editable( GTK_CONTAINER( bin ), FALSE );
 
 	/* identify the widgets for the properties */
 	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-id" );
@@ -226,6 +225,8 @@ setup_bin( ofaBatPropertiesBin *bin )
 
 	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
+
+	my_utils_container_set_editable( GTK_CONTAINER( bin ), FALSE );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -418,7 +419,9 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	}
 
 	priv->bat = bat;
-	my_utils_init_notes_ex( bin, bat, ofo_dossier_is_current( dossier ));
+	my_utils_container_notes_setup_full(
+				GTK_CONTAINER( bin ),
+				"pn-notes", ofo_bat_get_notes( bat ), ofo_dossier_is_current( dossier ));
 	my_utils_init_upd_user_stamp_ex( bin, bat );
 }
 

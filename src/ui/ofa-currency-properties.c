@@ -257,7 +257,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
-	my_utils_init_notes_ex( toplevel, currency, is_current );
+	my_utils_container_notes_init( toplevel, currency );
 	my_utils_init_upd_user_stamp_ex( toplevel, currency );
 	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 
@@ -370,7 +370,7 @@ do_update( ofaCurrencyProperties *self )
 	ofo_currency_set_label( priv->currency, priv->label );
 	ofo_currency_set_symbol( priv->currency, priv->symbol );
 	ofo_currency_set_digits( priv->currency, priv->digits );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), currency );
+	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), currency );
 
 	if( priv->is_new ){
 		priv->updated =
