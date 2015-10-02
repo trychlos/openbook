@@ -326,7 +326,7 @@ v_init_dialog( myDialog *dialog )
 	init_dialog_ref( self );
 
 	my_utils_container_notes_init( toplevel, ope_template );
-	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
+	my_utils_container_updstamp_init( toplevel, ope_template );
 
 	init_dialog_detail( self );
 

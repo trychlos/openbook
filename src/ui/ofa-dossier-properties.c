@@ -267,7 +267,7 @@ v_init_dialog( myDialog *dialog )
 
 	/* these are main notes of the dossier */
 	my_utils_container_notes_init( container, dossier );
-	my_utils_init_upd_user_stamp_ex( container, dossier );
+	my_utils_container_updstamp_init( container, dossier );
 	my_utils_container_set_editable( container, priv->is_current );
 
 	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );

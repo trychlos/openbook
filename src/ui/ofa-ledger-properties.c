@@ -255,7 +255,7 @@ v_init_dialog( myDialog *dialog )
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
 	my_utils_container_notes_init( container, ledger );
-	my_utils_init_upd_user_stamp_ex( container, ledger );
+	my_utils_container_updstamp_init( container, ledger );
 	my_utils_container_set_editable( container, is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */

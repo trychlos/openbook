@@ -327,7 +327,7 @@ v_init_dialog( myDialog *dialog )
 	}
 
 	my_utils_container_notes_init( GTK_CONTAINER( toplevel ), account );
-	my_utils_init_upd_user_stamp_ex( GTK_CONTAINER( toplevel ), account );
+	my_utils_container_updstamp_init( GTK_CONTAINER( toplevel ), account );
 	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
 
 	/* setup fields editability, depending of

@@ -422,7 +422,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 	my_utils_container_notes_setup_full(
 				GTK_CONTAINER( bin ),
 				"pn-notes", ofo_bat_get_notes( bat ), ofo_dossier_is_current( dossier ));
-	my_utils_init_upd_user_stamp_ex( bin, bat );
+	my_utils_container_updstamp_init( bin, bat );
 }
 
 static void

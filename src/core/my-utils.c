@@ -777,6 +777,35 @@ on_notes_changed( GtkTextBuffer *buffer, void *user_data )
 #endif
 
 /**
+ * my_utils_container_updstamp_setup_full:
+ * @container: the #GtkContainer container
+ * @label_name: the name of the #GtkLabel widget in the @container
+ * @stamp: the timestamp to be displayed
+ * @user: the username to be displayed.
+ *
+ * This function is mostly used through the
+ * "my_utils_container_updstamp_init()" macro.
+ */
+void
+my_utils_container_updstamp_setup_full( GtkContainer *container,
+								const gchar *label_name, const GTimeVal *stamp, const gchar *user )
+{
+	GtkWidget *label;
+	gchar *str_stamp, *str;
+
+	label = my_utils_container_get_child_by_name( container, label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	str_stamp = my_utils_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
+	str = g_strdup_printf( "%s (%s)", str_stamp, user );
+
+	gtk_label_set_text( GTK_LABEL( label ), str );
+
+	g_free( str );
+	g_free( str_stamp );
+}
+
+/**
  * my_utils_size_group_add_size_group:
  * @target: the target #GtkSizeGroup
  * @source: the source #GtkSizeGroup.
@@ -1017,31 +1046,6 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
 			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
 		}
 #endif
-}
-
-/**
- * my_utils_init_upd_user_stamp:
- *
- * This function is mostly used through the
- * "my_utils_init_upd_user_stamp_ex()" macro.
- */
-void
-my_utils_init_upd_user_stamp( GtkContainer *container,
-								const gchar *label_name, const GTimeVal *stamp, const gchar *user )
-{
-	GtkLabel *label;
-	gchar *str_stamp, *str;
-
-	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, label_name );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-
-	str_stamp = my_utils_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
-	str = g_strdup_printf( "%s (%s)", str_stamp, user );
-
-	gtk_label_set_text( label, str );
-
-	g_free( str );
-	g_free( str_stamp );
 }
 
 /**

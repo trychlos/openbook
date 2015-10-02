@@ -285,7 +285,7 @@ v_init_dialog( myDialog *dialog )
 	}
 
 	my_utils_container_notes_init( container, rate );
-	my_utils_init_upd_user_stamp_ex( container, rate );
+	my_utils_container_updstamp_init( container, rate );
 	my_utils_container_set_editable( container, is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */

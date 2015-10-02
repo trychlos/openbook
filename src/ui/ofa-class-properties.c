@@ -235,7 +235,7 @@ v_init_dialog( myDialog *dialog )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	my_utils_container_notes_init( toplevel, class );
-	my_utils_init_upd_user_stamp_ex( toplevel, class );
+	my_utils_container_updstamp_init( toplevel, class );
 	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
