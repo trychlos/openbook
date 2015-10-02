@@ -215,7 +215,7 @@ static void
 setup_ledger_selection( ofaLedgersBookBin *bin )
 {
 	ofaLedgersBookBinPrivate *priv;
-	GtkWidget *widget, *toggle;
+	GtkWidget *widget, *toggle, *label;
 
 	priv = bin->priv;
 
@@ -230,6 +230,10 @@ setup_ledger_selection( ofaLedgersBookBin *bin )
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, priv->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-frame-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_ledger_treeview_get_treeview( priv->ledgers_tview ));
 
 	g_signal_connect( priv->ledgers_tview, "ofa-changed", G_CALLBACK( on_tview_selection_changed ), bin );
 

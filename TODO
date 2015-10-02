@@ -536,12 +536,10 @@
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
 
- 857 2015-10- 2 on widgets which do not have a label as a mnemonic
-                widget, set the surounding frame (as an exception)
-                These must be frames with only one single addressable
-                child
+ 858 2015-10- 2 PluginManager: the properties of a plugin should be
+                distinct from its preferences -> have another interface
 
- 858
+ 859
 
 -----------------------------------------------------------------------
  DONE
@@ -3988,6 +3986,16 @@
  856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
                 current
      2015-10- 2 done
+
+ 857 2015-10- 2 on widgets which do not have a label as a mnemonic
+                widget, set the surounding frame (as an exception)
+                These must be frames with only one single addressable
+                child
+     2015-10- 2 src/core/:                       n/a
+                src/mysql/:                      n/a
+                src/ui/ofa-account-selector-bin: done
+                src/ui/ofa-ledger-close:         done
+                src/ui/ofa-ledgers-book-bin:     done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

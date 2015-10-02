@@ -57,10 +57,11 @@
               </object>
             </child>
             <child type="label">
-              <object class="GtkLabel" id="label1">
+              <object class="GtkLabel" id="p1-frame-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes"> Ledger selection </property>
+                <property name="label" translatable="yes"> Ledger _selection </property>
+                <property name="use_underline">True</property>
               </object>
             </child>
           </object>

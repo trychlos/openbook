@@ -2,6 +2,11 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-index</property>
+  </object>
   <object class="GtkWindow" id="asb-window">
     <property name="can_focus">False</property>
     <child>
@@ -30,7 +35,7 @@
                     <property name="can_focus">False</property>
                     <property name="column_spacing">2</property>
                     <child>
-                      <object class="GtkEntry" id="account-number">
+                      <object class="GtkEntry" id="asb-account-id">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="tooltip_text" translatable="yes">Enter here the number of the account to be reconciliated.</property>
@@ -44,7 +49,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="account-select">
+                      <object class="GtkButton" id="asb-account-select">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
@@ -64,7 +69,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="account-label">
+                  <object class="GtkLabel" id="asb-account-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="ellipsize">end</property>
@@ -84,11 +89,12 @@
               </object>
             </child>
             <child type="label">
-              <object class="GtkLabel" id="label1">
+              <object class="GtkLabel" id="asb-frame-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes"> Account selection </property>
+                <property name="label" translatable="yes"> A_ccount selection </property>
                 <property name="use_markup">True</property>
+                <property name="use_underline">True</property>
               </object>
             </child>
           </object>
@@ -99,10 +105,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-index</property>
   </object>
 </interface>

@@ -226,7 +226,7 @@ static void
 setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
 {
 	ofaLedgerClosePrivate *priv;
-	GtkWidget *tview_parent;
+	GtkWidget *tview_parent, *label;
 	GtkApplicationWindow *main_window;
 
 	priv = self->priv;
@@ -234,7 +234,7 @@ setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	tview_parent = my_utils_container_get_child_by_name( parent, "treeview-parent" );
+	tview_parent = my_utils_container_get_child_by_name( parent, "p1-treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
 	priv->tview = ofa_ledger_treeview_new();
@@ -243,6 +243,10 @@ setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
+
+	label = my_utils_container_get_child_by_name( parent, "p1-frame-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_ledger_treeview_get_treeview( priv->tview ));
 
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), self );
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_rows_activated ), self );
@@ -256,11 +260,15 @@ setup_date( ofaLedgerClose *self, GtkContainer *parent )
 
 	priv = self->priv;
 
-	priv->closing_entry = my_utils_container_get_child_by_name( parent, "p1-date" );
+	priv->closing_entry = my_utils_container_get_child_by_name( parent, "p2-date" );
 	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
 
-	label = my_utils_container_get_child_by_name( parent, "p1-label" );
+	label = my_utils_container_get_child_by_name( parent, "p2-frame-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->closing_entry );
+
+	label = my_utils_container_get_child_by_name( parent, "p2-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check());
 

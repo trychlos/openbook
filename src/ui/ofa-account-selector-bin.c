@@ -208,19 +208,23 @@ setup_bin( ofaAccountSelectorBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-number" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "asb-account-id" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_entry_changed ), bin );
 	priv->acc_entry = entry;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-select" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "asb-frame-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "asb-account-select" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_clicked ), bin );
 	/* the button will stay insensitive until the selection parms are set */
 	gtk_widget_set_sensitive( button, FALSE );
 	priv->acc_select = button;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "asb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->acc_label = label;
 

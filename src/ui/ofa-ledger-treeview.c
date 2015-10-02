@@ -659,10 +659,13 @@ ofa_ledger_treeview_set_hexpand( ofaLedgerTreeview *view, gboolean hexpand )
 }
 
 /**
- * ofa_ledger_treeview_get_top_focusable_widget:
+ * ofa_ledger_treeview_get_treeview:
+ * @view: this #ofaLedgerTreeview instance.
+ *
+ * Returns: the underlying #GtkTreeView widget.
  */
 GtkWidget *
-ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view )
+ofa_ledger_treeview_get_treeview( const ofaLedgerTreeview *view )
 {
 	ofaLedgerTreeviewPrivate *priv;
 
@@ -677,5 +680,27 @@ ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view )
 		return( GTK_WIDGET( priv->tview ));
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofa_ledger_treeview_get_top_focusable_widget:
+ */
+GtkWidget *
+ofa_ledger_treeview_get_top_focusable_widget( const ofaLedgerTreeview *view )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		g_return_val_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ), NULL );
+
+		return( GTK_WIDGET( priv->tview ));
+	}
+
+	g_return_val_if_reached( NULL );
 }
