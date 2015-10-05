@@ -495,10 +495,11 @@ book_create_page( ofaOpeTemplatesBook *book, const gchar *ledger )
 		}
 	}
 
-	/* a frame as the top parent */
+	/* a frame as the top widget of the notebook page */
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
+	/* attach data to the notebook page */
 	sdata = g_new0( sPageData, 1 );
 	sdata->dossier = priv->dossier;
 	sdata->ledger = g_strdup( ledger );

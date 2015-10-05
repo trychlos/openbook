@@ -105,10 +105,9 @@ static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, of
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountChartBin *book );
 static GtkWidget *book_get_page_by_class( ofaAccountChartBin *self, gint class_num, gboolean create );
 static GtkWidget *book_create_page( ofaAccountChartBin *self, gint class );
-static GtkWidget *book_create_scrolled_window( ofaAccountChartBin *book, gint class_num );
-static GtkWidget *book_create_treeview( ofaAccountChartBin *book, gint class_num, GtkContainer *parent );
-static void       book_create_columns( ofaAccountChartBin *book, gint class_num, GtkTreeView *tview );
-static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, void *pclass );
+static GtkWidget *page_add_treeview( ofaAccountChartBin *book, GtkWidget *page );
+static void       page_add_columns( ofaAccountChartBin *book, GtkTreeView *tview );
+static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
 static void       on_tview_row_selected( GtkTreeSelection *selection, ofaAccountChartBin *self );
 static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountChartBin *self );
 static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *self );
@@ -305,9 +304,10 @@ create_notebook( ofaAccountChartBin *book )
 
 	priv = book->priv;
 
+	/* an invisible frame */
 	frame = gtk_frame_new( NULL );
 	gtk_container_add( GTK_CONTAINER( book ), frame );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
 
 	priv->book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_notebook_popup_enable( priv->book );
@@ -558,45 +558,38 @@ static GtkWidget *
 book_create_page( ofaAccountChartBin *book, gint class_num )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_create_page";
-	GtkWidget *scrolled, *tview;
-
-	g_debug( "%s: book=%p, class_num=%d", thisfn, ( void * ) book, class_num );
-
-	scrolled = book_create_scrolled_window( book, class_num );
-	if( scrolled ){
-		tview = book_create_treeview( book, class_num, GTK_CONTAINER( scrolled ));
-		if( tview ){
-			book_create_columns( book, class_num, GTK_TREE_VIEW( tview ));
-		}
-	}
-
-	gtk_widget_show_all( scrolled );
-
-	return( scrolled );
-}
-
-/*
- * creates the page widget as a scrolled window
- * attach it to the notebook
- * set label and shortcut
- */
-static GtkWidget *
-book_create_scrolled_window( ofaAccountChartBin *book, gint class_num )
-{
-	static const gchar *thisfn = "ofa_account_chart_bin_create_scrolled_window";
 	ofaAccountChartBinPrivate *priv;
-	GtkWidget *scrolled, *label;
+	GtkWidget *frame, *scrolled, *tview, *label;
 	ofoClass *class_obj;
 	const gchar *class_label;
 	gchar *str;
 	gint page_num;
 
+	g_debug( "%s: book=%p, class_num=%d", thisfn, ( void * ) book, class_num );
+
 	priv = book->priv;
 
+	/* a frame as the top widget of the notebook page */
+	frame = gtk_frame_new( NULL );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+
+	/* attach data to the notebook page */
+	g_object_set_data( G_OBJECT( frame ), DATA_PAGE_CLASS, GINT_TO_POINTER( class_num ));
+
+	/* then a scrolled window inside the frame */
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
 	gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
+	/* then create the treeview inside the scrolled window */
+	tview = page_add_treeview( book, frame );
+	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
+
+	/* then create the columns in the treeview */
+	page_add_columns( book, GTK_TREE_VIEW( tview ));
+
+	/* last add the page to the notebook */
 	class_obj = ofo_class_get_by_number( priv->dossier, class_num );
 	if( class_obj && OFO_IS_CLASS( class_obj )){
 		class_label = ofo_class_get_label( class_obj );
@@ -609,15 +602,14 @@ book_create_scrolled_window( ofaAccountChartBin *book, gint class_num )
 	gtk_widget_set_tooltip_text( label, str );
 	g_free( str );
 
-	page_num = gtk_notebook_append_page( priv->book, scrolled, label );
+	page_num = gtk_notebook_append_page( priv->book, frame, label );
 	if( page_num == -1 ){
 		g_warning( "%s: unable to add a page to the notebook for class=%d", thisfn, class_num );
 		return( NULL );
 	}
-	gtk_notebook_set_tab_reorderable( priv->book, scrolled, TRUE );
-	g_object_set_data( G_OBJECT( scrolled ), DATA_PAGE_CLASS, GINT_TO_POINTER( class_num ));
+	gtk_notebook_set_tab_reorderable( priv->book, frame, TRUE );
 
-	return( scrolled );
+	return( frame );
 }
 
 /*
@@ -626,7 +618,7 @@ book_create_scrolled_window( ofaAccountChartBin *book, gint class_num )
  * setup the model filter
  */
 static GtkWidget *
-book_create_treeview( ofaAccountChartBin *book, gint class_num, GtkContainer *parent )
+page_add_treeview( ofaAccountChartBin *book, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_create_treeview";
 	ofaAccountChartBinPrivate *priv;
@@ -637,8 +629,6 @@ book_create_treeview( ofaAccountChartBin *book, gint class_num, GtkContainer *pa
 	priv = book->priv;
 
 	tview = gtk_tree_view_new();
-	gtk_container_add( parent, tview );
-
 	gtk_widget_set_hexpand( tview, TRUE );
 	gtk_widget_set_vexpand( tview, TRUE );
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
@@ -647,7 +637,7 @@ book_create_treeview( ofaAccountChartBin *book, gint class_num, GtkContainer *pa
 	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->store, ( void * ) tfilter );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) is_visible_row, GINT_TO_POINTER( class_num ), NULL );
+			( GtkTreeModelFilterVisibleFunc ) is_visible_row, page, NULL );
 
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tfilter );
 	g_object_unref( tfilter );
@@ -669,7 +659,7 @@ book_create_treeview( ofaAccountChartBin *book, gint class_num, GtkContainer *pa
  * creates the columns in the GtkTreeView
  */
 static void
-book_create_columns( ofaAccountChartBin *book, gint class_num, GtkTreeView *tview )
+page_add_columns( ofaAccountChartBin *book, GtkTreeView *tview )
 {
 	ofaAccountChartBinPrivate *priv;
 	GtkCellRenderer *cell;
@@ -783,7 +773,7 @@ book_create_columns( ofaAccountChartBin *book, gint class_num, GtkTreeView *tvie
  * tmodel here is the ofaTreeStore
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, void *pclass )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page )
 {
 	gchar *number;
 	gint class_num, filter_class;
@@ -795,7 +785,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, void *pclass )
 	class_num = ofo_account_get_class_from_number( number );
 	g_free( number );
 
-	filter_class = GPOINTER_TO_INT( pclass );
+	filter_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_CLASS ));
 	is_visible = ( filter_class == class_num );
 
 	return( is_visible );
