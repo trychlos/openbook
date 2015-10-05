@@ -56,8 +56,7 @@ struct _ofaOpeTemplatesBookPrivate {
 	GtkNotebook         *book;
 };
 
-/* the ledger mnemo is attached to each page of the notebook,
- * and also attached to the underlying treemodelfilter
+/* this piece of data is attached to each page of the notebook
  */
 typedef struct {
 	ofoDossier *dossier;
@@ -91,10 +90,9 @@ static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, gu
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplatesBook *book );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplatesBook *self, const gchar *ledger, gboolean create );
 static GtkWidget *book_create_page( ofaOpeTemplatesBook *self, const gchar *ledger );
-static GtkWidget *book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger );
+static GtkWidget *page_add_treeview( ofaOpeTemplatesBook *book, GtkWidget *page );
+static void       page_add_columns( ofaOpeTemplatesBook *book, GtkTreeView *tview );
 static void       on_finalized_page( sPageData *sdata, gpointer finalized_page );
-static GtkWidget *book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContainer *parent );
-static void       book_create_columns( ofaOpeTemplatesBook *book, const gchar *ledger, GtkTreeView *tview );
 static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
 static void       on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplatesBook *self );
 static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplatesBook *self );
@@ -308,16 +306,12 @@ static void
 create_notebook( ofaOpeTemplatesBook *self )
 {
 	ofaOpeTemplatesBookPrivate *priv;
-	GtkWidget *frame, *book;
+	GtkWidget *book;
 
 	priv = self->priv;
 
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-	gtk_container_add( GTK_CONTAINER( self ), frame );
-
 	book = gtk_notebook_new();
-	gtk_container_add( GTK_CONTAINER( frame ), book );
+	gtk_container_add( GTK_CONTAINER( self ), book );
 	priv->book = GTK_NOTEBOOK( book );
 
 	gtk_notebook_popup_enable( priv->book );
@@ -466,6 +460,8 @@ book_get_page_by_ledger( ofaOpeTemplatesBook *book, const gchar *ledger, gboolea
 
 /*
  * @ledger: ledger mnemo
+ * @book: this #ofaOpeTemplatesBook instance.
+ * @ledger: ledger mnemonic identifier
  *
  * creates the page widget for the given ledger
  */
@@ -473,42 +469,20 @@ static GtkWidget *
 book_create_page( ofaOpeTemplatesBook *book, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_templates_book_create_page";
-	GtkWidget *scrolled, *tview;
-
-	g_debug( "%s: book=%p, ledger=%s", thisfn, ( void * ) book, ledger );
-
-	scrolled = book_create_scrolled_window( book, ledger );
-	if( scrolled ){
-		tview = book_create_treeview( book, ledger, GTK_CONTAINER( scrolled ));
-		if( tview ){
-			book_create_columns( book, ledger, GTK_TREE_VIEW( tview ));
-		}
-	}
-
-	return( scrolled );
-}
-
-/*
- * creates the page widget as a scrolled window
- * attach it to the notebook
- * set label and shortcut
- */
-static GtkWidget *
-book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger )
-{
-	static const gchar *thisfn = "ofa_ope_templates_book_create_scrolled_window";
 	ofaOpeTemplatesBookPrivate *priv;
-	GtkWidget *scrolled, *label;
+	GtkWidget *frame, *scrolled, *tview, *label;
 	ofoLedger *ledger_obj;
 	const gchar *ledger_label;
 	gint page_num;
 	sPageData *sdata;
 
+	g_debug( "%s: book=%p, ledger=%s", thisfn, ( void * ) book, ledger );
+
 	priv = book->priv;
 
+	/* get ledger label */
 	if( !g_utf8_collate( ledger, UNKNOWN_LEDGER_MNEMO )){
 		ledger_label = UNKNOWN_LEDGER_LABEL;
-		ledger = UNKNOWN_LEDGER_MNEMO;
 
 	} else {
 		ledger_obj = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
@@ -516,51 +490,54 @@ book_create_scrolled_window( ofaOpeTemplatesBook *book, const gchar *ledger )
 			g_return_val_if_fail( OFO_IS_LEDGER( ledger_obj ), NULL );
 			ledger_label = ofo_ledger_get_label( ledger_obj );
 		} else {
-			/* ledger doesn't exist */
+			g_warning( "%s: ledger not found: %s", thisfn, ledger );
 			return( NULL );
 		}
 	}
 
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_scrolled_window_set_policy(
-			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-
-	label = gtk_label_new( ledger_label );
-
-	page_num = gtk_notebook_append_page( priv->book, scrolled, label );
-	if( page_num == -1 ){
-		g_warning( "%s: unable to add a page to the notebook for ledger=%s", thisfn, ledger );
-		return( NULL );
-	}
-	gtk_notebook_set_tab_reorderable( priv->book, scrolled, TRUE );
+	/* a frame as the top parent */
+	frame = gtk_frame_new( NULL );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	sdata = g_new0( sPageData, 1 );
 	sdata->dossier = priv->dossier;
 	sdata->ledger = g_strdup( ledger );
-	g_object_set_data( G_OBJECT( scrolled ), DATA_PAGE_LEDGER, sdata );
-	g_object_weak_ref( G_OBJECT( scrolled ), ( GWeakNotify ) on_finalized_page, sdata );
+	g_object_set_data( G_OBJECT( frame ), DATA_PAGE_LEDGER, sdata );
+	g_object_weak_ref( G_OBJECT( frame ), ( GWeakNotify ) on_finalized_page, sdata );
 
-	return( scrolled );
-}
+	/* then a scrolled window inside the frame */
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
+	gtk_scrolled_window_set_policy(
+			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
-static void
-on_finalized_page( sPageData *sdata, gpointer finalized_page )
-{
-	static const gchar *thisfn = "ofa_ope_templates_book_on_finalized_page";
+	/* then create the treeview inside the scrolled window */
+	tview = page_add_treeview( book, frame );
+	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
-	g_debug( "%s: sdata=%p, finalized_page=%p", thisfn, ( void * ) sdata, ( void * ) finalized_page );
+	/* then create the columns in the treeview */
+	page_add_columns( book, GTK_TREE_VIEW( tview ));
 
-	g_free( sdata->ledger );
-	g_free( sdata );
+	/* last add the page to the notebook */
+	label = gtk_label_new( ledger_label );
+
+	page_num = gtk_notebook_append_page( priv->book, frame, label );
+	if( page_num == -1 ){
+		g_warning( "%s: unable to add a page to the notebook for ledger=%s", thisfn, ledger );
+		gtk_widget_destroy( frame );
+		return( NULL );
+	}
+	gtk_notebook_set_tab_reorderable( priv->book, frame, TRUE );
+
+	return( frame );
 }
 
 /*
  * creates the treeview
- * attach it to the container parent (the scrolled window)
- * setup the model filter
+ * attach some piece of data to it
  */
 static GtkWidget *
-book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContainer *parent )
+page_add_treeview( ofaOpeTemplatesBook *book, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_ope_templates_book_create_treeview";
 	ofaOpeTemplatesBookPrivate *priv;
@@ -571,8 +548,6 @@ book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContain
 	priv = book->priv;
 
 	tview = gtk_tree_view_new();
-	gtk_container_add( parent, tview );
-
 	gtk_widget_set_hexpand( tview, TRUE );
 	gtk_widget_set_vexpand( tview, TRUE );
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
@@ -581,7 +556,7 @@ book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContain
 	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->ope_store, ( void * ) tfilter );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) is_visible_row, parent, NULL );
+			( GtkTreeModelFilterVisibleFunc ) is_visible_row, page, NULL );
 
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tfilter );
 	g_object_unref( tfilter );
@@ -603,7 +578,7 @@ book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContain
  * creates the columns in the GtkTreeView
  */
 static void
-book_create_columns( ofaOpeTemplatesBook *book, const gchar *ledger, GtkTreeView *tview )
+page_add_columns( ofaOpeTemplatesBook *book, GtkTreeView *tview )
 {
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
@@ -628,6 +603,17 @@ book_create_columns( ofaOpeTemplatesBook *book, const gchar *ledger, GtkTreeView
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+}
+
+static void
+on_finalized_page( sPageData *sdata, gpointer finalized_page )
+{
+	static const gchar *thisfn = "ofa_ope_templates_book_on_finalized_page";
+
+	g_debug( "%s: sdata=%p, finalized_page=%p", thisfn, ( void * ) sdata, ( void * ) finalized_page );
+
+	g_free( sdata->ledger );
+	g_free( sdata );
 }
 
 /*
