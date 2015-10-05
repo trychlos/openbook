@@ -49,7 +49,7 @@
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-class-page.h"
-#include "ui/ofa-currencies-page.h"
+#include "ui/ofa-currency-page.h"
 #include "ui/ofa-dossier-display-notes.h"
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
@@ -206,7 +206,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_CURRENCIES,
 				N_( "Currencies" ),
-				ofa_currencies_page_get_type,
+				ofa_currency_page_get_type,
 				FALSE
 		},
 		{ THM_GUIDED_INPUT,

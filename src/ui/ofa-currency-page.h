@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_CURRENCIES_PAGE_H__
-#define __OFA_CURRENCIES_PAGE_H__
+#ifndef __OFA_CURRENCY_PAGE_H__
+#define __OFA_CURRENCY_PAGE_H__
 
 /**
- * SECTION: ofa_currencies_page
- * @short_description: #ofaCurrenciesPage class definition.
+ * SECTION: ofa_currency_page
+ * @short_description: #ofaCurrencyPage class definition.
  * @include: ui/ofa-currencies-set.h
  *
  * Display the list of known currencies, letting the user edit it.
@@ -40,32 +40,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_CURRENCIES_PAGE                ( ofa_currencies_page_get_type())
-#define OFA_CURRENCIES_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CURRENCIES_PAGE, ofaCurrenciesPage ))
-#define OFA_CURRENCIES_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CURRENCIES_PAGE, ofaCurrenciesPageClass ))
-#define OFA_IS_CURRENCIES_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CURRENCIES_PAGE ))
-#define OFA_IS_CURRENCIES_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CURRENCIES_PAGE ))
-#define OFA_CURRENCIES_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CURRENCIES_PAGE, ofaCurrenciesPageClass ))
+#define OFA_TYPE_CURRENCY_PAGE                ( ofa_currency_page_get_type())
+#define OFA_CURRENCY_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPage ))
+#define OFA_CURRENCY_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPageClass ))
+#define OFA_IS_CURRENCY_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CURRENCY_PAGE ))
+#define OFA_IS_CURRENCY_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CURRENCY_PAGE ))
+#define OFA_CURRENCY_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPageClass ))
 
-typedef struct _ofaCurrenciesPagePrivate        ofaCurrenciesPagePrivate;
+typedef struct _ofaCurrencyPagePrivate        ofaCurrencyPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                   parent;
+	ofaPage                 parent;
 
 	/*< private members >*/
-	ofaCurrenciesPagePrivate *priv;
+	ofaCurrencyPagePrivate *priv;
 }
-	ofaCurrenciesPage;
+	ofaCurrencyPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass            parent;
 }
-	ofaCurrenciesPageClass;
+	ofaCurrencyPageClass;
 
-GType ofa_currencies_page_get_type( void ) G_GNUC_CONST;
+GType ofa_currency_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_CURRENCIES_PAGE_H__ */
+#endif /* __OFA_CURRENCY_PAGE_H__ */

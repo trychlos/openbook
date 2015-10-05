@@ -63,7 +63,7 @@
  *
  * ofaClassPage    a tree view on a list store                   Yes
  *
- * ofaCurrenciesPage a tree view on a list store                   Yes
+ * ofaCurrencyPage a tree view on a list store                   Yes
  *
  * ofaGuidedEx       a paned which embeds:                         No
  *                   - on the left, a tree view on a tree

@@ -130,8 +130,8 @@ openbook_SOURCES = \
 	ofa-class-page.h									\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
-	ofa-currencies-page.c								\
-	ofa-currencies-page.h								\
+	ofa-currency-page.c								\
+	ofa-currency-page.h								\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\

@@ -158,7 +158,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-class-page.$(OBJEXT) \
-	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
+	ofa-closing-parms-bin.$(OBJEXT) ofa-currency-page.$(OBJEXT) \
 	ofa-currency-combo.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
 	ofa-currency-store.$(OBJEXT) ofa-date-filter-hv-bin.$(OBJEXT) \
 	ofa-dossier-delete.$(OBJEXT) \
@@ -562,8 +562,8 @@ openbook_SOURCES = \
 	ofa-class-page.h									\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
-	ofa-currencies-page.c								\
-	ofa-currencies-page.h								\
+	ofa-currency-page.c								\
+	ofa-currency-page.h								\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
@@ -912,7 +912,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-class-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-class-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-closing-parms-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currencies-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
