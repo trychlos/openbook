@@ -37,9 +37,9 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-delete.h"
+#include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
-#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-dossier-treeview.h"
@@ -48,6 +48,8 @@
 /* private instance data
  */
 struct _ofaDossierManagerPrivate {
+
+	ofaMainWindow      *main_window;
 
 	/* UI
 	 */
@@ -153,6 +155,8 @@ ofa_dossier_manager_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
+
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	g_object_unref( self );
@@ -161,9 +165,9 @@ ofa_dossier_manager_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	ofaDossierManagerPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	ofaDossierManagerPrivate *priv;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	priv = OFA_DOSSIER_MANAGER( dialog )->priv;
@@ -270,20 +274,30 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 static void
 open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
 {
-	GtkApplicationWindow *main_window;
+	ofaDossierManagerPrivate *priv;
 	ofsDossierOpen *sdo;
+	gchar *account, *password;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	priv = self->priv;
 
-	sdo = ofa_dossier_open_run( OFA_MAIN_WINDOW( main_window ), dname, dbname );
+	account = NULL;
+	password = NULL;
+	ofa_dossier_login_run( priv->main_window, dname, dbname, &account, &password );
 
-	if( sdo ){
+	if( my_strlen( account ) && my_strlen( password )){
+		sdo = g_new0( ofsDossierOpen, 1 );
+		sdo->dname = g_strdup( dname );
+		sdo->dbname = g_strdup( dbname );
+		sdo->account = account;		/* will be free in the signal cleanup handler */
+		sdo->password = password;
 		g_signal_emit_by_name(
-				OFA_MAIN_WINDOW( main_window ), OFA_SIGNAL_DOSSIER_OPEN, sdo );
+				priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CANCEL );
+	} else {
+		g_free( account );
+		g_free( password );
 	}
 }
 

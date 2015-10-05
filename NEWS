@@ -33,6 +33,7 @@
    - Homogeneize visual width and alignment of date entries (todo #852).
    - Add a visual frame around accounts and operation templates treeviews.
    - Review the layout of DossierNewBin fields (todo #847).
+   - DossierManager uses DossierLogin instead of DossierOpen (todo #846).
 
  Bug fixes:
 

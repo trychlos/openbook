@@ -38,15 +38,25 @@
 /* private instance data
  */
 struct _ofaDossierLoginPrivate {
-	const gchar *label;
-	GtkWidget   *btn_ok;
-	gchar       *account;
-	gchar       *password;
-	gboolean     ok;
+
+	/* initialization
+	 */
+	ofaMainWindow *main_window;
+	const gchar   *label;				/* dossier name */
+	const gchar   *dbname;				/* database */
+	gchar         *account;
+	gchar         *password;
+
+	/* returned value */
+	gboolean       ok;
+
+	/* UI
+	 */
+	GtkWidget   *ok_btn;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-login.ui";
-static const gchar  *st_ui_id  = "DossierLoginDlg";
+static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-dossier-login.ui";
+static const gchar  *st_ui_id           = "DossierLoginDlg";
 
 G_DEFINE_TYPE( ofaDossierLogin, ofa_dossier_login, MY_TYPE_DIALOG )
 
@@ -124,20 +134,27 @@ ofa_dossier_login_class_init( ofaDossierLoginClass *klass )
 
 /**
  * ofa_dossier_login_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
+ * @dname: the name of the dossier to be opened
+ * @dbname: the name of the database to be opened
+ * @account: placeholder for the user's account
+ * @password: placeholder for the user's password.
  *
- * Update the properties of an journal
+ * Get the user credentials to open the specified @dname dossier.
  */
 void
-ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *dname, gchar **account, gchar **password )
+ofa_dossier_login_run( ofaMainWindow *main_window,
+		const gchar *dname, const gchar *dbname, gchar **account, gchar **password )
 {
 	static const gchar *thisfn = "ofa_dossier_login_run";
 	ofaDossierLogin *self;
 
-	g_debug( "%s: main_window=%p, account=%p, password=%p",
-				thisfn, ( void * ) main_window, ( void * ) account, ( void * ) password );
+	g_debug( "%s: main_window=%p, dname=%s, dbname=%s, account=%p, password=%p",
+				thisfn, ( void * ) main_window, dname, dbname, ( void * ) account, ( void * ) password );
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( my_strlen( dname ));
+	g_return_if_fail( my_strlen( dbname ));
 	g_return_if_fail( account && password );
 
 	self = g_object_new(
@@ -147,7 +164,9 @@ ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *dname, gch
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->label = dname;
+	self->priv->dbname = dbname;
 	self->priv->account = g_strdup( *account );
 	self->priv->password = g_strdup( *password );
 
@@ -167,33 +186,39 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaDossierLoginPrivate *priv;
-	GtkContainer *container;
+	GtkWindow *toplevel;
 	GtkWidget *entry, *label;
 	gchar *msg;
 
 	priv = OFA_DOSSIER_LOGIN( dialog )->priv;
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	label = my_utils_container_get_child_by_name( container, "label" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	msg = g_strdup_printf(
-				_( "In order to connect to '%s' dossier, please enter below "
-					"a user account and password." ), priv->label );
+				_( "In order to connect to '%s' dossier and its '%s' database, "
+					"please enter below a user account and password." ),
+					priv->label, priv->dbname );
 	gtk_label_set_text( GTK_LABEL( label ), msg );
 	g_free( msg );
 
-	entry = my_utils_container_get_child_by_name( container, "dl-account-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dl-account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dl-password-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
+
 	if( priv->account ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), priv->account );
 	}
 
-	entry = my_utils_container_get_child_by_name( container, "dl-password-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
 	if( priv->password ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), priv->password );
 	}
@@ -229,13 +254,7 @@ check_for_enable_dlg( ofaDossierLogin *self )
 
 	priv = self->priv;
 
-	if( !priv->btn_ok ){
-		priv->btn_ok = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-		g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
-	}
-
-	gtk_widget_set_sensitive( self->priv->btn_ok, ok );
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 static gboolean

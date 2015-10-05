@@ -971,7 +971,7 @@ static gboolean
 check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo )
 {
 	if( !my_strlen( sdo->account ) || !my_strlen( sdo->password )){
-		ofa_dossier_login_run( main_window, sdo->dname, &sdo->account, &sdo->password );
+		ofa_dossier_login_run( main_window, sdo->dname, sdo->dbname, &sdo->account, &sdo->password );
 	}
 
 	return( my_strlen( sdo->account ) && my_strlen( sdo->password ));

@@ -174,7 +174,7 @@ ofa_istore_init( ofaIStore *istore, ofoDossier *dossier )
 static void
 on_dossier_finalized( ofaIStore *istore, ofoDossier *finalized_dossier )
 {
-	static const gchar *thisfn = "ofa_istore_on_on_dossier_finalized";
+	static const gchar *thisfn = "ofa_istore_on_dossier_finalized";
 	sIStore *sdata;
 
 	g_debug( "%s: istore=%p (%s), ref_count=%d, finalized_dossier=%p",
