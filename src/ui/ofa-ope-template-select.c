@@ -31,7 +31,7 @@
 #include "api/ofo-account.h"
 
 #include "ui/ofa-ope-template-select.h"
-#include "ui/ofa-ope-templates-frame.h"
+#include "ui/ofa-ope-template-frame-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -40,12 +40,12 @@ struct _ofaOpeTemplateSelectPrivate {
 
 	/* UI
 	 */
-	ofaOpeTemplatesFrame *ope_templates_frame;
-	GtkWidget            *ok_btn;
+	ofaOpeTemplateFrameBin *ope_templates_frame;
+	GtkWidget              *ok_btn;
 
 	/* returned value
 	 */
-	gchar                *ope_mnemo;
+	gchar                  *ope_mnemo;
 };
 
 static const gchar          *st_ui_xml   = PKGUIDIR "/ofa-ope-template-select.ui";
@@ -57,8 +57,8 @@ static GtkWindow            *st_toplevel = NULL;
 G_DEFINE_TYPE( ofaOpeTemplateSelect, ofa_ope_template_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_ope_template_changed( ofaOpeTemplatesFrame *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
-static void      on_ope_template_activated( ofaOpeTemplatesFrame *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
+static void      on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
+static void      on_ope_template_activated( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
 static void      check_for_enable_dlg( ofaOpeTemplateSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaOpeTemplateSelect *self );
@@ -181,7 +181,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 	g_free( priv->ope_mnemo );
 	priv->ope_mnemo = NULL;
 
-	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
 	ofa_ope_templates_book_set_selected( book, asked_mnemo );
 
 	check_for_enable_dlg( st_this );
@@ -217,11 +217,11 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( container, "ope-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->ope_templates_frame = ofa_ope_templates_frame_new();
+	priv->ope_templates_frame = ofa_ope_template_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
-	ofa_ope_templates_frame_set_main_window(
+	ofa_ope_template_frame_bin_set_main_window(
 			priv->ope_templates_frame, OFA_MAIN_WINDOW( main_window ));
-	ofa_ope_templates_frame_set_buttons( priv->ope_templates_frame, FALSE );
+	ofa_ope_template_frame_bin_set_buttons( priv->ope_templates_frame, FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->ope_templates_frame ), "ofa-changed", G_CALLBACK( on_ope_template_changed ), dialog );
@@ -230,13 +230,13 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_ope_template_changed( ofaOpeTemplatesFrame *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
+on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-on_ope_template_activated( ofaOpeTemplatesFrame *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
+on_ope_template_activated( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
 {
 	gtk_dialog_response(
 			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
@@ -253,7 +253,7 @@ check_for_enable_dlg( ofaOpeTemplateSelect *self )
 
 	priv = self->priv;
 
-	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
 	mnemo = ofa_ope_templates_book_get_selected( book );
 	ok = my_strlen( mnemo );
 	g_free( mnemo );
@@ -276,7 +276,7 @@ do_select( ofaOpeTemplateSelect *self )
 
 	priv = self->priv;
 
-	book = ofa_ope_templates_frame_get_book( priv->ope_templates_frame );
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
 	mnemo = ofa_ope_templates_book_get_selected( book );
 	if( my_strlen( mnemo )){
 		g_free( priv->ope_mnemo );

@@ -143,8 +143,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
-	ofa-account-chart-bin.$(OBJEXT) \
-	ofa-account-book-bin.$(OBJEXT) \
+	ofa-account-chart-bin.$(OBJEXT) ofa-account-book-bin.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) \
 	ofa-account-frame-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
@@ -177,15 +176,14 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
 	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-ledger-book-bin.$(OBJEXT) \
-	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
-	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
-	ofa-ope-template-help.$(OBJEXT) \
+	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
+	ofa-ledger-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
+	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
 	ofa-ope-templates-book.$(OBJEXT) \
-	ofa-ope-templates-frame.$(OBJEXT) \
+	ofa-ope-template-frame-bin.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) ofa-page.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
 	ofa-rate-page.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
@@ -515,8 +513,8 @@ openbook_SOURCES = \
 	ofa-account-book-bin.h								\
 	ofa-account-book-render.c							\
 	ofa-account-book-render.h							\
-	ofa-account-filter-vv-bin.c						\
-	ofa-account-filter-vv-bin.h						\
+	ofa-account-filter-vv-bin.c							\
+	ofa-account-filter-vv-bin.h							\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-page.c									\
@@ -530,8 +528,8 @@ openbook_SOURCES = \
 	ofa-balance-bin.h									\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-balance-grid-bin.c									\
-	ofa-balance-grid-bin.h									\
+	ofa-balance-grid-bin.c								\
+	ofa-balance-grid-bin.h								\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-properties-bin.c							\
@@ -562,8 +560,8 @@ openbook_SOURCES = \
 	ofa-class-page.h									\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
-	ofa-currency-page.c								\
-	ofa-currency-page.h								\
+	ofa-currency-page.c									\
+	ofa-currency-page.h									\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
@@ -651,10 +649,10 @@ openbook_SOURCES = \
 	ofa-ope-template-store.h							\
 	ofa-ope-templates-book.c							\
 	ofa-ope-templates-book.h							\
-	ofa-ope-templates-frame.c							\
-	ofa-ope-templates-frame.h							\
-	ofa-ope-template-page.c							\
-	ofa-ope-template-page.h							\
+	ofa-ope-template-frame-bin.c						\
+	ofa-ope-template-frame-bin.h						\
+	ofa-ope-template-page.c								\
+	ofa-ope-template-page.h								\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\
@@ -663,8 +661,8 @@ openbook_SOURCES = \
 	ofa-plugin-manager.h								\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
-	ofa-rate-page.c									\
-	ofa-rate-page.h									\
+	ofa-rate-page.c										\
+	ofa-rate-page.h										\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
 	ofa-reconcil-render.c								\
@@ -700,7 +698,7 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
-	ofa-account-book-bin.ui							\
+	ofa-account-book-bin.ui								\
 	ofa-account-filter-vv-bin.ui						\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
@@ -882,38 +880,38 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-chart-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-grid-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-utils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-integrity-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-integrity.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-class-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-class-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-class-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-closing-parms-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Po@am__quote@
@@ -941,27 +939,27 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-list-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-frame-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-help.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-book.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-frame.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconciliation.Po@am__quote@

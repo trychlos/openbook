@@ -32,13 +32,13 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "ui/ofa-ope-templates-frame.h"
+#include "ui/ofa-ope-template-frame-bin.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaOpeTemplatesFramePrivate {
+struct _ofaOpeTemplateFrameBinPrivate {
 	gboolean             dispose_has_run;
 
 	GtkGrid             *grid;
@@ -66,43 +66,43 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaOpeTemplatesFrame, ofa_ope_templates_frame, GTK_TYPE_BIN )
+G_DEFINE_TYPE( ofaOpeTemplateFrameBin, ofa_ope_template_frame_bin, GTK_TYPE_BIN )
 
-static void setup_top_grid( ofaOpeTemplatesFrame *frame );
-static void on_new_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void on_properties_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void on_duplicate_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void on_delete_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void on_guided_input_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame );
-static void on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
-static void on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
-static void update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo );
-static void on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty );
+static void setup_top_grid( ofaOpeTemplateFrameBin *frame );
+static void on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame );
+static void on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame );
+static void on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame );
+static void on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame );
+static void on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame );
+static void on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplateFrameBin *frame );
+static void on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplateFrameBin *frame );
+static void update_buttons_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
+static void on_frame_closed( ofaOpeTemplateFrameBin *frame, void *empty );
 
 static void
 ope_templates_frame_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ope_templates_frame_finalize";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_FRAME( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_frame_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ope_template_frame_bin_parent_class )->finalize( instance );
 }
 
 static void
 ope_templates_frame_dispose( GObject *instance )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_FRAME( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
 
-	priv = ( OFA_OPE_TEMPLATES_FRAME( instance ))->priv;
+	priv = ( OFA_OPE_TEMPLATE_FRAME_BIN( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -112,50 +112,50 @@ ope_templates_frame_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_frame_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ope_template_frame_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ope_templates_frame_init( ofaOpeTemplatesFrame *self )
+ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_frame_init";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_init";
 
-	g_return_if_fail( self && OFA_IS_OPE_TEMPLATES_FRAME( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_FRAME_BIN( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATES_FRAME, ofaOpeTemplatesFramePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, ofaOpeTemplateFrameBinPrivate );
 	self->priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
+ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_ope_templates_frame_class_init";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	G_OBJECT_CLASS( klass )->dispose = ope_templates_frame_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_templates_frame_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaOpeTemplatesFramePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaOpeTemplateFrameBinPrivate ));
 
 	/**
-	 * ofaOpeTemplatesFrame::changed:
+	 * ofaOpeTemplateFrameBin::changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
 	 * Argument is the selected operation template mnemo.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplatesFrame *frame,
+	 * void ( *handler )( ofaOpeTemplateFrameBin *frame,
 	 * 						const gchar        *mnemo,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_OPE_TEMPLATES_FRAME,
+				OFA_TYPE_OPE_TEMPLATE_FRAME_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -166,20 +166,20 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 				G_TYPE_STRING );
 
 	/**
-	 * ofaOpeTemplatesFrame::activated:
+	 * ofaOpeTemplateFrameBin::activated:
 	 *
 	 * This signal is sent when the selection is activated.
 	 *
 	 * Argument is the selected account mnemo.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplatesFrame *frame,
+	 * void ( *handler )( ofaOpeTemplateFrameBin *frame,
 	 * 						const gchar        *mnemo,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-activated",
-				OFA_TYPE_OPE_TEMPLATES_FRAME,
+				OFA_TYPE_OPE_TEMPLATE_FRAME_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -190,21 +190,21 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 				G_TYPE_STRING );
 
 	/**
-	 * ofaOpeTemplatesFrame::closed:
+	 * ofaOpeTemplateFrameBin::closed:
 	 *
-	 * This signal is sent on the #ofaOpeTemplatesFrame when the book is
+	 * This signal is sent on the #ofaOpeTemplateFrameBin when the book is
 	 * about to be closed.
 	 *
 	 * The #ofaOpeTemplatesBook takes advantage of this signal to save
 	 * its own settings.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplatesFrame *store,
+	 * void ( *handler )( ofaOpeTemplateFrameBin *store,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CLOSED ] = g_signal_new_class_handler(
 				"ofa-closed",
-				OFA_TYPE_OPE_TEMPLATES_FRAME,
+				OFA_TYPE_OPE_TEMPLATE_FRAME_BIN,
 				G_SIGNAL_ACTION,
 				NULL,
 				NULL,								/* accumulator */
@@ -216,7 +216,7 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 }
 
 /**
- * ofa_ope_templates_frame_new:
+ * ofa_ope_template_frame_bin_new:
  *
  * Creates the structured content, i.e. The accounts notebook on the
  * left column, the buttons box on the right one.
@@ -236,12 +236,12 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
  * | +-------------------------------------------------------------------+ |
  * +-----------------------------------------------------------------------+
  */
-ofaOpeTemplatesFrame *
-ofa_ope_templates_frame_new( void  )
+ofaOpeTemplateFrameBin *
+ofa_ope_template_frame_bin_new( void  )
 {
-	ofaOpeTemplatesFrame *self;
+	ofaOpeTemplateFrameBin *self;
 
-	self = g_object_new( OFA_TYPE_OPE_TEMPLATES_FRAME, NULL );
+	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
 	setup_top_grid( self );
 
@@ -251,9 +251,9 @@ ofa_ope_templates_frame_new( void  )
 }
 
 static void
-setup_top_grid( ofaOpeTemplatesFrame *frame )
+setup_top_grid( ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkWidget *grid;
 
 	priv = frame->priv;
@@ -278,17 +278,17 @@ setup_top_grid( ofaOpeTemplatesFrame *frame )
 }
 
 /**
- * ofa_ope_templates_frame_set_main_window:
+ * ofa_ope_template_frame_bin_set_main_window:
  *
  * Returns the top focusable widget, here the treeview of the current
  * page.
  */
 void
-ofa_ope_templates_frame_set_main_window( ofaOpeTemplatesFrame *frame, ofaMainWindow *main_window )
+ofa_ope_template_frame_bin_set_main_window( ofaOpeTemplateFrameBin *frame, ofaMainWindow *main_window )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
-	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ));
+	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATE_FRAME_BIN( frame ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv = frame->priv;
@@ -301,59 +301,59 @@ ofa_ope_templates_frame_set_main_window( ofaOpeTemplatesFrame *frame, ofaMainWin
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame )
+on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = frame->priv;
 	ofa_ope_templates_book_button_clicked( priv->book, BUTTON_NEW );
 }
 
 static void
-on_properties_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame )
+on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = frame->priv;
 	ofa_ope_templates_book_button_clicked( priv->book, BUTTON_PROPERTIES );
 }
 
 static void
-on_duplicate_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame )
+on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = frame->priv;
 	ofa_ope_templates_book_button_clicked( priv->book, BUTTON_DUPLICATE );
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame )
+on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = frame->priv;
 	ofa_ope_templates_book_button_clicked( priv->book, BUTTON_DELETE );
 }
 
 static void
-on_guided_input_clicked( GtkButton *button, ofaOpeTemplatesFrame *frame )
+on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = frame->priv;
 	ofa_ope_templates_book_button_clicked( priv->book, BUTTON_GUIDED_INPUT );
 }
 
 /**
- * ofa_ope_templates_frame_set_buttons:
+ * ofa_ope_template_frame_bin_set_buttons:
  */
 void
-ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guided_input )
+ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *frame, gboolean guided_input )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
-	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ));
+	g_return_if_fail( frame && OFA_IS_OPE_TEMPLATE_FRAME_BIN( frame ));
 
 	priv = frame->priv;
 
@@ -382,18 +382,18 @@ ofa_ope_templates_frame_set_buttons( ofaOpeTemplatesFrame *frame, gboolean guide
 }
 
 /**
- * ofa_ope_templates_frame_get_book:
+ * ofa_ope_template_frame_bin_get_book:
  * @frame:
  *
  * Returns: the embedded #ofaOpeTemplatesBook book.
  */
 ofaOpeTemplatesBook *
-ofa_ope_templates_frame_get_book( ofaOpeTemplatesFrame *frame )
+ofa_ope_template_frame_bin_get_book( ofaOpeTemplateFrameBin *frame )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 	ofaOpeTemplatesBook *book;
 
-	g_return_val_if_fail( frame && OFA_IS_OPE_TEMPLATES_FRAME( frame ), NULL );
+	g_return_val_if_fail( frame && OFA_IS_OPE_TEMPLATE_FRAME_BIN( frame ), NULL );
 
 	priv = frame->priv;
 	book = NULL;
@@ -407,22 +407,22 @@ ofa_ope_templates_frame_get_book( ofaOpeTemplatesFrame *frame )
 }
 
 static void
-on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame )
+on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplateFrameBin *frame )
 {
 	update_buttons_sensitivity( frame, mnemo );
 	g_signal_emit_by_name( frame, "ofa-changed", mnemo );
 }
 
 static void
-on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame )
+on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplateFrameBin *frame )
 {
 	g_signal_emit_by_name( frame, "ofa-activated", mnemo );
 }
 
 static void
-update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
+update_buttons_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 {
-	ofaOpeTemplatesFramePrivate *priv;
+	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gboolean has_ope;
 	ofoDossier *dossier;
@@ -464,10 +464,10 @@ update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
 }
 
 static void
-on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty )
+on_frame_closed( ofaOpeTemplateFrameBin *frame, void *empty )
 {
-	static const gchar *thisfn = "ofa_ope_templates_frame_on_frame_closed";
-	ofaOpeTemplatesFramePrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_on_frame_closed";
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	g_debug( "%s: frame=%p, empty=%p", thisfn, ( void * ) frame, ( void * ) empty );
 

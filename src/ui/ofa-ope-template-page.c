@@ -36,7 +36,7 @@
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
-#include "ui/ofa-ope-templates-frame.h"
+#include "ui/ofa-ope-template-frame-bin.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -47,7 +47,7 @@ struct _ofaOpeTemplatePagePrivate {
 
 	/* UI
 	 */
-	ofaOpeTemplatesFrame *ope_frame;
+	ofaOpeTemplateFrameBin *ope_frame;
 };
 
 G_DEFINE_TYPE( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE )
@@ -55,7 +55,7 @@ G_DEFINE_TYPE( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE )
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatePage *page );
+static void       on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *page );
 static void       on_page_removed( ofaOpeTemplatePage *page, GtkWidget *page_w, guint page_n, void *empty );
 
 static void
@@ -133,10 +133,10 @@ v_setup_page( ofaPage *page )
 	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_grid_attach( grid, widget, 0, 0, 1, 1 );
 
-	priv->ope_frame = ofa_ope_templates_frame_new();
+	priv->ope_frame = ofa_ope_template_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ope_frame ));
-	ofa_ope_templates_frame_set_main_window( priv->ope_frame, ofa_page_get_main_window( page ));
-	ofa_ope_templates_frame_set_buttons( priv->ope_frame, TRUE );
+	ofa_ope_template_frame_bin_set_main_window( priv->ope_frame, ofa_page_get_main_window( page ));
+	ofa_ope_template_frame_bin_set_buttons( priv->ope_frame, TRUE );
 
 	g_signal_connect(
 			G_OBJECT( priv->ope_frame ), "ofa-activated", G_CALLBACK( on_row_activated ), page );
@@ -160,7 +160,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
 	priv = OFA_OPE_TEMPLATE_PAGE( page )->priv;
-	book = ofa_ope_templates_frame_get_book( priv->ope_frame );
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_frame );
 	top_widget = ofa_ope_templates_book_get_current_treeview( book );
 
 	return( top_widget );
@@ -170,7 +170,7 @@ v_get_top_focusable_widget( const ofaPage *page )
  * double click on a row opens the ope_template properties
  */
 static void
-on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatePage *page )
+on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *page )
 {
 	ofoOpeTemplate *ope;
 

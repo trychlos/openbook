@@ -498,6 +498,7 @@
                 ofaLedgersBookRender -> ofaLedgerBookRender
                 ofaOpeTemplatesPage -> ofaOpeTemplatePage
                 ofaRatesPage -> ofaRatePage
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
 
  845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
                 and DossierOpen
@@ -525,6 +526,7 @@
      2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
                 ofaAccountsFrame -> ofaAccountFrameBin
                 ofaBalancesGrid -> ofaBalanceGridBin
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
 
  851 2015-10- 1 segfault when closing the exercice
                 database trest6 restored from PWIConsultants-20150319.gz

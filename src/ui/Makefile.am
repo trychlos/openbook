@@ -83,8 +83,8 @@ openbook_SOURCES = \
 	ofa-account-book-bin.h								\
 	ofa-account-book-render.c							\
 	ofa-account-book-render.h							\
-	ofa-account-filter-vv-bin.c						\
-	ofa-account-filter-vv-bin.h						\
+	ofa-account-filter-vv-bin.c							\
+	ofa-account-filter-vv-bin.h							\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-page.c									\
@@ -98,8 +98,8 @@ openbook_SOURCES = \
 	ofa-balance-bin.h									\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-balance-grid-bin.c									\
-	ofa-balance-grid-bin.h									\
+	ofa-balance-grid-bin.c								\
+	ofa-balance-grid-bin.h								\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-properties-bin.c							\
@@ -130,8 +130,8 @@ openbook_SOURCES = \
 	ofa-class-page.h									\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
-	ofa-currency-page.c								\
-	ofa-currency-page.h								\
+	ofa-currency-page.c									\
+	ofa-currency-page.h									\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
@@ -219,10 +219,10 @@ openbook_SOURCES = \
 	ofa-ope-template-store.h							\
 	ofa-ope-templates-book.c							\
 	ofa-ope-templates-book.h							\
-	ofa-ope-templates-frame.c							\
-	ofa-ope-templates-frame.h							\
-	ofa-ope-template-page.c							\
-	ofa-ope-template-page.h							\
+	ofa-ope-template-frame-bin.c						\
+	ofa-ope-template-frame-bin.h						\
+	ofa-ope-template-page.c								\
+	ofa-ope-template-page.h								\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\
@@ -231,8 +231,8 @@ openbook_SOURCES = \
 	ofa-plugin-manager.h								\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
-	ofa-rate-page.c									\
-	ofa-rate-page.h									\
+	ofa-rate-page.c										\
+	ofa-rate-page.h										\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
 	ofa-reconcil-render.c								\
@@ -268,7 +268,7 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
-	ofa-account-book-bin.ui							\
+	ofa-account-book-bin.ui								\
 	ofa-account-filter-vv-bin.ui						\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
