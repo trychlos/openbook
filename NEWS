@@ -106,6 +106,7 @@
    - ofaCurrenciesPage class is renamed to ofaCurrencyPage (todo #844).
    - ofaLedgersPage class is renamed to ofaLedgerPage (todo #844).
    - ofaLedgersBookBin class is renamed to ofaLedgerBookBin (todo #844).
+   - ofaLedgersBookRender class is renamed to ofaLedgerBookRender (todo #844).
 
 -----------------------------------------------------------------------
  Version 0.39

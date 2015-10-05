@@ -200,8 +200,8 @@ openbook_SOURCES = \
 	ofa-ledger-treeview.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
-	ofa-ledgers-book-render.c							\
-	ofa-ledgers-book-render.h							\
+	ofa-ledger-book-render.c							\
+	ofa-ledger-book-render.h							\
 	ofa-ledger-page.c									\
 	ofa-ledger-page.h									\
 	ofa-list-store.c									\

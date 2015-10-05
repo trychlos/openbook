@@ -59,7 +59,7 @@
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-ledger-close.h"
-#include "ui/ofa-ledgers-book-render.h"
+#include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-templates-page.h"
@@ -246,7 +246,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_RENDER_LEDGERS_BOOK,
 				N_( "Ledgers book" ),
-				ofa_ledgers_book_render_get_type,
+				ofa_ledger_book_render_get_type,
 				FALSE
 		},
 		{ THM_RENDER_RECONCIL,
