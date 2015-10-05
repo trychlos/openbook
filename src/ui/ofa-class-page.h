@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_CLASSES_PAGE_H__
-#define __OFA_CLASSES_PAGE_H__
+#ifndef __OFA_CLASS_PAGE_H__
+#define __OFA_CLASS_PAGE_H__
 
 /**
- * SECTION: ofa_classes_page
- * @short_description: #ofaClassesPage class definition.
+ * SECTION: ofa_class_page
+ * @short_description: #ofaClassPage class definition.
  * @include: ui/ofa-classes-set.h
  *
  * Display the list of known classes, letting the user edit their label.
@@ -39,32 +39,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_CLASSES_PAGE                ( ofa_classes_page_get_type())
-#define OFA_CLASSES_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CLASSES_PAGE, ofaClassesPage ))
-#define OFA_CLASSES_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CLASSES_PAGE, ofaClassesPageClass ))
-#define OFA_IS_CLASSES_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CLASSES_PAGE ))
-#define OFA_IS_CLASSES_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CLASSES_PAGE ))
-#define OFA_CLASSES_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CLASSES_PAGE, ofaClassesPageClass ))
+#define OFA_TYPE_CLASS_PAGE                ( ofa_class_page_get_type())
+#define OFA_CLASS_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CLASS_PAGE, ofaClassPage ))
+#define OFA_CLASS_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CLASS_PAGE, ofaClassPageClass ))
+#define OFA_IS_CLASS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CLASS_PAGE ))
+#define OFA_IS_CLASS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CLASS_PAGE ))
+#define OFA_CLASS_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CLASS_PAGE, ofaClassPageClass ))
 
-typedef struct _ofaClassesPagePrivate        ofaClassesPagePrivate;
+typedef struct _ofaClassPagePrivate        ofaClassPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                parent;
+	ofaPage              parent;
 
 	/*< private members >*/
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 }
-	ofaClassesPage;
+	ofaClassPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass         parent;
 }
-	ofaClassesPageClass;
+	ofaClassPageClass;
 
-GType ofa_classes_page_get_type( void ) G_GNUC_CONST;
+GType ofa_class_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_CLASSES_PAGE_H__ */
+#endif /* __OFA_CLASS_PAGE_H__ */

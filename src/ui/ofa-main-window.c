@@ -48,7 +48,7 @@
 #include "ui/ofa-bats-page.h"
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-integrity.h"
-#include "ui/ofa-classes-page.h"
+#include "ui/ofa-class-page.h"
 #include "ui/ofa-currencies-page.h"
 #include "ui/ofa-dossier-display-notes.h"
 #include "ui/ofa-dossier-login.h"
@@ -201,7 +201,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
-				ofa_classes_page_get_type,
+				ofa_class_page_get_type,
 				FALSE
 		},
 		{ THM_CURRENCIES,

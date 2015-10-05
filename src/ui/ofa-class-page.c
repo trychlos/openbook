@@ -35,14 +35,14 @@
 
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-class-properties.h"
-#include "ui/ofa-classes-page.h"
+#include "ui/ofa-class-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaClassesPagePrivate {
+struct _ofaClassPagePrivate {
 
 	/* internals
 	 */
@@ -66,63 +66,63 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaClassesPage, ofa_classes_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
-static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *self );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static ofoClass  *tview_get_selected( ofaClassesPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static ofoClass  *tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaClassesPage *self );
-static void       insert_new_row( ofaClassesPage *self, ofoClass *class, gboolean with_selection );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesPage *self );
-static void       setup_first_selection( ofaClassesPage *self );
+static void       insert_dataset( ofaClassPage *self );
+static void       insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self );
+static void       setup_first_selection( ofaClassPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self );
-static void       on_new_clicked( GtkButton *button, ofaClassesPage *page );
-static void       on_update_clicked( GtkButton *button, ofaClassesPage *page );
-static void       on_delete_clicked( GtkButton *button, ofaClassesPage *page );
-static void       try_to_delete_current_row( ofaClassesPage *self );
-static gboolean   delete_confirmed( ofaClassesPage *self, ofoClass *class );
-static void       do_delete( ofaClassesPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesPage *self );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self );
-static gboolean   find_row_by_id( ofaClassesPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       on_row_selected( GtkTreeSelection *selection, ofaClassPage *self );
+static void       on_new_clicked( GtkButton *button, ofaClassPage *page );
+static void       on_update_clicked( GtkButton *button, ofaClassPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaClassPage *page );
+static void       try_to_delete_current_row( ofaClassPage *self );
+static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
+static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassPage *self );
+static gboolean   find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 static void
 classes_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_classes_page_finalize";
+	static const gchar *thisfn = "ofa_class_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_CLASSES_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_CLASS_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_classes_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_class_page_parent_class )->finalize( instance );
 }
 
 static void
 classes_page_dispose( GObject *instance )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	gulong handler_id;
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( instance && OFA_IS_CLASSES_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_CLASS_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ( OFA_CLASSES_PAGE( instance ))->priv;
+		priv = ( OFA_CLASS_PAGE( instance ))->priv;
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -137,27 +137,27 @@ classes_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_classes_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_class_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_classes_page_init( ofaClassesPage *self )
+ofa_class_page_init( ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_page_init";
+	static const gchar *thisfn = "ofa_class_page_init";
 
-	g_return_if_fail( self && OFA_IS_CLASSES_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_CLASS_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLASSES_PAGE, ofaClassesPagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLASS_PAGE, ofaClassPagePrivate );
 	self->priv->handlers = NULL;
 }
 
 static void
-ofa_classes_page_class_init( ofaClassesPageClass *klass )
+ofa_class_page_class_init( ofaClassPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_classes_page_class_init";
+	static const gchar *thisfn = "ofa_class_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -169,17 +169,17 @@ ofa_classes_page_class_init( ofaClassesPageClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaClassesPagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaClassPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = OFA_CLASSES_PAGE( page )->priv;
+	priv = OFA_CLASS_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
 	priv->is_current = ofo_dossier_is_current( dossier );
 
@@ -209,7 +209,7 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 setup_tree_view( ofaPage *page )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -218,7 +218,7 @@ setup_tree_view( ofaPage *page )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	priv = OFA_CLASSES_PAGE( page )->priv;
+	priv = OFA_CLASS_PAGE( page )->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margin( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -282,7 +282,7 @@ setup_tree_view( ofaPage *page )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *self )
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self )
 {
 	gboolean stop;
 
@@ -303,11 +303,11 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *sel
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_CLASSES_PAGE( page )->priv;
+	priv = OFA_CLASS_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -326,13 +326,13 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_CLASSES_PAGE( page ));
+	insert_dataset( OFA_CLASS_PAGE( page ));
 }
 
 static ofoClass *
-tview_get_selected( ofaClassesPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	GtkTreeSelection *select;
 	ofoClass *class;
 
@@ -349,13 +349,13 @@ tview_get_selected( ofaClassesPage *page, GtkTreeModel **tmodel, GtkTreeIter *it
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_CLASSES_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_CLASS_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_CLASSES_PAGE( page )->priv->tview ));
+	return( GTK_WIDGET( OFA_CLASS_PAGE( page )->priv->tview ));
 }
 
 static void
-insert_dataset( ofaClassesPage *self )
+insert_dataset( ofaClassPage *self )
 {
 	GList *dataset, *iset;
 	ofoClass *class;
@@ -373,9 +373,9 @@ insert_dataset( ofaClassesPage *self )
 }
 
 static void
-insert_new_row( ofaClassesPage *self, ofoClass *class, gboolean with_selection )
+insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
@@ -410,7 +410,7 @@ insert_new_row( ofaClassesPage *self, ofoClass *class, gboolean with_selection )
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesPage *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self )
 {
 	gint anum, bnum;
 
@@ -421,9 +421,9 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesP
 }
 
 static void
-setup_first_selection( ofaClassesPage *self )
+setup_first_selection( ofaClassPage *self )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
@@ -441,13 +441,13 @@ setup_first_selection( ofaClassesPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	on_update_clicked( NULL, OFA_CLASSES_PAGE( page ));
+	on_update_clicked( NULL, OFA_CLASS_PAGE( page ));
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
+on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 {
-	ofaClassesPagePrivate *priv;
+	ofaClassPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoClass *class;
@@ -476,9 +476,9 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaClassesPage *page )
+on_new_clicked( GtkButton *button, ofaClassPage *page )
 {
-	static const gchar *thisfn = "ofa_classes_page_on_new_clicked";
+	static const gchar *thisfn = "ofa_class_page_on_new_clicked";
 	ofoClass *class;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -493,7 +493,7 @@ on_new_clicked( GtkButton *button, ofaClassesPage *page )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaClassesPage *page )
+on_update_clicked( GtkButton *button, ofaClassPage *page )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -508,7 +508,7 @@ on_update_clicked( GtkButton *button, ofaClassesPage *page )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaClassesPage *page )
+on_delete_clicked( GtkButton *button, ofaClassPage *page )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -522,7 +522,7 @@ on_delete_clicked( GtkButton *button, ofaClassesPage *page )
 }
 
 static void
-try_to_delete_current_row( ofaClassesPage *self )
+try_to_delete_current_row( ofaClassPage *self )
 {
 	ofoClass *class;
 	GtkTreeModel *tmodel;
@@ -535,7 +535,7 @@ try_to_delete_current_row( ofaClassesPage *self )
 }
 
 static gboolean
-delete_confirmed( ofaClassesPage *self, ofoClass *class )
+delete_confirmed( ofaClassPage *self, ofoClass *class )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -551,7 +551,7 @@ delete_confirmed( ofaClassesPage *self, ofoClass *class )
 }
 
 static void
-do_delete( ofaClassesPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
+do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gboolean deletable;
 	ofoDossier *dossier;
@@ -570,9 +570,9 @@ do_delete( ofaClassesPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeI
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_page_on_new_object";
+	static const gchar *thisfn = "ofa_class_page_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -589,9 +589,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
  * modifying the class number is forbidden
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesPage *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_page_on_updated_object";
+	static const gchar *thisfn = "ofa_class_page_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint prev_num, class_num;
@@ -624,9 +624,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_page_on_deleted_object";
+	static const gchar *thisfn = "ofa_class_page_on_deleted_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -639,10 +639,10 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
  * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_page_on_reloaded_dataset";
-	ofaClassesPagePrivate *priv;
+	static const gchar *thisfn = "ofa_class_page_on_reloaded_dataset";
+	ofaClassPagePrivate *priv;
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
@@ -661,10 +661,10 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self )
 }
 
 static gboolean
-find_row_by_id( ofaClassesPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_classes_page_find_row_by_id";
-	ofaClassesPagePrivate *priv;
+	static const gchar *thisfn = "ofa_class_page_find_row_by_id";
+	ofaClassPagePrivate *priv;
 	gint num;
 
 	priv = self->priv;

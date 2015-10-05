@@ -61,7 +61,7 @@
  *
  * ofaBatsPage       a tree view on a list store                   Yes
  *
- * ofaClassesPage    a tree view on a list store                   Yes
+ * ofaClassPage    a tree view on a list store                   Yes
  *
  * ofaCurrenciesPage a tree view on a list store                   Yes
  *

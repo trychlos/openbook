@@ -126,8 +126,8 @@ openbook_SOURCES = \
 	ofa-check-integrity-bin.h							\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
-	ofa-classes-page.c									\
-	ofa-classes-page.h									\
+	ofa-class-page.c									\
+	ofa-class-page.h									\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
 	ofa-currencies-page.c								\
