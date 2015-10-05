@@ -254,8 +254,6 @@ v_init_dialog( myDialog *dialog )
 	my_utils_size_group_add_size_group(
 			group0, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
 	g_object_unref( group0 );
-	/* display the frame */
-	ofa_dossier_new_bin_set_frame( priv->new_bin, TRUE );
 
 	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 

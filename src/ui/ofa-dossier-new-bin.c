@@ -172,11 +172,11 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierNewBin *bin,
-	 * 						const gchar      *dname,
-	 * 						void             *infos,
-	 * 						const gchar      *account,
-	 * 						const gchar      *password,
-	 * 						gpointer          user_data );
+	 * 						const gchar    *dname,
+	 * 						void           *infos,
+	 * 						const gchar    *account,
+	 * 						const gchar    *password,
+	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
@@ -335,35 +335,6 @@ ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
 	}
 
 	g_return_val_if_reached( NULL );
-}
-
-/**
- * ofa_dossier_new_bin_set_frame:
- *
- * This must be called after having attached the widget to its parent.
- */
-void
-ofa_dossier_new_bin_set_frame( ofaDossierNewBin *bin, gboolean visible )
-{
-	ofaDossierNewBinPrivate *priv;
-	GtkWidget *frame, *label;
-
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-frame" );
-		g_return_if_fail( frame && GTK_IS_FRAME( frame ));
-		gtk_frame_set_shadow_type( GTK_FRAME( frame ), visible ? GTK_SHADOW_IN : GTK_SHADOW_NONE );
-
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-frame-label" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		gtk_label_set_markup( GTK_LABEL( label ), visible ? _( " Dossier properties " ) : "" );
-
-		gtk_widget_show_all( GTK_WIDGET( bin ));
-	}
 }
 
 /**

@@ -75,9 +75,6 @@ ofaDossierNewBin *ofa_dossier_new_bin_new                 ( void );
 GtkSizeGroup     *ofa_dossier_new_bin_get_size_group      ( const ofaDossierNewBin *bin,
 																	guint column );
 
-void              ofa_dossier_new_bin_set_frame           ( ofaDossierNewBin *bin,
-																	gboolean visible );
-
 void              ofa_dossier_new_bin_set_default_provider( ofaDossierNewBin *bin );
 
 void              ofa_dossier_new_bin_set_provider        ( ofaDossierNewBin *bin,

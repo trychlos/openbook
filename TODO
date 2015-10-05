@@ -518,14 +518,6 @@
                 (see debug messages) -> this should be done before the
                 acknowledge, or have a spinner, or have a progress bar
 
- 861 2015-10- 5 GtkBin: set MainWindow (so dossier) in _new()
-     2015-10- 5 ofaAccountFrameBin: done
-                ofaAccountChartBin: done
-                ofaClosingParmsBin: done
-                ofaGuidedInputBin: done
-                ofaOpeTemplateFrameBin: done
-                ofaOpeTemplateBookBin: done
-
  862
 
 -----------------------------------------------------------------------
@@ -4050,6 +4042,14 @@
 
  860 2015-10- 5 get rid of ofaIPrintable interface
      2015-10- 5 done
+
+ 861 2015-10- 5 GtkBin: set MainWindow (so dossier) in _new()
+     2015-10- 5 ofaAccountFrameBin: done
+                ofaAccountChartBin: done
+                ofaClosingParmsBin: done
+                ofaGuidedInputBin: done
+                ofaOpeTemplateFrameBin: done
+                ofaOpeTemplateBookBin: done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
