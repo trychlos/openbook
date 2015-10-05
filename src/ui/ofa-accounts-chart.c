@@ -1467,6 +1467,8 @@ ofa_accounts_chart_get_selected( ofaAccountsChart *book )
 
 /**
  * ofa_accounts_chart_set_selected:
+ * @book: this #ofaAccountsChart instance
+ * @number: the account identifier to be selected.
  *
  * Let the user reset the selection after the end of setup and
  * initialization phases
