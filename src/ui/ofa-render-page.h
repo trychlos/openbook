@@ -36,7 +36,7 @@
  *
  * This base classe along with its companion interface #ofaIRenderable,
  * which is expected to be implemented by the derived class, both make
- * use of the #GtkPrintOperation operations via the ofaIPrintable2
+ * use of the #GtkPrintOperation operations via the ofaIPrintable
  * interface.
  *
  * It is expected in a future version that these same displayed printings

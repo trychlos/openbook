@@ -34,7 +34,7 @@
 
 #include "api/my-utils.h"
 
-#include "ui/ofa-iprintable2.h"
+#include "ui/ofa-iprintable.h"
 
 /* data associated to each implementor object
  */
@@ -47,33 +47,33 @@ typedef struct {
 }
 	sIPrintable;
 
-#define IPRINTABLE2_LAST_VERSION         1
-#define IPRINTABLE2_DATA                 "ofa-iprintable2-data"
+#define IPRINTABLE_LAST_VERSION         1
+#define IPRINTABLE_DATA                 "ofa-iprintable-data"
 
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType        register_type( void );
-static void         interface_base_init( ofaIPrintable2Interface *klass );
-static void         interface_base_finalize( ofaIPrintable2Interface *klass );
-static sIPrintable *get_iprintable_data( ofaIPrintable2 *instance );
+static void         interface_base_init( ofaIPrintableInterface *klass );
+static void         interface_base_finalize( ofaIPrintableInterface *klass );
+static sIPrintable *get_iprintable_data( ofaIPrintable *instance );
 static void         on_instance_finalized( sIPrintable *sdata, void *instance );
-static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance );
-static void         iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable2 *instance );
-static void         iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
-static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance );
-static void         iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static gboolean     do_print( ofaIPrintable2 *instance, sIPrintable *sdata );
-static gboolean     load_settings( ofaIPrintable2 *instance, sIPrintable *sdata );
-static void         save_settings( ofaIPrintable2 *instance, sIPrintable *sdata );
+static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
+static void         iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable *instance );
+static void         iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
+static void         iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static gboolean     do_print( ofaIPrintable *instance, sIPrintable *sdata );
+static gboolean     load_settings( ofaIPrintable *instance, sIPrintable *sdata );
+static void         save_settings( ofaIPrintable *instance, sIPrintable *sdata );
 
 /**
- * ofa_iprintable2_get_type:
+ * ofa_iprintable_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_iprintable2_get_type( void )
+ofa_iprintable_get_type( void )
 {
 	static GType type = 0;
 
@@ -85,18 +85,18 @@ ofa_iprintable2_get_type( void )
 }
 
 /*
- * ofa_iprintable2_register_type:
+ * ofa_iprintable_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_iprintable2_register_type";
+	static const gchar *thisfn = "ofa_iprintable_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIPrintable2Interface ),
+		sizeof( ofaIPrintableInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -109,7 +109,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIPrintable2", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIPrintable", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -117,25 +117,25 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIPrintable2Interface *klass )
+interface_base_init( ofaIPrintableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iprintable2_interface_base_init";
+	static const gchar *thisfn = "ofa_iprintable_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		klass->begin_print = iprintable2_begin_print;
-		klass->draw_page = iprintable2_draw_page;
-		klass->end_print = iprintable2_end_print;
+		klass->begin_print = iprintable_begin_print;
+		klass->draw_page = iprintable_draw_page;
+		klass->end_print = iprintable_end_print;
 	}
 
 	st_initializations += 1;
 }
 
 static void
-interface_base_finalize( ofaIPrintable2Interface *klass )
+interface_base_finalize( ofaIPrintableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iprintable2_interface_base_finalize";
+	static const gchar *thisfn = "ofa_iprintable_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -145,15 +145,15 @@ interface_base_finalize( ofaIPrintable2Interface *klass )
 }
 
 /**
- * ofa_iprintable2_get_interface_last_version:
- * @instance: this #ofaIPrintable2 instance.
+ * ofa_iprintable_get_interface_last_version:
+ * @instance: this #ofaIPrintable instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_iprintable2_get_interface_last_version( const ofaIPrintable2 *instance )
+ofa_iprintable_get_interface_last_version( const ofaIPrintable *instance )
 {
-	return( IPRINTABLE2_LAST_VERSION );
+	return( IPRINTABLE_LAST_VERSION );
 }
 
 /*
@@ -164,23 +164,23 @@ ofa_iprintable2_get_interface_last_version( const ofaIPrintable2 *instance )
  * set.
  */
 static sIPrintable *
-get_iprintable_data( ofaIPrintable2 *instance )
+get_iprintable_data( ofaIPrintable *instance )
 {
 	sIPrintable *sdata;
 	const gchar *paper_name;
 
-	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE2_DATA );
+	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 
 	if( !sdata ){
 		sdata = g_new0( sIPrintable, 1 );
-		g_object_set_data( G_OBJECT( instance ), IPRINTABLE2_DATA, sdata );
+		g_object_set_data( G_OBJECT( instance ), IPRINTABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		/* as we provide default values, we are sure that these two methods
 		 * are implemented */
-		paper_name = OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_paper_name( instance );
+		paper_name = OFA_IPRINTABLE_GET_INTERFACE( instance )->get_paper_name( instance );
 		sdata->paper_size = gtk_paper_size_new( paper_name );
-		sdata->page_orientation = OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_page_orientation( instance );
+		sdata->page_orientation = OFA_IPRINTABLE_GET_INTERFACE( instance )->get_page_orientation( instance );
 	}
 
 	return( sdata );
@@ -189,11 +189,11 @@ get_iprintable_data( ofaIPrintable2 *instance )
 static void
 on_instance_finalized( sIPrintable *sdata, void *instance )
 {
-	static const gchar *thisfn = "ofa_iprintable2_on_instance_finalized";
+	static const gchar *thisfn = "ofa_iprintable_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
 
-	g_object_set_data( G_OBJECT( instance ), IPRINTABLE2_DATA, NULL );
+	g_object_set_data( G_OBJECT( instance ), IPRINTABLE_DATA, NULL );
 	gtk_paper_size_free( sdata->paper_size );
 	g_clear_object( &sdata->print );
 	g_free( sdata->group_name );
@@ -206,18 +206,18 @@ on_instance_finalized( sIPrintable *sdata, void *instance )
  * - create a new dedicated layout which will be used during drawing operation
  */
 static void
-on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance )
+on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance )
 {
-	OFA_IPRINTABLE2_GET_INTERFACE( instance )->begin_print( instance, operation, context );
+	OFA_IPRINTABLE_GET_INTERFACE( instance )->begin_print( instance, operation, context );
 }
 
 /*
  * default interface handler
  */
 static void
-iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_iprintable2_begin_print";
+	static const gchar *thisfn = "ofa_iprintable_begin_print";
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
@@ -228,40 +228,40 @@ iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation,
  * call once per page, with a page_num counted from zero
  */
 static void
-on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable2 *instance )
+on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable *instance )
 {
-	OFA_IPRINTABLE2_GET_INTERFACE( instance )->draw_page( instance, operation, context, page_num );
+	OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page( instance, operation, context, page_num );
 }
 
 /*
  * default interface handler
  */
 static void
-iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
-	static const gchar *thisfn = "ofa_iprintable2_draw_page";
+	static const gchar *thisfn = "ofa_iprintable_draw_page";
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p, page_num=%d",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context, page_num );
 }
 
 static void
-on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable2 *instance )
+on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance )
 {
-	OFA_IPRINTABLE2_GET_INTERFACE( instance )->end_print( instance, operation, context );
+	OFA_IPRINTABLE_GET_INTERFACE( instance )->end_print( instance, operation, context );
 }
 
 static void
-iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_iprintable2_end_print";
+	static const gchar *thisfn = "ofa_iprintable_end_print";
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 }
 
 /**
- * ofa_iprintable2_print:
+ * ofa_iprintable_print:
  * @instance:
  *
  * Print.
@@ -269,12 +269,12 @@ iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, G
  * Heavily relies on preparations which were made while preview.
  */
 gboolean
-ofa_iprintable2_print( ofaIPrintable2 *instance )
+ofa_iprintable_print( ofaIPrintable *instance )
 {
 	sIPrintable *sdata;
 	gboolean ok;
 
-	g_return_val_if_fail( instance && OFA_IS_IPRINTABLE2( instance ), FALSE );
+	g_return_val_if_fail( instance && OFA_IS_IPRINTABLE( instance ), FALSE );
 
 	sdata = get_iprintable_data( instance );
 
@@ -284,9 +284,9 @@ ofa_iprintable2_print( ofaIPrintable2 *instance )
 }
 
 static gboolean
-do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
+do_print( ofaIPrintable *instance, sIPrintable *sdata )
 {
-	static const gchar *thisfn = "ofa_iprintable2_do_print";
+	static const gchar *thisfn = "ofa_iprintable_do_print";
 	gboolean printed;
 	GtkPrintOperationResult res;
 	GError *error;
@@ -342,17 +342,17 @@ do_print( ofaIPrintable2 *instance, sIPrintable *sdata )
  * Note that print settings do not include page setup
  */
 static gboolean
-load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
+load_settings( ofaIPrintable *instance, sIPrintable *sdata )
 {
-	static const gchar *thisfn = "ofa_iprintable2_load_settings";
+	static const gchar *thisfn = "ofa_iprintable_load_settings";
 	GtkPrintSettings *settings;
 	GError *error;
 	gboolean ok;
 
 	ok = FALSE;
 
-	if( OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings ){
-		OFA_IPRINTABLE2_GET_INTERFACE( instance )->get_print_settings( instance, &sdata->keyfile, &sdata->group_name );
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_print_settings ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->get_print_settings( instance, &sdata->keyfile, &sdata->group_name );
 	}
 	g_debug( "%s: group_name=%s", thisfn, sdata->group_name );
 
@@ -380,9 +380,9 @@ load_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
  * sdata:
  */
 static void
-save_settings( ofaIPrintable2 *instance, sIPrintable *sdata )
+save_settings( ofaIPrintable *instance, sIPrintable *sdata )
 {
-	static const gchar *thisfn = "ofa_iprintable2_save_settings";
+	static const gchar *thisfn = "ofa_iprintable_save_settings";
 	GtkPrintSettings *settings;
 
 	settings = gtk_print_operation_get_print_settings( sdata->print );

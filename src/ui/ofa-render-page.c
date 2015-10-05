@@ -33,7 +33,7 @@
 
 #include "api/my-utils.h"
 
-#include "ui/ofa-iprintable2.h"
+#include "ui/ofa-iprintable.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -104,14 +104,14 @@ static void               on_print_clicked( GtkButton *button, ofaRenderPage *pa
 static cairo_t           *create_context( ofaRenderPage *page, gdouble width, gdouble height );
 static void               set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name );
 static void               pdf_crs_free( GList **pdf_crs );
-static void               iprintable2_iface_init( ofaIPrintable2Interface *iface );
-static guint              iprintable2_get_interface_version( const ofaIPrintable2 *instance );
-static const gchar       *iprintable2_get_paper_name( ofaIPrintable2 *instance );
-static GtkPageOrientation iprintable2_get_page_orientation( ofaIPrintable2 *instance );
-static void               iprintable2_get_print_settings( ofaIPrintable2 *instance, GKeyFile **keyfile, gchar **group_name );
-static void               iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void               iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
-static void               iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void               iprintable_iface_init( ofaIPrintableInterface *iface );
+static guint              iprintable_get_interface_version( const ofaIPrintable *instance );
+static const gchar       *iprintable_get_paper_name( ofaIPrintable *instance );
+static GtkPageOrientation iprintable_get_page_orientation( ofaIPrintable *instance );
+static void               iprintable_get_print_settings( ofaIPrintable *instance, GKeyFile **keyfile, gchar **group_name );
+static void               iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void               iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void               iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 
 GType
 ofa_render_page_get_type( void )
@@ -143,8 +143,8 @@ register_type( void )
 		( GInstanceInitFunc ) render_page_instance_init
 	};
 
-	static const GInterfaceInfo iprintable2_iface_info = {
-		( GInterfaceInitFunc ) iprintable2_iface_init,
+	static const GInterfaceInfo iprintable_iface_info = {
+		( GInterfaceInitFunc ) iprintable_iface_init,
 		NULL,
 		NULL
 	};
@@ -153,7 +153,7 @@ register_type( void )
 
 	type = g_type_register_static( OFA_TYPE_PAGE, "ofaRenderPage", &info, 0 );
 
-	g_type_add_interface_static( type, OFA_TYPE_IPRINTABLE2, &iprintable2_iface_info );
+	g_type_add_interface_static( type, OFA_TYPE_IPRINTABLE, &iprintable_iface_info );
 
 	return( type );
 }
@@ -562,7 +562,7 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 		render_pdf( page );
 	}
 
-	ofa_iprintable2_print( OFA_IPRINTABLE2( page ));
+	ofa_iprintable_print( OFA_IPRINTABLE( page ));
 }
 
 static cairo_t *
@@ -597,29 +597,29 @@ pdf_crs_free( GList **pdf_crs )
 }
 
 static void
-iprintable2_iface_init( ofaIPrintable2Interface *iface )
+iprintable_iface_init( ofaIPrintableInterface *iface )
 {
-	static const gchar *thisfn = "ofa_render_page_iprintable2_iface_init";
+	static const gchar *thisfn = "ofa_render_page_iprintable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iprintable2_get_interface_version;
-	iface->get_paper_name = iprintable2_get_paper_name;
-	iface->get_page_orientation = iprintable2_get_page_orientation;
-	iface->get_print_settings = iprintable2_get_print_settings;
-	iface->begin_print = iprintable2_begin_print;
-	iface->draw_page = iprintable2_draw_page;
-	iface->end_print = iprintable2_end_print;
+	iface->get_interface_version = iprintable_get_interface_version;
+	iface->get_paper_name = iprintable_get_paper_name;
+	iface->get_page_orientation = iprintable_get_page_orientation;
+	iface->get_print_settings = iprintable_get_print_settings;
+	iface->begin_print = iprintable_begin_print;
+	iface->draw_page = iprintable_draw_page;
+	iface->end_print = iprintable_end_print;
 }
 
 static guint
-iprintable2_get_interface_version( const ofaIPrintable2 *instance )
+iprintable_get_interface_version( const ofaIPrintable *instance )
 {
 	return( 1 );
 }
 
 static const gchar *
-iprintable2_get_paper_name( ofaIPrintable2 *instance )
+iprintable_get_paper_name( ofaIPrintable *instance )
 {
 	const gchar *paper_name;
 
@@ -632,7 +632,7 @@ iprintable2_get_paper_name( ofaIPrintable2 *instance )
 }
 
 static GtkPageOrientation
-iprintable2_get_page_orientation( ofaIPrintable2 *instance )
+iprintable_get_page_orientation( ofaIPrintable *instance )
 {
 	GtkPageOrientation orientation;
 
@@ -645,7 +645,7 @@ iprintable2_get_page_orientation( ofaIPrintable2 *instance )
 }
 
 static void
-iprintable2_get_print_settings( ofaIPrintable2 *instance, GKeyFile **keyfile, gchar **group_name )
+iprintable_get_print_settings( ofaIPrintable *instance, GKeyFile **keyfile, gchar **group_name )
 {
 	if( OFA_RENDER_PAGE_GET_CLASS( instance )->get_print_settings ){
 		OFA_RENDER_PAGE_GET_CLASS( instance )->get_print_settings( OFA_RENDER_PAGE( instance ), keyfile, group_name );
@@ -654,9 +654,9 @@ iprintable2_get_print_settings( ofaIPrintable2 *instance, GKeyFile **keyfile, gc
 
 
 static void
-iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_render_page_iprintable2_begin_print";
+	static const gchar *thisfn = "ofa_render_page_iprintable_begin_print";
 	ofaRenderPagePrivate *priv;
 	gint pages_count;
 
@@ -680,9 +680,9 @@ iprintable2_begin_print( ofaIPrintable2 *instance, GtkPrintOperation *operation,
  * call once per page, with a page_num counted from zero
  */
 static void
-iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
-	static const gchar *thisfn = "ofa_render_page_iprintable2_draw_page";
+	static const gchar *thisfn = "ofa_render_page_iprintable_draw_page";
 	cairo_t *cr;
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p, page_num=%d",
@@ -693,9 +693,9 @@ iprintable2_draw_page( ofaIPrintable2 *instance, GtkPrintOperation *operation, G
 }
 
 static void
-iprintable2_end_print( ofaIPrintable2 *instance, GtkPrintOperation *operation, GtkPrintContext *context )
+iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_render_page_iprintable2_end_print";
+	static const gchar *thisfn = "ofa_render_page_iprintable_end_print";
 	cairo_t *cr;
 
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
