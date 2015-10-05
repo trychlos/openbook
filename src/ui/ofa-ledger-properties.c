@@ -199,9 +199,8 @@ v_init_dialog( myDialog *dialog )
 	ofaLedgerPropertiesPrivate *priv;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
-	GtkEntry *entry;
 	GtkContainer *container;
-	GtkWidget *label;
+	GtkWidget *entry, *label, *last_close_entry;
 	gboolean is_current;
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
@@ -223,40 +222,44 @@ v_init_dialog( myDialog *dialog )
 
 	/* mnemonic */
 	priv->mnemo = g_strdup( jou_mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo-entry" ));
+	entry = my_utils_container_get_child_by_name( container, "p1-mnemo-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	if( priv->mnemo ){
-		gtk_entry_set_text( entry, priv->mnemo );
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->mnemo );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), dialog );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_mnemo_changed ), dialog );
 
 	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* label */
 	priv->label = g_strdup( ofo_ledger_get_label( priv->ledger ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label-entry" ));
+	entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	if( priv->label ){
-		gtk_entry_set_text( entry, priv->label );
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), dialog );
 
 	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
-	label = my_utils_container_get_child_by_name( container, "p1-last-close" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	entry = my_utils_container_get_child_by_name( container, "p1-last-close" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	str = my_date_to_str( &priv->closing, ofa_prefs_date_display());
-	gtk_label_set_text( GTK_LABEL( label ), str );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
+	last_close_entry = entry;
 
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
 	my_utils_container_notes_init( container, ledger );
 	my_utils_container_updstamp_init( container, ledger );
 	my_utils_container_set_editable( container, is_current );
+	my_utils_widget_set_editable( last_close_entry, FALSE );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );

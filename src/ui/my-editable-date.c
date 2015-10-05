@@ -36,17 +36,18 @@
 #include "ui/my-editable-date.h"
 
 typedef struct {
-	guint date_format;
-	guint max_length;					/* entry max length */
+	guint        date_format;
+	guint        max_length;			/* entry max length */
+	const gchar *placeholder;
 }
 	sDateFormat;
 
 static const sDateFormat st_formats[] = {
-		{ MY_DATE_DMMM, 11 },			/* d mmm yyyy */
-		{ MY_DATE_MMYY,  9 },			/* mmm yyyy */
-		{ MY_DATE_DMYY, 10 },			/* dd/mm/yyyy */
-		{ MY_DATE_SQL,  10 },			/* yyyy-mm-dd */
-		{ MY_DATE_YYMD,  8 },			/* yyyymmdd */
+		{ MY_DATE_DMMM, 11, N_( "d mmm yyyy" )},		/* d mmm yyyy */
+		{ MY_DATE_MMYY,  9, N_( "mmm yyyy" )},			/* mmm yyyy */
+		{ MY_DATE_DMYY, 10, N_( "dd/mm/yyyy" )},		/* dd/mm/yyyy */
+		{ MY_DATE_SQL,  10, N_( "yyyy-mm-dd" )},		/* yyyy-mm-dd */
+		{ MY_DATE_YYMD,  8, N_( "yyyymmdd" )},			/* yyyymmdd */
 		{ 0 }
 };
 
@@ -106,8 +107,16 @@ my_editable_date_init( GtkEditable *editable )
 			thisfn, ( void * ) editable, G_OBJECT_TYPE_NAME( editable ));
 
 	data = get_editable_date_data( editable );
-
 	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_finalized, data );
+
+	if( GTK_IS_ENTRY( editable )){
+		/* this should have been done in the .xml UI definition file
+		 * but is re-done here for dynamically created fields */
+		gtk_entry_set_width_chars( GTK_ENTRY( editable ), 10 );
+		gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), 10 );
+		/* centering */
+		gtk_entry_set_alignment( GTK_ENTRY( editable ), 0.5 );
+	}
 }
 
 static void
@@ -196,6 +205,7 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 
 	if( GTK_IS_ENTRY( editable )){
 		gtk_entry_set_max_length( GTK_ENTRY( editable ), data->format->max_length );
+		gtk_entry_set_placeholder_text( GTK_ENTRY( editable ), data->format->placeholder );
 	}
 }
 

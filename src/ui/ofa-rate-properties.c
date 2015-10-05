@@ -352,9 +352,6 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
-	gtk_entry_set_alignment( GTK_ENTRY( entry ), 0.5 );
 	gtk_grid_attach( priv->grid, entry, COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
@@ -370,9 +367,6 @@ add_empty_row( ofaRateProperties *self )
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
-	gtk_entry_set_alignment( GTK_ENTRY( entry ), 0.5 );
 	gtk_grid_attach( priv->grid, entry, COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );

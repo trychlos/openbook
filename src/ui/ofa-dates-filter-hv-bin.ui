@@ -39,7 +39,6 @@
                 <property name="can_focus">True</property>
                 <property name="tooltip_text" translatable="yes">The From effect date filter is the lower limit of the displayed rows. It will be taken into account when the entry loses the focus.</property>
                 <property name="halign">start</property>
-                <property name="max_length">10</property>
                 <property name="width_chars">10</property>
                 <property name="max_width_chars">10</property>
               </object>
@@ -79,7 +78,6 @@
                 <property name="can_focus">True</property>
                 <property name="tooltip_text" translatable="yes">The To effect date filter is the upper limit of the displayed rows. It will be taken into account when the entry loses the focus.</property>
                 <property name="halign">start</property>
-                <property name="max_length">10</property>
                 <property name="width_chars">10</property>
                 <property name="max_width_chars">10</property>
               </object>

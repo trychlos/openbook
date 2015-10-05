@@ -310,7 +310,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="tooltip_text" translatable="yes">The date to which the entry will be set as reconciliated if no account transaction is proposed.</property>
-                        <property name="max_length">10</property>
+                        <property name="halign">start</property>
                         <property name="width_chars">10</property>
                         <property name="max_width_chars">10</property>
                       </object>
@@ -523,7 +523,7 @@
                     <property name="margin_top">4</property>
                     <property name="margin_bottom">4</property>
                     <property name="row_spacing">3</property>
-                    <property name="column_spacing">8</property>
+                    <property name="column_spacing">4</property>
                     <property name="column_homogeneous">True</property>
                     <child>
                       <object class="GtkButton" id="reconciliate-btn">

@@ -81,7 +81,6 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
-                        <property name="max_length">10</property>
                         <property name="width_chars">10</property>
                         <property name="max_width_chars">10</property>
                       </object>
@@ -108,7 +107,6 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
-                        <property name="max_length">10</property>
                         <property name="width_chars">10</property>
                         <property name="max_width_chars">10</property>
                       </object>
@@ -167,7 +165,6 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
-                        <property name="max_length">10</property>
                         <property name="width_chars">10</property>
                         <property name="max_width_chars">10</property>
                       </object>
@@ -194,7 +191,6 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
-                        <property name="max_length">10</property>
                         <property name="width_chars">10</property>
                         <property name="max_width_chars">10</property>
                       </object>

@@ -508,10 +508,6 @@
  851 2015-10- 1 segfault when closing the exercice
                 database trest6 restored from PWIConsultants-20150319.gz
 
- 852 2015-10- 1 myDate: set width and max width (unless otherwise
-                specified) + set placeholder text + center
-                + remove corresponding specs from .xml UI definitions
-
  853 2015-10- 1 review v_init_dialog's:
                 - only store GtkWidget (as GtkWidget) when needed
                 - store object data members
@@ -3979,6 +3975,15 @@
  842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
                 aligned
      2015-10- 5 done
+
+ 852 2015-10- 1 myDate: set width and max width (unless otherwise
+                specified) + set placeholder text + center
+                + remove corresponding specs from .xml UI definitions
+     2015-10- 5 > width and 'start' layout is set in .xml UI definition
+                  to have a layout mockup easier
+                > content (max length, centering, placeholder) is set
+                  in myEditableDate as this depends of runtime
+                  conditions
 
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
