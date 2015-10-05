@@ -34,7 +34,7 @@
  * operation templates inside of a notebook, with one ledger per page.
  *
  * This convenience class also manages the update buttons (new, update,
- * duplicate and delete). So that almost all the OpeTemplatesPage
+ * duplicate and delete). So that almost all the OpeTemplatePage
  * features are also available in OpeTemplateSelect dialog.
  *
  * The #GtkNotebook is created when attaching to the parent widget.

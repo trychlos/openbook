@@ -37,48 +37,48 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-templates-frame.h"
-#include "ui/ofa-ope-templates-page.h"
+#include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaOpeTemplatesPagePrivate {
+struct _ofaOpeTemplatePagePrivate {
 
 	/* UI
 	 */
 	ofaOpeTemplatesFrame *ope_frame;
 };
 
-G_DEFINE_TYPE( ofaOpeTemplatesPage, ofa_ope_templates_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatesPage *page );
-static void       on_page_removed( ofaOpeTemplatesPage *page, GtkWidget *page_w, guint page_n, void *empty );
+static void       on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatePage *page );
+static void       on_page_removed( ofaOpeTemplatePage *page, GtkWidget *page_w, guint page_n, void *empty );
 
 static void
 ope_templates_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_finalize";
+	static const gchar *thisfn = "ofa_ope_template_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ope_template_page_parent_class )->finalize( instance );
 }
 
 static void
 ope_templates_page_dispose( GObject *instance )
 {
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
@@ -86,26 +86,26 @@ ope_templates_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ope_template_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ope_templates_page_init( ofaOpeTemplatesPage *self )
+ofa_ope_template_page_init( ofaOpeTemplatePage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_init";
+	static const gchar *thisfn = "ofa_ope_template_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_OPE_TEMPLATES_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATES_PAGE, ofaOpeTemplatesPagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATE_PAGE, ofaOpeTemplatePagePrivate );
 }
 
 static void
-ofa_ope_templates_page_class_init( ofaOpeTemplatesPageClass *klass )
+ofa_ope_template_page_class_init( ofaOpeTemplatePageClass *klass )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_class_init";
+	static const gchar *thisfn = "ofa_ope_template_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -116,17 +116,17 @@ ofa_ope_templates_page_class_init( ofaOpeTemplatesPageClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaOpeTemplatesPagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaOpeTemplatePagePrivate ));
 }
 
 static void
 v_setup_page( ofaPage *page )
 {
-	ofaOpeTemplatesPagePrivate *priv;
+	ofaOpeTemplatePagePrivate *priv;
 	GtkGrid *grid;
 	GtkWidget *widget;
 
-	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
+	priv = OFA_OPE_TEMPLATE_PAGE( page )->priv;
 
 	grid = ofa_page_get_top_grid( page );
 
@@ -153,13 +153,13 @@ v_init_view( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaOpeTemplatesPagePrivate *priv;
+	ofaOpeTemplatePagePrivate *priv;
 	ofaOpeTemplatesBook *book;
 	GtkWidget *top_widget;
 
-	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATES_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
-	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
+	priv = OFA_OPE_TEMPLATE_PAGE( page )->priv;
 	book = ofa_ope_templates_frame_get_book( priv->ope_frame );
 	top_widget = ofa_ope_templates_book_get_current_treeview( book );
 
@@ -170,7 +170,7 @@ v_get_top_focusable_widget( const ofaPage *page )
  * double click on a row opens the ope_template properties
  */
 static void
-on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatesPage *page )
+on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatePage *page )
 {
 	ofoOpeTemplate *ope;
 
@@ -183,10 +183,10 @@ on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplat
 }
 
 static void
-on_page_removed( ofaOpeTemplatesPage *page, GtkWidget *page_w, guint page_n, void *empty )
+on_page_removed( ofaOpeTemplatePage *page, GtkWidget *page_w, guint page_n, void *empty )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_on_page_removed";
-	ofaOpeTemplatesPagePrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_page_on_page_removed";
+	ofaOpeTemplatePagePrivate *priv;
 
 	g_debug( "%s: page=%p, page_w=%p, page_n=%d, empty=%p",
 			thisfn, ( void * ) page, ( void * ) page_w, page_n, ( void * ) empty );

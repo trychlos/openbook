@@ -186,7 +186,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) \
 	ofa-ope-templates-book.$(OBJEXT) \
 	ofa-ope-templates-frame.$(OBJEXT) \
-	ofa-ope-templates-page.$(OBJEXT) ofa-page.$(OBJEXT) \
+	ofa-ope-template-page.$(OBJEXT) ofa-page.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
 	ofa-rates-page.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
@@ -653,8 +653,8 @@ openbook_SOURCES = \
 	ofa-ope-templates-book.h							\
 	ofa-ope-templates-frame.c							\
 	ofa-ope-templates-frame.h							\
-	ofa-ope-templates-page.c							\
-	ofa-ope-templates-page.h							\
+	ofa-ope-template-page.c							\
+	ofa-ope-template-page.h							\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\
@@ -957,7 +957,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-book.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-frame.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-templates-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@

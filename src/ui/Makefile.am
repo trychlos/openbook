@@ -221,8 +221,8 @@ openbook_SOURCES = \
 	ofa-ope-templates-book.h							\
 	ofa-ope-templates-frame.c							\
 	ofa-ope-templates-frame.h							\
-	ofa-ope-templates-page.c							\
-	ofa-ope-templates-page.h							\
+	ofa-ope-template-page.c							\
+	ofa-ope-template-page.h							\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\

@@ -62,7 +62,7 @@
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-ope-templates-page.h"
+#include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconcil-render.h"
@@ -221,7 +221,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_OPE_TEMPLATES,
 				N_( "Operation templates" ),
-				ofa_ope_templates_page_get_type,
+				ofa_ope_template_page_get_type,
 				FALSE
 		},
 		{ THM_RATES,

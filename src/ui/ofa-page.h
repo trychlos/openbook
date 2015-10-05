@@ -74,7 +74,7 @@
  *
  * ofaLedgerPage    a tree view on a list store                   Yes
  *
- * ofaOpeTemplatesPage  a top frame, a grid with dynamic fields    Yes
+ * ofaOpeTemplatePage  a top frame, a grid with dynamic fields    Yes
  *
  * ofaRatesPage      a tree view on a list store                   Yes
  *
