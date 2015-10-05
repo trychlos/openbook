@@ -38,7 +38,7 @@
 #include "api/ofs-currency.h"
 
 #include "ui/my-progress-bar.h"
-#include "ui/ofa-balances-grid.h"
+#include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 
 /* private instance data
@@ -82,7 +82,7 @@ static ofsCurrency     *get_balance_for_currency( ofaCheckBalancesBin *bin, GLis
 static gboolean         check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances );
 static void             set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name );
 static myProgressBar   *get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name );
-static ofaBalancesGrid *get_new_balances_grid( ofaCheckBalancesBin *bin, const gchar *w_name );
+static ofaBalanceGridBin *get_new_balance_grid_bin( ofaCheckBalancesBin *bin, const gchar *w_name );
 static void             set_bar_progression( myProgressBar *bar, gulong total, gulong current );
 static void             set_checks_result( ofaCheckBalancesBin *bin );
 static gboolean         cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b );
@@ -267,7 +267,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
-	ofaBalancesGrid *grid;
+	ofaBalanceGridBin *grid;
 	GList *entries, *it;
 	const GDate *dbegin, *dend;
 	gulong count, i;
@@ -276,7 +276,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	ofsCurrency *sbal;
 
 	bar = get_new_bar( bin, "p4-entry-parent" );
-	grid = get_new_balances_grid( bin, "p4-entry-bals" );
+	grid = get_new_balance_grid_bin( bin, "p4-entry-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ) );
 
 	priv = bin->priv;
@@ -321,7 +321,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
-	ofaBalancesGrid *grid;
+	ofaBalanceGridBin *grid;
 	GList *ledgers, *it;
 	GList *currencies, *ic;
 	gulong count, i;
@@ -330,7 +330,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 	const gchar *currency;
 
 	bar = get_new_bar( bin, "p4-ledger-parent" );
-	grid = get_new_balances_grid( bin, "p4-ledger-bals" );
+	grid = get_new_balance_grid_bin( bin, "p4-ledger-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
@@ -375,7 +375,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
-	ofaBalancesGrid *grid;
+	ofaBalanceGridBin *grid;
 	GList *accounts, *it;
 	gulong count, i;
 	ofoAccount *account;
@@ -383,7 +383,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 	ofsCurrency *sbal;
 
 	bar = get_new_bar( bin, "p4-account-parent" );
-	grid = get_new_balances_grid( bin, "p4-account-bals" );
+	grid = get_new_balance_grid_bin( bin, "p4-account-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
@@ -497,16 +497,16 @@ get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name )
 	return( bar );
 }
 
-static ofaBalancesGrid *
-get_new_balances_grid( ofaCheckBalancesBin *bin, const gchar *w_name )
+static ofaBalanceGridBin *
+get_new_balance_grid_bin( ofaCheckBalancesBin *bin, const gchar *w_name )
 {
 	GtkWidget *parent;
-	ofaBalancesGrid *grid;
+	ofaBalanceGridBin *grid;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
 	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 
-	grid = ofa_balances_grid_new();
+	grid = ofa_balance_grid_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
 
 	return( grid );

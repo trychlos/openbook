@@ -75,27 +75,22 @@ typedef struct {
 }
 	ofaBalanceBinClass;
 
-GType               ofa_balance_bin_get_type( void ) G_GNUC_CONST;
+GType              ofa_balance_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaBalanceBin      *ofa_balance_bin_new     ( ofaMainWindow *main_window );
+ofaBalanceBin     *ofa_balance_bin_new                   ( ofaMainWindow *main_window );
 
-gboolean            ofa_balance_bin_is_valid( ofaBalanceBin *bin,
-														gchar **message );
+gboolean           ofa_balance_bin_is_valid              ( ofaBalanceBin *bin,
+																gchar **message );
 
-gboolean            ofa_balance_bin_get_accounts_balance
-                                            ( const ofaBalanceBin *bin );
+gboolean           ofa_balance_bin_get_accounts_balance  ( const ofaBalanceBin *bin );
 
-gboolean            ofa_balance_bin_get_subtotal_per_class
-                                            ( const ofaBalanceBin *bin );
+gboolean           ofa_balance_bin_get_subtotal_per_class( const ofaBalanceBin *bin );
 
-gboolean            ofa_balance_bin_get_new_page_per_class
-                                            ( const ofaBalanceBin *bin );
+gboolean           ofa_balance_bin_get_new_page_per_class( const ofaBalanceBin *bin );
 
-ofaIAccountFilter *ofa_balance_bin_get_account_filter
-                                            ( const ofaBalanceBin *bin );
+ofaIAccountFilter *ofa_balance_bin_get_account_filter    ( const ofaBalanceBin *bin );
 
-ofaIDateFilter    *ofa_balance_bin_get_date_filter
-                                            ( const ofaBalanceBin *bin );
+ofaIDateFilter    *ofa_balance_bin_get_date_filter       ( const ofaBalanceBin *bin );
 
 G_END_DECLS
 

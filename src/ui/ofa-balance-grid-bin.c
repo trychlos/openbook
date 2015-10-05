@@ -29,11 +29,11 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 
-#include "ui/ofa-balances-grid.h"
+#include "ui/ofa-balance-grid-bin.h"
 
 /* private instance data
  */
-struct _ofaBalancesGridPrivate {
+struct _ofaBalanceGridBinPrivate {
 	gboolean dispose_has_run;
 
 	/* UI
@@ -59,36 +59,36 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaBalancesGrid, ofa_balances_grid, GTK_TYPE_BIN )
+G_DEFINE_TYPE( ofaBalanceGridBin, ofa_balance_grid_bin, GTK_TYPE_BIN )
 
-static void setup_grid( ofaBalancesGrid *self );
-static void on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
-static void write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top );
+static void setup_grid( ofaBalanceGridBin *self );
+static void on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
+static void write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top );
 
 static void
 balances_grid_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_balances_grid_finalize";
+	static const gchar *thisfn = "ofa_balance_grid_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_BALANCES_GRID( instance ));
+	g_return_if_fail( instance && OFA_IS_BALANCE_GRID_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_balances_grid_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_balance_grid_bin_parent_class )->finalize( instance );
 }
 
 static void
 balances_grid_dispose( GObject *instance )
 {
-	ofaBalancesGridPrivate *priv;
+	ofaBalanceGridBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_BALANCES_GRID( instance ));
+	g_return_if_fail( instance && OFA_IS_BALANCE_GRID_BIN( instance ));
 
-	priv = ( OFA_BALANCES_GRID( instance ))->priv;
+	priv = ( OFA_BALANCE_GRID_BIN( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -98,44 +98,44 @@ balances_grid_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_balances_grid_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_balance_grid_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_balances_grid_init( ofaBalancesGrid *self )
+ofa_balance_grid_bin_init( ofaBalanceGridBin *self )
 {
-	static const gchar *thisfn = "ofa_balances_grid_init";
+	static const gchar *thisfn = "ofa_balance_grid_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
+	g_return_if_fail( self && OFA_IS_BALANCE_GRID_BIN( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_BALANCES_GRID, ofaBalancesGridPrivate );
+						self, OFA_TYPE_BALANCE_GRID_BIN, ofaBalanceGridBinPrivate );
 
 	self->priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
+ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_balances_grid_class_init";
+	static const gchar *thisfn = "ofa_balance_grid_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	G_OBJECT_CLASS( klass )->dispose = balances_grid_dispose;
 	G_OBJECT_CLASS( klass )->finalize = balances_grid_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaBalancesGridPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaBalanceGridBinPrivate ));
 
 	/**
-	 * ofaBalancesGrid::update:
+	 * ofaBalanceGridBin::update:
 	 *
 	 * This signal may be sent to update the balance grid.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaBalancesGrid *grid,
+	 * void ( *handler )( ofaBalanceGridBin *grid,
 	 *						const gchar   *currency,
 	 * 						gdouble        debit,
 	 * 						gdouble        credit,
@@ -143,7 +143,7 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 	 */
 	st_signals[ UPDATE ] = g_signal_new_class_handler(
 				"ofa-update",
-				OFA_TYPE_BALANCES_GRID,
+				OFA_TYPE_BALANCE_GRID_BIN,
 				G_SIGNAL_ACTION,
 				NULL,
 				NULL,								/* accumulator */
@@ -155,14 +155,14 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 }
 
 /**
- * ofa_balances_grid_new:
+ * ofa_balance_grid_bin_new:
  */
-ofaBalancesGrid *
-ofa_balances_grid_new( void )
+ofaBalanceGridBin *
+ofa_balance_grid_bin_new( void )
 {
-	ofaBalancesGrid *self;
+	ofaBalanceGridBin *self;
 
-	self = g_object_new( OFA_TYPE_BALANCES_GRID, NULL );
+	self = g_object_new( OFA_TYPE_BALANCE_GRID_BIN, NULL );
 
 	setup_grid( self );
 
@@ -170,9 +170,9 @@ ofa_balances_grid_new( void )
 }
 
 static void
-setup_grid( ofaBalancesGrid *self )
+setup_grid( ofaBalanceGridBin *self )
 {
-	ofaBalancesGridPrivate *priv;
+	ofaBalanceGridBinPrivate *priv;
 	GtkWidget *grid;
 
 	priv = self->priv;
@@ -189,15 +189,15 @@ setup_grid( ofaBalancesGrid *self )
 }
 
 static void
-on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble credit, void *empty )
+on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdouble credit, void *empty )
 {
-	ofaBalancesGridPrivate *priv;
+	ofaBalanceGridBinPrivate *priv;
 	gint i;
 	gboolean found;
 	GtkWidget *widget;
 	const gchar *cstr;
 
-	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
+	g_return_if_fail( self && OFA_IS_BALANCE_GRID_BIN( self ));
 
 	priv = self->priv;
 	found = FALSE;
@@ -251,9 +251,9 @@ on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble 
 }
 
 static void
-write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top )
+write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top )
 {
-	ofaBalancesGridPrivate *priv;
+	ofaBalanceGridBinPrivate *priv;
 	GtkWidget *widget;
 	gchar *str;
 

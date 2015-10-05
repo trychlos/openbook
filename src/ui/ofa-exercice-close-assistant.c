@@ -52,7 +52,7 @@
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
-#include "ui/ofa-balances-grid.h"
+#include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"
 #include "ui/ofa-closing-parms-bin.h"

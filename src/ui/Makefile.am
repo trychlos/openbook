@@ -98,8 +98,8 @@ openbook_SOURCES = \
 	ofa-balance-bin.h									\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-balances-grid.c									\
-	ofa-balances-grid.h									\
+	ofa-balance-grid-bin.c									\
+	ofa-balance-grid-bin.h									\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-properties-bin.c							\

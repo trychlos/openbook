@@ -150,7 +150,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-account-frame-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
 	ofa-balance-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
-	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
+	ofa-balance-grid-bin.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
 	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
 	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
 	ofa-bat-utils.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
@@ -530,8 +530,8 @@ openbook_SOURCES = \
 	ofa-balance-bin.h									\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-balances-grid.c									\
-	ofa-balances-grid.h									\
+	ofa-balance-grid-bin.c									\
+	ofa-balance-grid-bin.h									\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-properties-bin.c							\
@@ -896,7 +896,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balances-grid.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-grid-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-select.Po@am__quote@
