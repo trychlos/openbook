@@ -478,29 +478,6 @@
 
  843 2015- 9-30 account number should be renamed as account identifier
 
- 844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
-                idem for ledgers, ope-templates, etc.
-     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
-                ofaAccountsFrame -> ofaAccountFrameBin
-                ofaAccountsPage -> ofaAccountPage
-                ofaAccountsBookBin -> ofaAccountBookBin
-                ofaAccountsBookRender -> ofaAccountBookRender
-                ofaAccountsFilterVVBin -> ofaAccountFilterVVBin
-                ofaIAccountsFilter -> ofaIAccountFilter
-                ofaDatesFilterHVBin -> ofaDateFilterHVBin
-                ofaIDatesFilter -> ofaIDateFilter
-                ofaClassesPage -> ofaClassPage
-                ofaBatsPage -> ofaBatPage
-                ofaBalancesGrid -> ofaBalanceGridBin
-                ofaCurrenciesPage -> ofaCurrencyPage
-                ofaLedgersPage -> ofaLedgerPage
-                ofaLedgersBookBin -> ofaLedgerBookBin
-                ofaLedgersBookRender -> ofaLedgerBookRender
-                ofaOpeTemplatesPage -> ofaOpeTemplatePage
-                ofaRatesPage -> ofaRatePage
-                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
-                ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
-
  845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
                 and DossierOpen
 
@@ -521,13 +498,6 @@
                 NB: if restored to some use, check in DossierProperties
                 if this data is updatable by the user, or should be
                 read-only. 
-
- 850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
-                GtkBin-derived widgets ?
-     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
-                ofaAccountsFrame -> ofaAccountFrameBin
-                ofaBalancesGrid -> ofaBalanceGridBin
-                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
 
  851 2015-10- 1 segfault when closing the exercice
                 database trest6 restored from PWIConsultants-20150319.gz
@@ -4001,6 +3971,36 @@
  842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
                 aligned
      2015-10- 5 done
+
+ 844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
+                idem for ledgers, ope-templates, etc.
+     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
+                ofaAccountsPage -> ofaAccountPage
+                ofaAccountsBookBin -> ofaAccountBookBin
+                ofaAccountsBookRender -> ofaAccountBookRender
+                ofaAccountsFilterVVBin -> ofaAccountFilterVVBin
+                ofaIAccountsFilter -> ofaIAccountFilter
+                ofaDatesFilterHVBin -> ofaDateFilterHVBin
+                ofaIDatesFilter -> ofaIDateFilter
+                ofaClassesPage -> ofaClassPage
+                ofaBatsPage -> ofaBatPage
+                ofaBalancesGrid -> ofaBalanceGridBin
+                ofaCurrenciesPage -> ofaCurrencyPage
+                ofaLedgersPage -> ofaLedgerPage
+                ofaLedgersBookBin -> ofaLedgerBookBin
+                ofaLedgersBookRender -> ofaLedgerBookRender
+                ofaOpeTemplatesPage -> ofaOpeTemplatePage
+                ofaRatesPage -> ofaRatePage
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
+                ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
+
+ 850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
+                GtkBin-derived widgets ?
+     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
+                ofaBalancesGrid -> ofaBalanceGridBin
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
 
  852 2015-10- 1 myDate: set width and max width (unless otherwise
                 specified) + set placeholder text + center
