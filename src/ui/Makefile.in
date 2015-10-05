@@ -177,7 +177,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
 	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-ledgers-book-bin.$(OBJEXT) \
+	ofa-ledger-book-bin.$(OBJEXT) \
 	ofa-ledgers-book-render.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
 	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
@@ -630,8 +630,8 @@ openbook_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
-	ofa-ledgers-book-bin.c								\
-	ofa-ledgers-book-bin.h								\
+	ofa-ledger-book-bin.c								\
+	ofa-ledger-book-bin.h								\
 	ofa-ledgers-book-render.c							\
 	ofa-ledgers-book-render.h							\
 	ofa-ledger-page.c									\
@@ -730,7 +730,7 @@ ui_files = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
-	ofa-ledgers-book-bin.ui								\
+	ofa-ledger-book-bin.ui								\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
@@ -946,7 +946,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledgers-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledgers-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-list-store.Po@am__quote@

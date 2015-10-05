@@ -48,14 +48,14 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-ledgers-book-bin.h"
+#include "ui/ofa-ledger-book-bin.h"
 #include "ui/ofa-ledgers-book-render.h"
 
 /* private instance data
  */
 struct _ofaLedgersBookRenderPrivate {
 
-	ofaLedgersBookBin *args_bin;
+	ofaLedgerBookBin    *args_bin;
 
 	/* internals
 	 */
@@ -146,7 +146,7 @@ static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page 
 static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_get_dataset( ofaRenderPage *page );
 static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
-static void               on_args_changed( ofaLedgersBookBin *bin, ofaLedgersBookRender *page );
+static void               on_args_changed( ofaLedgerBookBin *bin, ofaLedgersBookRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
@@ -306,11 +306,11 @@ static GtkWidget *
 render_page_get_args_widget( ofaRenderPage *page )
 {
 	ofaLedgersBookRenderPrivate *priv;
-	ofaLedgersBookBin *bin;
+	ofaLedgerBookBin *bin;
 
 	priv = OFA_LEDGERS_BOOK_RENDER( page )->priv;
 
-	bin = ofa_ledgers_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
+	bin = ofa_ledger_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -356,8 +356,8 @@ render_page_get_dataset( ofaRenderPage *page )
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	priv->all_ledgers = ofa_ledgers_book_bin_get_all_ledgers( priv->args_bin );
-	tview = ofa_ledgers_book_bin_get_treeview( priv->args_bin );
+	priv->all_ledgers = ofa_ledger_book_bin_get_all_ledgers( priv->args_bin );
+	tview = ofa_ledger_book_bin_get_treeview( priv->args_bin );
 
 	if( priv->all_ledgers ){
 		priv->selected = ofo_ledger_get_dataset( dossier );
@@ -375,7 +375,7 @@ render_page_get_dataset( ofaRenderPage *page )
 		mnemos = g_slist_prepend( mnemos, g_strdup( ofo_ledger_get_mnemo( OFO_LEDGER( it->data ))));
 	}
 
-	date_filter = ofa_ledgers_book_bin_get_date_filter( priv->args_bin );
+	date_filter = ofa_ledger_book_bin_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
@@ -397,15 +397,15 @@ render_page_free_dataset( ofaRenderPage *page, GList *dataset )
 }
 
 /*
- * ofaLedgersBookBin "ofa-changed" handler
+ * ofaLedgerBookBin "ofa-changed" handler
  */
 static void
-on_args_changed( ofaLedgersBookBin *bin, ofaLedgersBookRender *page )
+on_args_changed( ofaLedgerBookBin *bin, ofaLedgersBookRender *page )
 {
 	gboolean valid;
 	gchar *message;
 
-	valid = ofa_ledgers_book_bin_is_valid( bin, &message );
+	valid = ofa_ledger_book_bin_is_valid( bin, &message );
 	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
@@ -466,7 +466,7 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 	ofaLedgersBookRenderPrivate *priv;
 
 	priv = OFA_LEDGERS_BOOK_RENDER( instance )->priv;
-	priv->new_page = ofa_ledgers_book_bin_get_new_page_per_ledger( priv->args_bin );
+	priv->new_page = ofa_ledger_book_bin_get_new_page_per_ledger( priv->args_bin );
 
 	return( priv->new_page );
 }

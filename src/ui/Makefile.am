@@ -198,8 +198,8 @@ openbook_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
-	ofa-ledgers-book-bin.c								\
-	ofa-ledgers-book-bin.h								\
+	ofa-ledger-book-bin.c								\
+	ofa-ledger-book-bin.h								\
 	ofa-ledgers-book-render.c							\
 	ofa-ledgers-book-render.h							\
 	ofa-ledger-page.c									\
@@ -298,7 +298,7 @@ ui_files = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
-	ofa-ledgers-book-bin.ui								\
+	ofa-ledger-book-bin.ui								\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
