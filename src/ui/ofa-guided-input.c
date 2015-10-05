@@ -44,6 +44,7 @@ struct _ofaGuidedInputPrivate {
 
 	/* runtime data
 	 */
+	ofaMainWindow        *main_window;
 	const ofoOpeTemplate *model;
 
 	/* UI
@@ -145,6 +146,7 @@ ofa_guided_input_run( ofaMainWindow *main_window, const ofoOpeTemplate *model )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->model = model;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -156,14 +158,10 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaGuidedInputPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 
 	priv = OFA_GUIDED_INPUT( dialog )->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
@@ -171,9 +169,8 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->input_bin = ofa_guided_input_bin_new();
+	priv->input_bin = ofa_guided_input_bin_new( priv->main_window );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
-	ofa_guided_input_bin_set_main_window( priv->input_bin, OFA_MAIN_WINDOW( main_window ));
 	ofa_guided_input_bin_set_ope_template( priv->input_bin, priv->model );
 
 	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( on_input_bin_changed ), dialog );

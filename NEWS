@@ -81,6 +81,7 @@
    - ofa_dossier_store_reload(): new method.
    - ofa_dossier_treeview_get_treeview(): new method.
    - ofa_exercice_combo_set_selected(): new method.
+   - ofa_guided_input_bin_set_main_window(): removed method (todo #861).
    - ofa_irenderable_free_dataset(): removed interface method.
    - ofa_irenderable_get_dataset(): removed interface method.
    - ofa_ledger_treeview_get_selection(): new method.

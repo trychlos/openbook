@@ -218,6 +218,7 @@ static const gchar *st_bin_xml          = PKGUIDIR "/ofa-guided-input-bin.ui";
 G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
 
 static void              setup_bin( ofaGuidedInputBin *bin );
+static void              setup_main_window( ofaGuidedInputBin *bin );
 static void              setup_dialog( ofaGuidedInputBin *bin );
 static void              init_model_data( ofaGuidedInputBin *bin );
 static void              add_entry_row( ofaGuidedInputBin *bin, gint i );
@@ -383,15 +384,19 @@ ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
  * ofa_guided_input_bin_new:
  */
 ofaGuidedInputBin *
-ofa_guided_input_bin_new( void )
+ofa_guided_input_bin_new( ofaMainWindow *main_window )
 {
-	ofaGuidedInputBin *self;
+	ofaGuidedInputBin *bin;
 
-	self = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
-	setup_bin( self );
+	bin->priv->main_window = main_window;
 
-	return( self );
+	setup_bin( bin );
+	setup_main_window( bin );
+	setup_dialog( bin );
+
+	return( bin );
 }
 
 static void
@@ -413,49 +418,35 @@ setup_bin( ofaGuidedInputBin *bin )
 	g_object_unref( builder );
 }
 
-/**
+/*
  * ofa_guided_input_bin_set_main_window:
  */
-void
-ofa_guided_input_bin_set_main_window( ofaGuidedInputBin *bin, ofaMainWindow *main_window )
+static void
+setup_main_window( ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_set_main_window";
+	static const gchar *thisfn = "ofa_guided_input_bin_setup_main_window";
 	ofaGuidedInputBinPrivate *priv;
 	gulong handler;
 
-	g_debug( "%s: bin=%p, main_window=%p", thisfn, ( void * ) bin, ( void * ) main_window );
-
-	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run ){
+	/* setup from dossier
+	 * datas which come from the dossier are read once
+	 * they are supposed to stay unchanged while the window is alive */
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->def_currency = ofo_dossier_get_default_currency( priv->dossier );
 
-		priv->main_window = main_window;
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
+	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-		/* setup from dossier
-		 * datas which come from the dossier are read once
-		 * they are supposed to stay unchanged while the window is alive */
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->def_currency = ofo_dossier_get_default_currency( priv->dossier );
-
-		handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
-		g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
-		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-		handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
-		g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
-		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-		/* setup the dialog part which do not depend of the operation
-		 * template */
-		setup_dialog( bin );
-	}
+	handler = g_signal_connect(
+					G_OBJECT( priv->dossier ),
+					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
+	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
 static void
