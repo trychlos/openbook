@@ -499,6 +499,7 @@
                 ofaOpeTemplatesPage -> ofaOpeTemplatePage
                 ofaRatesPage -> ofaRatePage
                 ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
+                ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
 
  845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
                 and DossierOpen

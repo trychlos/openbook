@@ -38,7 +38,7 @@
  */
 
 #include "ui/ofa-main-window-def.h"
-#include "ui/ofa-ope-templates-book.h"
+#include "ui/ofa-ope-template-book-bin.h"
 
 G_BEGIN_DECLS
 
@@ -76,7 +76,7 @@ void                    ofa_ope_template_frame_bin_set_main_window( ofaOpeTempla
 void                    ofa_ope_template_frame_bin_set_buttons    ( ofaOpeTemplateFrameBin *frame,
 																			gboolean guided_input );
 
-ofaOpeTemplatesBook    *ofa_ope_template_frame_bin_get_book       ( ofaOpeTemplateFrameBin *frame );
+ofaOpeTemplateBookBin    *ofa_ope_template_frame_bin_get_book       ( ofaOpeTemplateFrameBin *frame );
 
 G_END_DECLS
 

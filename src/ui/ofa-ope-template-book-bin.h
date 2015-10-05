@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_OPE_TEMPLATES_BOOK_H__
-#define __OFA_OPE_TEMPLATES_BOOK_H__
+#ifndef __OFA_OPE_TEMPLATE_BOOK_BIN_H__
+#define __OFA_OPE_TEMPLATE_BOOK_BIN_H__
 
 /**
- * SECTION: ofa_ope_templates_book
- * @short_description: #ofaOpeTemplatesBook class definition.
+ * SECTION: ofa_ope_template_book_bin
+ * @short_description: #ofaOpeTemplateBookBin class definition.
  * @include: ui/ofa-ope-template-book.h
  *
  * This is a convenience class which manages the display of the
@@ -51,49 +51,49 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_OPE_TEMPLATES_BOOK                ( ofa_ope_templates_book_get_type())
-#define OFA_OPE_TEMPLATES_BOOK( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_OPE_TEMPLATES_BOOK, ofaOpeTemplatesBook ))
-#define OFA_OPE_TEMPLATES_BOOK_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_OPE_TEMPLATES_BOOK, ofaOpeTemplatesBookClass ))
-#define OFA_IS_OPE_TEMPLATES_BOOK( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_OPE_TEMPLATES_BOOK ))
-#define OFA_IS_OPE_TEMPLATES_BOOK_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATES_BOOK ))
-#define OFA_OPE_TEMPLATES_BOOK_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATES_BOOK, ofaOpeTemplatesBookClass ))
+#define OFA_TYPE_OPE_TEMPLATE_BOOK_BIN                ( ofa_ope_template_book_bin_get_type())
+#define OFA_OPE_TEMPLATE_BOOK_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_OPE_TEMPLATE_BOOK_BIN, ofaOpeTemplateBookBin ))
+#define OFA_OPE_TEMPLATE_BOOK_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_OPE_TEMPLATE_BOOK_BIN, ofaOpeTemplateBookBinClass ))
+#define OFA_IS_OPE_TEMPLATE_BOOK_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_OPE_TEMPLATE_BOOK_BIN ))
+#define OFA_IS_OPE_TEMPLATE_BOOK_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_BOOK_BIN ))
+#define OFA_OPE_TEMPLATE_BOOK_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_BOOK_BIN, ofaOpeTemplateBookBinClass ))
 
-typedef struct _ofaOpeTemplatesBookPrivate         ofaOpeTemplatesBookPrivate;
+typedef struct _ofaOpeTemplateBookBinPrivate         ofaOpeTemplateBookBinPrivate;
 
 typedef struct {
 	/*< public members >*/
 	GtkBin                      parent;
 
 	/*< private members >*/
-	ofaOpeTemplatesBookPrivate *priv;
+	ofaOpeTemplateBookBinPrivate *priv;
 }
-	ofaOpeTemplatesBook;
+	ofaOpeTemplateBookBin;
 
 typedef struct {
 	/*< public members >*/
 	GtkBinClass                 parent;
 }
-	ofaOpeTemplatesBookClass;
+	ofaOpeTemplateBookBinClass;
 
-GType               ofa_ope_templates_book_get_type            ( void ) G_GNUC_CONST;
+GType               ofa_ope_template_book_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplatesBook *ofa_ope_templates_book_new                ( void );
+ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                ( void );
 
-void                ofa_ope_templates_book_set_main_window     ( ofaOpeTemplatesBook *book,
+void                ofa_ope_template_book_bin_set_main_window     ( ofaOpeTemplateBookBin *book,
 																		ofaMainWindow *main_window );
 
-void                ofa_ope_templates_book_expand_all          ( ofaOpeTemplatesBook *book );
+void                ofa_ope_template_book_bin_expand_all          ( ofaOpeTemplateBookBin *book );
 
-gchar              *ofa_ope_templates_book_get_selected        ( ofaOpeTemplatesBook *book );
+gchar              *ofa_ope_template_book_bin_get_selected        ( ofaOpeTemplateBookBin *book );
 
-void                ofa_ope_templates_book_set_selected        ( ofaOpeTemplatesBook *book,
+void                ofa_ope_template_book_bin_set_selected        ( ofaOpeTemplateBookBin *book,
 																		const gchar *mnemo );
 
-void                ofa_ope_templates_book_button_clicked      ( ofaOpeTemplatesBook *book,
+void                ofa_ope_template_book_bin_button_clicked      ( ofaOpeTemplateBookBin *book,
 																		gint button_id );
 
-GtkWidget          *ofa_ope_templates_book_get_current_treeview( const ofaOpeTemplatesBook *book );
+GtkWidget          *ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *book );
 
 G_END_DECLS
 
-#endif /* __OFA_OPE_TEMPLATES_BOOK_H__ */
+#endif /* __OFA_OPE_TEMPLATE_BOOK_BIN_H__ */

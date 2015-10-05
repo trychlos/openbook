@@ -154,14 +154,14 @@ static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
-	ofaOpeTemplatesBook *book;
+	ofaOpeTemplateBookBin *book;
 	GtkWidget *top_widget;
 
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
 	priv = OFA_OPE_TEMPLATE_PAGE( page )->priv;
 	book = ofa_ope_template_frame_bin_get_book( priv->ope_frame );
-	top_widget = ofa_ope_templates_book_get_current_treeview( book );
+	top_widget = ofa_ope_template_book_bin_get_current_treeview( book );
 
 	return( top_widget );
 }

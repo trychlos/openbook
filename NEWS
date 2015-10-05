@@ -111,6 +111,7 @@
    - ofaOpeTemplatesPage class is renamed to ofaOpeTemplatePage (todo #844).
    - ofaRatesPage class is renamed to ofaRatePage (todo #844).
    - ofaOpeTemplatesFrame class is renamed to ofaOpeTemplateFrameBin (todo #844/850).
+   - ofaOpeTemplatesBook class is renamed to ofaOpeTemplateBookBin (todo #844/850).
 
 -----------------------------------------------------------------------
  Version 0.39

@@ -150,7 +150,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplatesBook *book;
+	ofaOpeTemplateBookBin *book;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
@@ -182,7 +182,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 	priv->ope_mnemo = NULL;
 
 	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	ofa_ope_templates_book_set_selected( book, asked_mnemo );
+	ofa_ope_template_book_bin_set_selected( book, asked_mnemo );
 
 	check_for_enable_dlg( st_this );
 
@@ -247,14 +247,14 @@ static void
 check_for_enable_dlg( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplatesBook *book;
+	ofaOpeTemplateBookBin *book;
 	gchar *mnemo;
 	gboolean ok;
 
 	priv = self->priv;
 
 	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_templates_book_get_selected( book );
+	mnemo = ofa_ope_template_book_bin_get_selected( book );
 	ok = my_strlen( mnemo );
 	g_free( mnemo );
 
@@ -271,13 +271,13 @@ static gboolean
 do_select( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplatesBook *book;
+	ofaOpeTemplateBookBin *book;
 	gchar *mnemo;
 
 	priv = self->priv;
 
 	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_templates_book_get_selected( book );
+	mnemo = ofa_ope_template_book_bin_get_selected( book );
 	if( my_strlen( mnemo )){
 		g_free( priv->ope_mnemo );
 		priv->ope_mnemo = g_strdup( mnemo );
