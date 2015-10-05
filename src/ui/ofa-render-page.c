@@ -599,7 +599,7 @@ pdf_crs_free( GList **pdf_crs )
 static void
 iprintable2_iface_init( ofaIPrintable2Interface *iface )
 {
-	static const gchar *thisfn = "ofa_pdf_balances_iprintable2_iface_init";
+	static const gchar *thisfn = "ofa_render_page_iprintable2_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

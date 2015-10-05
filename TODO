@@ -534,10 +534,9 @@
                 (see debug messages) -> this should be done before the
                 acknowledge, or have a spinner, or have a progress bar
 
- 855 2015-10- 1 render page should have a pane between the drawing area
-                and the args zone
+ 860 2015-10- 5 get rid of ofaIPrintable interface
 
- 860
+ 861
 
 -----------------------------------------------------------------------
  DONE
@@ -3980,6 +3979,10 @@
                 src/ui/ofa-settlement.ui                    OK
                 src/ui/ofa-view-entries.ui                  --
      2015-10- 2 done
+
+ 855 2015-10- 1 render page should have a pane between the drawing area
+                and the args zone
+     2015-10- 5 set actions area end-aligned instead
 
  856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
                 current

@@ -35,7 +35,7 @@
  * exported as PDF files).
  *
  * This base classe along with its companion interface #ofaIRenderable,
- * which is expected to be implemented by the derived class, both makes
+ * which is expected to be implemented by the derived class, both make
  * use of the #GtkPrintOperation operations via the ofaIPrintable2
  * interface.
  *
