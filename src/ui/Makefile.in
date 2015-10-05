@@ -190,7 +190,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
 	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
 	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-view-entries.$(OBJEXT)
+	ofa-user-credentials-bin.$(OBJEXT) ofa-view-entries.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -677,6 +677,8 @@ openbook_SOURCES = \
 	ofa-settlement.h									\
 	ofa-tree-store.c									\
 	ofa-tree-store.h									\
+	ofa-user-credentials-bin.c							\
+	ofa-user-credentials-bin.h							\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)
@@ -739,6 +741,7 @@ ui_files = \
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
+	ofa-user-credentials-bin.ui							\
 	ofa-view-entries.ui									\
 	$(NULL)
 
@@ -967,6 +970,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-user-credentials-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-view-entries.Po@am__quote@
 
 .c.o:

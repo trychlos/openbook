@@ -34,6 +34,7 @@
 #include "api/ofa-settings.h"
 
 #include "ui/ofa-dossier-login.h"
+#include "ui/ofa-user-credentials-bin.h"
 
 /* private instance data
  */
@@ -52,7 +53,7 @@ struct _ofaDossierLoginPrivate {
 
 	/* UI
 	 */
-	GtkWidget   *ok_btn;
+	GtkWidget     *ok_btn;
 };
 
 static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-dossier-login.ui";
@@ -61,10 +62,9 @@ static const gchar  *st_ui_id           = "DossierLoginDlg";
 G_DEFINE_TYPE( ofaDossierLogin, ofa_dossier_login, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_account_changed( GtkEditable *entry, ofaDossierLogin *self );
-static void      on_password_changed( GtkEditable *entry, ofaDossierLogin *self );
-static void      check_for_enable_dlg( ofaDossierLogin *self );
-static gboolean  is_dialog_validable( ofaDossierLogin *self );
+static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierLogin *bin );
+static void      check_for_enable_dlg( ofaDossierLogin *bin );
+static gboolean  is_dialog_validable( ofaDossierLogin *bin );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 
 static void
@@ -187,7 +187,8 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierLoginPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *entry, *label;
+	GtkWidget *parent, *label;
+	ofaUserCredentialsBin *user_credentials;
 	gchar *msg;
 
 	priv = OFA_DOSSIER_LOGIN( dialog )->priv;
@@ -207,63 +208,58 @@ v_init_dialog( myDialog *dialog )
 	gtk_label_set_text( GTK_LABEL( label ), msg );
 	g_free( msg );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dl-account-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dl-password-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dl-user-parent" );
+	g_return_if_fail( parent && GTK_IS_WIDGET( parent ));
+	user_credentials = ofa_user_credentials_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( user_credentials ));
+	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), dialog );
 
 	if( priv->account ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), priv->account );
+		ofa_user_credentials_bin_set_account( user_credentials, priv->account );
 	}
-
 	if( priv->password ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), priv->password );
+		ofa_user_credentials_bin_set_password( user_credentials, priv->password );
 	}
 
 	check_for_enable_dlg( OFA_DOSSIER_LOGIN( dialog ));
 }
 
 static void
-on_account_changed( GtkEditable *entry, ofaDossierLogin *self )
+on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierLogin *bin )
 {
-	g_free( self->priv->account );
-	self->priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
+	ofaDossierLoginPrivate *priv;
 
-	check_for_enable_dlg( self );
+	priv = bin->priv;
+
+	g_free( priv->account );
+	priv->account = g_strdup( account );
+
+	g_free( priv->password );
+	priv->password = g_strdup( password );
+
+	check_for_enable_dlg( bin );
 }
 
 static void
-on_password_changed( GtkEditable *entry, ofaDossierLogin *self )
-{
-	g_free( self->priv->password );
-	self->priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
-
-	check_for_enable_dlg( self );
-}
-
-static void
-check_for_enable_dlg( ofaDossierLogin *self )
+check_for_enable_dlg( ofaDossierLogin *bin )
 {
 	ofaDossierLoginPrivate *priv;
 	gboolean ok;
 
-	ok = is_dialog_validable( self );
+	ok = is_dialog_validable( bin );
 
-	priv = self->priv;
+	priv = bin->priv;
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 static gboolean
-is_dialog_validable( ofaDossierLogin *self )
+is_dialog_validable( ofaDossierLogin *bin )
 {
 	ofaDossierLoginPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = bin->priv;
 
 	ok = my_strlen( priv->account ) && my_strlen( priv->password );
 

@@ -39,6 +39,7 @@
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-user-credentials-bin.h"
 
 /* private instance data
  */
@@ -75,8 +76,7 @@ G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 static void      v_init_dialog( myDialog *dialog );
 static void      on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, const gchar *dbname, ofaDossierOpen *self );
 static void      on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self );
-static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
-static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
+static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  connection_is_valid( ofaDossierOpen *self );
@@ -197,7 +197,9 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *container, *entry, *button, *focus, *account_entry, *label;
+	GtkWidget *container, *button, *focus, *label;
+	ofaUserCredentialsBin *user_credentials;
+	GtkSizeGroup *group;
 	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
@@ -206,13 +208,12 @@ v_init_dialog( myDialog *dialog )
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* do this first to be available as soon as the first signal
 	 * triggers */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-open" );
 	priv->ok_btn = button;
-
-	account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-account-entry" );
 
 	/* setup exercice combobox (before dossier) */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-exercice-parent" );
@@ -225,6 +226,7 @@ v_init_dialog( myDialog *dialog )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-exercice-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->exercice_combo ));
+	gtk_size_group_add_widget( group, label );
 
 	/* setup dossier treeview */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-dossier-parent" );
@@ -242,6 +244,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget(
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
+	gtk_size_group_add_widget( group, label );
 
 	if( priv->dname ){
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
@@ -249,26 +252,30 @@ v_init_dialog( myDialog *dialog )
 
 		if( priv->open_db ){
 			ofa_exercice_combo_set_selected( priv->exercice_combo, EXERCICE_COL_DBNAME, priv->open_db );
-			focus = account_entry;
+			focus = NULL;
 		}
-	}
-	if( focus ){
-		gtk_widget_grab_focus( focus );
 	}
 
 	/* setup account and password */
-	g_signal_connect(G_OBJECT( account_entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-user-parent" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	user_credentials = ofa_user_credentials_bin_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( user_credentials ));
+	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), dialog );
+	my_utils_size_group_add_size_group(
+			group, ofa_user_credentials_bin_get_size_group( user_credentials, 0 ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-account-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), account_entry );
+	/* focus defauls to be set on the dossier treeview
+	 * if the dossier is already set, then set the focus on the exercice combo
+	 * if the exercice is also already selected, then set focus to NULL
+	 * this means that the focus is to be grabbed by user credentials */
+	if( focus ){
+		gtk_widget_grab_focus( focus );
+	} else {
+		ofa_user_credentials_bin_grab_focus( user_credentials );
+	}
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-password-entry" );
-	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-password-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	g_object_unref( group );
 
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
 }
@@ -312,27 +319,17 @@ on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *d
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaDossierOpen *self )
+on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 
 	priv = self->priv;
 
 	g_free( priv->account );
-	priv->account = g_strdup( gtk_entry_get_text( entry ));
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_password_changed( GtkEntry *entry, ofaDossierOpen *self )
-{
-	ofaDossierOpenPrivate *priv;
-
-	priv = self->priv;
+	priv->account = g_strdup( account );
 
 	g_free( priv->password );
-	priv->password = g_strdup( gtk_entry_get_text( entry ));
+	priv->password = g_strdup( password );
 
 	check_for_enable_dlg( self );
 }

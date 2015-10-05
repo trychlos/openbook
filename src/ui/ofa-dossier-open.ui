@@ -94,62 +94,6 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="do-account-label">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">_Account :</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">1</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkEntry" id="do-account-entry">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="halign">start</property>
-                <property name="max_length">20</property>
-                <property name="invisible_char">●</property>
-                <property name="width_chars">15</property>
-                <property name="caps_lock_warning">False</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="do-password-label">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">_Password :</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">1</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkEntry" id="do-password-entry">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="halign">start</property>
-                <property name="visibility">False</property>
-                <property name="invisible_char">●</property>
-                <property name="width_chars">15</property>
-                <property name="input_purpose">password</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">3</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkLabel" id="message">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -157,7 +101,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">3</property>
                 <property name="width">2</property>
               </packing>
             </child>
@@ -189,6 +133,20 @@
                 <property name="top_attach">0</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkGrid" id="do-user-parent">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -202,5 +160,11 @@
       <action-widget response="-6">btn-cancel</action-widget>
       <action-widget response="-5">btn-open</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkSizeGroup" id="do-col0-hsize">
+    <widgets>
+      <widget name="do-dossier-label"/>
+      <widget name="do-exercice-label"/>
+    </widgets>
   </object>
 </interface>

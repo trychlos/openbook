@@ -247,6 +247,8 @@ openbook_SOURCES = \
 	ofa-settlement.h									\
 	ofa-tree-store.c									\
 	ofa-tree-store.h									\
+	ofa-user-credentials-bin.c							\
+	ofa-user-credentials-bin.h							\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)
@@ -309,6 +311,7 @@ ui_files = \
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
+	ofa-user-credentials-bin.ui							\
 	ofa-view-entries.ui									\
 	$(NULL)
 

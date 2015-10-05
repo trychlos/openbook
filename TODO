@@ -478,9 +478,6 @@
 
  843 2015- 9-30 account number should be renamed as account identifier
 
- 845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
-                and DossierOpen
-
  849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
                 there would be so a *ghost* data stored in dbms and
                 displayed in properties, but absolutely useless
@@ -3981,6 +3978,10 @@
                 ofaRatesPage -> ofaRatePage
                 ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
                 ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
+
+ 845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
+                and DossierOpen
+     2015-10- 1 done
 
  846 2015-10- 1 opening a dossier from DossierManager should be equal
                 to opening a dossier from the command-line (i.e. rather
