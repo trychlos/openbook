@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RATES_PAGE_H__
-#define __OFA_RATES_PAGE_H__
+#ifndef __OFA_RATE_PAGE_H__
+#define __OFA_RATE_PAGE_H__
 
 /**
- * SECTION: ofa_rates_page
- * @short_description: #ofaRatesPage class definition.
+ * SECTION: ofa_rate_page
+ * @short_description: #ofaRatePage class definition.
  * @include: ui/ofa-taux-set.h
  *
  * Display the chart of accounts, letting the user edit it.
@@ -37,32 +37,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_RATES_PAGE                ( ofa_rates_page_get_type())
-#define OFA_RATES_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RATES_PAGE, ofaRatesPage ))
-#define OFA_RATES_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RATES_PAGE, ofaRatesPageClass ))
-#define OFA_IS_RATES_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RATES_PAGE ))
-#define OFA_IS_RATES_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RATES_PAGE ))
-#define OFA_RATES_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RATES_PAGE, ofaRatesPageClass ))
+#define OFA_TYPE_RATE_PAGE                ( ofa_rate_page_get_type())
+#define OFA_RATE_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RATE_PAGE, ofaRatePage ))
+#define OFA_RATE_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RATE_PAGE, ofaRatePageClass ))
+#define OFA_IS_RATE_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RATE_PAGE ))
+#define OFA_IS_RATE_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RATE_PAGE ))
+#define OFA_RATE_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RATE_PAGE, ofaRatePageClass ))
 
-typedef struct _ofaRatesPagePrivate        ofaRatesPagePrivate;
+typedef struct _ofaRatePagePrivate        ofaRatePagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage              parent;
+	ofaPage             parent;
 
 	/*< private members >*/
-	ofaRatesPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 }
-	ofaRatesPage;
+	ofaRatePage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass        parent;
 }
-	ofaRatesPageClass;
+	ofaRatePageClass;
 
-GType ofa_rates_page_get_type( void ) G_GNUC_CONST;
+GType ofa_rate_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_RATES_PAGE_H__ */
+#endif /* __OFA_RATE_PAGE_H__ */

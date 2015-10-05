@@ -76,7 +76,7 @@
  *
  * ofaOpeTemplatePage  a top frame, a grid with dynamic fields    Yes
  *
- * ofaRatesPage      a tree view on a list store                   Yes
+ * ofaRatePage      a tree view on a list store                   Yes
  *
  * ofaReconciliation several top frames, with a treeview on        No
  *                   a tree store

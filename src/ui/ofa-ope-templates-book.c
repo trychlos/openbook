@@ -308,12 +308,16 @@ static void
 create_notebook( ofaOpeTemplatesBook *self )
 {
 	ofaOpeTemplatesBookPrivate *priv;
-	GtkWidget *book;
+	GtkWidget *frame, *book;
 
 	priv = self->priv;
 
+	frame = gtk_frame_new( NULL );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+	gtk_container_add( GTK_CONTAINER( self ), frame );
+
 	book = gtk_notebook_new();
-	gtk_container_add( GTK_CONTAINER( self ), book );
+	gtk_container_add( GTK_CONTAINER( frame ), book );
 	priv->book = GTK_NOTEBOOK( book );
 
 	gtk_notebook_popup_enable( priv->book );

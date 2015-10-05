@@ -231,8 +231,8 @@ openbook_SOURCES = \
 	ofa-plugin-manager.h								\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
-	ofa-rates-page.c									\
-	ofa-rates-page.h									\
+	ofa-rate-page.c									\
+	ofa-rate-page.h									\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
 	ofa-reconcil-render.c								\

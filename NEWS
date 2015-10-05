@@ -108,6 +108,7 @@
    - ofaLedgersBookBin class is renamed to ofaLedgerBookBin (todo #844).
    - ofaLedgersBookRender class is renamed to ofaLedgerBookRender (todo #844).
    - ofaOpeTemplatesPage class is renamed to ofaOpeTemplatePage (todo #844).
+   - ofaRatesPage class is renamed to ofaRatePage (todo #844).
 
 -----------------------------------------------------------------------
  Version 0.39
