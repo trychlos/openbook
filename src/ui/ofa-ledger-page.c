@@ -35,7 +35,7 @@
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"
-#include "ui/ofa-ledgers-page.h"
+#include "ui/ofa-ledger-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -43,7 +43,7 @@
 
 /* private instance data
  */
-struct _ofaLedgersPagePrivate {
+struct _ofaLedgerPagePrivate {
 
 	/* internals
 	 */
@@ -67,44 +67,44 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaLedgersPage, ofa_ledgers_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
-static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
-static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgersPage *self );
-static void       on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
-static void       on_new_clicked( GtkButton *button, ofaLedgersPage *page );
-static void       on_update_clicked( GtkButton *button, ofaLedgersPage *page );
-static void       do_update( ofaLedgersPage *self, ofoLedger *ledger );
-static void       on_delete_clicked( GtkButton *button, ofaLedgersPage *page );
-static gboolean   delete_confirmed( ofaLedgersPage *self, ofoLedger *ledger );
-static void       on_view_entries( GtkButton *button, ofaLedgersPage *self );
+static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
+static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
+static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
+static void       on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
+static void       on_new_clicked( GtkButton *button, ofaLedgerPage *page );
+static void       on_update_clicked( GtkButton *button, ofaLedgerPage *page );
+static void       do_update( ofaLedgerPage *self, ofoLedger *ledger );
+static void       on_delete_clicked( GtkButton *button, ofaLedgerPage *page );
+static gboolean   delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger );
+static void       on_view_entries( GtkButton *button, ofaLedgerPage *self );
 
 static void
 ledgers_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ledgers_page_finalize";
+	static const gchar *thisfn = "ofa_ledger_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_LEDGERS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ledgers_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_page_parent_class )->finalize( instance );
 }
 
 static void
 ledgers_page_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_LEDGERS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
@@ -112,26 +112,26 @@ ledgers_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ledgers_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ledgers_page_init( ofaLedgersPage *self )
+ofa_ledger_page_init( ofaLedgerPage *self )
 {
-	static const gchar *thisfn = "ofa_ledgers_page_init";
+	static const gchar *thisfn = "ofa_ledger_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_LEDGERS_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGERS_PAGE, ofaLedgersPagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_PAGE, ofaLedgerPagePrivate );
 }
 
 static void
-ofa_ledgers_page_class_init( ofaLedgersPageClass *klass )
+ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_ledgers_page_class_init";
+	static const gchar *thisfn = "ofa_ledger_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -143,7 +143,7 @@ ofa_ledgers_page_class_init( ofaLedgersPageClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaLedgersPagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaLedgerPagePrivate ));
 }
 
 static GtkWidget *
@@ -159,10 +159,10 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 setup_tree_view( ofaPage *page )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	GtkWidget *parent;
 
-	priv = OFA_LEDGERS_PAGE( page )->priv;
+	priv = OFA_LEDGER_PAGE( page )->priv;
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	my_utils_widget_set_margin( parent, 4, 4, 4, 0 );
@@ -185,13 +185,13 @@ setup_tree_view( ofaPage *page )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	g_return_val_if_fail( OFA_IS_LEDGERS_PAGE( page ), NULL );
+	g_return_val_if_fail( OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	priv = OFA_LEDGERS_PAGE( page )->priv;
+	priv = OFA_LEDGER_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -216,22 +216,22 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	/*insert_dataset( OFA_LEDGERS_PAGE( page ));*/
+	/*insert_dataset( OFA_LEDGER_PAGE( page ));*/
 }
 
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_LEDGERS_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	return( ofa_ledger_treeview_get_top_focusable_widget( OFA_LEDGERS_PAGE( page )->priv->tview ));
+	return( ofa_ledger_treeview_get_top_focusable_widget( OFA_LEDGER_PAGE( page )->priv->tview ));
 }
 
 /*
  * LedgerTreeview callback
  */
 static void
-on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
+on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
 	ofoDossier *dossier;
 	ofoLedger *ledger;
@@ -249,9 +249,9 @@ on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self
  * LedgerTreeview callback
  */
 static void
-on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
+on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	ofoDossier *dossier;
 	ofoLedger *ledger;
 
@@ -281,7 +281,7 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self 
 }
 
 static void
-on_insert_key( ofaLedgerTreeview *view, ofaLedgersPage *self )
+on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self )
 {
 	on_new_clicked( NULL, self );
 }
@@ -290,7 +290,7 @@ on_insert_key( ofaLedgerTreeview *view, ofaLedgersPage *self )
  * only delete if there is only one selected ledger
  */
 static void
-on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
+on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
 	if( g_list_length( selected ) == 1 ){
 		on_delete_clicked( NULL, self );
@@ -298,9 +298,9 @@ on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaLedgersPage *page )
+on_new_clicked( GtkButton *button, ofaLedgerPage *page )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 
 	priv = page->priv;
@@ -318,9 +318,9 @@ on_new_clicked( GtkButton *button, ofaLedgersPage *page )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaLedgersPage *page )
+on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	ofoDossier *dossier;
 	GList *selected;
 	ofoLedger *ledger;
@@ -338,9 +338,9 @@ on_update_clicked( GtkButton *button, ofaLedgersPage *page )
 }
 
 static void
-do_update( ofaLedgersPage *self, ofoLedger *ledger )
+do_update( ofaLedgerPage *self, ofoLedger *ledger )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	GtkWidget *view;
 
 	priv = self->priv;
@@ -364,9 +364,9 @@ do_update( ofaLedgersPage *self, ofoLedger *ledger )
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
-on_delete_clicked( GtkButton *button, ofaLedgersPage *page )
+on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	ofoDossier *dossier;
 	ofoLedger *ledger;
 	GList *selected;
@@ -398,7 +398,7 @@ on_delete_clicked( GtkButton *button, ofaLedgersPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaLedgersPage *self, ofoLedger *ledger )
+delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -415,15 +415,15 @@ delete_confirmed( ofaLedgersPage *self, ofoLedger *ledger )
 }
 
 static void
-on_view_entries( GtkButton *button, ofaLedgersPage *self )
+on_view_entries( GtkButton *button, ofaLedgerPage *self )
 {
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 	GList *list;
 	ofaPage *page;
 	const gchar *mnemo;
 	ofoLedger *ledger;
 
-	g_return_if_fail( OFA_IS_LEDGERS_PAGE( self ));
+	g_return_if_fail( OFA_IS_LEDGER_PAGE( self ));
 
 	priv = self->priv;
 

@@ -72,7 +72,7 @@
  *                   - on the right, the characteristics of
  *                     the current operation template
  *
- * ofaLedgersPage    a tree view on a list store                   Yes
+ * ofaLedgerPage    a tree view on a list store                   Yes
  *
  * ofaOpeTemplatesPage  a top frame, a grid with dynamic fields    Yes
  *

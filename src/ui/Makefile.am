@@ -202,8 +202,8 @@ openbook_SOURCES = \
 	ofa-ledgers-book-bin.h								\
 	ofa-ledgers-book-render.c							\
 	ofa-ledgers-book-render.h							\
-	ofa-ledgers-page.c									\
-	ofa-ledgers-page.h									\
+	ofa-ledger-page.c									\
+	ofa-ledger-page.h									\
 	ofa-list-store.c									\
 	ofa-list-store.h									\
 	ofa-main-window.c									\

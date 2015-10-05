@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_LEDGERS_PAGE_H__
-#define __OFA_LEDGERS_PAGE_H__
+#ifndef __OFA_LEDGER_PAGE_H__
+#define __OFA_LEDGER_PAGE_H__
 
 /**
- * SECTION: ofa_ledgers_page
- * @short_description: #ofaLedgersPage class definition.
+ * SECTION: ofa_ledger_page
+ * @short_description: #ofaLedgerPage class definition.
  * @include: ui/ofa-ledgers-set.h
  *
  * Display the list of ledgers.
@@ -37,32 +37,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_LEDGERS_PAGE                ( ofa_ledgers_page_get_type())
-#define OFA_LEDGERS_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_LEDGERS_PAGE, ofaLedgersPage ))
-#define OFA_LEDGERS_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_LEDGERS_PAGE, ofaLedgersPageClass ))
-#define OFA_IS_LEDGERS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_LEDGERS_PAGE ))
-#define OFA_IS_LEDGERS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGERS_PAGE ))
-#define OFA_LEDGERS_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGERS_PAGE, ofaLedgersPageClass ))
+#define OFA_TYPE_LEDGER_PAGE                ( ofa_ledger_page_get_type())
+#define OFA_LEDGER_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_LEDGER_PAGE, ofaLedgerPage ))
+#define OFA_LEDGER_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_LEDGER_PAGE, ofaLedgerPageClass ))
+#define OFA_IS_LEDGER_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_LEDGER_PAGE ))
+#define OFA_IS_LEDGER_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGER_PAGE ))
+#define OFA_LEDGER_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGER_PAGE, ofaLedgerPageClass ))
 
-typedef struct _ofaLedgersPagePrivate        ofaLedgersPagePrivate;
+typedef struct _ofaLedgerPagePrivate        ofaLedgerPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                parent;
+	ofaPage               parent;
 
 	/*< private members >*/
-	ofaLedgersPagePrivate *priv;
+	ofaLedgerPagePrivate *priv;
 }
-	ofaLedgersPage;
+	ofaLedgerPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass          parent;
 }
-	ofaLedgersPageClass;
+	ofaLedgerPageClass;
 
-GType ofa_ledgers_page_get_type( void ) G_GNUC_CONST;
+GType ofa_ledger_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_LEDGERS_PAGE_H__ */
+#endif /* __OFA_LEDGER_PAGE_H__ */

@@ -60,7 +60,7 @@
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledgers-book-render.h"
-#include "ui/ofa-ledgers-page.h"
+#include "ui/ofa-ledger-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
@@ -216,7 +216,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_LEDGERS,
 				N_( "Ledgers" ),
-				ofa_ledgers_page_get_type,
+				ofa_ledger_page_get_type,
 				FALSE
 		},
 		{ THM_OPE_TEMPLATES,
