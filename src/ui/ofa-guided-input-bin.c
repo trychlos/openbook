@@ -418,9 +418,6 @@ setup_bin( ofaGuidedInputBin *bin )
 	g_object_unref( builder );
 }
 
-/*
- * ofa_guided_input_bin_set_main_window:
- */
 static void
 setup_main_window( ofaGuidedInputBin *bin )
 {

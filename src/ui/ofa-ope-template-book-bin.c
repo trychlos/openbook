@@ -85,40 +85,41 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static void       create_notebook( ofaOpeTemplateBookBin *book );
-static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateBookBin *self );
-static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateBookBin *book );
-static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateBookBin *self, const gchar *ledger, gboolean create );
-static GtkWidget *book_create_page( ofaOpeTemplateBookBin *self, const gchar *ledger );
-static GtkWidget *page_add_treeview( ofaOpeTemplateBookBin *book, GtkWidget *page );
-static void       page_add_columns( ofaOpeTemplateBookBin *book, GtkTreeView *tview );
+static void       setup_bin( ofaOpeTemplateBookBin *bin );
+static void       setup_main_window( ofaOpeTemplateBookBin *bin );
+static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateBookBin *bin );
+static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateBookBin *bin );
+static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateBookBin *bin, const gchar *ledger, gboolean create );
+static GtkWidget *book_create_page( ofaOpeTemplateBookBin *bin, const gchar *ledger );
+static GtkWidget *page_add_treeview( ofaOpeTemplateBookBin *bin, GtkWidget *page );
+static void       page_add_columns( ofaOpeTemplateBookBin *bin, GtkTreeView *tview );
 static void       on_finalized_page( sPageData *sdata, gpointer finalized_page );
 static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
-static void       on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplateBookBin *self );
-static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateBookBin *self );
-static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookBin *self );
-static void       on_tview_insert( ofaOpeTemplateBookBin *self );
-static void       on_tview_delete( ofaOpeTemplateBookBin *self );
-static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateBookBin *self );
-static void       do_insert_ope_template( ofaOpeTemplateBookBin *self );
-static void       do_update_ope_template( ofaOpeTemplateBookBin *self );
-static void       do_duplicate_ope_template( ofaOpeTemplateBookBin *self );
-static void       do_delete_ope_template( ofaOpeTemplateBookBin *self );
-static gboolean   delete_confirmed( ofaOpeTemplateBookBin *self, ofoOpeTemplate *ope );
-static void       do_guided_input( ofaOpeTemplateBookBin *self );
-static void       dossier_signals_connect( ofaOpeTemplateBookBin *book );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *book );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *book );
-static void       on_updated_ledger_label( ofaOpeTemplateBookBin *book, ofoLedger *ledger );
-static void       on_updated_ope_template( ofaOpeTemplateBookBin *book, ofoOpeTemplate *template );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *book );
-static void       on_deleted_ledger_object( ofaOpeTemplateBookBin *book, ofoLedger *ledger );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *book );
-static GtkWidget *get_current_tree_view( const ofaOpeTemplateBookBin *self );
-static void       select_row_by_mnemo( ofaOpeTemplateBookBin *self, const gchar *mnemo );
-static void       select_row_by_iter( ofaOpeTemplateBookBin *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
-static void       on_action_closed( ofaOpeTemplateBookBin *book );
-static void       write_settings( ofaOpeTemplateBookBin *book );
+static void       on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplateBookBin *bin );
+static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateBookBin *bin );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookBin *bin );
+static void       on_tview_insert( ofaOpeTemplateBookBin *bin );
+static void       on_tview_delete( ofaOpeTemplateBookBin *bin );
+static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateBookBin *bin );
+static void       do_insert_ope_template( ofaOpeTemplateBookBin *bin );
+static void       do_update_ope_template( ofaOpeTemplateBookBin *bin );
+static void       do_duplicate_ope_template( ofaOpeTemplateBookBin *bin );
+static void       do_delete_ope_template( ofaOpeTemplateBookBin *bin );
+static gboolean   delete_confirmed( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *ope );
+static void       do_guided_input( ofaOpeTemplateBookBin *bin );
+static void       dossier_signals_connect( ofaOpeTemplateBookBin *bin );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
+static void       on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
+static void       on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin );
+static void       on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *bin );
+static GtkWidget *get_current_tree_view( const ofaOpeTemplateBookBin *bin );
+static void       select_row_by_mnemo( ofaOpeTemplateBookBin *bin, const gchar *mnemo );
+static void       select_row_by_iter( ofaOpeTemplateBookBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
+static void       on_action_closed( ofaOpeTemplateBookBin *bin );
+static void       write_settings( ofaOpeTemplateBookBin *bin );
 
 G_DEFINE_TYPE( ofaOpeTemplateBookBin, ofa_ope_template_book_bin, GTK_TYPE_BIN )
 
@@ -286,32 +287,35 @@ ofa_ope_template_book_bin_class_init( ofaOpeTemplateBookBinClass *klass )
  * Creates the structured content, i.e. one notebook with one page per
  * ledger.
  *
- * Does NOT insert the data (see: ofa_ope_template_book_bin_set_main_window).
+ * Does NOT insert the data.
  */
 ofaOpeTemplateBookBin *
-ofa_ope_template_book_bin_new( void  )
+ofa_ope_template_book_bin_new( ofaMainWindow *main_window  )
 {
-	ofaOpeTemplateBookBin *book;
+	ofaOpeTemplateBookBin *bin;
 
-	book = g_object_new( OFA_TYPE_OPE_TEMPLATE_BOOK_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_OPE_TEMPLATE_BOOK_BIN, NULL );
 
-	create_notebook( book );
+	bin->priv->main_window = main_window;
 
-	g_signal_connect( book, "ofa-closed", G_CALLBACK( on_action_closed ), book );
+	setup_bin( bin );
+	setup_main_window( bin );
 
-	return( book );
+	g_signal_connect( bin, "ofa-closed", G_CALLBACK( on_action_closed ), bin );
+
+	return( bin );
 }
 
 static void
-create_notebook( ofaOpeTemplateBookBin *self )
+setup_bin( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GtkWidget *book;
 
-	priv = self->priv;
+	priv = bin->priv;
 
 	book = gtk_notebook_new();
-	gtk_container_add( GTK_CONTAINER( self ), book );
+	gtk_container_add( GTK_CONTAINER( bin ), book );
 	priv->book = GTK_NOTEBOOK( book );
 
 	gtk_notebook_popup_enable( priv->book );
@@ -320,9 +324,45 @@ create_notebook( ofaOpeTemplateBookBin *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
-			"switch-page", G_CALLBACK( on_book_page_switched ), self );
+			"switch-page", G_CALLBACK( on_book_page_switched ), bin );
+}
 
-	gtk_widget_show_all( GTK_WIDGET( self ));
+/*
+ * This is required in order to get the dossier which will permit to
+ * create the underlying list store.
+ */
+static void
+setup_main_window( ofaOpeTemplateBookBin *bin )
+{
+	ofaOpeTemplateBookBinPrivate *priv;
+	gulong handler;
+	GList *strlist, *it;
+
+	priv = bin->priv;
+
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->ope_store = ofa_ope_template_store_new( priv->dossier );
+
+	/* create one page per ledger
+	 * if strlist is set, then create one page per ledger
+	 * other needed pages will be created on fly
+	 * nb: if the ledger no more exists, no page is created */
+	priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
+	strlist = ofa_settings_dossier_get_string_list( priv->dname, st_ledger_order );
+	for( it=strlist ; it ; it=it->next ){
+		book_get_page_by_ledger( bin, ( const gchar * ) it->data, TRUE );
+	}
+	ofa_settings_free_string_list( strlist );
+
+	handler = g_signal_connect(
+			priv->ope_store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), bin );
+	priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
+
+	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->ope_store ));
+
+	dossier_signals_connect( bin );
+
+	gtk_notebook_set_current_page( priv->book, 0 );
 }
 
 /*
@@ -330,7 +370,7 @@ create_notebook( ofaOpeTemplateBookBin *self )
  * just setup the selection
  */
 static void
-on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateBookBin *self )
+on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateBookBin *bin )
 {
 	GtkWidget *tview;
 	GtkTreeSelection *select;
@@ -339,60 +379,7 @@ on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeT
 	if( tview ){
 		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-		on_tview_row_selected( select, self );
-	}
-}
-
-/**
- * ofa_ope_template_book_bin_set_main_window:
- *
- * This is required in order to get the dossier which will permit to
- * create the underlying list store.
- */
-void
-ofa_ope_template_book_bin_set_main_window( ofaOpeTemplateBookBin *book, ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_ope_template_book_bin_set_main_window";
-	ofaOpeTemplateBookBinPrivate *priv;
-	gulong handler;
-	GList *strlist, *it;
-
-	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
-
-	g_return_if_fail( book && OFA_IS_OPE_TEMPLATE_BOOK_BIN( book ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = book->priv;
-
-	if( !priv->dispose_has_run ){
-
-		/* the notebook must have been created first */
-		g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
-
-		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->ope_store = ofa_ope_template_store_new( priv->dossier );
-
-		/* create one page per ledger
-		 * if strlist is set, then create one page per ledger
-		 * other needed pages will be created on fly
-		 * nb: if the ledger no more exists, no page is created */
-		priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
-		strlist = ofa_settings_dossier_get_string_list( priv->dname, st_ledger_order );
-		for( it=strlist ; it ; it=it->next ){
-			book_get_page_by_ledger( book, ( const gchar * ) it->data, TRUE );
-		}
-		ofa_settings_free_string_list( strlist );
-
-		handler = g_signal_connect( priv->ope_store,
-				"ofa-row-inserted", G_CALLBACK( on_row_inserted ), book );
-		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
-
-		ofa_list_store_load_dataset( OFA_LIST_STORE( priv->ope_store ));
-
-		dossier_signals_connect( book );
-
-		gtk_notebook_set_current_page( priv->book, 0 );
+		on_tview_row_selected( select, bin );
 	}
 }
 
@@ -400,7 +387,7 @@ ofa_ope_template_book_bin_set_main_window( ofaOpeTemplateBookBin *book, ofaMainW
  * is triggered by the store when a row is inserted
  */
 static void
-on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateBookBin *book )
+on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateBookBin *bin )
 {
 	ofoOpeTemplate *ope;
 	const gchar *ledger;
@@ -410,8 +397,8 @@ on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofa
 	g_object_unref( ope );
 
 	ledger = ofo_ope_template_get_ledger( ope );
-	if( !book_get_page_by_ledger( book, ledger, TRUE )){
-		book_get_page_by_ledger( book, UNKNOWN_LEDGER_MNEMO, TRUE );
+	if( !book_get_page_by_ledger( bin, ledger, TRUE )){
+		book_get_page_by_ledger( bin, UNKNOWN_LEDGER_MNEMO, TRUE );
 	}
 }
 
@@ -422,7 +409,7 @@ on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofa
  * If the page doesn't exist, and @bcreate is %TRUE, then it is created.
  */
 static GtkWidget *
-book_get_page_by_ledger( ofaOpeTemplateBookBin *book, const gchar *ledger, gboolean bcreate )
+book_get_page_by_ledger( ofaOpeTemplateBookBin *bin, const gchar *ledger, gboolean bcreate )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_get_page_by_ledger";
 	ofaOpeTemplateBookBinPrivate *priv;
@@ -430,7 +417,7 @@ book_get_page_by_ledger( ofaOpeTemplateBookBin *book, const gchar *ledger, gbool
 	GtkWidget *found, *page_widget;
 	sPageData *sdata;
 
-	priv = book->priv;
+	priv = bin->priv;
 	found = NULL;
 	count = gtk_notebook_get_n_pages( priv->book );
 
@@ -446,7 +433,7 @@ book_get_page_by_ledger( ofaOpeTemplateBookBin *book, const gchar *ledger, gbool
 
 	/* if not exists, create it (if allowed) */
 	if( !found && bcreate ){
-		found = book_create_page( book, ledger );
+		found = book_create_page( bin, ledger );
 		if( !found ){
 			g_warning( "%s: unable to create the page for ledger=%s", thisfn, ledger );
 			return( NULL );
@@ -466,7 +453,7 @@ book_get_page_by_ledger( ofaOpeTemplateBookBin *book, const gchar *ledger, gbool
  * creates the page widget for the given ledger
  */
 static GtkWidget *
-book_create_page( ofaOpeTemplateBookBin *book, const gchar *ledger )
+book_create_page( ofaOpeTemplateBookBin *bin, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_create_page";
 	ofaOpeTemplateBookBinPrivate *priv;
@@ -476,9 +463,9 @@ book_create_page( ofaOpeTemplateBookBin *book, const gchar *ledger )
 	gint page_num;
 	sPageData *sdata;
 
-	g_debug( "%s: book=%p, ledger=%s", thisfn, ( void * ) book, ledger );
+	g_debug( "%s: bin=%p, ledger=%s", thisfn, ( void * ) bin, ledger );
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	/* get ledger label */
 	if( !g_utf8_collate( ledger, UNKNOWN_LEDGER_MNEMO )){
@@ -513,11 +500,11 @@ book_create_page( ofaOpeTemplateBookBin *book, const gchar *ledger )
 			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
 	/* then create the treeview inside the scrolled window */
-	tview = page_add_treeview( book, frame );
+	tview = page_add_treeview( bin, frame );
 	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
 	/* then create the columns in the treeview */
-	page_add_columns( book, GTK_TREE_VIEW( tview ));
+	page_add_columns( bin, GTK_TREE_VIEW( tview ));
 
 	/* last add the page to the notebook */
 	label = gtk_label_new( ledger_label );
@@ -538,7 +525,7 @@ book_create_page( ofaOpeTemplateBookBin *book, const gchar *ledger )
  * attach some piece of data to it
  */
 static GtkWidget *
-page_add_treeview( ofaOpeTemplateBookBin *book, GtkWidget *page )
+page_add_treeview( ofaOpeTemplateBookBin *bin, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_create_treeview";
 	ofaOpeTemplateBookBinPrivate *priv;
@@ -546,7 +533,7 @@ page_add_treeview( ofaOpeTemplateBookBin *book, GtkWidget *page )
 	GtkTreeModel *tfilter;
 	GtkTreeSelection *select;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	tview = gtk_tree_view_new();
 	gtk_widget_set_hexpand( tview, TRUE );
@@ -563,14 +550,14 @@ page_add_treeview( ofaOpeTemplateBookBin *book, GtkWidget *page )
 	g_object_unref( tfilter );
 
 	g_signal_connect(
-			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_tview_row_activated), book );
+			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_tview_row_activated), bin );
 	g_signal_connect(
-			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), book );
+			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), bin );
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_tview_row_selected ), book );
+			G_OBJECT( select ), "changed", G_CALLBACK( on_tview_row_selected ), bin );
 
 	return( tview );
 }
@@ -579,7 +566,7 @@ page_add_treeview( ofaOpeTemplateBookBin *book, GtkWidget *page )
  * creates the columns in the GtkTreeView
  */
 static void
-page_add_columns( ofaOpeTemplateBookBin *book, GtkTreeView *tview )
+page_add_columns( ofaOpeTemplateBookBin *bin, GtkTreeView *tview )
 {
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
@@ -592,7 +579,7 @@ page_add_columns( ofaOpeTemplateBookBin *book, GtkTreeView *tview )
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( OPE_TEMPLATE_COL_MNEMO ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, bin, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -603,7 +590,7 @@ page_add_columns( ofaOpeTemplateBookBin *book, GtkTreeView *tview )
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
-			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, bin, NULL );
 }
 
 static void
@@ -658,7 +645,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page )
 }
 
 static void
-on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplateBookBin *self )
+on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplateBookBin *bin )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -670,16 +657,16 @@ on_tview_row_selected( GtkTreeSelection *selection, ofaOpeTemplateBookBin *self 
 	if( selection ){
 		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
-			g_signal_emit_by_name( self, "ofa-changed", mnemo );
+			g_signal_emit_by_name( bin, "ofa-changed", mnemo );
 			g_free( mnemo );
 		}
 	}
 
-	/*update_buttons_sensitivity( self, account );*/
+	/*update_buttons_sensitivity( bin, account );*/
 }
 
 static void
-on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateBookBin *self )
+on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateBookBin *bin )
 {
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
@@ -691,7 +678,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
 	select = gtk_tree_view_get_selection( tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
-		g_signal_emit_by_name( self, "ofa-activated", mnemo );
+		g_signal_emit_by_name( bin, "ofa-activated", mnemo );
 		g_free( mnemo );
 	}
 }
@@ -702,7 +689,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
  * FALSE to propagate the event further.
  */
 static gboolean
-on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookBin *self )
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookBin *bin )
 {
 	gboolean stop;
 
@@ -710,10 +697,10 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookB
 
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Insert ){
-			on_tview_insert( self );
+			on_tview_insert( bin );
 
 		} else if( event->keyval == GDK_KEY_Delete ){
-			on_tview_delete( self );
+			on_tview_delete( bin );
 		}
 	}
 
@@ -721,26 +708,26 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateBookB
 }
 
 static void
-on_tview_insert( ofaOpeTemplateBookBin *self )
+on_tview_insert( ofaOpeTemplateBookBin *bin )
 {
-	do_insert_ope_template( self );
+	do_insert_ope_template( bin );
 }
 
 static void
-on_tview_delete( ofaOpeTemplateBookBin *self )
+on_tview_delete( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	gchar *mnemo;
 	ofoOpeTemplate *ope;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	mnemo = ofa_ope_template_book_bin_get_selected( self );
+	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 	g_free( mnemo );
 
 	if( ofo_ope_template_is_deletable( ope, priv->dossier )){
-		do_delete_ope_template( self );
+		do_delete_ope_template( bin );
 	}
 }
 
@@ -750,13 +737,13 @@ on_tview_delete( ofaOpeTemplateBookBin *self )
 static void
 on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaOpeTemplateBookBin *self )
+						ofaOpeTemplateBookBin *bin )
 {
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 }
 
 static void
-do_insert_ope_template( ofaOpeTemplateBookBin *self )
+do_insert_ope_template( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	ofoOpeTemplate *ope;
@@ -765,7 +752,7 @@ do_insert_ope_template( ofaOpeTemplateBookBin *self )
 	const gchar *ledger;
 	sPageData *sdata;
 
-	priv = self->priv;
+	priv = bin->priv;
 	ledger = NULL;
 
 	page_n = gtk_notebook_get_current_page( priv->book );
@@ -783,21 +770,21 @@ do_insert_ope_template( ofaOpeTemplateBookBin *self )
 		g_object_unref( ope );
 
 	} else {
-		select_row_by_mnemo( self, ofo_ope_template_get_mnemo( ope ));
+		select_row_by_mnemo( bin, ofo_ope_template_get_mnemo( ope ));
 	}
 }
 
 static void
-do_update_ope_template( ofaOpeTemplateBookBin *self )
+do_update_ope_template( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gchar *mnemo;
 	GtkWidget *tview;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	mnemo = ofa_ope_template_book_bin_get_selected( self );
+	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -806,14 +793,14 @@ do_update_ope_template( ofaOpeTemplateBookBin *self )
 	}
 	g_free( mnemo );
 
-	tview = get_current_tree_view( self );
+	tview = get_current_tree_view( bin );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
 }
 
 static void
-do_duplicate_ope_template( ofaOpeTemplateBookBin *self )
+do_duplicate_ope_template( ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_do_duplicate_ope_template";
 	ofaOpeTemplateBookBinPrivate *priv;
@@ -822,13 +809,13 @@ do_duplicate_ope_template( ofaOpeTemplateBookBin *self )
 	ofoOpeTemplate *duplicate;
 	gchar *str;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATE_BOOK_BIN( self ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATE_BOOK_BIN( bin ));
 
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	mnemo = ofa_ope_template_book_bin_get_selected( self );
+	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -844,7 +831,7 @@ do_duplicate_ope_template( ofaOpeTemplateBookBin *self )
 		if( !ofo_ope_template_insert( duplicate, priv->dossier )){
 			g_object_unref( duplicate );
 		} else {
-			select_row_by_mnemo( self, new_mnemo );
+			select_row_by_mnemo( bin, new_mnemo );
 		}
 		g_free( new_mnemo );
 	}
@@ -852,23 +839,23 @@ do_duplicate_ope_template( ofaOpeTemplateBookBin *self )
 }
 
 static void
-do_delete_ope_template( ofaOpeTemplateBookBin *self )
+do_delete_ope_template( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gchar *mnemo;
 	GtkWidget *tview;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	mnemo = ofa_ope_template_book_bin_get_selected( self );
+	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		g_return_if_fail( ope &&
 				OFO_IS_OPE_TEMPLATE( ope ) &&
 				ofo_ope_template_is_deletable( ope, priv->dossier ));
 
-		if( delete_confirmed( self, ope ) &&
+		if( delete_confirmed( bin, ope ) &&
 				ofo_ope_template_delete( ope, priv->dossier )){
 
 			/* nothing to do here, all being managed by signal dos_handlers
@@ -877,13 +864,13 @@ do_delete_ope_template( ofaOpeTemplateBookBin *self )
 			 * asking for selection of the just deleted ope makes
 			 * almost sure that we are going to select the most close
 			 * row */
-			on_tview_row_selected( NULL, self );
-			ofa_ope_template_book_bin_set_selected( self, mnemo );
+			on_tview_row_selected( NULL, bin );
+			ofa_ope_template_book_bin_set_selected( bin, mnemo );
 		}
 	}
 	g_free( mnemo );
 
-	tview = get_current_tree_view( self );
+	tview = get_current_tree_view( bin );
 	if( tview ){
 		gtk_widget_grab_focus( tview );
 	}
@@ -896,7 +883,7 @@ do_delete_ope_template( ofaOpeTemplateBookBin *self )
  * - this is a detail account
  */
 static gboolean
-delete_confirmed( ofaOpeTemplateBookBin *self, ofoOpeTemplate *ope )
+delete_confirmed( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *ope )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -913,15 +900,15 @@ delete_confirmed( ofaOpeTemplateBookBin *self, ofoOpeTemplate *ope )
 }
 
 static void
-do_guided_input( ofaOpeTemplateBookBin *self )
+do_guided_input( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gchar *mnemo;
 
-	priv = self->priv;
+	priv = bin->priv;
 
-	mnemo = ofa_ope_template_book_bin_get_selected( self );
+	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -932,31 +919,31 @@ do_guided_input( ofaOpeTemplateBookBin *self )
 }
 
 static void
-dossier_signals_connect( ofaOpeTemplateBookBin *book )
+dossier_signals_connect( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	gulong handler;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), book );
+						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), bin );
 	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), book );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
 	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), book );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
 	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), book );
+						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), bin );
 	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 }
 
@@ -964,32 +951,32 @@ dossier_signals_connect( ofaOpeTemplateBookBin *book )
  * SIGNAL_DOSSIER_NEW_OBJECT signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *book )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), book=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), bin=%p",
 			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) book );
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) bin );
 }
 
 /*
  * OFA_SIGNAL_UPDATE_OBJECT signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *book )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, book=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, bin=%p",
 			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) book );
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) bin );
 
 	if( OFO_IS_LEDGER( object )){
-		on_updated_ledger_label( book, OFO_LEDGER( object ));
+		on_updated_ledger_label( bin, OFO_LEDGER( object ));
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		on_updated_ope_template( book, OFO_OPE_TEMPLATE( object ));
+		on_updated_ope_template( bin, OFO_OPE_TEMPLATE( object ));
 	}
 }
 
@@ -997,16 +984,16 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
  * a ledger label has changed : update the corresponding tab label
  */
 static void
-on_updated_ledger_label( ofaOpeTemplateBookBin *book, ofoLedger *ledger )
+on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger *ledger )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GtkWidget *page_w;
 	const gchar *mnemo;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	mnemo = ofo_ledger_get_mnemo( ledger );
-	page_w = book_get_page_by_ledger( book, mnemo, FALSE );
+	page_w = book_get_page_by_ledger( bin, mnemo, FALSE );
 	if( page_w ){
 		g_return_if_fail( GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( priv->book, page_w, ofo_ledger_get_label( ledger ));
@@ -1019,19 +1006,19 @@ on_updated_ledger_label( ofaOpeTemplateBookBin *book, ofoLedger *ledger )
  *  shown
  */
 static void
-on_updated_ope_template( ofaOpeTemplateBookBin *book, ofoOpeTemplate *template )
+on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GtkWidget *page_w;
 	const gchar *ledger;
 	gint page_n;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	ledger = ofo_ope_template_get_ledger( template );
-	page_w = book_get_page_by_ledger( book, ledger, TRUE );
+	page_w = book_get_page_by_ledger( bin, ledger, TRUE );
 	g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
-	select_row_by_mnemo( book, ofo_ope_template_get_mnemo( template ));
+	select_row_by_mnemo( bin, ofo_ope_template_get_mnemo( template ));
 
 	page_n = gtk_notebook_page_num( priv->book, page_w );
 	gtk_notebook_set_current_page( priv->book, page_n );
@@ -1041,36 +1028,36 @@ on_updated_ope_template( ofaOpeTemplateBookBin *book, ofoOpeTemplate *template )
  * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *book )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), book=%p",
+	g_debug( "%s: dossier=%p, object=%p (%s), bin=%p",
 			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) book );
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) bin );
 
 	if( OFO_IS_LEDGER( object )){
-		on_deleted_ledger_object( book, OFO_LEDGER( object ));
+		on_deleted_ledger_object( bin, OFO_LEDGER( object ));
 	}
 }
 
 static void
-on_deleted_ledger_object( ofaOpeTemplateBookBin *book, ofoLedger *ledger )
+on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GtkWidget *page_w;
 	gint page_n;
 	const gchar *mnemo;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	mnemo = ofo_ledger_get_mnemo( ledger );
-	page_w = book_get_page_by_ledger( book, mnemo, FALSE );
+	page_w = book_get_page_by_ledger( bin, mnemo, FALSE );
 	if( page_w ){
 		g_return_if_fail( GTK_IS_WIDGET( page_w ));
 		page_n = gtk_notebook_page_num( priv->book, page_w );
 		gtk_notebook_remove_page( priv->book, page_n );
-		book_get_page_by_ledger( book, UNKNOWN_LEDGER_MNEMO, TRUE );
+		book_get_page_by_ledger( bin, UNKNOWN_LEDGER_MNEMO, TRUE );
 	}
 }
 
@@ -1078,23 +1065,23 @@ on_deleted_ledger_object( ofaOpeTemplateBookBin *book, ofoLedger *ledger )
  * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *book )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_reloaded_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, book=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) book );
+	g_debug( "%s: dossier=%p, type=%lu, bin=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) bin );
 }
 
 static GtkWidget *
-get_current_tree_view( const ofaOpeTemplateBookBin *self )
+get_current_tree_view( const ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	gint page_n;
 	GtkWidget *page_w;
 	GtkWidget *tview;
 
-	priv = self->priv;
+	priv = bin->priv;
 	tview = NULL;
 
 	page_n = gtk_notebook_get_current_page( priv->book );
@@ -1113,13 +1100,13 @@ get_current_tree_view( const ofaOpeTemplateBookBin *self )
 
 /**
  * ofa_ope_template_book_bin_get_selected:
- * @book:
+ * @bin:
  *
  * Returns: the currently selected account number, as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ope_template_book_bin_get_selected( ofaOpeTemplateBookBin *book )
+ofa_ope_template_book_bin_get_selected( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	gchar *mnemo;
@@ -1128,14 +1115,14 @@ ofa_ope_template_book_bin_get_selected( ofaOpeTemplateBookBin *book )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	g_return_val_if_fail( book && OFA_IS_OPE_TEMPLATE_BOOK_BIN( book ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_BOOK_BIN( bin ), NULL );
 
-	priv = book->priv;
+	priv = bin->priv;
 	mnemo = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		tview = ( GtkTreeView * ) get_current_tree_view( book );
+		tview = ( GtkTreeView * ) get_current_tree_view( bin );
 		if( tview ){
 			select = gtk_tree_view_get_selection( tview );
 			if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
@@ -1154,17 +1141,17 @@ ofa_ope_template_book_bin_get_selected( ofaOpeTemplateBookBin *book )
  * initialization phases
  */
 void
-ofa_ope_template_book_bin_set_selected( ofaOpeTemplateBookBin *book, const gchar *mnemo )
+ofa_ope_template_book_bin_set_selected( ofaOpeTemplateBookBin *bin, const gchar *mnemo )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 
-	g_return_if_fail( book && OFA_IS_OPE_TEMPLATE_BOOK_BIN( book ));
+	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_BOOK_BIN( bin ));
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		select_row_by_mnemo( book, mnemo );
+		select_row_by_mnemo( bin, mnemo );
 	}
 }
 
@@ -1173,7 +1160,7 @@ ofa_ope_template_book_bin_set_selected( ofaOpeTemplateBookBin *book, const gchar
  * doesn't create the page class if it doesn't yet exist
  */
 static void
-select_row_by_mnemo( ofaOpeTemplateBookBin *book, const gchar *mnemo )
+select_row_by_mnemo( ofaOpeTemplateBookBin *bin, const gchar *mnemo )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	ofoOpeTemplate *ope;
@@ -1185,7 +1172,7 @@ select_row_by_mnemo( ofaOpeTemplateBookBin *book, const gchar *mnemo )
 	GtkTreeIter store_iter, filter_iter;
 	GtkTreePath *path;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	if( my_strlen( mnemo )){
 		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
@@ -1194,7 +1181,7 @@ select_row_by_mnemo( ofaOpeTemplateBookBin *book, const gchar *mnemo )
 			ledger = ofo_ope_template_get_ledger( ope );
 			g_debug( "select_row_by_mnemo: ledger=%s", ledger );
 			if( my_strlen( ledger )){
-				page_w = book_get_page_by_ledger( book, ledger, FALSE );
+				page_w = book_get_page_by_ledger( bin, ledger, FALSE );
 				if( page_w ){
 					page_n = gtk_notebook_page_num( priv->book, page_w );
 					gtk_notebook_set_current_page( priv->book, page_n );
@@ -1211,7 +1198,7 @@ select_row_by_mnemo( ofaOpeTemplateBookBin *book, const gchar *mnemo )
 					gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
 					gtk_tree_path_free( path );
 
-					select_row_by_iter( book, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
+					select_row_by_iter( bin, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
 				}
 			}
 		}
@@ -1219,7 +1206,7 @@ select_row_by_mnemo( ofaOpeTemplateBookBin *book, const gchar *mnemo )
 }
 
 static void
-select_row_by_iter( ofaOpeTemplateBookBin *book, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter )
+select_row_by_iter( ofaOpeTemplateBookBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter )
 {
 	GtkTreePath *path;
 
@@ -1235,19 +1222,19 @@ select_row_by_iter( ofaOpeTemplateBookBin *book, GtkTreeView *tview, GtkTreeMode
  * Returns the treeview of the current page.
  */
 GtkWidget *
-ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *book )
+ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GtkWidget *tview;
 
-	g_return_val_if_fail( book && OFA_IS_OPE_TEMPLATE_BOOK_BIN( book ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_BOOK_BIN( bin ), NULL );
 
-	priv = book->priv;
+	priv = bin->priv;
 	tview = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		tview = get_current_tree_view( book );
+		tview = get_current_tree_view( bin );
 	}
 
 	return( tview );
@@ -1257,32 +1244,32 @@ ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *boo
  * ofa_ope_template_book_bin_button_clicked:
  */
 void
-ofa_ope_template_book_bin_button_clicked( ofaOpeTemplateBookBin *book, gint button_id )
+ofa_ope_template_book_bin_button_clicked( ofaOpeTemplateBookBin *bin, gint button_id )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_button_clicked";
 	ofaOpeTemplateBookBinPrivate *priv;
 
-	g_return_if_fail( book && OFA_IS_OPE_TEMPLATE_BOOK_BIN( book ));
+	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_BOOK_BIN( bin ));
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
 		switch( button_id ){
 			case BUTTON_NEW:
-				do_insert_ope_template( book );
+				do_insert_ope_template( bin );
 				break;
 			case BUTTON_PROPERTIES:
-				do_update_ope_template( book );
+				do_update_ope_template( bin );
 				break;
 			case BUTTON_DUPLICATE:
-				do_duplicate_ope_template( book );
+				do_duplicate_ope_template( bin );
 				break;
 			case BUTTON_DELETE:
-				do_delete_ope_template( book );
+				do_delete_ope_template( bin );
 				break;
 			case BUTTON_GUIDED_INPUT:
-				do_guided_input( book );
+				do_guided_input( bin );
 				break;
 			default:
 				g_warning( "%s: unmanaged button_id=%d", thisfn, button_id );
@@ -1292,17 +1279,17 @@ ofa_ope_template_book_bin_button_clicked( ofaOpeTemplateBookBin *book, gint butt
 }
 
 static void
-on_action_closed( ofaOpeTemplateBookBin *book )
+on_action_closed( ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_action_closed";
 
-	g_debug( "%s: book=%p", thisfn, ( void * ) book );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	write_settings( book );
+	write_settings( bin );
 }
 
 static void
-write_settings( ofaOpeTemplateBookBin *book )
+write_settings( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	GList *strlist;
@@ -1310,7 +1297,7 @@ write_settings( ofaOpeTemplateBookBin *book )
 	GtkWidget *page;
 	sPageData *sdata;
 
-	priv = book->priv;
+	priv = bin->priv;
 	strlist = NULL;
 
 	/* record in settings the pages position */

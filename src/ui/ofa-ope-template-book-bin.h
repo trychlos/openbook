@@ -75,24 +75,21 @@ typedef struct {
 }
 	ofaOpeTemplateBookBinClass;
 
-GType               ofa_ope_template_book_bin_get_type            ( void ) G_GNUC_CONST;
+GType                  ofa_ope_template_book_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                ( void );
+ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                 ( ofaMainWindow *main_window );
 
-void                ofa_ope_template_book_bin_set_main_window     ( ofaOpeTemplateBookBin *book,
-																		ofaMainWindow *main_window );
+void                   ofa_ope_template_book_bin_expand_all          ( ofaOpeTemplateBookBin *bin );
 
-void                ofa_ope_template_book_bin_expand_all          ( ofaOpeTemplateBookBin *book );
+gchar                 *ofa_ope_template_book_bin_get_selected        ( ofaOpeTemplateBookBin *bin );
 
-gchar              *ofa_ope_template_book_bin_get_selected        ( ofaOpeTemplateBookBin *book );
+void                   ofa_ope_template_book_bin_set_selected        ( ofaOpeTemplateBookBin *bin,
+																				const gchar *mnemo );
 
-void                ofa_ope_template_book_bin_set_selected        ( ofaOpeTemplateBookBin *book,
-																		const gchar *mnemo );
+void                   ofa_ope_template_book_bin_button_clicked      ( ofaOpeTemplateBookBin *bin,
+																				gint button_id );
 
-void                ofa_ope_template_book_bin_button_clicked      ( ofaOpeTemplateBookBin *book,
-																		gint button_id );
-
-GtkWidget          *ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *book );
+GtkWidget             *ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *bin );
 
 G_END_DECLS
 

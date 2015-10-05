@@ -133,9 +133,8 @@ v_setup_page( ofaPage *page )
 	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_grid_attach( grid, widget, 0, 0, 1, 1 );
 
-	priv->ope_frame = ofa_ope_template_frame_bin_new();
+	priv->ope_frame = ofa_ope_template_frame_bin_new( ofa_page_get_main_window( page ));
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ope_frame ));
-	ofa_ope_template_frame_bin_set_main_window( priv->ope_frame, ofa_page_get_main_window( page ));
 	ofa_ope_template_frame_bin_set_buttons( priv->ope_frame, TRUE );
 
 	g_signal_connect(

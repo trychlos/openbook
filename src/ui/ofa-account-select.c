@@ -50,6 +50,7 @@ struct _ofaAccountSelectPrivate {
 
 	/* UI
 	 */
+	GtkWindow          *toplevel;
 	ofaAccountFrameBin *account_frame;
 	ofaAccountChartBin *account_chart;
 	GtkWidget          *ok_btn;
@@ -63,7 +64,6 @@ struct _ofaAccountSelectPrivate {
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
 static const gchar      *st_ui_id       = "AccountSelectDlg";
 static ofaAccountSelect *st_this        = NULL;
-static GtkWindow        *st_toplevel    = NULL;
 
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
@@ -183,9 +183,8 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 
 		st_this->priv->main_window = main_window;
 		st_this->priv->dossier = ofa_main_window_get_dossier( main_window );
-
-		st_toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-		my_utils_window_restore_position( st_toplevel, st_ui_id );
+		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
 		/* setup a weak reference on the dossier to auto-unref */
@@ -205,8 +204,8 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
-	my_utils_window_save_position( st_toplevel, st_ui_id );
-	gtk_widget_hide( GTK_WIDGET( st_toplevel ));
+	my_utils_window_save_position( st_this->priv->toplevel, st_ui_id );
+	gtk_widget_hide( GTK_WIDGET( st_this->priv->toplevel ));
 
 	return( g_strdup( priv->account_number ));
 }
@@ -222,14 +221,14 @@ v_init_dialog( myDialog *dialog )
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "btn-ok" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "p-message" );
+	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "p-message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 	my_utils_widget_set_style( priv->msg_label, "labelerror" );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "piece-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->account_frame = ofa_account_frame_bin_new( priv->main_window );

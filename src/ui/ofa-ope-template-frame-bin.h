@@ -66,17 +66,14 @@ typedef struct {
 }
 	ofaOpeTemplateFrameBinClass;
 
-GType                   ofa_ope_template_frame_bin_get_type       ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new            ( void );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new        ( ofaMainWindow *main_window );
 
-void                    ofa_ope_template_frame_bin_set_main_window( ofaOpeTemplateFrameBin *frame,
-																			ofaMainWindow *main_window );
-
-void                    ofa_ope_template_frame_bin_set_buttons    ( ofaOpeTemplateFrameBin *frame,
+void                    ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *bin,
 																			gboolean guided_input );
 
-ofaOpeTemplateBookBin    *ofa_ope_template_frame_bin_get_book       ( ofaOpeTemplateFrameBin *frame );
+ofaOpeTemplateBookBin    *ofa_ope_template_frame_bin_get_book ( ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

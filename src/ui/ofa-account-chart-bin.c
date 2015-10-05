@@ -330,8 +330,6 @@ setup_bin( ofaAccountChartBin *bin )
 }
 
 /*
- * ofa_account_chart_bin_set_main_window:
- *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.
  */
@@ -449,9 +447,10 @@ on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *
 
 /**
  * ofa_account_chart_bin_set_cell_data_func:
+ * @book:
+ * @fn_cell:
+ * @user_data:
  *
- * Must be called before #ofa_account_chart_bin_set_main_window() in order
- * to be taken into account.
  */
 void
 ofa_account_chart_bin_set_cell_data_func( ofaAccountChartBin *book, GtkTreeCellDataFunc fn_cell, void *user_data )

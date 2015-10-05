@@ -38,8 +38,13 @@
  */
 struct _ofaOpeTemplateSelectPrivate {
 
+	/* initialization
+	 */
+	ofaMainWindow          *main_window;
+
 	/* UI
 	 */
+	GtkWindow              *toplevel;
 	ofaOpeTemplateFrameBin *ope_templates_frame;
 	GtkWidget              *ok_btn;
 
@@ -50,9 +55,7 @@ struct _ofaOpeTemplateSelectPrivate {
 
 static const gchar          *st_ui_xml   = PKGUIDIR "/ofa-ope-template-select.ui";
 static const gchar          *st_ui_id    = "OpeTemplateSelectDialog";
-
 static ofaOpeTemplateSelect *st_this     = NULL;
-static GtkWindow            *st_toplevel = NULL;
 
 G_DEFINE_TYPE( ofaOpeTemplateSelect, ofa_ope_template_select, MY_TYPE_DIALOG )
 
@@ -167,8 +170,9 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 				MY_PROP_SIZE_POSITION, FALSE,
 				NULL );
 
-		st_toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-		my_utils_window_restore_position( st_toplevel, st_ui_id );
+		st_this->priv->main_window = main_window;
+		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
 		/* setup a weak reference on the dossier to auto-unref */
@@ -188,8 +192,8 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
-	my_utils_window_save_position( st_toplevel, st_ui_id );
-	gtk_widget_hide( GTK_WIDGET( st_toplevel ));
+	my_utils_window_save_position( st_this->priv->toplevel, st_ui_id );
+	gtk_widget_hide( GTK_WIDGET( st_this->priv->toplevel ));
 
 	return( g_strdup( priv->ope_mnemo ));
 }
@@ -199,16 +203,12 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_v_init_dialog";
 	ofaOpeTemplateSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkContainer *container;
 	GtkWidget *parent;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_OPE_TEMPLATE_SELECT( dialog )->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this )));
 
@@ -217,10 +217,8 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( container, "ope-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->ope_templates_frame = ofa_ope_template_frame_bin_new();
+	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( priv->main_window );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
-	ofa_ope_template_frame_bin_set_main_window(
-			priv->ope_templates_frame, OFA_MAIN_WINDOW( main_window ));
 	ofa_ope_template_frame_bin_set_buttons( priv->ope_templates_frame, FALSE );
 
 	g_signal_connect(

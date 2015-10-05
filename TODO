@@ -523,6 +523,8 @@
                 ofaAccountChartBin: done
                 ofaClosingParmsBin: done
                 ofaGuidedInputBin: done
+                ofaOpeTemplateFrameBin: done
+                ofaOpeTemplateBookBin: done
 
  862
 

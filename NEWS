@@ -85,6 +85,8 @@
    - ofa_irenderable_free_dataset(): removed interface method.
    - ofa_irenderable_get_dataset(): removed interface method.
    - ofa_ledger_treeview_get_selection(): new method.
+   - ofa_ope_template_book_bin_set_main_window(): removed method (todo #861).
+   - ofa_ope_template_frame_bin_set_main_window(): removed method (todo #861).
    - ofa_reconciliation_set_account(): new method.
    - ofa_render_page_free_dataset(): new virtual method.
    - ofa_render_page_get_dataset(): new virtual method.
