@@ -200,15 +200,23 @@ ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
  * ofa_closing_parms_bin_new:
  */
 ofaClosingParmsBin *
-ofa_closing_parms_bin_new( void )
+ofa_closing_parms_bin_new( ofaMainWindow *main_window )
 {
-	ofaClosingParmsBin *self;
+	ofaClosingParmsBin *bin;
 
-	self = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
-	setup_bin( self );
+	bin->priv->main_window = main_window;
+	bin->priv->dossier = ofa_main_window_get_dossier( main_window );
 
-	return( self );
+	setup_bin( bin );
+
+	if( bin->priv->dossier ){
+		setup_closing_opes( bin );
+		setup_currency_accounts( bin );
+	}
+
+	return( bin );
 }
 
 static void
@@ -266,33 +274,6 @@ setup_bin( ofaClosingParmsBin *bin )
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
-}
-
-/**
- * ofa_closing_parms_bin_set_main_window:
- */
-void
-ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *main_window )
-{
-	ofaClosingParmsBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-
-		if( priv->dossier ){
-			setup_closing_opes( bin );
-			setup_currency_accounts( bin );
-		}
-
-		gtk_widget_show_all( GTK_WIDGET( bin ));
-	}
 }
 
 static void

@@ -75,6 +75,7 @@
    - ofa_account_chart_bin_set_main_window(): removed method (todo #861).
    - ofa_account_frame_bin_set_main_window(): removed method (todo #861).
    - ofa_application_get_copyright(): new method.
+   - ofa_closing_parms_bin_set_main_window(): removed method (todo #861).
    - ofa_dossier_treeview_add_row(): removed method.
    - ofa_dossier_store_add_row(): removed method.
    - ofa_dossier_store_reload(): new method.

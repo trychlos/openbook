@@ -521,6 +521,7 @@
  861 2015-10- 5 GtkBin: set MainWindow (so dossier) in _new()
      2015-10- 5 ofaAccountFrameBin: done
                 ofaAccountChartBin: done
+                ofaClosingParmsBin: done
 
  862
 

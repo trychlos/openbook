@@ -68,17 +68,14 @@ typedef struct {
 }
 	ofaClosingParmsBinClass;
 
-GType               ofa_closing_parms_bin_get_type       ( void ) G_GNUC_CONST;
+GType               ofa_closing_parms_bin_get_type( void ) G_GNUC_CONST;
 
-ofaClosingParmsBin *ofa_closing_parms_bin_new            ( void );
+ofaClosingParmsBin *ofa_closing_parms_bin_new     ( ofaMainWindow *main_window );
 
-void                ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *prefs,
-																	ofaMainWindow *main_window );
+gboolean            ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin,
+															gchar **msg );
 
-gboolean            ofa_closing_parms_bin_is_valid       ( ofaClosingParmsBin *prefs,
-																	gchar **msg );
-
-void                ofa_closing_parms_bin_apply          ( ofaClosingParmsBin *prefs );
+void                ofa_closing_parms_bin_apply   ( ofaClosingParmsBin *bin );
 
 G_END_DECLS
 
