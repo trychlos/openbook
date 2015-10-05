@@ -36,7 +36,7 @@
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
-#include "ui/ofa-dates-filter-hv-bin.h"
+#include "ui/ofa-date-filter-hv-bin.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-balance-bin.h"
 
@@ -51,7 +51,7 @@ struct _ofaBalanceBinPrivate {
 	ofaAccountFilterVVBin *account_filter;
 	GtkWidget              *per_class_btn;		/* subtotal per class */
 	GtkWidget              *new_page_btn;
-	ofaDatesFilterHVBin    *dates_filter;
+	ofaDateFilterHVBin    *date_filter;
 	GtkWidget              *accounts_balance_btn;
 	GtkWidget              *from_prompt;
 	GtkWidget              *from_entry;
@@ -85,7 +85,7 @@ static void on_account_filter_changed( ofaIAccountFilter *filter, ofaBalanceBin 
 static void on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self );
 static void on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self );
-static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
+static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
 static void load_settings( ofaBalanceBin *bin );
 static void set_settings( ofaBalanceBin *bin );
 
@@ -242,34 +242,34 @@ setup_date_selection( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	GtkWidget *parent, *label;
-	ofaDatesFilterHVBin *filter;
+	ofaDateFilterHVBin *filter;
 	GtkWidget *check;
 
 	priv = bin->priv;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dates-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_dates_filter_hv_bin_new();
+	filter = ofa_date_filter_hv_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */
-	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( filter ));
+	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
 	check = gtk_check_button_new_with_mnemonic( _( "Acc_ounts balance" ));
-	ofa_idates_filter_add_widget( OFA_IDATES_FILTER( filter ), check, IDATES_FILTER_BEFORE );
+	ofa_idate_filter_add_widget( OFA_IDATE_FILTER( filter ), check, IDATE_FILTER_BEFORE );
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), bin );
 	priv->accounts_balance_btn = check;
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), bin );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
 
 	priv->from_prompt =
-			ofa_idates_filter_get_prompt( OFA_IDATES_FILTER( filter ), IDATES_FILTER_FROM );
+			ofa_idate_filter_get_prompt( OFA_IDATE_FILTER( filter ), IDATE_FILTER_FROM );
 	priv->from_entry =
-			ofa_idates_filter_get_entry( OFA_IDATES_FILTER( filter ), IDATES_FILTER_FROM );
+			ofa_idate_filter_get_entry( OFA_IDATE_FILTER( filter ), IDATE_FILTER_FROM );
 
-	priv->dates_filter = filter;
+	priv->date_filter = filter;
 }
 
 static void
@@ -343,8 +343,8 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, begin );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, begin );
 	}
 	gtk_widget_set_sensitive( priv->from_prompt, !active );
 	gtk_widget_set_sensitive( priv->from_entry, !active );
@@ -353,7 +353,7 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 }
 
 static void
-on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self )
+on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -381,10 +381,10 @@ ofa_balance_bin_is_valid( ofaBalanceBin *bin, gchar **message )
 
 	if( !priv->dispose_has_run ){
 
-		valid = ofa_idates_filter_is_valid(
-						OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, message ) &&
-				ofa_idates_filter_is_valid(
-						OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO, message );
+		valid = ofa_idate_filter_is_valid(
+						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
+				ofa_idate_filter_is_valid(
+						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
 
 		if( valid ){
 			set_settings( bin );
@@ -485,11 +485,11 @@ ofa_balance_bin_get_new_page_per_class( const ofaBalanceBin *bin )
 /**
  * ofa_balance_bin_get_date_filter:
  */
-ofaIDatesFilter *
-ofa_balance_bin_get_dates_filter( const ofaBalanceBin *bin )
+ofaIDateFilter *
+ofa_balance_bin_get_date_filter( const ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
-	ofaIDatesFilter *date_filter;
+	ofaIDateFilter *date_filter;
 
 	g_return_val_if_fail( bin && OFA_IS_BALANCE_BIN( bin ), NULL );
 
@@ -498,7 +498,7 @@ ofa_balance_bin_get_dates_filter( const ofaBalanceBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		date_filter = OFA_IDATES_FILTER( priv->dates_filter );
+		date_filter = OFA_IDATE_FILTER( priv->date_filter );
 	}
 
 	return( date_filter );
@@ -544,16 +544,16 @@ load_settings( ofaBalanceBin *bin )
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, &date );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, &date );
 	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO, &date );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, &date );
 	}
 
 	it = it ? it->next : NULL;
@@ -603,11 +603,11 @@ set_settings( ofaBalanceBin *bin )
 	acc_balance = ofa_balance_bin_get_accounts_balance( bin );
 
 	sdfrom = my_date_to_str(
-			ofa_idates_filter_get_date(
-					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM ), MY_DATE_SQL );
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM ), MY_DATE_SQL );
 	sdto = my_date_to_str(
-			ofa_idates_filter_get_date(
-					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO ), MY_DATE_SQL );
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO ), MY_DATE_SQL );
 
 	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%s;",
 			from_account ? from_account : "",

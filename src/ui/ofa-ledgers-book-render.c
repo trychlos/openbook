@@ -43,7 +43,7 @@
 #include "core/ofa-iconcil.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -347,7 +347,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *list, *it;
 	ofoLedger *ledger;
 	GList *dataset;
-	ofaIDatesFilter *dates_filter;
+	ofaIDateFilter *date_filter;
 
 	priv = OFA_LEDGERS_BOOK_RENDER( page )->priv;
 
@@ -375,9 +375,9 @@ render_page_get_dataset( ofaRenderPage *page )
 		mnemos = g_slist_prepend( mnemos, g_strdup( ofo_ledger_get_mnemo( OFO_LEDGER( it->data ))));
 	}
 
-	dates_filter = ofa_ledgers_book_bin_get_dates_filter( priv->args_bin );
-	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
-	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
+	date_filter = ofa_ledgers_book_bin_get_date_filter( priv->args_bin );
+	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
+	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_ledgers(
 						dossier, mnemos,

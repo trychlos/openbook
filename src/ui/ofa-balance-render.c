@@ -40,7 +40,7 @@
 #include "api/ofs-account-balance.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -343,7 +343,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofoDossier *dossier;
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
-	ofaIDatesFilter *dates_filter;
+	ofaIDateFilter *date_filter;
 
 	priv = OFA_BALANCE_RENDER( page )->priv;
 
@@ -361,9 +361,9 @@ render_page_get_dataset( ofaRenderPage *page )
 
 	priv->accounts_balance = ofa_balance_bin_get_accounts_balance( priv->args_bin );
 
-	dates_filter = ofa_balance_bin_get_dates_filter( priv->args_bin );
-	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
-	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
+	date_filter = ofa_balance_bin_get_date_filter( priv->args_bin );
+	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
+	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_balance(
 						dossier,

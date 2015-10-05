@@ -40,7 +40,7 @@
  * - current:    no
  */
 
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -86,7 +86,7 @@ gboolean           ofa_ledgers_book_bin_get_all_ledgers
 gboolean           ofa_ledgers_book_bin_get_new_page_per_ledger
                                                   ( const ofaLedgersBookBin *bin );
 
-ofaIDatesFilter   *ofa_ledgers_book_bin_get_dates_filter
+ofaIDateFilter   *ofa_ledgers_book_bin_get_date_filter
                                                   ( const ofaLedgersBookBin *bin );
 
 G_END_DECLS

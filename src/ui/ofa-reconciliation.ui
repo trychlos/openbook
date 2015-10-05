@@ -600,7 +600,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="effect-dates-filter">
+              <object class="GtkBox" id="effect-date-filter">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>

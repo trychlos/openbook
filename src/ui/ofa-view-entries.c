@@ -49,8 +49,8 @@
 #include "ui/my-cell-renderer-date.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-dates-filter-hv-bin.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-date-filter-hv-bin.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -117,7 +117,7 @@ struct _ofaViewEntriesPrivate {
 
 	/* frame 2: effect dates layout
 	 */
-	ofaDatesFilterHVBin *effect_filter;
+	ofaDateFilterHVBin *effect_filter;
 
 	/* frame 3: entry status
 	 */
@@ -258,7 +258,7 @@ static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self 
 static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static gboolean       display_entries_from_account( ofaViewEntries *self );
-static void           on_effect_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
+static void           on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
@@ -565,12 +565,12 @@ setup_dates_selection( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	priv->effect_filter = ofa_dates_filter_hv_bin_new();
-	ofa_idates_filter_set_prefs( OFA_IDATES_FILTER( priv->effect_filter ), st_pref_effect );
+	priv->effect_filter = ofa_date_filter_hv_bin_new();
+	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_pref_effect );
 	g_signal_connect(
 			priv->effect_filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
 
-	container = my_utils_container_get_child_by_name( priv->top_box, "effect-dates-filter" );
+	container = my_utils_container_get_child_by_name( priv->top_box, "effect-date-filter" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->effect_filter ));
 }
@@ -1649,7 +1649,7 @@ display_entries_from_account( ofaViewEntries *self )
 }
 
 static void
-on_effect_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
+on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
 {
 	refresh_display( self );
 }
@@ -1975,16 +1975,16 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 
 			get_row_deffect( self, tmodel, iter, &deffect );
 			if( visible ){
-				effect_filter = ofa_idates_filter_get_date(
-						OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
+				effect_filter = ofa_idate_filter_get_date(
+						OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
 						my_date_compare( effect_filter, &deffect ) <= 0;
 				visible &= ok;
 			}
 			if( visible ){
-				effect_filter = ofa_idates_filter_get_date(
-						OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO );
+				effect_filter = ofa_idate_filter_get_date(
+						OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO );
 				ok = !my_date_is_valid( effect_filter ) ||
 						!my_date_is_valid( &deffect ) ||
 						my_date_compare( effect_filter, &deffect ) >= 0;
@@ -2097,10 +2097,10 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM, begin );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO, end );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM, begin );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO, end );
 
 		/* then setup the general selection: changes on theses entries
 		 * will automativally trigger a display refresh */

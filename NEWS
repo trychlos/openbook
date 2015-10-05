@@ -98,6 +98,8 @@
    - ofaAccountsBookRender class is renamed to ofaAccountBookRender (todo #844).
    - ofaAccountsFilterVVBin class is renamed to ofaAccountFilterVVBin (todo #844).
    - ofaIAccountsFilter interface is renamed to ofaIAccountFilter (todo #844).
+   - ofaDatesFilterHVBin class is renamed to ofaDateFilterHVBin (todo #844).
+   - ofaIDatesFilter interface is renamed to ofaIDateFilter (todo #844).
 
 -----------------------------------------------------------------------
  Version 0.39

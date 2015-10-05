@@ -51,8 +51,8 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-dates-filter-hv-bin.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-date-filter-hv-bin.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -78,7 +78,7 @@ struct _ofaReconciliationPrivate {
 
 	/* UI - effect dates filter
 	 */
-	ofaDatesFilterHVBin *effect_filter;
+	ofaDateFilterHVBin *effect_filter;
 
 	/* UI - manual conciliation
 	 */
@@ -205,7 +205,7 @@ static void         setup_treeview( ofaPage *page, GtkContainer *parent );
 static void         setup_treeview_footer( ofaPage *page, GtkContainer *parent );
 static void         setup_account_selection( ofaPage *page, GtkContainer *parent );
 static void         setup_entries_filter( ofaPage *page, GtkContainer *parent );
-static void         setup_dates_filter( ofaPage *page, GtkContainer *parent );
+static void         setup_date_filter( ofaPage *page, GtkContainer *parent );
 static void         setup_manual_rappro( ofaPage *page, GtkContainer *parent );
 static void         setup_size_group( ofaPage *page, GtkContainer *parent );
 static void         setup_auto_rappro( ofaPage *page, GtkContainer *parent );
@@ -223,7 +223,7 @@ static void         insert_entry( ofaReconciliation *self, GtkTreeModel *tstore,
 static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
 static void         on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self );
 static void         select_mode( ofaReconciliation *self, gint mode );
-static void         on_effect_dates_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
+static void         on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         do_select_bat( ofaReconciliation *self );
@@ -386,7 +386,7 @@ v_setup_view( ofaPage *page )
 
 	setup_account_selection( page, GTK_CONTAINER( widget ));
 	setup_entries_filter( page, GTK_CONTAINER( widget ));
-	setup_dates_filter( page, GTK_CONTAINER( widget ));
+	setup_date_filter( page, GTK_CONTAINER( widget ));
 	setup_manual_rappro( page, GTK_CONTAINER( widget ));
 	setup_size_group( page, GTK_CONTAINER( widget ));
 	setup_auto_rappro( page, GTK_CONTAINER( widget ));
@@ -724,17 +724,17 @@ setup_entries_filter( ofaPage *page, GtkContainer *parent )
 }
 
 static void
-setup_dates_filter( ofaPage *page, GtkContainer *parent )
+setup_date_filter( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconciliationPrivate *priv;
 	GtkWidget *filter_parent;
 
 	priv = OFA_RECONCILIATION( page )->priv;
 
-	priv->effect_filter = ofa_dates_filter_hv_bin_new();
-	ofa_idates_filter_set_prefs( OFA_IDATES_FILTER( priv->effect_filter ), st_effect_dates );
+	priv->effect_filter = ofa_date_filter_hv_bin_new();
+	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_effect_dates );
 
-	filter_parent = my_utils_container_get_child_by_name( parent, "effect-dates-filter" );
+	filter_parent = my_utils_container_get_child_by_name( parent, "effect-date-filter" );
 	g_return_if_fail( filter_parent && GTK_IS_CONTAINER( filter_parent ));
 	gtk_container_add( GTK_CONTAINER( filter_parent ), GTK_WIDGET( priv->effect_filter ));
 
@@ -784,8 +784,8 @@ setup_size_group( ofaPage *page, GtkContainer *parent )
 	priv = OFA_RECONCILIATION( page )->priv;
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = ofa_idates_filter_get_prompt(
-			OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
+	label = ofa_idate_filter_get_prompt(
+			OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 	if( label ){
 		gtk_size_group_add_widget( group, label );
 	}
@@ -1201,7 +1201,7 @@ select_mode( ofaReconciliation *self, gint mode )
  * effect dates filter are not stored in settings
  */
 static void
-on_effect_dates_changed( ofaIDatesFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
+on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 
@@ -1722,14 +1722,14 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 				ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 		g_return_val_if_fail( my_date_is_valid( deffect ), FALSE );
 		/* ... against lower limit */
-		filter = ofa_idates_filter_get_date(
-				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_FROM );
+		filter = ofa_idate_filter_get_date(
+				OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) <= 0;
 		visible &= ok;
 		/* ... against upper limit */
-		filter = ofa_idates_filter_get_date(
-				OFA_IDATES_FILTER( priv->effect_filter ), IDATES_FILTER_TO );
+		filter = ofa_idate_filter_get_date(
+				OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO );
 		ok = !my_date_is_valid( filter ) ||
 				my_date_compare( filter, deffect ) >= 0;
 		visible &= ok;

@@ -129,7 +129,7 @@ ofa_account_filter_vv_bin_new( ofaMainWindow *main_window )
 static void
 iaccount_filter_iface_init( ofaIAccountFilterInterface *iface )
 {
-	static const gchar *thisfn = "ofa_dates_filter_iaccount_filter_iface_init";
+	static const gchar *thisfn = "ofa_date_filter_iaccount_filter_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

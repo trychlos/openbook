@@ -244,7 +244,7 @@ get_iaccount_filter_data( ofaIAccountFilter *filter )
 }
 
 /*
- * called on ofaDatesFilterBin composite widget finalization
+ * called on ofaDateFilterBin composite widget finalization
  */
 static void
 on_widget_finalized( ofaIAccountFilter *filter, void *finalized_widget )

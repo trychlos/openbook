@@ -35,7 +35,7 @@
 #include "api/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-idate-filter.h"
 
 /* data associated to each implementor object
  */
@@ -51,10 +51,10 @@ typedef struct {
 	GtkWidget    *to_entry;
 	GDate         to_date;
 }
-	sIDatesFilter;
+	sIDateFilter;
 
-#define IDATES_FILTER_LAST_VERSION      1
-#define IDATES_FILTER_DATA              "ofa-idates-filter-data"
+#define IDATE_FILTER_LAST_VERSION      1
+#define IDATE_FILTER_DATA              "ofa-idate-filter-data"
 
 #define DEFAULT_MANDATORY               FALSE
 
@@ -71,27 +71,27 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType          register_type( void );
-static void           interface_base_init( ofaIDatesFilterInterface *klass );
-static void           interface_base_finalize( ofaIDatesFilterInterface *klass );
-static sIDatesFilter *get_idates_filter_data( ofaIDatesFilter *filter );
-static void           on_widget_finalized( ofaIDatesFilter *idates_filter, void *finalized_widget );
-static void           setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata );
-static void           on_from_changed( GtkEntry *entry, ofaIDatesFilter *filter );
-static gboolean       on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDatesFilter *filter );
-static void           on_to_changed( GtkEntry *entry, ofaIDatesFilter *filter );
-static gboolean       on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDatesFilter *filter );
-static void           on_date_changed( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date );
-static gboolean       on_date_focus_out( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDatesFilter *sdata );
-static void           load_settings( ofaIDatesFilter *filter, sIDatesFilter *sdata );
-static void           set_settings( ofaIDatesFilter *filter, sIDatesFilter *sdata );
+static void           interface_base_init( ofaIDateFilterInterface *klass );
+static void           interface_base_finalize( ofaIDateFilterInterface *klass );
+static sIDateFilter *get_idate_filter_data( ofaIDateFilter *filter );
+static void           on_widget_finalized( ofaIDateFilter *idate_filter, void *finalized_widget );
+static void           setup_composite( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void           on_from_changed( GtkEntry *entry, ofaIDateFilter *filter );
+static gboolean       on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
+static void           on_to_changed( GtkEntry *entry, ofaIDateFilter *filter );
+static gboolean       on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
+static void           on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date );
+static gboolean       on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata );
+static void           load_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void           set_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
 
 /**
- * ofa_idates_filter_get_type:
+ * ofa_idate_filter_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_idates_filter_get_type( void )
+ofa_idate_filter_get_type( void )
 {
 	static GType type = 0;
 
@@ -103,18 +103,18 @@ ofa_idates_filter_get_type( void )
 }
 
 /*
- * ofa_idates_filter_register_type:
+ * ofa_idate_filter_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_idates_filter_register_type";
+	static const gchar *thisfn = "ofa_idate_filter_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIDatesFilterInterface ),
+		sizeof( ofaIDateFilterInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -127,7 +127,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDatesFilter", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDateFilter", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, GTK_TYPE_CONTAINER );
 
@@ -135,20 +135,20 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIDatesFilterInterface *klass )
+interface_base_init( ofaIDateFilterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_idates_filter_interface_base_init";
+	static const gchar *thisfn = "ofa_idate_filter_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		/**
-		 * ofaIDatesFilter::ofa-changed:
+		 * ofaIDateFilter::ofa-changed:
 		 *
 		 * This signal is sent when one of the from or to dates is changed.
 		 *
 		 * Handler is of type:
-		 * void ( *handler )( ofaIDatesFilter *filter,
+		 * void ( *handler )( ofaIDateFilter *filter,
 		 * 						gint           who,
 		 * 						gboolean       empty,
 		 * 						gboolean       valid,
@@ -156,7 +156,7 @@ interface_base_init( ofaIDatesFilterInterface *klass )
 		 */
 		st_signals[ CHANGED ] = g_signal_new_class_handler(
 					"ofa-changed",
-					OFA_TYPE_IDATES_FILTER,
+					OFA_TYPE_IDATE_FILTER,
 					G_SIGNAL_RUN_LAST,
 					NULL,
 					NULL,								/* accumulator */
@@ -167,13 +167,13 @@ interface_base_init( ofaIDatesFilterInterface *klass )
 					G_TYPE_INT, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
 
 		/**
-		 * ofaIDatesFilter::ofa-focus-out:
+		 * ofaIDateFilter::ofa-focus-out:
 		 *
 		 * This signal is sent when one of the from or to date entries lose
 		 * the focus. The date is supposed to be complete.
 		 *
 		 * Handler is of type:
-		 * void ( *handler )( ofaIDatesFilter *filter,
+		 * void ( *handler )( ofaIDateFilter *filter,
 		 * 						gint           who,
 		 * 						gboolean       empty,
 		 * 						GDate         *date,
@@ -181,7 +181,7 @@ interface_base_init( ofaIDatesFilterInterface *klass )
 		 */
 		st_signals[ CHANGED ] = g_signal_new_class_handler(
 					"ofa-focus-out",
-					OFA_TYPE_IDATES_FILTER,
+					OFA_TYPE_IDATE_FILTER,
 					G_SIGNAL_RUN_LAST,
 					NULL,
 					NULL,								/* accumulator */
@@ -196,9 +196,9 @@ interface_base_init( ofaIDatesFilterInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIDatesFilterInterface *klass )
+interface_base_finalize( ofaIDateFilterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_idates_filter_interface_base_finalize";
+	static const gchar *thisfn = "ofa_idate_filter_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -208,51 +208,51 @@ interface_base_finalize( ofaIDatesFilterInterface *klass )
 }
 
 /**
- * ofa_idates_filter_get_interface_last_version:
- * @instance: this #ofaIDatesFilter instance.
+ * ofa_idate_filter_get_interface_last_version:
+ * @instance: this #ofaIDateFilter instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_idates_filter_get_interface_last_version( const ofaIDatesFilter *instance )
+ofa_idate_filter_get_interface_last_version( const ofaIDateFilter *instance )
 {
-	return( IDATES_FILTER_LAST_VERSION );
+	return( IDATE_FILTER_LAST_VERSION );
 }
 
 /**
- * ofa_idates_filter_setup_bin:
- * @filter: this #ofaIDatesFilter instance.
+ * ofa_idate_filter_setup_bin:
+ * @filter: this #ofaIDateFilter instance.
  *
  * Initialize the composite widget which implements this interface.
  */
 void
-ofa_idates_filter_setup_bin( ofaIDatesFilter *filter, const gchar *xml_name )
+ofa_idate_filter_setup_bin( ofaIDateFilter *filter, const gchar *xml_name )
 {
-	static const gchar *thisfn = "ofa_idates_filter_setup_bin";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_setup_bin";
+	sIDateFilter *sdata;
 
 	g_debug( "%s: filter=%p, xml_name=%s", thisfn, ( void * ) filter, xml_name );
 
-	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 	sdata->xml_name = g_strdup( xml_name );
 	sdata->mandatory = DEFAULT_MANDATORY;
 
 	setup_composite( filter, sdata );
 }
 
-static sIDatesFilter *
-get_idates_filter_data( ofaIDatesFilter *filter )
+static sIDateFilter *
+get_idate_filter_data( ofaIDateFilter *filter )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	sdata = ( sIDatesFilter * ) g_object_get_data( G_OBJECT( filter ), IDATES_FILTER_DATA );
+	sdata = ( sIDateFilter * ) g_object_get_data( G_OBJECT( filter ), IDATE_FILTER_DATA );
 
 	if( !sdata ){
-		sdata = g_new0( sIDatesFilter, 1 );
-		g_object_set_data( G_OBJECT( filter ), IDATES_FILTER_DATA, sdata );
+		sdata = g_new0( sIDateFilter, 1 );
+		g_object_set_data( G_OBJECT( filter ), IDATE_FILTER_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( filter ), ( GWeakNotify ) on_widget_finalized, filter );
 	}
 
@@ -260,33 +260,33 @@ get_idates_filter_data( ofaIDatesFilter *filter )
 }
 
 /*
- * called on ofaDatesFilterBin composite widget finalization
+ * called on ofaDateFilterBin composite widget finalization
  */
 static void
-on_widget_finalized( ofaIDatesFilter *filter, void *finalized_widget )
+on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_idates_filter_on_widget_finalized";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_on_widget_finalized";
+	sIDateFilter *sdata;
 
 	g_debug( "%s: filter=%p (%s), ref_count=%d, finalized_widget=%p",
 			thisfn,
 			( void * ) filter, G_OBJECT_TYPE_NAME( filter ), G_OBJECT( filter )->ref_count,
 			( void * ) finalized_widget );
 
-	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 
 	g_clear_object( &sdata->group0 );
 	g_free( sdata->xml_name );
 	g_free( sdata->prefs_key );
 	g_free( sdata );
 
-	g_object_set_data( G_OBJECT( filter ), IDATES_FILTER_DATA, NULL );
+	g_object_set_data( G_OBJECT( filter ), IDATE_FILTER_DATA, NULL );
 }
 
 static void
-setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata )
+setup_composite( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -349,8 +349,8 @@ setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 }
 
 /**
- * ofa_idates_filter_add_widget:
- * @filter: this #ofaIDatesFilter instance.
+ * ofa_idate_filter_add_widget:
+ * @filter: this #ofaIDateFilter instance.
  * @widget: the widget to be added.
  * @where: where the widget is to be added in the composite UI.
  *
@@ -362,28 +362,28 @@ setup_composite( ofaIDatesFilter *filter, sIDatesFilter *sdata )
  * added. So it is up to the application to only call this method once.
  */
 void
-ofa_idates_filter_add_widget( ofaIDatesFilter *filter, GtkWidget *widget, gint where )
+ofa_idate_filter_add_widget( ofaIDateFilter *filter, GtkWidget *widget, gint where )
 {
-	static const gchar *thisfn = "ofa_idates_filter_add_widget";
+	static const gchar *thisfn = "ofa_idate_filter_add_widget";
 
 	g_debug( "%s: filter=%p, widget=%p, where=%d",
 			thisfn, ( void * ) filter, ( void * ) widget, where );
 
-	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
 
-	if( OFA_IDATES_FILTER_GET_INTERFACE( filter )->add_widget ){
-		OFA_IDATES_FILTER_GET_INTERFACE( filter )->add_widget( filter, widget, where );
+	if( OFA_IDATE_FILTER_GET_INTERFACE( filter )->add_widget ){
+		OFA_IDATE_FILTER_GET_INTERFACE( filter )->add_widget( filter, widget, where );
 	}
 }
 
 static void
-on_from_changed( GtkEntry *entry, ofaIDatesFilter *filter )
+on_from_changed( GtkEntry *entry, ofaIDateFilter *filter )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	sdata = get_idates_filter_data( filter );
-	on_date_changed( filter, IDATES_FILTER_FROM, entry, &sdata->from_date );
+	sdata = get_idate_filter_data( filter );
+	on_date_changed( filter, IDATE_FILTER_FROM, entry, &sdata->from_date );
 }
 
 /*
@@ -392,21 +392,21 @@ on_from_changed( GtkEntry *entry, ofaIDatesFilter *filter )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDatesFilter *filter )
+on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	sdata = get_idates_filter_data( filter );
-	return( on_date_focus_out( filter, IDATES_FILTER_FROM, entry, &sdata->from_date, sdata ));
+	sdata = get_idate_filter_data( filter );
+	return( on_date_focus_out( filter, IDATE_FILTER_FROM, entry, &sdata->from_date, sdata ));
 }
 
 static void
-on_to_changed( GtkEntry *entry, ofaIDatesFilter *filter )
+on_to_changed( GtkEntry *entry, ofaIDateFilter *filter )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	sdata = get_idates_filter_data( filter );
-	on_date_changed( filter, IDATES_FILTER_TO, entry, &sdata->to_date );
+	sdata = get_idate_filter_data( filter );
+	on_date_changed( filter, IDATE_FILTER_TO, entry, &sdata->to_date );
 }
 
 /*
@@ -415,16 +415,16 @@ on_to_changed( GtkEntry *entry, ofaIDatesFilter *filter )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDatesFilter *filter )
+on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	sdata = get_idates_filter_data( filter );
-	return( on_date_focus_out( filter, IDATES_FILTER_TO, entry, &sdata->to_date, sdata ));
+	sdata = get_idate_filter_data( filter );
+	return( on_date_focus_out( filter, IDATE_FILTER_TO, entry, &sdata->to_date, sdata ));
 }
 
 static void
-on_date_changed( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date )
+on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date )
 {
 	gboolean empty, valid;
 
@@ -439,7 +439,7 @@ on_date_changed( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date
  * only record the date in settings if it is valid
  */
 static gboolean
-on_date_focus_out( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDatesFilter *sdata )
+on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata )
 {
 	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
 
@@ -455,7 +455,7 @@ on_date_focus_out( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *da
 }
 
 /**
- * ofa_idates_filter_set_prefs:
+ * ofa_idate_filter_set_prefs:
  * @filter:
  * @prefs_key: the settings key where date are stored as a string list
  *  of SQL-formatted dates.
@@ -463,13 +463,13 @@ on_date_focus_out( ofaIDatesFilter *filter, gint who, GtkEntry *entry, GDate *da
  * Load the settings from user preferences.
  */
 void
-ofa_idates_filter_set_prefs( ofaIDatesFilter *filter, const gchar *prefs_key )
+ofa_idate_filter_set_prefs( ofaIDateFilter *filter, const gchar *prefs_key )
 {
-	sIDatesFilter *sdata;
+	sIDateFilter *sdata;
 
-	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 
 	g_free( sdata->prefs_key );
 	sdata->prefs_key = g_strdup( prefs_key );
@@ -478,29 +478,29 @@ ofa_idates_filter_set_prefs( ofaIDatesFilter *filter, const gchar *prefs_key )
 }
 
 /**
- * ofa_idates_filter_get_date:
+ * ofa_idate_filter_get_date:
  * @filter:
  * @who: whether we are addressing the "From" date or the "To" one.
  *
  * Returns: The specified date.
  */
 const GDate *
-ofa_idates_filter_get_date( ofaIDatesFilter *filter, gint who )
+ofa_idate_filter_get_date( ofaIDateFilter *filter, gint who )
 {
-	static const gchar *thisfn = "ofa_idates_filter_get_date";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_get_date";
+	sIDateFilter *sdata;
 	GDate *date;
 
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	g_return_val_if_fail( filter && OFA_IS_IDATE_FILTER( filter ), NULL );
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 	date = NULL;
 
 	switch( who ){
-		case IDATES_FILTER_FROM:
+		case IDATE_FILTER_FROM:
 			date = &sdata->from_date;
 			break;
-		case IDATES_FILTER_TO:
+		case IDATE_FILTER_TO:
 			date = &sdata->to_date;
 			break;
 		default:
@@ -511,26 +511,26 @@ ofa_idates_filter_get_date( ofaIDatesFilter *filter, gint who )
 }
 
 /**
- * ofa_idates_filter_set_date:
+ * ofa_idate_filter_set_date:
  * @filter:
  * @who: whether we are addressing the "From" date or the "To" one.
  * @date:
  */
 void
-ofa_idates_filter_set_date( ofaIDatesFilter *filter, gint who, const GDate *date )
+ofa_idate_filter_set_date( ofaIDateFilter *filter, gint who, const GDate *date )
 {
-	static const gchar *thisfn = "ofa_idates_filter_set_date";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_set_date";
+	sIDateFilter *sdata;
 
-	g_return_if_fail( filter && OFA_IS_IDATES_FILTER( filter ));
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 
 	switch( who ){
-		case IDATES_FILTER_FROM:
+		case IDATE_FILTER_FROM:
 			my_editable_date_set_date( GTK_EDITABLE( sdata->from_entry ), date );
 			break;
-		case IDATES_FILTER_TO:
+		case IDATE_FILTER_TO:
 			my_editable_date_set_date( GTK_EDITABLE( sdata->to_entry ), date );
 			break;
 		default:
@@ -539,7 +539,7 @@ ofa_idates_filter_set_date( ofaIDatesFilter *filter, gint who, const GDate *date
 }
 
 /**
- * ofa_idates_filter_is_valid:
+ * ofa_idate_filter_is_valid:
  * @filter:
  * @who: whether we are addressing the "From" date or the "To" one.
  * @message: [out][allow-none]: will be set to an error message.
@@ -548,18 +548,18 @@ ofa_idates_filter_set_date( ofaIDatesFilter *filter, gint who, const GDate *date
  * if it is mandatory or not.
  */
 gboolean
-ofa_idates_filter_is_valid( ofaIDatesFilter *filter, gint who, gchar **message )
+ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 {
-	static const gchar *thisfn = "ofa_idates_filter_is_valid";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_is_valid";
+	sIDateFilter *sdata;
 	gboolean valid;
 	GtkWidget *entry;
 	GDate *date;
 	gchar *str;
 
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), FALSE );
+	g_return_val_if_fail( filter && OFA_IS_IDATE_FILTER( filter ), FALSE );
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 	valid = FALSE;
 	date = NULL;
 	if( message ){
@@ -567,11 +567,11 @@ ofa_idates_filter_is_valid( ofaIDatesFilter *filter, gint who, gchar **message )
 	}
 
 	switch( who ){
-		case IDATES_FILTER_FROM:
+		case IDATE_FILTER_FROM:
 			date = &sdata->from_date;
 			entry = sdata->from_entry;
 			break;
-		case IDATES_FILTER_TO:
+		case IDATE_FILTER_TO:
 			date = &sdata->to_date;
 			entry = sdata->to_entry;
 			break;
@@ -591,10 +591,10 @@ ofa_idates_filter_is_valid( ofaIDatesFilter *filter, gint who, gchar **message )
 
 	if( !valid && message ){
 		switch( who ){
-			case IDATES_FILTER_FROM:
+			case IDATE_FILTER_FROM:
 				*message = g_strdup( _( "From date is not valid" ));
 				break;
-			case IDATES_FILTER_TO:
+			case IDATE_FILTER_TO:
 				*message = g_strdup( _( "To date is not valid" ));
 				break;
 		}
@@ -604,29 +604,29 @@ ofa_idates_filter_is_valid( ofaIDatesFilter *filter, gint who, gchar **message )
 }
 
 /**
- * ofa_idates_filter_get_entry:
+ * ofa_idate_filter_get_entry:
  * @filter:
  * @who:
  *
  * Returns: a pointer to the GtkWidget which is used as en antry for the date.
  */
 GtkWidget *
-ofa_idates_filter_get_entry( ofaIDatesFilter *filter, gint who )
+ofa_idate_filter_get_entry( ofaIDateFilter *filter, gint who )
 {
-	static const gchar *thisfn = "ofa_idates_filter_get_entry";
-	sIDatesFilter *sdata;
+	static const gchar *thisfn = "ofa_idate_filter_get_entry";
+	sIDateFilter *sdata;
 	GtkWidget *entry;
 
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	g_return_val_if_fail( filter && OFA_IS_IDATE_FILTER( filter ), NULL );
 
-	sdata = get_idates_filter_data( filter );
+	sdata = get_idate_filter_data( filter );
 	entry = NULL;
 
 	switch( who ){
-		case IDATES_FILTER_FROM:
+		case IDATE_FILTER_FROM:
 			entry = sdata->from_entry;
 			break;
-		case IDATES_FILTER_TO:
+		case IDATE_FILTER_TO:
 			entry = sdata->to_entry;
 			break;
 		default:
@@ -637,40 +637,40 @@ ofa_idates_filter_get_entry( ofaIDatesFilter *filter, gint who )
 }
 
 /**
- * ofa_idates_filter_get_frame_label:
+ * ofa_idate_filter_get_frame_label:
  * @filter:
  *
  * Returns: a pointer to the GtkWidget which is used as the frame label.
  */
 GtkWidget *
-ofa_idates_filter_get_frame_label( ofaIDatesFilter *filter )
+ofa_idate_filter_get_frame_label( ofaIDateFilter *filter )
 {
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	g_return_val_if_fail( filter && OFA_IS_IDATE_FILTER( filter ), NULL );
 
 	return( my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "frame-label" ));
 }
 
 /**
- * ofa_idates_filter_get_prompt:
+ * ofa_idate_filter_get_prompt:
  * @filter:
  * @who:
  *
  * Returns: a pointer to the GtkWidget which is used as the "From" prompt.
  */
 GtkWidget *
-ofa_idates_filter_get_prompt( ofaIDatesFilter *filter, gint who )
+ofa_idate_filter_get_prompt( ofaIDateFilter *filter, gint who )
 {
-	static const gchar *thisfn = "ofa_idates_filter_get_prompt";
+	static const gchar *thisfn = "ofa_idate_filter_get_prompt";
 	const gchar *cstr;
 
-	g_return_val_if_fail( filter && OFA_IS_IDATES_FILTER( filter ), NULL );
+	g_return_val_if_fail( filter && OFA_IS_IDATE_FILTER( filter ), NULL );
 	cstr = NULL;
 
 	switch( who ){
-		case IDATES_FILTER_FROM:
+		case IDATE_FILTER_FROM:
 			cstr = "from-prompt";
 			break;
-		case IDATES_FILTER_TO:
+		case IDATE_FILTER_TO:
 			cstr = "to-prompt";
 			break;
 		default:
@@ -684,7 +684,7 @@ ofa_idates_filter_get_prompt( ofaIDatesFilter *filter, gint who )
  * settings are: from;to; as SQL-formatted dates
  */
 static void
-load_settings( ofaIDatesFilter *filter, sIDatesFilter *sdata )
+load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
 	GList *slist, *it;
 	const gchar *cstr;
@@ -709,7 +709,7 @@ load_settings( ofaIDatesFilter *filter, sIDatesFilter *sdata )
 }
 
 static void
-set_settings( ofaIDatesFilter *filter, sIDatesFilter *sdata )
+set_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
 	gchar *sfrom, *sto, *str;
 

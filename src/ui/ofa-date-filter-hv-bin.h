@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DATES_FILTER_HV_BIN_H__
-#define __OFA_DATES_FILTER_HV_BIN_H__
+#ifndef __OFA_DATE_FILTER_HV_BIN_H__
+#define __OFA_DATE_FILTER_HV_BIN_H__
 
 /**
- * SECTION: ofa_dates_filter_hv_bin
- * @short_description: #ofaDatesFilterHVBin class definition.
- * @include: ui/ofa-dates-filter-hv-bin.h
+ * SECTION: ofa_date_filter_hv_bin
+ * @short_description: #ofaDateFilterHVBin class definition.
+ * @include: ui/ofa-date-filter-hv-bin.h
  *
  * Display a frame with a starting and an ending date to be used as
  * filters in a treeview.
@@ -51,34 +51,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_DATES_FILTER_HV_BIN                ( ofa_dates_filter_hv_bin_get_type())
-#define OFA_DATES_FILTER_HV_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DATES_FILTER_HV_BIN, ofaDatesFilterHVBin ))
-#define OFA_DATES_FILTER_HV_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DATES_FILTER_HV_BIN, ofaDatesFilterHVBinClass ))
-#define OFA_IS_DATES_FILTER_HV_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DATES_FILTER_HV_BIN ))
-#define OFA_IS_DATES_FILTER_HV_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DATES_FILTER_HV_BIN ))
-#define OFA_DATES_FILTER_HV_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DATES_FILTER_HV_BIN, ofaDatesFilterHVBinClass ))
+#define OFA_TYPE_DATE_FILTER_HV_BIN                ( ofa_date_filter_hv_bin_get_type())
+#define OFA_DATE_FILTER_HV_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DATE_FILTER_HV_BIN, ofaDateFilterHVBin ))
+#define OFA_DATE_FILTER_HV_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DATE_FILTER_HV_BIN, ofaDateFilterHVBinClass ))
+#define OFA_IS_DATE_FILTER_HV_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DATE_FILTER_HV_BIN ))
+#define OFA_IS_DATE_FILTER_HV_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DATE_FILTER_HV_BIN ))
+#define OFA_DATE_FILTER_HV_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DATE_FILTER_HV_BIN, ofaDateFilterHVBinClass ))
 
-typedef struct _ofaDatesFilterHVBinPrivate          ofaDatesFilterHVBinPrivate;
+typedef struct _ofaDateFilterHVBinPrivate          ofaDateFilterHVBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                      parent;
+	GtkBin                     parent;
 
 	/*< private members >*/
-	ofaDatesFilterHVBinPrivate *priv;
+	ofaDateFilterHVBinPrivate *priv;
 }
-	ofaDatesFilterHVBin;
+	ofaDateFilterHVBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                 parent;
+	GtkBinClass                parent;
 }
-	ofaDatesFilterHVBinClass;
+	ofaDateFilterHVBinClass;
 
-GType                ofa_dates_filter_hv_bin_get_type( void ) G_GNUC_CONST;
+GType               ofa_date_filter_hv_bin_get_type( void ) G_GNUC_CONST;
 
-ofaDatesFilterHVBin *ofa_dates_filter_hv_bin_new     ( void );
+ofaDateFilterHVBin *ofa_date_filter_hv_bin_new     ( void );
 
 G_END_DECLS
 
-#endif /* __OFA_DATES_FILTER_HV_BIN_H__ */
+#endif /* __OFA_DATE_FILTER_HV_BIN_H__ */

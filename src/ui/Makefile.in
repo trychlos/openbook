@@ -160,7 +160,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-classes-page.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currencies-page.$(OBJEXT) \
 	ofa-currency-combo.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
-	ofa-currency-store.$(OBJEXT) ofa-dates-filter-hv-bin.$(OBJEXT) \
+	ofa-currency-store.$(OBJEXT) ofa-date-filter-hv-bin.$(OBJEXT) \
 	ofa-dossier-delete.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-login.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
@@ -172,7 +172,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-idates-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-idate-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
 	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
 	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
@@ -570,8 +570,8 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-dates-filter-hv-bin.c							\
-	ofa-dates-filter-hv-bin.h							\
+	ofa-date-filter-hv-bin.c							\
+	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
@@ -610,8 +610,8 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
-	ofa-idates-filter.c									\
-	ofa-idates-filter.h									\
+	ofa-idate-filter.c									\
+	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-iprintable.c									\
@@ -713,7 +713,7 @@ ui_files = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
-	ofa-dates-filter-hv-bin.ui							\
+	ofa-date-filter-hv-bin.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
@@ -916,7 +916,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dates-filter-hv-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-login.Po@am__quote@
@@ -936,7 +936,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idates-filter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@

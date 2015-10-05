@@ -36,7 +36,7 @@
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
-#include "ui/ofa-dates-filter-hv-bin.h"
+#include "ui/ofa-date-filter-hv-bin.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-account-book-bin.h"
 
@@ -50,7 +50,7 @@ struct _ofaAccountBookBinPrivate {
 	 */
 	ofaAccountFilterVVBin *account_filter;
 	GtkWidget              *new_page_btn;
-	ofaDatesFilterHVBin    *dates_filter;
+	ofaDateFilterHVBin    *date_filter;
 
 	/* internals
 	 */
@@ -77,7 +77,7 @@ static void setup_date_selection( ofaAccountBookBin *bin );
 static void setup_others( ofaAccountBookBin *bin );
 static void on_account_filter_changed( ofaIAccountFilter *filter, ofaAccountBookBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self );
-static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self );
+static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self );
 static void load_settings( ofaAccountBookBin *bin );
 static void set_settings( ofaAccountBookBin *bin );
 
@@ -234,22 +234,22 @@ setup_date_selection( ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
 	GtkWidget *parent, *label;
-	ofaDatesFilterHVBin *filter;
+	ofaDateFilterHVBin *filter;
 
 	priv = bin->priv;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dates-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_dates_filter_hv_bin_new();
+	filter = ofa_date_filter_hv_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
-	priv->dates_filter = filter;
+	priv->date_filter = filter;
 
 	/* instead of "effect dates filter" */
-	label = ofa_idates_filter_get_frame_label( OFA_IDATES_FILTER( filter ));
+	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_dates_filter_changed ), bin );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
 
 }
 
@@ -287,7 +287,7 @@ on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self )
 }
 
 static void
-on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self )
+on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -315,10 +315,10 @@ ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
 
 	if( !priv->dispose_has_run ){
 
-		valid = ofa_idates_filter_is_valid(
-						OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, message ) &&
-				ofa_idates_filter_is_valid(
-						OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO, message );
+		valid = ofa_idate_filter_is_valid(
+						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
+				ofa_idate_filter_is_valid(
+						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
 
 		if( valid ){
 			set_settings( bin );
@@ -375,11 +375,11 @@ ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin )
 /**
  * ofa_account_book_bin_get_date_filter:
  */
-ofaIDatesFilter *
-ofa_account_book_bin_get_dates_filter( const ofaAccountBookBin *bin )
+ofaIDateFilter *
+ofa_account_book_bin_get_date_filter( const ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
-	ofaIDatesFilter *date_filter;
+	ofaIDateFilter *date_filter;
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
@@ -388,7 +388,7 @@ ofa_account_book_bin_get_dates_filter( const ofaAccountBookBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		date_filter = OFA_IDATES_FILTER( priv->dates_filter );
+		date_filter = OFA_IDATE_FILTER( priv->date_filter );
 	}
 
 	return( date_filter );
@@ -434,16 +434,16 @@ load_settings( ofaAccountBookBin *bin )
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM, &date );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, &date );
 	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-		ofa_idates_filter_set_date(
-				OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO, &date );
+		ofa_idate_filter_set_date(
+				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, &date );
 	}
 
 	it = it ? it->next : NULL;
@@ -475,11 +475,11 @@ set_settings( ofaAccountBookBin *bin )
 			OFA_IACCOUNT_FILTER( priv->account_filter ));
 
 	sdfrom = my_date_to_str(
-			ofa_idates_filter_get_date(
-					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_FROM ), MY_DATE_SQL );
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM ), MY_DATE_SQL );
 	sdto = my_date_to_str(
-			ofa_idates_filter_get_date(
-					OFA_IDATES_FILTER( priv->dates_filter ), IDATES_FILTER_TO ), MY_DATE_SQL );
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO ), MY_DATE_SQL );
 
 	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;",
 			from_account ? from_account : "",

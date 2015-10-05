@@ -41,7 +41,7 @@
  */
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idates-filter.h"
+#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -83,7 +83,7 @@ gboolean            ofa_account_book_bin_get_new_page_per_account
 ofaIAccountFilter *ofa_account_book_bin_get_account_filter
                                                   ( const ofaAccountBookBin *bin );
 
-ofaIDatesFilter    *ofa_account_book_bin_get_dates_filter
+ofaIDateFilter    *ofa_account_book_bin_get_date_filter
                                                   ( const ofaAccountBookBin *bin );
 
 G_END_DECLS
