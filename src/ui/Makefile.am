@@ -81,8 +81,8 @@ openbook_SOURCES = \
 	ofa-account-chart-bin.h								\
 	ofa-account-book-bin.c								\
 	ofa-account-book-bin.h								\
-	ofa-accounts-book-render.c							\
-	ofa-accounts-book-render.h							\
+	ofa-account-book-render.c							\
+	ofa-account-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
 	ofa-accounts-filter-vv-bin.h						\
 	ofa-account-frame-bin.c								\

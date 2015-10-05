@@ -145,7 +145,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
 	ofa-account-chart-bin.$(OBJEXT) \
 	ofa-account-book-bin.$(OBJEXT) \
-	ofa-accounts-book-render.$(OBJEXT) \
+	ofa-account-book-render.$(OBJEXT) \
 	ofa-accounts-filter-vv-bin.$(OBJEXT) \
 	ofa-account-frame-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
@@ -513,8 +513,8 @@ openbook_SOURCES = \
 	ofa-account-chart-bin.h								\
 	ofa-account-book-bin.c								\
 	ofa-account-book-bin.h								\
-	ofa-accounts-book-render.c							\
-	ofa-accounts-book-render.h							\
+	ofa-account-book-render.c							\
+	ofa-account-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
 	ofa-accounts-filter-vv-bin.h						\
 	ofa-account-frame-bin.c								\
@@ -888,7 +888,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-selector-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book-render.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@

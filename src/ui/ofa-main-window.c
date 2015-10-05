@@ -40,7 +40,7 @@
 #include "api/ofa-preferences.h"
 
 #include "ui/my-tab-label.h"
-#include "ui/ofa-accounts-book-render.h"
+#include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
@@ -241,7 +241,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_RENDER_ACCOUNTS_BOOK,
 				N_( "Accounts book" ),
-				ofa_accounts_book_render_get_type,
+				ofa_account_book_render_get_type,
 				FALSE
 		},
 		{ THM_RENDER_LEDGERS_BOOK,
