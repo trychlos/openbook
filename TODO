@@ -519,6 +519,7 @@
                 acknowledge, or have a spinner, or have a progress bar
 
  861 2015-10- 5 GtkBin: set MainWindow (so dossier) in _new()
+     2015-10- 5 ofaAccountFrameBin: done
 
  862
 

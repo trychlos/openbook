@@ -34,7 +34,10 @@
  * and the buttons box on the right.
  *
  * The class also acts as a proxy for "changed" and "activated" messages
- * sent by the underlying ofaAccountStore class.
+ * sent by the underlying ofaAccountStore class. It relays these
+ * messages as:
+ * - 'ofa-changed' when the selection changes
+ * - 'ofa-activated' when the selection is activated.
  */
 
 #include "ui/ofa-account-chart-bin.h"
@@ -66,19 +69,16 @@ typedef struct {
 }
 	ofaAccountFrameBinClass;
 
-GType               ofa_account_frame_bin_get_type       ( void ) G_GNUC_CONST;
+GType               ofa_account_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaAccountFrameBin *ofa_account_frame_bin_new            ( void );
+ofaAccountFrameBin *ofa_account_frame_bin_new        ( ofaMainWindow *main_window );
 
-void                ofa_account_frame_bin_set_main_window( ofaAccountFrameBin *frame,
-																	ofaMainWindow *main_window );
+void                ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *bin,
+																gboolean view_entries,
+																gboolean settlement,
+																gboolean reconciliation );
 
-void                ofa_account_frame_bin_set_buttons    ( ofaAccountFrameBin *frame,
-																	gboolean view_entries,
-																	gboolean settlement,
-																	gboolean reconciliation );
-
-ofaAccountChartBin *ofa_account_frame_bin_get_chart      ( const ofaAccountFrameBin *frame );
+ofaAccountChartBin *ofa_account_frame_bin_get_chart  ( const ofaAccountFrameBin *bin );
 
 G_END_DECLS
 

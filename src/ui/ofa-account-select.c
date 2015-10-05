@@ -44,12 +44,14 @@ struct _ofaAccountSelectPrivate {
 
 	/* input data
 	 */
+	ofaMainWindow      *main_window;
+	ofoDossier         *dossier;
 	gint                allowed;
 
 	/* UI
 	 */
-	ofaAccountFrameBin *accounts_frame;
-	ofaAccountChartBin *accounts_chart;
+	ofaAccountFrameBin *account_frame;
+	ofaAccountChartBin *account_chart;
 	GtkWidget          *ok_btn;
 	GtkWidget          *msg_label;
 
@@ -163,7 +165,6 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
 	ofaAccountChartBin *book;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -171,8 +172,6 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 			thisfn, ( void * ) main_window, asked_number );
 
 	if( !st_this ){
-
-		dossier = ofa_main_window_get_dossier( main_window );
 
 		st_this = g_object_new(
 				OFA_TYPE_ACCOUNT_SELECT,
@@ -182,17 +181,21 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 				MY_PROP_SIZE_POSITION, FALSE,
 				NULL );
 
+		st_this->priv->main_window = main_window;
+		st_this->priv->dossier = ofa_main_window_get_dossier( main_window );
+
 		st_toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
 		my_utils_window_restore_position( st_toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
 		/* setup a weak reference on the dossier to auto-unref */
-		g_object_weak_ref( G_OBJECT( dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
+		g_object_weak_ref(
+				G_OBJECT( st_this->priv->dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
 	}
 
 	priv = st_this->priv;
 
-	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
+	book = ofa_account_frame_bin_get_chart( priv->account_frame );
 	ofa_account_chart_bin_set_selected( book, asked_number );
 	check_for_enable_dlg( st_this );
 
@@ -213,33 +216,33 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
 	ofaAccountSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "p-message" );
+	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	my_utils_widget_set_style( priv->msg_label, "labelerror" );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->accounts_frame = ofa_account_frame_bin_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->accounts_frame ));
-	priv->accounts_chart = ofa_account_frame_bin_get_chart( priv->accounts_frame );
+	priv->account_frame = ofa_account_frame_bin_new( priv->main_window );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_frame ));
+	priv->account_chart = ofa_account_frame_bin_get_chart( priv->account_frame );
 	ofa_account_chart_bin_set_cell_data_func(
-			priv->accounts_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
-	ofa_account_frame_bin_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
-	ofa_account_frame_bin_set_buttons( priv->accounts_frame, FALSE, FALSE, FALSE );
+			priv->account_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
+	ofa_account_frame_bin_set_buttons( priv->account_frame, FALSE, FALSE, FALSE );
 
 	g_signal_connect(
-			G_OBJECT( priv->accounts_frame ), "changed", G_CALLBACK( on_account_changed ), dialog );
+			G_OBJECT( priv->account_frame ), "ofa-changed", G_CALLBACK( on_account_changed ), dialog );
 	g_signal_connect(
-			G_OBJECT( priv->accounts_frame ), "activated", G_CALLBACK( on_account_activated ), dialog );
+			G_OBJECT( priv->account_frame ), "ofa-activated", G_CALLBACK( on_account_activated ), dialog );
 }
 
 /*
@@ -261,7 +264,7 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	priv = self->priv;
 
-	ofa_account_chart_bin_cell_data_renderer( priv->accounts_chart, tcolumn, cell, tmodel, iter );
+	ofa_account_chart_bin_cell_data_renderer( priv->account_chart, tcolumn, cell, tmodel, iter );
 
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -297,7 +300,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	account = ofa_account_chart_bin_get_selected( priv->accounts_chart );
+	account = ofa_account_chart_bin_get_selected( priv->account_chart );
 	ok = is_selection_valid( self, account );
 	g_free( account );
 
@@ -308,8 +311,6 @@ static gboolean
 is_selection_valid( ofaAccountSelect *self, const gchar *number )
 {
 	ofaAccountSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gboolean ok;
 	ofoAccount *account;
 
@@ -317,12 +318,8 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	ok = FALSE;
 	set_message( self, "" );
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-
 	if( my_strlen( number )){
-		account = ofo_account_get_by_number( dossier, number );
+		account = ofo_account_get_by_number( priv->dossier, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		ok = ofo_account_is_allowed( account, priv->allowed );
@@ -347,7 +344,7 @@ do_select( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
+	book = ofa_account_frame_bin_get_chart( priv->account_frame );
 	account = ofa_account_chart_bin_get_selected( book );
 	ok = is_selection_valid( self, account );
 	if( ok ){
@@ -362,19 +359,8 @@ static void
 set_message( ofaAccountSelect *self, const gchar *str )
 {
 	ofaAccountSelectPrivate *priv;
-	GtkWindow *toplevel;
 
 	priv = self->priv;
-
-	if( !priv->msg_label ){
-		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
-		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p-message" );
-		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-
-		my_utils_widget_set_style( priv->msg_label, "labelerror" );
-	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
 }

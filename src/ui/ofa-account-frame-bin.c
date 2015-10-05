@@ -42,11 +42,11 @@
 struct _ofaAccountFrameBinPrivate {
 	gboolean            dispose_has_run;
 
-	GtkGrid            *grid;
 	ofaMainWindow      *main_window;
+	GtkGrid            *grid;
 	gint                buttons;
 
-	ofaAccountChartBin *book;
+	ofaAccountChartBin *account_chart;
 	ofaButtonsBox      *box;
 
 	GtkWidget          *new_btn;
@@ -69,16 +69,16 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 G_DEFINE_TYPE( ofaAccountFrameBin, ofa_account_frame_bin, GTK_TYPE_BIN )
 
-static void setup_top_grid( ofaAccountFrameBin *frame );
-static void on_new_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_properties_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_delete_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *frame );
-static void on_book_selection_changed( ofaAccountChartBin *book, const gchar *number, ofaAccountFrameBin *frame );
-static void on_book_selection_activated( ofaAccountChartBin *book, const gchar *number, ofaAccountFrameBin *frame );
-static void update_buttons_sensitivity( ofaAccountFrameBin *self, const gchar *number );
+static void setup_bin( ofaAccountFrameBin *bin );
+static void on_new_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_properties_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_delete_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *bin );
+static void on_book_selection_changed( ofaAccountChartBin *book, const gchar *account_id, ofaAccountFrameBin *bin );
+static void on_book_selection_activated( ofaAccountChartBin *book, const gchar *account_id, ofaAccountFrameBin *bin );
+static void update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id );
 
 static void
 accounts_frame_finalize( GObject *instance )
@@ -151,11 +151,11 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaAccountFrameBin *frame,
-	 * 						const gchar    *number,
-	 * 						gpointer        user_data );
+	 * 						const gchar      *account_id,
+	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-changed",
 				OFA_TYPE_ACCOUNT_FRAME_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -175,11 +175,11 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaAccountFrameBin *frame,
-	 * 						const gchar    *number,
-	 * 						gpointer        user_data );
+	 * 						const gchar      *account_id,
+	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"activated",
+				"ofa-activated",
 				OFA_TYPE_ACCOUNT_FRAME_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -206,22 +206,24 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
  * | | +---------------------------------------------+-----------------+ + |
  * | | | creates a notebook where each page contains | creates         | | |
  * | | |   the account of the corresponding class    |   a buttons box | | |
- * | | |   (cf. ofaAccountChartBin class)               |                 | | |
+ * | | |   (cf. ofaAccountChartBin class)            |                 | | |
  * | | |                                             |                 | | |
  * | | +---------------------------------------------+-----------------+ | |
  * | +-------------------------------------------------------------------+ |
  * +-----------------------------------------------------------------------+
  */
 ofaAccountFrameBin *
-ofa_account_frame_bin_new( void  )
+ofa_account_frame_bin_new( ofaMainWindow *main_window  )
 {
-	ofaAccountFrameBin *self;
+	ofaAccountFrameBin *bin;
 
-	self = g_object_new( OFA_TYPE_ACCOUNT_FRAME_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_ACCOUNT_FRAME_BIN, NULL );
 
-	setup_top_grid( self );
+	bin->priv->main_window = main_window;
 
-	return( self );
+	setup_bin( bin );
+
+	return( bin );
 }
 
 /*
@@ -229,15 +231,15 @@ ofa_account_frame_bin_new( void  )
  * buttons, and attach it to our #GtkBin
  */
 static void
-setup_top_grid( ofaAccountFrameBin *frame )
+setup_bin( ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 	GtkWidget *grid;
 
-	priv = frame->priv;
+	priv = bin->priv;
 
 	grid = gtk_grid_new();
-	gtk_container_add( GTK_CONTAINER( frame ), grid );
+	gtk_container_add( GTK_CONTAINER( bin ), grid );
 
 	priv->grid = GTK_GRID( grid );
 	my_utils_widget_set_margin_left( grid, 4 );
@@ -245,106 +247,90 @@ setup_top_grid( ofaAccountFrameBin *frame )
 
 	/* create the accounts notebook
 	 */
-	priv->book = ofa_account_chart_bin_new();
-	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->book ), 0, 0, 1, 1 );
+	priv->account_chart = ofa_account_chart_bin_new();
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->account_chart ), 0, 0, 1, 1 );
 
 	g_signal_connect(
-			G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), frame );
+			G_OBJECT( priv->account_chart ), "changed", G_CALLBACK( on_book_selection_changed ), bin );
 	g_signal_connect(
-			G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), frame );
+			G_OBJECT( priv->account_chart ), "activated", G_CALLBACK( on_book_selection_activated ), bin );
 
-	gtk_widget_show_all( GTK_WIDGET( frame ));
-}
-
-/**
- * ofa_account_frame_bin_set_main_window:
- *
- * Returns the top focusable widget, here the treeview of the current
- * page.
- */
-void
-ofa_account_frame_bin_set_main_window( ofaAccountFrameBin *frame, ofaMainWindow *main_window )
-{
-	ofaAccountFrameBinPrivate *priv;
-
-	g_return_if_fail( frame && OFA_IS_ACCOUNT_FRAME_BIN( frame ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = frame->priv;
-
-	if( !priv->dispose_has_run ){
-
-		priv->main_window = main_window;
-		ofa_account_chart_bin_set_main_window( priv->book, main_window );
-		ofa_account_chart_bin_expand_all( priv->book );
-	}
+	ofa_account_chart_bin_set_main_window( priv->account_chart, priv->main_window );
+	ofa_account_chart_bin_expand_all( priv->account_chart );
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_new_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_NEW );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_NEW );
 }
 
 static void
-on_properties_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_properties_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_PROPERTIES );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_PROPERTIES );
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_delete_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_DELETE );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_DELETE );
 }
 
 static void
-on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_VIEW_ENTRIES );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_VIEW_ENTRIES );
 }
 
 static void
-on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_SETTLEMENT );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_SETTLEMENT );
 }
 
 static void
-on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *frame )
+on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	priv = frame->priv;
-	ofa_account_chart_bin_button_clicked( priv->book, BUTTON_RECONCILIATION );
+	priv = bin->priv;
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_RECONCILIATION );
 }
 
 /**
  * ofa_account_frame_bin_set_buttons:
+ * @bin: this #ofaAccountFrameBin instance.
+ * @view_entries: whether the 'View entries...' button should be displayed.
+ * @settlement: whether the 'Settlement...' button should be displayed.
+ * @reconciliation: whether the 'Reconciliation...' button should be displayed.
+ *
+ * Display the required buttons.
  */
 void
-ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *frame, gboolean view_entries, gboolean settlement, gboolean reconciliation )
+ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *bin,
+				gboolean view_entries, gboolean settlement, gboolean reconciliation )
 {
 	ofaAccountFrameBinPrivate *priv;
 
-	g_return_if_fail( frame && OFA_IS_ACCOUNT_FRAME_BIN( frame ));
+	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
-	priv = frame->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -354,81 +340,81 @@ ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *frame, gboolean view_entr
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
 		priv->new_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), frame );
+				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), bin );
 		priv->update_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), frame );
+				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), bin );
 		priv->delete_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), frame );
+				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), bin );
 
 		if( view_entries ){
 			ofa_buttons_box_add_spacer( priv->box );
 			priv->view_entries_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), frame );
+					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), bin );
 		}
 		if( settlement ){
 			priv->settlement_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_SETTLEMENT, FALSE, G_CALLBACK( on_settlement_clicked ), frame );
+					BUTTON_SETTLEMENT, FALSE, G_CALLBACK( on_settlement_clicked ), bin );
 		}
 		if( reconciliation ){
 			priv->reconciliation_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_RECONCILIATION, FALSE, G_CALLBACK( on_reconciliation_clicked ), frame );
+					BUTTON_RECONCILIATION, FALSE, G_CALLBACK( on_reconciliation_clicked ), bin );
 		}
 	}
 }
 
 /**
  * ofa_account_frame_bin_get_chart:
- * @frame:
+ * @bin:
  *
  * Returns: the #ofaAccountChartBin book.
  */
 ofaAccountChartBin *
-ofa_account_frame_bin_get_chart( const ofaAccountFrameBin *frame )
+ofa_account_frame_bin_get_chart( const ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 	ofaAccountChartBin *book;
 
-	g_return_val_if_fail( frame && OFA_IS_ACCOUNT_FRAME_BIN( frame ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
 
-	priv = frame->priv;
+	priv = bin->priv;
 	book = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		book = priv->book;
+		book = priv->account_chart;
 	}
 
 	return( book );
 }
 
 static void
-on_book_selection_changed( ofaAccountChartBin *book, const gchar *number, ofaAccountFrameBin *frame )
+on_book_selection_changed( ofaAccountChartBin *book, const gchar *account_id, ofaAccountFrameBin *bin )
 {
-	update_buttons_sensitivity( frame, number );
-	g_signal_emit_by_name( frame, "changed", number );
+	update_buttons_sensitivity( bin, account_id );
+	g_signal_emit_by_name( bin, "ofa-changed", account_id );
 }
 
 static void
-on_book_selection_activated( ofaAccountChartBin *book, const gchar *number, ofaAccountFrameBin *frame )
+on_book_selection_activated( ofaAccountChartBin *book, const gchar *account_id, ofaAccountFrameBin *bin )
 {
-	g_signal_emit_by_name( frame, "activated", number );
+	g_signal_emit_by_name( bin, "ofa-activated", account_id );
 }
 
 static void
-update_buttons_sensitivity( ofaAccountFrameBin *self, const gchar *number )
+update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id )
 {
 	ofaAccountFrameBinPrivate *priv;
 	ofoDossier *dossier;
 	ofoAccount *account;
 	gboolean has_account;
 
-	priv = self->priv;
+	priv = bin->priv;
 	account = NULL;
 	has_account = FALSE;
 	dossier = ofa_main_window_get_dossier( priv->main_window );
 
-	if( number ){
-		account = ofo_account_get_by_number( dossier, number );
+	if( account_id ){
+		account = ofo_account_get_by_number( dossier, account_id );
 		has_account = ( account && OFO_IS_ACCOUNT( account ));
 	}
 

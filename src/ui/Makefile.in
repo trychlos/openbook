@@ -141,26 +141,26 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-cell-renderer-date.$(OBJEXT) my-editable-amount.$(OBJEXT) \
 	my-editable-date.$(OBJEXT) my-progress-bar.$(OBJEXT) \
 	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
-	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
-	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
-	ofa-account-chart-bin.$(OBJEXT) ofa-account-book-bin.$(OBJEXT) \
+	ofa-account-book-bin.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
+	ofa-account-chart-bin.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) \
 	ofa-account-frame-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
+	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
+	ofa-account-selector-bin.$(OBJEXT) ofa-account-store.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
-	ofa-balance-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
-	ofa-balance-grid-bin.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
-	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
-	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
-	ofa-bat-utils.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
+	ofa-balance-bin.$(OBJEXT) ofa-balance-grid-bin.$(OBJEXT) \
+	ofa-balance-render.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
+	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
+	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
+	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
 	ofa-buttons-box.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
 	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
-	ofa-check-integrity-bin.$(OBJEXT) \
-	ofa-class-properties.$(OBJEXT) ofa-class-page.$(OBJEXT) \
-	ofa-closing-parms-bin.$(OBJEXT) ofa-currency-page.$(OBJEXT) \
-	ofa-currency-combo.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
-	ofa-currency-store.$(OBJEXT) ofa-date-filter-hv-bin.$(OBJEXT) \
-	ofa-dossier-delete.$(OBJEXT) \
+	ofa-check-integrity-bin.$(OBJEXT) ofa-class-page.$(OBJEXT) \
+	ofa-class-properties.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
+	ofa-currency-page.$(OBJEXT) ofa-currency-combo.$(OBJEXT) \
+	ofa-currency-properties.$(OBJEXT) ofa-currency-store.$(OBJEXT) \
+	ofa-date-filter-hv-bin.$(OBJEXT) ofa-dossier-delete.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-login.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
@@ -173,20 +173,20 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
 	ofa-idate-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
 	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
-	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
-	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
-	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
-	ofa-ledger-page.$(OBJEXT) ofa-list-store.$(OBJEXT) \
-	ofa-main-window.$(OBJEXT) ofa-ope-template-help.$(OBJEXT) \
+	ofa-istore.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
+	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
+	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
+	ofa-ledger-treeview.$(OBJEXT) ofa-list-store.$(OBJEXT) \
+	ofa-main-window.$(OBJEXT) ofa-ope-template-book-bin.$(OBJEXT) \
+	ofa-ope-template-frame-bin.$(OBJEXT) \
+	ofa-ope-template-help.$(OBJEXT) \
+	ofa-ope-template-page.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
-	ofa-ope-template-store.$(OBJEXT) \
-	ofa-ope-template-book-bin.$(OBJEXT) \
-	ofa-ope-template-frame-bin.$(OBJEXT) \
-	ofa-ope-template-page.$(OBJEXT) ofa-page.$(OBJEXT) \
-	ofa-plugin-manager.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rate-page.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
+	ofa-ope-template-store.$(OBJEXT) ofa-page.$(OBJEXT) \
+	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
+	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
 	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
 	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
@@ -499,6 +499,18 @@ openbook_SOURCES = \
 	my-tab-label.h										\
 	ofa-about.c											\
 	ofa-about.h											\
+	ofa-account-book-bin.c								\
+	ofa-account-book-bin.h								\
+	ofa-account-book-render.c							\
+	ofa-account-book-render.h							\
+	ofa-account-chart-bin.c								\
+	ofa-account-chart-bin.h								\
+	ofa-account-filter-vv-bin.c							\
+	ofa-account-filter-vv-bin.h							\
+	ofa-account-frame-bin.c								\
+	ofa-account-frame-bin.h								\
+	ofa-account-page.c									\
+	ofa-account-page.h									\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
 	ofa-account-select.c								\
@@ -507,18 +519,6 @@ openbook_SOURCES = \
 	ofa-account-selector-bin.h							\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
-	ofa-account-chart-bin.c								\
-	ofa-account-chart-bin.h								\
-	ofa-account-book-bin.c								\
-	ofa-account-book-bin.h								\
-	ofa-account-book-render.c							\
-	ofa-account-book-render.h							\
-	ofa-account-filter-vv-bin.c							\
-	ofa-account-filter-vv-bin.h							\
-	ofa-account-frame-bin.c								\
-	ofa-account-frame-bin.h								\
-	ofa-account-page.c									\
-	ofa-account-page.h									\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-application-def.h								\
@@ -526,10 +526,12 @@ openbook_SOURCES = \
 	ofa-backup.h										\
 	ofa-balance-bin.c									\
 	ofa-balance-bin.h									\
-	ofa-balance-render.c								\
-	ofa-balance-render.h								\
 	ofa-balance-grid-bin.c								\
 	ofa-balance-grid-bin.h								\
+	ofa-balance-render.c								\
+	ofa-balance-render.h								\
+	ofa-bat-page.c										\
+	ofa-bat-page.h										\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-properties-bin.c							\
@@ -542,8 +544,6 @@ openbook_SOURCES = \
 	ofa-bat-treeview.h									\
 	ofa-bat-utils.c										\
 	ofa-bat-utils.h										\
-	ofa-bat-page.c										\
-	ofa-bat-page.h										\
 	ofa-buttons-box.c									\
 	ofa-buttons-box.h									\
 	ofa-check-balances.c								\
@@ -554,10 +554,10 @@ openbook_SOURCES = \
 	ofa-check-integrity.h								\
 	ofa-check-integrity-bin.c							\
 	ofa-check-integrity-bin.h							\
-	ofa-class-properties.c								\
-	ofa-class-properties.h								\
 	ofa-class-page.c									\
 	ofa-class-page.h									\
+	ofa-class-properties.c								\
+	ofa-class-properties.h								\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
 	ofa-currency-page.c									\
@@ -618,51 +618,51 @@ openbook_SOURCES = \
 	ofa-irenderable.h									\
 	ofa-istore.c										\
 	ofa-istore.h										\
+	ofa-ledger-book-bin.c								\
+	ofa-ledger-book-bin.h								\
+	ofa-ledger-book-render.c							\
+	ofa-ledger-book-render.h							\
 	ofa-ledger-close.c									\
 	ofa-ledger-close.h									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
+	ofa-ledger-page.c									\
+	ofa-ledger-page.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
 	ofa-ledger-store.c									\
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
-	ofa-ledger-book-bin.c								\
-	ofa-ledger-book-bin.h								\
-	ofa-ledger-book-render.c							\
-	ofa-ledger-book-render.h							\
-	ofa-ledger-page.c									\
-	ofa-ledger-page.h									\
 	ofa-list-store.c									\
 	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
+	ofa-ope-template-book-bin.c							\
+	ofa-ope-template-book-bin.h							\
+	ofa-ope-template-frame-bin.c						\
+	ofa-ope-template-frame-bin.h						\
 	ofa-ope-template-help.c								\
 	ofa-ope-template-help.h								\
+	ofa-ope-template-page.c								\
+	ofa-ope-template-page.h								\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-template-select.c							\
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
-	ofa-ope-template-book-bin.c							\
-	ofa-ope-template-book-bin.h							\
-	ofa-ope-template-frame-bin.c						\
-	ofa-ope-template-frame-bin.h						\
-	ofa-ope-template-page.c								\
-	ofa-ope-template-page.h								\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
-	ofa-rate-properties.c								\
-	ofa-rate-properties.h								\
 	ofa-rate-page.c										\
 	ofa-rate-page.h										\
+	ofa-rate-properties.c								\
+	ofa-rate-properties.h								\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
 	ofa-reconcil-render.c								\
@@ -695,11 +695,11 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
+	ofa-account-book-bin.ui								\
+	ofa-account-filter-vv-bin.ui						\
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
-	ofa-account-book-bin.ui								\
-	ofa-account-filter-vv-bin.ui						\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\

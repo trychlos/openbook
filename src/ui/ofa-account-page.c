@@ -126,15 +126,12 @@ v_setup_page( ofaPage *page )
 
 	grid = ofa_page_get_top_grid( page );
 
-	priv->accounts_frame = ofa_account_frame_bin_new();
+	priv->accounts_frame = ofa_account_frame_bin_new( ofa_page_get_main_window( page ));
 	gtk_grid_attach( grid, GTK_WIDGET( priv->accounts_frame ), 0, 0, 1, 1 );
-
-	ofa_account_frame_bin_set_main_window( priv->accounts_frame, ofa_page_get_main_window( page ));
 	ofa_account_frame_bin_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
 
 	g_signal_connect(
-			G_OBJECT( priv->accounts_frame ),
-			"activated", G_CALLBACK( on_account_activated ), page );
+			priv->accounts_frame, "ofa-activated", G_CALLBACK( on_account_activated ), page );
 }
 
 static void
