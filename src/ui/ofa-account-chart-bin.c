@@ -99,41 +99,42 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       create_notebook( ofaAccountChartBin *book );
-static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountChartBin *self );
-static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *self );
-static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountChartBin *book );
-static GtkWidget *book_get_page_by_class( ofaAccountChartBin *self, gint class_num, gboolean create );
-static GtkWidget *book_create_page( ofaAccountChartBin *self, gint class );
-static GtkWidget *page_add_treeview( ofaAccountChartBin *book, GtkWidget *page );
-static void       page_add_columns( ofaAccountChartBin *book, GtkTreeView *tview );
+static void       setup_bin( ofaAccountChartBin *bin );
+static void       setup_main_window( ofaAccountChartBin *bin );
+static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountChartBin *bin );
+static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *bin );
+static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountChartBin *bin );
+static GtkWidget *book_get_page_by_class( ofaAccountChartBin *bin, gint class_num, gboolean create );
+static GtkWidget *book_create_page( ofaAccountChartBin *bin, gint class );
+static GtkWidget *page_add_treeview( ofaAccountChartBin *bin, GtkWidget *page );
+static void       page_add_columns( ofaAccountChartBin *bin, GtkTreeView *tview );
 static gboolean   is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
-static void       on_tview_row_selected( GtkTreeSelection *selection, ofaAccountChartBin *self );
-static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountChartBin *self );
-static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *self );
-static void       tview_collapse_node( ofaAccountChartBin *self, GtkWidget *widget );
-static void       tview_expand_node( ofaAccountChartBin *self, GtkWidget *widget );
-static void       on_tview_insert( ofaAccountChartBin *self );
-static void       on_tview_delete( ofaAccountChartBin *self );
-static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountChartBin *self );
+static void       on_tview_row_selected( GtkTreeSelection *selection, ofaAccountChartBin *bin );
+static void       on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountChartBin *bin );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountChartBin *bin );
+static void       tview_collapse_node( ofaAccountChartBin *bin, GtkWidget *widget );
+static void       tview_expand_node( ofaAccountChartBin *bin, GtkWidget *widget );
+static void       on_tview_insert( ofaAccountChartBin *bin );
+static void       on_tview_delete( ofaAccountChartBin *bin );
+static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountChartBin *bin );
 static void       tview_cell_renderer_text( GtkCellRendererText *cell, gboolean is_root, gint level, gboolean is_error );
-static void       do_insert_account( ofaAccountChartBin *self );
-static void       do_update_account( ofaAccountChartBin *self );
-static void       do_delete_account( ofaAccountChartBin *self );
-static gboolean   delete_confirmed( ofaAccountChartBin *self, ofoAccount *account );
-static void       do_view_entries( ofaAccountChartBin *self );
-static void       do_settlement( ofaAccountChartBin *self );
-static void       do_reconciliation( ofaAccountChartBin *self );
-static void       dossier_signals_connect( ofaAccountChartBin *book );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *book );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *book );
-static void       on_updated_class_label( ofaAccountChartBin *book, ofoClass *class );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *book );
-static void       on_deleted_class_label( ofaAccountChartBin *book, ofoClass *class );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountChartBin *book );
-static GtkWidget *get_current_tree_view( const ofaAccountChartBin *self );
-static void       select_row_by_number( ofaAccountChartBin *self, const gchar *number );
-static void       select_row_by_iter( ofaAccountChartBin *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
+static void       do_insert_account( ofaAccountChartBin *bin );
+static void       do_update_account( ofaAccountChartBin *bin );
+static void       do_delete_account( ofaAccountChartBin *bin );
+static gboolean   delete_confirmed( ofaAccountChartBin *bin, ofoAccount *account );
+static void       do_view_entries( ofaAccountChartBin *bin );
+static void       do_settlement( ofaAccountChartBin *bin );
+static void       do_reconciliation( ofaAccountChartBin *bin );
+static void       dossier_signals_connect( ofaAccountChartBin *bin );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
+static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_deleted_class_label( ofaAccountChartBin *bin, ofoClass *class );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountChartBin *bin );
+static GtkWidget *get_current_tree_view( const ofaAccountChartBin *bin );
+static void       select_row_by_number( ofaAccountChartBin *bin, const gchar *number );
+static void       select_row_by_iter( ofaAccountChartBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaAccountChartBin, ofa_account_chart_bin, GTK_TYPE_BIN )
 
@@ -285,28 +286,31 @@ ofa_account_chart_bin_class_init( ofaAccountChartBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountChartBin *
-ofa_account_chart_bin_new( void  )
+ofa_account_chart_bin_new( ofaMainWindow *main_window  )
 {
-	ofaAccountChartBin *book;
+	ofaAccountChartBin *bin;
 
-	book = g_object_new( OFA_TYPE_ACCOUNT_CHART_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_ACCOUNT_CHART_BIN, NULL );
 
-	create_notebook( book );
+	bin->priv->main_window = main_window;
 
-	return( book );
+	setup_bin( bin );
+	setup_main_window( bin );
+
+	return( bin );
 }
 
 static void
-create_notebook( ofaAccountChartBin *book )
+setup_bin( ofaAccountChartBin *bin )
 {
 	ofaAccountChartBinPrivate *priv;
 	GtkWidget *frame;
 
-	priv = book->priv;
+	priv = bin->priv;
 
 	/* an invisible frame */
 	frame = gtk_frame_new( NULL );
-	gtk_container_add( GTK_CONTAINER( book ), frame );
+	gtk_container_add( GTK_CONTAINER( bin ), frame );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
 
 	priv->book = GTK_NOTEBOOK( gtk_notebook_new());
@@ -316,14 +320,40 @@ create_notebook( ofaAccountChartBin *book )
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
-			"switch-page", G_CALLBACK( on_book_page_switched ), book );
+			"switch-page", G_CALLBACK( on_book_page_switched ), bin );
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
-			"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
+			"key-press-event", G_CALLBACK( on_book_key_pressed ), bin );
 
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( priv->book ));
-	gtk_widget_show_all( GTK_WIDGET( book ));
+}
+
+/*
+ * ofa_account_chart_bin_set_main_window:
+ *
+ * This is required in order to get the dossier which will permit to
+ * create the underlying tree store.
+ */
+static void
+setup_main_window( ofaAccountChartBin *bin )
+{
+	ofaAccountChartBinPrivate *priv;
+	gulong handler;
+
+	priv = bin->priv;
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->store = ofa_account_store_new( priv->dossier );
+
+	handler = g_signal_connect(
+			priv->store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), bin );
+	priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
+
+	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
+
+	dossier_signals_connect( bin );
+
+	gtk_notebook_set_current_page( priv->book, 0 );
 }
 
 /*
@@ -436,47 +466,6 @@ ofa_account_chart_bin_set_cell_data_func( ofaAccountChartBin *book, GtkTreeCellD
 
 		priv->cell_fn = fn_cell;
 		priv->cell_data = user_data;
-	}
-}
-
-/**
- * ofa_account_chart_bin_set_main_window:
- *
- * This is required in order to get the dossier which will permit to
- * create the underlying tree store.
- */
-void
-ofa_account_chart_bin_set_main_window( ofaAccountChartBin *book, ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_account_chart_bin_set_main_window";
-	ofaAccountChartBinPrivate *priv;
-	gulong handler;
-
-	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
-
-	g_return_if_fail( book && OFA_IS_ACCOUNT_CHART_BIN( book ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = book->priv;
-
-	if( !priv->dispose_has_run ){
-
-		/* the notebook must have been created first */
-		g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
-
-		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->store = ofa_account_store_new( priv->dossier );
-
-		handler = g_signal_connect(
-				priv->store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
-
-		ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
-
-		dossier_signals_connect( book );
-
-		gtk_notebook_set_current_page( priv->book, 0 );
 	}
 }
 

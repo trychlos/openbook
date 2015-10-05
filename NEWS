@@ -72,6 +72,7 @@
    - ofo_dossier_set_last_closing_date(): new method.
    - ofo_dossier_get_prev_exe_last_entry(): new method.
    - ofo_dossier_set_prev_exe_last_entry(): new method.
+   - ofa_account_chart_bin_set_main_window(): removed method (todo #861).
    - ofa_account_frame_bin_set_main_window(): removed method (todo #861).
    - ofa_application_get_copyright(): new method.
    - ofa_dossier_treeview_add_row(): removed method.

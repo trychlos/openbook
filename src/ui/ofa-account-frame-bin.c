@@ -247,7 +247,7 @@ setup_bin( ofaAccountFrameBin *bin )
 
 	/* create the accounts notebook
 	 */
-	priv->account_chart = ofa_account_chart_bin_new();
+	priv->account_chart = ofa_account_chart_bin_new( priv->main_window );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->account_chart ), 0, 0, 1, 1 );
 
 	g_signal_connect(
@@ -255,7 +255,6 @@ setup_bin( ofaAccountFrameBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->account_chart ), "activated", G_CALLBACK( on_book_selection_activated ), bin );
 
-	ofa_account_chart_bin_set_main_window( priv->account_chart, priv->main_window );
 	ofa_account_chart_bin_expand_all( priv->account_chart );
 }
 
