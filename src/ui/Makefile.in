@@ -172,11 +172,11 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccounts-filter.$(OBJEXT) \
 	ofa-idates-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-iprintable2.$(OBJEXT) \
-	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
-	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
-	ofa-ledger-treeview.$(OBJEXT) ofa-ledgers-book-bin.$(OBJEXT) \
+	ofa-iprintable2.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
+	ofa-istore.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
+	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
+	ofa-ledgers-book-bin.$(OBJEXT) \
 	ofa-ledgers-book-render.$(OBJEXT) ofa-ledgers-page.$(OBJEXT) \
 	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
@@ -613,8 +613,6 @@ openbook_SOURCES = \
 	ofa-idates-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-iprintable.c									\
-	ofa-iprintable.h									\
 	ofa-iprintable2.c									\
 	ofa-iprintable2.h									\
 	ofa-irenderable.c									\
@@ -939,7 +937,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccounts-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idates-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Po@am__quote@

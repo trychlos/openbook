@@ -534,8 +534,6 @@
                 (see debug messages) -> this should be done before the
                 acknowledge, or have a spinner, or have a progress bar
 
- 860 2015-10- 5 get rid of ofaIPrintable interface
-
  861
 
 -----------------------------------------------------------------------
@@ -4010,6 +4008,9 @@
                 - another single case is have distinct editability (bat)
                   > my_utils_init_notes_ex
      2015-10- 2 done
+
+ 860 2015-10- 5 get rid of ofaIPrintable interface
+     2015-10- 5 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
