@@ -45,7 +45,7 @@
  * - current:    no
  */
 
-#include "ui/ofa-iaccounts-filter.h"
+#include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -91,7 +91,7 @@ gboolean            ofa_balance_bin_get_subtotal_per_class
 gboolean            ofa_balance_bin_get_new_page_per_class
                                             ( const ofaBalanceBin *bin );
 
-ofaIAccountsFilter *ofa_balance_bin_get_accounts_filter
+ofaIAccountFilter *ofa_balance_bin_get_account_filter
                                             ( const ofaBalanceBin *bin );
 
 ofaIDatesFilter    *ofa_balance_bin_get_dates_filter

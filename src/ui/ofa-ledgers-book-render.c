@@ -42,7 +42,7 @@
 
 #include "core/ofa-iconcil.h"
 
-#include "ui/ofa-iaccounts-filter.h"
+#include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"

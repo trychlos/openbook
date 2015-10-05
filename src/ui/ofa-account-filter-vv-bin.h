@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ACCOUNTS_FILTER_VV_BIN_H__
-#define __OFA_ACCOUNTS_FILTER_VV_BIN_H__
+#ifndef __OFA_ACCOUNT_FILTER_VV_BIN_H__
+#define __OFA_ACCOUNT_FILTER_VV_BIN_H__
 
 /**
- * SECTION: ofa_accounts_filter_vv_bin
- * @short_description: #ofaAccountsFilterVVBin class definition.
- * @include: ui/ofa-accounts-filter-vv-bin.h
+ * SECTION: ofa_account_filter_vv_bin
+ * @short_description: #ofaAccountFilterVVBin class definition.
+ * @include: ui/ofa-account-filter-vv-bin.h
  *
  * Display a frame with a starting and an ending accounts to be used
  * as filters.
@@ -38,7 +38,7 @@
  * The two entries may also come either besides each one (horizontally
  * aligned), or one below the other (vertically aligned).
  *
- * This composite widget implements the ofaIAccountsFilter interface.
+ * This composite widget implements the ofaIAccountFilter interface.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -51,34 +51,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ACCOUNTS_FILTER_VV_BIN                ( ofa_accounts_filter_vv_bin_get_type())
-#define OFA_ACCOUNTS_FILTER_VV_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNTS_FILTER_VV_BIN, ofaAccountsFilterVVBin ))
-#define OFA_ACCOUNTS_FILTER_VV_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNTS_FILTER_VV_BIN, ofaAccountsFilterVVBinClass ))
-#define OFA_IS_ACCOUNTS_FILTER_VV_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNTS_FILTER_VV_BIN ))
-#define OFA_IS_ACCOUNTS_FILTER_VV_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNTS_FILTER_VV_BIN ))
-#define OFA_ACCOUNTS_FILTER_VV_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNTS_FILTER_VV_BIN, ofaAccountsFilterVVBinClass ))
+#define OFA_TYPE_ACCOUNT_FILTER_VV_BIN                ( ofa_account_filter_vv_bin_get_type())
+#define OFA_ACCOUNT_FILTER_VV_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNT_FILTER_VV_BIN, ofaAccountFilterVVBin ))
+#define OFA_ACCOUNT_FILTER_VV_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNT_FILTER_VV_BIN, ofaAccountFilterVVBinClass ))
+#define OFA_IS_ACCOUNT_FILTER_VV_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNT_FILTER_VV_BIN ))
+#define OFA_IS_ACCOUNT_FILTER_VV_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_FILTER_VV_BIN ))
+#define OFA_ACCOUNT_FILTER_VV_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_FILTER_VV_BIN, ofaAccountFilterVVBinClass ))
 
-typedef struct _ofaAccountsFilterVVBinPrivate          ofaAccountsFilterVVBinPrivate;
+typedef struct _ofaAccountFilterVVBinPrivate          ofaAccountFilterVVBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                         parent;
+	GtkBin                        parent;
 
 	/*< private members >*/
-	ofaAccountsFilterVVBinPrivate *priv;
+	ofaAccountFilterVVBinPrivate *priv;
 }
-	ofaAccountsFilterVVBin;
+	ofaAccountFilterVVBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                    parent;
+	GtkBinClass                   parent;
 }
-	ofaAccountsFilterVVBinClass;
+	ofaAccountFilterVVBinClass;
 
-GType                   ofa_accounts_filter_vv_bin_get_type( void ) G_GNUC_CONST;
+GType                  ofa_account_filter_vv_bin_get_type( void ) G_GNUC_CONST;
 
-ofaAccountsFilterVVBin *ofa_accounts_filter_vv_bin_new     ( ofaMainWindow *main_window );
+ofaAccountFilterVVBin *ofa_account_filter_vv_bin_new     ( ofaMainWindow *main_window );
 
 G_END_DECLS
 
-#endif /* __OFA_ACCOUNTS_FILTER_VV_BIN_H__ */
+#endif /* __OFA_ACCOUNT_FILTER_VV_BIN_H__ */

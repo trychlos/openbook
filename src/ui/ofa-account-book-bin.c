@@ -35,7 +35,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-accounts-filter-vv-bin.h"
+#include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-account-book-bin.h"
@@ -48,7 +48,7 @@ struct _ofaAccountBookBinPrivate {
 
 	/* UI
 	 */
-	ofaAccountsFilterVVBin *accounts_filter;
+	ofaAccountFilterVVBin *account_filter;
 	GtkWidget              *new_page_btn;
 	ofaDatesFilterHVBin    *dates_filter;
 
@@ -75,7 +75,7 @@ static void setup_bin( ofaAccountBookBin *bin );
 static void setup_account_selection( ofaAccountBookBin *bin );
 static void setup_date_selection( ofaAccountBookBin *bin );
 static void setup_others( ofaAccountBookBin *bin );
-static void on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountBookBin *self );
+static void on_account_filter_changed( ofaIAccountFilter *filter, ofaAccountBookBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self );
 static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self );
 static void load_settings( ofaAccountBookBin *bin );
@@ -214,18 +214,18 @@ setup_account_selection( ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
 	GtkWidget *parent;
-	ofaAccountsFilterVVBin *filter;
+	ofaAccountFilterVVBin *filter;
 
 	priv = bin->priv;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "accounts-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_accounts_filter_vv_bin_new( priv->main_window );
+	filter = ofa_account_filter_vv_bin_new( priv->main_window );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
-	priv->accounts_filter = filter;
+	priv->account_filter = filter;
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_accounts_filter_changed ), bin );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
 
 }
 
@@ -269,7 +269,7 @@ setup_others( ofaAccountBookBin *bin )
 }
 
 static void
-on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountBookBin *self )
+on_account_filter_changed( ofaIAccountFilter *filter, ofaAccountBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -329,13 +329,13 @@ ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
 }
 
 /**
- * ofa_account_book_bin_get_accounts_filter:
+ * ofa_account_book_bin_get_account_filter:
  */
-ofaIAccountsFilter *
-ofa_account_book_bin_get_accounts_filter( const ofaAccountBookBin *bin )
+ofaIAccountFilter *
+ofa_account_book_bin_get_account_filter( const ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
-	ofaIAccountsFilter *filter;
+	ofaIAccountFilter *filter;
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
@@ -344,7 +344,7 @@ ofa_account_book_bin_get_accounts_filter( const ofaAccountBookBin *bin )
 
 	if( !priv->dispose_has_run ){
 
-		filter = OFA_IACCOUNTS_FILTER( priv->accounts_filter );
+		filter = OFA_IACCOUNT_FILTER( priv->account_filter );
 	}
 
 	return( filter );
@@ -412,22 +412,22 @@ load_settings( ofaAccountBookBin *bin )
 	it = list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		ofa_iaccounts_filter_set_account(
-				OFA_IACCOUNTS_FILTER( priv->accounts_filter ), IACCOUNTS_FILTER_FROM, cstr );
+		ofa_iaccount_filter_set_account(
+				OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_FROM, cstr );
 	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		ofa_iaccounts_filter_set_account(
-				OFA_IACCOUNTS_FILTER( priv->accounts_filter ), IACCOUNTS_FILTER_TO, cstr );
+		ofa_iaccount_filter_set_account(
+				OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_TO, cstr );
 	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		ofa_iaccounts_filter_set_all_accounts(
-				OFA_IACCOUNTS_FILTER( priv->accounts_filter ), my_utils_boolean_from_str( cstr ));
+		ofa_iaccount_filter_set_all_accounts(
+				OFA_IACCOUNT_FILTER( priv->account_filter ), my_utils_boolean_from_str( cstr ));
 	}
 
 	it = it ? it->next : NULL;
@@ -467,12 +467,12 @@ set_settings( ofaAccountBookBin *bin )
 
 	priv = bin->priv;
 
-	from_account = ofa_iaccounts_filter_get_account(
-			OFA_IACCOUNTS_FILTER( priv->accounts_filter ), IACCOUNTS_FILTER_FROM );
-	to_account = ofa_iaccounts_filter_get_account(
-			OFA_IACCOUNTS_FILTER( priv->accounts_filter ), IACCOUNTS_FILTER_TO );
-	all_accounts = ofa_iaccounts_filter_get_all_accounts(
-			OFA_IACCOUNTS_FILTER( priv->accounts_filter ));
+	from_account = ofa_iaccount_filter_get_account(
+			OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_FROM );
+	to_account = ofa_iaccount_filter_get_account(
+			OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_TO );
+	all_accounts = ofa_iaccount_filter_get_all_accounts(
+			OFA_IACCOUNT_FILTER( priv->account_filter ));
 
 	sdfrom = my_date_to_str(
 			ofa_idates_filter_get_date(

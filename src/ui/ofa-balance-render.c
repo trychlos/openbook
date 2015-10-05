@@ -39,7 +39,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
 
-#include "ui/ofa-iaccounts-filter.h"
+#include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
@@ -342,7 +342,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofaMainWindow *main_window;
 	ofoDossier *dossier;
 	GList *dataset;
-	ofaIAccountsFilter *accounts_filter;
+	ofaIAccountFilter *account_filter;
 	ofaIDatesFilter *dates_filter;
 
 	priv = OFA_BALANCE_RENDER( page )->priv;
@@ -354,10 +354,10 @@ render_page_get_dataset( ofaRenderPage *page )
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
-	accounts_filter = ofa_balance_bin_get_accounts_filter( priv->args_bin );
-	priv->from_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_FROM ));
-	priv->to_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_TO ));
-	priv->all_accounts = ofa_iaccounts_filter_get_all_accounts( accounts_filter );
+	account_filter = ofa_balance_bin_get_account_filter( priv->args_bin );
+	priv->from_account = g_strdup( ofa_iaccount_filter_get_account( account_filter, IACCOUNT_FILTER_FROM ));
+	priv->to_account = g_strdup( ofa_iaccount_filter_get_account( account_filter, IACCOUNT_FILTER_TO ));
+	priv->all_accounts = ofa_iaccount_filter_get_all_accounts( account_filter );
 
 	priv->accounts_balance = ofa_balance_bin_get_accounts_balance( priv->args_bin );
 

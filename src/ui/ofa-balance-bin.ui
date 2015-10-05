@@ -112,7 +112,7 @@ Please note that getting a current accounts balance implies to start from the be
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="accounts-filter">
+          <object class="GtkBox" id="account-filter">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>

@@ -40,7 +40,7 @@
  * - current:    no
  */
 
-#include "ui/ofa-iaccounts-filter.h"
+#include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idates-filter.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -80,7 +80,7 @@ gboolean            ofa_account_book_bin_is_valid( ofaAccountBookBin *bin,
 gboolean            ofa_account_book_bin_get_new_page_per_account
                                                   ( const ofaAccountBookBin *bin );
 
-ofaIAccountsFilter *ofa_account_book_bin_get_accounts_filter
+ofaIAccountFilter *ofa_account_book_bin_get_account_filter
                                                   ( const ofaAccountBookBin *bin );
 
 ofaIDatesFilter    *ofa_account_book_bin_get_dates_filter
