@@ -301,8 +301,13 @@ static void
 create_notebook( ofaAccountChartBin *book )
 {
 	ofaAccountChartBinPrivate *priv;
+	GtkWidget *frame;
 
 	priv = book->priv;
+
+	frame = gtk_frame_new( NULL );
+	gtk_container_add( GTK_CONTAINER( book ), frame );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	priv->book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_notebook_popup_enable( priv->book );
@@ -317,7 +322,7 @@ create_notebook( ofaAccountChartBin *book )
 			G_OBJECT( priv->book ),
 			"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
 
-	gtk_container_add( GTK_CONTAINER( book ), GTK_WIDGET( priv->book ));
+	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( priv->book ));
 	gtk_widget_show_all( GTK_WIDGET( book ));
 }
 
