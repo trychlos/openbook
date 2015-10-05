@@ -91,6 +91,7 @@
    - ofo_xxx_is_deletable(): check that the dossier is current (todo #856).
    - Review my_utils_init_notes/my_utils_getback_notes (todo #859).
    - Get rid of deprecated ofaIPrintable interface (todo #860).
+   - ofaAccountsChart class is renamed to ofaAccountChartBin (todo #844/850).
 
 -----------------------------------------------------------------------
  Version 0.39

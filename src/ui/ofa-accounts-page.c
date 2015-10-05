@@ -149,14 +149,14 @@ static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaAccountsPagePrivate *priv;
-	ofaAccountsChart *book;
+	ofaAccountChartBin *book;
 	GtkWidget *top_widget;
 
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
 	priv = OFA_ACCOUNTS_PAGE( page )->priv;
 	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
-	top_widget = ofa_accounts_chart_get_current_treeview( book );
+	top_widget = ofa_account_chart_bin_get_current_treeview( book );
 
 	return( top_widget );
 }

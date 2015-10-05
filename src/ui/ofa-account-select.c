@@ -34,7 +34,7 @@
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-store.h"
-#include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-main-window.h"
 
@@ -49,7 +49,7 @@ struct _ofaAccountSelectPrivate {
 	/* UI
 	 */
 	ofaAccountsFrame *accounts_frame;
-	ofaAccountsChart *accounts_chart;
+	ofaAccountChartBin *accounts_chart;
 	GtkWidget        *ok_btn;
 	GtkWidget        *msg_label;
 
@@ -162,7 +162,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
-	ofaAccountsChart *book;
+	ofaAccountChartBin *book;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
@@ -193,7 +193,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 	priv = st_this->priv;
 
 	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
-	ofa_accounts_chart_set_selected( book, asked_number );
+	ofa_account_chart_bin_set_selected( book, asked_number );
 	check_for_enable_dlg( st_this );
 
 	g_free( priv->account_number );
@@ -231,7 +231,7 @@ v_init_dialog( myDialog *dialog )
 	priv->accounts_frame = ofa_accounts_frame_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->accounts_frame ));
 	priv->accounts_chart = ofa_accounts_frame_get_chart( priv->accounts_frame );
-	ofa_accounts_chart_set_cell_data_func(
+	ofa_account_chart_bin_set_cell_data_func(
 			priv->accounts_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
 	ofa_accounts_frame_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
 	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE, FALSE, FALSE );
@@ -261,7 +261,7 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	priv = self->priv;
 
-	ofa_accounts_chart_cell_data_renderer( priv->accounts_chart, tcolumn, cell, tmodel, iter );
+	ofa_account_chart_bin_cell_data_renderer( priv->accounts_chart, tcolumn, cell, tmodel, iter );
 
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -297,7 +297,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	account = ofa_accounts_chart_get_selected( priv->accounts_chart );
+	account = ofa_account_chart_bin_get_selected( priv->accounts_chart );
 	ok = is_selection_valid( self, account );
 	g_free( account );
 
@@ -341,14 +341,14 @@ static gboolean
 do_select( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
-	ofaAccountsChart *book;
+	ofaAccountChartBin *book;
 	gchar *account;
 	gboolean ok;
 
 	priv = self->priv;
 
 	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
-	account = ofa_accounts_chart_get_selected( book );
+	account = ofa_account_chart_bin_get_selected( book );
 	ok = is_selection_valid( self, account );
 	if( ok ){
 		priv->account_number = g_strdup( account );

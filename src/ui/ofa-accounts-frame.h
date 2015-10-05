@@ -37,7 +37,7 @@
  * sent by the underlying ofaAccountStore class.
  */
 
-#include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -78,7 +78,7 @@ void              ofa_accounts_frame_set_buttons    ( ofaAccountsFrame *frame,
 															gboolean settlement,
 															gboolean reconciliation );
 
-ofaAccountsChart *ofa_accounts_frame_get_chart      ( const ofaAccountsFrame *frame );
+ofaAccountChartBin *ofa_accounts_frame_get_chart      ( const ofaAccountsFrame *frame );
 
 G_END_DECLS
 
