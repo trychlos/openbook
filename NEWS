@@ -32,6 +32,7 @@
    - Horizontally align action buttons to use less vertical space (todo #842).
    - Homogeneize visual width and alignment of date entries (todo #852).
    - Add a visual frame around accounts and operation templates treeviews.
+   - Review the layout of DossierNewBin fields (todo #847).
 
  Bug fixes:
 

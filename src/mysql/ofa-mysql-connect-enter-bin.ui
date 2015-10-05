@@ -38,6 +38,7 @@
               <object class="GtkEntry" id="p2-host-entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="hexpand">True</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -91,6 +92,7 @@
                 <property name="max_length">6</property>
                 <property name="invisible_char">●</property>
                 <property name="width_chars">6</property>
+                <property name="max_width_chars">6</property>
                 <property name="caps_lock_warning">False</property>
                 <property name="input_purpose">digits</property>
               </object>

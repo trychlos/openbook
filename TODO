@@ -485,13 +485,6 @@
                 to opening a dossier from the command-line (i.e. rather
                 use DossierLogin than DossierOpen)
 
- 847 2015-10- 1 ConnectDisplay/ConnectEnter: the port number should be
-                a fixed size (eg. 6 chars) while hostname, socket path
-                and database name should horizontally expand
-
- 848 2015-10- 1 DossierNewBin: having a frame with its label, even if
-                hidden, leaves a vertical space above the dossier name
-
  849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
                 there would be so a *ghost* data stored in dbms and
                 displayed in properties, but absolutely useless
@@ -3992,6 +3985,15 @@
                 ofaRatesPage -> ofaRatePage
                 ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
                 ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
+
+ 847 2015-10- 1 ConnectDisplay/ConnectEnter: the port number should be
+                a fixed size (eg. 6 chars) while hostname, socket path
+                and database name should horizontally expand
+     2015-10- 5 done
+
+ 848 2015-10- 1 DossierNewBin: having a frame with its label, even if
+                hidden, leaves a vertical space above the dossier name
+     2015-10- 5 always set the frame visible
 
  850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
                 GtkBin-derived widgets ?
