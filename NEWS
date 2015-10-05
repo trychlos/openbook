@@ -29,6 +29,7 @@
    - Set mnemonic widgets on all dialogs (todo #839).
    - Have a mnemonic widget even in frames with a single child (todo #857).
    - Defines the ofaIAbout interface for the plugins (todo #858).
+   - Horizontally align action buttons to use less vertical space (todo #842).
 
  Bug fixes:
 

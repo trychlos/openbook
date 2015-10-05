@@ -476,12 +476,6 @@
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
                 need a single account selection
 
- 841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
-                the print
-
- 842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
-                aligned
-
  843 2015- 9-30 account number should be renamed as account identifier
 
  844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
@@ -3977,6 +3971,14 @@
                 src/ui/ofa-settlement.ui                    OK
                 src/ui/ofa-view-entries.ui                  --
      2015-10- 2 done
+
+ 841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
+                the print
+     2015-10- 5 cancelled as a duplicate of #855
+
+ 842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
+                aligned
+     2015-10- 5 done
 
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone
