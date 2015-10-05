@@ -45,7 +45,7 @@
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
 #include "ui/ofa-balance-render.h"
-#include "ui/ofa-bats-page.h"
+#include "ui/ofa-bat-page.h"
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-class-page.h"
@@ -195,7 +195,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
-				ofa_bats_page_get_type,
+				ofa_bat_page_get_type,
 				FALSE
 		},
 

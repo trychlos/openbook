@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_BATS_PAGE_H__
-#define __OFA_BATS_PAGE_H__
+#ifndef __OFA_BAT_PAGE_H__
+#define __OFA_BAT_PAGE_H__
 
 /**
- * SECTION: ofa_bats_page
- * @short_description: #ofaBatsPage class definition.
+ * SECTION: ofa_bat_page
+ * @short_description: #ofaBatPage class definition.
  * @include: ui/ofa-bat-set.h
  *
  * Display the list of known bat, letting the user edit it.
@@ -40,32 +40,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_BATS_PAGE                ( ofa_bats_page_get_type())
-#define OFA_BATS_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BATS_PAGE, ofaBatsPage ))
-#define OFA_BATS_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BATS_PAGE, ofaBatsPageClass ))
-#define OFA_IS_BATS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BATS_PAGE ))
-#define OFA_IS_BATS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BATS_PAGE ))
-#define OFA_BATS_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BATS_PAGE, ofaBatsPageClass ))
+#define OFA_TYPE_BAT_PAGE                ( ofa_bat_page_get_type())
+#define OFA_BAT_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BAT_PAGE, ofaBatPage ))
+#define OFA_BAT_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BAT_PAGE, ofaBatPageClass ))
+#define OFA_IS_BAT_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BAT_PAGE ))
+#define OFA_IS_BAT_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_PAGE ))
+#define OFA_BAT_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_PAGE, ofaBatPageClass ))
 
-typedef struct _ofaBatsPagePrivate        ofaBatsPagePrivate;
+typedef struct _ofaBatPagePrivate        ofaBatPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage             parent;
+	ofaPage            parent;
 
 	/*< private members >*/
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 }
-	ofaBatsPage;
+	ofaBatPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass        parent;
+	ofaPageClass       parent;
 }
-	ofaBatsPageClass;
+	ofaBatPageClass;
 
-GType ofa_bats_page_get_type( void ) G_GNUC_CONST;
+GType ofa_bat_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_BATS_PAGE_H__ */
+#endif /* __OFA_BAT_PAGE_H__ */

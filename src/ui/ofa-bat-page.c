@@ -40,7 +40,7 @@
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-bats-page.h"
+#include "ui/ofa-bat-page.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -48,7 +48,7 @@
 
 /* private instance data
  */
-struct _ofaBatsPagePrivate {
+struct _ofaBatPagePrivate {
 
 	/* runtime data
 	 */
@@ -62,38 +62,38 @@ struct _ofaBatsPagePrivate {
 	GtkWidget      *import_btn;
 };
 
-G_DEFINE_TYPE( ofaBatsPage, ofa_bats_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page );
-static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page );
-static void       on_update_clicked( GtkButton *button, ofaBatsPage *page );
-static void       on_delete_clicked( GtkButton *button, ofaBatsPage *page );
-static void       on_import_clicked( GtkButton *button, ofaBatsPage *page );
+static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
+static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
+static void       on_update_clicked( GtkButton *button, ofaBatPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaBatPage *page );
+static void       on_import_clicked( GtkButton *button, ofaBatPage *page );
 
 static void
 bats_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_bats_page_finalize";
+	static const gchar *thisfn = "ofa_bat_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_BATS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bats_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_bat_page_parent_class )->finalize( instance );
 }
 
 static void
 bats_page_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_BATS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
@@ -101,26 +101,26 @@ bats_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bats_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_bat_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_bats_page_init( ofaBatsPage *self )
+ofa_bat_page_init( ofaBatPage *self )
 {
-	static const gchar *thisfn = "ofa_bats_page_init";
+	static const gchar *thisfn = "ofa_bat_page_init";
 
-	g_return_if_fail( OFA_IS_BATS_PAGE( self ));
+	g_return_if_fail( OFA_IS_BAT_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BATS_PAGE, ofaBatsPagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_PAGE, ofaBatPagePrivate );
 }
 
 static void
-ofa_bats_page_class_init( ofaBatsPageClass *klass )
+ofa_bat_page_class_init( ofaBatPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_bats_page_class_init";
+	static const gchar *thisfn = "ofa_bat_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -132,13 +132,13 @@ ofa_bats_page_class_init( ofaBatsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaBatsPagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaBatPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
 			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END, BAT_DISP_COUNT,
@@ -146,7 +146,7 @@ v_setup_view( ofaPage *page )
 			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
 			0 };
 
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = OFA_BAT_PAGE( page )->priv;
 
 	dossier = ofa_page_get_dossier( page );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
@@ -164,11 +164,11 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = OFA_BAT_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -191,23 +191,23 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = OFA_BAT_PAGE( page )->priv;
 
 	ofa_bat_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
 }
 
 static void
-on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page )
+on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
 {
-	on_update_clicked( NULL, OFA_BATS_PAGE( page ));
+	on_update_clicked( NULL, OFA_BAT_PAGE( page ));
 }
 
 static void
-on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page )
+on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 
 	priv = page->priv;
 
@@ -224,11 +224,11 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatsPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 
-	g_return_val_if_fail( page && OFA_IS_BATS_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_BAT_PAGE( page ), NULL );
 
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = OFA_BAT_PAGE( page )->priv;
 
 	return( ofa_bat_treeview_get_treeview( priv->tview ));
 }
@@ -237,9 +237,9 @@ v_get_top_focusable_widget( const ofaPage *page )
  * only notes can be updated
  */
 static void
-on_update_clicked( GtkButton *button, ofaBatsPage *page )
+on_update_clicked( GtkButton *button, ofaBatPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 
 	priv = page->priv;
@@ -252,9 +252,9 @@ on_update_clicked( GtkButton *button, ofaBatsPage *page )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaBatsPage *page )
+on_delete_clicked( GtkButton *button, ofaBatPage *page )
 {
-	ofaBatsPagePrivate *priv;
+	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 
 	priv = page->priv;
@@ -271,7 +271,7 @@ on_delete_clicked( GtkButton *button, ofaBatsPage *page )
  * imported and import it
  */
 static void
-on_import_clicked( GtkButton *button, ofaBatsPage *page )
+on_import_clicked( GtkButton *button, ofaBatPage *page )
 {
 	ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
 }

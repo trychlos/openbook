@@ -101,6 +101,7 @@
    - ofaDatesFilterHVBin class is renamed to ofaDateFilterHVBin (todo #844).
    - ofaIDatesFilter interface is renamed to ofaIDateFilter (todo #844).
    - ofaClassesPage class is renamed to ofaClassPage (todo #844).
+   - ofaBatsPage class is renamed to ofaBatPage (todo #844).
 
 -----------------------------------------------------------------------
  Version 0.39

@@ -59,7 +59,7 @@
  * ofaAccountPage   an empty grid which is handled by the     book-handled
  *                   ofaAccountsBook class
  *
- * ofaBatsPage       a tree view on a list store                   Yes
+ * ofaBatPage       a tree view on a list store                   Yes
  *
  * ofaClassPage    a tree view on a list store                   Yes
  *
