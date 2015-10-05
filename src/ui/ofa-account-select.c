@@ -35,7 +35,7 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-store.h"
 #include "ui/ofa-account-chart-bin.h"
-#include "ui/ofa-accounts-frame.h"
+#include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -44,18 +44,18 @@ struct _ofaAccountSelectPrivate {
 
 	/* input data
 	 */
-	gint              allowed;
+	gint                allowed;
 
 	/* UI
 	 */
-	ofaAccountsFrame *accounts_frame;
+	ofaAccountFrameBin *accounts_frame;
 	ofaAccountChartBin *accounts_chart;
-	GtkWidget        *ok_btn;
-	GtkWidget        *msg_label;
+	GtkWidget          *ok_btn;
+	GtkWidget          *msg_label;
 
 	/* returned value
 	 */
-	gchar            *account_number;
+	gchar              *account_number;
 };
 
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
@@ -67,8 +67,8 @@ G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
-static void      on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
-static void      on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
+static void      on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
+static void      on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -192,7 +192,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, g
 
 	priv = st_this->priv;
 
-	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
+	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
 	ofa_account_chart_bin_set_selected( book, asked_number );
 	check_for_enable_dlg( st_this );
 
@@ -228,13 +228,13 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( st_toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->accounts_frame = ofa_accounts_frame_new();
+	priv->accounts_frame = ofa_account_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->accounts_frame ));
-	priv->accounts_chart = ofa_accounts_frame_get_chart( priv->accounts_frame );
+	priv->accounts_chart = ofa_account_frame_bin_get_chart( priv->accounts_frame );
 	ofa_account_chart_bin_set_cell_data_func(
 			priv->accounts_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
-	ofa_accounts_frame_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
-	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE, FALSE, FALSE );
+	ofa_account_frame_bin_set_main_window( priv->accounts_frame, OFA_MAIN_WINDOW( main_window ));
+	ofa_account_frame_bin_set_buttons( priv->accounts_frame, FALSE, FALSE, FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->accounts_frame ), "changed", G_CALLBACK( on_account_changed ), dialog );
@@ -275,13 +275,13 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 static void
-on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self )
+on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self )
+on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self )
 {
 	gtk_dialog_response(
 			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
@@ -347,7 +347,7 @@ do_select( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
+	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
 	account = ofa_account_chart_bin_get_selected( book );
 	ok = is_selection_valid( self, account );
 	if( ok ){

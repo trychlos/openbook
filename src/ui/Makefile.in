@@ -147,7 +147,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-accounts-book-bin.$(OBJEXT) \
 	ofa-accounts-book-render.$(OBJEXT) \
 	ofa-accounts-filter-vv-bin.$(OBJEXT) \
-	ofa-accounts-frame.$(OBJEXT) ofa-accounts-page.$(OBJEXT) \
+	ofa-account-frame-bin.$(OBJEXT) ofa-accounts-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
 	ofa-balance-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
 	ofa-balances-grid.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
@@ -517,8 +517,8 @@ openbook_SOURCES = \
 	ofa-accounts-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
 	ofa-accounts-filter-vv-bin.h						\
-	ofa-accounts-frame.c								\
-	ofa-accounts-frame.h								\
+	ofa-account-frame-bin.c								\
+	ofa-account-frame-bin.h								\
 	ofa-accounts-page.c									\
 	ofa-accounts-page.h									\
 	ofa-application.c									\
@@ -890,7 +890,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-filter-vv-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-frame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accounts-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup.Po@am__quote@

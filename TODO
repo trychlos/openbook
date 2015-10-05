@@ -481,6 +481,7 @@
  844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
                 idem for ledgers, ope-templates, etc.
      2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
 
  845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
                 and DossierOpen
@@ -506,6 +507,7 @@
  850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
                 GtkBin-derived widgets ?
      2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
 
  851 2015-10- 1 segfault when closing the exercice
                 database trest6 restored from PWIConsultants-20150319.gz

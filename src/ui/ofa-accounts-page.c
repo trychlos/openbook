@@ -32,7 +32,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-account-properties.h"
-#include "ui/ofa-accounts-frame.h"
+#include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
@@ -46,7 +46,7 @@ struct _ofaAccountsPagePrivate {
 
 	/* UI
 	 */
-	ofaAccountsFrame *accounts_frame;
+	ofaAccountFrameBin *accounts_frame;
 };
 
 G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
@@ -54,7 +54,7 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_account_activated( ofaAccountsFrame *frame, const gchar *number, ofaAccountsPage *self );
+static void       on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountsPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -126,11 +126,11 @@ v_setup_page( ofaPage *page )
 
 	grid = ofa_page_get_top_grid( page );
 
-	priv->accounts_frame = ofa_accounts_frame_new();
+	priv->accounts_frame = ofa_account_frame_bin_new();
 	gtk_grid_attach( grid, GTK_WIDGET( priv->accounts_frame ), 0, 0, 1, 1 );
 
-	ofa_accounts_frame_set_main_window( priv->accounts_frame, ofa_page_get_main_window( page ));
-	ofa_accounts_frame_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
+	ofa_account_frame_bin_set_main_window( priv->accounts_frame, ofa_page_get_main_window( page ));
+	ofa_account_frame_bin_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
 
 	g_signal_connect(
 			G_OBJECT( priv->accounts_frame ),
@@ -155,14 +155,14 @@ v_get_top_focusable_widget( const ofaPage *page )
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
 	priv = OFA_ACCOUNTS_PAGE( page )->priv;
-	book = ofa_accounts_frame_get_chart( priv->accounts_frame );
+	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
 	top_widget = ofa_account_chart_bin_get_current_treeview( book );
 
 	return( top_widget );
 }
 
 static void
-on_account_activated( ofaAccountsFrame *frame, const gchar *number, ofaAccountsPage *self )
+on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountsPage *self )
 {
 	ofoAccount *account;
 
