@@ -33,7 +33,7 @@
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-account-frame-bin.h"
-#include "ui/ofa-accounts-page.h"
+#include "ui/ofa-account-page.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
@@ -42,40 +42,40 @@
 
 /* private instance data
  */
-struct _ofaAccountsPagePrivate {
+struct _ofaAccountPagePrivate {
 
 	/* UI
 	 */
 	ofaAccountFrameBin *accounts_frame;
 };
 
-G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountsPage *self );
+static void       on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_page_finalize";
+	static const gchar *thisfn = "ofa_account_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_account_page_parent_class )->finalize( instance );
 }
 
 static void
 accounts_page_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
@@ -83,26 +83,26 @@ accounts_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_account_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_accounts_page_init( ofaAccountsPage *self )
+ofa_account_page_init( ofaAccountPage *self )
 {
-	static const gchar *thisfn = "ofa_accounts_page_init";
+	static const gchar *thisfn = "ofa_account_page_init";
 
-	g_return_if_fail( self && OFA_IS_ACCOUNTS_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_ACCOUNT_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNTS_PAGE, ofaAccountsPagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_PAGE, ofaAccountPagePrivate );
 }
 
 static void
-ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
+ofa_account_page_class_init( ofaAccountPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_accounts_page_class_init";
+	static const gchar *thisfn = "ofa_account_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -113,16 +113,16 @@ ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaAccountsPagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaAccountPagePrivate ));
 }
 
 static void
 v_setup_page( ofaPage *page )
 {
-	ofaAccountsPagePrivate *priv;
+	ofaAccountPagePrivate *priv;
 	GtkGrid *grid;
 
-	priv = OFA_ACCOUNTS_PAGE( page )->priv;
+	priv = OFA_ACCOUNT_PAGE( page )->priv;
 
 	grid = ofa_page_get_top_grid( page );
 
@@ -140,7 +140,7 @@ v_setup_page( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_accounts_page_v_init_view";
+	static const gchar *thisfn = "ofa_account_page_v_init_view";
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 }
@@ -148,13 +148,13 @@ v_init_view( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaAccountsPagePrivate *priv;
+	ofaAccountPagePrivate *priv;
 	ofaAccountChartBin *book;
 	GtkWidget *top_widget;
 
-	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_ACCOUNT_PAGE( page ), NULL );
 
-	priv = OFA_ACCOUNTS_PAGE( page )->priv;
+	priv = OFA_ACCOUNT_PAGE( page )->priv;
 	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
 	top_widget = ofa_account_chart_bin_get_current_treeview( book );
 
@@ -162,7 +162,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountsPage *self )
+on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
 {
 	ofoAccount *account;
 

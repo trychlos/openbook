@@ -41,7 +41,7 @@
 
 #include "ui/my-tab-label.h"
 #include "ui/ofa-accounts-book-render.h"
-#include "ui/ofa-accounts-page.h"
+#include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
 #include "ui/ofa-balance-render.h"
@@ -190,7 +190,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_page_get_type,
+				ofa_account_page_get_type,
 				FALSE
 		},
 		{ THM_BATFILES,

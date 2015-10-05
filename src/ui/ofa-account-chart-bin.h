@@ -38,7 +38,7 @@
  * mnemonics are removed when disposing.
  *
  * This convenience class also manages the update buttons (new, update,
- * delete and view entries). So that all the AccountsPage features are
+ * delete and view entries). So that all the AccountPage features are
  * also available in AccountSelect dialog.
  */
 

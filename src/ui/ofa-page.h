@@ -56,7 +56,7 @@
  *
  * Class             View description                          Buttons box
  * ----------------  ----------------------------------------  -----------
- * ofaAccountsPage   an empty grid which is handled by the     book-handled
+ * ofaAccountPage   an empty grid which is handled by the     book-handled
  *                   ofaAccountsBook class
  *
  * ofaBatsPage       a tree view on a list store                   Yes

@@ -87,8 +87,8 @@ openbook_SOURCES = \
 	ofa-accounts-filter-vv-bin.h						\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
-	ofa-accounts-page.c									\
-	ofa-accounts-page.h									\
+	ofa-account-page.c									\
+	ofa-account-page.h									\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-application-def.h								\

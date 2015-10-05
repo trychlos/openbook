@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ACCOUNTS_PAGE_H__
-#define __OFA_ACCOUNTS_PAGE_H__
+#ifndef __OFA_ACCOUNT_PAGE_H__
+#define __OFA_ACCOUNT_PAGE_H__
 
 /**
- * SECTION: ofa_accounts_page
- * @short_description: #ofaAccountsPage class definition.
- * @include: ui/ofa-accounts-page.h
+ * SECTION: ofa_account_page
+ * @short_description: #ofaAccountPage class definition.
+ * @include: ui/ofa-account-page.h
  *
  * Display the chart of accounts, letting the user edit it.
  */
@@ -37,32 +37,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ACCOUNTS_PAGE                ( ofa_accounts_page_get_type())
-#define OFA_ACCOUNTS_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNTS_PAGE, ofaAccountsPage ))
-#define OFA_ACCOUNTS_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNTS_PAGE, ofaAccountsPageClass ))
-#define OFA_IS_ACCOUNTS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNTS_PAGE ))
-#define OFA_IS_ACCOUNTS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNTS_PAGE ))
-#define OFA_ACCOUNTS_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNTS_PAGE, ofaAccountsPageClass ))
+#define OFA_TYPE_ACCOUNT_PAGE                ( ofa_account_page_get_type())
+#define OFA_ACCOUNT_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNT_PAGE, ofaAccountPage ))
+#define OFA_ACCOUNT_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNT_PAGE, ofaAccountPageClass ))
+#define OFA_IS_ACCOUNT_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNT_PAGE ))
+#define OFA_IS_ACCOUNT_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_PAGE ))
+#define OFA_ACCOUNT_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_PAGE, ofaAccountPageClass ))
 
-typedef struct _ofaAccountsPagePrivate        ofaAccountsPagePrivate;
+typedef struct _ofaAccountPagePrivate        ofaAccountPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                 parent;
+	ofaPage                parent;
 
 	/*< private members >*/
-	ofaAccountsPagePrivate *priv;
+	ofaAccountPagePrivate *priv;
 }
-	ofaAccountsPage;
+	ofaAccountPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass           parent;
 }
-	ofaAccountsPageClass;
+	ofaAccountPageClass;
 
-GType ofa_accounts_page_get_type( void ) G_GNUC_CONST;
+GType ofa_account_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_ACCOUNTS_PAGE_H__ */
+#endif /* __OFA_ACCOUNT_PAGE_H__ */
