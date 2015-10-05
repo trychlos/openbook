@@ -79,8 +79,8 @@ openbook_SOURCES = \
 	ofa-account-store.h									\
 	ofa-account-chart-bin.c								\
 	ofa-account-chart-bin.h								\
-	ofa-accounts-book-bin.c								\
-	ofa-accounts-book-bin.h								\
+	ofa-account-book-bin.c								\
+	ofa-account-book-bin.h								\
 	ofa-accounts-book-render.c							\
 	ofa-accounts-book-render.h							\
 	ofa-accounts-filter-vv-bin.c						\
@@ -268,7 +268,7 @@ ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-account-selector-bin.ui							\
-	ofa-accounts-book-bin.ui							\
+	ofa-account-book-bin.ui							\
 	ofa-accounts-filter-vv-bin.ui						\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\

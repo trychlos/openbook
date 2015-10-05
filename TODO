@@ -483,6 +483,7 @@
      2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
                 ofaAccountsFrame -> ofaAccountFrameBin
                 ofaAccountsPage -> ofaAccountPage
+                ofaAccountsBookBin -> ofaAccountBookBin
 
  845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
                 and DossierOpen

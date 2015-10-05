@@ -47,14 +47,14 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-accounts-book-bin.h"
+#include "ui/ofa-account-book-bin.h"
 #include "ui/ofa-accounts-book-render.h"
 
 /* private instance data
  */
 struct _ofaAccountsBookRenderPrivate {
 
-	ofaAccountsBookBin *args_bin;
+	ofaAccountBookBin *args_bin;
 
 	/* internals
 	 */
@@ -157,7 +157,7 @@ static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page 
 static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_get_dataset( ofaRenderPage *page );
 static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
-static void               on_args_changed( ofaAccountsBookBin *bin, ofaAccountsBookRender *page );
+static void               on_args_changed( ofaAccountBookBin *bin, ofaAccountsBookRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
@@ -317,11 +317,11 @@ static GtkWidget *
 render_page_get_args_widget( ofaRenderPage *page )
 {
 	ofaAccountsBookRenderPrivate *priv;
-	ofaAccountsBookBin *bin;
+	ofaAccountBookBin *bin;
 
 	priv = OFA_ACCOUNTS_BOOK_RENDER( page )->priv;
 
-	bin = ofa_accounts_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
+	bin = ofa_account_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -348,15 +348,15 @@ render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar *
 }
 
 /*
- * ofaAccountsBookBin "ofa-changed" handler
+ * ofaAccountBookBin "ofa-changed" handler
  */
 static void
-on_args_changed( ofaAccountsBookBin *bin, ofaAccountsBookRender *page )
+on_args_changed( ofaAccountBookBin *bin, ofaAccountsBookRender *page )
 {
 	gboolean valid;
 	gchar *message;
 
-	valid = ofa_accounts_book_bin_is_valid( bin, &message );
+	valid = ofa_account_book_bin_is_valid( bin, &message );
 	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
@@ -380,12 +380,12 @@ render_page_get_dataset( ofaRenderPage *page )
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
-	accounts_filter = ofa_accounts_book_bin_get_accounts_filter( priv->args_bin );
+	accounts_filter = ofa_account_book_bin_get_accounts_filter( priv->args_bin );
 	priv->from_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_FROM ));
 	priv->to_account = g_strdup( ofa_iaccounts_filter_get_account( accounts_filter, IACCOUNTS_FILTER_TO ));
 	priv->all_accounts = ofa_iaccounts_filter_get_all_accounts( accounts_filter );
 
-	dates_filter = ofa_accounts_book_bin_get_dates_filter( priv->args_bin );
+	dates_filter = ofa_account_book_bin_get_dates_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idates_filter_get_date( dates_filter, IDATES_FILTER_TO ));
 
@@ -463,7 +463,7 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 	ofaAccountsBookRenderPrivate *priv;
 
 	priv = OFA_ACCOUNTS_BOOK_RENDER( instance )->priv;
-	priv->new_page = ofa_accounts_book_bin_get_new_page_per_account( priv->args_bin );
+	priv->new_page = ofa_account_book_bin_get_new_page_per_account( priv->args_bin );
 
 	return( priv->new_page );
 }

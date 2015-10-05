@@ -38,11 +38,11 @@
 #include "ui/ofa-accounts-filter-vv-bin.h"
 #include "ui/ofa-dates-filter-hv-bin.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-accounts-book-bin.h"
+#include "ui/ofa-account-book-bin.h"
 
 /* private instance data
  */
-struct _ofaAccountsBookBinPrivate {
+struct _ofaAccountBookBinPrivate {
 	gboolean                dispose_has_run;
 	ofaMainWindow          *main_window;
 
@@ -66,45 +66,45 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-accounts-book-bin.ui";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-account-book-bin.ui";
 static const gchar *st_settings         = "RenderAccountsBook";
 
-G_DEFINE_TYPE( ofaAccountsBookBin, ofa_accounts_book_bin, GTK_TYPE_BIN )
+G_DEFINE_TYPE( ofaAccountBookBin, ofa_account_book_bin, GTK_TYPE_BIN )
 
-static void setup_bin( ofaAccountsBookBin *bin );
-static void setup_account_selection( ofaAccountsBookBin *bin );
-static void setup_date_selection( ofaAccountsBookBin *bin );
-static void setup_others( ofaAccountsBookBin *bin );
-static void on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountsBookBin *self );
-static void on_new_page_toggled( GtkToggleButton *button, ofaAccountsBookBin *self );
-static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountsBookBin *self );
-static void load_settings( ofaAccountsBookBin *bin );
-static void set_settings( ofaAccountsBookBin *bin );
+static void setup_bin( ofaAccountBookBin *bin );
+static void setup_account_selection( ofaAccountBookBin *bin );
+static void setup_date_selection( ofaAccountBookBin *bin );
+static void setup_others( ofaAccountBookBin *bin );
+static void on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountBookBin *self );
+static void on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self );
+static void on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self );
+static void load_settings( ofaAccountBookBin *bin );
+static void set_settings( ofaAccountBookBin *bin );
 
 static void
 accounts_book_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_book_bin_finalize";
+	static const gchar *thisfn = "ofa_account_book_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_BOOK_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_BOOK_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_book_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_account_book_bin_parent_class )->finalize( instance );
 }
 
 static void
 accounts_book_bin_dispose( GObject *instance )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_BOOK_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_BOOK_BIN( instance ));
 
-	priv = OFA_ACCOUNTS_BOOK_BIN( instance )->priv;
+	priv = OFA_ACCOUNT_BOOK_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -114,47 +114,47 @@ accounts_book_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_book_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_account_book_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_accounts_book_bin_init( ofaAccountsBookBin *self )
+ofa_account_book_bin_init( ofaAccountBookBin *self )
 {
-	static const gchar *thisfn = "ofa_accounts_book_bin_init";
+	static const gchar *thisfn = "ofa_account_book_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_ACCOUNTS_BOOK_BIN( self ));
+	g_return_if_fail( self && OFA_IS_ACCOUNT_BOOK_BIN( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_ACCOUNTS_BOOK_BIN, ofaAccountsBookBinPrivate );
+						self, OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBinPrivate );
 }
 
 static void
-ofa_accounts_book_bin_class_init( ofaAccountsBookBinClass *klass )
+ofa_account_book_bin_class_init( ofaAccountBookBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_accounts_book_bin_class_init";
+	static const gchar *thisfn = "ofa_account_book_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	G_OBJECT_CLASS( klass )->dispose = accounts_book_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_book_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaAccountsBookBinPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaAccountBookBinPrivate ));
 
 	/**
-	 * ofaAccountsBookBin::ofa-changed:
+	 * ofaAccountBookBin::ofa-changed:
 	 *
 	 * This signal is sent when a widget has changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaAccountsBookBin *bin,
+	 * void ( *handler )( ofaAccountBookBin *bin,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_ACCOUNTS_BOOK_BIN,
+				OFA_TYPE_ACCOUNT_BOOK_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -166,17 +166,17 @@ ofa_accounts_book_bin_class_init( ofaAccountsBookBinClass *klass )
 }
 
 /**
- * ofa_accounts_book_bin_new:
+ * ofa_account_book_bin_new:
  * @main_window:
  *
- * Returns: a newly allocated #ofaAccountsBookBin object.
+ * Returns: a newly allocated #ofaAccountBookBin object.
  */
-ofaAccountsBookBin *
-ofa_accounts_book_bin_new( ofaMainWindow *main_window )
+ofaAccountBookBin *
+ofa_account_book_bin_new( ofaMainWindow *main_window )
 {
-	ofaAccountsBookBin *self;
+	ofaAccountBookBin *self;
 
-	self = g_object_new( OFA_TYPE_ACCOUNTS_BOOK_BIN, NULL );
+	self = g_object_new( OFA_TYPE_ACCOUNT_BOOK_BIN, NULL );
 
 	self->priv->main_window = main_window;
 
@@ -191,7 +191,7 @@ ofa_accounts_book_bin_new( ofaMainWindow *main_window )
 }
 
 static void
-setup_bin( ofaAccountsBookBin *bin )
+setup_bin( ofaAccountBookBin *bin )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -210,9 +210,9 @@ setup_bin( ofaAccountsBookBin *bin )
 }
 
 static void
-setup_account_selection( ofaAccountsBookBin *bin )
+setup_account_selection( ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	GtkWidget *parent;
 	ofaAccountsFilterVVBin *filter;
 
@@ -230,9 +230,9 @@ setup_account_selection( ofaAccountsBookBin *bin )
 }
 
 static void
-setup_date_selection( ofaAccountsBookBin *bin )
+setup_date_selection( ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	GtkWidget *parent, *label;
 	ofaDatesFilterHVBin *filter;
 
@@ -254,9 +254,9 @@ setup_date_selection( ofaAccountsBookBin *bin )
 }
 
 static void
-setup_others( ofaAccountsBookBin *bin )
+setup_others( ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	GtkWidget *toggle;
 
 	priv = bin->priv;
@@ -269,15 +269,15 @@ setup_others( ofaAccountsBookBin *bin )
 }
 
 static void
-on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountsBookBin *self )
+on_accounts_filter_changed( ofaIAccountsFilter *filter, ofaAccountBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-on_new_page_toggled( GtkToggleButton *button, ofaAccountsBookBin *self )
+on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 
 	priv = self->priv;
 
@@ -287,25 +287,25 @@ on_new_page_toggled( GtkToggleButton *button, ofaAccountsBookBin *self )
 }
 
 static void
-on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountsBookBin *self )
+on_dates_filter_changed( ofaIDatesFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_accounts_book_bin_is_valid:
+ * ofa_account_book_bin_is_valid:
  * @bin:
  * @message: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_accounts_book_bin_is_valid( ofaAccountsBookBin *bin, gchar **message )
+ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	gboolean valid;
 
-	g_return_val_if_fail( bin && OFA_IS_ACCOUNTS_BOOK_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	valid = FALSE;
@@ -329,15 +329,15 @@ ofa_accounts_book_bin_is_valid( ofaAccountsBookBin *bin, gchar **message )
 }
 
 /**
- * ofa_accounts_book_bin_get_accounts_filter:
+ * ofa_account_book_bin_get_accounts_filter:
  */
 ofaIAccountsFilter *
-ofa_accounts_book_bin_get_accounts_filter( const ofaAccountsBookBin *bin )
+ofa_account_book_bin_get_accounts_filter( const ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	ofaIAccountsFilter *filter;
 
-	g_return_val_if_fail( bin && OFA_IS_ACCOUNTS_BOOK_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	filter = NULL;
@@ -351,15 +351,15 @@ ofa_accounts_book_bin_get_accounts_filter( const ofaAccountsBookBin *bin )
 }
 
 /**
- * ofa_accounts_book_bin_get_new_page_per_account:
+ * ofa_account_book_bin_get_new_page_per_account:
  */
 gboolean
-ofa_accounts_book_bin_get_new_page_per_account( const ofaAccountsBookBin *bin )
+ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	gboolean new_page;
 
-	g_return_val_if_fail( bin && OFA_IS_ACCOUNTS_BOOK_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), FALSE );
 
 	priv = bin->priv;
 	new_page = FALSE;
@@ -373,15 +373,15 @@ ofa_accounts_book_bin_get_new_page_per_account( const ofaAccountsBookBin *bin )
 }
 
 /**
- * ofa_accounts_book_bin_get_date_filter:
+ * ofa_account_book_bin_get_date_filter:
  */
 ofaIDatesFilter *
-ofa_accounts_book_bin_get_dates_filter( const ofaAccountsBookBin *bin )
+ofa_account_book_bin_get_dates_filter( const ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	ofaIDatesFilter *date_filter;
 
-	g_return_val_if_fail( bin && OFA_IS_ACCOUNTS_BOOK_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
 	priv = bin->priv;
 	date_filter = NULL;
@@ -399,9 +399,9 @@ ofa_accounts_book_bin_get_dates_filter( const ofaAccountsBookBin *bin )
  * account_from;account_to;all_accounts;effect_from;effect_to;new_page_per_account;
  */
 static void
-load_settings( ofaAccountsBookBin *bin )
+load_settings( ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
 	GDate date;
@@ -458,9 +458,9 @@ load_settings( ofaAccountsBookBin *bin )
 }
 
 static void
-set_settings( ofaAccountsBookBin *bin )
+set_settings( ofaAccountBookBin *bin )
 {
-	ofaAccountsBookBinPrivate *priv;
+	ofaAccountBookBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 	const gchar *from_account, *to_account;
 	gboolean all_accounts;

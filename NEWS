@@ -94,6 +94,7 @@
    - ofaAccountsChart class is renamed to ofaAccountChartBin (todo #844/850).
    - ofaAccountsFrame class is renamed to ofaAccountFrameBin (todo #844/850).
    - ofaAccountsPage class is renamed to ofaAccountPage (todo #844).
+   - ofaAccountsBookBin class is renamed to ofaAccountBookBin (todo #844).
 
 -----------------------------------------------------------------------
  Version 0.39
