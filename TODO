@@ -56,6 +56,7 @@
      2015- 1-22 this suppose to be able to simulate the click on the
                 'Continue' button, but unfortunately GtkAssistant is 
                 not a GtkDialog, so do not known how to do ?
+     2015-10- 6 try to intercept double-click on GtkFileChooser
 
  152 2014- 6- 3 import qif files
 
@@ -484,9 +485,6 @@
                 NB: if restored to some use, check in DossierProperties
                 if this data is updatable by the user, or should be
                 read-only. 
-
- 851 2015-10- 1 segfault when closing the exercice
-                database trest6 restored from PWIConsultants-20150319.gz
 
  853 2015-10- 1 review v_init_dialog's:
                 - only store GtkWidget (as GtkWidget) when needed
@@ -4003,6 +4001,10 @@
                 ofaAccountsFrame -> ofaAccountFrameBin
                 ofaBalancesGrid -> ofaBalanceGridBin
                 ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
+
+ 851 2015-10- 1 segfault when closing the exercice
+                database trest6 restored from PWIConsultants-20150319.gz
+     2015-10- 6 fixed
 
  852 2015-10- 1 myDate: set width and max width (unless otherwise
                 specified) + set placeholder text + center

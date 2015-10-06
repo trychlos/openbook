@@ -402,23 +402,29 @@ mysqlInfos *
 ofa_mysql_get_connect_newdb_infos( const gchar *dname, const gchar *root_account, const gchar *root_password, gchar **prev_dbname )
 {
 	mysqlInfos *infos;
-	gchar *dbname, *newdb;
+	gchar *newdb;
 
 	infos = ofa_mysql_get_connect_infos( dname );
-	dbname = infos->dbname;
-	*prev_dbname = g_strdup( infos->dbname );
 
+	*prev_dbname = infos->dbname;
 	infos->dbname = NULL;
 	infos->account = g_strdup( root_account );
 	infos->password = g_strdup( root_password );
 
-	newdb = find_new_database( infos, dbname );
-	g_free( dbname );
+	newdb = find_new_database( infos, *prev_dbname );
 	infos->dbname = newdb;
 
 	return( infos );
 }
 
+/*
+ * @infos: connection informations for the dossier (with dbname=NULL)
+ * @dbname: current database name
+ *
+ * Search for a suitable new database name with same radical and '_[0-9]'
+ * sufix. If current dbname is already sufixed with '_[0-9]', then just
+ * increment the existing sufix.
+ */
 static gchar *
 find_new_database( mysqlInfos *infos, const gchar *dbname )
 {
@@ -434,7 +440,7 @@ find_new_database( mysqlInfos *infos, const gchar *dbname )
 		p = g_strrstr( dbname, "_" );
 		/* if the original db name contains itself some underscores,
 		 * then ignore them */
-		if( atoi( p+1 ) == 0 ){
+		if( p && atoi( p+1 ) == 0 ){
 			p = NULL;
 		}
 		if( p ){
@@ -445,6 +451,7 @@ find_new_database( mysqlInfos *infos, const gchar *dbname )
 			prefix = g_strdup( dbname );
 			i = 0;
 		}
+		g_debug( "%s: dbname=%s, prefix=%s, i=%d", thisfn, dbname, prefix, i );
 		while( TRUE ){
 			i += 1;
 			candidate = g_strdup_printf( "%s_%d", prefix, i );

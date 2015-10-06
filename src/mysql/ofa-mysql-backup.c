@@ -225,6 +225,9 @@ ofa_mysql_archive( const ofaIDbms *instance,
 	gint status;
 
 	infos = ofa_mysql_get_connect_newdb_infos( dname, root_account, root_password, &prev_dbname );
+	if( !my_strlen( infos->dbname )){
+		return( FALSE );
+	}
 
 	new_dbname = infos->dbname;
 	infos->dbname = prev_dbname;

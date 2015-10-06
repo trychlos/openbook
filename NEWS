@@ -41,6 +41,7 @@
    - OpeTemplates: fix load order of detail rows.
    - Settings: fix multiple loads of the dossiers (todo #833).
    - RenderPage: set action area end-aligned (todo #855).
+   - ExerciceCloseAssistant: fix null pointer (todo #851).
 
  Other changes:
 
