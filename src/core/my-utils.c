@@ -40,6 +40,7 @@ typedef struct {
 	sBuildableByName;
 
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
+static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 static gboolean is_readable_gfile( GFile *file );
@@ -754,27 +755,65 @@ my_utils_container_notes_setup_full(
 
 	my_utils_widget_set_editable( view, editable );
 
-#if 0
 	if( editable ){
 		g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), NULL );
 	}
-#endif
 	return( view );
 }
 
-#if 0
+/*
+ * notes are described as varchar(4096) in DDL
+ * and tables are defined with UTF-8 encoding.
+ * we so can expect that the count of chars in a GtkTextBuffer is
+ * compatible with the DBMS...
+ *
+ * The limit is 4096 (MAX_LENGTH), including the terminating null
+ * character. So count must be less or equal to MAX_LENGTH-1.
+ * Start offset is counted from zero, so must be 0 to MAX_LENGTH-1.
+ *
+ * The 'in' flag prevent infinite recursion. It is common to all managed
+ * GtkTextBuffers, but this is not an issue as the user only works on
+ * one at a time.
+ */
 static void
-on_notes_changed( GtkTextBuffer *buffer, void *user_data )
+on_notes_changed( GtkTextBuffer *buffer, void *empty )
 {
+	static const gchar *thisfn = "my_utils_on_notes_changed";
+	static const gint MAX_LENGTH = 4096;
+	static gboolean in = FALSE;
+	gint count;
 	GtkTextIter start, end;
-	gchar *notes;
 
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	g_free( notes );
+	/* prevent an infinite recursion */
+	if( !in ){
+		count = gtk_text_buffer_get_char_count( buffer );
+		if( count >= MAX_LENGTH ){
+			/*
+			 * this code works, but emit the following Gtk-Warning:
+			 *
+			 * Invalid text buffer iterator: either the iterator is
+			 * uninitialized, or the characters/pixbufs/widgets in the
+			 * buffer have been modified since the iterator was created.
+			 * You must use marks, character numbers, or line numbers to
+			 * preserve a position across buffer modifications.
+			 * You can apply tags and insert marks without invalidating
+			 * your iterators, but any mutation that affects 'indexable'
+			 * buffer contents (contents that can be referred to by character
+			 * offset) will invalidate all outstanding iterators
+			 */
+			gtk_text_buffer_get_iter_at_offset( buffer, &start, MAX_LENGTH-1 );
+			/*gtk_text_iter_backward_char( &start );*/
+			/*gtk_text_buffer_get_iter_at_offset( buffer, &end, count );*/
+			gtk_text_buffer_get_end_iter( buffer, &end );
+			/*gtk_text_iter_backward_char( &end );*/
+			in = TRUE;
+			g_debug( "%s: count=%d, start=%d, end=%d",
+					thisfn, count, gtk_text_iter_get_offset( &start ), gtk_text_iter_get_offset( &end ));
+			gtk_text_buffer_delete( buffer, &start, &end );
+			in = FALSE;
+		}
+	}
 }
-#endif
 
 /**
  * my_utils_container_updstamp_setup_full:

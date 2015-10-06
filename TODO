@@ -36,6 +36,8 @@
   49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
      2014- 6-21 at 4096 chars now...
+     2015-10- 6 monitoring works and doesn't allow more than 4095 chars
+                but keep emitting a Gtk-Warning
 
   85 2014- 5-21 Color the frame of the invalid GtkEntry
                 + set data "ofa-data-entry-valid"
@@ -363,14 +365,6 @@
  758 2015- 3-21 warns when deleting a settled or reconciliated entry
                 +unsettle/unreconciliate
 
- 760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
-                progress bar in Restore assistant
-                + (page result of the restore) message converting from
-                to...
-     2015- 3-29 update_ddl is called not ony from restore assistant,
-                but also each time we open the dossier - so have to
-                take care of that
-
  761 2015- 3-22 in the warning displayed when restoring to a database,
                 display the target database in bold (or red)
 
@@ -451,7 +445,7 @@
 
  819 2015- 4-26 next dbms version:
                 - rename RAT_VAL_BEG as RAT_VAL_BEGIN
-                - move SIREN to SIRET
+                - move SIREN to SIRET (todo #817)
 
  820 2015- 4-27 check that strings are valid utf-8
      2015- 9-23 where ?
@@ -3634,6 +3628,15 @@
 
  759 2015- 3-22 review ofa_bats_page_on_import_clicked()
      2015- 3-31 no more needed
+
+ 760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
+                progress bar in Restore assistant
+                + (page result of the restore) message converting from
+                to...
+     2015- 3-29 update_ddl is called not ony from restore assistant,
+                but also each time we open the dossier - so have to
+                take care of that
+     2015-10- 6 done with new ofaDDLUpdate class
 
  762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
      2015- 3-28 done - git #bca6ea7

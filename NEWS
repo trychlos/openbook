@@ -35,6 +35,7 @@
    - Review the layout of DossierNewBin fields (todo #847).
    - DossierManager uses DossierLogin instead of DossierOpen (todo #846).
    - Add a progress page when remediating the database model (todo #23).
+   - Check that notes does not have more than 4095 chars (todo #49).
 
  Bug fixes:
 

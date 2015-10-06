@@ -48,7 +48,6 @@
 
 #include "core/ofa-ddl-update.h"
 #include "core/ofa-icollector.h"
-#include "core/ofo-dossier-ddl.h"
 #include "core/ofo-marshal.h"
 
 /* priv instance data
