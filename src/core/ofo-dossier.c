@@ -46,6 +46,7 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-ddl-update.h"
 #include "core/ofa-icollector.h"
 #include "core/ofo-dossier-ddl.h"
 #include "core/ofo-marshal.h"
@@ -586,7 +587,7 @@ ofo_dossier_open( ofoDossier *dossier,
 	priv->dbms = dbms;
 	priv->userid = g_strdup( account );
 
-	if( ofo_dossier_ddl_update( dossier )){
+	if( ofa_ddl_update_run( dossier )){
 		connect_objects_handlers( dossier );
 		if( dossier_do_read( dossier )){
 			ok = TRUE;
@@ -871,6 +872,32 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 }
 
 /**
+ * ofo_dossier_get_database_version:
+ * @dossier:
+ *
+ * Returns the last complete version
+ * i.e. a version where the version date is set
+ */
+gint
+ofo_dossier_get_database_version( const ofoDossier *dossier )
+{
+	gint vmax;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	vmax = 0;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		ofa_dbms_query_int(
+				ofo_dossier_get_dbms( dossier ),
+				"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", &vmax, FALSE );
+	}
+
+	return( vmax );
+}
+
+/**
  * ofo_dossier_get_default_currency:
  *
  * Returns: the default currency of the dossier.
@@ -886,7 +913,6 @@ ofo_dossier_get_default_currency( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**

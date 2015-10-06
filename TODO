@@ -26,9 +26,6 @@
      2014- 7-14 when using an existing database, have an option to
                 reinitialize it, or to use it as is
 
-  23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
-                the executed SQL statements
-
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
 
   41 2014- 5-12 ofaMainWindow: set menu tooltips
@@ -497,11 +494,6 @@
                 - update ok_btn when setting readonly buttons
                 - call check_enable_dlg at the very end
 
- 854 2015-10- 1 when restoring a dossier, insertions in dbms continue
-                long after having acknowledged the good restore !
-                (see debug messages) -> this should be done before the
-                acknowledge, or have a spinner, or have a progress bar
-
  862
 
 -----------------------------------------------------------------------
@@ -579,6 +571,10 @@
                 (see do_init_p2_provider_params and display_p4_params
                  functions)
      2014- 5- 7 Given up with 0.1.9-libgda version
+
+  23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
+                the executed SQL statements
+     2015-10- 6 define new ofaDDLUpdate class
 
   24 2014- 5- 8 Have a configuration parameter which says if user
                 preferences supersede global ones, or if global
@@ -4014,6 +4010,13 @@
                 > content (max length, centering, placeholder) is set
                   in myEditableDate as this depends of runtime
                   conditions
+
+ 854 2015-10- 1 when restoring a dossier, insertions in dbms continue
+                long after having acknowledged the good restore !
+                (see debug messages) -> this should be done before the
+                acknowledge, or have a spinner, or have a progress bar
+     2015-10- 6 this is the consequence of the DDL update which happens
+                when opening the dossier - see also #23
 
  855 2015-10- 1 render page should have a pane between the drawing area
                 and the args zone

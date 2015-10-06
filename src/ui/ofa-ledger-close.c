@@ -37,8 +37,9 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
+#include "core/my-progress-bar.h"
+
 #include "ui/my-editable-date.h"
-#include "ui/my-progress-bar.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-main-window.h"

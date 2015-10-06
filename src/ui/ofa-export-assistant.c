@@ -44,9 +44,9 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
+#include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
 
-#include "ui/my-progress-bar.h"
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-main-window.h"
 

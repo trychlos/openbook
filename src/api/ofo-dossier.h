@@ -51,6 +51,10 @@ G_BEGIN_DECLS
 #define DOS_STATUS_OPENED               "O"
 #define DOS_STATUS_CLOSED               "A"
 
+/* the identifier of the dossier row
+ */
+#define THIS_DOS_ID                     1
+
 ofoDossier      *ofo_dossier_new                       ( void );
 
 gboolean         ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
@@ -74,6 +78,7 @@ gboolean         ofo_dossier_use_ledger                ( const ofoDossier *dossi
 gboolean         ofo_dossier_use_ope_template          ( const ofoDossier *dossier,
 																const gchar *ope_template );
 
+gint             ofo_dossier_get_database_version      ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
 const GDate     *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );
 const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );

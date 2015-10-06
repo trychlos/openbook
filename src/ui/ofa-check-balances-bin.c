@@ -37,7 +37,8 @@
 #include "api/ofo-ledger.h"
 #include "api/ofs-currency.h"
 
-#include "ui/my-progress-bar.h"
+#include "core/my-progress-bar.h"
+
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 

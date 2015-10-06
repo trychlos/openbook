@@ -46,12 +46,12 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
+#include "core/my-progress-bar.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
-#include "ui/my-progress-bar.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"

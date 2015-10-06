@@ -34,6 +34,7 @@
    - Add a visual frame around accounts and operation templates treeviews.
    - Review the layout of DossierNewBin fields (todo #847).
    - DossierManager uses DossierLogin instead of DossierOpen (todo #846).
+   - Add a progress page when remediating the database model (todo #23).
 
  Bug fixes:
 

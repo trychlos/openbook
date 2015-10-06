@@ -57,6 +57,8 @@ libofa_core_la_SOURCES = \
 	my-double.c											\
 	my-field-combo.c									\
 	my-field-combo.h									\
+	my-progress-bar.c									\
+	my-progress-bar.h									\
 	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\
@@ -72,6 +74,8 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dbms.c											\
+	ofa-ddl-update.c									\
+	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
@@ -103,8 +107,6 @@ libofa_core_la_SOURCES = \
 	ofo-concil.c										\
 	ofo-currency.c										\
 	ofo-dossier.c										\
-	ofo-dossier-ddl.c									\
-	ofo-dossier-ddl.h									\
 	ofo-entry.c											\
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
@@ -137,6 +139,7 @@ libofa_core_la_LDFLAGS = \
 ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-dbms-root-bin.ui								\
+	ofa-ddl-update.ui									\
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
 	ofa-preferences.ui									\

@@ -41,7 +41,8 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofs-currency.h"
 
-#include "ui/my-progress-bar.h"
+#include "core/my-progress-bar.h"
+
 #include "ui/ofa-check-integrity-bin.h"
 
 /* private instance data

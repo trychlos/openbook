@@ -36,10 +36,10 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "core/my-progress-bar.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 
-#include "ui/my-progress-bar.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
