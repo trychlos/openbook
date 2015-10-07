@@ -1361,7 +1361,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		type = atoi( cstr );
+		type = cstr ? atoi( cstr ) : 0;
 		switch( type ){
 			case 1:
 				rate = rate_import_csv_rate( importable, fields, settings, line, &errors );
@@ -1485,7 +1485,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
-		g_free( detail );
+		ofa_box_free_fields_list( detail );
 		return( NULL );
 	}
 	*mnemo = g_strdup( cstr );
