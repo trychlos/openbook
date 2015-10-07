@@ -77,11 +77,12 @@ struct _ofaRestoreAssistantPrivate {
 	 */
 	GtkFileChooser         *p1_chooser;
 	gchar                  *p1_folder;
-	gchar                  *p1_fname;		/* the utf-8 to be restored filename */
+	gchar                  *p1_furi;		/* the utf-8 to be restored filename */
 	gint                    p1_filter;
 
 	/* p2: select the dossier target
 	 */
+	GtkWidget              *p2_furi;
 	ofaDossierTreeview     *p2_dossier_treeview;
 	GtkWidget              *p2_new_dossier_btn;
 	gchar                  *p2_dossier;
@@ -91,6 +92,9 @@ struct _ofaRestoreAssistantPrivate {
 
 	/* p3: DBMS root account
 	 */
+	GtkWidget              *p3_furi;
+	GtkWidget              *p3_dossier;
+	GtkWidget              *p3_database;
 	ofaDBMSRootBin         *p3_dbms_credentials;
 	gchar                  *p3_account;
 	gchar                  *p3_password;
@@ -98,14 +102,26 @@ struct _ofaRestoreAssistantPrivate {
 
 	/* p4: dossier administrative credentials
 	 */
+	GtkWidget              *p4_furi;
+	GtkWidget              *p4_dossier;
+	GtkWidget              *p4_database;
 	ofaAdminCredentialsBin *p4_admin_credentials;
 	gchar                  *p4_account;
 	gchar                  *p4_password;
+	GtkWidget              *p4_open_btn;
 	gboolean                p4_open;
 	GtkWidget              *p4_message;
 
 	/* p5: display operations to be done and ask for confirmation
 	 */
+	GtkWidget              *p5_furi;
+	GtkWidget              *p5_dossier;
+	GtkWidget              *p5_database;
+	GtkWidget              *p5_root_account;
+	GtkWidget              *p5_root_password;
+	GtkWidget              *p5_admin_account;
+	GtkWidget              *p5_admin_password;
+	GtkWidget              *p5_open;
 
 	/* p6: restore the file, display the result
 	 */
@@ -146,40 +162,42 @@ static const gchar *st_prefs_import     = "RestoreAssistant-settings";
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-restore-assistant.ui";
 static const gchar *st_ui_id            = "RestoreAssistant";
 
-static void            p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p1_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser );
-static void            p1_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p1_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self );
-static void            p1_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self );
-static void            p1_check_for_complete( ofaRestoreAssistant *self );
-static void            p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
-static void            p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p2_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
-static void            p2_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
-static void            p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant );
-static void            p2_check_for_complete( ofaRestoreAssistant *self );
-static void            p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
-static void            p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
-static void            p3_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p3_check_for_complete( ofaRestoreAssistant *self );
-static void            p3_set_message( ofaRestoreAssistant *self, const gchar *message );
-static void            p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
-static void            p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
-static void            p4_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p4_check_for_complete( ofaRestoreAssistant *self );
-static void            p4_set_message( ofaRestoreAssistant *self, const gchar *message );
-static void            p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p5_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static gboolean        p6_restore_confirmed( const ofaRestoreAssistant *self );
-static gboolean        p6_do_restore( ofaRestoreAssistant *self );
-static gboolean        p6_do_credentials( ofaRestoreAssistant *self );
-static gboolean        p6_do_open( ofaRestoreAssistant *self );
-static void            get_settings( ofaRestoreAssistant *self );
-static void            update_settings( ofaRestoreAssistant *self );
+static void     p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p1_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser );
+static void     p1_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p1_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self );
+static void     p1_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self );
+static gboolean p1_check_for_complete( ofaRestoreAssistant *self );
+static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
+static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant );
+static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
+static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
+static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
+static void     p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_check_for_complete( ofaRestoreAssistant *self );
+static void     p3_set_message( ofaRestoreAssistant *self, const gchar *message );
+static void     p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
+static void     p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
+static void     p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_check_for_complete( ofaRestoreAssistant *self );
+static void     p4_set_message( ofaRestoreAssistant *self, const gchar *message );
+static void     p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
+static gboolean p6_do_restore( ofaRestoreAssistant *self );
+static gboolean p6_do_credentials( ofaRestoreAssistant *self );
+static gboolean p6_do_open( ofaRestoreAssistant *self );
+static void     get_settings( ofaRestoreAssistant *self );
+static void     update_settings( ofaRestoreAssistant *self );
 
 G_DEFINE_TYPE( ofaRestoreAssistant, ofa_restore_assistant, MY_TYPE_ASSISTANT );
 
@@ -190,23 +208,23 @@ static const ofsAssistant st_pages_cb [] = {
 				NULL },
 		{ ASSIST_PAGE_SELECT,
 				( myAssistantCb ) p1_do_init,
-				( myAssistantCb ) p1_display,
+				( myAssistantCb ) p1_do_display,
 				( myAssistantCb ) p1_do_forward },
 		{ ASSIST_PAGE_TARGET,
 				( myAssistantCb ) p2_do_init,
-				NULL,
+				( myAssistantCb ) p2_do_display,
 				( myAssistantCb ) p2_do_forward },
 		{ ASSIST_PAGE_ROOT,
 				( myAssistantCb ) p3_do_init,
-				( myAssistantCb ) p3_display,
+				( myAssistantCb ) p3_do_display,
 				( myAssistantCb ) p3_do_forward },
 		{ ASSIST_PAGE_ADMIN,
 				( myAssistantCb ) p4_do_init,
-				( myAssistantCb ) p4_display,
+				( myAssistantCb ) p4_do_display,
 				( myAssistantCb ) p4_do_forward },
 		{ ASSIST_PAGE_CONFIRM,
-				NULL,
-				( myAssistantCb ) p5_display,
+				( myAssistantCb ) p5_do_init,
+				( myAssistantCb ) p5_do_display,
 				NULL },
 		{ ASSIST_PAGE_DONE,
 				NULL,
@@ -230,7 +248,7 @@ restore_assistant_finalize( GObject *instance )
 	priv = OFA_RESTORE_ASSISTANT( instance )->priv;
 
 	g_free( priv->p1_folder );
-	g_free( priv->p1_fname );
+	g_free( priv->p1_furi );
 	g_free( priv->p2_dossier );
 	g_free( priv->p2_database );
 	g_free( priv->p3_account );
@@ -341,9 +359,8 @@ p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-filechooser" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-filechooser" );
 	g_return_if_fail( widget && GTK_IS_FILE_CHOOSER_WIDGET( widget ));
 	priv->p1_chooser = GTK_FILE_CHOOSER( widget );
 
@@ -383,19 +400,22 @@ p1_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser )
 }
 
 static void
-p1_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+p1_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_restore_assistant_p1_display";
+	static const gchar *thisfn = "ofa_restore_assistant_p1_do_display";
 	ofaRestoreAssistantPrivate *priv;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
+	priv->current_page_w = page;
 
 	if( priv->p1_folder ){
 		gtk_file_chooser_set_current_folder_uri( priv->p1_chooser, priv->p1_folder );
 	}
+
+	p1_check_for_complete( self );
 }
 
 static void
@@ -407,10 +427,12 @@ p1_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self )
 static void
 p1_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self )
 {
-	p1_check_for_complete( self );
+	if( p1_check_for_complete( self )){
+		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( self )));
+	}
 }
 
-static void
+static gboolean
 p1_check_for_complete( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
@@ -418,14 +440,16 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	g_free( priv->p1_fname );
-	priv->p1_fname = gtk_file_chooser_get_filename( priv->p1_chooser );
-	g_debug( "p1_check_for_complete: fname=%s", priv->p1_fname );
+	g_free( priv->p1_furi );
+	priv->p1_furi = gtk_file_chooser_get_uri( priv->p1_chooser );
+	g_debug( "p1_check_for_complete: furi=%s", priv->p1_furi );
 
-	ok = my_strlen( priv->p1_fname ) > 0 &&
-			my_utils_file_is_readable_file( priv->p1_fname );
+	ok = my_strlen( priv->p1_furi ) > 0 &&
+			my_utils_uri_is_readable_file( priv->p1_furi );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+
+	return( ok );
 }
 
 static void
@@ -453,7 +477,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p2_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *parent, *label;
+	GtkWidget *parent;
 	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DNAME,
 			0 };
@@ -464,14 +488,13 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-fname" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p1_fname );
+	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
+	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
+	my_utils_widget_set_style( priv->p2_furi, "labelinfo" );
 
 	priv->p2_dossier_treeview = ofa_dossier_treeview_new();
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_treeview ));
 	ofa_dossier_treeview_set_columns( priv->p2_dossier_treeview, st_columns );
@@ -480,11 +503,29 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_signal_connect( priv->p2_dossier_treeview, "changed", G_CALLBACK( p2_on_dossier_changed ), self );
 	g_signal_connect( priv->p2_dossier_treeview, "activated", G_CALLBACK( p2_on_dossier_activated ), self );
 
-	priv->p2_new_dossier_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-new-dossier" );
+	priv->p2_new_dossier_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-dossier" );
 
 	g_signal_connect( priv->p2_new_dossier_btn, "clicked", G_CALLBACK( p2_on_dossier_new ), self );
 
 	priv->p2_is_new_dossier = FALSE;
+}
+
+static void
+p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_p2_do_display";
+	ofaRestoreAssistantPrivate *priv;
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
+
+	priv = self->priv;
+	priv->current_page_w = page;
+
+	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
+
 	p2_check_for_complete( self );
 }
 
@@ -497,7 +538,9 @@ p2_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar
 static void
 p2_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant )
 {
-	p2_check_for_complete( assistant );
+	if( p2_check_for_complete( assistant )){
+		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( assistant )));
+	}
 }
 
 static void
@@ -529,7 +572,7 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 	}
 }
 
-static void
+static gboolean
 p2_check_for_complete( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
@@ -543,6 +586,8 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 	ok = my_strlen( priv->p2_dossier ) > 0;
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+
+	return( ok );
 }
 
 static void
@@ -576,60 +621,61 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *label, *parent, *infos;
-	GtkSizeGroup *group;
+	GtkSizeGroup *hgroup;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dossier" );
+	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
+	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
+	my_utils_widget_set_style( priv->p3_furi, "labelinfo" );
+
+	priv->p3_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier" );
+	g_return_if_fail( priv->p3_dossier && GTK_IS_LABEL( priv->p3_dossier ));
+	my_utils_widget_set_style( priv->p3_dossier, "labelinfo" );
+
+	priv->p3_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-database" );
+	g_return_if_fail( priv->p3_database && GTK_IS_LABEL( priv->p3_database ));
+	my_utils_widget_set_style( priv->p3_database, "labelinfo" );
+
+	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label311" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_dossier );
+	gtk_size_group_add_widget( hgroup, label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label21" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label312" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( group, label );
+	gtk_size_group_add_widget( hgroup, label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-database" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label313" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_database );
+	gtk_size_group_add_widget( hgroup, label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label22" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( group, label );
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-connect-infos" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	infos = ofa_idbms_connect_display_new( priv->p2_idbms, priv->p2_dossier );
 	gtk_container_add( GTK_CONTAINER( parent ), infos );
 	my_utils_size_group_add_size_group(
-			group, ofa_idbms_connect_display_get_size_group( priv->p2_idbms, infos, 0 ));
+			hgroup, ofa_idbms_connect_display_get_size_group( priv->p2_idbms, infos, 0 ));
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dra-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
 	my_utils_size_group_add_size_group(
-			group, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
-	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, priv->p2_dossier );
+			hgroup, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
 
 	g_signal_connect(
 			priv->p3_dbms_credentials, "ofa-changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
 
-	if( priv->p3_account && priv->p3_password ){
-		ofa_dbms_root_bin_set_credentials(
-				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
-	}
+	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
+	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
+	my_utils_widget_set_style( priv->p3_message, "labelerror" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelerror" );
-	priv->p3_message = label;
-
-	gtk_widget_show_all( page );
+	g_object_unref( hgroup );
 }
 
 static void
@@ -649,8 +695,29 @@ p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar 
 }
 
 static void
-p3_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
+	static const gchar *thisfn = "ofa_restore_assistant_p3_do_display";
+	ofaRestoreAssistantPrivate *priv;
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = self->priv;
+	priv->current_page_w = page;
+
+	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), priv->p2_dossier );
+	gtk_label_set_text( GTK_LABEL( priv->p3_database ), priv->p2_database );
+
+	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, priv->p2_dossier );
+
+	if( priv->p3_account && priv->p3_password ){
+		ofa_dbms_root_bin_set_credentials(
+				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
+	}
+
+	gtk_widget_show_all( page );
 	p3_check_for_complete( self );
 }
 
@@ -703,42 +770,60 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p4_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *label, *parent, *toggle;
+	GtkWidget *parent, *label;
+	GtkSizeGroup *hgroup;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dossier" );
+	priv->p4_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
+	g_return_if_fail( priv->p4_furi && GTK_IS_LABEL( priv->p4_furi ));
+	my_utils_widget_set_style( priv->p4_furi, "labelinfo" );
+
+	priv->p4_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dossier" );
+	g_return_if_fail( priv->p4_dossier && GTK_IS_LABEL( priv->p4_dossier ));
+	my_utils_widget_set_style( priv->p4_dossier, "labelinfo" );
+
+	priv->p4_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-database" );
+	g_return_if_fail( priv->p4_database && GTK_IS_LABEL( priv->p4_database ));
+	my_utils_widget_set_style( priv->p4_database, "labelinfo" );
+
+	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label411" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_dossier );
+	gtk_size_group_add_widget( hgroup, label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-database" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label412" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_database );
+	gtk_size_group_add_widget( hgroup, label );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-admin-credentials" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label413" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( hgroup, label );
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p4_admin_credentials = ofa_admin_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_admin_credentials ));
+	my_utils_size_group_add_size_group(
+			hgroup, ofa_admin_credentials_bin_get_size_group( priv->p4_admin_credentials, 0 ));
 
 	g_signal_connect( priv->p4_admin_credentials,
 			"ofa-changed", G_CALLBACK( p4_on_admin_credentials_changed ), self );
 
-	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
-	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->p4_open );
+	priv->p4_open_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-open" );
+	g_return_if_fail( priv->p4_open_btn && GTK_IS_CHECK_BUTTON( priv->p4_open_btn ));
 
-	g_signal_connect( toggle, "toggled", G_CALLBACK( p4_on_open_toggled ), self );
+	g_signal_connect( priv->p4_open_btn, "toggled", G_CALLBACK( p4_on_open_toggled ), self );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-message" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelerror" );
-	priv->p4_message = label;
+	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
+	g_return_if_fail( priv->p4_message && GTK_IS_LABEL( priv->p4_message ));
+	my_utils_widget_set_style( priv->p4_message, "labelerror" );
 
-	gtk_widget_show_all( page );
+	g_object_unref( hgroup );
 }
 
 static void
@@ -771,8 +856,25 @@ p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self )
  * ask the user to confirm the operation
  */
 static void
-p4_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
+	static const gchar *thisfn = "ofa_restore_assistant_p4_do_display";
+	ofaRestoreAssistantPrivate *priv;
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = self->priv;
+	priv->current_page_w = page;
+
+	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), priv->p2_dossier );
+	gtk_label_set_text( GTK_LABEL( priv->p4_database ), priv->p2_database );
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
+	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
+
+	gtk_widget_show_all( page );
 	p4_check_for_complete( self );
 }
 
@@ -823,11 +925,10 @@ p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
  * confirmation page
  */
 static void
-p5_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_restore_assistant_p5_display";
+	static const gchar *thisfn = "ofa_restore_assistant_p5_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *label;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -836,39 +937,66 @@ p5_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-fname" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p1_fname );
+	priv->p5_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
+	g_return_if_fail( priv->p5_furi && GTK_IS_LABEL( priv->p5_furi ));
+	my_utils_widget_set_style( priv->p5_furi, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-dossier" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_dossier );
+	priv->p5_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dossier" );
+	g_return_if_fail( priv->p5_dossier && GTK_IS_LABEL( priv->p5_dossier ));
+	my_utils_widget_set_style( priv->p5_dossier, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-database" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_database );
+	priv->p5_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-database" );
+	g_return_if_fail( priv->p5_database && GTK_IS_LABEL( priv->p5_database ));
+	my_utils_widget_set_style( priv->p5_database, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-dbms-account" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p3_account );
+	priv->p5_root_account = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dbms-account" );
+	g_return_if_fail( priv->p5_root_account && GTK_IS_LABEL( priv->p5_root_account ));
+	my_utils_widget_set_style( priv->p5_root_account, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-dbms-password" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), "******" );
+	priv->p5_root_password = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dbms-password" );
+	g_return_if_fail( priv->p5_root_password && GTK_IS_LABEL( priv->p5_root_password ));
+	my_utils_widget_set_style( priv->p5_root_password, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-adm-account" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p4_account );
+	priv->p5_admin_account = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-adm-account" );
+	g_return_if_fail( priv->p5_admin_account && GTK_IS_LABEL( priv->p5_admin_account ));
+	my_utils_widget_set_style( priv->p5_admin_account, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-adm-password" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), "******" );
+	priv->p5_admin_password = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-adm-password" );
+	g_return_if_fail( priv->p5_admin_password && GTK_IS_LABEL( priv->p5_admin_password ));
+	my_utils_widget_set_style( priv->p5_admin_password, "labelinfo" );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-open" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), priv->p4_open ? _( "True" ): _( "False" ));
+	priv->p5_open = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
+	g_return_if_fail( priv->p5_open && GTK_IS_LABEL( priv->p5_open ));
+	my_utils_widget_set_style( priv->p5_open, "labelinfo" );
 }
 
+static void
+p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_p5_do_display";
+	ofaRestoreAssistantPrivate *priv;
+
+	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = self->priv;
+
+	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), priv->p2_dossier );
+	gtk_label_set_text( GTK_LABEL( priv->p5_database ), priv->p2_database );
+	gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
+	gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
+	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
+	gtk_label_set_text( GTK_LABEL( priv->p5_admin_password ), "******" );
+	gtk_label_set_text( GTK_LABEL( priv->p5_open ), priv->p4_open ? _( "True" ): _( "False" ));
+}
+
+/*
+ * execution
+ * execution summary
+ */
 static void
 p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
@@ -895,7 +1023,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 		if( priv->p2_is_new_dossier ){
 			ofa_settings_remove_dossier( priv->p2_dossier );
 		}
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-label1" );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label61" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		gtk_label_set_text(
 				GTK_LABEL( label ), _( "The restore operation has been cancelled by the user." ));
@@ -941,26 +1069,28 @@ p6_do_restore( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
-	gchar *str;
+	gchar *str, *fname;
 	GtkWidget *label;
 
 	priv = self->priv;
 
 	/* restore the backup */
+	fname = g_filename_from_uri( priv->p1_furi, NULL, NULL );
 	ok = ofa_idbms_restore(
-			priv->p2_idbms, priv->p2_dossier, priv->p1_fname, priv->p3_account, priv->p3_password );
+			priv->p2_idbms, priv->p2_dossier, fname, priv->p3_account, priv->p3_password );
+	g_free( fname );
 
 	if( ok ){
 		str = g_strdup_printf(
 				_( "The '%s' backup file has been successfully restored "
-					"into the '%s' dossier." ), priv->p1_fname, priv->p2_dossier );
+					"into the '%s' dossier." ), priv->p1_furi, priv->p2_dossier );
 	} else {
 		str = g_strdup_printf(
 				_( "Unable to restore the '%s' backup file.\n"
-					"Please fix the errors and retry." ), priv->p1_fname );
+					"Please fix the errors and retry." ), priv->p1_furi );
 	}
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_w ), "p7-label1" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_w ), "p6-label61" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
@@ -999,7 +1129,7 @@ p6_do_credentials( ofaRestoreAssistant *self )
 				_( "Unable to set the dossier administrative credentials." ));
 	}
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_w ), "p7-label2" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_w ), "p6-label62" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
