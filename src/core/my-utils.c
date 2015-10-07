@@ -43,6 +43,7 @@ static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
+static gboolean is_dir( GFile *file );
 static gboolean is_readable_gfile( GFile *file );
 
 /**
@@ -1447,6 +1448,51 @@ my_utils_uri_exists( const gchar *uri )
 	g_debug( "my_utils_uri_exists: the uri '%s' exists: %s", uri, exists ? "True":"False" );
 
 	return( exists );
+}
+
+/**
+ * my_utils_uri_is_dir:
+ * @uri: an URI
+ *
+ * Returns: %TRUE if the specified URI is a directory.
+ *
+ * The caller should be conscious and take care of the usual race
+ * condition: anything may happen between this test and the actual
+ * use of its result...
+ */
+gboolean
+my_utils_uri_is_dir( const gchar *uri )
+{
+	GFile *file;
+	gboolean ok;
+	gchar *sysfname;
+
+	ok = FALSE;
+
+	sysfname = my_utils_filename_from_utf8( uri );
+	if( sysfname ){
+		file = g_file_new_for_uri( sysfname );
+		ok = is_dir( file );
+		g_object_unref( file );
+	}
+	g_free( sysfname );
+
+	g_debug( "my_utils_uri_is_dir: uri=%s, ok=%s", uri, ok ? "True":"False" );
+	return( ok );
+}
+
+static gboolean
+is_dir( GFile *file )
+{
+	gboolean ok;
+	GFileType type;
+
+	ok = FALSE;
+
+	type = g_file_query_file_type( file, G_FILE_QUERY_INFO_NONE, NULL );
+	ok = ( type == G_FILE_TYPE_DIRECTORY );
+
+	return( ok );
 }
 
 /**

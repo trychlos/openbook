@@ -36,6 +36,7 @@
    - DossierManager uses DossierLogin instead of DossierOpen (todo #846).
    - Add a progress page when remediating the database model (todo #23).
    - Check that notes does not have more than 4095 chars (todo #49).
+   - Assistants: automatically advance to next page on selection activation (todo #149).
 
  Bug fixes:
 
@@ -44,6 +45,7 @@
    - Settings: fix multiple loads of the dossiers (todo #833).
    - RenderPage: set action area end-aligned (todo #855).
    - ExerciceCloseAssistant: fix null pointer (todo #851).
+   - ofoRate: fix behavior on import error.
 
  Other changes:
 
@@ -62,6 +64,7 @@
    - my_utils_container_get_buildable_by_name: removed function.
    - my_utils_container_set_editable(): new function.
    - my_utils_size_group_add_size_group(): new function.
+   - my_utils_uri_is_dir(): new function.
    - my_utils_widget_set_editable(): new function.
    - my_utils_widget_set_style(): new function.
    - my_utils_widget_set_margin(): new function.

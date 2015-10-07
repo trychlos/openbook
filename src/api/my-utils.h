@@ -131,6 +131,7 @@ gboolean      my_utils_file_is_readable_file          ( const gchar *filename );
 gchar        *my_utils_filename_from_utf8             ( const gchar *filename );
 
 gboolean      my_utils_uri_exists                     ( const gchar *uri );
+gboolean      my_utils_uri_is_dir                     ( const gchar *uri );
 gboolean      my_utils_uri_is_readable_file           ( const gchar *uri );
 
 void          my_utils_action_enable                  ( GActionMap *map, GSimpleAction **action, const gchar *name, gboolean enable );

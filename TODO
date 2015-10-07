@@ -56,6 +56,10 @@
                 'Continue' button, but unfortunately GtkAssistant is 
                 not a GtkDialog, so do not known how to do ?
      2015-10- 6 try to intercept double-click on GtkFileChooser
+     2015-10- 7 issue is not detecting the activation, but automatically
+                advance to next page
+     2015-10- 7 RestoreAssistant: done
+                ImportAssistant: done
 
  152 2014- 6- 3 import qif files
 
@@ -370,8 +374,6 @@
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
 
- 778 2015- 3-30 use ofaAccountSelector where appropriate
-
  783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
                 will be reported after exercice closing
 
@@ -467,6 +469,7 @@
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
                 need a single account selection
+     2015-10- 7 see also #778
 
  843 2015- 9-30 account number should be renamed as account identifier
 
@@ -488,7 +491,23 @@
                 - update ok_btn when setting readonly buttons
                 - call check_enable_dlg at the very end
 
- 862
+ 862 2015-10- 7 fix focus on GtkBin-derived widgets on the assistants
+                - RestoreAssistant: dossier treeview after created a new dossier
+                - RestoreAssistant: DBMS root credentials
+                - RestoreAssistant: administrative credentials
+
+ 863 2015-10- 7 myAssistant: create get_current_page() method to get
+                rid of derived classes storing the current page
+
+ 864 2015-10- 7 myAssistant: show_all after call to display to get
+                rid of derived classes showing all
+
+ 865 2015-10- 7 ofa_idbms_restore(): get an uri instead of the filename
+
+ 866 2015-10- 7 progress bars in db model remediation touch the border
+                (see print screen)
+
+ 867
 
 -----------------------------------------------------------------------
  DONE
@@ -3687,6 +3706,9 @@
  777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
                 there is not at least one generable entry
      2015- 3-29 fixed - git #4148c19
+
+ 778 2015- 3-30 use ofaAccountSelector where appropriate
+     2015-10- 7 see also #840
 
  780 2015- 3-30 is_visible_row: assertion 'my_date_is_valid( deffect )' failed
                 is_visible_row (tmodel=<optimized out>, iter=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-reconciliation.c:1690
