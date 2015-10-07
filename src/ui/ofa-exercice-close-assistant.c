@@ -563,7 +563,6 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_utils_widget_set_style( label, "labelerror" );
 	priv->p3_message = label;
 
-	gtk_widget_show_all( page_widget );
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
 
@@ -634,7 +633,6 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv->p4_checks_bin = ofa_check_balances_bin_new();
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
-	gtk_widget_show_all( page_widget );
 
 	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );
 
@@ -695,7 +693,6 @@ p5_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv->p5_checks_bin = ofa_check_integrity_bin_new();
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p5_checks_bin ));
-	gtk_widget_show_all( page_widget );
 
 	g_signal_connect( priv->p5_checks_bin, "ofa-done", G_CALLBACK( p5_on_checks_done ), self );
 

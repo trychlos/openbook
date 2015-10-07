@@ -717,7 +717,6 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
 
-	gtk_widget_show_all( page );
 	p3_check_for_complete( self );
 }
 
@@ -874,7 +873,6 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
 	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
 
-	gtk_widget_show_all( page );
 	p4_check_for_complete( self );
 }
 

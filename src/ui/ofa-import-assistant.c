@@ -738,8 +738,6 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 		g_free( str );
 	}
 
-	gtk_widget_show_all( page );
-
 	complete = my_strlen( priv->p1_furi ) > 0;
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
 }
@@ -780,7 +778,6 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_widget_set_can_focus( priv->p5_text, FALSE );
 
 	priv->p5_page = page;
-	gtk_widget_show_all( page );
 
 	/* search from something which would be able to import the data */
 	if( st_radios[priv->p2_idx].get_type ){

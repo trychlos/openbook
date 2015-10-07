@@ -37,6 +37,7 @@
    - Add a progress page when remediating the database model (todo #23).
    - Check that notes does not have more than 4095 chars (todo #49).
    - Assistants: automatically advance to next page on selection activation (todo #149).
+   - ofa_bat_utils_import(): display an error message if no willing-to module found.
 
  Bug fixes:
 
@@ -52,6 +53,7 @@
    - Upgrade to Gtk+ 3.16.
    - Upgrade to Fedora 22 build chain.
    - Upgrade DBMS to v26.
+   - myAssistant: takes care of showing the pages (todo #864).
    - ofaAccountsBook class: renamed to ofaAccountsChart (todo #816).
    - ofaLedgerClose: have a 'All ledgers' button (todo #815).
    - Printings: optimize dataset load.

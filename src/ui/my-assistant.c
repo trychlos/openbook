@@ -267,8 +267,6 @@ do_setup_assistant( myAssistant *self )
 	g_signal_connect( self, MY_SIGNAL_PAGE_INIT, G_CALLBACK( on_page_init ), NULL );
 	g_signal_connect( self, MY_SIGNAL_PAGE_DISPLAY, G_CALLBACK( on_page_display ), NULL );
 	g_signal_connect( self, MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
-
-	gtk_widget_show_all( GTK_WIDGET( priv->assistant ));
 }
 
 /*
@@ -516,6 +514,8 @@ on_page_display( myAssistant *assistant, GtkWidget *page_w, gint page_num, void 
 				}
 			}
 		}
+
+		gtk_widget_show_all( page_w );
 	}
 }
 

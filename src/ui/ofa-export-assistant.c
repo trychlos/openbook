@@ -846,7 +846,6 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_bar ));
 
 	priv->p5_page = page;
-	gtk_widget_show_all( page );
 
 	priv->p5_base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->p5_base )){
