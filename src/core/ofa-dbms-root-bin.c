@@ -272,6 +272,34 @@ ofa_dbms_root_bin_get_size_group( const ofaDBMSRootBin *bin, guint column )
 }
 
 /**
+ * ofa_dbms_root_bin_grab_focus:
+ * @bin: this #ofaDBMSRootBin instance.
+ *
+ * Set the focus on the first empty field.
+ */
+void
+ofa_dbms_root_bin_grab_focus( const ofaDBMSRootBin *bin )
+{
+	static const gchar *thisfn = "ofa_dbms_root_bin_grab_focus";
+	ofaDBMSRootBinPrivate *priv;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+
+	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( my_strlen( priv->account )){
+			gtk_widget_grab_focus( priv->password_entry );
+		} else {
+			gtk_widget_grab_focus( priv->account_entry );
+		}
+	}
+}
+
+/**
  * ofa_dbms_root_bin_set_dossier:
  * @bin: this #ofaDBMSRootBin instance.
  * @dname: the name of the dossier.

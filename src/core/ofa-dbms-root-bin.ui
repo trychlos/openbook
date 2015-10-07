@@ -2,6 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
+  <object class="GtkSizeGroup" id="drb-col0-hsize"/>
   <object class="GtkWindow" id="drb-window">
     <property name="can_focus">False</property>
     <child>
@@ -39,6 +40,17 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkEntry" id="drb-account-entry">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkLabel" id="drb-password-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -62,17 +74,6 @@
                   <packing>
                     <property name="left_attach">1</property>
                     <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="drb-account-entry">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hexpand">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
                   </packing>
                 </child>
                 <child>
@@ -105,11 +106,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkSizeGroup" id="drb-col0-hsize">
-    <widgets>
-      <widget name="drb-account-label"/>
-      <widget name="drb-password-label"/>
-    </widgets>
   </object>
 </interface>

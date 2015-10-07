@@ -78,6 +78,8 @@ ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
 GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( const ofaDBMSRootBin *bin,
 																guint column );
 
+void            ofa_dbms_root_bin_grab_focus     ( const ofaDBMSRootBin *bin );
+
 void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
 																const gchar *dname );
 

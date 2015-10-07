@@ -92,9 +92,9 @@ struct _ofaRestoreAssistantPrivate {
 
 	/* p3: DBMS root account
 	 */
+	GtkSizeGroup           *p3_hgroup;
 	GtkWidget              *p3_furi;
 	GtkWidget              *p3_dossier;
-	GtkWidget              *p3_database;
 	ofaDBMSRootBin         *p3_dbms_credentials;
 	gchar                  *p3_account;
 	gchar                  *p3_password;
@@ -272,6 +272,7 @@ restore_assistant_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->p2_idbms );
+		g_clear_object( &priv->p3_hgroup );
 	}
 
 	/* chain up to the parent class */
@@ -523,6 +524,8 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
 
 	p2_check_for_complete( self );
+
+	gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_treeview ));
 }
 
 static void
@@ -565,6 +568,7 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 
 		priv->p2_is_new_dossier = TRUE;
 		ofa_dossier_treeview_set_selected( priv->p2_dossier_treeview, dname );
+		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_treeview ));
 	}
 }
 
@@ -616,8 +620,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *label, *parent, *infos;
-	GtkSizeGroup *hgroup;
+	GtkWidget *label, *parent;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -632,37 +635,22 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p3_dossier && GTK_IS_LABEL( priv->p3_dossier ));
 	my_utils_widget_set_style( priv->p3_dossier, "labelinfo" );
 
-	priv->p3_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-database" );
-	g_return_if_fail( priv->p3_database && GTK_IS_LABEL( priv->p3_database ));
-	my_utils_widget_set_style( priv->p3_database, "labelinfo" );
-
-	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->p3_hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label311" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( hgroup, label );
+	gtk_size_group_add_widget( priv->p3_hgroup, label );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label312" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( hgroup, label );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label313" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( hgroup, label );
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	infos = ofa_idbms_connect_display_new( priv->p2_idbms, priv->p2_dossier );
-	gtk_container_add( GTK_CONTAINER( parent ), infos );
-	my_utils_size_group_add_size_group(
-			hgroup, ofa_idbms_connect_display_get_size_group( priv->p2_idbms, infos, 0 ));
+	gtk_size_group_add_widget( priv->p3_hgroup, label );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
 	my_utils_size_group_add_size_group(
-			hgroup, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
+			priv->p3_hgroup, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
 
 	g_signal_connect(
 			priv->p3_dbms_credentials, "ofa-changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
@@ -670,8 +658,6 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
 	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
 	my_utils_widget_set_style( priv->p3_message, "labelerror" );
-
-	g_object_unref( hgroup );
 }
 
 static void
@@ -695,6 +681,8 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_display";
 	ofaRestoreAssistantPrivate *priv;
+	GtkWidget *parent, *infos, *child;
+	GList *children;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -703,7 +691,24 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), priv->p2_dossier );
-	gtk_label_set_text( GTK_LABEL( priv->p3_database ), priv->p2_database );
+
+	/* the connection informations must be set here
+	 * because it needs an ofaIDbms handle and it is not stable enough
+	 * when in do_init() phase */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	children = gtk_container_get_children( GTK_CONTAINER( parent ));
+	if( children ){
+		child = ( GtkWidget * ) children->data;
+		if( child && GTK_IS_WIDGET( child )){
+			gtk_widget_destroy( child );
+		}
+		g_list_free( children );
+	}
+	infos = ofa_idbms_connect_display_new( priv->p2_idbms, priv->p2_dossier );
+	gtk_container_add( GTK_CONTAINER( parent ), infos );
+	my_utils_size_group_add_size_group(
+			priv->p3_hgroup, ofa_idbms_connect_display_get_size_group( priv->p2_idbms, infos, 0 ));
 
 	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, priv->p2_dossier );
 
@@ -868,6 +873,8 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
 
 	p4_check_for_complete( self );
+
+	/*ofa_admin_credentials_bin_grab_focus( priv->p4_admin_credentials );*/
 }
 
 static void

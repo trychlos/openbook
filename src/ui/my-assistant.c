@@ -507,6 +507,8 @@ on_page_display( myAssistant *assistant, GtkWidget *page_w, gint page_num, void 
 	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 
 		priv = assistant->priv;
+		gtk_widget_show_all( page_w );
+
 		if( priv->cbs ){
 			for( i=0 ; priv->cbs[i].page_num >= 0 ; ++i ){
 				if( priv->cbs[i].page_num == page_num ){
@@ -517,8 +519,6 @@ on_page_display( myAssistant *assistant, GtkWidget *page_w, gint page_num, void 
 				}
 			}
 		}
-
-		gtk_widget_show_all( page_w );
 	}
 }
 

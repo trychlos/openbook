@@ -77,6 +77,8 @@ ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( void );
 GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin,
 																			guint column );
 
+void                    ofa_admin_credentials_bin_grab_focus    ( const ofaAdminCredentialsBin *bin );
+
 gboolean                ofa_admin_credentials_bin_is_valid      ( const ofaAdminCredentialsBin *bin,
 																			gchar **error_message );
 

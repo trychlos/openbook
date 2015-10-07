@@ -203,7 +203,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-label311">
+                  <object class="GtkLabel" id="p3-label312">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Target dossier :</property>
@@ -215,30 +215,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-label312">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Target database :</property>
-                    <property name="xalign">1</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="p3-database">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="p3-label313">
+                  <object class="GtkLabel" id="p3-label311">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Source file :</property>
@@ -277,14 +254,17 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p3-message">
+          <object class="GtkBox" id="p3-connect-infos">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
         <child>
@@ -302,17 +282,14 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p3-connect-infos">
+          <object class="GtkLabel" id="p3-message">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <placeholder/>
-            </child>
+            <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
       </object>

@@ -40,6 +40,9 @@ struct _ofaAdminCredentialsBinPrivate {
 	/* UI
 	 */
 	GtkSizeGroup *group0;
+	GtkWidget    *account_entry;
+	GtkWidget    *password_entry;
+	GtkWidget    *bis_entry;
 
 	/* runtime data
 	 */
@@ -186,7 +189,7 @@ setup_bin( ofaAdminCredentialsBin *bin )
 	ofaAdminCredentialsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry, *label;
+	GtkWidget *toplevel, *label;
 
 	priv = bin->priv;
 	builder = gtk_builder_new_from_file( st_bin_xml );
@@ -201,29 +204,26 @@ setup_bin( ofaAdminCredentialsBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), bin );
+	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-entry" );
+	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
+	g_signal_connect( priv->account_entry, "changed", G_CALLBACK( on_account_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->account_entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
+	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-entry" );
+	g_return_if_fail( priv->password_entry && GTK_IS_ENTRY( priv->password_entry ));
+	g_signal_connect( priv->password_entry, "changed", G_CALLBACK( on_password_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-passbis-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_bis_changed ), bin );
+	priv->bis_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-passbis-entry" );
+	g_return_if_fail( priv->bis_entry && GTK_IS_ENTRY( priv->bis_entry ));
+	g_signal_connect( priv->bis_entry, "changed", G_CALLBACK( on_bis_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-passbis-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->bis_entry );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -261,6 +261,40 @@ ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin, gui
 	}
 
 	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofa_admin_credentials_bin_grab_focus:
+ * @bin: this #ofaAdminCredentialsBin instance.
+ *
+ * Set the focus.
+ */
+void
+ofa_admin_credentials_bin_grab_focus( const ofaAdminCredentialsBin *bin )
+{
+	static const gchar *thisfn = "ofa_admin_credentials_bin_grab_focus";
+	ofaAdminCredentialsBinPrivate *priv;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( my_strlen( priv->account )){
+			if( my_strlen( priv->password )){
+				if( my_strlen( priv->bis )){
+					gtk_widget_grab_focus( priv->account_entry );
+				} else {
+					gtk_widget_grab_focus( priv->bis_entry );
+				}
+			} else {
+				gtk_widget_grab_focus( priv->password_entry );
+			}
+		} else {
+			gtk_widget_grab_focus( priv->account_entry );
+		}
+	}
 }
 
 static void

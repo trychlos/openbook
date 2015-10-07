@@ -482,8 +482,7 @@
 
  862 2015-10- 7 fix focus on GtkBin-derived widgets on the assistants
                 - RestoreAssistant: dossier treeview after created a new dossier
-                - RestoreAssistant: DBMS root credentials
-                - RestoreAssistant: administrative credentials
+                - administrative credentials
 
  865 2015-10- 7 ofa_idbms_restore(): get an uri instead of the filename
 
