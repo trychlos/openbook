@@ -682,10 +682,19 @@ ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 
 /**
  * ofa_idbms_restore:
+ * @instance: this #ofaIDbms instance.
+ * @dname: the dossier name.
+ * @furi: the source file URI.
+ * @root_account: the DBMS root account.
+ * @root_password: the DBMS root password.
+ *
+ * Restore the @furi source file into the registered @dname dossier.
+ *
+ * Returns: %TRUE if successfull.
  */
 gboolean
 ofa_idbms_restore( const ofaIDbms *instance,
-		const gchar *dname, const gchar *fname, const gchar *root_account, const gchar *root_password )
+		const gchar *dname, const gchar *furi, const gchar *root_account, const gchar *root_password )
 {
 	gboolean ok;
 
@@ -695,7 +704,7 @@ ofa_idbms_restore( const ofaIDbms *instance,
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->restore ){
 
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, dname, fname, root_account, root_password );
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, dname, furi, root_account, root_password );
 	}
 
 	return( ok );

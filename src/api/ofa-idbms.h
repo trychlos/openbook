@@ -376,7 +376,7 @@ typedef struct {
 	 * restore:
 	 * @instance: the #ofaIDbms provider.
 	 * @dname: the name of the dossier to be restored.
-	 * @fname: the input filename.
+	 * @furi: the input filename URI.
 	 * @root_account: the root account of the DBMS server.
 	 * @root_password:
 	 *
@@ -396,7 +396,7 @@ typedef struct {
 	 */
 	gboolean       ( *restore )                       ( const ofaIDbms *instance,
 																const gchar *dname,
-																const gchar *fname,
+																const gchar *furi,
 																const gchar *root_account,
 																const gchar *root_password );
 
@@ -613,7 +613,7 @@ gboolean      ofa_idbms_backup                        ( const ofaIDbms *instance
 
 gboolean      ofa_idbms_restore                       ( const ofaIDbms *instance,
 															const gchar *dname,
-															const gchar *fname,
+															const gchar *furi,
 															const gchar *root_account,
 															const gchar *root_password );
 

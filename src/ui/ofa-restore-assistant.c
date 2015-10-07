@@ -1086,15 +1086,13 @@ p6_do_restore( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
-	gchar *str, *fname;
+	gchar *str;
 
 	priv = self->priv;
 
 	/* restore the backup */
-	fname = g_filename_from_uri( priv->p1_furi, NULL, NULL );
 	ok = ofa_idbms_restore(
-			priv->p2_idbms, priv->p2_dossier, fname, priv->p3_account, priv->p3_password );
-	g_free( fname );
+			priv->p2_idbms, priv->p2_dossier, priv->p1_furi, priv->p3_account, priv->p3_password );
 
 	if( ok ){
 		str = g_strdup_printf(

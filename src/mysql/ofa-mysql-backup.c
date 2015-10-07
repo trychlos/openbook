@@ -146,18 +146,19 @@ ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
  */
 gboolean
 ofa_mysql_restore( const ofaIDbms *instance,
-						const gchar *dname, const gchar *fname,
+						const gchar *dname, const gchar *furi,
 						const gchar *root_account, const gchar *root_password )
 {
 	mysqlInfos *infos;
 	gboolean ok;
-	gchar *cmdline;
+	gchar *fname, *cmdline;
 
 	infos = ofa_mysql_get_connect_infos( dname );
 	infos->account = g_strdup( root_account );
 	infos->password = g_strdup( root_password );
 
 	create_fake_database( instance, infos );
+	fname = g_filename_from_uri( furi, NULL, NULL );
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( !my_strlen( cmdline )){
@@ -173,6 +174,7 @@ ofa_mysql_restore( const ofaIDbms *instance,
 				TRUE );
 
 	g_free( cmdline );
+	g_free( fname );
 
 	ofa_mysql_free_connect_infos( infos );
 

@@ -45,7 +45,7 @@ const gchar *ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance );
 
 gboolean     ofa_mysql_restore            ( const ofaIDbms *instance,
 														const gchar *dname,
-														const gchar *fname,
+														const gchar *furi,
 														const gchar *account,
 														const gchar *password );
 
