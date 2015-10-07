@@ -115,10 +115,6 @@ struct _ofaImportAssistantPrivate {
 	GtkWidget        *p5_text;
 	ofaIImportable   *p5_object;
 	ofaIImportable   *p5_plugin;
-
-	/* runtime data
-	 */
-	GtkWidget        *current_page_w;
 };
 
 /* management of the radio buttons group
@@ -350,7 +346,6 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 			G_OBJECT( self ), "message", G_CALLBACK( p5_on_message ), self );
 
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
-
 	my_assistant_run( MY_ASSISTANT( self ));
 }
 
@@ -399,7 +394,6 @@ p1_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	ofaImportAssistantPrivate *priv;
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
 	if( priv->p1_furi ){
 		gtk_file_chooser_set_uri( priv->p1_chooser, priv->p1_furi );
@@ -437,7 +431,7 @@ p1_check_for_complete( ofaImportAssistant *self )
 	ok = my_strlen( priv->p1_furi ) &&
 			my_utils_uri_is_readable_file( priv->p1_furi );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 
 	return( ok );
 }
@@ -500,7 +494,6 @@ p2_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
 
@@ -546,7 +539,7 @@ p2_check_for_complete( ofaImportAssistant *self )
 
 	priv = self->priv;
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, priv->p2_type > 0 );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->p2_type > 0 );
 }
 
 static void
@@ -624,7 +617,6 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p2_datatype );
@@ -651,7 +643,7 @@ p3_check_for_complete( ofaImportAssistant *self )
 	gtk_label_set_text( GTK_LABEL( priv->p3_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 }
 
 static void
@@ -739,7 +731,7 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	complete = my_strlen( priv->p1_furi ) > 0;
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), complete );
 }
 
 /*
@@ -758,10 +750,10 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, FALSE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), FALSE );
 
 	priv = self->priv;
-	priv->current_page_w = page;
+	priv->p5_page = page;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -776,8 +768,6 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p5_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-text-view" );
 	g_return_if_fail( priv->p5_text && GTK_IS_TEXT_VIEW( priv->p5_text ));
 	gtk_widget_set_can_focus( priv->p5_text, FALSE );
-
-	priv->p5_page = page;
 
 	/* search from something which would be able to import the data */
 	if( st_radios[priv->p2_idx].get_type ){
@@ -827,7 +817,7 @@ p5_error_no_interface( const ofaImportAssistant *self )
 
 	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, TRUE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
 }
 
 static gboolean
@@ -893,7 +883,7 @@ p5_do_import( ofaImportAssistant *self )
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, TRUE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
 
 	/* do not continue and remove from idle callbacks list */
 	return( FALSE );

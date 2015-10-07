@@ -61,6 +61,9 @@
    - BatProperties: make the entries be read-only (todo #829).
    - DossierStore: is an auto-maintained singleton (todo #832).
    - myTimeout: new structure.
+   - my_assistant_get_current_page(): new method (todo #863).
+   - my_assistant_set_page_complete(),
+   - my_assistant_set_page_type(): work on current page.
    - my_utils_container_attach_from_ui(): new function.
    - my_utils_container_attach_from_window(): new function.
    - my_utils_container_get_buildable_by_name: removed function.

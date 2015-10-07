@@ -91,10 +91,6 @@ struct _ofaExportAssistantPrivate {
 	myProgressBar    *p5_bar;
 	ofaIExportable   *p5_base;
 	GtkWidget        *p5_page;
-
-	/* runtime data
-	 */
-	GtkWidget        *current_page_w;
 };
 
 /* ExportAssistant Assistant
@@ -313,7 +309,6 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 	get_settings( self );
-
 	my_assistant_run( MY_ASSISTANT( self ));
 }
 
@@ -384,7 +379,7 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	is_complete = p1_is_complete( self );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, is_complete );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), is_complete );
 }
 
 static gboolean
@@ -493,7 +488,6 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_datatype ), priv->p1_datatype );
 
@@ -525,7 +519,7 @@ p2_check_for_complete( ofaExportAssistant *self )
 	gtk_label_set_text( GTK_LABEL( priv->p2_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 }
 
 static void
@@ -607,7 +601,6 @@ p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	priv->current_page_w = page;
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p1_datatype );
 	gtk_label_set_text( GTK_LABEL( priv->p3_format ), priv->p2_format );
@@ -677,7 +670,7 @@ p3_check_for_complete( ofaExportAssistant *self )
 
 	ok = my_strlen( priv->p3_furi ) > 0 && !my_utils_uri_is_dir( priv->p3_furi );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 
 	return( ok );
 }
@@ -781,7 +774,7 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( label ), priv->p3_furi );
 
 	complete = ( my_strlen( priv->p3_furi ) > 0 );
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, complete );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), complete );
 }
 
 /*
@@ -836,16 +829,15 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), page, FALSE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), FALSE );
 
 	priv = self->priv;
+	priv->p5_page = page;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p5_bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_bar ));
-
-	priv->p5_page = page;
 
 	priv->p5_base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->p5_base )){

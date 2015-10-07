@@ -5,7 +5,7 @@
   <object class="GtkAssistant" id="ExerciceCloseAssistant">
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkLabel" id="label1">
+      <object class="GtkLabel" id="label0">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">This assistant will guide you in the process of closing the current exercice.
@@ -36,25 +36,25 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid2">
+      <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkGrid" id="grid21">
+          <object class="GtkGrid" id="grid11">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
             <property name="column_spacing">4</property>
             <child>
-              <object class="GtkFrame" id="frame211">
+              <object class="GtkFrame" id="frame111">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkGrid" id="grid211">
+                  <object class="GtkGrid" id="grid111">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">12</property>
@@ -64,7 +64,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="p2-closing-begin-label">
+                      <object class="GtkLabel" id="p1-closing-begin-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Beginning date :</property>
@@ -77,7 +77,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-closing-begin-entry">
+                      <object class="GtkEntry" id="p1-closing-begin-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -90,7 +90,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p2-closing-end-label">
+                      <object class="GtkLabel" id="p1-closing-end-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">_Closing date :</property>
@@ -103,7 +103,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-closing-end-entry">
+                      <object class="GtkEntry" id="p1-closing-end-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -118,7 +118,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                   </object>
                 </child>
                 <child type="label">
-                  <object class="GtkLabel" id="label211">
+                  <object class="GtkLabel" id="label111">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes"> Closing exercice </property>
@@ -132,13 +132,13 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
               </packing>
             </child>
             <child>
-              <object class="GtkFrame" id="frame212">
+              <object class="GtkFrame" id="frame112">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkGrid" id="grid212">
+                  <object class="GtkGrid" id="grid112">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">12</property>
@@ -148,7 +148,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="p2-next-begin-label">
+                      <object class="GtkLabel" id="p1-next-begin-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">B_eginning date :</property>
@@ -161,7 +161,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-next-begin-entry">
+                      <object class="GtkEntry" id="p1-next-begin-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -174,7 +174,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p2-next-end-label">
+                      <object class="GtkLabel" id="p1-next-end-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">C_losing date :</property>
@@ -187,7 +187,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="p2-next-end-entry">
+                      <object class="GtkEntry" id="p1-next-end-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
@@ -202,7 +202,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                   </object>
                 </child>
                 <child type="label">
-                  <object class="GtkLabel" id="label212">
+                  <object class="GtkLabel" id="label112">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes"> Next exercice </property>
@@ -222,7 +222,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p2-forward-parent">
+          <object class="GtkBox" id="p1-forward-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -241,12 +241,12 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid3">
+      <object class="GtkGrid" id="grid2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <child>
-          <object class="GtkLabel" id="label31">
+          <object class="GtkLabel" id="label21">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Archiving the current exercice will require the DBMS root credentials.</property>
@@ -259,7 +259,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p3-message">
+          <object class="GtkLabel" id="p2-message">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -270,7 +270,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p3-dbms">
+          <object class="GtkBox" id="p2-dbms">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -289,7 +289,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid4">
+      <object class="GtkGrid" id="grid3">
         <property name="can_focus">False</property>
         <child>
           <placeholder/>
@@ -325,7 +325,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid5">
+      <object class="GtkGrid" id="grid4">
         <property name="can_focus">False</property>
         <child>
           <placeholder/>
@@ -361,11 +361,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid6">
+      <object class="GtkGrid" id="grid5">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkLabel" id="label61">
+          <object class="GtkLabel" id="label51">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">We are now ready to close this exercice.
@@ -389,13 +389,13 @@ The new exercice will be automatically opened after the operation.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="grid7">
+      <object class="GtkGrid" id="grid6">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkLabel" id="label71">
+          <object class="GtkLabel" id="label61">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Validating remaining lines :</property>
@@ -407,7 +407,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label72">
+          <object class="GtkLabel" id="label62">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Balancing accounts :</property>
@@ -419,7 +419,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label73">
+          <object class="GtkLabel" id="label63">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Closing ledgers :</property>
@@ -431,7 +431,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label74">
+          <object class="GtkLabel" id="label64">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Archiving the exercice :</property>
@@ -443,7 +443,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p7-archived">
+          <object class="GtkLabel" id="p6-archived">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -454,7 +454,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label76">
+          <object class="GtkLabel" id="label66">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Creating carried forward entries :</property>
@@ -466,7 +466,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label75">
+          <object class="GtkLabel" id="label65">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Cleaning up settled/reconciliated entries :</property>
@@ -478,7 +478,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p7-cleanup">
+          <object class="GtkLabel" id="p6-cleanup">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -489,7 +489,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label77">
+          <object class="GtkLabel" id="label67">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Saving opening accounts balances :</property>
@@ -501,7 +501,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p7-summary">
+          <object class="GtkLabel" id="p6-summary">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="ypad">20</property>
@@ -514,7 +514,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label78">
+          <object class="GtkLabel" id="label68">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Bringing up ex-future entries :</property>
@@ -526,7 +526,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p7-validating">
+          <object class="GtkBox" id="p6-validating">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -540,7 +540,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p7-balancing">
+          <object class="GtkBox" id="p6-balancing">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -554,7 +554,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p7-ledgers">
+          <object class="GtkBox" id="p6-ledgers">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -568,7 +568,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p7-forward">
+          <object class="GtkBox" id="p6-forward">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -582,7 +582,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p7-open">
+          <object class="GtkBox" id="p6-open">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -596,7 +596,7 @@ The new exercice will be automatically opened after the operation.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="box1">
+          <object class="GtkBox" id="p6-future">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>

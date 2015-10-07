@@ -45,6 +45,7 @@ struct _myAssistantPrivate {
 
 	GtkWidget          *prev_page_widget;
 	gint                prev_page_num;
+	GtkWidget          *cur_page_widget;
 
 	gboolean            escape_key_pressed;
 };
@@ -296,6 +297,8 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, myAssistant *self )
 		priv = self->priv;
 		sdata = assistant_get_data( self, page );
 		g_return_if_fail( sdata );
+
+		priv->cur_page_widget = page;
 
 		if( priv->prev_page_num >= 0 && priv->prev_page_num < sdata->page_num ){
 			g_signal_emit_by_name( self, MY_SIGNAL_PAGE_FORWARD, priv->prev_page_widget, priv->prev_page_num );
@@ -617,6 +620,9 @@ my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboo
 
 /**
  * my_assistant_get_assistant:
+ * @assistant: this #myAssistant instance.
+ *
+ * Returns: the underlying #GtkAssistant.
  */
 GtkAssistant *
 my_assistant_get_assistant( myAssistant *assistant )
@@ -633,14 +639,40 @@ my_assistant_get_assistant( myAssistant *assistant )
 		return( GTK_ASSISTANT( toplevel ));
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * my_assistant_get_current_page:
+ * @assistant: this #myAssistant instance.
+ *
+ * Returns: the page widget being currently displayed.
+ */
+GtkWidget *
+my_assistant_get_current_page( myAssistant *assistant )
+{
+	myAssistantPrivate *priv;
+
+	g_return_val_if_fail( assistant && MY_IS_ASSISTANT( assistant ), NULL );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		return( priv->cur_page_widget );
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
 /**
  * my_assistant_set_page_complete:
+ * @assistant: this #myAssistant instance.
+ * @complete: whether the current page is completed.
+ *
+ * Set the current page complete.
  */
 void
-my_assistant_set_page_complete( myAssistant *assistant, GtkWidget *page, gboolean complete )
+my_assistant_set_page_complete( myAssistant *assistant, gboolean complete )
 {
 	myAssistantPrivate *priv;
 
@@ -651,15 +683,19 @@ my_assistant_set_page_complete( myAssistant *assistant, GtkWidget *page, gboolea
 		priv = assistant->priv;
 		g_return_if_fail( priv->assistant && GTK_IS_ASSISTANT( priv->assistant ));
 
-		gtk_assistant_set_page_complete( priv->assistant, page, complete );
+		gtk_assistant_set_page_complete( priv->assistant, priv->cur_page_widget, complete );
 	}
 }
 
 /**
  * my_assistant_set_page_type:
+ * @assistant: this #myAssistant instance.
+ * @type: the desired type.
+ *
+ * Set the current page type.
  */
 void
-my_assistant_set_page_type( myAssistant *assistant, GtkWidget *page, GtkAssistantPageType type )
+my_assistant_set_page_type( myAssistant *assistant, GtkAssistantPageType type )
 {
 	myAssistantPrivate *priv;
 
@@ -670,6 +706,6 @@ my_assistant_set_page_type( myAssistant *assistant, GtkWidget *page, GtkAssistan
 		priv = assistant->priv;
 		g_return_if_fail( priv->assistant && GTK_IS_ASSISTANT( priv->assistant ));
 
-		gtk_assistant_set_page_type( priv->assistant, page, type );
+		gtk_assistant_set_page_type( priv->assistant, priv->cur_page_widget, type );
 	}
 }

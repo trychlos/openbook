@@ -109,12 +109,12 @@ void          my_assistant_set_page_initialized( myAssistant *assistant,
 
 GtkAssistant *my_assistant_get_assistant       ( myAssistant *assistant );
 
+GtkWidget    *my_assistant_get_current_page    ( myAssistant *assistant );
+
 void          my_assistant_set_page_complete   ( myAssistant *assistant,
-														GtkWidget *page,
 														gboolean complete );
 
 void          my_assistant_set_page_type       ( myAssistant *assistant,
-														GtkWidget *page,
 														GtkAssistantPageType type );
 
 G_END_DECLS

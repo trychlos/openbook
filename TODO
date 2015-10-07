@@ -485,9 +485,6 @@
                 - RestoreAssistant: DBMS root credentials
                 - RestoreAssistant: administrative credentials
 
- 863 2015-10- 7 myAssistant: create get_current_page() method to get
-                rid of derived classes storing the current page
-
  865 2015-10- 7 ofa_idbms_restore(): get an uri instead of the filename
 
  867
@@ -4079,6 +4076,10 @@
                 ofaGuidedInputBin: done
                 ofaOpeTemplateFrameBin: done
                 ofaOpeTemplateBookBin: done
+
+ 863 2015-10- 7 myAssistant: create get_current_page() method to get
+                rid of derived classes storing the current page
+     2015-10- 7 done
 
  864 2015-10- 7 myAssistant: show_all after call to display to get
                 rid of derived classes showing all
