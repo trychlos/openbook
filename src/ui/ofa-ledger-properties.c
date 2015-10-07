@@ -317,7 +317,7 @@ init_balances_page( ofaLedgerProperties *self )
 		str = g_strdup_printf( _( "%s balance" ), code );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_utils_widget_set_style( label, "labelemphasis1" );
+		my_utils_widget_set_style( label, "labelinfo" );
 		my_utils_widget_set_xalign( label, 0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+1, 1, 1 );
 
