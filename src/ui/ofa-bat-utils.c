@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
@@ -54,7 +55,7 @@ ofa_bat_utils_import( ofaMainWindow *main_window )
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
 	ofoDossier *dossier;
-	gchar *uri;
+	gchar *uri, *str;
 
 	imported_id = 0;
 
@@ -88,6 +89,13 @@ ofa_bat_utils_import( ofaMainWindow *main_window )
 					G_OBJECT_TYPE_NAME( importable ), G_OBJECT( importable )->ref_count, imported_id );
 
 			g_object_unref( importable );
+
+		} else {
+			str = g_strdup_printf(
+					_( "Unable to find a module willing to import '%s' URI.\n\n"
+						"The operation will be cancelled." ), uri );
+			my_utils_dialog_warning( str );
+			g_free( str );
 		}
 
 		g_free( uri );

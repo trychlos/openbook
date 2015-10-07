@@ -50,17 +50,6 @@
 
  126 2014- 5-28 have several demo dossiers
 
- 149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
-                the current selection) should advance to the next page
-     2015- 1-22 this suppose to be able to simulate the click on the
-                'Continue' button, but unfortunately GtkAssistant is 
-                not a GtkDialog, so do not known how to do ?
-     2015-10- 6 try to intercept double-click on GtkFileChooser
-     2015-10- 7 issue is not detecting the activation, but automatically
-                advance to next page
-     2015-10- 7 RestoreAssistant: done
-                ImportAssistant: done
-
  152 2014- 6- 3 import qif files
 
  153 2014- 6- 3 import ofx/ofc files
@@ -1064,6 +1053,18 @@
  148 2014- 6- 2 ImportAssistant: selecting a folder shouldn't make the
                 page complete
      2014-12-12 done - svn #4276
+
+ 149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
+                the current selection) should advance to the next page
+     2015- 1-22 this suppose to be able to simulate the click on the
+                'Continue' button, but unfortunately GtkAssistant is 
+                not a GtkDialog, so do not known how to do ?
+     2015-10- 6 try to intercept double-click on GtkFileChooser
+     2015-10- 7 issue is not detecting the activation, but automatically
+                advance to next page
+     2015-10- 7 RestoreAssistant: done
+                ImportAssistant: done
+                ExportAssistant: done
 
  150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
                 'label' title column to the account label
