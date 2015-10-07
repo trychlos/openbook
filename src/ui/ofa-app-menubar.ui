@@ -21,7 +21,7 @@
           <attribute name="action">app.manage</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">R_estore...</attribute>
+          <attribute name="label" translatable="yes">_Restore...</attribute>
           <attribute name="action">app.restore</attribute>
         </item>
       </section>
