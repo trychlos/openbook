@@ -139,7 +139,7 @@ my_dialog_init_dialog( myDialog *self )
 				g_signal_emit_by_name( window, "my-dialog-init", name, window );
 			}
 
-			gtk_widget_show_all( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( self ))));
+			gtk_widget_show_all( GTK_WIDGET( toplevel ));
 
 			self->priv->init_has_run = TRUE;
 

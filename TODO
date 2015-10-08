@@ -261,9 +261,6 @@
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
 
- 642 2015- 2- 9 implement BAT page, import button
-     2015- 2-15 for now, just disable it - svn #4599
-
  652 2015- 2-15 let the user configure colors
      2015- 3-13 (branch colors) doesn't know how to go back from custom 
                 in GtkColorChooserWidget (this is bad)
@@ -294,12 +291,6 @@
 
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
-
- 695 2015- 3- 4 all printings should be first viewable in Openbook
-                (to be printed only after user visual validation)
-     2015- 4-11 Balances: done
-     2015- 4-12 Books: done
-     2015- 4-12 Ledgers: done
 
  701 2015- 3- 8 be able to open a current dossier as read-only
                 (use case: when user wants to make sure he will not
@@ -339,10 +330,6 @@
  745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
                 selected account is displayed
 
- 749 2015- 3-19 Have a summary of non fully used bat files
-                because they will not be purged at the closing of the 
-                exercice
-
  751 2015- 3-20 Reconciliation: associate the bat file with the openbook
                 account as soon as we reconciliate one line thus refusing
                 the selection for another account
@@ -365,15 +352,6 @@
 
  783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
                 will be reported after exercice closing
-
- 784 2015- 4- 3 archive the entries last number when opening the exercice
-                (this is for the audit trace: be able to prove that we
-                have kept all generated entries on an exercice base)
-                > next dbms version:
-                  - last entry number from previous exercice
-                  - row number in rate detail validities
-                  - account number in bat file
-                  - last period closing date
 
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
 
@@ -401,6 +379,9 @@
                 - closing a ledger at a given date
                 - closing a period at a given date
                 (+ closing an exercice)
+     2015-10- 8 DOS_LAST_CLOSING is date of last closed period and has
+                been introduced with DB model v26; it is not used at
+                this time
 
  799 2015- 4-13 AccountsBook account top and bottom reports:
                 - add a label [bottom report] or [top report] ?
@@ -438,9 +419,6 @@
                 - rename RAT_VAL_BEG as RAT_VAL_BEGIN
                 - move SIREN to SIRET (todo #817)
 
- 820 2015- 4-27 check that strings are valid utf-8
-     2015- 9-23 where ?
-
  821 2015- 4-27 check that concenating strings doesn't override the limit
                 (as the MySQL truncation may make the string invalid utf-8)
                 and take care to truncate to a valid utf-8
@@ -461,13 +439,6 @@
      2015-10- 7 see also (closed) #778
 
  843 2015- 9-30 account number should be renamed as account identifier
-
- 849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
-                there would be so a *ghost* data stored in dbms and
-                displayed in properties, but absolutely useless
-                NB: if restored to some use, check in DossierProperties
-                if this data is updatable by the user, or should be
-                read-only. 
 
  853 2015-10- 1 review v_init_dialog's:
                 - only store GtkWidget (as GtkWidget) when needed
@@ -3155,6 +3126,10 @@
                 notes are not (but should)
      2015- 2- 9 done - svn #4570
 
+ 642 2015- 2- 9 implement BAT page, import button
+     2015- 2-15 for now, just disable it - svn #4599
+     2015-10- 8 closed (done)
+
  643 2015- 2- 9 when importing a BAT file, update the BAT store of the
                 page
      2015- 2-11 done - svn #4580
@@ -3406,6 +3381,13 @@
                 editing a balance
      2015- 3- 7 done with AccountsBalance - git #81264e2
 
+ 695 2015- 3- 4 all printings should be first viewable in Openbook
+                (to be printed only after user visual validation)
+     2015- 4-11 Balances: done
+     2015- 4-12 Books: done
+     2015- 4-12 Ledgers: done
+     2015-10- 8 done
+
  696 2015- 3- 4 when printing from an account to an account, the
                 accounts may not exist (they are just limits)
      2015- 3- 6 done - git #544baa4
@@ -3615,6 +3597,11 @@
                 the bat lines
      2015- 4- 3 already fixed when refactoring the reconciliation
 
+ 749 2015- 3-19 Have a summary of non fully used bat files
+                because they will not be purged at the closing of the 
+                exercice
+     2015-10- 8 closed (see #783)
+
  750 2015- 3-20 Reconciliation: when opening the page, the last seen
                 account is displayed (normal), no line is selected,
                 but the Accept button is enabled
@@ -3699,6 +3686,9 @@
  778 2015- 3-30 use ofaAccountSelector where appropriate
      2015-10- 7 closed (see also #840)
 
+ 779 2015- 3-30 import settleable indicator from EBP accounts
+     2015- 3-31 done - git #918430877
+
  780 2015- 3-30 is_visible_row: assertion 'my_date_is_valid( deffect )' failed
                 is_visible_row (tmodel=<optimized out>, iter=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-reconciliation.c:1690
                 while importing and mode=All (but actually imported)
@@ -3721,8 +3711,15 @@
 #7  0x0000000000454e5c in on_paginate (operation=0x74ef30, context=0x12c1310, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:581
      2015- 3-30 fixed - git #0111b0b
 
- 779 2015- 3-30 import settleable indicator from EBP accounts
-     2015- 3-31 done - git #918430877
+ 784 2015- 4- 3 archive the entries last number when opening the exercice
+                (this is for the audit trace: be able to prove that we
+                have kept all generated entries on an exercice base)
+                > next dbms version:
+                  - last entry number from previous exercice
+                  - row number in rate detail validities
+                  - account number in bat file
+                  - last period closing date
+     2015-10- 8 done with DB model v26
 
  785 2015- 4- 3 updating the amount of an entry make the operation date
                 change when it is less that the minimum allowed (though
@@ -3823,6 +3820,10 @@
  820 2015- 4-26 have a special-development dossier.conf to not mix
                 development dossiers with production dossiers
      2015- 4-26 done - git #aadaccc
+
+ 820 2015- 4-27 check that strings are valid utf-8
+     2015- 9-23 where ?
+     2015-10- 8 closed as not enough infos
 
  823 2015- 4-27 review mnemonic activation in all dialogs
      2015- 9-25 closed - see #839
@@ -4004,6 +4005,16 @@
  848 2015-10- 1 DossierNewBin: having a frame with its label, even if
                 hidden, leaves a vertical space above the dossier name
      2015-10- 5 always set the frame visible
+
+ 849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
+                there would be so a *ghost* data stored in dbms and
+                displayed in properties, but absolutely useless
+                NB: if restored to some use, check in DossierProperties
+                if this data is updatable by the user, or should be
+                read-only.
+     2015-10- 8 DOS_LAST_CLOSING is date of last closed period and has
+                been introduced with DB model v26
+                -> closed as duplicate of #798)
 
  850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
                 GtkBin-derived widgets ?
