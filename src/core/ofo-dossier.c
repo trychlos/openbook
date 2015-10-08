@@ -253,23 +253,17 @@ dossier_dispose( GObject *instance )
 	static const gchar *thisfn = "ofo_dossier_dispose";
 	ofoDossierPrivate *priv;
 
-	if( !OFO_BASE( instance )->prot->dispose_has_run ){
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 		priv = OFO_DOSSIER( instance )->priv;
 
-		if( priv->cur_details ){
-			free_cur_details( priv->cur_details );
-		}
-		if( priv->datasets ){
-			free_datasets( priv->datasets );
-		}
-		if( priv->dbms ){
-			g_clear_object( &priv->dbms );
-		}
+		free_cur_details( priv->cur_details );
+		free_datasets( priv->datasets );
+		g_clear_object( &priv->dbms );
 
 		ofa_icollector_dispose( OFA_ICOLLECTOR( instance ));
 	}
@@ -2766,7 +2760,9 @@ idataset_set_datasets( ofaIDataset *instance, GList *list )
 static void
 free_datasets( GList *datasets )
 {
-	g_list_free_full( datasets, ( GDestroyNotify ) ofa_idataset_free_full );
+	if( datasets ){
+		g_list_free_full( datasets, ( GDestroyNotify ) ofa_idataset_free_full );
+	}
 }
 
 static void
@@ -2780,7 +2776,9 @@ free_cur_detail( sCurrency *details )
 static void
 free_cur_details( GList *details )
 {
-	g_list_free_full( details, ( GDestroyNotify ) free_cur_detail );
+	if( details ){
+		g_list_free_full( details, ( GDestroyNotify ) free_cur_detail );
+	}
 }
 
 /*
