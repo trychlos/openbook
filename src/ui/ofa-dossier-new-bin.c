@@ -529,6 +529,7 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message
 		root_ok = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
 		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, root_ok );
 		if( ok && !root_ok ){
+			g_free( str );
 			str = g_strdup( _( "DBMS root credentials are not valid" ));
 		}
 		ok &= root_ok;
@@ -536,6 +537,8 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message
 
 	if( error_message ){
 		*error_message = str;
+	} else {
+		g_free( str );
 	}
 
 	return( ok );
