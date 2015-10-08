@@ -115,6 +115,7 @@ window_dispose( GObject *instance )
 static void
 window_constructed( GObject *instance )
 {
+	static const gchar *thisfn = "my_window_constructed";
 	myWindowPrivate *priv;
 	GtkWidget *toplevel;
 
@@ -139,6 +140,14 @@ window_constructed( GObject *instance )
 				my_utils_window_restore_position( priv->toplevel, priv->window_name );
 			}
 		}
+	}
+
+	if( priv->toplevel && priv->main_window ){
+		gtk_window_set_transient_for( priv->toplevel, GTK_WINDOW( priv->main_window ));
+
+	} else {
+		g_warning( "%s: main_window=%p, toplevel=%p",
+				thisfn, ( void * ) priv->main_window, ( void * ) priv->toplevel );
 	}
 }
 
