@@ -116,9 +116,9 @@ ofa_about_class_init( ofaAboutClass *klass )
  * Display the About... dialog box.
  */
 void
-ofa_about_run( ofaMainWindow *main_window )
+ofa_about_run( const ofaMainWindow *main_window )
 {
-	GtkApplication *application;
+	const GtkApplication *application;
 	ofaAbout *about;
 	GdkPixbuf *pixbuf;
 	GtkWidget *button;

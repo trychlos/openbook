@@ -65,7 +65,7 @@ typedef struct {
 
 GType ofa_about_get_type ( void ) G_GNUC_CONST;
 
-void  ofa_about_run      ( ofaMainWindow *main_window );
+void  ofa_about_run      ( const ofaMainWindow *main_window );
 
 G_END_DECLS
 
