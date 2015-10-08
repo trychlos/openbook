@@ -347,7 +347,7 @@ static void             close_all_pages( ofaMainWindow *main_window );
 static void
 main_window_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_main_instance_finalize";
+	static const gchar *thisfn = "ofa_main_window_finalize";
 	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
