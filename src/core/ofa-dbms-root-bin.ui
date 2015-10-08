@@ -2,7 +2,6 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkSizeGroup" id="drb-col0-hsize"/>
   <object class="GtkWindow" id="drb-window">
     <property name="can_focus">False</property>
     <child>
@@ -106,5 +105,11 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="drb-col0-hsize">
+    <widgets>
+      <widget name="drb-account-label"/>
+      <widget name="drb-password-label"/>
+    </widgets>
   </object>
 </interface>
