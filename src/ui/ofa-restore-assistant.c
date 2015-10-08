@@ -77,7 +77,7 @@ struct _ofaRestoreAssistantPrivate {
 	 */
 	GtkFileChooser         *p1_chooser;
 	gchar                  *p1_folder;
-	gchar                  *p1_furi;		/* the utf-8 to be restored filename */
+	gchar                  *p1_furi;		/* the utf-8 to be restored file uri */
 	gint                    p1_filter;
 
 	/* p2: select the dossier target
