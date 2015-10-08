@@ -76,7 +76,7 @@ void               ofa_ledger_treeview_set_columns             ( ofaLedgerTreevi
 																			ofaLedgerColumns columns );
 
 void               ofa_ledger_treeview_set_main_window         ( ofaLedgerTreeview *view,
-																			ofaMainWindow *main_window );
+																			const ofaMainWindow *main_window );
 
 void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
 																			GtkSelectionMode mode );

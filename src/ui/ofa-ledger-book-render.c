@@ -55,6 +55,7 @@
  */
 struct _ofaLedgerBookRenderPrivate {
 
+	ofoDossier          *dossier;
 	ofaLedgerBookBin    *args_bin;
 
 	/* internals
@@ -294,6 +295,8 @@ page_init_view( ofaPage *page )
 
 	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
+
+	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -340,8 +343,6 @@ static GList *
 render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaLedgerBookRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	ofaLedgerTreeview *tview;
 	GSList *mnemos;
 	GList *list, *it;
@@ -351,21 +352,16 @@ render_page_get_dataset( ofaRenderPage *page )
 
 	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
 	priv->all_ledgers = ofa_ledger_book_bin_get_all_ledgers( priv->args_bin );
 	tview = ofa_ledger_book_bin_get_treeview( priv->args_bin );
 
 	if( priv->all_ledgers ){
-		priv->selected = ofo_ledger_get_dataset( dossier );
+		priv->selected = ofo_ledger_get_dataset( priv->dossier );
 	} else {
 		list = ofa_ledger_treeview_get_selected( tview );
 		priv->selected = NULL;
 		for( it=list ; it ; it=it->next ){
-			ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) it->data );
+			ledger = ofo_ledger_get_by_mnemo( priv->dossier, ( const gchar * ) it->data );
 			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 			priv->selected = g_list_append( priv->selected, ledger );
 		}
@@ -380,7 +376,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_ledgers(
-						dossier, mnemos,
+						priv->dossier, mnemos,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
@@ -518,15 +514,11 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static const gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
+	ofaLedgerBookRenderPrivate *priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( main_window );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
-	return( ofo_dossier_get_name( dossier ));
+	return( ofo_dossier_get_name( priv->dossier ));
 }
 
 static gchar *
@@ -675,14 +667,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble y, height;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
@@ -692,7 +677,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
 
-	priv->ledger_object = ofo_ledger_get_by_mnemo( dossier, priv->ledger_mnemo );
+	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->dossier, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
 
 	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );
@@ -723,8 +708,6 @@ static void
 irenderable_draw_line( ofaIRenderable *instance, GList *current )
 {
 	ofaLedgerBookRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	ofoEntry *entry;
 	const gchar *cstr, *code;
 	gchar *str;
@@ -735,11 +718,6 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofoConcil *concil;
 	gboolean is_paginating;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
 	y = ofa_irenderable_get_last_y( instance );
@@ -747,7 +725,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	/* get currency properties */
 	code = ofo_entry_get_currency( entry );
-	currency = ofo_currency_get_by_code( dossier, code );
+	currency = ofo_currency_get_by_code( priv->dossier, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	digits = ofo_currency_get_digits( currency );
 
@@ -794,7 +772,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	}
 
 	/* reconciliation ? */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
 	if( concil ){
 		ofa_irenderable_set_text( instance,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
@@ -872,8 +850,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble bottom, vspace, req_height, height, top;
 	gchar *str;
 	GList *it;
@@ -881,11 +857,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	gboolean first;
 	ofoCurrency *currency;
 	gint digits, shift;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
@@ -910,7 +881,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->report_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 
@@ -949,8 +920,6 @@ draw_ledger_totals( ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble y, height;
 	gboolean first;
 	gchar *str;
@@ -961,17 +930,12 @@ draw_ledger_totals( ofaIRenderable *instance )
 
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
 	y = ofa_irenderable_get_last_y( instance );
 	height = 0;
 
 	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

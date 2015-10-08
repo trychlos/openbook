@@ -71,7 +71,7 @@ typedef struct {
 
 GType    ofa_class_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_class_properties_run     ( ofaMainWindow *parent, ofoClass *devise );
+gboolean ofa_class_properties_run     ( const ofaMainWindow *parent, ofoClass *devise );
 
 G_END_DECLS
 

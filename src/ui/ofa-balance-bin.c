@@ -44,7 +44,10 @@
  */
 struct _ofaBalanceBinPrivate {
 	gboolean                dispose_has_run;
-	ofaMainWindow          *main_window;
+
+	/* initialization
+	 */
+	const ofaMainWindow    *main_window;
 
 	/* UI
 	 */
@@ -175,12 +178,12 @@ ofa_balance_bin_class_init( ofaBalanceBinClass *klass )
 
 /**
  * ofa_balance_bin_new:
- * @main_window:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Returns: a newly allocated #ofaBalanceBin object.
  */
 ofaBalanceBin *
-ofa_balance_bin_new( ofaMainWindow *main_window )
+ofa_balance_bin_new( const ofaMainWindow *main_window )
 {
 	ofaBalanceBin *self;
 

@@ -102,7 +102,9 @@ typedef struct {
 
 GType    ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_ope_template_properties_run     ( ofaMainWindow *parent, ofoOpeTemplate *model, const gchar *journal );
+gboolean ofa_ope_template_properties_run     ( const ofaMainWindow *parent,
+														ofoOpeTemplate *model,
+														const gchar *ledger );
 
 G_END_DECLS
 

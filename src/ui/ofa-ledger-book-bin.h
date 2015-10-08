@@ -72,7 +72,7 @@ typedef struct {
 
 GType              ofa_ledger_book_bin_get_type               ( void ) G_GNUC_CONST;
 
-ofaLedgerBookBin  *ofa_ledger_book_bin_new                    ( ofaMainWindow *main_window );
+ofaLedgerBookBin  *ofa_ledger_book_bin_new                    ( const ofaMainWindow *main_window );
 
 gboolean           ofa_ledger_book_bin_is_valid               ( ofaLedgerBookBin *bin,
 																		gchar **message );

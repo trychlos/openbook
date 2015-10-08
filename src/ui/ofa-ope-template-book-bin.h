@@ -77,7 +77,7 @@ typedef struct {
 
 GType                  ofa_ope_template_book_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                 ( ofaMainWindow *main_window );
+ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                 ( const ofaMainWindow *main_window );
 
 void                   ofa_ope_template_book_bin_expand_all          ( ofaOpeTemplateBookBin *bin );
 

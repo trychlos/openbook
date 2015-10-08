@@ -44,7 +44,7 @@ struct _ofaGuidedInputPrivate {
 
 	/* runtime data
 	 */
-	ofaMainWindow        *main_window;
+	const ofaMainWindow  *main_window;
 	const ofoOpeTemplate *model;
 
 	/* UI
@@ -124,12 +124,14 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
 
 /**
  * ofa_guided_input_run:
- * @main: the main window of the application.
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @model: the #ofoOpeTemplate instance to be used as a template for
+ *  the guided input.
  *
- * Update the properties of an journal
+ * Let the user enter a new operation based on the @model template.
  */
 void
-ofa_guided_input_run( ofaMainWindow *main_window, const ofoOpeTemplate *model )
+ofa_guided_input_run( const ofaMainWindow *main_window, const ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;

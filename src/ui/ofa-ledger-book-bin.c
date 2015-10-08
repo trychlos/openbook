@@ -42,7 +42,10 @@
  */
 struct _ofaLedgerBookBinPrivate {
 	gboolean             dispose_has_run;
-	ofaMainWindow       *main_window;
+
+	/* initialization
+	 */
+	const ofaMainWindow *main_window;
 
 	/* UI
 	 */
@@ -169,12 +172,12 @@ ofa_ledger_book_bin_class_init( ofaLedgerBookBinClass *klass )
 
 /**
  * ofa_ledger_book_bin_new:
- * @main_window:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Returns: a newly allocated #ofaLedgerBookBin object.
  */
 ofaLedgerBookBin *
-ofa_ledger_book_bin_new( ofaMainWindow *main_window )
+ofa_ledger_book_bin_new( const ofaMainWindow *main_window )
 {
 	ofaLedgerBookBin *self;
 

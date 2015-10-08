@@ -38,13 +38,13 @@
 /* private instance data
  */
 struct _ofaPagePrivate {
-	gboolean       from_widget_finalized;
+	gboolean             from_widget_finalized;
 
 	/* properties set at instanciation time
 	 */
-	ofaMainWindow *main_window;
-	GtkGrid       *top_grid;
-	gint           theme;
+	const ofaMainWindow *main_window;
+	GtkGrid             *top_grid;
+	gint                 theme;
 
 	/* UI
 	 */
@@ -142,7 +142,7 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				g_value_set_pointer( value, priv->main_window );
+				g_value_set_pointer( value, ( gpointer ) priv->main_window );
 				break;
 
 			case PROP_TOP_GRID_ID:
@@ -420,7 +420,7 @@ do_init_view( ofaPage *page )
 /**
  * ofa_page_get_main_window:
  */
-ofaMainWindow *
+const ofaMainWindow *
 ofa_page_get_main_window( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );

@@ -68,7 +68,7 @@ typedef struct {
 
 GType                   ofa_ope_template_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new        ( ofaMainWindow *main_window );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new        ( const ofaMainWindow *main_window );
 
 void                    ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *bin,
 																			gboolean guided_input );

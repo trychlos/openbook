@@ -99,7 +99,7 @@ void            ofa_bat_treeview_set_delete     ( ofaBatTreeview *view,
 														gboolean authorize );
 
 void            ofa_bat_treeview_set_main_window( ofaBatTreeview *view,
-														ofaMainWindow *main_window );
+														const ofaMainWindow *main_window );
 
 ofoBat         *ofa_bat_treeview_get_selected   ( const ofaBatTreeview *view );
 

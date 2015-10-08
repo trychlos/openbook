@@ -41,7 +41,7 @@
 struct _ofaOpeTemplateFrameBinPrivate {
 	gboolean             dispose_has_run;
 
-	ofaMainWindow       *main_window;
+	const ofaMainWindow *main_window;
 	GtkGrid             *grid;
 	gint                 buttons;
 
@@ -217,6 +217,7 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 
 /**
  * ofa_ope_template_frame_bin_new:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Creates the structured content, i.e. The accounts notebook on the
  * left column, the buttons box on the right one.
@@ -237,7 +238,7 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaOpeTemplateFrameBin *
-ofa_ope_template_frame_bin_new( ofaMainWindow *main_window  )
+ofa_ope_template_frame_bin_new( const ofaMainWindow *main_window  )
 {
 	ofaOpeTemplateFrameBin *bin;
 

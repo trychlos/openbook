@@ -46,23 +46,23 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* internals
 	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
-	ofoLedger     *ledger;
-	gboolean       is_new;
-	gboolean       updated;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	ofoLedger           *ledger;
+	gboolean             is_new;
+	gboolean             updated;
 
 	/* data
 	 */
-	gchar         *mnemo;
-	gchar         *label;
-	gchar         *upd_user;
-	GTimeVal       upd_stamp;
-	GDate          closing;
+	gchar               *mnemo;
+	gchar               *label;
+	gchar               *upd_user;
+	GTimeVal             upd_stamp;
+	GDate                closing;
 
 	/* UI
 	 */
-	GtkWidget     *ok_btn;
+	GtkWidget           *ok_btn;
 };
 
 /* columns displayed in the exercice combobox
@@ -158,12 +158,13 @@ ofa_ledger_properties_class_init( ofaLedgerPropertiesClass *klass )
 
 /**
  * ofa_ledger_properties_run:
- * @main: the main window of the application.
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @ledger: the #ofoLedger to be displayed/updated.
  *
  * Update the properties of an ledger
  */
 gboolean
-ofa_ledger_properties_run( ofaMainWindow *main_window, ofoLedger *ledger )
+ofa_ledger_properties_run( const ofaMainWindow *main_window, ofoLedger *ledger )
 {
 	static const gchar *thisfn = "ofa_ledger_properties_run";
 	ofaLedgerProperties *self;

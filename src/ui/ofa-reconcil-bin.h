@@ -70,7 +70,7 @@ typedef struct {
 
 GType           ofa_reconcil_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaReconcilBin *ofa_reconcil_bin_new        ( ofaMainWindow *main_window );
+ofaReconcilBin *ofa_reconcil_bin_new        ( const ofaMainWindow *main_window );
 
 gboolean        ofa_reconcil_bin_is_valid   ( ofaReconcilBin *bin,
 													gchar **message );

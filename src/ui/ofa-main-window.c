@@ -1789,7 +1789,7 @@ static void
 on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid )
 {
 	ofaPage *handler;
-	ofaMainWindow *main_window;
+	const ofaMainWindow *main_window;
 	GtkNotebook *book;
 	gint page_num;
 

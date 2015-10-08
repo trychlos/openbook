@@ -40,18 +40,18 @@
 /* private instance data
  */
 struct _ofaBatTreeviewPrivate {
-	gboolean       dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* UI
 	 */
-	GtkTreeView   *tview;
-	ofaBatStore   *store;
+	GtkTreeView         *tview;
+	ofaBatStore         *store;
 
 	/* runtime data
 	 */
-	gboolean       delete_authorized;
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
+	gboolean             delete_authorized;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
 };
 
 /* signals defined here
@@ -393,9 +393,14 @@ ofa_bat_treeview_set_delete( ofaBatTreeview *view, gboolean authorized )
 
 /**
  * ofa_bat_treeview_set_main_window:
+ * @view: this #ofaBatTreeview instance.
+ * @main_window: the #ofaMainWindow main window of the application.
+ *
+ * Setup the main window, and thus the dossier.
+ * Initialize the underlying store.
  */
 void
-ofa_bat_treeview_set_main_window( ofaBatTreeview *view, ofaMainWindow *main_window )
+ofa_bat_treeview_set_main_window( ofaBatTreeview *view, const ofaMainWindow *main_window )
 {
 	ofaBatTreeviewPrivate *priv;
 

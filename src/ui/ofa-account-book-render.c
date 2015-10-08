@@ -54,6 +54,7 @@
  */
 struct _ofaAccountBookRenderPrivate {
 
+	ofoDossier        *dossier;
 	ofaAccountBookBin *args_bin;
 
 	/* internals
@@ -305,6 +306,8 @@ page_init_view( ofaPage *page )
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
+
+	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -365,18 +368,11 @@ static GList *
 render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaAccountBookRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -390,7 +386,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_general_books(
-						dossier,
+						priv->dossier,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -517,15 +513,11 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static const gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
+	ofaAccountBookRenderPrivate *priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( main_window );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
 
-	return( ofo_dossier_get_name( dossier ));
+	return( ofo_dossier_get_name( priv->dossier ));
 }
 
 static gchar *
@@ -671,15 +663,8 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 {
 	ofaAccountBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble y, height;
 	ofoCurrency *currency;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
 
@@ -692,12 +677,12 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	priv->account_debit = 0;
 	priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number( dossier, priv->account_number );
+	priv->account_object = ofo_account_get_by_number( priv->dossier, priv->account_number );
 	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	currency = ofo_currency_get_by_code( dossier, priv->currency_code );
+	currency = ofo_currency_get_by_code( priv->dossier, priv->currency_code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	priv->currency_digits = ofo_currency_get_digits( currency );
@@ -817,19 +802,12 @@ static void
 irenderable_draw_line( ofaIRenderable *instance, GList *current )
 {
 	ofaAccountBookRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	ofoEntry *entry;
 	const gchar *cstr;
 	gchar *str;
 	gdouble y;
 	ofxAmount amount;
 	ofoConcil *concil;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
 
@@ -872,7 +850,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	}
 
 	/* reconciliation */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
 	if( concil ){
 		ofa_irenderable_set_text( instance,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
@@ -976,8 +954,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble bottom, vspace, req_height, height, top;
 	gchar *str;
 	GList *it;
@@ -985,11 +961,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	gboolean first;
 	ofoCurrency *currency;
 	gint digits;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
 
@@ -1013,7 +984,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

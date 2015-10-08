@@ -52,41 +52,42 @@
  */
 struct _ofaBalanceRenderPrivate {
 
+	ofoDossier    *dossier;
 	ofaBalanceBin *args_bin;
 
 	/* internals
 	 */
-	gchar                *from_account;
-	gchar                *to_account;
-	gboolean              all_accounts;
-	gboolean              per_class;
-	gboolean              new_page;
-	GDate                 from_date;
-	GDate                 to_date;
-	gboolean              accounts_balance;
-	GList                *totals;
-	gint                  count;					/* count of returned entries */
+	gchar         *from_account;
+	gchar         *to_account;
+	gboolean       all_accounts;
+	gboolean       per_class;
+	gboolean       new_page;
+	GDate          from_date;
+	GDate          to_date;
+	gboolean       accounts_balance;
+	GList         *totals;
+	gint           count;				/* count of returned entries */
 
 	/* print datas
 	 */
-	gdouble               render_width;
-	gdouble               render_height;
-	gdouble               page_margin;
-	gdouble               amount_width;
-	gdouble               body_number_ltab;
-	gdouble               body_label_ltab;
-	gint                  body_label_max_size;		/* Pango units */
-	gdouble               body_debit_period_rtab;
-	gdouble               body_credit_period_rtab;
-	gdouble               body_debit_solde_rtab;
-	gdouble               body_credit_solde_rtab;
-	gdouble               body_currency_ltab;
+	gdouble        render_width;
+	gdouble        render_height;
+	gdouble        page_margin;
+	gdouble        amount_width;
+	gdouble        body_number_ltab;
+	gdouble        body_label_ltab;
+	gint           body_label_max_size;			/* Pango units */
+	gdouble        body_debit_period_rtab;
+	gdouble        body_credit_period_rtab;
+	gdouble        body_debit_solde_rtab;
+	gdouble        body_credit_solde_rtab;
+	gdouble        body_currency_ltab;
 
 	/* subtotal per class
 	 */
-	gint                  class_num;
-	ofoClass             *class_object;
-	GList                *subtotals;				/* subtotals per currency for this class */
+	gint           class_num;
+	ofoClass      *class_object;
+	GList         *subtotals;			/* subtotals per currency for this class */
 };
 
 typedef struct {
@@ -293,6 +294,8 @@ page_init_view( ofaPage *page )
 
 	priv = OFA_BALANCE_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
+
+	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -339,18 +342,11 @@ static GList *
 render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
 
 	priv = OFA_BALANCE_RENDER( page )->priv;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -366,7 +362,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_balance(
-						dossier,
+						priv->dossier,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -509,25 +505,23 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static const gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
+	ofaBalanceRenderPrivate *priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( main_window );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv = OFA_BALANCE_RENDER( instance )->priv;
 
-	return( ofo_dossier_get_name( dossier ));
+	return( ofo_dossier_get_name( priv->dossier ));
 }
 
 static gchar *
 irenderable_get_page_header_title( const ofaIRenderable *instance )
 {
-	ofaBalanceRenderPrivate *priv;;
+	ofaBalanceRenderPrivate *priv;
 
 	priv = OFA_BALANCE_RENDER( instance )->priv;
-	return( g_strdup( priv->accounts_balance ?
-			st_page_header_title_accounts : st_page_header_title_entries ));
+
+	return(
+			g_strdup( priv->accounts_balance ?
+					st_page_header_title_accounts : st_page_header_title_entries ));
 }
 
 /*
@@ -733,16 +727,9 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 {
 	ofaBalanceRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	ofsAccountBalance *sbal;
 	gdouble height, y;
 	gchar *str;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_BALANCE_RENDER( instance )->priv;
 
@@ -752,7 +739,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	sbal = ( ofsAccountBalance * ) current->data;
 	priv->class_num = ofo_account_get_class_from_number( sbal->account );
 
-	priv->class_object = ofo_class_get_by_number( dossier, priv->class_num );
+	priv->class_object = ofo_class_get_by_number( priv->dossier, priv->class_num );
 
 	g_list_free_full( priv->subtotals, ( GDestroyNotify ) free_currency );
 	priv->subtotals = NULL;
@@ -786,18 +773,11 @@ static void
 irenderable_draw_line( ofaIRenderable *instance, GList *current )
 {
 	ofaBalanceRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gdouble y;
 	ofsAccountBalance *sbal;
 	ofoAccount *account;
 	gchar *str;
 	gdouble solde;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv = OFA_BALANCE_RENDER( instance )->priv;
 
@@ -806,7 +786,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	sbal = ( ofsAccountBalance * ) current->data;
 	g_return_if_fail( my_strlen( sbal->account ));
-	account = ofo_account_get_by_number( dossier, sbal->account );
+	account = ofo_account_get_by_number( priv->dossier, sbal->account );
 	/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
 
 	solde = 0;

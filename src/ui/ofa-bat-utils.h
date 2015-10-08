@@ -37,7 +37,7 @@
 
 G_BEGIN_DECLS
 
-ofxCounter ofa_bat_utils_import( ofaMainWindow *main_window );
+ofxCounter ofa_bat_utils_import( const ofaMainWindow *main_window );
 
 G_END_DECLS
 

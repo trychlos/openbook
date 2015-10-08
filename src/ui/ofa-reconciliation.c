@@ -3344,7 +3344,7 @@ on_print_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 	const gchar *acc_number;
-	ofaMainWindow *main_window;
+	const ofaMainWindow *main_window;
 	ofaPage *page;
 
 	priv = self->priv;

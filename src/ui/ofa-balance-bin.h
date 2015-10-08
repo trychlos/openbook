@@ -77,7 +77,7 @@ typedef struct {
 
 GType              ofa_balance_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaBalanceBin     *ofa_balance_bin_new                   ( ofaMainWindow *main_window );
+ofaBalanceBin     *ofa_balance_bin_new                   ( const ofaMainWindow *main_window );
 
 gboolean           ofa_balance_bin_is_valid              ( ofaBalanceBin *bin,
 																gchar **message );

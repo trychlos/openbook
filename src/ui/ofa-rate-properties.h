@@ -87,7 +87,7 @@ typedef struct {
 
 GType    ofa_rate_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_rate_properties_run     ( ofaMainWindow *parent, ofoRate *rate );
+gboolean ofa_rate_properties_run     ( const ofaMainWindow *main_window, ofoRate *rate );
 
 G_END_DECLS
 

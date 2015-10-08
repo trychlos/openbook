@@ -74,7 +74,8 @@ typedef struct {
 
 GType ofa_guided_input_get_type( void ) G_GNUC_CONST;
 
-void  ofa_guided_input_run     ( ofaMainWindow *parent, const ofoOpeTemplate *model );
+void  ofa_guided_input_run     ( const ofaMainWindow *main_window,
+										const ofoOpeTemplate *model );
 
 G_END_DECLS
 

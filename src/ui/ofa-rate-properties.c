@@ -181,12 +181,13 @@ ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 
 /**
  * ofa_rate_properties_run:
- * @main: the main window of the application.
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @rate: the #ofoRate to be displayed/updated.
  *
- * Update the properties of a rate
+ * Update the properties of a rate.
  */
 gboolean
-ofa_rate_properties_run( ofaMainWindow *main_window, ofoRate *rate )
+ofa_rate_properties_run( const ofaMainWindow *main_window, ofoRate *rate )
 {
 	static const gchar *thisfn = "ofa_rate_properties_run";
 	ofaRateProperties *self;

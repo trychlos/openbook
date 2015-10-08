@@ -57,7 +57,7 @@ struct _ofaGuidedInputBinPrivate {
 
 	/* input parameters at initialization time
 	 */
-	ofaMainWindow        *main_window;
+	const ofaMainWindow  *main_window;
 
 	/* from dossier
 	 */
@@ -382,9 +382,12 @@ ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
 
 /**
  * ofa_guided_input_bin_new:
+ * @main_window: the #ofaMainWindow main window of the application.
+ *
+ * Returns: a new #ofaGuidedInputBin instance.
  */
 ofaGuidedInputBin *
-ofa_guided_input_bin_new( ofaMainWindow *main_window )
+ofa_guided_input_bin_new( const ofaMainWindow *main_window )
 {
 	ofaGuidedInputBin *bin;
 

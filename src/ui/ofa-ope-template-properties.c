@@ -62,36 +62,36 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* internals
 	 */
-	ofaMainWindow      *main_window;
-	ofoDossier         *dossier;
-	gboolean            is_current;
-	ofoOpeTemplate     *ope_template;
-	ofaLedgerCombo     *ledger_combo;
-	GtkWidget          *ledger_parent;
-	GtkWidget          *ref_entry;
-	GtkGrid            *grid;			/* detail grid */
-	gint                count;			/* count of added detail lines */
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	gboolean             is_current;
+	ofoOpeTemplate      *ope_template;
+	ofaLedgerCombo      *ledger_combo;
+	GtkWidget           *ledger_parent;
+	GtkWidget           *ref_entry;
+	GtkGrid             *grid;			/* detail grid */
+	gint                 count;			/* count of added detail lines */
 
 	/* result
 	 */
-	gboolean            is_new;
-	gboolean            updated;
+	gboolean             is_new;
+	gboolean             updated;
 
 	/* data
 	 */
-	gchar              *mnemo;
-	gchar              *label;
-	gchar              *ledger;			/* ledger mnemo */
-	gboolean            ledger_locked;
-	gchar              *ref;			/* ref mnemo */
-	gboolean            ref_locked;
-	gchar              *upd_user;
-	GTimeVal            upd_stamp;
+	gchar               *mnemo;
+	gchar               *label;
+	gchar               *ledger;			/* ledger mnemo */
+	gboolean             ledger_locked;
+	gchar               *ref;			/* ref mnemo */
+	gboolean             ref_locked;
+	gchar               *upd_user;
+	GTimeVal             upd_stamp;
 
 	/* UI
 	 */
-	ofaOpeTemplateHelp *help_dlg;
-	GtkWidget          *ok_btn;
+	ofaOpeTemplateHelp  *help_dlg;
+	GtkWidget           *ok_btn;
 };
 
 /* columns in the detail treeview
@@ -238,15 +238,15 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 
 /**
  * ofa_ope_template_properties_run:
- * @main: the main window of the application.
- * @model:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @model: the #ofoOpeTemplate to be displayed/updated.
  * @ledger_id: set to the current ledger when creating a new model,
  *  left to OFO_BASE_UNSET_ID when updating an existing model.
  *
  * Update the properties of an model
  */
 gboolean
-ofa_ope_template_properties_run( ofaMainWindow *main_window, ofoOpeTemplate *model, const gchar *ledger )
+ofa_ope_template_properties_run( const ofaMainWindow *main_window, ofoOpeTemplate *model, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_run";
 	ofaOpeTemplateProperties *self;

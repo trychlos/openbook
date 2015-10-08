@@ -43,7 +43,7 @@ struct _ofaBatPropertiesPrivate {
 
 	/* initialization
 	 */
-	ofaMainWindow       *main_window;
+	const ofaMainWindow *main_window;
 
 	/* internals
 	 */
@@ -132,13 +132,14 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
 
 /**
  * ofa_bat_properties_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
+ * @bat: the #ofoBat to be displayed.
  *
  * Display the properties of a bat file.
  * Let update the notes if the dossier is not an archive.
  */
 gboolean
-ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
+ofa_bat_properties_run( const ofaMainWindow *main_window, ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_properties_run";
 	ofaBatProperties *self;

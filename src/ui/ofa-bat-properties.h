@@ -72,7 +72,7 @@ typedef struct {
 
 GType    ofa_bat_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_bat_properties_run     ( ofaMainWindow *parent, ofoBat *bat );
+gboolean ofa_bat_properties_run     ( const ofaMainWindow *parent, ofoBat *bat );
 
 G_END_DECLS
 

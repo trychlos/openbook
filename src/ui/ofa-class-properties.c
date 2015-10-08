@@ -43,23 +43,23 @@ struct _ofaClassPropertiesPrivate {
 
 	/* initialization
 	 */
-	ofaMainWindow *main_window;
+	const ofaMainWindow *main_window;
 
 	/* internals
 	 */
-	ofoClass      *class;
-	gboolean       is_new;
-	gboolean       updated;
-	ofoDossier    *dossier;
+	ofoClass            *class;
+	gboolean             is_new;
+	gboolean             updated;
+	ofoDossier          *dossier;
 
 	/* data
 	 */
-	gint           number;
-	gchar         *label;
+	gint                 number;
+	gchar               *label;
 
 	/* UI
 	 */
-	GtkWidget     *btn_ok;
+	GtkWidget           *btn_ok;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-class-properties.ui";
@@ -142,12 +142,13 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
 
 /**
  * ofa_class_properties_run:
- * @main: the main window of the application.
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @class: the #ofoClass to be displayed/updated.
  *
  * Update the properties of an class
  */
 gboolean
-ofa_class_properties_run( ofaMainWindow *main_window, ofoClass *class )
+ofa_class_properties_run( const ofaMainWindow *main_window, ofoClass *class )
 {
 	static const gchar *thisfn = "ofa_class_properties_run";
 	ofaClassProperties *self;

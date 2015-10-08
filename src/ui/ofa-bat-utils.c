@@ -38,7 +38,7 @@
 
 /**
  * ofa_bat_utils_import:
- * @main_window:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * open GtkFileChooser dialog to let the user select the file to be
  * imported and import it
@@ -47,7 +47,7 @@
  * an error has happened.
  */
 ofxCounter
-ofa_bat_utils_import( ofaMainWindow *main_window )
+ofa_bat_utils_import( const ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_bat_utils_import";
 	ofxCounter imported_id;

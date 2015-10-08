@@ -71,7 +71,7 @@ typedef struct {
 
 GType    ofa_ledger_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_ledger_properties_run     ( ofaMainWindow *parent, ofoLedger *ledger );
+gboolean ofa_ledger_properties_run     ( const ofaMainWindow *parent, ofoLedger *ledger );
 
 G_END_DECLS
 

@@ -71,7 +71,7 @@ typedef struct {
 
 GType    ofa_currency_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_currency_properties_run     ( ofaMainWindow *parent, ofoCurrency *currency );
+gboolean ofa_currency_properties_run     ( const ofaMainWindow *parent, ofoCurrency *currency );
 
 G_END_DECLS
 

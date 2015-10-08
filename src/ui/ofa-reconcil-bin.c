@@ -43,20 +43,23 @@
 /* private instance data
  */
 struct _ofaReconcilBinPrivate {
-	gboolean       dispose_has_run;
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
+	gboolean             dispose_has_run;
+
+	/* initialization
+	 */
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
 
 	/* UI
 	 */
-	GtkWidget     *account_entry;
-	GtkWidget     *account_label;
-	GtkWidget     *date_entry;
+	GtkWidget           *account_entry;
+	GtkWidget           *account_label;
+	GtkWidget           *date_entry;
 
 	/* internals
 	 */
-	ofoAccount    *account;
-	GDate          date;
+	ofoAccount          *account;
+	GDate                date;
 };
 
 /* signals defined here
@@ -169,12 +172,12 @@ ofa_reconcil_bin_class_init( ofaReconcilBinClass *klass )
 
 /**
  * ofa_reconcil_bin_new:
- * @main_window:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Returns: a newly allocated #ofaReconcilBin object.
  */
 ofaReconcilBin *
-ofa_reconcil_bin_new( ofaMainWindow *main_window )
+ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 {
 	ofaReconcilBin *self;
 

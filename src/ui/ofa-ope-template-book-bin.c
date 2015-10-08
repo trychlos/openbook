@@ -46,7 +46,7 @@
 struct _ofaOpeTemplateBookBinPrivate {
 	gboolean             dispose_has_run;
 
-	ofaMainWindow       *main_window;
+	const ofaMainWindow *main_window;
 	ofoDossier          *dossier;
 	GList               *dos_handlers;
 	gchar               *dname;			/* to be used after dossier finalization */
@@ -283,6 +283,7 @@ ofa_ope_template_book_bin_class_init( ofaOpeTemplateBookBinClass *klass )
 
 /**
  * ofa_ope_template_book_bin_new:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Creates the structured content, i.e. one notebook with one page per
  * ledger.
@@ -290,7 +291,7 @@ ofa_ope_template_book_bin_class_init( ofaOpeTemplateBookBinClass *klass )
  * Does NOT insert the data.
  */
 ofaOpeTemplateBookBin *
-ofa_ope_template_book_bin_new( ofaMainWindow *main_window  )
+ofa_ope_template_book_bin_new( const ofaMainWindow *main_window  )
 {
 	ofaOpeTemplateBookBin *bin;
 

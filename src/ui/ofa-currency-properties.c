@@ -139,12 +139,13 @@ ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
 
 /**
  * ofa_currency_properties_run:
- * @main: the main window of the application.
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @currency: the #ofoCurrency to be displayed/updated.
  *
  * Update the properties of an currency
  */
 gboolean
-ofa_currency_properties_run( ofaMainWindow *main_window, ofoCurrency *currency )
+ofa_currency_properties_run( const ofaMainWindow *main_window, ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofa_currency_properties_run";
 	ofaCurrencyProperties *self;

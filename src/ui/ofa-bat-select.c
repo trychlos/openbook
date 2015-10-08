@@ -140,12 +140,14 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 
 /**
  * ofa_bat_select_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @id: [allow-none]: the initially selected BAT identifier.
  *
  * Returns the selected Bank Account Transaction list (BAT) identifier,
  * or -1.
  */
 ofxCounter
-ofa_bat_select_run( ofaMainWindow *main_window, ofxCounter id )
+ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 {
 	static const gchar *thisfn = "ofa_bat_select_run";
 	ofaBatSelect *self;

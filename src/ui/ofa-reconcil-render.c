@@ -49,6 +49,7 @@
  */
 struct _ofaReconcilRenderPrivate {
 
+	ofoDossier     *dossier;
 	ofaReconcilBin *args_bin;
 
 	/* internals
@@ -271,6 +272,8 @@ page_init_view( ofaPage *page )
 
 	priv = OFA_RECONCIL_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
+
+	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -317,28 +320,21 @@ static GList *
 render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaReconcilRenderPrivate *priv;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	GList *dataset;
 	ofoCurrency *currency;
 
 	priv = OFA_RECONCIL_RENDER( page )->priv;
-
-	main_window = ofa_page_get_main_window( OFA_PAGE( page ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
 	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
 	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
 
-	priv->account = ofo_account_get_by_number( dossier, priv->account_number );
+	priv->account = ofo_account_get_by_number( priv->dossier, priv->account_number );
 	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
 
 	priv->currency = ofo_account_get_currency( priv->account );
-	currency = ofo_currency_get_by_code( dossier, priv->currency );
+	currency = ofo_currency_get_by_code( priv->dossier, priv->currency );
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	priv->digits = ofo_currency_get_digits( currency );
@@ -346,7 +342,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
-					dossier,
+					priv->dossier,
 					ofo_account_get_number( priv->account ),
 					&priv->date );
 
@@ -497,15 +493,11 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static const gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
+	ofaReconcilRenderPrivate *priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-	dossier = ofa_main_window_get_dossier( main_window );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv = OFA_RECONCIL_RENDER( instance )->priv;
 
-	return( ofo_dossier_get_name( dossier ));
+	return( ofo_dossier_get_name( priv->dossier ));
 }
 
 static gchar *
@@ -580,22 +572,15 @@ irenderable_draw_top_summary( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 	gchar *str, *str_solde, *sdate;
 	gdouble y, height;
 	GDate date;
 
 	priv = OFA_RECONCIL_RENDER( instance )->priv;
 
-	main_window = ofa_page_get_main_window( OFA_PAGE( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
 	y = ofa_irenderable_get_last_y( instance );
 
-	ofo_account_get_global_deffect( priv->account, dossier, &priv->global_deffect );
+	ofo_account_get_global_deffect( priv->account, priv->dossier, &priv->global_deffect );
 	my_date_set_from_date( &date, &priv->global_deffect );
 	if( !my_date_is_valid( &date )){
 		my_date_set_from_date( &date, &priv->date );

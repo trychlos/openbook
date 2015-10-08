@@ -39,18 +39,18 @@
 /* private instance data
  */
 struct _ofaLedgerTreeviewPrivate {
-	gboolean         dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* runtime datas
 	 */
-	ofaMainWindow   *main_window;
-	ofoDossier      *dossier;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
 
 	/* UI
 	 */
-	GtkTreeView     *tview;
-	ofaLedgerColumns columns;
-	ofaLedgerStore  *store;
+	GtkTreeView         *tview;
+	ofaLedgerColumns     columns;
+	ofaLedgerStore      *store;
 };
 
 /* signals defined here
@@ -356,12 +356,14 @@ create_treeview_columns( ofaLedgerTreeview *view )
 
 /**
  * ofa_ledger_treeview_set_main_window:
+ * @view: this #ofaLedgerTreeview instance.
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.
  */
 void
-ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, ofaMainWindow *main_window )
+ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindow *main_window )
 {
 	ofaLedgerTreeviewPrivate *priv;
 
