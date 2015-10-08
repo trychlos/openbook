@@ -109,12 +109,12 @@ ofa_account_filter_vv_bin_class_init( ofaAccountFilterVVBinClass *klass )
 
 /**
  * ofa_account_filter_vv_bin_new:
- * @xml_name: the radical of the XML file which defines the UI.
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Returns: a newly allocated #ofaAccountFilterVVBin object.
  */
 ofaAccountFilterVVBin *
-ofa_account_filter_vv_bin_new( ofaMainWindow *main_window )
+ofa_account_filter_vv_bin_new( const ofaMainWindow *main_window )
 {
 	ofaAccountFilterVVBin *bin;
 

@@ -72,7 +72,7 @@ typedef struct {
 
 GType               ofa_account_book_bin_get_type( void ) G_GNUC_CONST;
 
-ofaAccountBookBin  *ofa_account_book_bin_new     ( ofaMainWindow *main_window );
+ofaAccountBookBin  *ofa_account_book_bin_new     ( const ofaMainWindow *main_window );
 
 gboolean            ofa_account_book_bin_is_valid( ofaAccountBookBin *bin,
 															gchar **message );

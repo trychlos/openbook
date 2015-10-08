@@ -41,26 +41,26 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	gchar         *xml_name;
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
-	gchar         *prefs_key;
-	GtkSizeGroup  *group0;
+	gchar               *xml_name;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	gchar               *prefs_key;
+	GtkSizeGroup        *group0;
 
-	GtkWidget     *from_prompt;
-	GtkWidget     *from_entry;
-	GtkWidget     *from_select;
-	GtkWidget     *from_label;
-	gchar         *from_account;
+	GtkWidget           *from_prompt;
+	GtkWidget           *from_entry;
+	GtkWidget           *from_select;
+	GtkWidget           *from_label;
+	gchar               *from_account;
 
-	GtkWidget     *to_prompt;
-	GtkWidget     *to_entry;
-	GtkWidget     *to_select;
-	GtkWidget     *to_label;
-	gchar         *to_account;
+	GtkWidget           *to_prompt;
+	GtkWidget           *to_entry;
+	GtkWidget           *to_select;
+	GtkWidget           *to_label;
+	gchar               *to_account;
 
-	GtkWidget     *all_btn;
-	gboolean       all_accounts;
+	GtkWidget           *all_btn;
+	gboolean             all_accounts;
 }
 	sIAccountFilter;
 
@@ -204,11 +204,13 @@ ofa_iaccount_filter_get_interface_last_version( const ofaIAccountFilter *instanc
 /**
  * ofa_iaccount_filter_setup_bin:
  * @filter: this #ofaIAccountFilter instance.
+ * @xml_name: the UI .xml definition file name.
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Initialize the composite widget which implements this interface.
  */
 void
-ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name, ofaMainWindow *main_window )
+ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name, const ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_setup_bin";
 	sIAccountFilter *sdata;

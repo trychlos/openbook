@@ -44,7 +44,7 @@
  */
 struct _ofaAccountBookBinPrivate {
 	gboolean                dispose_has_run;
-	ofaMainWindow          *main_window;
+	const ofaMainWindow    *main_window;
 
 	/* UI
 	 */
@@ -167,12 +167,12 @@ ofa_account_book_bin_class_init( ofaAccountBookBinClass *klass )
 
 /**
  * ofa_account_book_bin_new:
- * @main_window:
+ * @main_window: the #ofaMainWindow main window of the application.
  *
  * Returns: a newly allocated #ofaAccountBookBin object.
  */
 ofaAccountBookBin *
-ofa_account_book_bin_new( ofaMainWindow *main_window )
+ofa_account_book_bin_new( const ofaMainWindow *main_window )
 {
 	ofaAccountBookBin *self;
 

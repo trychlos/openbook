@@ -91,7 +91,7 @@ guint        ofa_iaccount_filter_get_interface_last_version
 
 void         ofa_iaccount_filter_setup_bin       ( ofaIAccountFilter *filter,
 															const gchar *xml_name,
-															ofaMainWindow *main_window );
+															const ofaMainWindow *main_window );
 
 void         ofa_iaccount_filter_set_prefs       ( ofaIAccountFilter *filter,
 															const gchar *prefs_key );
