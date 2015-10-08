@@ -40,7 +40,7 @@ AC_DEFUN([PWI_MAINTAINER_CHECK_MODE],[
 	if test "${USE_MAINTAINER_MODE}" = "yes"; then
 		AC_DEFINE([PWI_MAINTAINER_MODE],[1],[Define to 1 if we are in maintainer mode])
 		AC_SUBST([AM_CPPFLAGS],["${AM_CPPFLAGS} ${DISABLE_DEPRECATED} -DGSEAL_ENABLED"])
-		AC_SUBST([AM_CFLAGS],["${AM_CFLAGS} -Werror"])
+		AC_SUBST([AM_CFLAGS],["${AM_CFLAGS} -Werror -O0"])
 		msg_maintainer_mode="enabled"
 	fi
 

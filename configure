@@ -5246,7 +5246,7 @@ $as_echo "#define PWI_MAINTAINER_MODE 1" >>confdefs.h
 
 		AM_CPPFLAGS="${AM_CPPFLAGS} ${DISABLE_DEPRECATED} -DGSEAL_ENABLED"
 
-		AM_CFLAGS="${AM_CFLAGS} -Werror"
+		AM_CFLAGS="${AM_CFLAGS} -Werror -O0"
 
 		msg_maintainer_mode="enabled"
 	fi
