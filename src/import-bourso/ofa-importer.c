@@ -313,6 +313,7 @@ get_file_content( ofaIImportable *bourso_importer, const gchar *uri )
 		}
 		g_strfreev( lines );
 	}
+	g_object_unref( gfile );
 
 	return( g_slist_reverse( list ));
 }
