@@ -38,10 +38,6 @@
 struct _ofaDBMSRootBinPrivate {
 	gboolean      dispose_has_run;
 
-	/* initialization
-	 */
-	gchar        *dname;
-
 	/* UI
 	 */
 	GtkWidget    *account_entry;
@@ -51,6 +47,7 @@ struct _ofaDBMSRootBinPrivate {
 
 	/* runtime data
 	 */
+	gchar        *dname;
 	gchar        *account;
 	gchar        *password;
 };
@@ -127,6 +124,10 @@ ofa_dbms_root_bin_init( ofaDBMSRootBin *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
 							self, OFA_TYPE_DBMS_ROOT_BIN, ofaDBMSRootBinPrivate );
+
+	self->priv->dname = NULL;
+	self->priv->account = NULL;
+	self->priv->password = NULL;
 }
 
 static void
