@@ -160,6 +160,8 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
+	ofa-entry-page.c									\
+	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
@@ -247,8 +249,6 @@ openbook_SOURCES = \
 	ofa-tree-store.h									\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
-	ofa-view-entries.c									\
-	ofa-view-entries.h									\
 	$(NULL)
 
 openbook_LDADD = \
@@ -291,6 +291,7 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
 	ofa-guided-input.ui									\
@@ -310,7 +311,6 @@ ui_files = \
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
-	ofa-view-entries.ui									\
 	$(NULL)
 
 images_files = \

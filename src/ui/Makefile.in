@@ -165,7 +165,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
 	ofa-dossier-new-mini.$(OBJEXT) ofa-dossier-open.$(OBJEXT) \
 	ofa-dossier-properties.$(OBJEXT) ofa-dossier-store.$(OBJEXT) \
-	ofa-dossier-treeview.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
+	ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
@@ -189,7 +190,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-reconciliation.$(OBJEXT) \
 	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
 	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-user-credentials-bin.$(OBJEXT) ofa-view-entries.$(OBJEXT)
+	ofa-user-credentials-bin.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -589,6 +590,8 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
+	ofa-entry-page.c									\
+	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
@@ -676,8 +679,6 @@ openbook_SOURCES = \
 	ofa-tree-store.h									\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
-	ofa-view-entries.c									\
-	ofa-view-entries.h									\
 	$(NULL)
 
 openbook_LDADD = \
@@ -720,6 +721,7 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
 	ofa-guided-input.ui									\
@@ -739,7 +741,6 @@ ui_files = \
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
-	ofa-view-entries.ui									\
 	$(NULL)
 
 images_files = \
@@ -925,6 +926,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-treeview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-close-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-store.Po@am__quote@
@@ -967,7 +969,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-user-credentials-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-view-entries.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

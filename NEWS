@@ -137,6 +137,7 @@
    - ofaOpeTemplatesFrame class is renamed to ofaOpeTemplateFrameBin (todo #844/850).
    - ofaOpeTemplatesBook class is renamed to ofaOpeTemplateBookBin (todo #844/850).
    - ofaUserCredentialsBin: new class (todo #845).
+   - ofaViewEntries class is renamed to ofaEntryPage (for consistency).
 
 -----------------------------------------------------------------------
  Version 0.39

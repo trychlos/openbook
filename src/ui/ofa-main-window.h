@@ -78,6 +78,7 @@ enum {
 	THM_BATFILES,
 	THM_CLASSES,
 	THM_CURRENCIES,
+	THM_ENTRIES,
 	THM_GUIDED_INPUT,
 	THM_LEDGERS,
 	THM_OPE_TEMPLATES,
@@ -87,8 +88,7 @@ enum {
 	THM_RENDER_ACCOUNTS_BOOK,
 	THM_RENDER_LEDGERS_BOOK,
 	THM_RENDER_RECONCIL,
-	THM_SETTLEMENT,
-	THM_VIEW_ENTRIES
+	THM_SETTLEMENT
 };
 
 ofaMainWindow *ofa_main_window_new                    ( const ofaApplication *application );

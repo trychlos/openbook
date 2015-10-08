@@ -38,7 +38,6 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-view-entries.h"
 
 /* private instance data
  */

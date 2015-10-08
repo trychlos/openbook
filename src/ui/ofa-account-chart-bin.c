@@ -40,11 +40,11 @@
 #include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-account-store.h"
 #include "ui/ofa-buttons-box.h"
-#include "ui/ofa-page.h"
+#include "ui/ofa-entry-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-settlement.h"
 #include "ui/ofa-reconciliation.h"
-#include "ui/ofa-view-entries.h"
 
 /* private instance data
  */
@@ -1181,8 +1181,8 @@ do_view_entries( ofaAccountChartBin *self )
 
 	number = ofa_account_chart_bin_get_selected( self );
 	g_debug( "ofa_account_chart_bin_do_view_entries: number=%s", number );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_VIEW_ENTRIES );
-	ofa_view_entries_display_entries( OFA_VIEW_ENTRIES( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
+	page = ofa_main_window_activate_theme( priv->main_window, THM_ENTRIES );
+	ofa_entry_page_display_entries( OFA_ENTRY_PAGE( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
 	g_free( number );
 
 	tview = get_current_tree_view( self );
@@ -1642,6 +1642,10 @@ on_updated_currency_code( ofaAccountChartBin *self, ofoCurrency *currency )
 
 /**
  * ofa_account_chart_bin_button_clicked:
+ * @book: this #ofaAccountChartBin instance.
+ * @button_id: the button identifier which has been clicked on.
+ *
+ * The button identifier is declared in ofa-buttons-box.h.
  */
 void
 ofa_account_chart_bin_button_clicked( ofaAccountChartBin *book, gint button_id )

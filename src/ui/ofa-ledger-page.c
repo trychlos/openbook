@@ -33,13 +33,13 @@
 #include "api/ofo-ledger.h"
 
 #include "ui/ofa-buttons-box.h"
+#include "ui/ofa-entry-page.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-view-entries.h"
 
 /* private instance data
  */
@@ -83,7 +83,7 @@ static void       on_update_clicked( GtkButton *button, ofaLedgerPage *page );
 static void       do_update( ofaLedgerPage *self, ofoLedger *ledger );
 static void       on_delete_clicked( GtkButton *button, ofaLedgerPage *page );
 static gboolean   delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger );
-static void       on_view_entries( GtkButton *button, ofaLedgerPage *self );
+static void       on_entry_page( GtkButton *button, ofaLedgerPage *self );
 
 static void
 ledgers_page_finalize( GObject *instance )
@@ -208,7 +208,7 @@ v_setup_buttons( ofaPage *page )
 
 	ofa_buttons_box_add_spacer( buttons_box );
 	priv->entries_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries ), page );
+			buttons_box, BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_entry_page ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -415,7 +415,7 @@ delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
 }
 
 static void
-on_view_entries( GtkButton *button, ofaLedgerPage *self )
+on_entry_page( GtkButton *button, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	GList *list;
@@ -435,10 +435,10 @@ on_view_entries( GtkButton *button, ofaLedgerPage *self )
 	if( ledger ){
 		page = ofa_main_window_activate_theme(
 						ofa_page_get_main_window( OFA_PAGE( self )),
-						THM_VIEW_ENTRIES );
+						THM_ENTRIES );
 		if( page ){
-			ofa_view_entries_display_entries(
-							OFA_VIEW_ENTRIES( page ),
+			ofa_entry_page_display_entries(
+							OFA_ENTRY_PAGE( page ),
 							OFO_TYPE_LEDGER,
 							ofo_ledger_get_mnemo( ledger ),
 							NULL,

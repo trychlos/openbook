@@ -50,12 +50,12 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-date-filter-hv-bin.h"
+#include "ui/ofa-entry-page.h"
 #include "ui/ofa-idate-filter.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-view-entries.h"
 
 /* columns in the entries view
  * declared before the private data in order to be able to dimension
@@ -87,7 +87,7 @@ enum {
 
 /* priv instance data
  */
-struct _ofaViewEntriesPrivate {
+struct _ofaEntryPagePrivate {
 
 	/* internals
 	 */
@@ -212,140 +212,140 @@ enum {
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
 #define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.ui";
-static const gchar *st_ui_id            = "ViewEntriesWindow";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-entry-page.ui";
+static const gchar *st_ui_id            = "EntryPageWindow";
 
-static const gchar *st_pref_selection   = "ViewEntriesSelection";
-static const gchar *st_pref_ledger      = "ViewEntriesLedger";
-static const gchar *st_pref_account     = "ViewEntriesAccount";
-static const gchar *st_pref_effect      = "ViewEntriesEffectDates";
-static const gchar *st_pref_status      = "ViewEntriesStatus";
-static const gchar *st_pref_columns     = "ViewEntriesColumns";
-static const gchar *st_pref_sort_c      = "ViewEntriesSortC";
-static const gchar *st_pref_sort_s      = "ViewEntriesSortS";
+static const gchar *st_pref_selection   = "EntryPageSelection";
+static const gchar *st_pref_ledger      = "EntryPageLedger";
+static const gchar *st_pref_account     = "EntryPageAccount";
+static const gchar *st_pref_effect      = "EntryPageEffectDates";
+static const gchar *st_pref_status      = "EntryPageStatus";
+static const gchar *st_pref_columns     = "EntryPageColumns";
+static const gchar *st_pref_sort_c      = "EntryPageSortC";
+static const gchar *st_pref_sort_s      = "EntryPageSortS";
 
 #define SEL_LEDGER                      "Ledger"
 #define SEL_ACCOUNT                     "Account"
 
-G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE )
 
 static GtkWidget     *v_setup_view( ofaPage *page );
-static void           reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent );
-static void           setup_gen_selection( ofaViewEntries *self );
-static void           setup_ledger_selection( ofaViewEntries *self );
-static void           setup_account_selection( ofaViewEntries *self );
-static void           setup_dates_selection( ofaViewEntries *self );
-static void           setup_status_selection( ofaViewEntries *self );
-static void           setup_display_columns( ofaViewEntries *self );
+static void           reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
+static void           setup_gen_selection( ofaEntryPage *self );
+static void           setup_ledger_selection( ofaEntryPage *self );
+static void           setup_account_selection( ofaEntryPage *self );
+static void           setup_dates_selection( ofaEntryPage *self );
+static void           setup_status_selection( ofaEntryPage *self );
+static void           setup_display_columns( ofaEntryPage *self );
 static gboolean       has_column_id( GList *id_list, gint id );
-static void           setup_edit_switch( ofaViewEntries *self );
-static GtkTreeView   *setup_entries_treeview( ofaViewEntries *self );
-static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self );
-static gint           cmp_strings( ofaViewEntries *self, const gchar *stra, const gchar *strb );
-static gint           cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb );
-static gint           cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb );
-static void           on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self );
-static void           setup_footer( ofaViewEntries *self );
-static void           setup_signaling_connect( ofaViewEntries *self );
+static void           setup_edit_switch( ofaEntryPage *self );
+static GtkTreeView   *setup_entries_treeview( ofaEntryPage *self );
+static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPage *self );
+static gint           cmp_strings( ofaEntryPage *self, const gchar *stra, const gchar *strb );
+static gint           cmp_amounts( ofaEntryPage *self, const gchar *stra, const gchar *strb );
+static gint           cmp_counters( ofaEntryPage *self, const gchar *stra, const gchar *strb );
+static void           on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self );
+static void           setup_footer( ofaEntryPage *self );
+static void           setup_signaling_connect( ofaEntryPage *self );
 static GtkWidget     *v_setup_buttons( ofaPage *page );
 static void           v_init_view( ofaPage *page );
-static void           set_visible_columns( ofaViewEntries *self );
+static void           set_visible_columns( ofaEntryPage *self );
 static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
-static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *self );
-static gboolean       display_entries_from_ledger( ofaViewEntries *self );
-static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
-static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
-static void           on_account_select( GtkButton *button, ofaViewEntries *self );
-static gboolean       display_entries_from_account( ofaViewEntries *self );
-static void           on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self );
-static void           refresh_display( ofaViewEntries *self );
-static void           display_entries( ofaViewEntries *self, GList *entries );
-static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
-static void           compute_balances( ofaViewEntries *self );
-static GtkWidget     *reset_balances_widgets( ofaViewEntries *self );
-static void           display_balance( ofsCurrency *pc, ofaViewEntries *self );
-static void           set_balance_currency_label_position( ofaViewEntries *self );
-static void           set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self );
-static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaViewEntries *self );
-static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self );
-static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self );
-static void           set_renderers_editable( ofaViewEntries *self, gboolean editable );
-static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaViewEntries *self );
-static gint           get_data_set_indicator( ofaViewEntries *self, gint column_id );
-static void           set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter );
-static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries *self );
-static void           check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_label( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter );
-static void           check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter );
-static void           reset_error_msg( ofaViewEntries *self, GtkTreeIter *iter );
-static void           set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );
-/*static void           set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );*/
-static void           display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean       save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void           remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
-static void           remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
-static gboolean       find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter );
-static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
-static void           do_new_entry( ofaViewEntries *self, ofoEntry *entry );
-static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self );
-static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
-static void           do_update_ledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
-static void           do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
-static void           do_update_entry( ofaViewEntries *self, ofoEntry *entry );
-static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
-static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
-static gboolean       on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
-static ofaEntryStatus get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static GDate         *get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date );
-static gint           get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void           insert_new_row( ofaViewEntries *self );
-static void           delete_row( ofaViewEntries *self );
+static void           on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void           on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
+static gboolean       display_entries_from_ledger( ofaEntryPage *self );
+static void           on_account_changed( GtkEntry *entry, ofaEntryPage *self );
+static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self );
+static void           on_account_select( GtkButton *button, ofaEntryPage *self );
+static gboolean       display_entries_from_account( ofaEntryPage *self );
+static void           on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self );
+static void           refresh_display( ofaEntryPage *self );
+static void           display_entries( ofaEntryPage *self, GList *entries );
+static void           display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter );
+static void           compute_balances( ofaEntryPage *self );
+static GtkWidget     *reset_balances_widgets( ofaEntryPage *self );
+static void           display_balance( ofsCurrency *pc, ofaEntryPage *self );
+static void           set_balance_currency_label_position( ofaEntryPage *self );
+static void           set_balance_currency_label_margin( GtkWidget *widget, ofaEntryPage *self );
+static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
+static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
+static void           on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void           on_visible_column_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void           on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self );
+static void           set_renderers_editable( ofaEntryPage *self, gboolean editable );
+static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaEntryPage *self );
+static gint           get_data_set_indicator( ofaEntryPage *self, gint column_id );
+static void           set_data_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *iter );
+static void           on_row_selected( GtkTreeSelection *select, ofaEntryPage *self );
+static void           check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter );
+static void           check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean       check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter );
+static void           reset_error_msg( ofaEntryPage *self, GtkTreeIter *iter );
+static void           set_error_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );
+/*static void           set_warning_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );*/
+static void           display_error_msg( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean       save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void           remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
+static void           remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
+static gboolean       find_entry_by_number( ofaEntryPage *self, gint number, GtkTreeIter *iter );
+static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
+static void           do_new_entry( ofaEntryPage *self, ofoEntry *entry );
+static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
+static void           do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number );
+static void           do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo );
+static void           do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code );
+static void           do_update_entry( ofaEntryPage *self, ofoEntry *entry );
+static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
+static void           do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry );
+static gboolean       on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self );
+static ofaEntryStatus get_row_status( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static GDate         *get_row_deffect( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date );
+static gint           get_row_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void           insert_new_row( ofaEntryPage *self );
+static void           delete_row( ofaEntryPage *self );
 
 static void
-view_entries_finalize( GObject *instance )
+entry_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_view_entries_finalize";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_finalize";
+	ofaEntryPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_VIEW_ENTRIES( instance ));
+	g_return_if_fail( OFA_IS_ENTRY_PAGE( instance ));
 
 	/* free data members here */
-	priv = OFA_VIEW_ENTRIES( instance )->priv;
+	priv = OFA_ENTRY_PAGE( instance )->priv;
 
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
 	ofs_currency_list_free( &priv->balances );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_view_entries_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_entry_page_parent_class )->finalize( instance );
 }
 
 static void
-view_entries_dispose( GObject *instance )
+entry_page_dispose( GObject *instance )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GList *it;
 
-	g_return_if_fail( OFA_IS_VIEW_ENTRIES( instance ));
+	g_return_if_fail( OFA_IS_ENTRY_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_VIEW_ENTRIES( instance )->priv;
+		priv = OFA_ENTRY_PAGE( instance )->priv;
 
 		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( it=priv->handlers ; it ; it=it->next ){
@@ -356,21 +356,21 @@ view_entries_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_view_entries_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_entry_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_view_entries_init( ofaViewEntries *self )
+ofa_entry_page_init( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_init";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_init";
+	ofaEntryPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_VIEW_ENTRIES( self ));
+	g_return_if_fail( OFA_IS_ENTRY_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_VIEW_ENTRIES, ofaViewEntriesPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ENTRY_PAGE, ofaEntryPagePrivate );
 	priv = self->priv;
 
 	/* default visible columns */
@@ -386,54 +386,54 @@ ofa_view_entries_init( ofaViewEntries *self )
 }
 
 static void
-ofa_view_entries_class_init( ofaViewEntriesClass *klass )
+ofa_entry_page_class_init( ofaEntryPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_view_entries_class_init";
+	static const gchar *thisfn = "ofa_entry_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = view_entries_dispose;
-	G_OBJECT_CLASS( klass )->finalize = view_entries_finalize;
+	G_OBJECT_CLASS( klass )->dispose = entry_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = entry_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaViewEntriesPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaEntryPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *frame;
 
-	priv = OFA_VIEW_ENTRIES( page )->priv;
+	priv = OFA_ENTRY_PAGE( page )->priv;
 
 	priv->dossier = ofa_page_get_dossier( page );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
-	reparent_from_dialog( OFA_VIEW_ENTRIES( page ), GTK_CONTAINER( frame ));
+	reparent_from_dialog( OFA_ENTRY_PAGE( page ), GTK_CONTAINER( frame ));
 
-	setup_ledger_selection( OFA_VIEW_ENTRIES( page ));
-	setup_account_selection( OFA_VIEW_ENTRIES( page ));
-	setup_dates_selection( OFA_VIEW_ENTRIES( page ));
-	setup_status_selection( OFA_VIEW_ENTRIES( page ));
-	setup_display_columns( OFA_VIEW_ENTRIES( page ));
-	setup_edit_switch( OFA_VIEW_ENTRIES( page ));
+	setup_ledger_selection( OFA_ENTRY_PAGE( page ));
+	setup_account_selection( OFA_ENTRY_PAGE( page ));
+	setup_dates_selection( OFA_ENTRY_PAGE( page ));
+	setup_status_selection( OFA_ENTRY_PAGE( page ));
+	setup_display_columns( OFA_ENTRY_PAGE( page ));
+	setup_edit_switch( OFA_ENTRY_PAGE( page ));
 
-	priv->entries_tview = setup_entries_treeview( OFA_VIEW_ENTRIES( page ));
-	setup_footer( OFA_VIEW_ENTRIES( page ));
+	priv->entries_tview = setup_entries_treeview( OFA_ENTRY_PAGE( page ));
+	setup_footer( OFA_ENTRY_PAGE( page ));
 
 	/* must be done at the end so that on_gen_selection_toggled doesn't
 	 * complain */
-	setup_gen_selection( OFA_VIEW_ENTRIES( page ));
+	setup_gen_selection( OFA_ENTRY_PAGE( page ));
 
 	/* connect to dossier signaling system */
-	setup_signaling_connect( OFA_VIEW_ENTRIES( page ));
+	setup_signaling_connect( OFA_ENTRY_PAGE( page ));
 
 	/* allow the entry dataset to be loaded */
 	priv->initializing = FALSE;
@@ -442,7 +442,7 @@ v_setup_view( ofaPage *page )
 }
 
 static void
-reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent )
+reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent )
 {
 	GtkWidget *box;
 
@@ -454,10 +454,10 @@ reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent )
 }
 
 static void
-setup_gen_selection( ofaViewEntries *self )
+setup_gen_selection( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_setup_gen_selection";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_setup_gen_selection";
+	ofaEntryPagePrivate *priv;
 	gchar *text;
 	GtkWidget *btn;
 	GtkToggleButton *toggle;
@@ -495,9 +495,9 @@ setup_gen_selection( ofaViewEntries *self )
 }
 
 static void
-setup_ledger_selection( ofaViewEntries *self )
+setup_ledger_selection( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *initial_mnemo;
 
 	priv = self->priv;
@@ -521,9 +521,9 @@ setup_ledger_selection( ofaViewEntries *self )
 }
 
 static void
-setup_account_selection( ofaViewEntries *self )
+setup_account_selection( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *image;
 	GtkButton *btn;
 	GtkWidget *widget;
@@ -558,9 +558,9 @@ setup_account_selection( ofaViewEntries *self )
 }
 
 static void
-setup_dates_selection( ofaViewEntries *self )
+setup_dates_selection( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *container;
 
 	priv = self->priv;
@@ -576,10 +576,10 @@ setup_dates_selection( ofaViewEntries *self )
 }
 
 static void
-setup_status_selection( ofaViewEntries *self )
+setup_status_selection( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_setup_status_selection";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_setup_status_selection";
+	ofaEntryPagePrivate *priv;
 	GtkWidget *button;
 	gboolean bpast, brough, bvalid, bdeleted, bfuture;
 	GList *prefs, *it;
@@ -643,10 +643,10 @@ setup_status_selection( ofaViewEntries *self )
 }
 
 static void
-setup_display_columns( ofaViewEntries *self )
+setup_display_columns( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_setup_display_columns";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_setup_display_columns";
+	ofaEntryPagePrivate *priv;
 	GtkWidget *widget;
 	GList *id_list;
 
@@ -744,10 +744,10 @@ has_column_id( GList *id_list, gint id )
 }
 
 static void
-setup_edit_switch( ofaViewEntries *self )
+setup_edit_switch( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_setup_edit_switch";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_setup_edit_switch";
+	ofaEntryPagePrivate *priv;
 	GtkWidget *widget;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
@@ -776,10 +776,10 @@ setup_edit_switch( ofaViewEntries *self )
  *   onto the GtkTreeModel of the GtkListStore
  */
 static GtkTreeView *
-setup_entries_treeview( ofaViewEntries *self )
+setup_entries_treeview( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_setup_entries_treeview";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_setup_entries_treeview";
+	ofaEntryPagePrivate *priv;
 	GtkTreeView *tview;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
@@ -1157,10 +1157,10 @@ setup_entries_treeview( ofaViewEntries *self )
  * the difference is small, but actually exists
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_sort_model";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_on_sort_model";
+	ofaEntryPagePrivate *priv;
 	gint cmp, sort_column_id;
 	ofxCounter numa, numb;
 	GtkSortType sort_order;
@@ -1285,13 +1285,13 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 }
 
 static gint
-cmp_strings( ofaViewEntries *self, const gchar *stra, const gchar *strb )
+cmp_strings( ofaEntryPage *self, const gchar *stra, const gchar *strb )
 {
 	return( my_collate( stra, strb ));
 }
 
 static gint
-cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb )
+cmp_amounts( ofaEntryPage *self, const gchar *stra, const gchar *strb )
 {
 	ofxAmount a, b;
 
@@ -1306,7 +1306,7 @@ cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 }
 
 static gint
-cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb )
+cmp_counters( ofaEntryPage *self, const gchar *stra, const gchar *strb )
 {
 	ofxCounter a, b;
 
@@ -1328,10 +1328,10 @@ cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb )
  * header makes the sort order descending as the default
  */
 static void
-on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self )
+on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_header_clicked";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_on_header_clicked";
+	ofaEntryPagePrivate *priv;
 	gint sort_column_id, new_column_id;
 	GtkSortType sort_order;
 
@@ -1360,9 +1360,9 @@ on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self )
 }
 
 static void
-setup_footer( ofaViewEntries *self )
+setup_footer( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *widget;
 
 	priv = self->priv;
@@ -1373,9 +1373,9 @@ setup_footer( ofaViewEntries *self )
 }
 
 static void
-setup_signaling_connect( ofaViewEntries *self )
+setup_signaling_connect( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gulong handler;
 
 	priv = self->priv;
@@ -1408,25 +1408,25 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_view_entries_v_init_view";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_v_init_view";
+	ofaEntryPagePrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_VIEW_ENTRIES( page )->priv;
+	priv = OFA_ENTRY_PAGE( page )->priv;
 
-	set_visible_columns( OFA_VIEW_ENTRIES( page ));
+	set_visible_columns( OFA_ENTRY_PAGE( page ));
 
 	/* simulate a toggle message from gen_selection */
 	if( gtk_toggle_button_get_active( priv->ledger_btn )){
-		on_gen_selection_toggled( priv->ledger_btn, OFA_VIEW_ENTRIES( page ));
+		on_gen_selection_toggled( priv->ledger_btn, OFA_ENTRY_PAGE( page ));
 	} else {
-		on_gen_selection_toggled( priv->account_btn, OFA_VIEW_ENTRIES( page ));
+		on_gen_selection_toggled( priv->account_btn, OFA_ENTRY_PAGE( page ));
 	}
 }
 
 static void
-set_visible_columns( ofaViewEntries *self )
+set_visible_columns( ofaEntryPage *self )
 {
 	GList *columns, *it;
 	gboolean *priv_flag, is_visible;
@@ -1454,18 +1454,18 @@ set_visible_columns( ofaViewEntries *self )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_VIEW_ENTRIES( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_ENTRY_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_VIEW_ENTRIES( page )->priv->entries_tview ));
+	return( GTK_WIDGET( OFA_ENTRY_PAGE( page )->priv->entries_tview ));
 }
 
 /*
  * toggle between display per ledger or display per account
  */
 static void
-on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
+on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean is_active;
 
 	priv = self->priv;
@@ -1518,9 +1518,9 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
  * ofaLedgerCombo signal handler
  */
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -1532,9 +1532,9 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *se
 }
 
 static gboolean
-display_entries_from_ledger( ofaViewEntries *self )
+display_entries_from_ledger( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GList *entries;
 
 	priv = self->priv;
@@ -1554,9 +1554,9 @@ display_entries_from_ledger( ofaViewEntries *self )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaViewEntries *self )
+on_account_changed( GtkEntry *entry, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	ofoAccount *account;
 	gchar *str;
 
@@ -1588,9 +1588,9 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
  * AccountSelect dialogbox
  */
 static gboolean
-on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self )
+on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean stop;
 
 	priv = self->priv;
@@ -1609,9 +1609,9 @@ on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntri
  * button may be NULL when called from above on_account_entry_key_pressed()
  */
 static void
-on_account_select( GtkButton *button, ofaViewEntries *self )
+on_account_select( GtkButton *button, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *acc_number;
 
 	priv = self->priv;
@@ -1627,9 +1627,9 @@ on_account_select( GtkButton *button, ofaViewEntries *self )
 }
 
 static gboolean
-display_entries_from_account( ofaViewEntries *self )
+display_entries_from_account( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GList *entries;
 
 	priv = self->priv;
@@ -1649,15 +1649,15 @@ display_entries_from_account( ofaViewEntries *self )
 }
 
 static void
-on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaViewEntries *self )
+on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self )
 {
 	refresh_display( self );
 }
 
 static void
-refresh_display( ofaViewEntries *self )
+refresh_display( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -1671,10 +1671,10 @@ refresh_display( ofaViewEntries *self )
  * the hash is used to store the balance per currency
  */
 static void
-display_entries( ofaViewEntries *self, GList *entries )
+display_entries( ofaEntryPage *self, GList *entries )
 {
-	static const gchar *thisfn = "ofa_view_entries_display_entries";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_display_entries";
+	ofaEntryPagePrivate *priv;
 	GtkTreeIter iter;
 	GList *iset;
 
@@ -1700,9 +1700,9 @@ display_entries( ofaViewEntries *self, GList *entries )
  * iter is on the list store
  */
 static void
-display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
+display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *ssettle;
 	ofxCounter counter;
 	const GDate *d;
@@ -1767,10 +1767,10 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
  * dataset, and then each time we modify the display filter
  */
 static void
-compute_balances( ofaViewEntries *self )
+compute_balances( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_compute_balances";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_compute_balances";
+	ofaEntryPagePrivate *priv;
 	GtkWidget *box;
 	GtkTreeIter iter;
 	gchar *sdeb, *scre, *dev_code;
@@ -1813,7 +1813,7 @@ compute_balances( ofaViewEntries *self )
 }
 
 static GtkWidget *
-reset_balances_widgets( ofaViewEntries *self )
+reset_balances_widgets( ofaEntryPage *self )
 {
 	GtkWidget *box;
 
@@ -1825,9 +1825,9 @@ reset_balances_widgets( ofaViewEntries *self )
 }
 
 static void
-display_balance( ofsCurrency *pc, ofaViewEntries *self )
+display_balance( ofsCurrency *pc, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *box, *row, *label;
 	gchar *str;
 
@@ -1867,7 +1867,7 @@ display_balance( ofsCurrency *pc, ofaViewEntries *self )
 }
 
 static void
-set_balance_currency_label_position( ofaViewEntries *self )
+set_balance_currency_label_position( ofaEntryPage *self )
 {
 	GtkWidget *box;
 
@@ -1877,9 +1877,9 @@ set_balance_currency_label_position( ofaViewEntries *self )
 }
 
 static void
-set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
+set_balance_currency_label_margin( GtkWidget *widget, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gint margin;
 	GtkWidget *bar;
 
@@ -1917,9 +1917,9 @@ set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
  * - effect date layout
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean visible, ok;
 	gchar *account, *ledger;
 	ofoEntry *entry;
@@ -2011,7 +2011,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 static void
 on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaViewEntries *self )
+						ofaEntryPage *self )
 {
 	ofaEntryStatus status;
 	GdkRGBA color;
@@ -2074,18 +2074,18 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 /**
- * ofa_view_entries_display_entries:
+ * ofa_entry_page_display_entries:
  *
  * @begin: [allow-none]:
  * @end: [allow-none]:
  */
 void
-ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar *id, const GDate *begin, const GDate *end )
+ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id, const GDate *begin, const GDate *end )
 {
-	static const gchar *thisfn = "ofa_view_entries_display_entries";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_display_entries";
+	ofaEntryPagePrivate *priv;
 
-	g_return_if_fail( self && OFA_IS_VIEW_ENTRIES( self ));
+	g_return_if_fail( self && OFA_IS_ENTRY_PAGE( self ));
 	g_return_if_fail( my_strlen( id ));
 
 	if( !OFA_PAGE( self )->prot->dispose_has_run ){
@@ -2119,9 +2119,9 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
  * display columns
  */
 static void
-on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self )
+on_visible_column_toggled( GtkToggleButton *button, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean *visible_flag;
 
 	priv = self->priv;
@@ -2140,9 +2140,9 @@ on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self )
  *  deleted or future)
  */
 static void
-on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self )
+on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean *visible_flag;
 	gchar *prefs;
 
@@ -2172,7 +2172,7 @@ on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self )
  * previous value.
  */
 static void
-on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self )
+on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self )
 {
 	gboolean is_active;
 
@@ -2184,9 +2184,9 @@ on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self
  * reconciliation date and status are never editable
  */
 static void
-set_renderers_editable( ofaViewEntries *self, gboolean editable )
+set_renderers_editable( ofaEntryPage *self, gboolean editable )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gint i;
 
 	priv = self->priv;
@@ -2200,10 +2200,10 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 }
 
 static void
-on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaViewEntries *self )
+on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_cell_edited";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_on_cell_edited";
+	ofaEntryPagePrivate *priv;
 	gint column_id;
 	GtkTreePath *path;
 	GtkTreeIter sort_iter, filter_iter, iter;
@@ -2266,7 +2266,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
  * any) so that we do not try later to reset a default value
  */
 static gint
-get_data_set_indicator( ofaViewEntries *self, gint column_id )
+get_data_set_indicator( ofaEntryPage *self, gint column_id )
 {
 	gint column_data;
 
@@ -2294,9 +2294,9 @@ get_data_set_indicator( ofaViewEntries *self, gint column_id )
  * any) so that we do not try later to reset a default value
  */
 static void
-set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter )
+set_data_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gint column_data;
 
 	priv = self->priv;
@@ -2308,9 +2308,9 @@ set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter 
 }
 
 static void
-on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
+on_row_selected( GtkTreeSelection *select, ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoEntry *entry;
@@ -2342,9 +2342,9 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
  * Individual checks in general are only able to detect errors.
  */
 static void
-check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean v_dope, v_deffect, v_ledger, v_account, v_currency;
 	gchar *prev_msg;
 
@@ -2388,9 +2388,9 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdope, *msg;
 	GDate date;
 	gboolean is_valid;
@@ -2422,9 +2422,9 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter )
  * check for intrinsic validity of effect date
  */
 static gboolean
-check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdeffect, *msg;
 	GDate deff;
 	gboolean is_valid;
@@ -2467,9 +2467,9 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *str, *msg;
 	gboolean is_valid;
 
@@ -2495,9 +2495,9 @@ check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *acc_number, *cur_code, *msg;
 	gboolean is_valid;
 	ofoAccount *account;
@@ -2545,9 +2545,9 @@ check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_label( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *str;
 	gboolean is_valid;
 
@@ -2566,9 +2566,9 @@ check_row_for_valid_label( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *code, *msg;
 	gboolean is_valid;
 
@@ -2594,9 +2594,9 @@ check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 static gboolean
-check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdeb, *scre;
 	gdouble debit, credit;
 	gboolean is_valid;
@@ -2631,9 +2631,9 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter )
  * effect date as computed from dossier and ledger
  */
 static void
-check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdope, *sdeffect, *mnemo, *msg, *sdmin, *sdeff;
 	GDate dope, deff, deff_min;
 	ofoLedger *ledger;
@@ -2688,9 +2688,9 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
  * Returns: %TRUE if a default date has actually been set
  */
 static gboolean
-set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
+set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gboolean set;
 	gboolean deff_set;
 	gint deff_data;
@@ -2739,9 +2739,9 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
  * @iter: an iter on the sorted model
  */
 static gboolean
-check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter )
+check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *number, *code, *msg;
 	gboolean is_valid;
 	const gchar *account_currency;
@@ -2782,9 +2782,9 @@ check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter )
  * Reset error and warning messages
  */
 static void
-reset_error_msg( ofaViewEntries *self, GtkTreeIter *iter )
+reset_error_msg( ofaEntryPage *self, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -2798,9 +2798,9 @@ reset_error_msg( ofaViewEntries *self, GtkTreeIter *iter )
  * Set an error message for the current row
  */
 static void
-set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
+set_error_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *msg )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -2815,9 +2815,9 @@ set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
  */
 #if 0
 static void
-set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
+set_warning_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *msg )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -2827,9 +2827,9 @@ set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
 #endif
 
 static void
-display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+display_error_msg( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *msgerr, *msgwarn;
 	const gchar *color_str, *text;
 
@@ -2861,9 +2861,9 @@ display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter
  * save a modified or new entry
  */
 static gboolean
-save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gchar *sdope, *sdeff, *ref, *label, *ledger, *account, *sdeb, *scre, *currency;
 	GDate dope, deff;
 	gint number;
@@ -2954,10 +2954,10 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
  * note that the status cannot be modified here
  */
 static void
-remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit )
+remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit )
 {
-	static const gchar *thisfn = "ofa_view_entries_remediate_entry_account";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_remediate_entry_account";
+	ofaEntryPagePrivate *priv;
 	const gchar *account;
 	ofxAmount amount, debit, credit;
 	ofaEntryStatus status;
@@ -3027,10 +3027,10 @@ remediate_entry_account( ofaViewEntries *self, ofoEntry *entry, const gchar *pre
 }
 
 static void
-remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit )
+remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit )
 {
-	static const gchar *thisfn = "ofa_view_entries_remediate_entry_ledger";
-	ofaViewEntriesPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_page_remediate_entry_ledger";
+	ofaEntryPagePrivate *priv;
 	const gchar *ledger, *currency;
 	ofxAmount amount, debit, credit;
 	ofaEntryStatus status;
@@ -3100,9 +3100,9 @@ remediate_entry_ledger( ofaViewEntries *self, ofoEntry *entry, const gchar *prev
  * Returns: a GtkTreeIter on GtkListStore treemodel
  */
 static gboolean
-find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter )
+find_entry_by_number( ofaEntryPage *self, gint number, GtkTreeIter *iter )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	gint tnumber;
 
 	priv = self->priv;
@@ -3122,9 +3122,9 @@ find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter )
 }
 
 static void
-on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self )
+on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_new_object";
+	static const gchar *thisfn = "ofa_entry_page_on_dossier_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -3142,9 +3142,9 @@ on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *sel
  * update our dataset if the entry should be part of it
  */
 static void
-do_new_entry( ofaViewEntries *self, ofoEntry *entry )
+do_new_entry( ofaEntryPage *self, ofoEntry *entry )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkTreeIter iter;
 
 	priv = self->priv;
@@ -3166,9 +3166,9 @@ do_new_entry( ofaViewEntries *self, ofoEntry *entry )
  * a ledger mnemo, an account number, a currency code may has changed
  */
 static void
-on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self )
+on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_entry_page_on_dossier_updated_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
@@ -3193,7 +3193,7 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 }
 
 static void
-do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number )
+do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -3217,7 +3217,7 @@ do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *
 }
 
 static void
-do_update_ledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo )
+do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -3241,7 +3241,7 @@ do_update_ledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mn
 }
 
 static void
-do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *code )
+do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -3265,9 +3265,9 @@ do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *c
 }
 
 static void
-do_update_entry( ofaViewEntries *self, ofoEntry *entry )
+do_update_entry( ofaEntryPage *self, ofoEntry *entry )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkTreeIter iter;
 
 	priv = self->priv;
@@ -3283,9 +3283,9 @@ do_update_entry( ofaViewEntries *self, ofoEntry *entry )
  *  have been deleted
  */
 static void
-on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self )
+on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_dossier_deleted_object";
+	static const gchar *thisfn = "ofa_entry_page_on_dossier_deleted_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), user_data=%p",
 			thisfn,
@@ -3299,15 +3299,15 @@ on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries 
 }
 
 static void
-do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry )
+do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_view_entries_on_deleted_entries";
+	static const gchar *thisfn = "ofa_entry_page_on_deleted_entries";
 
 	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
 }
 
 static gboolean
-on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self )
+on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self )
 {
 	gboolean stop;
 
@@ -3330,7 +3330,7 @@ on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntrie
 }
 
 static ofaEntryStatus
-get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+get_row_status( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *str;
 	ofaEntryStatus status;
@@ -3343,7 +3343,7 @@ get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static GDate *
-get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date )
+get_row_deffect( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date )
 {
 	gchar *sdate;
 
@@ -3355,7 +3355,7 @@ get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, 
 }
 
 static gint
-get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+get_row_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *msgerr, *msgwarn;
 	gint err_level;
@@ -3382,9 +3382,9 @@ get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter 
  * insert a new entry at the current position
  */
 static void
-insert_new_row( ofaViewEntries *self )
+insert_new_row( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter sort_iter, filter_iter, new_iter;
 	ofoEntry *entry;
@@ -3435,9 +3435,9 @@ insert_new_row( ofaViewEntries *self )
 }
 
 static void
-delete_row( ofaViewEntries *self )
+delete_row( ofaEntryPage *self )
 {
-	ofaViewEntriesPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter sort_iter, filter_iter, iter;
