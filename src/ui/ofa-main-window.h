@@ -93,7 +93,7 @@ enum {
 
 ofaMainWindow *ofa_main_window_new                    ( const ofaApplication *application );
 
-ofaPage       *ofa_main_window_activate_theme         ( ofaMainWindow *window, gint theme_id );
+ofaPage       *ofa_main_window_activate_theme         ( const ofaMainWindow *window, gint theme_id );
 
 gboolean       ofa_main_window_is_willing_to_quit     ( ofaMainWindow *window );
 

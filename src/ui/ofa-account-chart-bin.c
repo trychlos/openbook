@@ -49,19 +49,19 @@
 /* private instance data
  */
 struct _ofaAccountChartBinPrivate {
-	gboolean            dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaMainWindow      *main_window;
-	ofoDossier         *dossier;
-	GList              *dos_handlers;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	GList               *dos_handlers;
 
-	ofaAccountStore    *store;
-	GList              *sto_handlers;
-	GtkNotebook        *book;
-	GtkTreeCellDataFunc cell_fn;
-	void               *cell_data;
+	ofaAccountStore     *store;
+	GList               *sto_handlers;
+	GtkNotebook         *book;
+	GtkTreeCellDataFunc  cell_fn;
+	void                *cell_data;
 
-	gint                prev_class;
+	gint                 prev_class;
 };
 
 /* these are only default labels in the case where we were not able to
@@ -286,7 +286,7 @@ ofa_account_chart_bin_class_init( ofaAccountChartBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountChartBin *
-ofa_account_chart_bin_new( ofaMainWindow *main_window  )
+ofa_account_chart_bin_new( const ofaMainWindow *main_window  )
 {
 	ofaAccountChartBin *bin;
 

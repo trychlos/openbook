@@ -72,7 +72,7 @@ typedef struct {
 
 GType               ofa_account_chart_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaAccountChartBin *ofa_account_chart_bin_new                 ( ofaMainWindow *main_window );
+ofaAccountChartBin *ofa_account_chart_bin_new                 ( const ofaMainWindow *main_window );
 
 void                ofa_account_chart_bin_set_cell_data_func  ( ofaAccountChartBin *book,
 																		GtkTreeCellDataFunc fn_cell,

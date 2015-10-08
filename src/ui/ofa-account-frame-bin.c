@@ -40,21 +40,21 @@
 /* private instance data
  */
 struct _ofaAccountFrameBinPrivate {
-	gboolean            dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaMainWindow      *main_window;
-	GtkGrid            *grid;
-	gint                buttons;
+	const ofaMainWindow *main_window;
+	GtkGrid             *grid;
+	gint                 buttons;
 
-	ofaAccountChartBin *account_chart;
-	ofaButtonsBox      *box;
+	ofaAccountChartBin  *account_chart;
+	ofaButtonsBox       *box;
 
-	GtkWidget          *new_btn;
-	GtkWidget          *update_btn;
-	GtkWidget          *delete_btn;
-	GtkWidget          *view_entries_btn;
-	GtkWidget          *settlement_btn;
-	GtkWidget          *reconciliation_btn;
+	GtkWidget           *new_btn;
+	GtkWidget           *update_btn;
+	GtkWidget           *delete_btn;
+	GtkWidget           *view_entries_btn;
+	GtkWidget           *settlement_btn;
+	GtkWidget           *reconciliation_btn;
 };
 
 /* signals defined here
@@ -213,7 +213,7 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountFrameBin *
-ofa_account_frame_bin_new( ofaMainWindow *main_window  )
+ofa_account_frame_bin_new( const ofaMainWindow *main_window  )
 {
 	ofaAccountFrameBin *bin;
 

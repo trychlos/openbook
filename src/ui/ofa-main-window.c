@@ -338,7 +338,7 @@ static void             on_dossier_properties_cleanup_handler( ofaMainWindow *wi
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
+static GtkWidget       *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
@@ -1628,7 +1628,7 @@ ofa_main_window_get_dossier_credentials( const ofaMainWindow *window, const gcha
  * last run it
  */
 ofaPage *
-ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
+ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 {
 	static const gchar *thisfn = "ofa_main_window_activate_theme";
 	ofaMainWindowPrivate *priv;
@@ -1713,7 +1713,7 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
  * handling object as an ofaPage
  */
 static GtkWidget *
-main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
+main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
 {
 	GtkGrid *grid;
 	ofaPage *handler;

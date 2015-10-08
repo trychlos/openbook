@@ -44,21 +44,21 @@ struct _ofaAccountSelectPrivate {
 
 	/* input data
 	 */
-	ofaMainWindow      *main_window;
-	ofoDossier         *dossier;
-	gint                allowed;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	gint                 allowed;
 
 	/* UI
 	 */
-	GtkWindow          *toplevel;
-	ofaAccountFrameBin *account_frame;
-	ofaAccountChartBin *account_chart;
-	GtkWidget          *ok_btn;
-	GtkWidget          *msg_label;
+	GtkWindow           *toplevel;
+	ofaAccountFrameBin  *account_frame;
+	ofaAccountChartBin  *account_chart;
+	GtkWidget           *ok_btn;
+	GtkWidget           *msg_label;
 
 	/* returned value
 	 */
-	gchar              *account_number;
+	gchar               *account_number;
 };
 
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
@@ -155,12 +155,15 @@ on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
 
 /**
  * ofa_account_select_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @asked_number: [allow-none]: the initially selected account identifier.
+ * @allowed: flags which qualifies the allowed selection (see ofoAccount.h).
  *
- * Returns the selected account number, as a newly allocated string
- * that must be g_free() by the caller
+ * Returns: the selected account identifier, as a newly allocated string
+ * that must be g_free() by the caller.
  */
 gchar *
-ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
+ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;

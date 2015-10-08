@@ -71,7 +71,7 @@ typedef struct {
 
 GType               ofa_account_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaAccountFrameBin *ofa_account_frame_bin_new        ( ofaMainWindow *main_window );
+ofaAccountFrameBin *ofa_account_frame_bin_new        ( const ofaMainWindow *main_window );
 
 void                ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *bin,
 																gboolean view_entries,
