@@ -39,6 +39,8 @@ typedef struct {
 }
 	sBuildableByName;
 
+static GtkCssProvider *st_css_provider  = NULL;
+
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
@@ -984,26 +986,25 @@ my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
 {
 	static const gchar *thisfn = "my_utils_widget_set_style";
 	static const gchar *cssfile = PKGCSSDIR "/ofa.css";
-	static GtkCssProvider *css_provider = NULL;
 	GError *error;
 	GtkStyleContext *context;
 
-	if( !css_provider ){
-		css_provider = gtk_css_provider_new();
+	if( !st_css_provider ){
+		st_css_provider = gtk_css_provider_new();
 		error = NULL;
 		g_debug( "%s: css=%s", thisfn, cssfile );
-		if( !gtk_css_provider_load_from_path( css_provider, cssfile, &error )){
+		if( !gtk_css_provider_load_from_path( st_css_provider, cssfile, &error )){
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
-			g_clear_object( &css_provider );
+			g_clear_object( &st_css_provider );
 		}
 	}
 
-	if( css_provider ){
+	if( st_css_provider ){
 		context = gtk_widget_get_style_context( widget );
 		gtk_style_context_add_class( context, style );
 		gtk_style_context_add_provider( context,
-				GTK_STYLE_PROVIDER( css_provider ),
+				GTK_STYLE_PROVIDER( st_css_provider ),
 				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
 	}
 }
@@ -1086,6 +1087,21 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
 			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
 		}
 #endif
+}
+
+/**
+ * my_utils_css_provider_free:
+ *
+ * Release the memory allocated to the CSS provider.
+ */
+void
+my_utils_css_provider_free( void )
+{
+	static const gchar *thisfn = "my_utils_css_provider_free";
+
+	g_debug( "%s", thisfn );
+
+	g_clear_object( &st_css_provider );
 }
 
 /**

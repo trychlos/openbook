@@ -200,12 +200,10 @@ application_dispose( GObject *instance )
 		if( priv->dos_store ){
 			ofa_dossier_store_free();
 		}
-		if( priv->menu ){
-			g_object_unref( priv->menu );
-		}
-
+		g_clear_object( &priv->menu );
 		ofa_plugin_release_modules();
 		ofa_settings_free();
+		my_utils_css_provider_free();
 	}
 
 	/* chain up to the parent class */

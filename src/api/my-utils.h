@@ -116,6 +116,8 @@ void          my_utils_widget_set_margin_left         ( GtkWidget *widget, guint
 void          my_utils_widget_set_margin_right        ( GtkWidget *widget, guint right );
 void          my_utils_widget_set_xalign              ( GtkWidget *widget, gfloat xalign );
 
+void          my_utils_css_provider_free              ( void );
+
 gboolean      my_utils_output_stream_new              ( const gchar *uri, GFile **file, GOutputStream **stream );
 
 gboolean      my_utils_input_stream_new               ( const gchar *filename, GFile **file, GInputStream **stream );

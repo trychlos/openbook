@@ -455,7 +455,9 @@
                 - RestoreAssistant: dossier treeview after created a new dossier
                 - administrative credentials
 
- 867
+ 867 2015-10- 8 oaDossierNewBin: priv->infos is never released
+
+ 868
 
 -----------------------------------------------------------------------
  DONE
