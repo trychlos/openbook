@@ -187,12 +187,13 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 
 /**
  * ofa_account_properties_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
+ * @account: the account.
  *
  * Update the properties of an account
  */
 gboolean
-ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
+ofa_account_properties_run( const ofaMainWindow *main_window, ofoAccount *account )
 {
 	static const gchar *thisfn = "ofa_account_properties_run";
 	ofaAccountProperties *self;
