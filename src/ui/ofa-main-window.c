@@ -1280,7 +1280,9 @@ do_close_dossier( ofaMainWindow *self )
 
 	g_clear_object( &priv->dossier );
 	g_free( priv->dos_account );
+	priv->dos_account = NULL;
 	g_free( priv->dos_password );
+	priv->dos_password = NULL;
 
 	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 	priv->pane = NULL;

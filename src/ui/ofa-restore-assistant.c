@@ -1046,13 +1046,10 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
-		/* first close the currently opened dossier if we are going to
-		 * restore to this same dossier */
+		/* first close the currently opened dossier */
 		if( dossier ){
 			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
-			if( !g_utf8_collate( priv->p2_dossier, ofo_dossier_get_name( dossier ))){
-				ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
-			}
+			ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
 		}
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );

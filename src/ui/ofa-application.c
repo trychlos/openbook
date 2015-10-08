@@ -841,7 +841,6 @@ on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_main_window_close_dossier( priv->main_window );
 	ofa_restore_assistant_run( priv->main_window );
 }
 
