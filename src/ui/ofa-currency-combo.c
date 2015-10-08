@@ -38,13 +38,13 @@
 /* private instance data
  */
 struct _ofaCurrencyComboPrivate {
-	gboolean           dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaMainWindow     *main_window;
-	ofoDossier        *dossier;
-	GList             *handlers;
-	ofaCurrencyColumns columns;
-	ofaCurrencyStore  *store;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	GList               *handlers;
+	ofaCurrencyColumns   columns;
+	ofaCurrencyStore    *store;
 };
 
 /* signals defined here
@@ -228,7 +228,7 @@ create_combo_columns( ofaCurrencyCombo *combo )
  * create the underlying tree store.
  */
 void
-ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo, ofaMainWindow *main_window )
+ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo, const ofaMainWindow *main_window )
 {
 	ofaCurrencyComboPrivate *priv;
 

@@ -75,7 +75,7 @@ void              ofa_currency_combo_set_columns    ( ofaCurrencyCombo *combo,
 																ofaCurrencyColumns columns );
 
 void              ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo,
-																ofaMainWindow *main_window );
+																const ofaMainWindow *main_window );
 
 gchar            *ofa_currency_combo_get_selected   ( ofaCurrencyCombo *combo );
 

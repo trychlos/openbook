@@ -48,46 +48,46 @@ struct _ofaAccountPropertiesPrivate {
 
 	/* initialization
 	 */
-	ofaMainWindow *main_window;
-	ofoAccount    *account;
+	const ofaMainWindow *main_window;
+	ofoAccount          *account;
 
 	/* runtime data
 	 */
-	ofoDossier    *dossier;
-	gboolean       is_current;
-	gboolean       is_new;
-	gboolean       updated;
-	gboolean       number_ok;
-	gboolean       has_entries;
-	gboolean       balances_displayed;
+	ofoDossier          *dossier;
+	gboolean             is_current;
+	gboolean             is_new;
+	gboolean             updated;
+	gboolean             number_ok;
+	gboolean             has_entries;
+	gboolean             balances_displayed;
 
 	/* UI
 	 */
-	GtkWidget     *number_entry;
-	GtkWidget     *label_entry;
-	GtkWidget     *closed_btn;
-	GtkWidget     *type_frame;
-	GtkWidget     *root_btn;
-	GtkWidget     *detail_btn;
-	GtkWidget     *p1_exe_frame;
-	GtkWidget     *settleable_btn;
-	GtkWidget     *reconciliable_btn;
-	GtkWidget     *forward_btn;
-	GtkWidget     *currency_etiq;
-	GtkWidget     *currency_parent;
-	GtkWidget     *currency_combo;
-	GtkWidget     *btn_ok;
+	GtkWidget           *number_entry;
+	GtkWidget           *label_entry;
+	GtkWidget           *closed_btn;
+	GtkWidget           *type_frame;
+	GtkWidget           *root_btn;
+	GtkWidget           *detail_btn;
+	GtkWidget           *p1_exe_frame;
+	GtkWidget           *settleable_btn;
+	GtkWidget           *reconciliable_btn;
+	GtkWidget           *forward_btn;
+	GtkWidget           *currency_etiq;
+	GtkWidget           *currency_parent;
+	GtkWidget           *currency_combo;
+	GtkWidget           *btn_ok;
 
 	/* account data
 	 */
-	gchar         *number;
-	gchar         *label;
-	gchar         *currency;
-	gint           cur_digits;
-	const gchar   *cur_symbol;
-	gchar         *type;
-	gchar         *upd_user;
-	GTimeVal       upd_stamp;
+	gchar               *number;
+	gchar               *label;
+	gchar               *currency;
+	gint                 cur_digits;
+	const gchar         *cur_symbol;
+	gchar               *type;
+	gchar               *upd_user;
+	GTimeVal             upd_stamp;
 };
 
 typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
