@@ -232,7 +232,7 @@ dossier_finalize( GObject *instance )
 
 	g_free( priv->dname );
 	g_free( priv->userid );
-
+	g_free( priv->currency );
 	g_free( priv->label );
 	g_free( priv->forward_ope );
 	g_free( priv->sld_ope );
