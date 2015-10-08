@@ -173,6 +173,10 @@ application_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_APPLICATION( instance )->priv;
+
+	g_free( priv->application_name );
+	g_free( priv->description );
+	g_free( priv->icon_name );
 	g_strfreev( priv->argv );
 
 	/* chain up to the parent class */
