@@ -370,7 +370,10 @@ main_window_finalize( GObject *instance )
 static void
 main_window_dispose( GObject *instance )
 {
+	static const gchar *thisfn = "ofa_main_window_dispose";
 	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
@@ -385,12 +388,8 @@ main_window_dispose( GObject *instance )
 		}
 
 		/* unref object members here */
-		if( priv->menu ){
-			g_object_unref( priv->menu );
-		}
-		if( priv->dossier ){
-			g_object_unref( priv->dossier );
-		}
+		g_clear_object( &priv->menu );
+		g_clear_object( &priv->dossier );
 	}
 
 	/* chain up to the parent class */
