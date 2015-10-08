@@ -883,9 +883,11 @@ ofa_settings_dossier_get_keys( const gchar *dname )
 
 	settings_new();
 
-	list = NULL;
 	group = get_dossier_group_from_name( dname );
 	array = g_key_file_get_keys( get_keyfile_from_target( SETTINGS_TARGET_DOSSIER ), group, NULL, NULL );
+	g_free( group );
+
+	list = NULL;
 	iter = array;
 	while( *iter ){
 		list = g_slist_prepend( list, g_strdup( *iter ));
