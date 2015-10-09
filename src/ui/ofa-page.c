@@ -348,22 +348,25 @@ do_setup_page( ofaPage *page )
 static void
 v_setup_page_default( ofaPage *page )
 {
+	ofaPagePrivate *priv;
 	GtkWidget *view;
 	GtkWidget *buttons_box;
 
 	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
+	priv = page->priv;
+
 	view = do_setup_view( page );
 	if( view ){
-		gtk_grid_attach( page->priv->top_grid, view, 0, 0, 1, 1 );
+		gtk_grid_attach( priv->top_grid, view, 0, 0, 1, 1 );
 	}
 
 	buttons_box = do_setup_buttons( page );
 	if( buttons_box ){
-		gtk_grid_attach( page->priv->top_grid, buttons_box, 1, 0, 1, 1 );
+		gtk_grid_attach( priv->top_grid, buttons_box, 1, 0, 1, 1 );
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( page->priv->top_grid ));
+	gtk_widget_show_all( GTK_WIDGET( priv->top_grid ));
 }
 
 static GtkWidget *
