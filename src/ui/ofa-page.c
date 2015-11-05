@@ -42,7 +42,6 @@ struct _ofaPagePrivate {
 	/* properties set at instanciation time
 	 */
 	const ofaMainWindow *main_window;
-	GtkGrid             *top_grid;
 	gint                 theme;
 };
 
@@ -50,7 +49,6 @@ struct _ofaPagePrivate {
  */
 enum {
 	PROP_MAIN_WINDOW_ID = 1,
-	PROP_TOP_GRID_ID,
 	PROP_THEME_ID,
 };
 
@@ -63,14 +61,13 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaPage, ofa_page, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaPage, ofa_page, GTK_TYPE_GRID )
 
 static void       do_setup_page( ofaPage *page );
 static void       v_setup_page_default( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
 static GtkWidget *do_setup_buttons( ofaPage *page );
 static void       do_init_view( ofaPage *page );
-static void       on_grid_finalized( ofaPage *self, GObject *grid );
 
 static void
 page_finalize( GObject *instance )
@@ -134,10 +131,6 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 				g_value_set_pointer( value, ( gpointer ) priv->main_window );
 				break;
 
-			case PROP_TOP_GRID_ID:
-				g_value_set_pointer( value, priv->top_grid );
-				break;
-
 			case PROP_THEME_ID:
 				g_value_set_int( value, priv->theme );
 				break;
@@ -172,10 +165,6 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 				priv->main_window = g_value_get_pointer( value );
 				break;
 
-			case PROP_TOP_GRID_ID:
-				priv->top_grid = g_value_get_pointer( value );
-				break;
-
 			case PROP_THEME_ID:
 				priv->theme = g_value_get_int( value );
 				break;
@@ -207,18 +196,11 @@ page_constructed( GObject *instance )
 	self = OFA_PAGE( instance );
 	priv = self->priv;
 
-	g_debug( "%s: instance=%p (%s), main_window=%p, top_grid=%p, theme=%d",
+	g_debug( "%s: instance=%p (%s), main_window=%p, theme=%d",
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) priv->main_window,
-			( void * ) priv->top_grid,
 			priv->theme );
-
-	/* attach a weak reference to the grid widget to unref this object
-	 * and (more useful) the derived class which handles it */
-	g_return_if_fail( priv->top_grid && GTK_IS_GRID( priv->top_grid ));
-	g_object_weak_ref(
-			G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, instance );
 
 	/* let the child class setup its page */
 	do_setup_page( self );
@@ -240,7 +222,6 @@ ofa_page_init( ofaPage *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPagePrivate );
 	self->priv->main_window = NULL;
-	self->priv->top_grid = NULL;
 	self->priv->theme = -1;
 }
 
@@ -266,15 +247,6 @@ ofa_page_class_init( ofaPageClass *klass )
 					PAGE_PROP_MAIN_WINDOW,
 					"Main window",
 					"The main window (ofaMainWindow *)",
-					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			PROP_TOP_GRID_ID,
-			g_param_spec_pointer(
-					PAGE_PROP_TOP_GRID,
-					"Page grid",
-					"The top child of the page (GtkGrid *)",
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property(
@@ -340,25 +312,21 @@ do_setup_page( ofaPage *page )
 static void
 v_setup_page_default( ofaPage *page )
 {
-	ofaPagePrivate *priv;
-	GtkWidget *view;
-	GtkWidget *buttons_box;
+	GtkWidget *view, *buttons_box;
 
 	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	priv = page->priv;
-
 	view = do_setup_view( page );
 	if( view ){
-		gtk_grid_attach( priv->top_grid, view, 0, 0, 1, 1 );
+		gtk_grid_attach( GTK_GRID( page ), view, 0, 0, 1, 1 );
 	}
 
 	buttons_box = do_setup_buttons( page );
 	if( buttons_box ){
-		gtk_grid_attach( priv->top_grid, buttons_box, 1, 0, 1, 1 );
+		gtk_grid_attach( GTK_GRID( page ), buttons_box, 1, 0, 1, 1 );
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( priv->top_grid ));
+	gtk_widget_show_all( GTK_WIDGET( page ));
 }
 
 static GtkWidget *
@@ -429,22 +397,6 @@ ofa_page_get_main_window( const ofaPage *page )
 }
 
 /**
- * ofa_page_get_top_grid:
- */
-GtkGrid *
-ofa_page_get_top_grid( const ofaPage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-
-	if( !page->prot->dispose_has_run ){
-
-		return( page->priv->top_grid );
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_page_get_theme:
  *
  * Returns -1 if theme is not set.
@@ -477,21 +429,6 @@ ofa_page_get_dossier( const ofaPage *page )
 	}
 
 	return( NULL );
-}
-
-static void
-on_grid_finalized( ofaPage *self, GObject *finalized_grid )
-{
-	static const gchar *thisfn = "ofa_page_on_grid_finalized";
-
-	g_debug( "%s: self=%p (%s), finalized_grid=%p (%s)",
-			thisfn,
-			( void * ) self, G_OBJECT_TYPE_NAME( self ),
-			( void * ) finalized_grid, G_OBJECT_TYPE_NAME( finalized_grid ));
-
-	g_return_if_fail( self && OFA_IS_PAGE( self ));
-
-	g_object_unref( self );
 }
 
 /**

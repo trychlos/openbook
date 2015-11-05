@@ -30,18 +30,14 @@
  * @short_description: #ofaPage class definition.
  * @include: ui/ofa-page.h
  *
- * The main window is organized with a treeview on the left pane, and a
- * notebook on the right one. The main child of the pages of this said
- * 'main' (because owned by the main window) notebook is always a
- * GtkGrid which is itself created by the main window.
- *
- * All datas of the applications are displayed in pages of this 'main'
- * notebook. These datas are handled by ofaPage-derived classes
- * (this class). Each ofaPage-derived class begins so with an empty
- * GtkGrid as its top widget.
- *
- * Most of them, though this is far from being mandatory, have a
- * similar display:
+ * The main window is organized with an horizontal paned which
+ * includes:
+ * - a treeview on the left pane,
+ * - a notebook on the right pane.
+ * All datas of the application are displayed as pages of this right-
+ * pane 'main' notebook. The top child of these pages is always a
+ * #GtkGrid -derived classes. Most of them, though this is far from
+ * being mandatory, have a similar display:
  *
  * +------------------------------------------------------------------+
  * | GtkGrid created by the main window,                              |
@@ -83,23 +79,6 @@
  *
  * ofaEntryPage        several top frames with a treeview on a       No
  *                     list store
- *
- * Finalization
- * ------------
- * The application pages may be terminated by two ways:
- * - terminating the application,
- *   which destroy the main Notebook,
- *   which destroy the top #GtkGrid of each page,
- *   which unref the #ofaPage -derived class through the weak reference
- *   set on the GtkGrid
- * - terminating the page itself by cliking on the label cross,
- *   which removes the page from the main notebook,
- *   which destroy the top #GtkGrid of the page,
- *   which unref the #ofaPage -derived class through the weak reference
- *   set on the GtkGrid.
- * There is no place where the finalization is initialized by the
- * #ofaPage. This is always the destroying of the top #GtkGrid which
- * leads to the unreffing of the page.
  */
 
 #include "api/ofo-dossier-def.h"
@@ -113,12 +92,9 @@ G_BEGIN_DECLS
  * Properties set against this base class at instanciation time
  */
 #define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
-#define PAGE_PROP_TOP_GRID              "page-prop-top-grid"
 #define PAGE_PROP_THEME                 "page-prop-theme"
 
 const ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
-
-GtkGrid             *ofa_page_get_top_grid              ( const ofaPage *page );
 
 gint                 ofa_page_get_theme                 ( const ofaPage *page );
 

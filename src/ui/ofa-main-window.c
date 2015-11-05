@@ -297,11 +297,6 @@ static sTreeDef st_tree_defs[] = {
 		{ 0 }
 };
 
-/* A pointer to the handling ofaPage object is set against each page
- * ( the GtkGrid) of the main notebook
- */
-#define OFA_DATA_HANDLER                "ofa-data-handler"
-
 static const gchar *st_main_window_name = "MainWindow";
 static const gchar *st_dosmenu_xml      = PKGUIDIR "/ofa-dos-menubar.ui";
 static const gchar *st_dosmenu_id       = "dos-menu";
@@ -337,10 +332,10 @@ static void             enable_action_import( ofaMainWindow *window, gboolean en
 static void             on_dossier_properties_cleanup_handler( ofaMainWindow *window );
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
-static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static GtkWidget       *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
-static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
-static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
+static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
+static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
+static void             on_tab_close_clicked( myTabLabel *tab, ofaPage *page );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void             close_all_pages( ofaMainWindow *main_window );
 
@@ -1622,10 +1617,13 @@ ofa_main_window_get_dossier_credentials( const ofaMainWindow *window, const gcha
 
 /**
  * ofa_main_window_activate_theme:
+ * @main_window: the #ofaMainWindow main window.
+ * @theme: the theme identifier as defined in ofa-main-window.h.
  *
- * if the main page doesn't exist yet, then create it
- * then make sure it is displayed, and activate it
- * last run it
+ * Activate the specified theme, creating the corresponding page if it
+ * didn't exist.
+ *
+ * Returns: the #ofaPage corresponding to the theme.
  */
 ofaPage *
 ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
@@ -1633,13 +1631,12 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	static const gchar *thisfn = "ofa_main_window_activate_theme";
 	ofaMainWindowPrivate *priv;
 	GtkNotebook *main_book;
-	GtkWidget *page;
-	ofaPage *handler;
+	ofaPage *page;
 	const sThemeDef *theme_def;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	handler = NULL;
+	page = NULL;
 	priv = main_window->priv;
 
 	if( !priv->dispose_has_run ){
@@ -1664,14 +1661,11 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 		if( !page ){
 			page = main_book_create_page( main_window, main_book, theme_def );
 		}
-		g_return_val_if_fail( page && GTK_IS_WIDGET( page ), NULL );
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 		main_book_activate_page( main_window, main_book, page );
-
-		handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
-		g_return_val_if_fail( handler && OFA_IS_PAGE( handler ), NULL );
 	}
 
-	return( handler );
+	return( page );
 }
 
 static GtkNotebook *
@@ -1685,68 +1679,55 @@ main_get_book( const ofaMainWindow *window )
 	return( GTK_NOTEBOOK( book ));
 }
 
-static GtkWidget *
+static ofaPage *
 main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
 {
-	GtkWidget *page, *found;
+	GtkWidget *page;
 	gint count, i, page_thm;
-	ofaPage *handler;
 
-	found = NULL;
 	count = gtk_notebook_get_n_pages( book );
-	for( i=0 ; !found && i<count ; ++i ){
+	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( book, i );
-		handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
-		g_return_val_if_fail( handler && OFA_IS_PAGE( handler ), NULL );
-		page_thm = ofa_page_get_theme( handler );
+		g_return_val_if_fail( OFA_IS_PAGE( page ), NULL );
+		page_thm = ofa_page_get_theme( OFA_PAGE( page ));
 		if( page_thm == theme ){
-			found = page;
+			return( OFA_PAGE( page ));
 		}
 	}
 
-	return( found );
+	return( NULL );
 }
 
 /*
  * the page for this theme has not been found
- * so, create it as an empty GtkGrid, simultaneously instanciating the
- * handling object as an ofaPage
+ * so, create it here
  */
-static GtkWidget *
+static ofaPage *
 main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
 {
-	GtkGrid *grid;
-	ofaPage *handler;
+	ofaPage *page;
 	myTabLabel *tab;
 	GtkWidget *label;
 
-	/* all pages of the main notebook begin with a GtkGrid
-	 */
-	grid = GTK_GRID( gtk_grid_new());
-
-	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
-	g_signal_connect(
-			G_OBJECT( tab),
-			MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), grid );
-
-	label = gtk_label_new( gettext( theme_def->label ));
-	my_utils_widget_set_xalign( label, 0 );
-
-	gtk_notebook_append_page_menu( book, GTK_WIDGET( grid ), GTK_WIDGET( tab ), label );
-	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
-
-	/* then instanciates the handling object which happens to be an
-	 * ofaPage
-	 */
-	handler = g_object_new(( *theme_def->fn_get_type )(),
+	/* the top child of the notebook page */
+	page = g_object_new(( *theme_def->fn_get_type )(),
 					PAGE_PROP_MAIN_WINDOW, main,
-					PAGE_PROP_TOP_GRID,    grid,
 					PAGE_PROP_THEME,       theme_def->theme_id,
 					NULL );
 
-	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );
 
-	return( GTK_WIDGET( grid ));
+	/* the tab widget */
+	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
+	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
+
+	/* the menu widget */
+	label = gtk_label_new( gettext( theme_def->label ));
+	my_utils_widget_set_xalign( label, 0 );
+
+	gtk_notebook_append_page_menu( book, GTK_WIDGET( page ), GTK_WIDGET( tab ), label );
+	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( page ), TRUE );
+
+	return( page );
 }
 
 /*
@@ -1756,55 +1737,44 @@ main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThem
  * embedded treeview.
  */
 static void
-main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page )
+main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page )
 {
 	gint page_num;
 	GtkWidget *widget;
-	ofaPage *handler;
 
 	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
 	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
-	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
 	gtk_widget_show_all( GTK_WIDGET( window ));
 
-	page_num = gtk_notebook_page_num( book, page );
+	page_num = gtk_notebook_page_num( book, GTK_WIDGET( page ));
 	gtk_notebook_set_current_page( book, page_num );
 
-	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
-	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
-
-	widget = ofa_page_get_top_focusable_widget( handler );
+	widget = ofa_page_get_top_focusable_widget( page );
 	if( widget ){
 		g_return_if_fail( GTK_IS_WIDGET( widget ));
 		gtk_widget_grab_focus( widget );
 	}
 }
 
-/*
- * @grid: the grid which contains the #ofaPage content of the main
- *  GtkNotebook
- */
 static void
-on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid )
+on_tab_close_clicked( myTabLabel *tab, ofaPage *page )
 {
-	ofaPage *handler;
+	static const gchar *thisfn = "ofa_main_window_on_tab_close_clicked";
 	const ofaMainWindow *main_window;
 	GtkNotebook *book;
 	gint page_num;
 
-	g_debug( "ofa_main_window_on_tab_close_clicked: tab=%p", ( void * ) tab );
+	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
 
-	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( grid ), OFA_DATA_HANDLER );
-	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
-
-	main_window = ofa_page_get_main_window( handler );
+	main_window = ofa_page_get_main_window( page );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	book = main_get_book( main_window );
 	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 
-	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
+	page_num = gtk_notebook_page_num( book, GTK_WIDGET( page ));
 	g_return_if_fail( page_num >= 0 );
 
 	gtk_notebook_remove_page( book, page_num );
@@ -1818,15 +1788,12 @@ static void
 on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_main_window_on_page_removed";
-	ofaPage *handler;
 
 	g_debug( "%s: book=%p, page_w=%p, page_num=%u, main_window=%p",
 			thisfn, ( void * ) book, ( void * ) page_w, page_num, ( void * ) main_window );
 
-	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page_w ), OFA_DATA_HANDLER );
-	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
 
-	g_signal_emit_by_name( handler, "page-removed", page_w, page_num );
+	g_signal_emit_by_name( page_w, "page-removed", page_w, page_num );
 }
 
 static void

@@ -119,14 +119,12 @@ static void
 v_setup_page( ofaPage *page )
 {
 	ofaAccountPagePrivate *priv;
-	GtkGrid *grid;
 
 	priv = OFA_ACCOUNT_PAGE( page )->priv;
 
-	grid = ofa_page_get_top_grid( page );
-
 	priv->accounts_frame = ofa_account_frame_bin_new( ofa_page_get_main_window( page ));
-	gtk_grid_attach( grid, GTK_WIDGET( priv->accounts_frame ), 0, 0, 1, 1 );
+	gtk_widget_set_margin_top( GTK_WIDGET( priv->accounts_frame ), 4 );
+	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->accounts_frame ), 0, 0, 1, 1 );
 	ofa_account_frame_bin_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
 
 	g_signal_connect(

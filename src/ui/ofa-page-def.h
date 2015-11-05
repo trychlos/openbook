@@ -47,7 +47,7 @@ typedef struct _ofaPagePrivate        ofaPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject           parent;
+	GtkGrid           parent;
 
 	/*< protected members >*/
 	ofaPageProtected *prot;
@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GtkGridClass      parent;
 
 	/*< protected virtual functions >*/
 	/**

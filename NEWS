@@ -27,7 +27,8 @@
 
  Other changes:
 
-   - 
+   - ofaPage: is now derived from GtkGrid.
+   - ofa_page_get_top_grid(): removed function.
 
 -----------------------------------------------------------------------
  Version 0.40

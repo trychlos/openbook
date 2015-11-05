@@ -46,9 +46,7 @@
  * | | | | +-------------+ | +--------------------------------+ | | | |
  * | | | | | GtkTreeView | | | GtkNotebook                    | | | | |
  * | | | | |             | | |                                | | | | |
- * | | | | |             | | | where each page is a GtkGrid   | | | | |
- * | | | | |             | | |  which is handled by an        | | | | |
- * | | | | |             | | |  ofaPage                       | | | | |
+ * | | | | |             | | | 'main notebook'                | | | | |
  * | | | | |             | | |                                | | | | |
  * | | | | |             | | | see ofa-page.h for a more      | | | | |
  * | | | | |             | | |  complete description of the   | | | | |
