@@ -160,6 +160,8 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
+	ofa-entry-columns.c									\
+	ofa-entry-columns.h									\
 	ofa-entry-page.c									\
 	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
@@ -178,6 +180,8 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
+	ofa-icolumns.c										\
+	ofa-icolumns.h										\
 	ofa-idate-filter.c									\
 	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
@@ -291,6 +295,8 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-entry-columns-bin.ui							\
+	ofa-entry-columns-menu.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
@@ -314,6 +320,7 @@ ui_files = \
 	$(NULL)
 
 images_files = \
+	arrow-down.png										\
 	filler.png											\
 	green-checkmark.png									\
 	notes1.png											\

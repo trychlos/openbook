@@ -14591,7 +14591,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile misc/t_amounts/Makefile misc/t_delete/Makefile misc/t_dynbook/Makefile misc/t_nonmodal/Makefile misc/t_spawn/Makefile misc/t_weakref/Makefile po/Makefile.in src/Makefile src/api/Makefile src/core/Makefile src/css/Makefile src/import-bourso/Makefile src/import-bourso-pdf/Makefile src/import-lcl/Makefile src/import-lcl-pdf/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/ui/Makefile"
+ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile misc/t_action/Makefile misc/t_amounts/Makefile misc/t_delete/Makefile misc/t_dynbook/Makefile misc/t_nonmodal/Makefile misc/t_spawn/Makefile misc/t_weakref/Makefile po/Makefile.in src/Makefile src/api/Makefile src/core/Makefile src/css/Makefile src/import-bourso/Makefile src/import-bourso-pdf/Makefile src/import-lcl/Makefile src/import-lcl-pdf/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/ui/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -15659,6 +15659,7 @@ do
     "m4/Makefile") CONFIG_FILES="$CONFIG_FILES m4/Makefile" ;;
     "maintainer/Makefile") CONFIG_FILES="$CONFIG_FILES maintainer/Makefile" ;;
     "misc/Makefile") CONFIG_FILES="$CONFIG_FILES misc/Makefile" ;;
+    "misc/t_action/Makefile") CONFIG_FILES="$CONFIG_FILES misc/t_action/Makefile" ;;
     "misc/t_amounts/Makefile") CONFIG_FILES="$CONFIG_FILES misc/t_amounts/Makefile" ;;
     "misc/t_delete/Makefile") CONFIG_FILES="$CONFIG_FILES misc/t_delete/Makefile" ;;
     "misc/t_dynbook/Makefile") CONFIG_FILES="$CONFIG_FILES misc/t_dynbook/Makefile" ;;

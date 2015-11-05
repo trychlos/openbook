@@ -117,7 +117,7 @@ static void on_properties          ( GSimpleAction *action, GVariant *parameter,
 static void on_backup              ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close               ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_entry_page    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_entry_page      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_settlement      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_ledger_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -143,7 +143,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "backup",           on_backup,               NULL, NULL, NULL },
 		{ "close",            on_close,                NULL, NULL, NULL },
 		{ "guided",           on_ope_guided,           NULL, NULL, NULL },
-		{ "entries",          on_ope_entry_page,     NULL, NULL, NULL },
+		{ "entries",          on_ope_entry_page,       NULL, NULL, NULL },
 		{ "concil",           on_ope_concil,           NULL, NULL, NULL },
 		{ "settlement",       on_ope_settlement,       NULL, NULL, NULL },
 		{ "ledclosing",       on_ope_ledger_close,     NULL, NULL, NULL },

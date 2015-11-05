@@ -131,6 +131,7 @@ AC_CONFIG_FILES([
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
+	misc/t_action/Makefile
 	misc/t_amounts/Makefile
 	misc/t_delete/Makefile
 	misc/t_dynbook/Makefile

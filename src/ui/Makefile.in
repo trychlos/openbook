@@ -165,20 +165,21 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
 	ofa-dossier-new-mini.$(OBJEXT) ofa-dossier-open.$(OBJEXT) \
 	ofa-dossier-properties.$(OBJEXT) ofa-dossier-store.$(OBJEXT) \
-	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
-	ofa-exercice-combo.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) ofa-entry-columns.$(OBJEXT) \
+	ofa-entry-page.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-idate-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
-	ofa-istore.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
-	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
-	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
-	ofa-ledger-treeview.$(OBJEXT) ofa-list-store.$(OBJEXT) \
-	ofa-main-window.$(OBJEXT) ofa-ope-template-book-bin.$(OBJEXT) \
+	ofa-icolumns.$(OBJEXT) ofa-idate-filter.$(OBJEXT) \
+	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
+	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
+	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
+	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
+	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
+	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
+	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
+	ofa-ope-template-book-bin.$(OBJEXT) \
 	ofa-ope-template-frame-bin.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) \
@@ -590,6 +591,8 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
+	ofa-entry-columns.c									\
+	ofa-entry-columns.h									\
 	ofa-entry-page.c									\
 	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
@@ -608,6 +611,8 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
+	ofa-icolumns.c										\
+	ofa-icolumns.h										\
 	ofa-idate-filter.c									\
 	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
@@ -721,6 +726,8 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-entry-columns-bin.ui							\
+	ofa-entry-columns-menu.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
@@ -744,6 +751,7 @@ ui_files = \
 	$(NULL)
 
 images_files = \
+	arrow-down.png										\
 	filler.png											\
 	green-checkmark.png									\
 	notes1.png											\
@@ -926,6 +934,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-treeview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-columns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-close-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
@@ -935,6 +944,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icolumns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@

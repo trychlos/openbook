@@ -455,9 +455,62 @@
                 - RestoreAssistant: dossier treeview after created a new dossier
                 - administrative credentials
 
- 867 2015-10- 8 oaDossierNewBin: priv->infos is never released
+ 867 2015-10- 8 ofaDossierNewBin: priv->infos is never released
 
- 868
+ 868 2015-10-30 GuidedInput: review account/entry label/debit/credit
+                resp. fields width
+
+ 869 2015-10-30 GuidedInput: after having clicked on Validate, disable
+                fields while recording the entries
+
+ 870 2015-10-30 GuidedInput/ViewEntries: when an entry has ESP piece ref
+                (or EXP ledger ?), this piece ref is not displayed in
+                view entries
+
+ 871 2015-11- 1 Reconciliation: selected account label is displayed with
+                red font color - why ?
+
+ 872 2015-11- 1 Reconciliation: when cliking on print and the reconciliation
+                summary page is already opened for another account, the
+                new account is rightly displayed in account selection,
+                but the render area is left with old account - should be
+                cleared, or pre-rendered
+
+ 873 2015-11- 1 GuidedInput: display the account in red when invalid
+
+ 874 2015-11- 1 ViewEntries: reconciliation date is not updated
+
+ 875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
+                entry
+
+ 876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
+                see PWIConsultants-20150131_1.gz
+
+ 877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
+                is not child of entry, then move bat line under entry
+
+ 878 2015-11- 1 Reconciliation: reconciliate two bat lines
+                + be able to make a BAT file terminated
+
+ 879 2015-11- 1 Reconciliation: ignore bat line (?)
+                + be able to make a BAT file terminated
+
+ 880 2015-11- 1 Have a TVA module
+
+ 881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
+                leading space missing
+
+ 882 2015-11- 2 GuidedInput on Avron Internet operation template:
+                controls are shifted to the right - why for this ope ?
+
+ 883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
+                the action should become disabled
+
+ 884 2015-11- 4 there is no difference between v_setup_view and v_init_view
+                in ofaPage derived classes ?
+                if confirmed, remove one of these two functions
+
+ 885
 
 -----------------------------------------------------------------------
  DONE

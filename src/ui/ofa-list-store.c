@@ -248,7 +248,7 @@ ofa_list_store_class_init( ofaListStoreClass *klass )
 static void
 istore_iface_init( ofaIStoreInterface *iface )
 {
-	static const gchar *thisfn = "ofo_list_store_istore_iface_init";
+	static const gchar *thisfn = "ofa_list_store_istore_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
