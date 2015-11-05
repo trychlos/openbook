@@ -506,10 +506,6 @@
  883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
                 the action should become disabled
 
- 884 2015-11- 4 there is no difference between v_setup_view and v_init_view
-                in ofaPage derived classes ?
-                if confirmed, remove one of these two functions
-
  885
 
 -----------------------------------------------------------------------
@@ -4154,6 +4150,13 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 884 2015-11- 4 there is no difference between v_setup_view and v_init_view
+                in ofaPage derived classes ?
+                if confirmed, remove one of these two functions
+     2015-11- 5 there is a diff in the returned value, thus these two
+                functions have distinct use cases -> all pages are
+                reviewed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

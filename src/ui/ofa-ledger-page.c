@@ -72,7 +72,6 @@ G_DEFINE_TYPE( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
@@ -140,7 +139,6 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaLedgerPagePrivate ));
@@ -149,7 +147,10 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	GtkWidget *frame;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	frame = setup_tree_view( page );
 
@@ -211,12 +212,6 @@ v_setup_buttons( ofaPage *page )
 			buttons_box, BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_entry_page ), page );
 
 	return( GTK_WIDGET( buttons_box ));
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	/*insert_dataset( OFA_LEDGER_PAGE( page ));*/
 }
 
 static GtkWidget *

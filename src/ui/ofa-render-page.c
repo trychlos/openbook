@@ -92,7 +92,6 @@ static void               setup_args_area( ofaRenderPage *page, GtkContainer *pa
 static void               setup_actions_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_drawing_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_page_size( ofaRenderPage *page );
-static void               v_init_view( ofaPage *page );
 static GList             *get_dataset( ofaRenderPage *page );
 static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
 static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
@@ -219,7 +218,6 @@ render_page_class_init( ofaRenderPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = render_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 
 	g_type_class_add_private( klass, sizeof( ofaRenderPagePrivate ));
 }
@@ -227,7 +225,10 @@ render_page_class_init( ofaRenderPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_render_page_v_setup_view";
 	GtkWidget *widget, *page_widget;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( page_widget ), st_ui_xml, st_ui_name, "top" );
@@ -334,11 +335,6 @@ setup_page_size( ofaRenderPage *page )
 
 	g_object_unref( page_setup );
 	gtk_paper_size_free( paper_size );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
 }
 
 /**

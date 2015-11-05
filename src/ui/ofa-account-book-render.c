@@ -300,9 +300,12 @@ accounts_book_render_class_init( ofaAccountBookRenderClass *klass )
 static void
 page_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_account_book_render_page_init_view";
 	ofaAccountBookRenderPrivate *priv;
 
 	OFA_PAGE_CLASS( ofa_account_book_render_parent_class )->init_view( page );
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));

@@ -72,8 +72,7 @@ typedef struct {
 	 * The base class default implementation successively calls
 	 * #setup_view() and #setup_buttons_box() virtual methods,
 	 * attaching the two returned widgets respectively on columns 0
-	 * and 1 of the main grid of the page.
-	 * It ends up by calling gtk_widget_show_all() on the page.
+	 * and 1 of the top grid of the page.
 	 */
 	void        ( *setup_page )              ( ofaPage *page );
 
@@ -82,10 +81,8 @@ typedef struct {
 	 * @page: this #ofaPage object.
 	 *
 	 * This virtual function is called by #setup_page() default
-	 * implementation of the base class virtual method.
-	 *
-	 * This is a pure virtual function, that the child class should
-	 * implement.
+	 * implementation of the base class virtual method. There is
+	 * no default implementation.
 	 */
 	GtkWidget * ( *setup_view )              ( ofaPage *page );
 
@@ -94,11 +91,8 @@ typedef struct {
 	 * @page: this #ofaPage object.
 	 *
 	 * This virtual function is called by #setup_page() default
-	 * implementation of the base class virtual method.
-	 *
-	 * The base class default implementation creates 'New',
-	 * 'Properties' and 'Delete' buttons. On click messages are sent to
-	 * the corresponding virtual functions.
+	 * implementation of the base class virtual method. There is
+	 * no default implementation.
 	 */
 	GtkWidget * ( *setup_buttons )           ( ofaPage *page );
 
@@ -108,22 +102,10 @@ typedef struct {
 	 *
 	 * This virtual function is called after the page has been set up.
 	 *
-	 * This is a pure virtual function, that the child class should
-	 * implement.
+	 * This is mostly useful when a first stage of derived class setup
+	 * the view, while a second stage will actually initialized it.
 	 */
 	void        ( *init_view )               ( ofaPage *page );
-
-	/**
-	 * on_button_clicked:
-	 * @page: this #ofaPage object.
-	 * @button_id: the standard identifier of the clicked button.
-	 *
-	 * This virtual function is triggered when a button is clicked.
-	 *
-	 * This is a pure virtual function, that the child class should
-	 * implement.
-	 */
-	void        ( *on_button_clicked )       ( ofaPage *page, guint button_id );
 
 	/**
 	 * get_top_focusable_widget:

@@ -53,7 +53,6 @@ struct _ofaOpeTemplatePagePrivate {
 G_DEFINE_TYPE( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *page );
 static void       on_page_removed( ofaOpeTemplatePage *page, GtkWidget *page_w, guint page_n, void *empty );
@@ -113,7 +112,6 @@ ofa_ope_template_page_class_init( ofaOpeTemplatePageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ope_templates_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaOpeTemplatePagePrivate ));
@@ -122,7 +120,10 @@ ofa_ope_template_page_class_init( ofaOpeTemplatePageClass *klass )
 static void
 v_setup_page( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_ope_template_page_v_setup_Page";
 	ofaOpeTemplatePagePrivate *priv;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_OPE_TEMPLATE_PAGE( page )->priv;
 
@@ -136,11 +137,6 @@ v_setup_page( ofaPage *page )
 
 	g_signal_connect(
 			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
 }
 
 static GtkWidget *

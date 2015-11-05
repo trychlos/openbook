@@ -80,8 +80,6 @@ G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static void       pane_restore_position( GtkWidget *pane );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
@@ -172,9 +170,7 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = guided_ex_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 
 	g_type_class_add_private( klass, sizeof( ofaGuidedExPrivate ));
 }
@@ -182,9 +178,12 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
 	ofaGuidedExPrivate *priv;
 	GtkWidget *pane;
 	gulong handler;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_GUIDED_EX( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
@@ -218,6 +217,9 @@ v_setup_view( ofaPage *page )
 	g_signal_connect(
 			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
 
+	init_left_view( OFA_GUIDED_EX( page ),
+						gtk_paned_get_child1( GTK_PANED( OFA_GUIDED_EX( page )->priv->pane )));
+
 	return( pane );
 }
 
@@ -229,19 +231,6 @@ pane_restore_position( GtkWidget *pane )
 	pos = ofa_settings_get_int( "GuidedInputExDlg-pane" );
 	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
 	gtk_paned_set_position( GTK_PANED( pane ), pos );
-}
-
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
-{
-	return( NULL );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	init_left_view( OFA_GUIDED_EX( page ),
-						gtk_paned_get_child1( GTK_PANED( OFA_GUIDED_EX( page )->priv->pane )));
 }
 
 static GtkWidget *

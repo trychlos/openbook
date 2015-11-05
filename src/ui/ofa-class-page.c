@@ -72,7 +72,6 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static ofoClass  *tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaClassPage *self );
@@ -166,7 +165,6 @@ ofa_class_page_class_init( ofaClassPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaClassPagePrivate ));
@@ -175,9 +173,13 @@ ofa_class_page_class_init( ofaClassPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_class_page_v_setup_view";
 	ofaClassPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
+	GtkWidget *tview;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_CLASS_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
@@ -203,7 +205,11 @@ v_setup_view( ofaPage *page )
 						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	return( setup_tree_view( page ));
+	tview = setup_tree_view( page );
+
+	insert_dataset( OFA_CLASS_PAGE( page ));
+
+	return( tview );
 }
 
 static GtkWidget *
@@ -321,12 +327,6 @@ v_setup_buttons( ofaPage *page )
 			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	insert_dataset( OFA_CLASS_PAGE( page ));
 }
 
 static ofoClass *

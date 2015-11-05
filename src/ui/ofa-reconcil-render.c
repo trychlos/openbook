@@ -266,9 +266,12 @@ reconcil_render_class_init( ofaReconcilRenderClass *klass )
 static void
 page_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_reconcil_render_page_init_view";
 	ofaReconcilRenderPrivate *priv;
 
 	OFA_PAGE_CLASS( ofa_reconcil_render_parent_class )->init_view( page );
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_RECONCIL_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));

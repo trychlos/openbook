@@ -64,7 +64,6 @@ static GtkWidget   *setup_tree_view( ofaCurrencyPage *self );
 static gboolean     on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrencyPage *self );
 static ofoCurrency *tview_get_selected( ofaCurrencyPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static GtkWidget   *v_setup_buttons( ofaPage *page );
-static void         v_init_view( ofaPage *page );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
 static void         setup_first_selection( ofaCurrencyPage *self );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
@@ -157,7 +156,6 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaCurrencyPagePrivate ));
@@ -166,9 +164,13 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_currency_page_v_setup_view";
 	ofaCurrencyPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
+	GtkWidget *tview;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_CURRENCY_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
@@ -193,7 +195,10 @@ v_setup_view( ofaPage *page )
 						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	return( setup_tree_view( OFA_CURRENCY_PAGE( page )));
+	tview = setup_tree_view( OFA_CURRENCY_PAGE( page ));
+	setup_first_selection( OFA_CURRENCY_PAGE( page ));
+
+	return( tview );
 }
 
 static GtkWidget *
@@ -334,12 +339,6 @@ v_setup_buttons( ofaPage *page )
 			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	setup_first_selection( OFA_CURRENCY_PAGE( page ));
 }
 
 static GtkWidget *

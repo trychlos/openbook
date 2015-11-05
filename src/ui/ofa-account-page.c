@@ -51,7 +51,6 @@ struct _ofaAccountPagePrivate {
 G_DEFINE_TYPE( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
 
@@ -109,7 +108,6 @@ ofa_account_page_class_init( ofaAccountPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = accounts_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaAccountPagePrivate ));
@@ -118,7 +116,10 @@ ofa_account_page_class_init( ofaAccountPageClass *klass )
 static void
 v_setup_page( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_account_page_v_setup_page";
 	ofaAccountPagePrivate *priv;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_ACCOUNT_PAGE( page )->priv;
 
@@ -129,14 +130,6 @@ v_setup_page( ofaPage *page )
 
 	g_signal_connect(
 			priv->accounts_frame, "ofa-activated", G_CALLBACK( on_account_activated ), page );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	static const gchar *thisfn = "ofa_account_page_v_init_view";
-
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 }
 
 static GtkWidget *

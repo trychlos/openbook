@@ -76,7 +76,6 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_dossier_signaling( ofaRatePage *self );
 static GtkWidget *setup_tree_view( ofaRatePage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaRatePage *self );
 static void       insert_new_row( ofaRatePage *self, ofoRate *rate, gboolean with_selection );
@@ -172,7 +171,6 @@ ofa_rate_page_class_init( ofaRatePageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaRatePagePrivate ));
@@ -181,9 +179,20 @@ ofa_rate_page_class_init( ofaRatePageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	setup_dossier_signaling( OFA_RATE_PAGE( page ));
+	static const gchar *thisfn = "ofa_rate_page_v_setup_view";
+	ofaRatePagePrivate *priv;
+	GtkWidget *tview;
 
-	return( setup_tree_view( OFA_RATE_PAGE( page )));
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	priv = OFA_RATE_PAGE( page )->priv;
+
+	setup_dossier_signaling( OFA_RATE_PAGE( page ));
+	tview = setup_tree_view( OFA_RATE_PAGE( page ));
+	priv->is_current = ofo_dossier_is_current( ofa_page_get_dossier( page ));
+	insert_dataset( OFA_RATE_PAGE( page ));
+
+	return( tview );
 }
 
 static void
@@ -321,17 +330,6 @@ v_setup_buttons( ofaPage *page )
 			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	ofaRatePagePrivate *priv;
-
-	priv = OFA_RATE_PAGE( page )->priv;
-	priv->is_current = ofo_dossier_is_current( ofa_page_get_dossier( page ));
-
-	insert_dataset( OFA_RATE_PAGE( page ));
 }
 
 static GtkWidget *

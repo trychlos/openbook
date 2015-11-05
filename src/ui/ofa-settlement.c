@@ -181,9 +181,6 @@ static void           setup_entries_treeview( ofaSettlement *self );
 static void           setup_account_selection( ofaSettlement *self );
 static void           setup_settlement_selection( ofaSettlement *self );
 static void           setup_signaling_connect( ofaSettlement *self );
-static GtkWidget     *v_setup_buttons( ofaPage *page );
-static void           v_init_view( ofaPage *page );
-static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
 static void           on_account_changed( GtkEntry *entry, ofaSettlement *self );
 static void           on_account_select( GtkButton *button, ofaSettlement *self );
 static void           on_settlement_changed( GtkComboBox *box, ofaSettlement *self );
@@ -287,9 +284,6 @@ ofa_settlement_class_init( ofaSettlementClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = settlement_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaSettlementPrivate ));
 }
@@ -297,8 +291,11 @@ ofa_settlement_class_init( ofaSettlementClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_settlement_v_setup_view";
 	ofaSettlementPrivate *priv;
 	GtkWidget *frame;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_SETTLEMENT( page )->priv;
 
@@ -720,25 +717,6 @@ setup_signaling_connect( ofaSettlement *self )
 					G_OBJECT( priv->dossier ),
 					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-}
-
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
-{
-	return( NULL );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_SETTLEMENT( page ), NULL );
-
-	return( NULL );
 }
 
 static void

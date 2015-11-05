@@ -206,8 +206,6 @@ static gint            cmp_counters( ofaEntryPage *self, const gchar *stra, cons
 static void            on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self );
 static void            setup_footer( ofaEntryPage *self );
 static void            setup_signaling_connect( ofaEntryPage *self );
-static GtkWidget      *v_setup_buttons( ofaPage *page );
-static void            v_init_view( ofaPage *page );
 static GtkWidget      *v_get_top_focusable_widget( const ofaPage *page );
 static void            on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
 static void            on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
@@ -349,8 +347,6 @@ ofa_entry_page_class_init( ofaEntryPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = entry_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaEntryPagePrivate ));
@@ -413,6 +409,13 @@ v_setup_view( ofaPage *page )
 
 	/* allow the entry dataset to be loaded */
 	priv->initializing = FALSE;
+
+	/* simulate a toggle message from gen_selection */
+	if( gtk_toggle_button_get_active( priv->ledger_btn )){
+		on_gen_selection_toggled( priv->ledger_btn, OFA_ENTRY_PAGE( page ));
+	} else {
+		on_gen_selection_toggled( priv->account_btn, OFA_ENTRY_PAGE( page ));
+	}
 
 	return( frame );
 }
@@ -1336,33 +1339,6 @@ setup_signaling_connect( ofaEntryPage *self )
 					G_OBJECT( priv->dossier ),
 					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-}
-
-/*
- * no extra buttons in this view
- */
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
-{
-	return( NULL );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	static const gchar *thisfn = "ofa_entry_page_v_init_view";
-	ofaEntryPagePrivate *priv;
-
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
-
-	priv = OFA_ENTRY_PAGE( page )->priv;
-
-	/* simulate a toggle message from gen_selection */
-	if( gtk_toggle_button_get_active( priv->ledger_btn )){
-		on_gen_selection_toggled( priv->ledger_btn, OFA_ENTRY_PAGE( page ));
-	} else {
-		on_gen_selection_toggled( priv->account_btn, OFA_ENTRY_PAGE( page ));
-	}
 }
 
 static GtkWidget *

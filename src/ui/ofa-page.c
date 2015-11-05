@@ -64,10 +64,10 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 G_DEFINE_TYPE( ofaPage, ofa_page, GTK_TYPE_GRID )
 
 static void       do_setup_page( ofaPage *page );
-static void       v_setup_page_default( ofaPage *page );
+static void       v_setup_page( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
 static GtkWidget *do_setup_buttons( ofaPage *page );
-static void       do_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 
 static void
 page_finalize( GObject *instance )
@@ -202,9 +202,9 @@ page_constructed( GObject *instance )
 			( void * ) priv->main_window,
 			priv->theme );
 
-	/* let the child class setup its page */
+	/* let the child class setup its page before showing it */
 	do_setup_page( self );
-	do_init_view( self );
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 static void
@@ -261,11 +261,11 @@ ofa_page_class_init( ofaPageClass *klass )
 					-1,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	klass->setup_page = v_setup_page_default;
+	klass->setup_page = v_setup_page;
 	klass->setup_view = NULL;
+	klass->setup_buttons = NULL;
 	klass->init_view = NULL;
-	klass->on_button_clicked = NULL;
-	klass->get_top_focusable_widget = NULL;
+	klass->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	/**
 	 * ofaPage::page-removed:
@@ -310,7 +310,7 @@ do_setup_page( ofaPage *page )
  * version of the 'setup_page' virtual method
  */
 static void
-v_setup_page_default( ofaPage *page )
+v_setup_page( ofaPage *page )
 {
 	GtkWidget *view, *buttons_box;
 
@@ -325,8 +325,6 @@ v_setup_page_default( ofaPage *page )
 	if( buttons_box ){
 		gtk_grid_attach( GTK_GRID( page ), buttons_box, 1, 0, 1, 1 );
 	}
-
-	gtk_widget_show_all( GTK_WIDGET( page ));
 }
 
 static GtkWidget *
@@ -341,7 +339,6 @@ do_setup_view( ofaPage *page )
 
 	if( OFA_PAGE_GET_CLASS( page )->setup_view ){
 		view = OFA_PAGE_GET_CLASS( page )->setup_view( page );
-
 	} else {
 		g_debug( "%s: page=%p", thisfn, ( void * ) page );
 	}
@@ -352,6 +349,7 @@ do_setup_view( ofaPage *page )
 static GtkWidget *
 do_setup_buttons( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_page_do_setup_buttons";
 	GtkWidget *buttons_box;
 
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
@@ -360,24 +358,23 @@ do_setup_buttons( ofaPage *page )
 
 	if( OFA_PAGE_GET_CLASS( page )->setup_buttons ){
 		buttons_box = OFA_PAGE_GET_CLASS( page )->setup_buttons( page );
+	} else {
+		g_debug( "%s: page=%p", thisfn, ( void * ) page );
 	}
 
 	return( buttons_box );
 }
 
-static void
-do_init_view( ofaPage *page )
+/*
+ * this is only called if the derived class doesn't provide its own
+ * version of the 'get_top_focusable_widget' virtual method
+ */
+static GtkWidget *
+v_get_top_focusable_widget( const ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_page_do_init_view";
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	g_return_if_fail( page && OFA_IS_PAGE( page ));
-
-	if( OFA_PAGE_GET_CLASS( page )->init_view ){
-		OFA_PAGE_GET_CLASS( page )->init_view( page );
-
-	} else {
-		g_debug( "%s: page=%p", thisfn, ( void * ) page );
-	}
+	return( NULL );
 }
 
 /**

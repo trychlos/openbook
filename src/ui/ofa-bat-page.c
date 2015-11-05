@@ -66,7 +66,6 @@ G_DEFINE_TYPE( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
 static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
@@ -129,7 +128,6 @@ ofa_bat_page_class_init( ofaBatPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaBatPagePrivate ));
@@ -138,6 +136,7 @@ ofa_bat_page_class_init( ofaBatPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
 	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
@@ -145,6 +144,8 @@ v_setup_view( ofaPage *page )
 			BAT_DISP_FORMAT, BAT_DISP_RIB,
 			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
 			0 };
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_BAT_PAGE( page )->priv;
 
@@ -154,6 +155,7 @@ v_setup_view( ofaPage *page )
 
 	priv->tview = ofa_bat_treeview_new();
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
+	ofa_bat_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), page );
@@ -186,16 +188,6 @@ v_setup_buttons( ofaPage *page )
 			buttons_box, BUTTON_IMPORT, TRUE, G_CALLBACK( on_import_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	ofaBatPagePrivate *priv;
-
-	priv = OFA_BAT_PAGE( page )->priv;
-
-	ofa_bat_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
 }
 
 static void

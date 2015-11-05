@@ -210,8 +210,6 @@ static void         setup_manual_rappro( ofaPage *page, GtkContainer *parent );
 static void         setup_size_group( ofaPage *page, GtkContainer *parent );
 static void         setup_auto_rappro( ofaPage *page, GtkContainer *parent );
 static void         setup_buttons( ofaPage *page, GtkContainer *parent );
-static GtkWidget   *v_setup_buttons( ofaPage *page );
-static void         v_init_view( ofaPage *page );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
 static void         on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self );
 static void         on_account_select_clicked( GtkButton *button, ofaReconciliation *self );
@@ -359,8 +357,6 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = reconciliation_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaReconciliationPrivate ));
@@ -374,7 +370,14 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_reconciliation_v_setup_view";
+	ofaReconciliationPrivate *priv;
 	GtkWidget *widget, *page_widget;
+	GtkTreeSelection *select;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	priv = OFA_RECONCILIATION( page )->priv;
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( page_widget ), st_ui_xml, st_ui_name, "top" );
@@ -393,6 +396,12 @@ v_setup_view( ofaPage *page )
 	setup_buttons( page, GTK_CONTAINER( widget ));
 
 	dossier_signaling_connect( OFA_RECONCILIATION( page ));
+
+	get_settings( OFA_RECONCILIATION( page ));
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	gtk_tree_selection_unselect_all( select );
+	on_tview_selection_changed( select, OFA_RECONCILIATION( page ));
 
 	return( page_widget );
 }
@@ -866,29 +875,6 @@ setup_buttons( ofaPage *page, GtkContainer *parent )
 	g_signal_connect(
 			G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), page );
 	priv->print_btn = button;
-}
-
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
-{
-	return( NULL );
-}
-
-static void
-v_init_view( ofaPage *page )
-{
-	ofaReconciliation *self;
-	ofaReconciliationPrivate *priv;
-	GtkTreeSelection *select;
-
-	self = OFA_RECONCILIATION( page );
-	priv = self->priv;
-
-	get_settings( self );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	gtk_tree_selection_unselect_all( select );
-	on_tview_selection_changed( select, self );
 }
 
 static GtkWidget *

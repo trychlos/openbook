@@ -288,9 +288,12 @@ balance_render_class_init( ofaBalanceRenderClass *klass )
 static void
 page_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_balance_render_page_init_view";
 	ofaBalanceRenderPrivate *priv;
 
 	OFA_PAGE_CLASS( ofa_balance_render_parent_class )->init_view( page );
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_BALANCE_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));

@@ -289,9 +289,12 @@ ledgers_book_render_class_init( ofaLedgerBookRenderClass *klass )
 static void
 page_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_ledger_book_render_page_init_view";
 	ofaLedgerBookRenderPrivate *priv;
 
 	OFA_PAGE_CLASS( ofa_ledger_book_render_parent_class )->init_view( page );
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
