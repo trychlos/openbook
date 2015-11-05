@@ -14,7 +14,7 @@
  Version 0.40
  ============
 
- Released on 
+ Released on 2015-11-05
 
  New features and improvements:
 
@@ -38,6 +38,7 @@
    - Check that notes does not have more than 4095 chars (todo #49).
    - Assistants: automatically advance to next page on selection activation (todo #149).
    - ofa_bat_utils_import(): display an error message if no willing-to module found.
+   - EntryPage: review columns selection to lesser the window width.
 
  Bug fixes:
 

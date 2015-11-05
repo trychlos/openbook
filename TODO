@@ -441,7 +441,7 @@
  843 2015- 9-30 account number should be renamed as account identifier
 
  853 2015-10- 1 review v_init_dialog's:
-                - only store GtkWidget (as GtkWidget) when needed
+                - only store GtkWidget (as GtkWidget *) when needed
                 - store object data members
                 - set data before connecting the signal
                   (or after the end of init ?)
