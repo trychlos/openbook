@@ -51,7 +51,6 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-date-filter-hv-bin.h"
 #include "ui/ofa-entry-columns.h"
-#include "ui/ofa-entry-columns-bin.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-icolumns.h"
 #include "ui/ofa-idate-filter.h"
@@ -104,7 +103,6 @@ struct _ofaEntryPagePrivate {
 
 	/* frame 4: visible columns
 	 */
-	ofaEntryColumnsBin  *columns_bin;
 
 	/* frame 5: edition switch
 	 */
@@ -210,7 +208,6 @@ static void            setup_footer( ofaEntryPage *self );
 static void            setup_signaling_connect( ofaEntryPage *self );
 static GtkWidget      *v_setup_buttons( ofaPage *page );
 static void            v_init_view( ofaPage *page );
-static void            set_visible_columns( ofaEntryPage *self );
 static GtkWidget      *v_get_top_focusable_widget( const ofaPage *page );
 static void            on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
 static void            on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
@@ -231,9 +228,7 @@ static void            set_balance_currency_label_margin( GtkWidget *widget, ofa
 static gboolean        is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
 static void            on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
 static void            on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self );
-static void            on_display_column_toggled( ofaEntryColumnsBin *bin, gint column_id, gboolean visible, ofaEntryPage *self );
 static void            on_column_toggled( ofaEntryPage *self, gint column_id, gboolean visible, void *empty );
-static void            set_visible_column( ofaEntryPage *self, gboolean visible, gint column_id );
 static void            on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self );
 static void            set_renderers_editable( ofaEntryPage *self, gboolean editable );
 static void            on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaEntryPage *self );
@@ -640,19 +635,8 @@ setup_display_selection( ofaEntryPage *self )
 	parent = my_utils_container_get_child_by_name( priv->top_box, "f5-ecb-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	if( 0 ){
-		priv->columns_bin = ofa_entry_columns_bin_new( st_pref_columns );
-		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->columns_bin ));
-
-		g_signal_connect( priv->columns_bin, "ofa-toggled", G_CALLBACK( on_display_column_toggled ), self );
-	}
-
 	ofa_icolumns_attach_menu_button( OFA_ICOLUMNS( self ), GTK_CONTAINER( parent ));
 	g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
-
-	if( 0 ){
-		set_visible_columns( OFA_ENTRY_PAGE( self ));
-	}
 	ofa_icolumns_init_visible( OFA_ICOLUMNS( self ), st_pref_columns );
 }
 
@@ -1381,30 +1365,6 @@ v_init_view( ofaPage *page )
 	}
 }
 
-/*
- * called once on init_view
- */
-static void
-set_visible_columns( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GList *columns, *it;
-	gboolean is_visible;
-	gint col_id;
-
-	priv = self->priv;
-	g_return_if_fail( priv->entries_tview && GTK_IS_TREE_VIEW( priv->entries_tview ));
-
-	columns = gtk_tree_view_get_columns( priv->entries_tview );
-	for( it=columns ; it ; it=it->next ){
-		col_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_COLUMN_ID ));
-		if( col_id >= 0 ){
-			is_visible = ofa_entry_columns_bin_get_visible( priv->columns_bin, col_id );
-			gtk_tree_view_column_set_visible( GTK_TREE_VIEW_COLUMN( it->data ), is_visible );
-		}
-	}
-}
-
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
@@ -2077,23 +2037,6 @@ ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id,
  * a display column has been toggled
  */
 static void
-on_display_column_toggled( ofaEntryColumnsBin *bin, gint column_id, gboolean visible, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-
-	priv = self->priv;
-
-	if( !priv->initializing ){
-		set_visible_column( self, visible, column_id );
-		set_balance_currency_label_position( self );
-		gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
-	}
-}
-
-/*
- * a display column has been toggled
- */
-static void
 on_column_toggled( ofaEntryPage *self, gint column_id, gboolean visible, void *empty )
 {
 	ofaEntryPagePrivate *priv;
@@ -2104,37 +2047,6 @@ on_column_toggled( ofaEntryPage *self, gint column_id, gboolean visible, void *e
 		set_balance_currency_label_position( self );
 		gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
 	}
-}
-
-static void
-set_visible_column( ofaEntryPage *self, gboolean visible, gint column_id )
-{
-	static const gchar *thisfn = "ofa_entry_page_set_visible_column";
-	ofaEntryPagePrivate *priv;
-	GList *columns, *it;
-	gint col_id;
-	GList *id_list;
-
-	priv = self->priv;
-	g_return_if_fail( !priv->initializing );
-
-	id_list = NULL;
-	columns = gtk_tree_view_get_columns( priv->entries_tview );
-	for( it=columns ; it ; it=it->next ){
-		col_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_COLUMN_ID ));
-		if( col_id == column_id ){
-			gtk_tree_view_column_set_visible( GTK_TREE_VIEW_COLUMN( it->data ), visible );
-		}
-		if( col_id >= 0 ){
-			if( gtk_tree_view_column_get_visible( GTK_TREE_VIEW_COLUMN( it->data ))){
-				id_list = g_list_prepend( id_list, GINT_TO_POINTER( col_id ));
-			}
-		} else {
-			g_warning( "%s: column=%p, invalild column id=%d", thisfn, ( void * ) it->data, col_id );
-		}
-	}
-	ofa_settings_set_int_list( st_pref_columns, id_list );
-	g_list_free( id_list );
 }
 
 /*

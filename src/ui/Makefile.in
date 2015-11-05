@@ -726,8 +726,6 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
-	ofa-entry-columns-bin.ui							\
-	ofa-entry-columns-menu.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
