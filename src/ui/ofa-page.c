@@ -38,16 +38,12 @@
 /* private instance data
  */
 struct _ofaPagePrivate {
-	gboolean             from_widget_finalized;
 
 	/* properties set at instanciation time
 	 */
 	const ofaMainWindow *main_window;
 	GtkGrid             *top_grid;
 	gint                 theme;
-
-	/* UI
-	 */
 };
 
 /* class properties
@@ -310,7 +306,10 @@ ofa_page_class_init( ofaPageClass *klass )
 	 * ofaPage::page-removed:
 	 *
 	 * This signal is proxied by the main window after the page has
-	 * been removed from the main notebook.
+	 * been removed from the main notebook, and before the top #GtkGrid
+	 * be destroyed.
+	 * This is mostly useful when the page needs to be informed of its
+	 * next closing, while having yet all its widgets available.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaPage     *page,

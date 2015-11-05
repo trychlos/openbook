@@ -38,7 +38,7 @@
  * All datas of the applications are displayed in pages of this 'main'
  * notebook. These datas are handled by ofaPage-derived classes
  * (this class). Each ofaPage-derived class begins so with an empty
- * GtkGrid.
+ * GtkGrid as its top widget.
  *
  * Most of them, though this is far from being mandatory, have a
  * similar display:
@@ -54,35 +54,52 @@
  * |+------------------------------------------------+---------------+|
  * +------------------------------------------------------------------+
  *
- * Class             View description                          Buttons box
- * ----------------  ----------------------------------------  -----------
- * ofaAccountPage   an empty grid which is handled by the     book-handled
- *                   ofaAccountsBook class
+ * Class               View description                          Buttons box
+ * ------------------  ----------------------------------------  -----------
+ * ofaAccountPage      an empty grid which is handled by the     book-handled
+ *                     ofaAccountsBook class
  *
- * ofaBatPage       a tree view on a list store                   Yes
+ * ofaBatPage          a tree view on a list store                   Yes
  *
- * ofaClassPage    a tree view on a list store                   Yes
+ * ofaClassPage        a tree view on a list store                   Yes
  *
- * ofaCurrencyPage a tree view on a list store                   Yes
+ * ofaCurrencyPage     a tree view on a list store                   Yes
  *
- * ofaGuidedEx       a paned which embeds:                         No
- *                   - on the left, a tree view on a tree
- *                     store where operation templates are
- *                     stored 'under' the journal;
- *                   - on the right, the characteristics of
- *                     the current operation template
+ * ofaGuidedEx         a paned which embeds:                         No
+ *                     - on the left, a tree view on a tree
+ *                       store where operation templates are
+ *                       stored 'under' the journal;
+ *                     - on the right, the characteristics of
+ *                       the current operation template
  *
- * ofaLedgerPage    a tree view on a list store                   Yes
+ * ofaLedgerPage       a tree view on a list store                   Yes
  *
- * ofaOpeTemplatePage  a top frame, a grid with dynamic fields    Yes
+ * ofaOpeTemplatePage  a top frame, a grid with dynamic fields       Yes
  *
- * ofaRatePage      a tree view on a list store                   Yes
+ * ofaRatePage         a tree view on a list store                   Yes
  *
- * ofaReconciliation several top frames, with a treeview on        No
- *                   a tree store
+ * ofaReconciliation   several top frames, with a treeview on        No
+ *                     a tree store
  *
- * ofaViewEntries    several top frames with a treeview on a       No
- *                   list store
+ * ofaEntryPage        several top frames with a treeview on a       No
+ *                     list store
+ *
+ * Finalization
+ * ------------
+ * The application pages may be terminated by two ways:
+ * - terminating the application,
+ *   which destroy the main Notebook,
+ *   which destroy the top #GtkGrid of each page,
+ *   which unref the #ofaPage -derived class through the weak reference
+ *   set on the GtkGrid
+ * - terminating the page itself by cliking on the label cross,
+ *   which removes the page from the main notebook,
+ *   which destroy the top #GtkGrid of the page,
+ *   which unref the #ofaPage -derived class through the weak reference
+ *   set on the GtkGrid.
+ * There is no place where the finalization is initialized by the
+ * #ofaPage. This is always the destroying of the top #GtkGrid which
+ * leads to the unreffing of the page.
  */
 
 #include "api/ofo-dossier-def.h"
