@@ -94,7 +94,6 @@ page_finalize( GObject *instance )
 static void
 page_dispose( GObject *instance )
 {
-	ofaPagePrivate *priv;
 	ofaPageProtected *prot;
 
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
@@ -106,12 +105,6 @@ page_dispose( GObject *instance )
 		prot->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		priv = ( OFA_PAGE( instance ))->priv;
-
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -490,7 +483,6 @@ static void
 on_grid_finalized( ofaPage *self, GObject *finalized_grid )
 {
 	static const gchar *thisfn = "ofa_page_on_grid_finalized";
-	ofaPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s), finalized_grid=%p (%s)",
 			thisfn,
@@ -498,9 +490,6 @@ on_grid_finalized( ofaPage *self, GObject *finalized_grid )
 			( void * ) finalized_grid, G_OBJECT_TYPE_NAME( finalized_grid ));
 
 	g_return_if_fail( self && OFA_IS_PAGE( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( self );
 }
