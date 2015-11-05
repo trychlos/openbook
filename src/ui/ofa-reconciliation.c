@@ -2032,11 +2032,14 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 			}
 			nb += 1;
 		}
-		if( tot_debit == tot_credit ){
+		if( tot_debit-tot_credit < 0.01 ){
 			accept_enabled = unique_concil && count_zero > 0;
 			unreconciliate_enabled = same_concil && rec_id > 0 && count_zero == 0;
 		}
 	}
+	g_debug( "%s: tot_debit=%f, tot_credit=%f, unique_concil=%s, same_concil=%s, rec_id=%ld, count_zero=%u",
+			thisfn, tot_debit, tot_credit, unique_concil ? "True":"False",
+			same_concil ? "True":"False", rec_id, count_zero );
 
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
@@ -2228,6 +2231,7 @@ static void
 on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	run_selection_engine( self );
+	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 }
 
 /*
@@ -2294,6 +2298,7 @@ static void
 on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	run_selection_engine( self );
+	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 }
 
 /*

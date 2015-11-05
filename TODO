@@ -503,9 +503,6 @@
  882 2015-11- 2 GuidedInput on Avron Internet operation template:
                 controls are shifted to the right - why for this ope ?
 
- 883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
-                the action should become disabled
-
  885
 
 -----------------------------------------------------------------------
@@ -4150,6 +4147,10 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
+                the action should become disabled
+     2015-11- 5 done
 
  884 2015-11- 4 there is no difference between v_setup_view and v_init_view
                 in ofaPage derived classes ?
