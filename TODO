@@ -497,9 +497,6 @@
 
  880 2015-11- 1 Have a TVA module
 
- 881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
-                leading space missing
-
  882 2015-11- 2 GuidedInput on Avron Internet operation template:
                 controls are shifted to the right - why for this ope ?
 
@@ -4147,6 +4144,10 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
+                leading space missing
+     2015-11- 5 ofa-reconcil-bin.ui fixed
 
  883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
                 the action should become disabled

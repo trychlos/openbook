@@ -159,7 +159,7 @@
               <object class="GtkLabel" id="frame-label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Reconciliation </property>
+                <property name="label" translatable="yes"> Reconciliation </property>
               </object>
             </child>
           </object>

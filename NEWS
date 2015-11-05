@@ -19,11 +19,11 @@
 
  New features and improvements:
 
-   - 
+   - Reconciliation: disable buttons when actions are done (todo #883).
 
  Bug fixes:
 
-   - 
+   - Reconciliation: fix missing leading space (todo #881).
 
  Other changes:
 
