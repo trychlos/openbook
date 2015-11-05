@@ -126,8 +126,6 @@ ofoDossier          *ofa_page_get_dossier               ( const ofaPage *page );
 
 GtkWidget           *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 
-void                 ofa_page_pre_remove                ( ofaPage *page );
-
 G_END_DECLS
 
 #endif /* __OFA_PAGE_H__ */
