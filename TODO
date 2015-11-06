@@ -483,16 +483,10 @@
  875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
                 entry
 
- 876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
-                see PWIConsultants-20150131_1.gz
-
  877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
                 is not child of entry, then move bat line under entry
 
  878 2015-11- 1 Reconciliation: reconciliate two bat lines
-                + be able to make a BAT file terminated
-
- 879 2015-11- 1 Reconciliation: ignore bat line (?)
                 + be able to make a BAT file terminated
 
  880 2015-11- 1 Have a TVA module
@@ -4144,6 +4138,17 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
+                see PWIConsultants-20150131_1.gz
+     2015-11- 5 fixed
+
+ 879 2015-11- 1 Reconciliation: ignore bat line (?)
+                + be able to make a BAT file terminated
+     2015-11- 5 there is no sense to ignore a BAT line, but we may put
+                it in a waiting state, waiting for the bank to send us
+                the opposite line
+     2015-11- 5 cancelled
 
  881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
                 leading space missing

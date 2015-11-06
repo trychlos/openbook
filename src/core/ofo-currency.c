@@ -26,7 +26,9 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <glib/gi18n.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -406,6 +408,29 @@ ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 
 	g_assert_not_reached();
 	return( NULL );
+}
+
+/**
+ * ofo_currency_get_min_gap:
+ * @currency: this #ofoCurrency currency.
+ *
+ * Returns: the minimal gap to determine if two amounts are equal.
+ */
+const gdouble
+ofo_currency_get_min_gap( const ofoCurrency *currency )
+{
+	gint digits;
+
+	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), 0 );
+
+	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+
+		digits = ofo_currency_get_digits( currency );
+		return( exp10( -digits ));
+	}
+
+	g_assert_not_reached();
+	return( 0 );
 }
 
 /**

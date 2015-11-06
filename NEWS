@@ -24,11 +24,13 @@
  Bug fixes:
 
    - Reconciliation: fix missing leading space (todo #881).
+   - Reconciliation: fix rounding computation (todo #876).
 
  Other changes:
 
+   - ofo_currency_get_min_gap(): new method.
    - ofaPage: is now derived from GtkGrid.
-   - ofa_page_get_top_grid(): removed function.
+   - ofa_page_get_top_grid(): removed method.
 
 -----------------------------------------------------------------------
  Version 0.40

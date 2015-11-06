@@ -50,6 +50,7 @@ gint            ofo_currency_get_digits   ( const ofoCurrency *currency );
 const gchar    *ofo_currency_get_notes    ( const ofoCurrency *currency );
 const gchar    *ofo_currency_get_upd_user ( const ofoCurrency *currency );
 const GTimeVal *ofo_currency_get_upd_stamp( const ofoCurrency *currency );
+const gdouble   ofo_currency_get_min_gap  ( const ofoCurrency *currency );
 
 gboolean        ofo_currency_is_deletable ( const ofoCurrency *currency, ofoDossier *dossier );
 gboolean        ofo_currency_is_valid     ( const gchar *code, const gchar *label, const gchar *symbol, gint digits );
