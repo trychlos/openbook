@@ -1043,7 +1043,7 @@ get_reconciliable_account( ofaReconciliation *self )
 		g_free( str );
 
 		my_utils_widget_set_style(
-				GTK_WIDGET( priv->account_label ), ok ? "labelnormal" : "labelinvalid" );
+				GTK_WIDGET( priv->account_label ), ok ? "labelnormal" : "labelerror" );
 
 		priv->precision = 0;
 		if( ok ){

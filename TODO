@@ -467,9 +467,6 @@
                 (or EXP ledger ?), this piece ref is not displayed in
                 view entries
 
- 871 2015-11- 1 Reconciliation: selected account label is displayed with
-                red font color - why ?
-
  872 2015-11- 1 Reconciliation: when cliking on print and the reconciliation
                 summary page is already opened for another account, the
                 new account is rightly displayed in account selection,
@@ -4138,6 +4135,10 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 871 2015-11- 1 Reconciliation: selected account label is displayed with
+                red font color - why ?
+     2015-11- 6 fixed
 
  876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
                 see PWIConsultants-20150131_1.gz
