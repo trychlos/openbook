@@ -178,9 +178,6 @@ static const sConcil st_concils[] = {
 		{ 0 }
 };
 
-#define COLOR_LABEL_NORMAL              "#000000"	/* black */
-#define COLOR_LABEL_INVALID             "#808080"	/* gray */
-
 #define COLOR_BAT_CONCIL_FONT           "#008000"	/* middle green */
 #define COLOR_BAT_UNCONCIL_FONT         "#00ff00"	/* pure green */
 #define COLOR_BAT_UNCONCIL_BACKGROUND   "#00ff00"	/* pure green */
@@ -1067,7 +1064,7 @@ get_reconciliable_account( ofaReconciliation *self )
 			g_return_val_if_fail( my_strlen( cur_code ), NULL );
 			currency = ofo_currency_get_by_code( priv->dossier, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
-			priv->precision = ofo_currency_get_min_gap( currency );
+			priv->precision = ofo_currency_get_precision( currency );
 		}
 	}
 

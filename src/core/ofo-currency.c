@@ -411,13 +411,13 @@ ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 }
 
 /**
- * ofo_currency_get_min_gap:
+ * ofo_currency_get_precision:
  * @currency: this #ofoCurrency currency.
  *
- * Returns: the minimal gap to determine if two amounts are equal.
+ * Returns: the precision to be used with this currency.
  */
 const gdouble
-ofo_currency_get_min_gap( const ofoCurrency *currency )
+ofo_currency_get_precision( const ofoCurrency *currency )
 {
 	gint digits;
 
