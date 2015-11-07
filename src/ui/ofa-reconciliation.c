@@ -255,7 +255,7 @@ static void         on_decline_clicked( GtkButton *button, ofaReconciliation *se
 static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
 static GtkTreeIter *search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre );
-static void         insert_bat_line( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre );
+static void         insert_bat_line( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre, const ofoConcil *concil );
 static gboolean     run_selection_engine( ofaReconciliation *self );
 static void         examine_selection( ofaReconciliation *self, GtkTreeModel *tmodel, GList *paths, ofxAmount *debit, ofxAmount *credit, ofxCounter *recid, gboolean *unique, gint *rowsnb, GList **concils, GList **unconcils );
 static gboolean     is_unreconciliate_accepted( ofaReconciliation *self, ofoConcil *concil );
@@ -1401,7 +1401,7 @@ display_bat_lines( ofaReconciliation *self )
 	ofoBatLine *batline;
 	gboolean done;
 	gdouble bat_amount;
-	gchar *sbat_deb, *sbat_cre, *bat_sdval;
+	gchar *sbat_deb, *sbat_cre;
 	GtkTreeModel *store_model;
 	GtkTreeIter *entry_iter;
 	ofoConcil *concil;
@@ -1425,14 +1425,6 @@ display_bat_lines( ofaReconciliation *self )
 			sbat_cre = my_double_to_str( bat_amount );
 		}
 
-		if( 0 ){
-			bat_sdval = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display());
-			g_debug( "%s: batline: label=%s, dval=%s, sdeb=%s, scre=%s",
-					thisfn, ofo_bat_line_get_label( batline ),
-					bat_sdval, sbat_deb, sbat_cre );
-			g_free( bat_sdval );
-		}
-
 		/* try to insert the batline under an entry it has been
 		 * reconciliated aginst; this entry may not be found here if:
 		 * - the batline is not yet reconciliated
@@ -1448,7 +1440,7 @@ display_bat_lines( ofaReconciliation *self )
 			if( ent_number > 0 ){
 				entry_iter = search_for_entry_by_number( self, ent_number );
 				if( entry_iter ){
-					insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre );
+					insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre, concil );
 					gtk_tree_iter_free( entry_iter );
 					done = TRUE;
 				} else {
@@ -1462,15 +1454,17 @@ display_bat_lines( ofaReconciliation *self )
 			entry_iter = search_for_entry_by_amount( self, sbat_deb, sbat_cre );
 			if( entry_iter ){
 				set_entry_dval_by_store_iter( self, ofo_bat_line_get_deffect( batline ), store_model, entry_iter);
-				insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre );
+				insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre, NULL );
 				gtk_tree_iter_free( entry_iter );
 				done = TRUE;
 			}
 		}
 
-		/* last just insert the bat line at level zero */
+		/* last just insert the bat line at level zero
+		 * reconciliation date may be set if the bat line is member of
+		 * a reconciliation group which does not contain any entry */
 		if( !done ){
-			insert_bat_line( self, batline, NULL, sbat_deb, sbat_cre );
+			insert_bat_line( self, batline, NULL, sbat_deb, sbat_cre, concil );
 		}
 
 		g_free( sbat_deb );
@@ -2298,7 +2292,7 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 		scre = my_double_to_str( amount );
 	}
 
-	insert_bat_line( self, OFO_BAT_LINE( object ), NULL, sdeb, scre );
+	insert_bat_line( self, OFO_BAT_LINE( object ), NULL, sdeb, scre, NULL );
 	g_object_unref( object );
 	g_free( sdeb );
 	g_free( scre );
@@ -2431,19 +2425,23 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
  */
 static void
 insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
-							GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre )
+							GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre,
+							const ofoConcil *concil )
 {
-	static const gchar *thisfn = "ofa_reconciliation_insert_bat_line";
 	GtkTreeModel *child_tmodel;
 	const GDate *dope;
-	gchar *sdope, *slabel;
-	ofxCounter line_id;
+	gchar *sdope, *sdreconcil;
 	GtkTreeIter new_iter;
 
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
 
 	dope = get_bat_line_dope( self, batline );
 	sdope = my_date_to_str( dope, ofa_prefs_date_display());
+	sdreconcil = g_strdup( "" );
+	if( concil ){
+		g_free( sdreconcil );
+		sdreconcil = my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display());
+	}
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(
@@ -2451,23 +2449,18 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 				&new_iter,
 				entry_iter,
 				-1,
-				COL_DOPE,    sdope,
-				COL_PIECE,   ofo_bat_line_get_ref( batline ),
-				COL_NUMBER,  ofo_bat_line_get_line_id( batline ),
-				COL_LABEL,   ofo_bat_line_get_label( batline ),
-				COL_DEBIT,   sdeb,
-				COL_CREDIT,  scre,
-				COL_OBJECT,  batline,
+				COL_DOPE,      sdope,
+				COL_PIECE,     ofo_bat_line_get_ref( batline ),
+				COL_NUMBER,    ofo_bat_line_get_line_id( batline ),
+				COL_LABEL,     ofo_bat_line_get_label( batline ),
+				COL_DEBIT,     sdeb,
+				COL_CREDIT,    scre,
+				COL_DRECONCIL, sdreconcil,
+				COL_OBJECT,    batline,
 				-1 );
 
+	g_free( sdreconcil );
 	g_free( sdope );
-
-	/* check for insertion */
-	if( 0 ){
-		gtk_tree_model_get( child_tmodel, &new_iter, COL_NUMBER, &line_id, COL_LABEL, &slabel, -1 );
-		g_debug( "%s: line=%ld, label=%s", thisfn, line_id, slabel );
-		g_free( slabel );
-	}
 }
 
 /*
@@ -3270,7 +3263,7 @@ remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *en
 						bat_scre = my_double_to_str( bat_amount );
 					}
 					g_debug( "%s: entry found for bat_sdeb=%s, bat_scre=%s", thisfn, bat_sdeb, bat_scre );
-					insert_bat_line( self, OFO_BAT_LINE( object ), entry_iter, bat_sdeb, bat_scre );
+					insert_bat_line( self, OFO_BAT_LINE( object ), entry_iter, bat_sdeb, bat_scre, NULL );
 					set_entry_dval_by_store_iter(
 							self, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )), store_model, entry_iter);
 					g_object_unref( object );

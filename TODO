@@ -483,9 +483,6 @@
  877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
                 is not child of entry, then move bat line under entry
 
- 878 2015-11- 1 Reconciliation: reconciliate two bat lines
-                + be able to make a BAT file terminated
-
  880 2015-11- 1 Have a TVA module
 
  882 2015-11- 2 GuidedInput on Avron Internet operation template:
@@ -4143,6 +4140,10 @@
  876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
                 see PWIConsultants-20150131_1.gz
      2015-11- 5 fixed
+
+ 878 2015-11- 1 Reconciliation: reconciliate two bat lines
+                + be able to make a BAT file terminated
+     2015-11- 6 fixed
 
  879 2015-11- 1 Reconciliation: ignore bat line (?)
                 + be able to make a BAT file terminated

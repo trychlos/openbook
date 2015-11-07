@@ -20,6 +20,7 @@
  New features and improvements:
 
    - Reconciliation: disable buttons when actions are done (todo #883).
+   - Reconciliation: display bat lines reconciliation date.
 
  Bug fixes:
 
