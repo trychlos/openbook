@@ -421,7 +421,6 @@ setup_treeview_header( ofaPage *page, GtkContainer *parent )
 
 	label = my_utils_container_get_child_by_name( parent, "header-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelaccount" );
 
 	label = my_utils_container_get_child_by_name( parent, "header-debit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -429,7 +428,6 @@ setup_treeview_header( ofaPage *page, GtkContainer *parent )
 
 	label = my_utils_container_get_child_by_name( parent, "header-credit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelaccount" );
 	priv->account_credit = GTK_LABEL( label );
 }
 
@@ -671,16 +669,13 @@ setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 
 	label = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelaccount" );
 
 	label = my_utils_container_get_child_by_name( parent, "footer-debit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelaccount" );
 	priv->bal_debit = GTK_LABEL( label );
 
 	label = my_utils_container_get_child_by_name( parent, "footer-credit" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelaccount" );
 	priv->bal_credit = GTK_LABEL( label );
 }
 
@@ -3115,7 +3110,7 @@ get_store_iter_from_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTree
  * This is called at the end of the view setup: all widgets are defined,
  * and triggers are connected.
  *
- * settings format: account;mode;manual_concil[sql];
+ * settings format: account;mode;manualconcil[sql];
  */
 static void
 get_settings( ofaReconciliation *self )
