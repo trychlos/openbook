@@ -47,6 +47,7 @@ ofaTabLabel GtkGrid GtkButton {
 /* black */
 GtkLabel.labelnormal {
 	color: #000000;
+	font-style: normal;
 }
 
 GtkLabel.labelwarning {
@@ -56,6 +57,7 @@ GtkLabel.labelwarning {
 /* red */
 GtkLabel.labelerror {
 	color: #ff0000;
+	font-style: italic;
 }
 
 GtkLabel.labelinvalid {
