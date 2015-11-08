@@ -32,45 +32,67 @@
  *
  * Display both entries from an account and a Bank Account Transaction
  * list, letting user reconciliate balanced lines.
+ * No matter in which order the user selects the account and the BAT
+ * file(s), the code handles things so that entries are always displayed
+ * before BAT lines.
  *
- * This is displayed as a tree view where:
- * - entries (if any) are always at the level zero
- * - bat lines may be:
- *   . as the child of an entry if they are reconciliated with this same
- *     entry, or proposed to
- *   . at the level zero if they are not reconciliated nor may be
- *     automatically proposed to be reconciliated against any entry.
+ * This is displayed as a tree view per conciliation group:
  *
- * An entry may have zero or one bat line child.
+ * - the first row of a conciliation group is at level zero,
+ *   other rows of this same conciliation group being children of the
+ *   first row - where row here may be either an entry or a BAT line
  *
- * Bat lines are inserted:
- * - preferentially as the child of an entry:
- *   . either (one of) the entry against which the bat line has been
- *     previously reconciliated
- *   . or a proposed compatible entry:
- *     > without yet any child
- *     > not yet reconciliated
- *     > with compatible amounts
- * - or at level zero if no automatic proposition can be made.
+ *   each time it is possible, the code tries to have an entry as the
+ *   first row (because it is more readable and intuitive for the user)
+ *   but this cannot be forced because:
+ *   . a conciliation group may contain only BAT lines
+ *   . only BAT lines may be loaded and no entries
  *
- * Activating (enter or double-click) an entry row toggles its
- * reconciliation state:
- * - if the entry was reconciliated, then all the reconciliation group
- *   is undone as well
- * - if the entry was not reconciliated, then the reconciliation date
- *   is taken from:
- *   . the child bat line effect date if any, and these two lines (the
- *     entry and the bat line) are set as members of a new reconciliation
- *     group
- *   . the manual reconciliation date if set (the entry is the only
- *     member of a new reconciliation group)
- *   . else (no reconciliation date) nothing happens.
+ * - if not member of a conciliation group:
+ *   . entries are at level zero
+ *   . bat lines may be:
+ *     . as the child of an entry if they are proposed to be reconciliated
+ *       with this same entry
+ *     . at the level zero if they are not proposed to any automatic
+ *       conciliation.
  *
- * Activating a bat line row has no effect
+ * We so may have actual conciliation group or proposed conciliation
+ * group. A proposed conciliation group will be build with an entry and
+ * a BAT line.
  *
- * Selection can be multiple in order to allow 'b' bat lines be
- * reconciliated against 'e' entries. Both b and e may be equal to
- * zero, as soon as sum(b+e)=0.
+ * Activating (enter or double-click) a row is only managed when this
+ * row is the first one of an actual or proposed conciliation group.
+ * When true, the state is toggled, i.e. the conciliation group is
+ * removed (if was set) or created (if was proposed).
+ *
+ * Actions:
+ * - reconciliate:
+ *   . enabled when:
+ *     > the selection contains an entry or points to a proposed
+ *       conciliation group
+ *     > and a conciliation date may be taken either from the manual
+ *       reconciliation date entry, or from a selected BAT line or from
+ *       a proposed BAT line
+ *     > and no selected row is already member of an actual conciliation
+ *       group
+ *     Note that whether the reconciliation action is enabled does not
+ *     depent of whether the selection is rightly balanced: it is always
+ *     possible for the user to force entries to be manually
+ *     reconciliated; only a confirmation may be required in this case.
+ *   . does: create a new conciliation group
+ *   . confirmation: if debit <> credit
+ * - decline:
+ *   . enabled when:
+ *     > the selection contains only not conciliated bat lines which
+ *       are member of a same proposed conciliation group
+ *       pratically this limit to the selection of one BAT line because
+ *       this is the limit of the proposal algorythm
+ *   . does: cancel the proposal and move the BAT line to level zero
+ *   . confirmation: no
+ * - unreconciliate:
+ *   . enabled when:
+ *   . does:
+ *   . confirmation:
  *
  * It is possible to import a bat file which concerns already manually
  * reconciliated entries.
@@ -80,16 +102,8 @@
  * bat line and to 'Accept' the reconciliation. The batline will be
  * added to the entry reconciliation group.
  *
- * The automatic proposal may be wrong, and may thus be declined. The
- * corresponding bat line is moved at tree view level zero.
- *
  * The OFA_T_CONCIL table records the conciliation groups, gathering
  * them by concil identifier.
- *
- * Development rules:
- * - type:       dialog
- * - settings:   yes
- * - current:    no
  */
 
 #include "ui/ofa-page-def.h"
