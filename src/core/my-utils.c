@@ -39,10 +39,12 @@ typedef struct {
 }
 	sBuildableByName;
 
+static const gchar    *st_cssfile       = PKGCSSDIR "/ofa.css";
 static GtkCssProvider *st_css_provider  = NULL;
 
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
+static gboolean utils_css_provider_setup( void );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 static gboolean is_dir( GFile *file );
@@ -975,6 +977,31 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 }
 
 /**
+ * my_utils_widget_remove_style:
+ * @widget:
+ * @style:
+ *
+ * Remove the specified @style from the given @widget.
+ */
+void
+my_utils_widget_remove_style( GtkWidget *widget, const gchar *style )
+{
+	static const gchar *thisfn = "my_utils_widget_remove_style";
+	GtkStyleContext *context;
+
+	g_debug( "%s: widget=%p (%s), style=%s",
+			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), style );
+
+	if( utils_css_provider_setup()){
+		context = gtk_widget_get_style_context( widget );
+		gtk_style_context_add_provider( context,
+				GTK_STYLE_PROVIDER( st_css_provider ),
+				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+		gtk_style_context_remove_class( context, style );
+	}
+}
+
+/**
  * my_utils_widget_set_style:
  * @widget:
  * @style:
@@ -985,27 +1012,17 @@ void
 my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
 {
 	static const gchar *thisfn = "my_utils_widget_set_style";
-	static const gchar *cssfile = PKGCSSDIR "/ofa.css";
-	GError *error;
 	GtkStyleContext *context;
 
-	if( !st_css_provider ){
-		st_css_provider = gtk_css_provider_new();
-		error = NULL;
-		g_debug( "%s: css=%s", thisfn, cssfile );
-		if( !gtk_css_provider_load_from_path( st_css_provider, cssfile, &error )){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-			g_clear_object( &st_css_provider );
-		}
-	}
+	g_debug( "%s: widget=%p (%s), style=%s",
+			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), style );
 
-	if( st_css_provider ){
+	if( utils_css_provider_setup()){
 		context = gtk_widget_get_style_context( widget );
-		gtk_style_context_add_class( context, style );
 		gtk_style_context_add_provider( context,
 				GTK_STYLE_PROVIDER( st_css_provider ),
 				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+		gtk_style_context_add_class( context, style );
 	}
 }
 
@@ -1087,6 +1104,28 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
 			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
 		}
 #endif
+}
+
+/*
+ * returns: %TRUE if the CSS provider has been successfully setup
+ */
+static gboolean
+utils_css_provider_setup( void )
+{
+	static const gchar *thisfn = "my_utils_widget_setup_css_provider";
+	GError *error;
+
+	if( !st_css_provider ){
+		st_css_provider = gtk_css_provider_new();
+		error = NULL;
+		g_debug( "%s: css=%s", thisfn, st_cssfile );
+		if( !gtk_css_provider_load_from_path( st_css_provider, st_cssfile, &error )){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+			g_clear_object( &st_css_provider );
+		}
+	}
+	return( st_css_provider && GTK_IS_CSS_PROVIDER( st_css_provider ));
 }
 
 /**
