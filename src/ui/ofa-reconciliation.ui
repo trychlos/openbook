@@ -616,7 +616,8 @@
           </object>
           <packing>
             <property name="left_attach">4</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">0</property>
+            <property name="height">4</property>
           </packing>
         </child>
         <child>
@@ -646,15 +647,6 @@
             <property name="left_attach">2</property>
             <property name="top_attach">2</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <placeholder/>

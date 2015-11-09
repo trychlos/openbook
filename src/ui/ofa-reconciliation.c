@@ -255,7 +255,6 @@ static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *bat
 static gboolean     is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry, ofoConcil *concil );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
 static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self );
-static void         get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
 static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self );
 static void         examine_selection( ofaReconciliation *self, ofxAmount *debit, ofxAmount *credit, ofoConcil **concil, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self );
@@ -266,6 +265,7 @@ static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
 static void         expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean     check_for_enable_view( ofaReconciliation *self );
 static void         default_expand_view( ofaReconciliation *self );
+static void         expand_tview_selection( ofaReconciliation *self );
 static void         on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_reconciliate( ofaReconciliation *self );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
@@ -273,7 +273,6 @@ static void         do_decline( ofaReconciliation *self );
 static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_unconciliate( ofaReconciliation *self );
 static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
-//static GtkTreeIter *search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre );
 static gboolean     run_selection_engine( ofaReconciliation *self );
 static void         examine_selection_old( ofaReconciliation *self, GtkTreeModel *tmodel, GList *paths, ofxAmount *debit, ofxAmount *credit, ofxCounter *recid, gboolean *unique, gint *rowsnb, GList **concils, GList **unconcils );
 static gboolean     is_unreconciliate_accepted( ofaReconciliation *self, ofoConcil *concil );
@@ -292,6 +291,7 @@ static ofoBatLine  *get_child_by_store_iter( ofaReconciliation *self, GtkTreeMod
 static const GDate *get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline );
 static ofoBase     *get_object_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path );
 static void         get_store_iter_from_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeModel **store_model, GtkTreeIter *store_iter );
+static void         get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
 static gboolean     search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean     search_for_parent_by_concil( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void         get_settings( ofaReconciliation *self );
@@ -2091,41 +2091,6 @@ tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath 
 }
 
 /*
- * set
- * - the level zero indice if the row is member of a hierarchy
- * - the counciliation id
- * of the specified row
- */
-static void
-get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
-{
-	ofaReconciliationPrivate *priv;
-	GtkTreeIter iter;
-	gint *indices, depth;
-	ofoBase *object;
-	ofoConcil *concil;
-
-	priv = self->priv;
-	*indice = -1;
-	*concil_id = 0;
-
-	gtk_tree_model_get_iter( tmodel, &iter, path );
-	indices = gtk_tree_path_get_indices_with_depth( path, &depth );
-	if( depth > 1 ){
-		*indice = indices[0];
-	} else if( gtk_tree_model_iter_has_child( tmodel, &iter )){
-		*indice = indices[0];
-	}
-	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
-	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
-	g_object_unref( object );
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
-	if( concil ){
-		*concil_id = ofo_concil_get_id( concil );
-	}
-}
-
-/*
  * - accept is enabled if selected lines are compatible:
  *   i.e. as soon as sum(debit)=sum(credit)
  *
@@ -2268,35 +2233,7 @@ examine_selection( ofaReconciliation *self,
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_row_activated";
-	GtkTreeSelection *selection;
-	GList *selected;
-	GtkTreeModel *tmodel;
-	GtkTreeIter *start, iter, child, parent;
-
-	g_debug( "%s: view=%p, path=%p, column=%p, self=%p",
-			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) self );
-
-	selection = gtk_tree_view_get_selection( view );
-	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
-	if( g_list_length( selected ) == 1 ){
-		start = &iter;
-		gtk_tree_model_get_iter( tmodel, start, ( GtkTreePath * ) selected->data );
-		if( gtk_tree_model_iter_parent( tmodel, &parent, start )){
-			gtk_tree_selection_select_iter( selection, &parent );
-			start = &parent;
-		}
-		if( gtk_tree_model_iter_children( tmodel, &child, start )){
-			while( TRUE ){
-				gtk_tree_selection_select_iter( selection, &child );
-				if( !gtk_tree_model_iter_next( tmodel, &child )){
-					break;
-				}
-			}
-		}
-	}
-	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
-
+	expand_tview_selection( self );
 	do_reconciliate( self );
 	on_tview_selection_changed( NULL, self );
 }
@@ -2461,6 +2398,41 @@ default_expand_view( ofaReconciliation *self )
 }
 
 /*
+ * when only one row is selected, and this row is member of a hierarchy,
+ * this expands the selection to all the hierarchy
+ */
+static void
+expand_tview_selection( ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeSelection *selection;
+	GList *selected;
+	GtkTreeIter *start, iter, parent, child;
+	GtkTreeModel *tmodel;
+
+	priv = self->priv;
+	selection = gtk_tree_view_get_selection( priv->tview );
+	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	if( g_list_length( selected ) == 1 ){
+		start = &iter;
+		gtk_tree_model_get_iter( tmodel, start, ( GtkTreePath * ) selected->data );
+		if( gtk_tree_model_iter_parent( tmodel, &parent, start )){
+			gtk_tree_selection_select_iter( selection, &parent );
+			start = &parent;
+		}
+		if( gtk_tree_model_iter_children( tmodel, &child, start )){
+			while( TRUE ){
+				gtk_tree_selection_select_iter( selection, &child );
+				if( !gtk_tree_model_iter_next( tmodel, &child )){
+					break;
+				}
+			}
+		}
+	}
+	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+}
+
+/*
  * use cases:
  * - importing a bat file while the corresponding entries have already
  *   been manually reconciliated: accept bat line
@@ -2475,6 +2447,7 @@ default_expand_view( ofaReconciliation *self )
 static void
 on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
+	expand_tview_selection( self );
 	do_reconciliate( self );
 	on_tview_selection_changed( NULL, self );
 }
@@ -2496,9 +2469,11 @@ do_reconciliate( ofaReconciliation *self )
 	GtkTreeSelection *selection;
 	GList *selected, *it;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GtkTreeIter iter, filter_iter, store_iter, parent_iter;
+	GtkTreePath *parent, *ent_parent_path, *bat_parent_path;
 	ofoBase *object;
 	ofxCounter concil_id;
+	gint depth;
 
 	priv = self->priv;
 
@@ -2520,6 +2495,8 @@ do_reconciliate( ofaReconciliation *self )
 	/* add each line to this same concil group */
 	selection = gtk_tree_view_get_selection( priv->tview );
 	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	ent_parent_path = NULL;
+	bat_parent_path = NULL;
 	for( it=selected ; it ; it=it->next ){
 		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
@@ -2534,7 +2511,57 @@ do_reconciliate( ofaReconciliation *self )
 			ofa_iconcil_add_to_concil( OFA_ICONCIL( object ), concil, priv->dossier );
 		}
 		update_concil_data_by_path( self, ( GtkTreePath * ) it->data, concil_id, &dval );
+
+		/* search for the first toplevel entry
+		 * defaulting to the first toplevel batline */
+		depth = gtk_tree_path_get_depth(( GtkTreePath * ) it->data );
+		if( !ent_parent_path && OFO_IS_ENTRY( object ) && depth == 1 ){
+			ent_parent_path = gtk_tree_path_copy(( GtkTreePath * ) it->data );
+		}
+		if( !bat_parent_path && OFO_IS_BAT_LINE( object ) && depth == 1 ){
+			bat_parent_path = gtk_tree_path_copy(( GtkTreePath * ) it->data );
+		}
 	}
+
+	/* review the hierarchy:
+	 * keep the toplevel parent, all other rows become children of it */
+	parent = ent_parent_path ? ent_parent_path : bat_parent_path;
+	gtk_tree_model_get_iter( tmodel, &iter, parent );
+	gtk_tree_model_sort_convert_iter_to_child_iter(
+			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
+	gtk_tree_model_filter_convert_iter_to_child_iter(
+			GTK_TREE_MODEL_FILTER( priv->tfilter ), &parent_iter, &filter_iter );
+
+	for( it=selected ; it ; it=it->next ){
+		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+
+		if( gtk_tree_path_compare(( GtkTreePath * ) it->data, parent ) != 0 &&
+				!gtk_tree_path_is_descendant(( GtkTreePath * ) it->data, parent )){
+
+			gtk_tree_model_sort_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
+			gtk_tree_model_filter_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
+			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
+			gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &store_iter, &parent_iter, -1 );
+			if( OFO_IS_ENTRY( object )){
+				set_row_entry( self, priv->tstore, &store_iter, OFO_ENTRY( object ));
+			} else {
+				set_row_batline( self, priv->tstore, &store_iter, OFO_BAT_LINE( object ));
+			}
+		}
+		g_object_unref( object );
+	}
+
+	/* last re-selected the head of the hierarchy
+	 * keeping the hierarchy expanded to be visible by the user */
+	gtk_tree_selection_unselect_all( selection );
+	gtk_tree_selection_select_path( selection, parent );
+	gtk_tree_model_get_iter( tmodel, &iter, parent );
+	expand_node_by_iter( self, priv->tview, tmodel, &iter );
+
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 }
 
@@ -2658,77 +2685,6 @@ search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
 
 	return( entry_iter );
 }
-
-#if 0
-/*
- * search for a candidate entry which satisfies the specified criteria
- *
- * returns an iter on the store model, or NULL
- *
- * if not %NULL, the returned iter should be gtk_tree_iter_free() by
- * the caller
- */
-static GtkTreeIter *
-search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre )
-{
-	static const gchar *thisfn = "ofa_reconcilitation_search_for_entry_by_amount";
-	GtkTreeModel *child_tmodel;
-	GtkTreeIter iter;
-	GtkTreeIter *entry_iter;
-	gchar *sdeb, *scre, *sdval;
-	GObject *object;
-	gboolean found;
-
-	found = FALSE;
-	entry_iter = NULL;
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
-	/*g_debug( "search_for_entry_by_amount: sbat_deb=%s, sbat_cre=%s", sbat_deb, sbat_cre );*/
-
-	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( child_tmodel,
-					&iter,
-					COL_DEBIT,     &sdeb,
-					COL_CREDIT,    &scre,
-					COL_DRECONCIL, &sdval,
-					COL_OBJECT,    &object,
-					-1 );
-			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
-			g_object_unref( object );
-
-			if( OFO_IS_ENTRY( object ) &&
-					!my_strlen( sdval ) &&
-					!gtk_tree_model_iter_has_child( child_tmodel, &iter )){
-
-				/* are the amounts compatible ?
-				 * a positive bat_amount implies that the entry should be a debit */
-				g_return_val_if_fail( my_strlen( sdeb ) || my_strlen( scre ), NULL );
-				/*g_debug( "examining entry: sdeb=%s, scre=%s", sdeb, scre );*/
-
-				if(( my_strlen( scre ) && my_strlen( sbat_deb ) && !g_utf8_collate( scre, sbat_deb )) ||
-						( my_strlen( sdeb ) && my_strlen( sbat_cre ) && !g_utf8_collate( sdeb, sbat_cre ))){
-					found = TRUE;
-				}
-			}
-			g_free( sdeb );
-			g_free( scre );
-
-			if( found ){
-				entry_iter = gtk_tree_iter_copy( &iter );
-				break;
-			}
-
-			if( !gtk_tree_model_iter_next( child_tmodel, &iter )){
-				break;
-			}
-		}
-	}
-	if( 0 ){
-		g_debug( "%s: returning entry_iter=%p", thisfn, ( void * ) entry_iter );
-	}
-	return( entry_iter );
-}
-#endif
 
 /*
  * Run the selection engine on the reconciliation group of the current
@@ -3411,6 +3367,41 @@ get_store_iter_from_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTree
 			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
 	gtk_tree_model_filter_convert_iter_to_child_iter(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ), store_iter, &filter_iter );
+}
+
+/*
+ * set
+ * - the level zero indice if the row is member of a hierarchy
+ * - the counciliation id
+ * of the specified row
+ */
+static void
+get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeIter iter;
+	gint *indices, depth;
+	ofoBase *object;
+	ofoConcil *concil;
+
+	priv = self->priv;
+	*indice = -1;
+	*concil_id = 0;
+
+	gtk_tree_model_get_iter( tmodel, &iter, path );
+	indices = gtk_tree_path_get_indices_with_depth( path, &depth );
+	if( depth > 1 ){
+		*indice = indices[0];
+	} else if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+		*indice = indices[0];
+	}
+	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+	g_object_unref( object );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+	if( concil ){
+		*concil_id = ofo_concil_get_id( concil );
+	}
 }
 
 /*
