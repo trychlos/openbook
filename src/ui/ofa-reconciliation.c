@@ -119,6 +119,8 @@ struct _ofaReconciliationPrivate {
 	 * this is the balance of the account
 	 * with deduction of unreconciliated entries and bat lines
 	 */
+	GtkWidget           *select_debit;
+	GtkWidget           *select_credit;
 	GtkWidget           *bal_footer_label;
 	GtkWidget           *bal_debit_label;
 	GtkWidget           *bal_credit_label;
@@ -252,6 +254,8 @@ static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmo
 static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
 static gboolean     is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry, ofoConcil *concil );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
+static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self );
+static void         get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
 static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self );
 static void         examine_selection( ofaReconciliation *self, ofxAmount *debit, ofxAmount *credit, ofoConcil **concil, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self );
@@ -265,7 +269,9 @@ static void         default_expand_view( ofaReconciliation *self );
 static void         on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_reconciliate( ofaReconciliation *self );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
+static void         do_decline( ofaReconciliation *self );
 static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
+static void         do_unconciliate( ofaReconciliation *self );
 static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
 //static GtkTreeIter *search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre );
 static gboolean     run_selection_engine( ofaReconciliation *self );
@@ -655,6 +661,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 
 	select = gtk_tree_view_get_selection( priv->tview);
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
+	gtk_tree_selection_set_select_function( select, ( GtkTreeSelectionFunc ) tview_select_fn, page, NULL );
 	g_signal_connect( select, "changed", G_CALLBACK( on_tview_selection_changed ), page );
 
 	gtk_widget_set_sensitive( tview, FALSE );
@@ -671,6 +678,14 @@ setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 	ofaReconciliationPrivate *priv;
 
 	priv = OFA_RECONCILIATION( page )->priv;
+
+	priv->select_debit = my_utils_container_get_child_by_name( parent, "select-debit" );
+	g_return_if_fail( priv->select_debit && GTK_IS_LABEL( priv->select_debit ));
+	my_utils_widget_set_style( priv->select_debit, "labelhelp" );
+
+	priv->select_credit = my_utils_container_get_child_by_name( parent, "select-credit" );
+	g_return_if_fail( priv->select_credit && GTK_IS_LABEL( priv->select_credit ));
+	my_utils_widget_set_style( priv->select_credit, "labelhelp" );
 
 	priv->bal_footer_label = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( priv->bal_footer_label && GTK_IS_LABEL( priv->bal_footer_label ));
@@ -2013,6 +2028,104 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 /*
+ * if a hierarchy is involved, only accept selection inside this hierarchy
+ * else, accept anything
+ * a hierarchy is identified by its first level path (an integer)
+ * or also are allowed:
+ * a single not-null hierarchy + a single not-null conciliation group
+ */
+static gboolean
+tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self )
+{
+	GList *selected, *it;
+	gint hierarchy, indice;
+	ofxCounter council_id, id;
+	gboolean accept;
+
+	/* always accept unselect */
+	if( is_selected ){
+		return( TRUE );
+	}
+
+	/* examine the current selection, getting the first not-null hierarchy
+	 * and the first not null conciliation group */
+	hierarchy = -1;
+	council_id = 0;
+	accept = TRUE;
+	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	for( it=selected ; it ; it=it->next ){
+		get_indice_concil_id_by_path( self, tmodel, ( GtkTreePath * ) it->data, &indice, &id );
+		if( indice != -1 ){
+			if( hierarchy == -1 ){
+				hierarchy = indice;
+			} else if( hierarchy != indice ){
+				accept = FALSE;
+				break;
+			}
+		}
+		if( id != 0 ){
+			if( council_id == 0 ){
+				council_id = id;
+			} else if( council_id != id ){
+				accept = FALSE;
+				break;
+			}
+		}
+	}
+	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* examine current row */
+	get_indice_concil_id_by_path( self, tmodel, path, &indice, &id );
+	if( indice != -1 ){
+		if( hierarchy != -1 && hierarchy != indice ){
+			accept = FALSE;
+		}
+	}
+	if( id != 0 ){
+		if( council_id != 0 && council_id != id ){
+			accept = FALSE;
+		}
+	}
+
+	return( accept );
+}
+
+/*
+ * set
+ * - the level zero indice if the row is member of a hierarchy
+ * - the counciliation id
+ * of the specified row
+ */
+static void
+get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeIter iter;
+	gint *indices, depth;
+	ofoBase *object;
+	ofoConcil *concil;
+
+	priv = self->priv;
+	*indice = -1;
+	*concil_id = 0;
+
+	gtk_tree_model_get_iter( tmodel, &iter, path );
+	indices = gtk_tree_path_get_indices_with_depth( path, &depth );
+	if( depth > 1 ){
+		*indice = indices[0];
+	} else if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+		*indice = indices[0];
+	}
+	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+	g_object_unref( object );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+	if( concil ){
+		*concil_id = ofo_concil_get_id( concil );
+	}
+}
+
+/*
  * - accept is enabled if selected lines are compatible:
  *   i.e. as soon as sum(debit)=sum(credit)
  *
@@ -2030,6 +2143,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 	ofoConcil *concil;
 	guint unconcil_rows;
 	gboolean is_child, unique;
+	gchar *sdeb, *scre;
 
 	priv = self->priv;
 
@@ -2039,6 +2153,13 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 
 	examine_selection( self,
 			&debit, &credit, &concil, &unconcil_rows, &unique, &is_child );
+
+	sdeb = my_double_to_str( debit );
+	gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
+	g_free( sdeb );
+	scre = my_double_to_str( credit );
+	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
+	g_free( scre );
 
 	/* it is important to only enable actions when only one unique
 	 * conciliation group is selected, as implementation do not know
@@ -2141,16 +2262,43 @@ examine_selection( ofaReconciliation *self,
 
 /*
  * activating a row is a shortcut for reconciliate
+ * the selection is automatically extended to the parent and all its
+ * children if this is possible (and desirable: only one selected row)
  */
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self )
 {
 	static const gchar *thisfn = "ofa_reconciliation_on_row_activated";
+	GtkTreeSelection *selection;
+	GList *selected;
+	GtkTreeModel *tmodel;
+	GtkTreeIter *start, iter, child, parent;
 
 	g_debug( "%s: view=%p, path=%p, column=%p, self=%p",
 			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) self );
 
+	selection = gtk_tree_view_get_selection( view );
+	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	if( g_list_length( selected ) == 1 ){
+		start = &iter;
+		gtk_tree_model_get_iter( tmodel, start, ( GtkTreePath * ) selected->data );
+		if( gtk_tree_model_iter_parent( tmodel, &parent, start )){
+			gtk_tree_selection_select_iter( selection, &parent );
+			start = &parent;
+		}
+		if( gtk_tree_model_iter_children( tmodel, &child, start )){
+			while( TRUE ){
+				gtk_tree_selection_select_iter( selection, &child );
+				if( !gtk_tree_model_iter_next( tmodel, &child )){
+					break;
+				}
+			}
+		}
+	}
+	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
 	do_reconciliate( self );
+	on_tview_selection_changed( NULL, self );
 }
 
 /*
@@ -2392,11 +2540,18 @@ do_reconciliate( ofaReconciliation *self )
 
 /*
  * decline a proposition:
- * the selection should be only a child
- * it is moved to level 0
+ * the selection is limited to one child row
+ * it is moved to level 0, and re-selected
  */
 static void
 on_decline_clicked( GtkButton *button, ofaReconciliation *self )
+{
+	do_decline( self );
+	on_tview_selection_changed( NULL, self );
+}
+
+static void
+do_decline( ofaReconciliation *self )
 {
 	ofaReconciliationPrivate *priv;
 	GtkTreeSelection *select;
@@ -2411,19 +2566,25 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 	selected = gtk_tree_selection_get_selected_rows( select, NULL );
 	g_return_if_fail( g_list_length( selected ) == 1 );
 
+	/* get an iter on the underlying store model, making sure it has a
+	 *  parent */
 	ok = gtk_tree_model_get_iter( priv->tsort, &sort_iter, ( GtkTreePath * ) selected->data );
 	g_return_if_fail( ok );
 
 	gtk_tree_model_sort_convert_iter_to_child_iter( GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 	gtk_tree_model_filter_convert_iter_to_child_iter( GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
-	gtk_tree_model_get( priv->tstore, &store_iter, COL_OBJECT, &object, -1 );
-	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 
 	has_parent = gtk_tree_model_iter_parent( priv->tstore, &parent_iter, &store_iter );
 	g_return_if_fail( has_parent );
 
+	gtk_tree_model_get( priv->tstore, &store_iter, COL_OBJECT, &object, -1 );
+	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+
+	/* remove the child and re-insert it at level zero
+	 * reset conciliation indications on parent row */
 	gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
 	gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &store_iter, NULL, -1 );
+
 	if( OFO_IS_ENTRY( object )){
 		set_row_entry( self, priv->tstore, &store_iter, OFO_ENTRY( object ));
 	} else {
@@ -2431,16 +2592,28 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 	}
 	g_object_unref( object );
 
-	gtk_tree_store_set( GTK_TREE_STORE( priv->tstore ), &parent_iter, COL_DRECONCIL, "", -1 );
+	update_concil_data_by_iter( self, priv->tstore, &parent_iter, 0, NULL );
 
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* re-select the newly inserted child */
+	gtk_tree_selection_unselect_all( select );
+	gtk_tree_model_filter_convert_child_iter_to_iter( GTK_TREE_MODEL_FILTER( priv->tfilter ), &filter_iter, &store_iter );
+	gtk_tree_model_sort_convert_child_iter_to_iter( GTK_TREE_MODEL_SORT( priv->tsort ), &sort_iter, &filter_iter );
+	gtk_tree_selection_select_iter( select, &sort_iter );
 }
 
 static void
 on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
+	do_unconciliate( self );
+	on_tview_selection_changed( NULL, self );
+}
+
+static void
+do_unconciliate( ofaReconciliation *self )
+{
 	run_selection_engine( self );
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 }
 
 /*
@@ -3261,8 +3434,9 @@ search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeMo
 		return( FALSE );
 	}
 
-	const gchar *lab = OFO_IS_BAT_LINE( object ) ? ofo_bat_line_get_label( OFO_BAT_LINE( object )) : NULL;
-	gboolean is_debug = lab ? g_str_has_prefix( lab, "CB DECATHLON 1" ) : FALSE;
+	//const gchar *lab = OFO_IS_BAT_LINE( object ) ? ofo_bat_line_get_label( OFO_BAT_LINE( object )) : NULL;
+	//gboolean is_debug = lab ? g_str_has_prefix( lab, "CB DECATHLON 1" ) : FALSE;
+	gboolean is_debug = FALSE;
 
 	if( gtk_tree_model_get_iter_first( tmodel, iter )){
 		/* get amounts of the being-inserted object
