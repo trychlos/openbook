@@ -236,6 +236,7 @@ ofa_concil_collection_add( ofaConcilCollection *collection, ofoConcil *concil )
 void
 ofa_concil_collection_remove( ofaConcilCollection *collection, ofoConcil *concil )
 {
+	static const gchar *thisfn = "ofa_concil_collection_remove";
 	ofaConcilCollectionPrivate *priv;
 
 	g_return_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ));
@@ -245,6 +246,8 @@ ofa_concil_collection_remove( ofaConcilCollection *collection, ofoConcil *concil
 
 		priv = collection->priv;
 		priv->concils = g_list_remove( priv->concils, concil );
+		g_debug( "%s: collection=%p, concil=%p, id=%ld",
+				thisfn, ( void * ) collection, ( void * ) concil, ofo_concil_get_id( concil ));
 		g_object_unref( concil );
 	}
 }

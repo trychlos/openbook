@@ -114,6 +114,7 @@ struct _ofaReconciliationPrivate {
 	GtkTreeModel        *tsort;			/* GtkTreeModelSort stacked on the TreeModelFilter */
 	GtkTreeView         *tview;			/* the treeview built on the sorted model */
 	GtkTreeViewColumn   *sort_column;
+	gint                 activate_action;
 
 	/* UI - reconciliated balance
 	 * this is the balance of the account
@@ -187,6 +188,15 @@ static const sConcil st_concils[] = {
 		{ ENT_CONCILED_SESSION, N_( "Reconciliation session" ) },
 		{ ENT_CONCILED_ALL,     N_( "All" ) },
 		{ 0 }
+};
+
+/* when activating, and depending of the current selection, the
+ * possible action may be conciliate or unconciliate or do nothing
+ */
+enum {
+	ACTIV_NONE = 0,
+	ACTIV_CONCILIATE,
+	ACTIV_UNCONCILIATE
 };
 
 #define COLOR_BAT_CONCIL_FONT           "#008000"	/* middle green */
@@ -268,30 +278,18 @@ static void         default_expand_view( ofaReconciliation *self );
 static void         expand_tview_selection( ofaReconciliation *self );
 static void         on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_reconciliate( ofaReconciliation *self );
+static GtkTreePath *do_reconciliate_review_hierarchy( ofaReconciliation *self, GList *selected, GtkTreePath *parent );
+static GDate       *get_date_for_new_concil( ofaReconciliation *self, GDate *date );
 static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_decline( ofaReconciliation *self );
 static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_unconciliate( ofaReconciliation *self );
-static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
-static gboolean     run_selection_engine( ofaReconciliation *self );
-static void         examine_selection_old( ofaReconciliation *self, GtkTreeModel *tmodel, GList *paths, ofxAmount *debit, ofxAmount *credit, ofxCounter *recid, gboolean *unique, gint *rowsnb, GList **concils, GList **unconcils );
-static gboolean     is_unreconciliate_accepted( ofaReconciliation *self, ofoConcil *concil );
 static void         set_reconciliated_balance( ofaReconciliation *self );
-static GDate       *get_date_for_new_concil( ofaReconciliation *self, GDate *date );
-static void         get_batline_dval_from_objects( ofaReconciliation *self, GDate *dval, GList *objects );
-static void         get_entry_dval_by_path( ofaReconciliation *self, GDate *dval, GtkTreeModel *tmodel, GtkTreePath *path );
-static void         set_entry_dval_by_path( ofaReconciliation *self, GDate *dval, GtkTreeModel *tmodel, GtkTreePath *path );
 static void         update_concil_data_by_path( ofaReconciliation *self, GtkTreePath *path, ofxCounter id, const GDate *dval );
 static void         update_concil_data_by_iter( ofaReconciliation *self, GtkTreeModel *store_model, GtkTreeIter *store_iter, ofxCounter id, const GDate *dval );
-static void         set_reconciliated_dval_from_concil( ofaReconciliation *self, ofoConcil *concil );
-static void         reset_proposed_dval_from_concil( ofaReconciliation *self, ofoConcil *concil );
-static void         add_child_to_concil_by_path( ofaReconciliation *self, ofoConcil *concil, GtkTreeModel *tmodel, GtkTreePath *path );
-static ofoBatLine  *get_child_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path );
-static ofoBatLine  *get_child_by_store_iter( ofaReconciliation *self, GtkTreeModel *store_model, GtkTreeIter *ent_iter );
 static const GDate *get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline );
-static ofoBase     *get_object_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path );
-static void         get_store_iter_from_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeModel **store_model, GtkTreeIter *store_iter );
 static void         get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
+static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
 static gboolean     search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean     search_for_parent_by_concil( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void         get_settings( ofaReconciliation *self );
@@ -1148,7 +1146,7 @@ insert_entry( ofaReconciliation *self, ofoEntry *entry )
 
 	priv = self->priv;
 
-	if( 0 && search_for_parent_by_concil( self, OFO_BASE( entry ), priv->tstore, &parent_iter )){
+	if( search_for_parent_by_concil( self, OFO_BASE( entry ), priv->tstore, &parent_iter )){
 		gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &insert_iter, &parent_iter, -1 );
 		set_row_entry( self, priv->tstore, &insert_iter, entry );
 
@@ -1415,14 +1413,28 @@ do_display_bat_files( ofaReconciliation *self )
 	}
 }
 
+/*
+ * about to display a newly-imported or a newly-selected BAT file
+ * check that it is not already displayed
+ */
 static void
 display_bat_by_id( ofaReconciliation *self, ofxCounter bat_id )
 {
 	ofaReconciliationPrivate *priv;
+	ofoBat *bat;
+	GList *it;
 
 	priv = self->priv;
 
-	ofoBat *bat = ofo_bat_get_by_id( priv->dossier, bat_id );
+	for( it=priv->bats ; it ; it=it->next ){
+		bat = ( ofoBat * ) it->data;
+		if( ofo_bat_get_id( bat ) == bat_id ){
+			my_utils_dialog_warning( _( "The selected BAT file is already loaded" ));
+			return;
+		}
+	}
+
+	bat = ofo_bat_get_by_id( priv->dossier, bat_id );
 	if( bat ){
 		priv->bats = g_list_prepend( priv->bats, bat );
 		display_bat_file( self, bat );
@@ -2115,6 +2127,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 	concil_enabled = FALSE;
 	decline_enabled = FALSE;
 	unreconciliate_enabled = FALSE;
+	priv->activate_action = ACTIV_NONE;
 
 	examine_selection( self,
 			&debit, &credit, &concil, &unconcil_rows, &unique, &is_child );
@@ -2133,6 +2146,15 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
 	concil_enabled = ( unique && unconcil_rows > 0 );
 	decline_enabled = ( unique && !concil && unconcil_rows == 1 && is_child );
 	unreconciliate_enabled = ( unique && concil && unconcil_rows == 0 );
+
+	/* what to do on selection activation ? */
+	if( unique ){
+		if( !concil || unconcil_rows > 0 ){
+			priv->activate_action = ACTIV_CONCILIATE;
+		} else {
+			priv->activate_action = ACTIV_UNCONCILIATE;
+		}
+	}
 
 	gtk_widget_set_sensitive( priv->reconciliate_btn, concil_enabled );
 	gtk_widget_set_sensitive( priv->decline_btn, decline_enabled );
@@ -2226,7 +2248,7 @@ examine_selection( ofaReconciliation *self,
 }
 
 /*
- * activating a row is a shortcut for reconciliate
+ * activating a row is a shortcut for toggling conciliate/unconciliate
  * the selection is automatically extended to the parent and all its
  * children if this is possible (and desirable: only one selected row)
  */
@@ -2234,7 +2256,16 @@ static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self )
 {
 	expand_tview_selection( self );
-	do_reconciliate( self );
+	switch( self->priv->activate_action ){
+		case ACTIV_CONCILIATE:
+			do_reconciliate( self );
+			break;
+		case ACTIV_UNCONCILIATE:
+			do_unconciliate( self );
+			break;
+		default:
+			break;
+	}
 	on_tview_selection_changed( NULL, self );
 }
 
@@ -2460,6 +2491,7 @@ on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 static void
 do_reconciliate( ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_do_reconciliate";
 	ofaReconciliationPrivate *priv;
 	ofxAmount debit, credit;
 	guint unconcil_rows;
@@ -2469,11 +2501,13 @@ do_reconciliate( ofaReconciliation *self )
 	GtkTreeSelection *selection;
 	GList *selected, *it;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter, filter_iter, store_iter, parent_iter;
+	GtkTreeIter iter;
 	GtkTreePath *parent, *ent_parent_path, *bat_parent_path;
 	ofoBase *object;
 	ofxCounter concil_id;
 	gint depth;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -2489,6 +2523,8 @@ do_reconciliate( ofaReconciliation *self )
 						"effect date" ));
 			return;
 		}
+	} else {
+		my_date_set_from_date( &dval, ofo_concil_get_dval( concil ));
 	}
 	concil_id = concil ? ofo_concil_get_id( concil ) : 0;
 
@@ -2526,33 +2562,12 @@ do_reconciliate( ofaReconciliation *self )
 	/* review the hierarchy:
 	 * keep the toplevel parent, all other rows become children of it */
 	parent = ent_parent_path ? ent_parent_path : bat_parent_path;
-	gtk_tree_model_get_iter( tmodel, &iter, parent );
-	gtk_tree_model_sort_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
-	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( priv->tfilter ), &parent_iter, &filter_iter );
-
-	for( it=selected ; it ; it=it->next ){
-		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
-		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
-
-		if( gtk_tree_path_compare(( GtkTreePath * ) it->data, parent ) != 0 &&
-				!gtk_tree_path_is_descendant(( GtkTreePath * ) it->data, parent )){
-
-			gtk_tree_model_sort_convert_iter_to_child_iter(
-					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
-			gtk_tree_model_filter_convert_iter_to_child_iter(
-					GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
-			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
-			gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &store_iter, &parent_iter, -1 );
-			if( OFO_IS_ENTRY( object )){
-				set_row_entry( self, priv->tstore, &store_iter, OFO_ENTRY( object ));
-			} else {
-				set_row_batline( self, priv->tstore, &store_iter, OFO_BAT_LINE( object ));
-			}
-		}
-		g_object_unref( object );
+	parent = do_reconciliate_review_hierarchy( self, selected, parent );
+	if( ent_parent_path ){
+		gtk_tree_path_free( ent_parent_path );
+	}
+	if( bat_parent_path ){
+		gtk_tree_path_free( bat_parent_path );
 	}
 
 	/* last re-selected the head of the hierarchy
@@ -2560,9 +2575,130 @@ do_reconciliate( ofaReconciliation *self )
 	gtk_tree_selection_unselect_all( selection );
 	gtk_tree_selection_select_path( selection, parent );
 	gtk_tree_model_get_iter( tmodel, &iter, parent );
-	expand_node_by_iter( self, priv->tview, tmodel, &iter );
+	collapse_node_by_iter( self, priv->tview, tmodel, &iter );
 
+	gtk_tree_path_free( parent );
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
+	set_reconciliated_balance( self );
+	if( priv->bats ){
+		display_bat_counts( self );
+	}
+}
+
+/*
+ * review the hierarchy:
+ * keep the specified toplevel parent, all other selected rows becoming
+ * children of it; we use GtkTreeRowReference because this requires a
+ * reorganization of all the selection
+ */
+static GtkTreePath *
+do_reconciliate_review_hierarchy( ofaReconciliation *self, GList *selected, GtkTreePath *parent )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeRowReference *parent_ref, *ref;
+	GList *refs, *it;
+	GtkTreePath *it_path, *parent_path;
+	GtkTreeIter sort_iter, filter_iter, store_iter, parent_iter;
+	ofoBase *object;
+
+	priv = self->priv;
+	parent_ref = gtk_tree_row_reference_new( priv->tsort, parent );
+
+	/* build a list of row refs */
+	refs = NULL;
+	for( it=selected ; it ; it=it->next ){
+		ref = gtk_tree_row_reference_new( priv->tsort, ( GtkTreePath * ) it->data );
+		refs = g_list_prepend( refs, ref );
+	}
+
+	/* iter through the list of refs */
+	for( it=refs ; it ; it=it->next ){
+		it_path = gtk_tree_row_reference_get_path(( GtkTreeRowReference * ) it->data );
+		parent_path = gtk_tree_row_reference_get_path( parent_ref );
+
+		if( gtk_tree_path_compare( it_path, parent_path ) != 0 &&
+			 !gtk_tree_path_is_descendant( it_path, parent_path )){
+
+			gtk_tree_model_get_iter( priv->tsort, &sort_iter, it_path );
+			gtk_tree_model_sort_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
+			gtk_tree_model_filter_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
+
+			gtk_tree_model_get_iter( priv->tsort, &sort_iter, parent_path );
+			gtk_tree_model_sort_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
+			gtk_tree_model_filter_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_FILTER( priv->tfilter ), &parent_iter, &filter_iter );
+
+			gtk_tree_model_get( priv->tstore, &store_iter, COL_OBJECT, &object, -1 );
+			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
+			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
+			gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &store_iter, &parent_iter, -1 );
+			if( OFO_IS_ENTRY( object )){
+				set_row_entry( self, priv->tstore, &store_iter, OFO_ENTRY( object ));
+			} else {
+				set_row_batline( self, priv->tstore, &store_iter, OFO_BAT_LINE( object ));
+			}
+			g_object_unref( object );
+		}
+
+		gtk_tree_path_free( parent_path );
+		gtk_tree_path_free( it_path );
+	}
+
+	parent_path = gtk_tree_row_reference_get_path( parent_ref );
+
+	gtk_tree_row_reference_free( parent_ref );
+	g_list_free_full( refs, ( GDestroyNotify ) gtk_tree_row_reference_free );
+
+	return( parent_path );
+}
+
+/*
+ * search for a valid date in order to initialize a new conciliation group
+ * - first examine effect date of selected bat lines
+ * - then take manual conciliation date
+ *
+ * there is no garanty that the returned date is valid
+ */
+static GDate *
+get_date_for_new_concil( ofaReconciliation *self, GDate *date )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeSelection *selection;
+	GList *rows, *it;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBase *object;
+
+	priv = self->priv;
+	selection = gtk_tree_view_get_selection( priv->tview );
+	rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	my_date_clear( date );
+
+	for( it=rows ; it ; it=it->next ){
+		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+		g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
+		g_object_unref( object );
+
+		if( OFO_IS_BAT_LINE( object )){
+			my_date_set_from_date( date, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )));
+			break;
+		}
+	}
+
+	g_list_free_full( rows, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* else try with the manually provided date
+	 * may not be valid */
+	if( !my_date_is_valid( date )){
+		my_date_set_from_date( date, &priv->dconcil );
+	}
+
+	return( date );
 }
 
 /*
@@ -2580,12 +2716,15 @@ on_decline_clicked( GtkButton *button, ofaReconciliation *self )
 static void
 do_decline( ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_do_decline";
 	ofaReconciliationPrivate *priv;
 	GtkTreeSelection *select;
 	GList *selected;
 	GtkTreeIter sort_iter, filter_iter, store_iter, parent_iter;
 	gboolean has_parent, ok;
 	GObject *object;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -2633,6 +2772,7 @@ do_decline( ofaReconciliation *self )
 static void
 on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 {
+	expand_tview_selection( self );
 	do_unconciliate( self );
 	on_tview_selection_changed( NULL, self );
 }
@@ -2640,278 +2780,84 @@ on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 static void
 do_unconciliate( ofaReconciliation *self )
 {
-	run_selection_engine( self );
-}
-
-/*
- * returns an iter on the store model, or NULL
- *
- * if not %NULL, the returned iter should be gtk_tree_iter_free() by
- * the caller
- */
-static GtkTreeIter *
-search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
-{
-	GtkTreeModel *child_tmodel;
-	GtkTreeIter iter;
-	GtkTreeIter *entry_iter;
-	ofxCounter ecr_number;
-	GObject *object;
-
-	entry_iter = NULL;
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
-
-	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( child_tmodel,
-					&iter,
-					COL_NUMBER, &ecr_number,
-					COL_OBJECT, &object,
-					-1 );
-			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
-			g_object_unref( object );
-
-			/* search for the entry which has the specified number */
-			if( OFO_IS_ENTRY( object ) && ecr_number == number ){
-				entry_iter = gtk_tree_iter_copy( &iter );
-				break;
-			}
-
-			if( !gtk_tree_model_iter_next( child_tmodel, &iter )){
-				break;
-			}
-		}
-	}
-
-	return( entry_iter );
-}
-
-/*
- * Run the selection engine on the reconciliation group of the current
- * selection, whether a row has been selected, or the Accept button has
- * been clicked.
- *
- * If the selection is balanced,
- * - create a new reconciliation group, or update the existing one (if any)
- *
- * Else, if we have only one selected entry
- * - if entry is reconciliated,
- *   clear the reconciliation group
- *
- * - else, create a new reconciliation group with this entry
- *   if it has a child, then add the batline to the group
- *   The used reconciliation date is preferably taken from the proposal.
- *
- * return TRUE if we have actually changed the reconciliation state
- * this prevent us to recompute the account balances if we don't have
- * do anything
- */
-static gboolean
-run_selection_engine( ofaReconciliation *self )
-{
-	static const gchar *thisfn = "ofa_reconciliation_run_selection_engine";
+	static const gchar *thisfn = "ofa_reconciliation_do_unconciliate";
 	ofaReconciliationPrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GList *paths, *obj_concils, *obj_unconcils, *start, *it;
-	gboolean updated;
 	ofxAmount debit, credit;
-	ofxCounter rec_id;
-	gint rows_count;
-	gboolean unique_concil;
-	ofoBase *object;
+	guint unconcil_rows;
+	gboolean is_child, unique;
 	ofoConcil *concil;
+	GtkTreeSelection *selection;
+	GList *selected, *it;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter, filter_iter, store_iter, child_iter;
 	GDate dval;
-
-	priv = self->priv;
-	updated = FALSE;
-	select = gtk_tree_view_get_selection( priv->tview );
-	paths = gtk_tree_selection_get_selected_rows( select, &tmodel );
-	examine_selection_old( self,  tmodel, paths,
-			&debit, &credit, &rec_id, &unique_concil, &rows_count, &obj_concils, &obj_unconcils );
-	g_debug( "%s: debit=%lf, credit=%lf, rec_id=%ld, unique_concil=%s, rows_count=%d, obj_concils=%d, obj_unconcils=%d",
-			thisfn, debit, credit, rec_id, unique_concil ? "True":"False", rows_count,
-			g_list_length( obj_concils ), g_list_length( obj_unconcils ));
-
-	/* if the selection is empty or contains several reconciliation
-	 * groups, then does nothing */
-	if( rows_count >= 1 && unique_concil ){
-		if( rows_count == 1 ){
-			object = get_object_by_path( self, tmodel, ( GtkTreePath * ) paths->data );
-			if( OFO_IS_ENTRY( object )){
-				if( rec_id > 0 ){
-					/* unreconciliate the selected entry and all its group */
-					concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
-					if( is_unreconciliate_accepted( self, concil )){
-						g_object_ref( concil );
-						ofa_iconcil_remove_concil( concil, priv->dossier );
-						reset_proposed_dval_from_concil( self, concil );
-						g_object_unref( concil );
-						updated = TRUE;
-					}
-				} else {
-					/* reconciliate the entry, with its child if any */
-					get_entry_dval_by_path( self, &dval, tmodel, ( GtkTreePath * ) paths->data );
-					if( my_date_is_valid( &dval )){
-						concil = ofa_iconcil_new_concil( OFA_ICONCIL( object ), &dval, priv->dossier );
-						set_entry_dval_by_path( self, &dval, tmodel, ( GtkTreePath * ) paths->data );
-						add_child_to_concil_by_path( self, concil, tmodel, ( GtkTreePath * ) paths->data );
-						updated = TRUE;
-					}
-				}
-			}
-		} else if( debit == credit ){
-			if( g_list_length( obj_unconcils ) == 0 ){
-				/* unreconciliate the fully selected group */
-				concil = ofa_iconcil_get_concil( OFA_ICONCIL( obj_concils->data ), priv->dossier );
-				if( is_unreconciliate_accepted( self, concil )){
-					g_object_ref( concil );
-					ofa_iconcil_remove_concil( concil, priv->dossier );
-					reset_proposed_dval_from_concil( self, concil );
-					g_object_unref( concil );
-					updated = TRUE;
-				}
-
-			} else {
-				/* reconciliate the selected rows (entries/batlines) together */
-				concil = NULL;
-				start = obj_unconcils;
-				if( rec_id == 0 ){
-					get_batline_dval_from_objects( self, &dval, obj_unconcils );
-					if( my_date_is_valid( &dval )){
-						concil = ofa_iconcil_new_concil( OFA_ICONCIL( obj_unconcils->data ), &dval, priv->dossier );
-						rec_id = ofo_concil_get_id( concil );
-						start = obj_unconcils->next;
-						updated = TRUE;
-					}
-				} else {
-					concil = ofa_concil_collection_get_by_id( rec_id, priv->dossier );
-				}
-				if( rec_id > 0 ){
-					g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
-					for( it=start ; it ; it=it->next ){
-						ofa_iconcil_add_to_concil( OFA_ICONCIL( it->data ), concil, priv->dossier );
-					}
-					updated = TRUE;
-				}
-				if( concil ){
-					set_reconciliated_dval_from_concil( self, concil );
-				}
-			}
-		}
-	}
-
-	g_list_free( obj_concils );
-	g_list_free( obj_unconcils );
-	g_list_free_full( paths, ( GDestroyNotify ) gtk_tree_path_free );
-
-	if( updated ){
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		default_expand_view( self );
-		set_reconciliated_balance( self );
-		if( priv->bats ){
-			display_bat_counts( self );
-		}
-	}
-
-	return( updated );
-}
-
-/*
- * examine the current selection, gathering the indicators the selection
- * engine needs in order to known what to do
- *
- * @unique: set to %TRUE if all selected rows are of the same group or zero
- *  (set to %FALSE if there is several non-null concil groups)
- */
-static void
-examine_selection_old( ofaReconciliation *self, GtkTreeModel *tmodel, GList *paths,
-		ofxAmount *debit, ofxAmount *credit,
-		ofxCounter *recid, gboolean *unique, gint *rowsnb,
-		GList **concils, GList **unconcils )
-{
-	ofaReconciliationPrivate *priv;
-	GList *it;
-	ofoConcil *concil;
-	ofxCounter id;
 	ofoBase *object;
-	ofxAmount amount;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-	*debit = 0;
-	*credit = 0;
-	*recid = 0;
-	*unique = TRUE;
-	*rowsnb = 0;
-	*concils = NULL;
-	*unconcils = NULL;
 
-	for( it=paths ; it ; it=it->next ){
-		object = get_object_by_path( self, tmodel, ( GtkTreePath * ) it->data );
-		if( object ){
-			*rowsnb += 1;
+	examine_selection( self, &debit, &credit, &concil, &unconcil_rows, &unique, &is_child );
+	g_return_if_fail( unique );
+	g_return_if_fail( concil );
 
-			if( OFO_IS_ENTRY( object )){
-				*debit += ofo_entry_get_debit( OFO_ENTRY( object ));
-				*credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+	my_date_clear( &dval );
+	ofa_iconcil_remove_concil( concil, priv->dossier );
 
-			} else {
-				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
-				if( amount < 0 ){
-					*debit += -1*amount;
-				} else {
-					*credit += amount;
+	selection = gtk_tree_view_get_selection( priv->tview );
+	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+
+	/* first iterate to find a candidate value date */
+	for( it=selected ; it ; it=it->next ){
+		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+		g_object_unref( object );
+		if( OFO_IS_BAT_LINE( object )){
+			my_date_set_from_date( &dval, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )));
+			break;
+		}
+	}
+
+	/* second iterate to set this candidate date (if found)
+	 * also run into children even if they are not in the selection
+	 * (because they may not be visible) */
+	for( it=selected ; it ; it=it->next ){
+		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
+		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+		g_object_unref( object );
+
+		gtk_tree_model_sort_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
+		gtk_tree_model_filter_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
+
+		if( OFO_IS_ENTRY( object )){
+			update_concil_data_by_iter( self, priv->tstore, &store_iter, 0, &dval );
+		} else {
+			update_concil_data_by_iter( self, priv->tstore, &store_iter, 0, NULL );
+		}
+
+		if( gtk_tree_model_iter_children( priv->tstore, &child_iter, &store_iter )){
+			while( TRUE ){
+				gtk_tree_model_get( priv->tstore, &child_iter, COL_OBJECT, &object, -1 );
+				g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+				g_object_unref( object );
+				update_concil_data_by_iter( self, priv->tstore, &child_iter, 0, NULL );
+				if( !gtk_tree_model_iter_next( priv->tstore, &child_iter )){
+					break;
 				}
-			}
-			/* unique is FALSE if several groups found */
-			concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
-			id = concil ? ofo_concil_get_id( concil ) : 0;
-			if( *recid == 0 ){
-				*recid = id;
-			} else if( id > 0 && *recid != id ){
-				*unique = FALSE;
-			}
-			/* build a list of reconciliated/unreconciliated objects */
-			if( id > 0 ){
-				*concils = g_list_prepend( *concils, object );
-			} else {
-				*unconcils = g_list_prepend( *unconcils, object );
 			}
 		}
 	}
-}
 
-/*
- * An entry is about to be unreconciliated
- *
- * Ask for a confirmation if this entry belongs to a reconciliation group
- * (has been reconciliated together against another entry or a batline) as
- * all entries of the group are unreconciliated together
- */
-static gboolean
-is_unreconciliate_accepted( ofaReconciliation *self, ofoConcil *concil )
-{
-	gboolean ok;
-	GList *ids;
-	guint ent_count, bat_count;
+	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
-	ok = TRUE;
-	ids = ofo_concil_get_ids( concil );
-	ofs_concil_id_get_count_by_type( ids, &ent_count, &bat_count );
-	g_return_val_if_fail( ent_count+bat_count > 0, FALSE );
-
-	if( ent_count > 1 || bat_count > 1 ){
-
-		ok = my_utils_dialog_question(
-					_( "You are about to unreconciliate a row which belongs "
-						"to a reconciliation group.\n"
-						"This implies that all entries and BAT lines of this "
-						"reconciliation group will be unreconciliated together.\n"
-						"Are you sure ?" ),
-					_( "_OK" ));
+	set_reconciliated_balance( self );
+	if( priv->bats ){
+		display_bat_counts( self );
 	}
-
-	return( ok );
 }
 
 /*
@@ -3004,135 +2950,6 @@ set_reconciliated_balance( ofaReconciliation *self )
 }
 
 /*
- * search for a valid date in order to initialize a new conciliation group
- * - first examine effect date of selected bat lines
- * - then take manual conciliation date
- *
- * there is no garanty that the returned date is valid
- */
-static GDate *
-get_date_for_new_concil( ofaReconciliation *self, GDate *date )
-{
-	ofaReconciliationPrivate *priv;
-	GtkTreeSelection *selection;
-	GList *rows, *it;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoBase *object;
-
-	priv = self->priv;
-	selection = gtk_tree_view_get_selection( priv->tview );
-	rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
-	my_date_clear( date );
-
-	for( it=rows ; it ; it=it->next ){
-		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
-		g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
-		g_object_unref( object );
-
-		if( OFO_IS_BAT_LINE( object )){
-			my_date_set_from_date( date, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )));
-			break;
-		}
-	}
-
-	g_list_free_full( rows, ( GDestroyNotify ) gtk_tree_path_free );
-
-	/* else try with the manually provided date
-	 * may not be valid */
-	if( !my_date_is_valid( date )){
-		my_date_set_from_date( date, &priv->dconcil );
-	}
-
-	return( date );
-}
-
-/*
- * search for a valid dval in the first batline from the list of objects
- * defaults to manual reconciliation date
- */
-static void
-get_batline_dval_from_objects( ofaReconciliation *self, GDate *dval, GList *objects )
-{
-	ofaReconciliationPrivate *priv;
-	GList *it;
-	GDate date;
-	ofoBase *object;
-	gboolean found;
-
-	priv = self->priv;
-	my_date_clear( dval );
-	found = FALSE;
-
-	for( it=objects ; it ; it=it->next ){
-		object = ( ofoBase * ) it->data;
-		if( OFO_IS_BAT_LINE( object )){
-			my_date_set_from_date( dval, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )));
-			found = TRUE;
-			break;
-		}
-	}
-
-	/* else try with the manually provided date */
-	if( !found ){
-		my_date_set_from_date( &date, &priv->dconcil );
-		if( my_date_is_valid( &date )){
-			my_date_set_from_date( dval, &date );
-		}
-	}
-}
-
-/*
- * the given path points to an entry
- * search the reconciliation date to be applied, either from a proposed
- * child bat line, or from the manual reconciliation date
- */
-static void
-get_entry_dval_by_path( ofaReconciliation *self, GDate *dval, GtkTreeModel *tmodel, GtkTreePath *path )
-{
-	ofaReconciliationPrivate *priv;
-	gboolean ok;
-	GtkTreeIter iter;
-	gchar *sdval;
-	GDate date;
-
-	priv = self->priv;
-	my_date_clear( dval );
-
-	ok = gtk_tree_model_get_iter( tmodel, &iter, path );
-	g_return_if_fail( ok );
-
-	/* if a proposed date has been set from a child bat line */
-	gtk_tree_model_get( tmodel, &iter, COL_DRECONCIL, &sdval, -1 );
-	my_date_set_from_str( &date, sdval, ofa_prefs_date_display());
-	if( my_date_is_valid( &date )){
-		my_date_set_from_date( dval, &date );
-
-	/* else try with the manually provided date */
-	} else {
-		my_date_set_from_date( &date, &priv->dconcil );
-		if( my_date_is_valid( &date )){
-			my_date_set_from_date( dval, &date );
-		}
-	}
-}
-
-/*
- * the given path points to an entry
- * set the displayed reconciliation date
- */
-static void
-set_entry_dval_by_path( ofaReconciliation *self, GDate *dval, GtkTreeModel *tmodel, GtkTreePath *path )
-{
-	GtkTreeModel *store_model;
-	GtkTreeIter store_iter;
-
-	get_store_iter_from_path( self, tmodel, path, &store_model, &store_iter );
-	update_concil_data_by_iter( self, store_model, &store_iter, 0, dval);
-}
-
-/*
  * update the conciliation id and date
  * path comes from the current selection
  */
@@ -3181,139 +2998,6 @@ update_concil_data_by_iter( ofaReconciliation *self,
 	g_free( sid );
 }
 
-/*
- * a group has been reconciliated
- * set the entries dval to those of the conciliation group
- */
-static void
-set_reconciliated_dval_from_concil( ofaReconciliation *self, ofoConcil *concil )
-{
-	ofaReconciliationPrivate *priv;
-	GList *ids, *it;
-	GtkTreeModel *store_model;
-	GtkTreeIter *iter;
-	ofsConcilId *sid;
-	const GDate *dval;
-
-	priv = self->priv;
-	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	dval = ofo_concil_get_dval( concil );
-	ids = ofo_concil_get_ids( concil );
-
-	for( it=ids ; it ; it=it->next ){
-		sid = ( ofsConcilId * ) it->data;
-		if( !g_utf8_collate( sid->type, CONCIL_TYPE_ENTRY )){
-			iter = search_for_entry_by_number( self, sid->other_id );
-			if( iter ){
-				update_concil_data_by_iter( self, store_model, iter, 0, dval );
-				gtk_tree_iter_free( iter );
-			}
-		}
-	}
-}
-
-/*
- * a group has been unreconciliated
- * reset the proposed entries dval to a suitable value if any
- *
- * The ofoConcil gives us the list of involved entries
- */
-static void
-reset_proposed_dval_from_concil( ofaReconciliation *self, ofoConcil *concil )
-{
-	ofaReconciliationPrivate *priv;
-	GList *ids, *it;
-	ofsConcilId *sid;
-	GtkTreeIter *iter;
-	ofoBatLine *batline;
-	GtkTreeModel *store_model;
-
-	priv = self->priv;
-	ids = ofo_concil_get_ids( concil );
-	store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-
-	for( it=ids ; it ; it=it->next ){
-		sid = ( ofsConcilId * ) it->data;
-		if( !g_utf8_collate( sid->type, CONCIL_TYPE_ENTRY )){
-			iter = search_for_entry_by_number( self, sid->other_id );
-			if( iter ){
-				batline = get_child_by_store_iter( self, store_model, iter );
-				update_concil_data_by_iter( self, store_model, iter, 0,
-						batline ? ofo_bat_line_get_deffect( batline ) : NULL );
-				gtk_tree_iter_free( iter );
-			}
-		}
-	}
-}
-
-/*
- * tmodel, path are sort model and path of the just reconciliated entry
- * add child bat line to the conciliation group if it exists
- *
- * we work on child model because 'gtk_tree_model_iter_has_child'
- * actually says if we have a *visible* child
- * but a batline may be not visible when we are clearing
- * the reconciliation date
- */
-static void
-add_child_to_concil_by_path( ofaReconciliation *self, ofoConcil *concil, GtkTreeModel *tmodel, GtkTreePath *path )
-{
-	ofaReconciliationPrivate *priv;
-	ofoBatLine *batline;
-
-	priv = self->priv;
-
-	batline = get_child_by_path( self, tmodel, path );
-	if( batline ){
-		ofa_iconcil_add_to_concil(
-				OFA_ICONCIL( batline ), concil, priv->dossier );
-	}
-}
-
-/*
- * returns the child bat line of the pointed entry, if any
- */
-static ofoBatLine *
-get_child_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path )
-{
-	GtkTreeModel *store_model;
-	GtkTreeIter ent_store_iter;
-	ofoBatLine *batline;
-
-	get_store_iter_from_path( self, tmodel, path, &store_model, &ent_store_iter );
-	batline = get_child_by_store_iter( self, store_model, &ent_store_iter );
-
-	return( batline );
-}
-
-/*
- * returns the child bat line of the pointed entry, if any
- *
- * tmodel, iter are store model and entry iter
- */
-static ofoBatLine *
-get_child_by_store_iter( ofaReconciliation *self, GtkTreeModel *store_model, GtkTreeIter *ent_iter )
-{
-	GtkTreeIter bat_store_iter;
-	ofoBase *batline;
-
-	batline = NULL;
-
-	if( gtk_tree_model_iter_has_child( store_model, ent_iter ) &&
-		gtk_tree_model_iter_children( store_model, &bat_store_iter, ent_iter )){
-
-		gtk_tree_model_get(
-				store_model,
-				&bat_store_iter,
-				COL_OBJECT,  &batline,
-				-1 );
-		g_return_val_if_fail( batline && OFO_IS_BAT_LINE( batline ), NULL );
-		g_object_unref( batline );
-	}
-
-	return( batline ? OFO_BAT_LINE( batline ) : NULL );
-}
-
 static const GDate *
 get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline )
 {
@@ -3325,48 +3009,6 @@ get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline )
 	}
 
 	return( dope );
-}
-
-static ofoBase *
-get_object_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path )
-{
-	GtkTreeIter iter;
-	gboolean ok;
-	ofoBase *object;
-
-	ok = gtk_tree_model_get_iter( tmodel, &iter, path );
-	g_return_val_if_fail( ok, NULL );
-
-	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
-	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
-
-	g_object_unref( object );
-
-	return( object );
-}
-
-/*
- * tmodel is the sort model (those of the treeview)
- * path is a path on this sort model (a path from the selection in the treeview)
- */
-static void
-get_store_iter_from_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeModel **store_model, GtkTreeIter *store_iter )
-{
-	ofaReconciliationPrivate *priv;
-	GtkTreeIter iter, filter_iter;
-	gboolean ok;
-
-	priv = self->priv;
-
-	*store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-
-	ok = gtk_tree_model_get_iter( tmodel, &iter, path );
-	g_return_if_fail( ok );
-
-	gtk_tree_model_sort_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &iter );
-	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( priv->tfilter ), store_iter, &filter_iter );
 }
 
 /*
@@ -3402,6 +3044,49 @@ get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, Gtk
 	if( concil ){
 		*concil_id = ofo_concil_get_id( concil );
 	}
+}
+
+/*
+ * returns an iter on the store model, or NULL
+ *
+ * if not %NULL, the returned iter should be gtk_tree_iter_free() by
+ * the caller
+ */
+static GtkTreeIter *
+search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
+{
+	GtkTreeModel *child_tmodel;
+	GtkTreeIter iter;
+	GtkTreeIter *entry_iter;
+	ofxCounter ecr_number;
+	GObject *object;
+
+	entry_iter = NULL;
+	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
+
+	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( child_tmodel,
+					&iter,
+					COL_NUMBER, &ecr_number,
+					COL_OBJECT, &object,
+					-1 );
+			g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), NULL );
+			g_object_unref( object );
+
+			/* search for the entry which has the specified number */
+			if( OFO_IS_ENTRY( object ) && ecr_number == number ){
+				entry_iter = gtk_tree_iter_copy( &iter );
+				break;
+			}
+
+			if( !gtk_tree_model_iter_next( child_tmodel, &iter )){
+				break;
+			}
+		}
+	}
+
+	return( entry_iter );
 }
 
 /*

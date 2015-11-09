@@ -19,8 +19,9 @@
 
  New features and improvements:
 
-   - Reconciliation: disable buttons when actions are done (todo #883).
+   - Reconciliation: update buttons after actions are done (todo #883).
    - Reconciliation: display bat lines reconciliation date and identifier.
+   - Reconciliation: review display on conciliation groups (todo #877).
 
  Bug fixes:
 

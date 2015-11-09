@@ -480,15 +480,19 @@
  875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
                 entry
 
- 877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
-                is not child of entry, then move bat line under entry
-
  880 2015-11- 1 Have a TVA module
 
  882 2015-11- 2 GuidedInput on Avron Internet operation template:
                 controls are shifted to the right - why for this ope ?
 
- 885
+ 885 2015-11- 7 Have an operation counter (identifier)
+                Use case: be able to delete the whole operation when the
+                user wants to delete an entry
+
+ 886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
+                bat files and entries are purged
+
+ 887
 
 -----------------------------------------------------------------------
  DONE
@@ -4140,6 +4144,12 @@
  876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
                 see PWIConsultants-20150131_1.gz
      2015-11- 5 fixed
+
+ 877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
+                is not child of entry, then move bat line under entry
+     2015-11- 6 Actually: make sure that a conciliation group is displayed
+                with a first line, and others as children
+     2015-11- 9 done
 
  878 2015-11- 1 Reconciliation: reconciliate two bat lines
                 + be able to make a BAT file terminated
