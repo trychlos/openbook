@@ -378,17 +378,25 @@ ofa_render_page_clear_drawing_area( ofaRenderPage *page )
 void
 ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const gchar *message )
 {
+	static const gchar *thisfn = "ofa_render_page_set_args_changed";
 	ofaRenderPagePrivate *priv;
+
+	g_debug( "%s: page=%p (%s), is_valid=%s, message=%s",
+			thisfn,
+			( void * ) page, G_OBJECT_TYPE_NAME( page ),
+			is_valid ? "True":"False", message );
 
 	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
 
 	if( !OFA_PAGE( page )->prot->dispose_has_run ){
 
 		priv = page->priv;
+
 		gtk_widget_set_sensitive( priv->render_btn, is_valid );
 		gtk_widget_set_sensitive( priv->print_btn, is_valid );
 		set_message( page, is_valid ? "" : message, MSG_ERROR );
-		ofa_render_page_free_dataset( page );
+
+		ofa_render_page_clear_drawing_area( page );
 	}
 }
 
