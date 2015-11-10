@@ -476,9 +476,6 @@
 
  880 2015-11- 1 Have a TVA module
 
- 882 2015-11- 2 GuidedInput on Avron Internet operation template:
-                controls are shifted to the right - why for this ope ?
-
  885 2015-11- 7 Have an operation counter (identifier)
                 Use case: be able to delete the whole operation when the
                 user wants to delete an entry
@@ -486,7 +483,9 @@
  886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
                 bat files and entries are purged
 
- 887
+ 887 2015-11-10 Reconciliation: implement ofaIColumns interface
+
+ 888
 
 -----------------------------------------------------------------------
  DONE
@@ -4166,6 +4165,11 @@
  881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
                 leading space missing
      2015-11- 5 ofa-reconcil-bin.ui fixed
+
+ 882 2015-11- 2 GuidedInput on Avron Internet operation template:
+                controls are shifted to the right - why for this ope ?
+     2015-11-10 this was due to the length of the ope template label
+                fixed by reviewing the UI layout + ellipsize the label
 
  883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
                 the action should become disabled

@@ -25,6 +25,7 @@
 
  Bug fixes:
 
+   - GuidedInput: review the layout of the UI (todo #882).
    - Reconciliation: fix missing leading space (todo #881).
    - Reconciliation: fix rounding computation (todo #876).
    - Reconciliation: fix account label style (todo #871).
