@@ -67,6 +67,8 @@ static void       do_setup_page( ofaPage *page );
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
 static GtkWidget *do_setup_buttons( ofaPage *page );
+static void       do_init_view( ofaPage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 
 static void
@@ -204,6 +206,7 @@ page_constructed( GObject *instance )
 
 	/* let the child class setup its page before showing it */
 	do_setup_page( self );
+	do_init_view( self );
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
@@ -264,7 +267,7 @@ ofa_page_class_init( ofaPageClass *klass )
 	klass->setup_page = v_setup_page;
 	klass->setup_view = NULL;
 	klass->setup_buttons = NULL;
-	klass->init_view = NULL;
+	klass->init_view = v_init_view;
 	klass->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	/**
@@ -363,6 +366,29 @@ do_setup_buttons( ofaPage *page )
 	}
 
 	return( buttons_box );
+}
+
+static void
+do_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_page_do_init_view";
+
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
+
+	if( OFA_PAGE_GET_CLASS( page )->init_view ){
+		OFA_PAGE_GET_CLASS( page )->init_view( page );
+
+	} else {
+		g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	}
+}
+
+static void
+v_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_page_v_init_view";
+
+	g_debug( "%s: page=%p (%s)", thisfn, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 }
 
 /*
