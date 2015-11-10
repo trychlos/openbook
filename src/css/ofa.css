@@ -22,14 +22,6 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-.ofaInvalid {
-	border-color: red;
-}
-
-.ofaValid {
-	border-color: @inset_light_color;
-}
-
 # Main GtkNotebook TabLabel close button
 ofaTabLabel GtkGrid {
 	padding: 0px;
@@ -42,6 +34,16 @@ ofaTabLabel GtkGrid GtkButton {
 	-GtkWidget-focus-line-width : 0px;
 	-GtkWidget-focus-padding : 0px;
 	padding: 0px;
+}
+
+GtkEntry.entrynormal {
+	border-color: @inset_light_color;
+}
+
+GtkEntry.entryerror {
+	border-color: red;
+	color: #ff0000;
+	font-style: italic;
 }
 
 GtkLabel.labelnormal {
