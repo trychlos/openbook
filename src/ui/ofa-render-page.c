@@ -338,6 +338,35 @@ setup_page_size( ofaRenderPage *page )
 }
 
 /**
+ * ofa_render_page_clear_drawing_area:
+ * @page:
+ *
+ * Clear the drawing area.
+ */
+void
+ofa_render_page_clear_drawing_area( ofaRenderPage *page )
+{
+	ofaRenderPagePrivate *priv;
+	cairo_t *cr;
+
+	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
+
+	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+
+		priv = page->priv;
+
+		/* free data */
+		ofa_render_page_free_dataset( page );
+		pdf_crs_free( &priv->pdf_crs );
+
+		/* reset the drawing area */
+		cr = create_context( page, priv->render_width, priv->render_height );
+		draw_widget_background( cr, priv->drawing_area );
+		cairo_destroy( cr );
+	}
+}
+
+/**
  * ofa_render_page_set_args_changed:
  * @page:
  * @is_valid:

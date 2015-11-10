@@ -35,6 +35,7 @@
    - ofo_currency_get_precision(): new method.
    - ofaPage: is now derived from GtkGrid.
    - ofa_page_get_top_grid(): removed method.
+   - ofa_render_page_clear_drawing_area(): new method.
 
 -----------------------------------------------------------------------
  Version 0.40
