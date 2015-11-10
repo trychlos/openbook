@@ -467,12 +467,6 @@
                 (or EXP ledger ?), this piece ref is not displayed in
                 view entries
 
- 872 2015-11- 1 Reconciliation: when cliking on print and the reconciliation
-                summary page is already opened for another account, the
-                new account is rightly displayed in account selection,
-                but the render area is left with old account - should be
-                cleared, or pre-rendered
-
  873 2015-11- 1 GuidedInput: display the account in red when invalid
 
  874 2015-11- 1 ViewEntries: reconciliation date is not updated
@@ -4140,6 +4134,13 @@
  871 2015-11- 1 Reconciliation: selected account label is displayed with
                 red font color - why ?
      2015-11- 6 fixed
+
+ 872 2015-11- 1 Reconciliation: when cliking on print and the reconciliation
+                summary page is already opened for another account, the
+                new account is rightly displayed in account selection,
+                but the render area is left with old account - should be
+                cleared, or pre-rendered
+     2015-11-10 done
 
  876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
                 see PWIConsultants-20150131_1.gz

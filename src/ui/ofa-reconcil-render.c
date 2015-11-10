@@ -396,6 +396,7 @@ ofa_reconcil_render_set_account( ofaReconcilRender *page, const gchar *account_n
 		priv = page->priv;
 
 		ofa_reconcil_bin_set_account( priv->args_bin, account_number );
+		ofa_render_page_clear_drawing_area( OFA_RENDER_PAGE( page ));
 	}
 }
 
