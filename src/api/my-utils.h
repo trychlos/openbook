@@ -73,9 +73,6 @@ GtkWidget    *my_utils_builder_load_from_path         ( const gchar *path_xml, c
 void          my_utils_dialog_warning                 ( const gchar *msg );
 gboolean      my_utils_dialog_question                ( const gchar *msg, const gchar *ok_text );
 
-gboolean      my_utils_entry_get_valid                ( GtkEntry *entry );
-void          my_utils_entry_set_valid                ( GtkEntry *entry, gboolean valid );
-
 GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );

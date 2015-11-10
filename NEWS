@@ -33,6 +33,7 @@
 
  Other changes:
 
+   - my_utils_entry_get_valid(), my_utils_entry_set_valid(): removed functions.
    - my_utils_widget_remove_style(): new function.
    - ofo_currency_get_precision(): new method.
    - ofaPage: is now derived from GtkGrid.

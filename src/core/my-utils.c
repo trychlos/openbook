@@ -551,24 +551,6 @@ my_utils_str_replace( const gchar *string, const gchar *old, const gchar *new )
 }
 
 /**
- * my_utils_entry_get_valid
- */
-gboolean
-my_utils_entry_get_valid( GtkEntry *entry )
-{
-	return( TRUE );
-}
-
-/**
- * my_utils_entry_set_valid
- */
-void
-my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
-{
-	my_utils_widget_set_style( GTK_WIDGET( entry ), valid ? "ofaValid" : "ofaInvalid" );
-}
-
-/**
  * my_utils_container_get_child_by_name:
  */
 GtkWidget *
