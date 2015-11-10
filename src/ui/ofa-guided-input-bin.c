@@ -1319,7 +1319,6 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 
 		ope = priv->ope;
 		ofs_currency_list_free( &priv->currency_list );
-
 		ofs_ope_apply_template( ope, priv->dossier );
 
 		/* update the bin dialog with the new content of operation */
