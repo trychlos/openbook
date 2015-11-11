@@ -41,6 +41,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "api/ofs-concil-id.h"
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
@@ -218,6 +219,7 @@ static void            on_effect_filter_changed( ofaIDateFilter *filter, gint wh
 static void            refresh_display( ofaEntryPage *self );
 static void            display_entries( ofaEntryPage *self, GList *entries );
 static void            display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter );
+static void            display_entry_concil( ofaEntryPage *self, ofoConcil *concil, GtkTreeIter *iter );
 static void            compute_balances( ofaEntryPage *self );
 static GtkWidget      *reset_balances_widgets( ofaEntryPage *self );
 static void            display_balance( ofsCurrency *pc, ofaEntryPage *self );
@@ -251,15 +253,17 @@ static void            display_error_msg( ofaEntryPage *self, GtkTreeModel *tmod
 static gboolean        save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void            remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
 static void            remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
-static gboolean        find_entry_by_number( ofaEntryPage *self, gint number, GtkTreeIter *iter );
+static gboolean        find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter );
 static void            on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
 static void            do_new_entry( ofaEntryPage *self, ofoEntry *entry );
 static void            on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
 static void            do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number );
 static void            do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo );
 static void            do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code );
+static void            do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted );
 static void            do_update_entry( ofaEntryPage *self, ofoEntry *entry );
 static void            on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
+static void            do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil );
 static void            do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry );
 static gboolean        on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self );
 static ofaEntryStatus  get_row_status( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -1594,9 +1598,8 @@ static void
 display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaEntryPagePrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *ssettle;
+	gchar *sdope, *sdeff, *sdeb, *scre, *ssettle;
 	ofxCounter counter;
-	const GDate *d;
 	ofxAmount amount;
 	ofoConcil *concil;
 	const gchar *cstr, *cref;
@@ -1609,9 +1612,6 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 	sdeb = amount ? my_double_to_str( amount ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
 	scre = amount ? my_double_to_str( amount ) : g_strdup( "" );
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), ofa_page_get_dossier( OFA_PAGE( self )));
-	d = concil ? ofo_concil_get_dval( concil ) : NULL;
-	srappro = my_date_to_str( d, ofa_prefs_date_display());
 	counter = ofo_entry_get_settlement_number( entry );
 	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 	cstr = ofo_entry_get_ref( entry );
@@ -1631,7 +1631,7 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_CREDIT,       scre,
 				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
 				ENT_COL_SETTLE,       ssettle,
-				ENT_COL_DRECONCIL,    srappro,
+				ENT_COL_DRECONCIL,    "",
 				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
 				ENT_COL_OBJECT,       entry,
 				ENT_COL_MSGERR,       "",
@@ -1642,11 +1642,39 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 				-1 );
 
 	g_free( ssettle );
-	g_free( srappro );
 	g_free( scre );
 	g_free( sdeb );
 	g_free( sdeff );
 	g_free( sdope );
+
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), ofa_page_get_dossier( OFA_PAGE( self )));
+	if( concil ){
+		display_entry_concil( self, concil, iter );
+	}
+}
+
+/*
+ * iter is on the list store
+ */
+static void
+display_entry_concil( ofaEntryPage *self, ofoConcil *concil, GtkTreeIter *iter )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *srappro;
+
+	priv = self->priv;
+
+	srappro = concil ?
+				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display()) :
+				g_strdup( "" );
+
+	gtk_list_store_set(
+				GTK_LIST_STORE( priv->tstore ),
+				iter,
+				ENT_COL_DRECONCIL,    srappro,
+				-1 );
+
+	g_free( srappro );
 }
 
 /*
@@ -2991,7 +3019,7 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
  * Returns: a GtkTreeIter on GtkListStore treemodel
  */
 static gboolean
-find_entry_by_number( ofaEntryPage *self, gint number, GtkTreeIter *iter )
+find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter )
 {
 	ofaEntryPagePrivate *priv;
 	gint tnumber;
@@ -3078,6 +3106,9 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 		} else if( OFO_IS_CURRENCY( object )){
 			do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
 		}
+	} else if( OFO_IS_CONCIL( object )){
+		do_update_concil( self, OFO_CONCIL( object ), FALSE );
+
 	} else if( OFO_IS_ENTRY( object )){
 		do_update_entry( self, OFO_ENTRY( object ));
 	}
@@ -3155,6 +3186,31 @@ do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *cod
 	}
 }
 
+/*
+ * a conciliation group is updated
+ * -> update the entry row if needed
+ */
+static void
+do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted )
+{
+	ofaEntryPagePrivate *priv;
+	GList *ids, *it;
+	ofsConcilId *sid;
+	GtkTreeIter iter;
+
+	priv = self->priv;
+
+	ids = ofo_concil_get_ids( concil );
+	for( it=ids ; it ; it=it->next ){
+		sid = ( ofsConcilId * ) it->data;
+		if( !g_strcmp0( sid->type, CONCIL_TYPE_ENTRY ) &&
+				find_entry_by_number( self, sid->other_id, &iter )){
+			display_entry_concil( self, is_deleted ? NULL : concil, &iter );
+		}
+	}
+	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+}
+
 static void
 do_update_entry( ofaEntryPage *self, ofoEntry *entry )
 {
@@ -3184,15 +3240,24 @@ on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *s
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_ENTRY( object )){
+	if( OFO_IS_CONCIL( object )){
+		do_on_deleted_concil( self, OFO_CONCIL( object ));
+
+	} else if( OFO_IS_ENTRY( object )){
 		do_on_deleted_entry( self, OFO_ENTRY( object ));
 	}
 }
 
 static void
+do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil )
+{
+	do_update_concil( self, concil, TRUE );
+}
+
+static void
 do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_deleted_entries";
+	static const gchar *thisfn = "ofa_entry_page_on_deleted_entry";
 	ofaEntryPagePrivate *priv;
 	ofxCounter id;
 	ofoConcil *concil;

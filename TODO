@@ -467,8 +467,6 @@
                 (or EXP ledger ?), this piece ref is not displayed in
                 view entries
 
- 874 2015-11- 1 ViewEntries: reconciliation date is not updated
-
  880 2015-11- 1 Have a TVA module
 
  885 2015-11- 7 Have an operation counter (identifier)
@@ -4140,6 +4138,9 @@
      2015-11-10 difficult as there is no linl between a data and the control
                 it comes from, so do not know how to handle an error
                 -> cancelled
+
+ 874 2015-11- 1 ViewEntries: reconciliation date is not updated
+     2015-11-11 fixed
 
  875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
                 entry
