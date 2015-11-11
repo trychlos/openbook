@@ -67,3 +67,21 @@ dist_pkgdoc_DATA = \
 
 uninstall-hook:
 	-\rm -fr $(DESTDIR)$(pkgdocdir)
+
+# just run "make install-txz" and that's done
+install-txz:
+	(cd $(top_srcdir) && \
+	 my_topdir=`pwd` && \
+	 tmpdir=`mktemp -d /tmp/tmpXXXX` && \
+	 mkdir $${tmpdir}/_build && \
+	 cd $${tmpdir}/_build && \
+	 $${my_topdir}/configure --prefix=/ && \
+	 make && \
+	 make DESTDIR=$${tmpdir}/_install/$(PACKAGE)-$(VERSION) install && \
+	 cd $${tmpdir}/_install && \
+	 tar -cvJf - * > /tmp/$(PACKAGE)-$(VERSION)-install.tar.xz && \
+	 cd /tmp && \
+	 rm -fr $${tmpdir})
+	@echo "==="
+	@echo "=== /tmp/$(PACKAGE)-$(VERSION)-install.tar.xz available"
+	@echo "==="
