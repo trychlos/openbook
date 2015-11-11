@@ -36,6 +36,7 @@
    - my_utils_entry_get_valid(), my_utils_entry_set_valid(): removed functions.
    - my_utils_widget_remove_style(): new function.
    - ofo_currency_get_precision(): new method.
+   - ofo_entry_unsettle_by_number(): new method.
    - ofaPage: is now derived from GtkGrid.
    - ofa_page_get_top_grid(): removed method.
    - ofa_render_page_clear_drawing_area(): new method.

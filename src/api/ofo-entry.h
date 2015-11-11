@@ -196,6 +196,8 @@ gboolean        ofo_entry_validate             ( ofoEntry *entry, const ofoDossi
 gboolean        ofo_entry_validate_by_ledger   ( ofoDossier *dossier,
 													const gchar *mnemo, const GDate *deffect );
 
+void            ofo_entry_unsettle_by_number   ( ofoDossier *dossier, ofxCounter number );
+
 gboolean        ofo_entry_delete               ( ofoEntry *entry, const ofoDossier *dossier );
 
 G_END_DECLS

@@ -1469,6 +1469,9 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 
 /**
  * ofo_entry_get_settlement_number:
+ * @entry: this #ofoEntry instance.
+ *
+ * Returns: the number of the settlement group, or zero.
  */
 ofxCounter
 ofo_entry_get_settlement_number( const ofoEntry *entry )
@@ -2471,7 +2474,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 		g_free( stamp_str );
 
 	} else {
-		ofo_entry_set_settlement_number( entry, -1 );
+		ofo_entry_set_settlement_number( entry, 0 );
 		entry_set_settlement_user( entry, NULL );
 		entry_set_settlement_stamp( entry, NULL );
 
@@ -2485,6 +2488,36 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 	g_string_free( query, TRUE );
 
 	return( ok );
+}
+
+/**
+ * ofo_entry_unsettle_by_number:
+ * @dossier: the #ofoDossier instance.
+ * @number: the identifier of the settlement group to be cancelled.
+ *
+ * Cancel the identified settlement group by updating all member
+ * entries. Each entry will receive a 'updated' message through the
+ * dossier signaling system
+ */
+void
+ofo_entry_unsettle_by_number( ofoDossier *dossier, ofxCounter number )
+{
+	GList *entries, *it;
+	gchar *where;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( number > 0 );
+
+	/* get the list of entries */
+	where = g_strdup_printf( "ENT_STLMT_NUMBER=%ld", number );
+	entries = entry_load_dataset( dossier, where, NULL );
+	g_free( where );
+
+	/* update the entries, simultaneously sending messages */
+	for( it=entries ; it ; it=it->next ){
+		ofo_entry_update_settlement( OFO_ENTRY( it->data ), dossier, 0 );
+	}
+	ofo_entry_free_dataset( entries );
 }
 
 /**
