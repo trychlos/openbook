@@ -467,12 +467,7 @@
                 (or EXP ledger ?), this piece ref is not displayed in
                 view entries
 
- 873 2015-11- 1 GuidedInput: display the account in red when invalid
-
  874 2015-11- 1 ViewEntries: reconciliation date is not updated
-
- 875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
-                entry
 
  880 2015-11- 1 Have a TVA module
 
@@ -4140,6 +4135,15 @@
                 but the render area is left with old account - should be
                 cleared, or pre-rendered
      2015-11-10 done
+
+ 873 2015-11- 1 GuidedInput: display the account in red when invalid
+     2015-11-10 difficult as there is no linl between a data and the control
+                it comes from, so do not know how to handle an error
+                -> cancelled
+
+ 875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
+                entry
+     2015-11-11 done
 
  876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
                 see PWIConsultants-20150131_1.gz

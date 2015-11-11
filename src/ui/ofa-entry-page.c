@@ -267,6 +267,7 @@ static GDate          *get_row_deffect( ofaEntryPage *self, GtkTreeModel *tmodel
 static gint            get_row_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void            insert_new_row( ofaEntryPage *self );
 static void            delete_row( ofaEntryPage *self );
+static gboolean        ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLUMNS, icolumns_iface_init ));
@@ -3192,8 +3193,25 @@ static void
 do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofa_entry_page_on_deleted_entries";
+	ofaEntryPagePrivate *priv;
+	ofxCounter id;
+	ofoConcil *concil;
 
 	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
+
+	priv = self->priv;
+
+	/* if entry was settled, then cancel all settlement group */
+	id = ofo_entry_get_settlement_number( entry );
+	if( id > 0 ){
+		ofo_entry_unsettle_by_number( priv->dossier, id );
+	}
+
+	/* if entry was conciliated, then remove all conciliation group */
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	if( concil ){
+		ofa_iconcil_remove_concil( concil, priv->dossier );
+	}
 }
 
 static gboolean
@@ -3332,7 +3350,6 @@ delete_row( ofaEntryPage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter sort_iter, filter_iter, iter;
 	ofoEntry *entry;
-	gchar *msg, *label;
 
 	priv = self->priv;
 	select = gtk_tree_view_get_selection( priv->entries_tview );
@@ -3341,17 +3358,14 @@ delete_row( ofaEntryPage *self )
 		gtk_tree_model_get(
 				priv->tsort,
 				&sort_iter,
-				ENT_COL_LABEL,    &label,
 				ENT_COL_OBJECT,   &entry,
 				-1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
 		if( get_row_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
-			msg = g_strdup_printf(
-					_( "Are you sure you want to remove the '%s' entry" ),
-					label );
 
-			if( my_utils_dialog_question( msg, _( "_Delete" ))){
+			if( ask_for_delete_confirmed( self, entry )){
+
 				gtk_tree_model_sort_convert_iter_to_child_iter(
 						GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 				gtk_tree_model_filter_convert_iter_to_child_iter(
@@ -3361,10 +3375,50 @@ delete_row( ofaEntryPage *self )
 				ofo_entry_delete( entry, priv->dossier );
 				compute_balances( self );
 			}
-
-			g_free( msg );
 		}
-		g_free( label );
 		g_object_unref( entry );
 	}
+}
+
+static gboolean
+ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
+{
+	ofaEntryPagePrivate *priv;
+	GString *msg;
+	gboolean ok;
+
+	priv = page->priv;
+	msg = g_string_new( "" );;
+
+	/* first ask for the standard confirmation */
+	g_string_printf( msg,
+			_( "Are you sure you want to remove the '%s' entry ?" ),
+			ofo_entry_get_label( entry ));
+	ok = my_utils_dialog_question( msg->str, _( "_Delete" ));
+	g_string_free( msg, TRUE );
+
+	/* ask for more confirmation is the entry is settled or conciliated */
+	if( ok ){
+		msg = g_string_new( "" );
+		if( ofo_entry_get_settlement_number( entry ) > 0 ){
+			msg = g_string_append( msg,
+					_( "The entry has been settled. "
+						"Deleting it will automatically cancel all the settlement group."));
+		}
+		if( ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier )){
+			if( my_strlen( msg->str )){
+				msg = g_string_append( msg, "\n" );
+			}
+			msg = g_string_append( msg,
+					_( "The entry has been reconciliated. "
+						"Deleting it will automatically cancel all the conciliation group."));
+		}
+		if( my_strlen( msg->str )){
+			msg = g_string_append( msg, _( "\nAre you sure ?"));
+			ok = my_utils_dialog_question( msg->str, _( "Yes, _delete it" ));
+		}
+		g_string_free( msg, TRUE );
+	}
+
+	return( ok );
 }
