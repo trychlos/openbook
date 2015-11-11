@@ -979,7 +979,7 @@ uninstall-am: uninstall-dist_pkgdocDATA
 uninstall-hook:
 	-\rm -fr $(DESTDIR)$(pkgdocdir)
 
-# just run "make install-txz" and that's done 
+# just run "make install-txz" and that's done
 install-txz:
 	(cd $(top_srcdir) && \
 	 my_topdir=`pwd` && \
