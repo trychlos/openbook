@@ -16,19 +16,11 @@
  Version 0.42
  ============
 
- Released on 
+ Released on 2015-11-12
 
  New features and improvements:
 
-   - 
-
- Bug fixes:
-
-   - 
-
- Other changes:
-
-   - 
+   - 'install-txz' target let the user build a locally installable tarball.
 
 -----------------------------------------------------------------------
  Version 0.41
