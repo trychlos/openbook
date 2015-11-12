@@ -41,7 +41,7 @@
 	../src/ui/ofa-ope-template-properties.ui \
 	../src/ui/ofa-rate-properties.ui \
 	../src/ui/ofa-reconcil-bin.ui \
-	../src/ui/ofa-reconciliation.ui \
+	../src/ui/ofa-reconcil-page.ui \
 	../src/ui/ofa-balance-bin.ui \
 	../src/ui/ofa-render-page.ui \
 	../src/ui/ofa-restore-assistant.ui \

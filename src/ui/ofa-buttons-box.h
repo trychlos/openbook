@@ -93,7 +93,7 @@ enum {
 	BUTTON_DECLINE,
 	BUTTON_UNRECONCILIATE,
 	BUTTON_SETTLEMENT,
-	BUTTON_RECONCILIATION
+	BUTTON_RECONCIL_PAGE
 };
 
 GType          ofa_buttons_box_get_type      ( void ) G_GNUC_CONST;

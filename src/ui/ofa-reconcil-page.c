@@ -46,7 +46,6 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-concil-id.h"
 
-#include "core/ofa-concil-collection.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-editable-date.h"
@@ -59,11 +58,11 @@
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-reconcil-render.h"
-#include "ui/ofa-reconciliation.h"
+#include "ui/ofa-reconcil-page.h"
 
 /* private instance data
  */
-struct _ofaReconciliationPrivate {
+struct _ofaReconcilPagePrivate {
 
 	/* UI - account
 	 */
@@ -204,7 +203,7 @@ enum {
 
 static const gchar *st_reconciliation   = "Reconciliation";
 static const gchar *st_effect_dates     = "ReconciliationEffects";
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-reconciliation.ui";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-reconcil-page.ui";
 static const gchar *st_ui_name          = "ReconciliationWindow";
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
@@ -218,7 +217,7 @@ static const gchar *st_ui_name          = "ReconciliationWindow";
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
-G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE )
 
 static GtkWidget   *v_setup_view( ofaPage *page );
 static void         setup_treeview_header( ofaPage *page, GtkContainer *parent );
@@ -232,105 +231,105 @@ static void         setup_size_group( ofaPage *page, GtkContainer *parent );
 static void         setup_auto_rappro( ofaPage *page, GtkContainer *parent );
 static void         setup_action_buttons( ofaPage *page, GtkContainer *parent );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
-static void         on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self );
-static void         on_account_select_clicked( GtkButton *button, ofaReconciliation *self );
-static void         do_account_selection( ofaReconciliation *self );
-static void         clear_account_content( ofaReconciliation *self );
-static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
-static void         set_account_balance( ofaReconciliation *self );
-static void         do_display_entries( ofaReconciliation *self );
-static void         insert_entry( ofaReconciliation *self, ofoEntry *entry );
-static void         set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
-static void         on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self );
-static void         select_mode( ofaReconciliation *self, gint mode );
-static void         on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self );
-static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
-static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
-static void         do_select_bat( ofaReconciliation *self );
-static void         on_import_clicked( GtkButton *button, ofaReconciliation *self );
-static void         on_clear_clicked( GtkButton *button, ofaReconciliation *self );
-static void         clear_bat_content( ofaReconciliation *self );
-static void         do_display_bat_files( ofaReconciliation *self );
-static void         display_bat_by_id( ofaReconciliation *self, ofxCounter bat_id );
-static void         display_bat_file( ofaReconciliation *self, ofoBat *bat );
-static void         insert_batline( ofaReconciliation *self, ofoBatLine *batline );
-static void         set_row_batline( ofaReconciliation *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline );
-static void         display_bat_name( ofaReconciliation *self );
-static void         display_bat_counts( ofaReconciliation *self );
-static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
-static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self );
-static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
-static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
-static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
-static gboolean     is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry, ofoConcil *concil );
-static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
-static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self );
-static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self );
-static void         examine_selection( ofaReconciliation *self, ofxAmount *debit, ofxAmount *credit, ofoConcil **concil, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
-static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self );
-static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self );
-static void         collapse_node( ofaReconciliation *self, GtkWidget *widget );
-static void         collapse_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
-static void         expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean     check_for_enable_view( ofaReconciliation *self );
-static void         default_expand_view( ofaReconciliation *self );
-static void         expand_tview_selection( ofaReconciliation *self );
-static void         on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self );
-static void         do_reconciliate( ofaReconciliation *self );
-static GtkTreePath *do_reconciliate_review_hierarchy( ofaReconciliation *self, GList *selected, GtkTreePath *parent );
-static GDate       *get_date_for_new_concil( ofaReconciliation *self, GDate *date );
-static void         on_decline_clicked( GtkButton *button, ofaReconciliation *self );
-static void         do_decline( ofaReconciliation *self );
-static void         on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self );
-static void         do_unconciliate( ofaReconciliation *self );
-static void         set_reconciliated_balance( ofaReconciliation *self );
-static void         update_concil_data_by_path( ofaReconciliation *self, GtkTreePath *path, ofxCounter id, const GDate *dval );
-static void         update_concil_data_by_iter( ofaReconciliation *self, GtkTreeModel *store_model, GtkTreeIter *store_iter, ofxCounter id, const GDate *dval );
-static const GDate *get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline );
-static void         get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
-static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, ofxCounter number );
-static gboolean     search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean     search_for_parent_by_concil( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void         get_settings( ofaReconciliation *self );
-static void         set_settings( ofaReconciliation *self );
-static void         dossier_signaling_connect( ofaReconciliation *self );
-static void         on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *self );
-static void         on_new_entry( ofaReconciliation *self, ofoEntry *entry );
-static void         insert_new_entry( ofaReconciliation *self, ofoEntry *entry );
-static void         remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter );
-static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self );
-static void         on_updated_entry( ofaReconciliation *self, ofoEntry *entry );
-static void         on_print_clicked( GtkButton *button, ofaReconciliation *self );
+static void         on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self );
+static void         on_account_select_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         do_account_selection( ofaReconcilPage *self );
+static void         clear_account_content( ofaReconcilPage *self );
+static ofoAccount  *get_reconciliable_account( ofaReconcilPage *self );
+static void         set_account_balance( ofaReconcilPage *self );
+static void         do_display_entries( ofaReconcilPage *self );
+static void         insert_entry( ofaReconcilPage *self, ofoEntry *entry );
+static void         set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
+static void         on_mode_combo_changed( GtkComboBox *box, ofaReconcilPage *self );
+static void         select_mode( ofaReconcilPage *self, gint mode );
+static void         on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconcilPage *self );
+static void         on_date_concil_changed( GtkEditable *editable, ofaReconcilPage *self );
+static void         on_select_bat( GtkButton *button, ofaReconcilPage *self );
+static void         do_select_bat( ofaReconcilPage *self );
+static void         on_import_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         on_clear_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         clear_bat_content( ofaReconcilPage *self );
+static void         do_display_bat_files( ofaReconcilPage *self );
+static void         display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id );
+static void         display_bat_file( ofaReconcilPage *self, ofoBat *bat );
+static void         insert_batline( ofaReconcilPage *self, ofoBatLine *batline );
+static void         set_row_batline( ofaReconcilPage *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline );
+static void         display_bat_name( ofaReconcilPage *self );
+static void         display_bat_counts( ofaReconcilPage *self );
+static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcilPage *self );
+static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconcilPage *self );
+static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
+static gboolean     is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static gboolean     is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline );
+static gboolean     is_entry_session_conciliated( ofaReconcilPage *self, ofoEntry *entry, ofoConcil *concil );
+static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
+static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilPage *self );
+static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self );
+static void         examine_selection( ofaReconcilPage *self, ofxAmount *debit, ofxAmount *credit, ofoConcil **concil, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
+static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconcilPage *self );
+static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconcilPage *self );
+static void         collapse_node( ofaReconcilPage *self, GtkWidget *widget );
+static void         collapse_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void         expand_node( ofaReconcilPage *self, GtkWidget *widget );
+static void         expand_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean     check_for_enable_view( ofaReconcilPage *self );
+static void         default_expand_view( ofaReconcilPage *self );
+static void         expand_tview_selection( ofaReconcilPage *self );
+static void         on_reconciliate_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         do_reconciliate( ofaReconcilPage *self );
+static GtkTreePath *do_reconciliate_review_hierarchy( ofaReconcilPage *self, GList *selected, GtkTreePath *parent );
+static GDate       *get_date_for_new_concil( ofaReconcilPage *self, GDate *date );
+static void         on_decline_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         do_decline( ofaReconcilPage *self );
+static void         on_unreconciliate_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         do_unconciliate( ofaReconcilPage *self );
+static void         set_reconciliated_balance( ofaReconcilPage *self );
+static void         update_concil_data_by_path( ofaReconcilPage *self, GtkTreePath *path, ofxCounter id, const GDate *dval );
+static void         update_concil_data_by_iter( ofaReconcilPage *self, GtkTreeModel *store_model, GtkTreeIter *store_iter, ofxCounter id, const GDate *dval );
+static const GDate *get_bat_line_dope( ofaReconcilPage *self, ofoBatLine *batline );
+static void         get_indice_concil_id_by_path( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
+static GtkTreeIter *search_for_entry_by_number( ofaReconcilPage *self, ofxCounter number );
+static gboolean     search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean     search_for_parent_by_concil( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void         get_settings( ofaReconcilPage *self );
+static void         set_settings( ofaReconcilPage *self );
+static void         dossier_signaling_connect( ofaReconcilPage *self );
+static void         on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconcilPage *self );
+static void         on_new_entry( ofaReconcilPage *self, ofoEntry *entry );
+static void         insert_new_entry( ofaReconcilPage *self, ofoEntry *entry );
+static void         remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter );
+static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
+static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
+static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 
 static void
 reconciliation_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_reconciliation_finalize";
+	static const gchar *thisfn = "ofa_reconcil_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_RECONCILIATION( instance ));
+	g_return_if_fail( OFA_IS_RECONCIL_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_reconciliation_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_reconcil_page_parent_class )->finalize( instance );
 }
 
 static void
 reconciliation_dispose( GObject *instance )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GList *it;
 
-	g_return_if_fail( OFA_IS_RECONCILIATION( instance ));
+	g_return_if_fail( OFA_IS_RECONCIL_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ( OFA_RECONCILIATION( instance ))->priv;
+		priv = ( OFA_RECONCIL_PAGE( instance ))->priv;
 
 		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( it=priv->handlers ; it ; it=it->next ){
@@ -345,28 +344,28 @@ reconciliation_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_reconciliation_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_reconcil_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_reconciliation_init( ofaReconciliation *self )
+ofa_reconcil_page_init( ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_init";
+	static const gchar *thisfn = "ofa_reconcil_page_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_RECONCILIATION( self ));
+	g_return_if_fail( OFA_IS_RECONCIL_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RECONCILIATION, ofaReconciliationPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RECONCIL_PAGE, ofaReconcilPagePrivate );
 
 	my_date_clear( &self->priv->dconcil );
 }
 
 static void
-ofa_reconciliation_class_init( ofaReconciliationClass *klass )
+ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_reconciliation_class_init";
+	static const gchar *thisfn = "ofa_reconcil_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -376,7 +375,7 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaReconciliationPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaReconcilPagePrivate ));
 }
 
 /*
@@ -387,14 +386,14 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_reconciliation_v_setup_view";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *widget, *page_widget;
 	GtkTreeSelection *select;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
@@ -413,13 +412,13 @@ v_setup_view( ofaPage *page )
 	setup_auto_rappro( page, GTK_CONTAINER( widget ));
 	setup_action_buttons( page, GTK_CONTAINER( widget ));
 
-	dossier_signaling_connect( OFA_RECONCILIATION( page ));
+	dossier_signaling_connect( OFA_RECONCIL_PAGE( page ));
 
-	get_settings( OFA_RECONCILIATION( page ));
+	get_settings( OFA_RECONCIL_PAGE( page ));
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	gtk_tree_selection_unselect_all( select );
-	on_tview_selection_changed( select, OFA_RECONCILIATION( page ));
+	on_tview_selection_changed( select, OFA_RECONCIL_PAGE( page ));
 
 	return( page_widget );
 }
@@ -427,9 +426,9 @@ v_setup_view( ofaPage *page )
 static void
 setup_treeview_header( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	priv->acc_header_label = my_utils_container_get_child_by_name( parent, "header-label" );
 	g_return_if_fail( priv->acc_header_label && GTK_IS_LABEL( priv->acc_header_label ));
@@ -452,15 +451,15 @@ setup_treeview_header( ofaPage *page, GtkContainer *parent )
 static void
 setup_treeview( ofaPage *page, GtkContainer *parent )
 {
-	static const gchar *thisfn = "ofa_reconciliation_setup_treeview";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_setup_treeview";
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *tview;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	gint column_id;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	tview = my_utils_container_get_child_by_name( parent, "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -673,9 +672,9 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 static void
 setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	priv->select_debit = my_utils_container_get_child_by_name( parent, "select-debit" );
 	g_return_if_fail( priv->select_debit && GTK_IS_LABEL( priv->select_debit ));
@@ -701,10 +700,10 @@ setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 static void
 setup_account_selection( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *button;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	priv->acc_id_entry = my_utils_container_get_child_by_name( parent, "account-number" );
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
@@ -726,14 +725,14 @@ setup_account_selection( ofaPage *page, GtkContainer *parent )
 static void
 setup_entries_filter( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
 	gint i;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
@@ -769,10 +768,10 @@ setup_entries_filter( ofaPage *page, GtkContainer *parent )
 static void
 setup_date_filter( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *filter_parent;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	priv->effect_filter = ofa_date_filter_hv_bin_new();
 	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_effect_dates );
@@ -788,10 +787,10 @@ setup_date_filter( ofaPage *page, GtkContainer *parent )
 static void
 setup_manual_rappro( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *entry, *label;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	entry = my_utils_container_get_child_by_name( parent, "manual-date" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -820,11 +819,11 @@ setup_manual_rappro( ofaPage *page, GtkContainer *parent )
 static void
 setup_size_group( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkSizeGroup *group;
 	GtkWidget *label;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	label = ofa_idate_filter_get_prompt(
@@ -842,10 +841,10 @@ setup_size_group( ofaPage *page, GtkContainer *parent )
 static void
 setup_auto_rappro( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *button, *label;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	button = my_utils_container_get_child_by_name( parent, "assist-select" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -881,10 +880,10 @@ setup_auto_rappro( ofaPage *page, GtkContainer *parent )
 static void
 setup_action_buttons( ofaPage *page, GtkContainer *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkWidget *button;
 
-	priv = OFA_RECONCILIATION( page )->priv;
+	priv = OFA_RECONCIL_PAGE( page )->priv;
 
 	priv->actions_frame = my_utils_container_get_child_by_name( parent, "f6-actions" );
 	g_return_if_fail( priv->actions_frame && GTK_IS_FRAME( priv->actions_frame ));
@@ -917,9 +916,9 @@ setup_action_buttons( ofaPage *page, GtkContainer *parent )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_RECONCILIATION( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_RECONCIL_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_RECONCILIATION( page )->priv->tview ));
+	return( GTK_WIDGET( OFA_RECONCIL_PAGE( page )->priv->tview ));
 }
 
 /*
@@ -927,10 +926,10 @@ v_get_top_focusable_widget( const ofaPage *page )
  * (and priv->account is NULL)
  */
 static void
-on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self )
+on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_account_entry_changed";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_on_account_entry_changed";
+	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *select;
 
 	priv = self->priv;
@@ -956,7 +955,7 @@ on_account_entry_changed( GtkEntry *entry, ofaReconciliation *self )
 }
 
 static void
-on_account_select_clicked( GtkButton *button, ofaReconciliation *self )
+on_account_select_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	do_account_selection( self );
 }
@@ -967,9 +966,9 @@ on_account_select_clicked( GtkButton *button, ofaReconciliation *self )
  * dialog
  */
 static void
-do_account_selection( ofaReconciliation *self )
+do_account_selection( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *account_number;
 	gchar *number;
 
@@ -997,9 +996,9 @@ do_account_selection( ofaReconciliation *self )
  * remove all entries from the treeview
  */
 static void
-clear_account_content( ofaReconciliation *self )
+clear_account_content( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
 	priv = self->priv;
 	priv->acc_debit = 0;
@@ -1025,9 +1024,9 @@ clear_account_content( ofaReconciliation *self )
  * a reconciliation session
  */
 static ofoAccount *
-get_reconciliable_account( ofaReconciliation *self )
+get_reconciliable_account( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *number;
 	gboolean ok;
 	ofoAccount *account;
@@ -1078,9 +1077,9 @@ get_reconciliable_account( ofaReconciliation *self )
  * or when remediating to an event signaled by through the dossier
  */
 static void
-set_account_balance( ofaReconciliation *self )
+set_account_balance( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gchar *sdiff, *samount;
 
 	priv = self->priv;
@@ -1110,10 +1109,10 @@ set_account_balance( ofaReconciliation *self )
  * the store is expected to be empty or only contain bat lines
  */
 static void
-do_display_entries( ofaReconciliation *self )
+do_display_entries( ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_do_display_entries";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_do_display_entries";
+	ofaReconcilPagePrivate *priv;
 	GList *entries, *it;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
@@ -1138,9 +1137,9 @@ do_display_entries( ofaReconciliation *self )
  * (though it would be theorically possible)
  */
 static void
-insert_entry( ofaReconciliation *self, ofoEntry *entry )
+insert_entry( ofaReconcilPage *self, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeIter parent_iter, insert_iter, child_iter;
 	ofoBase *object;
 
@@ -1173,9 +1172,9 @@ insert_entry( ofaReconciliation *self, ofoEntry *entry )
 }
 
 static void
-set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
+set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	ofxAmount amount;
 	gchar *sdope, *sdeb, *scre, *sdrap, *sid;
 	const GDate *dconcil;
@@ -1225,9 +1224,9 @@ set_row_entry( ofaReconciliation *self, GtkTreeModel *tstore, GtkTreeIter *iter,
 }
 
 static void
-on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self )
+on_mode_combo_changed( GtkComboBox *box, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
 
@@ -1251,9 +1250,9 @@ on_mode_combo_changed( GtkComboBox *box, ofaReconciliation *self )
  * called when reading the settings
  */
 static void
-select_mode( ofaReconciliation *self, gint mode )
+select_mode( ofaReconcilPage *self, gint mode )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint box_mode;
@@ -1279,9 +1278,9 @@ select_mode( ofaReconciliation *self, gint mode )
  * effect dates filter are not stored in settings
  */
 static void
-on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconciliation *self )
+on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -1292,9 +1291,9 @@ on_effect_dates_changed( ofaIDateFilter *filter, gint who, gboolean empty, const
  * modifying the manual reconciliation date
  */
 static void
-on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
+on_date_concil_changed( GtkEditable *editable, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GDate date;
 	gboolean valid;
 
@@ -1312,7 +1311,7 @@ on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
  * select an already imported Bank Account Transaction list file
  */
 static void
-on_select_bat( GtkButton *button, ofaReconciliation *self )
+on_select_bat( GtkButton *button, ofaReconcilPage *self )
 {
 	do_select_bat( self );
 }
@@ -1324,9 +1323,9 @@ on_select_bat( GtkButton *button, ofaReconciliation *self )
  * Hitting Cancel on BAT selection doesn't change anything
  */
 static void
-do_select_bat( ofaReconciliation *self )
+do_select_bat( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	ofxCounter prev_id, bat_id;
 
 	priv = self->priv;
@@ -1345,7 +1344,7 @@ do_select_bat( ofaReconciliation *self )
  * be unsuccessful)
  */
 static void
-on_import_clicked( GtkButton *button, ofaReconciliation *self )
+on_import_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	ofxCounter imported_id;
 
@@ -1356,7 +1355,7 @@ on_import_clicked( GtkButton *button, ofaReconciliation *self )
 }
 
 static void
-on_clear_clicked( GtkButton *button, ofaReconciliation *self )
+on_clear_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	clear_bat_content( self );
 }
@@ -1369,9 +1368,9 @@ on_clear_clicked( GtkButton *button, ofaReconciliation *self )
  *  proposed reconciliation date in the entries
  */
 static void
-clear_bat_content( ofaReconciliation *self )
+clear_bat_content( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
 	priv = self->priv;
 
@@ -1401,9 +1400,9 @@ clear_bat_content( ofaReconciliation *self )
  * should only be called on a cleared tree store
  */
 static void
-do_display_bat_files( ofaReconciliation *self )
+do_display_bat_files( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GList *it;
 
 	priv = self->priv;
@@ -1418,9 +1417,9 @@ do_display_bat_files( ofaReconciliation *self )
  * check that it is not already displayed
  */
 static void
-display_bat_by_id( ofaReconciliation *self, ofxCounter bat_id )
+display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	ofoBat *bat;
 	GList *it;
 
@@ -1442,9 +1441,9 @@ display_bat_by_id( ofaReconciliation *self, ofxCounter bat_id )
 }
 
 static void
-display_bat_file( ofaReconciliation *self, ofoBat *bat )
+display_bat_file( ofaReconcilPage *self, ofoBat *bat )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GList *batlines, *it;
 
 	priv = self->priv;
@@ -1466,10 +1465,10 @@ display_bat_file( ofaReconciliation *self, ofoBat *bat )
 /*
  */
 static void
-insert_batline( ofaReconciliation *self, ofoBatLine *batline )
+insert_batline( ofaReconcilPage *self, ofoBatLine *batline )
 {
-	static const gchar *thisfn = "ofa_reconciliation_insert_batline";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_insert_batline";
+	ofaReconcilPagePrivate *priv;
 	GtkTreeIter parent_iter, insert_iter;
 	ofoBase *object;
 
@@ -1501,9 +1500,9 @@ insert_batline( ofaReconciliation *self, ofoBatLine *batline )
 /*
  */
 static void
-set_row_batline( ofaReconciliation *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline )
+set_row_batline( ofaReconcilPage *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	ofxAmount bat_amount;
 	gchar *sdeb, *scre, *sdope, *sdreconcil, *sid;
 	ofoConcil *concil;
@@ -1558,9 +1557,9 @@ set_row_batline( ofaReconciliation *self, GtkTreeModel *store, GtkTreeIter *iter
  * just display 'multiple selection' if appropriate
  */
 static void
-display_bat_name( ofaReconciliation *self )
+display_bat_name( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	guint count;
 	const gchar *cstr;
 
@@ -1577,9 +1576,9 @@ display_bat_name( ofaReconciliation *self )
 }
 
 static void
-display_bat_counts( ofaReconciliation *self )
+display_bat_counts( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GList *it;
 	gchar *str;
 	gint total, used, unused;
@@ -1618,11 +1617,11 @@ display_bat_counts( ofaReconciliation *self )
  * lines may be entries or unreconciliated bat lines
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_sort_model";
+	static const gchar *thisfn = "ofa_reconcil_page_on_sort_model";
 	static const gchar *empty = "";
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gint cmp, sort_column_id;
 	GtkSortType sort_order;
 	ofoBase *object_a, *object_b;
@@ -1761,10 +1760,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
  * header makes the sort order descending as the default
  */
 static void
-on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self )
+on_header_clicked( GtkTreeViewColumn *column, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_header_clicked";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_on_header_clicked";
+	ofaReconcilPagePrivate *priv;
 	gint sort_column_id, new_column_id;
 	GtkSortType sort_order;
 
@@ -1799,9 +1798,9 @@ on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self )
  * tmodel here is the main GtkTreeModelSort on which the view is built
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean visible, ok;
 	GObject *object;
 	const GDate *deffect, *filter;
@@ -1844,9 +1843,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 }
 
 static gboolean
-is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean visible;
 	ofoConcil *concil;
 	const gchar *selected_account, *entry_account;
@@ -1904,9 +1903,9 @@ is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *it
  * entry
  */
 static gboolean
-is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
+is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean visible;
 	ofoConcil *concil;
 	GList *ids;
@@ -1959,9 +1958,9 @@ is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 }
 
 static gboolean
-is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry, ofoConcil *concil )
+is_entry_session_conciliated( ofaReconcilPage *self, ofoEntry *entry, ofoConcil *concil )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean is_session;
 	const GTimeVal *stamp;
 	GDate date, dnow;
@@ -1994,9 +1993,9 @@ is_entry_session_conciliated( ofaReconciliation *self, ofoEntry *entry, ofoConci
 static void
 on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaReconciliation *self )
+						ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GObject *object;
 	GdkRGBA color;
 	gint id;
@@ -2047,7 +2046,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
  * a single not-null hierarchy + a single not-null conciliation group
  */
 static gboolean
-tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconciliation *self )
+tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilPage *self )
 {
 	GList *selected, *it;
 	gint hierarchy, indice;
@@ -2112,9 +2111,9 @@ tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath 
  *   does not decide of the actions
  */
 static void
-on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
+on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean concil_enabled, decline_enabled, unreconciliate_enabled;
 	ofxAmount debit, credit;
 	ofoConcil *concil;
@@ -2173,11 +2172,11 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconciliation *self )
  *  (most useful when selecting only one child to decline it)
  */
 static void
-examine_selection( ofaReconciliation *self,
+examine_selection( ofaReconcilPage *self,
 		ofxAmount *debit, ofxAmount *credit,
 		ofoConcil **concil, guint *unconcil_rows, gboolean *unique, gboolean *is_child )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GList *selected, *it;
@@ -2253,7 +2252,7 @@ examine_selection( ofaReconciliation *self,
  * children if this is possible (and desirable: only one selected row)
  */
 static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconciliation *self )
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconcilPage *self )
 {
 	expand_tview_selection( self );
 	switch( self->priv->activate_action ){
@@ -2277,7 +2276,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
  * Handles left and right arrows to expand/collapse nodes
  */
 static gboolean
-on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self )
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconcilPage *self )
 {
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Left ){
@@ -2291,7 +2290,7 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self )
 }
 
 static void
-collapse_node( ofaReconciliation *self, GtkWidget *widget )
+collapse_node( ofaReconcilPage *self, GtkWidget *widget )
 {
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
@@ -2310,7 +2309,7 @@ collapse_node( ofaReconciliation *self, GtkWidget *widget )
 }
 
 static void
-collapse_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
+collapse_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	GtkTreePath *path;
 	GtkTreeIter parent_iter;
@@ -2328,7 +2327,7 @@ collapse_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel
 }
 
 static void
-expand_node( ofaReconciliation *self, GtkWidget *widget )
+expand_node( ofaReconcilPage *self, GtkWidget *widget )
 {
 	GtkTreeSelection *select;
 	GList *selected;
@@ -2347,7 +2346,7 @@ expand_node( ofaReconciliation *self, GtkWidget *widget )
 }
 
 static void
-expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
+expand_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	GtkTreePath *path;
 
@@ -2364,9 +2363,9 @@ expand_node_by_iter( ofaReconciliation *self, GtkTreeView *tview, GtkTreeModel *
  * mode)
  */
 static gboolean
-check_for_enable_view( ofaReconciliation *self )
+check_for_enable_view( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gboolean enabled;
 
 	priv = self->priv;
@@ -2395,9 +2394,9 @@ check_for_enable_view( ofaReconciliation *self )
  * accepted (and are so reconciliated)
  */
 static void
-default_expand_view( ofaReconciliation *self )
+default_expand_view( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoConcil *concil;
@@ -2433,9 +2432,9 @@ default_expand_view( ofaReconciliation *self )
  * this expands the selection to all the hierarchy
  */
 static void
-expand_tview_selection( ofaReconciliation *self )
+expand_tview_selection( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *selection;
 	GList *selected;
 	GtkTreeIter *start, iter, parent, child;
@@ -2476,7 +2475,7 @@ expand_tview_selection( ofaReconciliation *self )
  * together, so that accept may be enabled
  */
 static void
-on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
+on_reconciliate_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	expand_tview_selection( self );
 	do_reconciliate( self );
@@ -2489,10 +2488,10 @@ on_reconciliate_clicked( GtkButton *button, ofaReconciliation *self )
  * add all other lines to this conciliation group
  */
 static void
-do_reconciliate( ofaReconciliation *self )
+do_reconciliate( ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_do_reconciliate";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_do_reconciliate";
+	ofaReconcilPagePrivate *priv;
 	ofxAmount debit, credit;
 	guint unconcil_rows;
 	gboolean is_child, unique;
@@ -2593,9 +2592,9 @@ do_reconciliate( ofaReconciliation *self )
  * reorganization of all the selection
  */
 static GtkTreePath *
-do_reconciliate_review_hierarchy( ofaReconciliation *self, GList *selected, GtkTreePath *parent )
+do_reconciliate_review_hierarchy( ofaReconcilPage *self, GList *selected, GtkTreePath *parent )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeRowReference *parent_ref, *ref;
 	GList *refs, *it;
 	GtkTreePath *it_path, *parent_path;
@@ -2664,9 +2663,9 @@ do_reconciliate_review_hierarchy( ofaReconciliation *self, GList *selected, GtkT
  * there is no garanty that the returned date is valid
  */
 static GDate *
-get_date_for_new_concil( ofaReconciliation *self, GDate *date )
+get_date_for_new_concil( ofaReconcilPage *self, GDate *date )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *selection;
 	GList *rows, *it;
 	GtkTreeModel *tmodel;
@@ -2707,17 +2706,17 @@ get_date_for_new_concil( ofaReconciliation *self, GDate *date )
  * it is moved to level 0, and re-selected
  */
 static void
-on_decline_clicked( GtkButton *button, ofaReconciliation *self )
+on_decline_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	do_decline( self );
 	on_tview_selection_changed( NULL, self );
 }
 
 static void
-do_decline( ofaReconciliation *self )
+do_decline( ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_do_decline";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_do_decline";
+	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *select;
 	GList *selected;
 	GtkTreeIter sort_iter, filter_iter, store_iter, parent_iter;
@@ -2770,7 +2769,7 @@ do_decline( ofaReconciliation *self )
 }
 
 static void
-on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
+on_unreconciliate_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	expand_tview_selection( self );
 	do_unconciliate( self );
@@ -2778,10 +2777,10 @@ on_unreconciliate_clicked( GtkButton *button, ofaReconciliation *self )
 }
 
 static void
-do_unconciliate( ofaReconciliation *self )
+do_unconciliate( ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_do_unconciliate";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_do_unconciliate";
+	ofaReconcilPagePrivate *priv;
 	ofxAmount debit, credit;
 	guint unconcil_rows;
 	gboolean is_child, unique;
@@ -2869,9 +2868,9 @@ do_unconciliate( ofaReconciliation *self )
  * all rows
  */
 static void
-set_reconciliated_balance( ofaReconciliation *self )
+set_reconciliated_balance( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gdouble debit, credit;
 	gdouble account_debit, account_credit;
 	GtkTreeModel *tstore;
@@ -2954,9 +2953,9 @@ set_reconciliated_balance( ofaReconciliation *self )
  * path comes from the current selection
  */
 static void
-update_concil_data_by_path( ofaReconciliation *self, GtkTreePath *path, ofxCounter id, const GDate *dval )
+update_concil_data_by_path( ofaReconcilPage *self, GtkTreePath *path, ofxCounter id, const GDate *dval )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeIter sort_iter, filter_iter, store_iter;
 
 	priv = self->priv;
@@ -2975,7 +2974,7 @@ update_concil_data_by_path( ofaReconciliation *self, GtkTreePath *path, ofxCount
  * the provided iter must be on the store model
  */
 static void
-update_concil_data_by_iter( ofaReconciliation *self,
+update_concil_data_by_iter( ofaReconcilPage *self,
 		GtkTreeModel *store_model, GtkTreeIter *store_iter, ofxCounter id, const GDate *dval )
 {
 	gchar *sid, *sdvaleur;
@@ -2999,7 +2998,7 @@ update_concil_data_by_iter( ofaReconciliation *self,
 }
 
 static const GDate *
-get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline )
+get_bat_line_dope( ofaReconcilPage *self, ofoBatLine *batline )
 {
 	const GDate *dope;
 
@@ -3018,9 +3017,9 @@ get_bat_line_dope( ofaReconciliation *self, ofoBatLine *batline )
  * of the specified row
  */
 static void
-get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
+get_indice_concil_id_by_path( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeIter iter;
 	gint *indices, depth;
 	ofoBase *object;
@@ -3053,7 +3052,7 @@ get_indice_concil_id_by_path( ofaReconciliation *self, GtkTreeModel *tmodel, Gtk
  * the caller
  */
 static GtkTreeIter *
-search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
+search_for_entry_by_number( ofaReconcilPage *self, ofxCounter number )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter iter;
@@ -3095,10 +3094,10 @@ search_for_entry_by_number( ofaReconciliation *self, ofxCounter number )
  *  be used as a parent of the being-inserted row
  */
 static gboolean
-search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter )
+search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_reconciliation_search_for_parent_by_amount";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_search_for_parent_by_amount";
+	ofaReconcilPagePrivate *priv;
 	ofxAmount object_balance, iter_balance;
 	ofoBase *obj;
 
@@ -3169,9 +3168,9 @@ search_for_parent_by_amount( ofaReconciliation *self, ofoBase *object, GtkTreeMo
  * return TRUE if found
  */
 static gboolean
-search_for_parent_by_concil( ofaReconciliation *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter )
+search_for_parent_by_concil( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	ofoConcil *concil;
 	ofxCounter object_id;
 	ofoBase *obj;
@@ -3209,9 +3208,9 @@ search_for_parent_by_concil( ofaReconciliation *self, ofoBase *object, GtkTreeMo
  * settings format: account;mode;manualconcil[sql];
  */
 static void
-get_settings( ofaReconciliation *self )
+get_settings( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
 	GDate date;
@@ -3249,9 +3248,9 @@ get_settings( ofaReconciliation *self )
 }
 
 static void
-set_settings( ofaReconciliation *self )
+set_settings( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *account, *sdate;
 	gchar *date_sql;
 	GDate date;
@@ -3281,9 +3280,9 @@ set_settings( ofaReconciliation *self )
 }
 
 static void
-dossier_signaling_connect( ofaReconciliation *self )
+dossier_signaling_connect( ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	gulong handler;
 
 	priv = self->priv;
@@ -3298,9 +3297,9 @@ dossier_signaling_connect( ofaReconciliation *self )
 }
 
 static void
-on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *self )
+on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_dossier_new_object";
+	static const gchar *thisfn = "ofa_reconcil_page_on_dossier_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -3318,9 +3317,9 @@ on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconciliation *
  * currently selected account
  */
 static void
-on_new_entry( ofaReconciliation *self, ofoEntry *entry )
+on_new_entry( ofaReconcilPage *self, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *selected_account, *entry_account;
 
 	priv = self->priv;
@@ -3333,9 +3332,9 @@ on_new_entry( ofaReconciliation *self, ofoEntry *entry )
 }
 
 static void
-insert_new_entry( ofaReconciliation *self, ofoEntry *entry )
+insert_new_entry( ofaReconcilPage *self, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	GtkTreeModel *store;
 	GtkTreeIter iter;
 
@@ -3352,10 +3351,10 @@ insert_new_entry( ofaReconciliation *self, ofoEntry *entry )
  * reconciliated) which would be suitable for the given entry
  */
 static void
-remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter )
+remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter )
 {
-	static const gchar *thisfn = "ofa_reconciliation_remediate_bat_lines";
-	ofaReconciliationPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_page_remediate_bat_lines";
+	ofaReconcilPagePrivate *priv;
 	ofxAmount ent_debit, ent_credit, bat_amount;
 	GtkTreeModel *store_model;
 	GtkTreeIter iter;
@@ -3411,9 +3410,9 @@ remediate_bat_lines( ofaReconciliation *self, GtkTreeModel *tstore, ofoEntry *en
  * a ledger mnemo, an account number, a currency code may has changed
  */
 static void
-on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconciliation *self )
+on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconciliation_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_reconcil_page_on_dossier_updated_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
@@ -3434,9 +3433,9 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
  * the treeview...
  */
 static void
-on_updated_entry( ofaReconciliation *self, ofoEntry *entry )
+on_updated_entry( ofaReconcilPage *self, ofoEntry *entry )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *selected_account, *entry_account;
 	GtkTreeModel *tstore;
 	GtkTreeIter *iter;
@@ -3462,9 +3461,9 @@ on_updated_entry( ofaReconciliation *self, ofoEntry *entry )
 }
 
 static void
-on_print_clicked( GtkButton *button, ofaReconciliation *self )
+on_print_clicked( GtkButton *button, ofaReconcilPage *self )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 	const gchar *acc_number;
 	const ofaMainWindow *main_window;
 	ofaPage *page;
@@ -3477,16 +3476,16 @@ on_print_clicked( GtkButton *button, ofaReconciliation *self )
 }
 
 /**
- * ofa_reconciliation_set_account:
+ * ofa_reconcil_page_set_account:
  * @page:
  * @number:
  */
 void
-ofa_reconciliation_set_account( ofaReconciliation *page, const gchar *number )
+ofa_reconcil_page_set_account( ofaReconcilPage *page, const gchar *number )
 {
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 
-	g_return_if_fail( page && OFA_IS_RECONCILIATION( page ));
+	g_return_if_fail( page && OFA_IS_RECONCIL_PAGE( page ));
 
 	if( !OFA_PAGE( page )->prot->dispose_has_run ){
 

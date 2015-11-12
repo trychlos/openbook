@@ -67,7 +67,7 @@
 #include "ui/ofa-page.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
-#include "ui/ofa-reconciliation.h"
+#include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-settlement.h"
 
 /* private instance data
@@ -231,7 +231,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_RECONCIL,
 				N_( "Reconciliation" ),
-				ofa_reconciliation_get_type,
+				ofa_reconcil_page_get_type,
 				FALSE
 		},
 		{ THM_RENDER_BALANCES,

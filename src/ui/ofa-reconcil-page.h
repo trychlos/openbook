@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RECONCILIATION_H__
-#define __OFA_RECONCILIATION_H__
+#ifndef __OFA_RECONCIL_PAGE_H__
+#define __OFA_RECONCIL_PAGE_H__
 
 /**
  * SECTION: ofa_reconciliation
- * @short_description: #ofaReconciliation class definition.
- * @include: ui/ofa-reconciliation.h
+ * @short_description: #ofaReconcilPage class definition.
+ * @include: ui/ofa-reconcil-page.h
  *
  * Display both entries from an account and a Bank Account Transaction
  * list, letting user reconciliate balanced lines.
@@ -110,35 +110,35 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_RECONCILIATION                ( ofa_reconciliation_get_type())
-#define OFA_RECONCILIATION( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECONCILIATION, ofaReconciliation ))
-#define OFA_RECONCILIATION_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECONCILIATION, ofaReconciliationClass ))
-#define OFA_IS_RECONCILIATION( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECONCILIATION ))
-#define OFA_IS_RECONCILIATION_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECONCILIATION ))
-#define OFA_RECONCILIATION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECONCILIATION, ofaReconciliationClass ))
+#define OFA_TYPE_RECONCIL_PAGE                ( ofa_reconcil_page_get_type())
+#define OFA_RECONCIL_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECONCIL_PAGE, ofaReconcilPage ))
+#define OFA_RECONCIL_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECONCIL_PAGE, ofaReconcilPageClass ))
+#define OFA_IS_RECONCIL_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECONCIL_PAGE ))
+#define OFA_IS_RECONCIL_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECONCIL_PAGE ))
+#define OFA_RECONCIL_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECONCIL_PAGE, ofaReconcilPageClass ))
 
-typedef struct _ofaReconciliationPrivate       ofaReconciliationPrivate;
+typedef struct _ofaReconcilPagePrivate        ofaReconcilPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                   parent;
+	ofaPage                 parent;
 
 	/*< private members >*/
-	ofaReconciliationPrivate *priv;
+	ofaReconcilPagePrivate *priv;
 }
-	ofaReconciliation;
+	ofaReconcilPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPageClass            parent;
 }
-	ofaReconciliationClass;
+	ofaReconcilPageClass;
 
-GType ofa_reconciliation_get_type   ( void ) G_GNUC_CONST;
+GType ofa_reconcil_page_get_type   ( void ) G_GNUC_CONST;
 
-void  ofa_reconciliation_set_account( ofaReconciliation *page,
+void  ofa_reconcil_page_set_account( ofaReconcilPage *page,
 											const gchar *number );
 
 G_END_DECLS
 
-#endif /* __OFA_RECONCILIATION_H__ */
+#endif /* __OFA_RECONCIL_PAGE_H__ */

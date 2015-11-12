@@ -309,7 +309,7 @@ on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_RECONCILIATION );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_RECONCIL_PAGE );
 }
 
 /**
@@ -356,7 +356,7 @@ ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *bin,
 		}
 		if( reconciliation ){
 			priv->reconciliation_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_RECONCILIATION, FALSE, G_CALLBACK( on_reconciliation_clicked ), bin );
+					BUTTON_RECONCIL_PAGE, FALSE, G_CALLBACK( on_reconciliation_clicked ), bin );
 		}
 	}
 }

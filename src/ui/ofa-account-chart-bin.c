@@ -44,7 +44,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-settlement.h"
-#include "ui/ofa-reconciliation.h"
+#include "ui/ofa-reconcil-page.h"
 
 /* private instance data
  */
@@ -1219,7 +1219,7 @@ do_reconciliation( ofaAccountChartBin *self )
 	number = ofa_account_chart_bin_get_selected( self );
 	g_debug( "ofa_account_chart_bin_do_reconciliation: number=%s", number );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_RECONCIL );
-	ofa_reconciliation_set_account( OFA_RECONCILIATION( page ), number );
+	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), number );
 	g_free( number );
 }
 
@@ -1674,7 +1674,7 @@ ofa_account_chart_bin_button_clicked( ofaAccountChartBin *book, gint button_id )
 			case BUTTON_SETTLEMENT:
 				do_settlement( book );
 				break;
-			case BUTTON_RECONCILIATION:
+			case BUTTON_RECONCIL_PAGE:
 				do_reconciliation( book );
 				break;
 		}

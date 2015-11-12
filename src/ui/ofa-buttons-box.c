@@ -242,7 +242,7 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 			case BUTTON_SETTLEMENT:
 				button = gtk_button_new_with_mnemonic( _( "_Settlement..." ));
 				break;
-			case BUTTON_RECONCILIATION:
+			case BUTTON_RECONCIL_PAGE:
 				button = gtk_button_new_with_mnemonic( _( "_Reconciliation" ));
 				break;
 			default:

@@ -74,7 +74,7 @@
  *
  * ofaRatePage         a tree view on a list store                   Yes
  *
- * ofaReconciliation   several top frames, with a treeview on        No
+ * ofaReconcilPage   several top frames, with a treeview on        No
  *                     a tree store
  *
  * ofaEntryPage        several top frames with a treeview on a       No
