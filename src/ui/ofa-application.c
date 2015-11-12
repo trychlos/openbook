@@ -387,6 +387,7 @@ ofa_application_class_init( ofaApplicationClass *klass )
 ofaApplication *
 ofa_application_new( void )
 {
+	static const gchar *thisfn = "ofa_application_new";
 	ofaApplication *application;
 
 	application = g_object_new( OFA_TYPE_APPLICATION,
@@ -403,7 +404,11 @@ ofa_application_new( void )
 			NULL );
 
 	ofa_box_register_types();
-	ofa_plugin_load_modules( G_APPLICATION( application ));
+
+	if( ofa_plugin_load_modules( G_APPLICATION( application )) == -1 ){
+		g_error( "%s: unable to initialize application, aborting", thisfn );
+		g_clear_object( &application );
+	}
 
 	return( application );
 }

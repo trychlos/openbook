@@ -37,9 +37,13 @@ main( int argc, char *argv[] )
 	int ret;
 	ofaApplication *appli;
 
+	ret = -1;
 	appli = ofa_application_new();
-	ret = ofa_application_run_with_args( appli, argc, argv );
-	g_object_unref( appli );
+
+	if( appli ){
+		ret = ofa_application_run_with_args( appli, argc, argv );
+		g_object_unref( appli );
+	}
 
 	return( ret );
 }

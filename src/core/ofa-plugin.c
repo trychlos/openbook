@@ -162,8 +162,9 @@ ofa_plugin_dump( const ofaPlugin *plugin )
 	}
 }
 
-/*
+/**
  * ofa_plugin_load_modules:
+ * @application: the #GApplication application instance.
  *
  * Load availables dynamically loadable extension libraries (plugins).
  *
@@ -174,6 +175,7 @@ ofa_plugin_dump( const ofaPlugin *plugin )
  *
  * Returns: the count of sucessfully loaded libraries, each of them
  * being managed by an #ofaPlugin instance.
+ * Returns: -1 if an error has occured.
  */
 gint
 ofa_plugin_load_modules( GApplication *application )
@@ -196,23 +198,22 @@ ofa_plugin_load_modules( GApplication *application )
 	if( error ){
 		g_warning( "%s: g_dir_open: %s", thisfn, error->message );
 		g_error_free( error );
-		error = NULL;
-
-	} else {
-		while(( entry = g_dir_read_name( api_dir )) != NULL ){
-			if( g_str_has_suffix( entry, suffix )){
-				fname = g_build_filename( dirname, entry, NULL );
-				plugin = plugin_new( fname, application );
-				if( plugin ){
-					plugin->priv->name = my_utils_str_remove_suffix( entry, suffix );
-					st_modules = g_list_append( st_modules, plugin );
-					g_debug( "%s: module %s successfully loaded", thisfn, entry );
-				}
-				g_free( fname );
-			}
-		}
-		g_dir_close( api_dir );
+		return( -1 );
 	}
+
+	while(( entry = g_dir_read_name( api_dir )) != NULL ){
+		if( g_str_has_suffix( entry, suffix )){
+			fname = g_build_filename( dirname, entry, NULL );
+			plugin = plugin_new( fname, application );
+			if( plugin ){
+				plugin->priv->name = my_utils_str_remove_suffix( entry, suffix );
+				st_modules = g_list_append( st_modules, plugin );
+				g_debug( "%s: module %s successfully loaded", thisfn, entry );
+			}
+			g_free( fname );
+		}
+	}
+	g_dir_close( api_dir );
 
 	return( g_list_length( st_modules ));
 }
