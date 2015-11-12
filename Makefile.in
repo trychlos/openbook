@@ -980,13 +980,15 @@ uninstall-hook:
 	-\rm -fr $(DESTDIR)$(pkgdocdir)
 
 # just run "make install-txz" and that's done
+# the output file may later be installed with a command like
+# '(cd ~/.local && tar -xJv --strip-components=4 -f /tmp/openbook-0.42-install.tar.xz)'
 install-txz:
 	(cd $(top_srcdir) && \
 	 my_topdir=`pwd` && \
 	 tmpdir=`mktemp -d /tmp/tmpXXXX` && \
 	 mkdir $${tmpdir}/_build && \
 	 cd $${tmpdir}/_build && \
-	 $${my_topdir}/configure --prefix=/ && \
+	 $${my_topdir}/configure --prefix=$$HOME/.local/@PACKAGE@-@VERSION@ && \
 	 make && \
 	 make DESTDIR=$${tmpdir}/_install/$(PACKAGE)-$(VERSION) install && \
 	 cd $${tmpdir}/_install && \
