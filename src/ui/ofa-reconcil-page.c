@@ -53,12 +53,14 @@
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
 #include "ui/ofa-date-filter-hv-bin.h"
+#include "ui/ofa-icolumns.h"
 #include "ui/ofa-idate-filter.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-reconcil-render.h"
+#include "ui/ofa-reconcil-columns.h"
 #include "ui/ofa-reconcil-page.h"
+#include "ui/ofa-reconcil-render.h"
 
 /* private instance data
  */
@@ -132,23 +134,6 @@ struct _ofaReconcilPagePrivate {
 	GList               *bats;			/* loaded ofoBat objects */
 };
 
-/* column ordering in the main entries listview
- */
-enum {
-	COL_ACCOUNT,
-	COL_DOPE,
-	COL_LEDGER,
-	COL_PIECE,
-	COL_NUMBER,
-	COL_LABEL,
-	COL_DEBIT,
-	COL_CREDIT,
-	COL_IDCONCIL,
-	COL_DRECONCIL,
-	COL_OBJECT,				/* may be an ofoEntry or an ofoBatLine */
-	N_COLUMNS
-};
-
 /* set against the COL_DRECONCIL column to be used in on_cell_data_func() */
 #define DATA_COLUMN_ID      "ofa-data-column-id"
 
@@ -202,6 +187,7 @@ enum {
 #define COLOR_BAT_UNCONCIL_FONT         "#00ff00"	/* pure green */
 
 static const gchar *st_reconciliation   = "Reconciliation";
+static const gchar *st_pref_columns     = "ReconciliationColumns";
 static const gchar *st_effect_dates     = "ReconciliationEffects";
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-reconcil-page.ui";
 static const gchar *st_ui_name          = "ReconciliationWindow";
@@ -217,8 +203,8 @@ static const gchar *st_ui_name          = "ReconciliationWindow";
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
-G_DEFINE_TYPE( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE )
-
+static void         icolumns_iface_init( ofaIColumnsInterface *iface );
+static guint        icolumns_get_interface_version( const ofaIColumns *instance );
 static GtkWidget   *v_setup_view( ofaPage *page );
 static void         setup_treeview_header( ofaPage *page, GtkContainer *parent );
 static void         setup_treeview( ofaPage *page, GtkContainer *parent );
@@ -302,6 +288,9 @@ static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *obj
 static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 
+G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLUMNS, icolumns_iface_init ));
+
 static void
 reconciliation_finalize( GObject *instance )
 {
@@ -376,6 +365,25 @@ ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaReconcilPagePrivate ));
+}
+
+/*
+ * ofaIColumns interface management
+ */
+static void
+icolumns_iface_init( ofaIColumnsInterface *iface )
+{
+	static const gchar *thisfn = "ofa_reconcil_page_icolumns_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icolumns_get_interface_version;
+}
+
+static guint
+icolumns_get_interface_version( const ofaIColumns *instance )
+{
+	return( 1 );
 }
 
 /*
@@ -513,6 +521,12 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+	ofa_icolumns_add_column(
+			OFA_ICOLUMNS( page ),
+			column_id,
+			ofa_reconcil_columns_get_label( column_id ),
+			ofa_reconcil_columns_get_def_visible( column_id ),
+			column );
 
 	/* default is to sort by ascending operation date
 	 */
@@ -537,6 +551,12 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+	ofa_icolumns_add_column(
+			OFA_ICOLUMNS( page ),
+			column_id,
+			ofa_reconcil_columns_get_label( column_id ),
+			ofa_reconcil_columns_get_def_visible( column_id ),
+			column );
 
 	/* piece's reference
 	 */
@@ -556,6 +576,12 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+	ofa_icolumns_add_column(
+			OFA_ICOLUMNS( page ),
+			column_id,
+			ofa_reconcil_columns_get_label( column_id ),
+			ofa_reconcil_columns_get_def_visible( column_id ),
+			column );
 
 	/* entry number is not displayed */
 
@@ -635,6 +661,12 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+	ofa_icolumns_add_column(
+			OFA_ICOLUMNS( page ),
+			column_id,
+			ofa_reconcil_columns_get_label( column_id ),
+			ofa_reconcil_columns_get_def_visible( column_id ),
+			column );
 
 	/* reconciliation date
 	 */
@@ -726,13 +758,19 @@ static void
 setup_entries_filter( ofaPage *page, GtkContainer *parent )
 {
 	ofaReconcilPagePrivate *priv;
-	GtkWidget *combo, *label;
+	GtkWidget *columns, *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
 	gint i;
 
 	priv = OFA_RECONCIL_PAGE( page )->priv;
+
+	columns = my_utils_container_get_child_by_name( parent, "f2-columns" );
+	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
+	ofa_icolumns_attach_menu_button( OFA_ICOLUMNS( page ), GTK_CONTAINER( columns ));
+	//g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
+	ofa_icolumns_init_visible( OFA_ICOLUMNS( page ), st_pref_columns );
 
 	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));

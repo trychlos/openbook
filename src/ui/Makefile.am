@@ -239,10 +239,12 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
+	ofa-reconcil-columns.c								\
+	ofa-reconcil-columns.h								\
+	ofa-reconcil-page.c									\
+	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
 	ofa-reconcil-render.h								\
-	ofa-reconcil-page.c								\
-	ofa-reconcil-page.h								\
 	ofa-render-page.c									\
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\

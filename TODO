@@ -472,8 +472,6 @@
  886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
                 bat files and entries are purged
 
- 887 2015-11-10 Reconciliation: implement ofaIColumns interface
-
  888
 
 -----------------------------------------------------------------------
@@ -4188,6 +4186,9 @@
      2015-11- 5 there is a diff in the returned value, thus these two
                 functions have distinct use cases -> all pages are
                 reviewed
+
+ 887 2015-11-10 Reconciliation: implement ofaIColumns interface
+     2015-11-12 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

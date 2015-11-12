@@ -250,6 +250,7 @@
                     <property name="margin_right">4</property>
                     <property name="margin_top">4</property>
                     <property name="margin_bottom">4</property>
+                    <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkComboBox" id="entries-filter">
@@ -259,21 +260,37 @@
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
+                        <property name="top_attach">1</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkLabel" id="entries-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">_Mode :</property>
+                        <property name="label" translatable="yes">_Entries filter :</property>
                         <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkGrid" id="f2-columns">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
                         <property name="top_attach">0</property>
                       </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                   </object>
                 </child>
@@ -281,7 +298,7 @@
                   <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes"> Entries filter </property>
+                    <property name="label" translatable="yes"> Display </property>
                     <property name="use_markup">True</property>
                   </object>
                 </child>
@@ -660,5 +677,11 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="f2-sizegroup">
+    <widgets>
+      <widget name="f2-columns"/>
+      <widget name="entries-filter"/>
+    </widgets>
   </object>
 </interface>

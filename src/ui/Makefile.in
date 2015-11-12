@@ -188,10 +188,10 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) ofa-page.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
 	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
-	ofa-reconcil-render.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
-	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
-	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-user-credentials-bin.$(OBJEXT)
+	ofa-reconcil-columns.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
+	ofa-reconcil-render.$(OBJEXT) ofa-render-page.$(OBJEXT) \
+	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
+	ofa-tree-store.$(OBJEXT) ofa-user-credentials-bin.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -670,10 +670,12 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
+	ofa-reconcil-columns.c								\
+	ofa-reconcil-columns.h								\
+	ofa-reconcil-page.c									\
+	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
 	ofa-reconcil-render.h								\
-	ofa-reconcil-page.c								\
-	ofa-reconcil-page.h								\
 	ofa-render-page.c									\
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
@@ -970,6 +972,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-columns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
