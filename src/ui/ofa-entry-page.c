@@ -51,14 +51,42 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-date-filter-hv-bin.h"
-#include "ui/ofa-entry-columns.h"
 #include "ui/ofa-entry-page.h"
-#include "ui/ofa-icolumns.h"
 #include "ui/ofa-idate-filter.h"
+#include "ui/ofa-itreeview-column.h"
+#include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
+
+/* columns in the entries store
+ * must declared before the private data in order to be able to
+ * dimension the renderers array
+ */
+enum {
+	ENT_COL_DOPE = 0,
+	ENT_COL_DEFF,
+	ENT_COL_NUMBER,						/* entry number */
+	ENT_COL_REF,
+	ENT_COL_LEDGER,
+	ENT_COL_ACCOUNT,
+	ENT_COL_LABEL,
+	ENT_COL_SETTLE,
+	ENT_COL_DRECONCIL,
+	ENT_COL_DEBIT,
+	ENT_COL_CREDIT,
+	ENT_COL_CURRENCY,
+	ENT_COL_STATUS,
+				/*  below columns are not visible */
+	ENT_COL_OBJECT,
+	ENT_COL_MSGERR,
+	ENT_COL_MSGWARN,
+	ENT_COL_DOPE_SET,					/* operation date set by the user */
+	ENT_COL_DEFF_SET,					/* effect date set by the user */
+	ENT_COL_CURRENCY_SET,				/* currency set by the user */
+	ENT_N_COLUMNS
+};
 
 /* priv instance data
  */
@@ -188,8 +216,29 @@ static const gchar *st_pref_sort_s      = "EntryPageSortS";
 #define SEL_LEDGER                      "Ledger"
 #define SEL_ACCOUNT                     "Account"
 
-static void            icolumns_iface_init( ofaIColumnsInterface *iface );
-static guint           icolumns_get_interface_version( const ofaIColumns *instance );
+static const ofsTreeviewColumnId st_treeview_column_ids[] = {
+		{ ENT_COL_DOPE,      ITVC_DOPE },
+		{ ENT_COL_DEFF,      ITVC_DEFFECT },
+		{ ENT_COL_NUMBER,    ITVC_ENT_ID },
+		{ ENT_COL_REF,       ITVC_ENT_REF },
+		{ ENT_COL_LEDGER,    ITVC_LED_ID },
+		{ ENT_COL_ACCOUNT,   ITVC_ACC_ID },
+		{ ENT_COL_LABEL,     ITVC_ENT_LABEL },
+		{ ENT_COL_SETTLE,    ITVC_STLMT_NUMBER },
+		{ ENT_COL_DRECONCIL, ITVC_CONCIL_DATE },
+		{ ENT_COL_DEBIT,     ITVC_DEBIT },
+		{ ENT_COL_CREDIT,    ITVC_CREDIT },
+		{ ENT_COL_CURRENCY,  ITVC_CUR_ID },
+		{ ENT_COL_STATUS,    ITVC_ENT_STATUS },
+		{ -1 }
+};
+
+static void            itreeview_column_iface_init( ofaITreeviewColumnInterface *iface );
+static guint           itreeview_column_get_interface_version( const ofaITreeviewColumn *instance );
+static void            itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface );
+static guint           itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
+static gchar          *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
+static gboolean        itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
 static GtkWidget      *v_setup_view( ofaPage *page );
 static void            reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
 static void            setup_gen_selection( ofaEntryPage *self );
@@ -274,7 +323,8 @@ static void            delete_row( ofaEntryPage *self );
 static gboolean        ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLUMNS, icolumns_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ));
 
 static void
 entry_page_finalize( GObject *instance )
@@ -358,22 +408,57 @@ ofa_entry_page_class_init( ofaEntryPageClass *klass )
 }
 
 /*
- * ofaIColumns interface management
+ * ofaITreeviewColumn interface management
  */
 static void
-icolumns_iface_init( ofaIColumnsInterface *iface )
+itreeview_column_iface_init( ofaITreeviewColumnInterface *iface )
 {
-	static const gchar *thisfn = "ofa_entry_page_icolumns_iface_init";
+	static const gchar *thisfn = "ofa_entry_page_itreeview_column_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = icolumns_get_interface_version;
+	iface->get_interface_version = itreeview_column_get_interface_version;
 }
 
 static guint
-icolumns_get_interface_version( const ofaIColumns *instance )
+itreeview_column_get_interface_version( const ofaITreeviewColumn *instance )
 {
 	return( 1 );
+}
+
+/*
+ * ofaITreeviewDisplay interface management
+ */
+static void
+itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface )
+{
+	static const gchar *thisfn = "ofa_entry_page_itreeview_display_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itreeview_display_get_interface_version;
+	iface->get_label = itreeview_display_get_label;
+	iface->get_def_visible = itreeview_display_get_def_visible;
+}
+
+static guint
+itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
+{
+	return( 1 );
+}
+
+static gchar *
+itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	return( ofa_itreeview_column_get_menu_label(
+					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
+}
+
+static gboolean
+itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	return( ofa_itreeview_column_get_def_visible(
+					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
 }
 
 static GtkWidget *
@@ -643,9 +728,9 @@ setup_display_selection( ofaEntryPage *self )
 	parent = my_utils_container_get_child_by_name( priv->top_box, "f5-ecb-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	ofa_icolumns_attach_menu_button( OFA_ICOLUMNS( self ), GTK_CONTAINER( parent ));
-	g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
-	ofa_icolumns_init_visible( OFA_ICOLUMNS( self ), st_pref_columns );
+	ofa_itreeview_display_attach_menu_button( OFA_ITREEVIEW_DISPLAY( self ), GTK_CONTAINER( parent ));
+	g_signal_connect( self, "ofa-toggled", G_CALLBACK( on_column_toggled ), NULL );
+	ofa_itreeview_display_init_visible( OFA_ITREEVIEW_DISPLAY( self ), st_pref_columns );
 }
 
 static void
@@ -763,12 +848,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* effect date
 	 */
@@ -792,12 +872,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* piece's reference
 	 */
@@ -823,12 +898,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* ledger
 	 */
@@ -851,12 +921,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* account
 	 */
@@ -879,12 +944,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* label
 	 */
@@ -935,12 +995,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* reconciliation date
 	 */
@@ -964,12 +1019,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* debit
 	 */
@@ -1044,12 +1094,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* entry status
 	 */
@@ -1075,12 +1120,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( self ),
-			column_id,
-			ofa_entry_columns_get_label( column_id ),
-			ofa_entry_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
@@ -1381,8 +1421,8 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), !is_active );
 
 		/* update the default visibility of the columns */
-		ofa_icolumns_set_visible( OFA_ICOLUMNS( self ), ENT_COL_LEDGER, !is_active );
-		ofa_icolumns_set_visible( OFA_ICOLUMNS( self ), ENT_COL_ACCOUNT, is_active );
+		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_LEDGER, !is_active );
+		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_ACCOUNT, is_active );
 
 		/* and display the entries */
 		if( is_active ){
@@ -1398,8 +1438,8 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), is_active );
 
 		/* update the default visibility of the columns */
-		ofa_icolumns_set_visible( OFA_ICOLUMNS( self ), ENT_COL_LEDGER, is_active );
-		ofa_icolumns_set_visible( OFA_ICOLUMNS( self ), ENT_COL_ACCOUNT, !is_active );
+		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_LEDGER, is_active );
+		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_ACCOUNT, !is_active );
 
 		/* and display the entries */
 		if( is_active ){
@@ -1814,8 +1854,8 @@ set_balance_currency_label_margin( GtkWidget *widget, ofaEntryPage *self )
 	priv = self->priv;
 
 	margin = 0;
-	margin += ofa_icolumns_get_visible( OFA_ICOLUMNS( self ), ENT_COL_CURRENCY ) ? 25 : 0;
-	margin += ofa_icolumns_get_visible( OFA_ICOLUMNS( self ), ENT_COL_STATUS ) ? 48 : 0;
+	margin += ofa_itreeview_display_get_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_CURRENCY ) ? 25 : 0;
+	margin += ofa_itreeview_display_get_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_STATUS ) ? 48 : 0;
 
 	/* this doesn't work as expected: the scroll bar is always rendered
 	 * as visible */
@@ -3468,7 +3508,7 @@ ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
 		if( ofo_entry_get_settlement_number( entry ) > 0 ){
 			msg = g_string_append( msg,
 					_( "The entry has been settled. "
-						"Deleting it will automatically cancel all the settlement group."));
+						"Deleting it will also automatically delete all the settlement group."));
 		}
 		if( ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier )){
 			if( my_strlen( msg->str )){
@@ -3476,7 +3516,7 @@ ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
 			}
 			msg = g_string_append( msg,
 					_( "The entry has been reconciliated. "
-						"Deleting it will automatically cancel all the conciliation group."));
+						"Deleting it will also automatically delete all the conciliation group."));
 		}
 		if( my_strlen( msg->str )){
 			msg = g_string_append( msg, _( "\nAre you sure ?"));

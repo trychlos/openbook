@@ -43,7 +43,7 @@
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
                 + my_utils_entry_set_valid
-     2014- 5-22 see also todo #20
+     2014- 5-22 see also (cancelled) todo #20
 
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
@@ -72,10 +72,6 @@
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
      2014-10- 6 this should be implemented as a plugin
-
- 252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
-                library (not a dynamically loadabled plugin) of same
-                version than sgbd (i.e. 1 as for now)
 
  253 2014- 6-24 editing rough entries: have a 'select' button besides 
                 of the account number when editing an entry
@@ -112,6 +108,8 @@
                 -> so the dossier manager should take care of that
 
  311 2014- 9-21 editing CA12 VAT declaration
+     2015-11-14 due to new VAT declaration rules, must also provide a
+                monthly CA3
 
  312 2014- 9-22 myEditableAmount: should limit the count of decimals
 
@@ -462,8 +460,6 @@
 
  869 2015-10-30 GuidedInput: after having clicked on Validate, disable
                 fields while recording the entries
-
- 880 2015-11- 1 Have a TVA module
 
  885 2015-11- 7 Have an operation counter (identifier)
                 Use case: be able to delete the whole operation when the
@@ -1511,6 +1507,11 @@
                 are trying to get all selected items from the tree, try 
                 using gtk_tree_selection_get_selected_rows instead.
      2014- 6-27 done
+
+ 252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
+                library (not a dynamically loadabled plugin) of same
+                version than sgbd (i.e. 1 as for now)
+     2015-11-14 undefined use case -> cancelled
 
  257 2014- 6-23 editing rough entries: insert a new line
      2014- 6-27 done
@@ -4166,6 +4167,9 @@
                 it in a waiting state, waiting for the bank to send us
                 the opposite line
      2015-11- 5 cancelled
+
+ 880 2015-11- 1 Have a TVA module
+     2015-11-14 cancelled as duplicate of #311
 
  881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
                 leading space missing

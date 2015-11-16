@@ -165,8 +165,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
 	ofa-dossier-new-mini.$(OBJEXT) ofa-dossier-open.$(OBJEXT) \
 	ofa-dossier-properties.$(OBJEXT) ofa-dossier-store.$(OBJEXT) \
-	ofa-dossier-treeview.$(OBJEXT) ofa-entry-columns.$(OBJEXT) \
-	ofa-entry-page.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
+	ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
@@ -174,6 +174,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-icolumns.$(OBJEXT) ofa-idate-filter.$(OBJEXT) \
 	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
 	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
+	ofa-itreeview-column.$(OBJEXT) ofa-itreeview-display.$(OBJEXT) \
 	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
 	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
 	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
@@ -591,8 +592,6 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-entry-columns.c									\
-	ofa-entry-columns.h									\
 	ofa-entry-page.c									\
 	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
@@ -623,6 +622,10 @@ openbook_SOURCES = \
 	ofa-irenderable.h									\
 	ofa-istore.c										\
 	ofa-istore.h										\
+	ofa-itreeview-column.c								\
+	ofa-itreeview-column.h								\
+	ofa-itreeview-display.c								\
+	ofa-itreeview-display.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\
@@ -934,7 +937,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-columns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-close-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
@@ -950,6 +952,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-column.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@

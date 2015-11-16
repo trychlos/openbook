@@ -160,8 +160,6 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-entry-columns.c									\
-	ofa-entry-columns.h									\
 	ofa-entry-page.c									\
 	ofa-entry-page.h									\
 	ofa-exercice-combo.c								\
@@ -192,6 +190,10 @@ openbook_SOURCES = \
 	ofa-irenderable.h									\
 	ofa-istore.c										\
 	ofa-istore.h										\
+	ofa-itreeview-column.c								\
+	ofa-itreeview-column.h								\
+	ofa-itreeview-display.c								\
+	ofa-itreeview-display.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\
