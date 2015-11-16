@@ -29,6 +29,8 @@
 
  Other changes:
 
+   - ofa-entry-columns.{c,h}: removed obsolete files.
+   - ofa-reconcil-columns.{c,h}: removed obsolete files.
    - ofaIColumns: removed obsolete interface.
    - ofaITreeviewColumn: new interface.
    - ofaITreeviewDisplay: new interface.
