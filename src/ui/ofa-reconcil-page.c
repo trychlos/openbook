@@ -53,12 +53,12 @@
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
 #include "ui/ofa-date-filter-hv-bin.h"
-#include "ui/ofa-icolumns.h"
 #include "ui/ofa-idate-filter.h"
+#include "ui/ofa-itreeview-column.h"
+#include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
-#include "ui/ofa-reconcil-columns.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-reconcil-render.h"
 
@@ -203,8 +203,44 @@ static const gchar *st_ui_name          = "ReconciliationWindow";
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
-static void         icolumns_iface_init( ofaIColumnsInterface *iface );
-static guint        icolumns_get_interface_version( const ofaIColumns *instance );
+/* column ordering in the reconciliation store
+ */
+enum {
+	COL_ACCOUNT,
+	COL_DOPE,
+	COL_LEDGER,
+	COL_PIECE,
+	COL_NUMBER,
+	COL_LABEL,
+	COL_DEBIT,
+	COL_CREDIT,
+	COL_IDCONCIL,
+	COL_DRECONCIL,
+	COL_OBJECT,				/* may be an ofoEntry or an ofoBatLine
+	 	 	 	 	 	 	 * as long as it implements ofaIConcil interface */
+	N_COLUMNS
+};
+
+static const ofsTreeviewColumnId st_treeview_column_ids[] = {
+		{ COL_ACCOUNT,   ITVC_ACC_ID },
+		{ COL_DOPE,      ITVC_DOPE },
+		{ COL_LEDGER,    ITVC_LED_ID },
+		{ COL_PIECE,     ITVC_ENT_REF },
+		{ COL_NUMBER,    ITVC_ENT_ID },
+		{ COL_LABEL,     ITVC_ENT_LABEL },
+		{ COL_DEBIT,     ITVC_DEBIT },
+		{ COL_CREDIT,    ITVC_CREDIT },
+		{ COL_IDCONCIL,  ITVC_CONCIL_ID },
+		{ COL_DRECONCIL, ITVC_CONCIL_DATE },
+		{ -1 }
+};
+
+static void         itreeview_column_iface_init( ofaITreeviewColumnInterface *iface );
+static guint        itreeview_column_get_interface_version( const ofaITreeviewColumn *instance );
+static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface );
+static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
+static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
+static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
 static GtkWidget   *v_setup_view( ofaPage *page );
 static void         setup_treeview_header( ofaPage *page, GtkContainer *parent );
 static void         setup_treeview( ofaPage *page, GtkContainer *parent );
@@ -289,7 +325,8 @@ static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLUMNS, icolumns_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ));
 
 static void
 reconciliation_finalize( GObject *instance )
@@ -368,22 +405,57 @@ ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 }
 
 /*
- * ofaIColumns interface management
+ * ofaITreeviewColumn interface management
  */
 static void
-icolumns_iface_init( ofaIColumnsInterface *iface )
+itreeview_column_iface_init( ofaITreeviewColumnInterface *iface )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_icolumns_iface_init";
+	static const gchar *thisfn = "ofa_entry_page_itreeview_column_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = icolumns_get_interface_version;
+	iface->get_interface_version = itreeview_column_get_interface_version;
 }
 
 static guint
-icolumns_get_interface_version( const ofaIColumns *instance )
+itreeview_column_get_interface_version( const ofaITreeviewColumn *instance )
 {
 	return( 1 );
+}
+
+/*
+ * ofaITreeviewDisplay interface management
+ */
+static void
+itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface )
+{
+	static const gchar *thisfn = "ofa_entry_page_itreeview_display_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itreeview_display_get_interface_version;
+	iface->get_label = itreeview_display_get_label;
+	iface->get_def_visible = itreeview_display_get_def_visible;
+}
+
+static guint
+itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
+{
+	return( 1 );
+}
+
+static gchar *
+itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	return( ofa_itreeview_column_get_menu_label(
+					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
+}
+
+static gboolean
+itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	return( ofa_itreeview_column_get_def_visible(
+					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
 }
 
 /*
@@ -521,12 +593,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( page ),
-			column_id,
-			ofa_reconcil_columns_get_label( column_id ),
-			ofa_reconcil_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( page ), column, column_id );
 
 	/* default is to sort by ascending operation date
 	 */
@@ -551,12 +618,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( page ),
-			column_id,
-			ofa_reconcil_columns_get_label( column_id ),
-			ofa_reconcil_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( page ), column, column_id );
 
 	/* piece's reference
 	 */
@@ -576,12 +638,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( page ),
-			column_id,
-			ofa_reconcil_columns_get_label( column_id ),
-			ofa_reconcil_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( page ), column, column_id );
 
 	/* entry number is not displayed */
 
@@ -661,12 +718,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
-	ofa_icolumns_add_column(
-			OFA_ICOLUMNS( page ),
-			column_id,
-			ofa_reconcil_columns_get_label( column_id ),
-			ofa_reconcil_columns_get_def_visible( column_id ),
-			column );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( page ), column, column_id );
 
 	/* reconciliation date
 	 */
@@ -768,9 +820,9 @@ setup_entries_filter( ofaPage *page, GtkContainer *parent )
 
 	columns = my_utils_container_get_child_by_name( parent, "f2-columns" );
 	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
-	ofa_icolumns_attach_menu_button( OFA_ICOLUMNS( page ), GTK_CONTAINER( columns ));
+	ofa_itreeview_display_attach_menu_button( OFA_ITREEVIEW_DISPLAY( page ), GTK_CONTAINER( columns ));
 	//g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
-	ofa_icolumns_init_visible( OFA_ICOLUMNS( page ), st_pref_columns );
+	ofa_itreeview_display_init_visible( OFA_ITREEVIEW_DISPLAY( page ), st_pref_columns );
 
 	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));

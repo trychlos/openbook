@@ -178,8 +178,6 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
-	ofa-icolumns.c										\
-	ofa-icolumns.h										\
 	ofa-idate-filter.c									\
 	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
@@ -241,8 +239,6 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
-	ofa-reconcil-columns.c								\
-	ofa-reconcil-columns.h								\
 	ofa-reconcil-page.c									\
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\

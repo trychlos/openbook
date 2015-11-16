@@ -87,6 +87,7 @@ typedef struct {
 enum {
 	ITVC_ACC_ID = 0,
 	ITVC_CONCIL_DATE,
+	ITVC_CONCIL_ID,
 	ITVC_CREDIT,
 	ITVC_CUR_ID,
 	ITVC_DEBIT,

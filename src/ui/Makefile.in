@@ -171,16 +171,15 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-icolumns.$(OBJEXT) ofa-idate-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
-	ofa-irenderable.$(OBJEXT) ofa-istore.$(OBJEXT) \
-	ofa-itreeview-column.$(OBJEXT) ofa-itreeview-display.$(OBJEXT) \
-	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
-	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
-	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
-	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-list-store.$(OBJEXT) ofa-main-window.$(OBJEXT) \
-	ofa-ope-template-book-bin.$(OBJEXT) \
+	ofa-idate-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
+	ofa-istore.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
+	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
+	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
+	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
+	ofa-ledger-treeview.$(OBJEXT) ofa-list-store.$(OBJEXT) \
+	ofa-main-window.$(OBJEXT) ofa-ope-template-book-bin.$(OBJEXT) \
 	ofa-ope-template-frame-bin.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) \
@@ -189,10 +188,10 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-template-store.$(OBJEXT) ofa-page.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
 	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
-	ofa-reconcil-columns.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
-	ofa-reconcil-render.$(OBJEXT) ofa-render-page.$(OBJEXT) \
-	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
-	ofa-tree-store.$(OBJEXT) ofa-user-credentials-bin.$(OBJEXT)
+	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
+	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
+	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
+	ofa-user-credentials-bin.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -610,8 +609,6 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
-	ofa-icolumns.c										\
-	ofa-icolumns.h										\
 	ofa-idate-filter.c									\
 	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
@@ -673,8 +670,6 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
-	ofa-reconcil-columns.c								\
-	ofa-reconcil-columns.h								\
 	ofa-reconcil-page.c									\
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
@@ -946,7 +941,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icolumns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
@@ -976,7 +970,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-columns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
