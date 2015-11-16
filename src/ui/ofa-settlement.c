@@ -39,6 +39,8 @@
 #include "api/ofo-entry.h"
 
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-itreeview-column.h"
+#include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -171,9 +173,26 @@ static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.ui";
 static const gchar *st_ui_id            = "SettlementWindow";
 
 static const gchar *st_pref_settlement  = "SettlementPrefs";
+static const gchar *st_pref_columns     = "SettlementColumns";
 
-G_DEFINE_TYPE( ofaSettlement, ofa_settlement, OFA_TYPE_PAGE )
+static const ofsTreeviewColumnId st_treeview_column_ids[] = {
+		{ ENT_COL_DOPE,       ITVC_DOPE },
+		{ ENT_COL_DEFF,       ITVC_DEFFECT },
+		{ ENT_COL_REF,        ITVC_ENT_REF },
+		{ ENT_COL_LEDGER,     ITVC_LED_ID },
+		{ ENT_COL_LABEL,      ITVC_ENT_LABEL },
+		{ ENT_COL_SETTLEMENT, ITVC_STLMT_NUMBER },
+		{ ENT_COL_DEBIT,      ITVC_DEBIT },
+		{ ENT_COL_CREDIT,     ITVC_CREDIT },
+		{ -1 }
+};
 
+static void           itreeview_column_iface_init( ofaITreeviewColumnInterface *iface );
+static guint          itreeview_column_get_interface_version( const ofaITreeviewColumn *instance );
+static void           itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface );
+static guint          itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
+static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
+static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
 static GtkWidget     *v_setup_view( ofaPage *page );
 static void           reparent_from_dialog( ofaSettlement *self, GtkContainer *parent );
 static void           setup_footer( ofaSettlement *self );
@@ -210,6 +229,10 @@ static void           on_new_entry( ofaSettlement *self, ofoEntry *entry );
 static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaSettlement *self );
 static void           on_updated_entry( ofaSettlement *self, ofoEntry *entry );
 static gboolean       find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
+
+G_DEFINE_TYPE_EXTENDED( ofaSettlement, ofa_settlement, OFA_TYPE_PAGE, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ));
 
 static void
 settlement_finalize( GObject *instance )
@@ -286,6 +309,73 @@ ofa_settlement_class_init( ofaSettlementClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 
 	g_type_class_add_private( klass, sizeof( ofaSettlementPrivate ));
+}
+
+/*
+ * ofaITreeviewColumn interface management
+ */
+static void
+itreeview_column_iface_init( ofaITreeviewColumnInterface *iface )
+{
+	static const gchar *thisfn = "ofa_entry_page_itreeview_column_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itreeview_column_get_interface_version;
+}
+
+static guint
+itreeview_column_get_interface_version( const ofaITreeviewColumn *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofaITreeviewDisplay interface management
+ */
+static void
+itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface )
+{
+	static const gchar *thisfn = "ofa_entry_page_itreeview_display_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itreeview_display_get_interface_version;
+	iface->get_label = itreeview_display_get_label;
+	iface->get_def_visible = itreeview_display_get_def_visible;
+}
+
+static guint
+itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
+{
+	return( 1 );
+}
+
+static gchar *
+itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	return( ofa_itreeview_column_get_menu_label(
+					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
+}
+
+static gboolean
+itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id )
+{
+	gboolean visible;
+
+	switch( column_id ){
+		case ENT_COL_ACCOUNT:
+			visible = FALSE;
+			break;
+		case ENT_COL_LEDGER:
+			visible = TRUE;
+			break;
+		default:
+			visible = ofa_itreeview_column_get_def_visible(
+							OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids );
+			break;
+	}
+	return( visible );
 }
 
 static GtkWidget *
@@ -440,6 +530,7 @@ setup_entries_treeview( ofaSettlement *self )
 		sort_column = column;
 	}
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* effect date
 	 */
@@ -459,6 +550,7 @@ setup_entries_treeview( ofaSettlement *self )
 		sort_column = column;
 	}
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* piece's reference
 	 */
@@ -481,6 +573,7 @@ setup_entries_treeview( ofaSettlement *self )
 		sort_column = column;
 	}
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* ledger
 	 */
@@ -500,25 +593,10 @@ setup_entries_treeview( ofaSettlement *self )
 		sort_column = column;
 	}
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* account
 	 */
-	column_id = ENT_COL_ACCOUNT;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Account" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	/* label
 	 */
@@ -652,13 +730,19 @@ static void
 setup_settlement_selection( ofaSettlement *self )
 {
 	ofaSettlementPrivate *priv;
-	GtkWidget *combo, *label;
+	GtkWidget *combo, *label, *columns;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	gint i, idx;
 	GtkTreeIter iter;
 
 	priv = self->priv;
+
+	columns = my_utils_container_get_child_by_name( priv->top_box, "f2-columns" );
+	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
+	ofa_itreeview_display_attach_menu_button( OFA_ITREEVIEW_DISPLAY( self ), GTK_CONTAINER( columns ));
+	//g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
+	ofa_itreeview_display_init_visible( OFA_ITREEVIEW_DISPLAY( self ), st_pref_columns );
 
 	combo = my_utils_container_get_child_by_name( priv->top_box, "entries-filter" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));

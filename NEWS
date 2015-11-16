@@ -22,6 +22,7 @@
  New features and improvements:
 
    - Reconciliation: let the user select displayed columns (todo #887).
+   - Settlement: let the user select displayed columns.
 
  Bug fixes:
 

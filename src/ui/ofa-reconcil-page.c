@@ -821,7 +821,7 @@ setup_entries_filter( ofaPage *page, GtkContainer *parent )
 	columns = my_utils_container_get_child_by_name( parent, "f2-columns" );
 	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
 	ofa_itreeview_display_attach_menu_button( OFA_ITREEVIEW_DISPLAY( page ), GTK_CONTAINER( columns ));
-	//g_signal_connect( self, "icolumns-toggled", G_CALLBACK( on_column_toggled ), NULL );
+	//g_signal_connect( self, "ofa-toggled", G_CALLBACK( on_column_toggled ), NULL );
 	ofa_itreeview_display_init_visible( OFA_ITREEVIEW_DISPLAY( page ), st_pref_columns );
 
 	combo = my_utils_container_get_child_by_name( parent, "entries-filter" );
