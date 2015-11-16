@@ -29,6 +29,7 @@
 
  Other changes:
 
+   - ofaIColumns: removed obsolete interface.
    - ofaITreeviewColumn: new interface.
    - ofaITreeviewDisplay: new interface.
    - ofaReconciliation class is renamed to ofaReconcilPage.
