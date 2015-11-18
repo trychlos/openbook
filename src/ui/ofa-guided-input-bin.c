@@ -735,6 +735,7 @@ row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 
 		if( col_def->width ){
 			gtk_entry_set_width_chars( GTK_ENTRY( widget ), col_def->width );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( widget ), col_def->width );
 		}
 
 		if( col_def->is_double ){
@@ -1586,6 +1587,7 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_DEBIT, row, 1, 1 );
 
 	entry = gtk_entry_new();
@@ -1593,6 +1595,7 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_CREDIT, row, 1, 1 );
 
 	label = gtk_label_new( _( "Diff :" ));

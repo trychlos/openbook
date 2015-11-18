@@ -180,7 +180,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
 	ofaGuidedExPrivate *priv;
-	GtkWidget *pane;
+	GtkWidget *pane, *child;
 	gulong handler;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -189,8 +189,11 @@ v_setup_view( ofaPage *page )
 	priv->dossier = ofa_page_get_dossier( page );
 
 	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
-	gtk_paned_add1( GTK_PANED( pane ), setup_view_left( OFA_GUIDED_EX( page )));
-	gtk_paned_add2( GTK_PANED( pane ), setup_view_right( OFA_GUIDED_EX( page )));
+	child = setup_view_left( OFA_GUIDED_EX( page ));
+	gtk_paned_pack1( GTK_PANED( pane ), child, FALSE, FALSE );
+	gtk_widget_set_size_request( child, 200, -1 );
+	child = setup_view_right( OFA_GUIDED_EX( page ));
+	gtk_paned_pack2( GTK_PANED( pane ), child, TRUE, FALSE );
 	priv->pane = pane;
 	pane_restore_position( pane );
 
@@ -265,7 +268,7 @@ setup_view_left( ofaGuidedEx *self )
 	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
 
 	button = gtk_button_new_with_mnemonic( _( "_Select" ));
-	my_utils_widget_set_margin( button, 0, 4, 0, 4 );
+	my_utils_widget_set_margin( button, 0, 4, 4, 4 );
 	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
 	self->priv->left_select = GTK_BUTTON( button );
@@ -282,18 +285,15 @@ static GtkWidget *
 setup_view_right( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
-	GtkWidget *grid, *parent, *box, *button, *image;
+	GtkWidget *grid, *box, *button, *image;
 
 	priv = self->priv;
 
 	grid = gtk_grid_new();
 
-	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin( parent, 0, 0, 2, 4 );
-	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
-
 	priv->input_bin = ofa_guided_input_bin_new( ofa_page_get_main_window( OFA_PAGE( self )));
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
+	my_utils_widget_set_margin( GTK_WIDGET( priv->input_bin ), 0, 0, 2, 4 );
+	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->input_bin ), 0, 0, 1, 1 );
 
 	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( on_right_piece_changed ), self );
 

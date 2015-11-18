@@ -36,7 +36,7 @@
                       <object class="GtkLabel" id="p1-dope-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">O_peration date :</property>
+                        <property name="label" translatable="yes">O_peration :</property>
                         <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
@@ -87,7 +87,7 @@
                       <object class="GtkLabel" id="p1-deffect-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">_Effect date :</property>
+                        <property name="label" translatable="yes">_Effect :</property>
                         <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>

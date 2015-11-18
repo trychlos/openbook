@@ -455,9 +455,6 @@
 
  867 2015-10- 8 ofaDossierNewBin: priv->infos is never released
 
- 868 2015-10-30 GuidedInput: review account/entry label/debit/credit
-                resp. fields width
-
  869 2015-10-30 GuidedInput: after having clicked on Validate, disable
                 fields while recording the entries
 
@@ -4117,6 +4114,10 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 868 2015-10-30 GuidedInput: review account/entry label/debit/credit
+                resp. fields width
+     2015-11-18 fixed - Also done the minimal width of the panes
 
  870 2015-10-30 GuidedInput/ViewEntries: when an entry has ESP piece ref
                 (or EXP ledger ?), this piece ref is not displayed in

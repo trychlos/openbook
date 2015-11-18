@@ -26,7 +26,7 @@
 
  Bug fixes:
 
-   - 
+   - GuidedInput: fix the width of entries (todo #868).
 
  Other changes:
 
