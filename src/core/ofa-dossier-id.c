@@ -87,6 +87,8 @@ dossier_id_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		priv->dispose_has_run = TRUE;
+
 		/* unref object members here */
 	}
 
