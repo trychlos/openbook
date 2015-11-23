@@ -181,6 +181,25 @@ ofa_ifile_id_get_provider_name( const ofaIFileId *instance )
 }
 
 /**
+ * ofa_ifile_id_get_provider_instance:
+ * @instance: this #ofaIFileId instance.
+ *
+ * Returns: a new reference to the provider instance which should be
+ * g_object_unref() by the caller.
+ */
+ofaIDbms *
+ofa_ifile_id_get_provider_instance( const ofaIFileId *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
+
+	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance ){
+		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance( instance ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_ifile_id_get_periods:
  * @instance: this #ofaIFileId instance.
  *

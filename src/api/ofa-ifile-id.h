@@ -40,7 +40,7 @@
  * the #ofaFileDir singleton.
  */
 
-#include <glib-object.h>
+#include "api/ofa-idbms.h"
 
 G_BEGIN_DECLS
 
@@ -57,6 +57,7 @@ typedef struct _ofaIFileId                     ofaIFileId;
  *                         interface that the plugin implements.
  * @get_dossier_name: [must]: returns the identifier name of the dossier.
  * @get_provider_name: [should]: returns the IDbms provider name.
+ * @get_provider_instance: [should]: returns the IDbms provider instance.
  * @get_periods: [should]: returns the defined financial periods.
  *
  * This defines the interface that an #ofaIFileId should/must
@@ -79,7 +80,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIFileId *instance );
+	guint      ( *get_interface_version )( const ofaIFileId *instance );
 
 	/**
 	 * get_dossier_name:
@@ -88,7 +89,7 @@ typedef struct {
 	 * Returns: the identifier name of the dossier as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *  ( *get_dossier_name )     ( const ofaIFileId *instance );
+	gchar *    ( *get_dossier_name )     ( const ofaIFileId *instance );
 
 	/**
 	 * get_provider_name:
@@ -97,7 +98,16 @@ typedef struct {
 	 * Returns: the provider name as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *  ( *get_provider_name )    ( const ofaIFileId *instance );
+	gchar *    ( *get_provider_name )    ( const ofaIFileId *instance );
+
+	/**
+	 * get_provider_instance:
+	 * @instance: the #ofaIFileId instance.
+	 *
+	 * Returns: a new reference to the provider instance which should
+	 * be g_object_unref() by the caller.
+	 */
+	ofaIDbms * ( *get_provider_instance )( const ofaIFileId *instance );
 
 	/**
 	 * get_periods:
@@ -112,21 +122,23 @@ typedef struct {
 	 * by the caller. The #ofa_ifile_id_free_periods() method is also
 	 * a convenience method for this.
 	 */
-	GList *  ( *get_periods )          ( const ofaIFileId *instance );
+	GList *    ( *get_periods )          ( const ofaIFileId *instance );
 }
 	ofaIFileIdInterface;
 
-GType   ofa_ifile_id_get_type                  ( void );
+GType     ofa_ifile_id_get_type                  ( void );
 
-guint   ofa_ifile_id_get_interface_last_version( void );
+guint     ofa_ifile_id_get_interface_last_version( void );
 
-guint   ofa_ifile_id_get_interface_version     ( const ofaIFileId *instance );
+guint     ofa_ifile_id_get_interface_version     ( const ofaIFileId *instance );
 
-gchar  *ofa_ifile_id_get_dossier_name          ( const ofaIFileId *instance );
+gchar    *ofa_ifile_id_get_dossier_name          ( const ofaIFileId *instance );
 
-gchar  *ofa_ifile_id_get_provider_name         ( const ofaIFileId *instance );
+gchar    *ofa_ifile_id_get_provider_name         ( const ofaIFileId *instance );
 
-GList  *ofa_ifile_id_get_periods               ( const ofaIFileId *instance );
+ofaIDbms *ofa_ifile_id_get_provider_instance     ( const ofaIFileId *instance );
+
+GList    *ofa_ifile_id_get_periods               ( const ofaIFileId *instance );
 
 #define ofa_ifile_id_free_periods(L)           g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
