@@ -45,6 +45,7 @@ struct _myFileMonitorPrivate {
 	myTimeout    *timeout;
 };
 
+#define FILE_MONITOR_SIGNAL_CHANGED     "changed"
 #define FILE_MONITOR_RATE_LIMIT         250		/* ms */
 
 /* signals defined here
@@ -141,7 +142,7 @@ my_file_monitor_class_init( myFileMonitorClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				FILE_MONITOR_SIGNAL_CHANGED,
 				MY_TYPE_FILE_MONITOR,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -253,5 +254,5 @@ on_monitor_changed_timeout( myFileMonitor *monitor )
 	myFileMonitorPrivate *priv = monitor->priv;
 
 	g_debug( "%s: emitting signal: filename=%s", thisfn, priv->filename );
-	g_signal_emit_by_name( monitor, "changed", priv->filename );
+	g_signal_emit_by_name( monitor, FILE_MONITOR_SIGNAL_CHANGED, priv->filename );
 }
