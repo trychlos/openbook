@@ -80,6 +80,8 @@ libofa_core_la_SOURCES = \
 	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
+	ofa-dossier-id.c									\
+	ofa-dossier-id.h									\
 	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\

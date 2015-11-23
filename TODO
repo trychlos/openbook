@@ -469,7 +469,9 @@
 
  889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
 
- 890
+ 890 2015-11-23 remove ofa_idbms_get_provider_by_name()
+
+ 891
 
 -----------------------------------------------------------------------
  DONE
