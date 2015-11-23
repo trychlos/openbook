@@ -92,6 +92,7 @@ libofa_core_la_SOURCES = \
 	ofa-idataset.c										\
 	ofa-idbms.c											\
 	ofa-iexportable.c									\
+	ofa-ifile-id.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-ipreferences.c									\

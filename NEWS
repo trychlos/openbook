@@ -30,6 +30,7 @@
 
  Other changes:
 
+   - ofaIFileId: new dossier meta properties management interface.
    - myFileMonitor: new class.
    - mySettings: new class.
    - ofa-entry-columns.{c,h}: removed obsolete files.
