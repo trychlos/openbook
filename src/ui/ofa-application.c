@@ -36,6 +36,8 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
+#include "core/ofa-file-dir.h"
+
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
@@ -71,6 +73,7 @@ struct _ofaApplicationPrivate {
 	ofaMainWindow      *main_window;
 	GMenuModel         *menu;
 	ofaDossierStore    *dos_store;
+	ofaFileDir         *file_dir;
 
 	/* menu items
 	 */
@@ -134,6 +137,7 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     maintainer_test_function( void );
 
 static void     setup_actions_monitor( ofaApplication *application );
+static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application );
 static void     on_dossier_store_changed( ofaDossierStore *store, guint count, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -197,6 +201,7 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->file_dir );
 		if( priv->dos_store ){
 			ofa_dossier_store_free();
 		}
@@ -749,15 +754,28 @@ setup_actions_monitor( ofaApplication *application )
 
 	priv = application->priv;
 
-	/* ofaDossierStore monitoring
+	/* dossiers directory monitoring
 	 */
-	priv->dos_store = ofa_dossier_store_new();
+	priv->file_dir = ofa_file_dir_new();
+	g_signal_connect( priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
+	on_file_dir_changed( priv->file_dir, ofa_file_dir_get_count( priv->file_dir ), application );
 
+	priv->dos_store = ofa_dossier_store_new();
 	g_signal_connect(
 			priv->dos_store, "changed", G_CALLBACK( on_dossier_store_changed ), application );
-
 	enable_action_open(
 			application, !ofa_dossier_store_is_empty( priv->dos_store ));
+}
+
+static void
+on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application )
+{
+	static const gchar *thisfn = "ofa_application_on_filed_dir_changed";
+
+	g_debug( "%s: dir=%p, count=%u, application=%p",
+			thisfn, ( void * ) dir, count, ( void * ) application );
+
+	enable_action_open( application, count > 0 );
 }
 
 static void
