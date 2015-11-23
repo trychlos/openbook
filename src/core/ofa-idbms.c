@@ -162,6 +162,51 @@ idbms_get_interface_version( const ofaIDbms *instance )
 }
 
 /**
+ * ofa_idbms_get_instance_by_name:
+ * @provider_name: the name of the provider as published in the settings.
+ *
+ * Returns: a new reference to the #ofaIDbms module instance which
+ * publishes this name. This new reference should be g_object_unref() by
+ * the caller.
+ */
+ofaIDbms *
+ofa_idbms_get_instance_by_name( const gchar *provider_name )
+{
+	static const gchar *thisfn = "ofa_idbms_get_instance_by_name";
+	GList *modules;
+	ofaIDbms *module;
+
+	g_debug( "%s: provider_name=%s", thisfn, provider_name );
+
+	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
+	module = get_provider_by_name( modules, provider_name );
+	ofa_plugin_free_extensions( modules );
+
+	return( module );
+}
+
+static ofaIDbms *
+get_provider_by_name( GList *modules, const gchar *name )
+{
+	GList *im;
+	ofaIDbms *instance;
+	const gchar *provider_name;
+
+	instance = NULL;
+
+	for( im=modules ; im ; im=im->next ){
+
+		provider_name = ofa_idbms_get_provider_name( OFA_IDBMS( im->data ));
+		if( !g_utf8_collate( provider_name, name )){
+			instance = g_object_ref( OFA_IDBMS( im->data ));
+			break;
+		}
+	}
+
+	return( instance );
+}
+
+/**
  * ofa_idbms_connect:
  * @instance: this
  */
@@ -247,52 +292,6 @@ ofa_idbms_get_provider_from_dossier( const gchar *dossier_name )
 	g_free( prov_name );
 
 	return( prov_module );
-}
-
-/**
- * ofa_idbms_get_provider_by_name:
- * @pname: the name of the provider as published in the settings.
- *
- * Returns a new reference to the #ofaIDbms module instance which
- * publishes this name.
- * This new reference should be g_object_unref() by the caller after
- * usage.
- */
-ofaIDbms *
-ofa_idbms_get_provider_by_name( const gchar *pname )
-{
-	static const gchar *thisfn = "ofa_idbms_get_provider_by_name";
-	GList *modules;
-	ofaIDbms *module;
-
-	g_debug( "%s: name=%s", thisfn, pname );
-
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
-	module = get_provider_by_name( modules, pname );
-	ofa_plugin_free_extensions( modules );
-
-	return( module );
-}
-
-static ofaIDbms *
-get_provider_by_name( GList *modules, const gchar *name )
-{
-	GList *im;
-	ofaIDbms *instance;
-	const gchar *provider_name;
-
-	instance = NULL;
-
-	for( im=modules ; im ; im=im->next ){
-
-		provider_name = ofa_idbms_get_provider_name( OFA_IDBMS( im->data ));
-		if( !g_utf8_collate( provider_name, name )){
-			instance = g_object_ref( OFA_IDBMS( im->data ));
-			break;
-		}
-	}
-
-	return( instance );
 }
 
 /**

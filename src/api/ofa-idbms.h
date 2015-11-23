@@ -534,6 +534,10 @@ typedef enum {
 
 GType         ofa_idbms_get_type                      ( void );
 
+ofaIDbms     *ofa_idbms_get_instance_by_name          ( const gchar *provider_name );
+
+#define       ofa_idbms_get_provider_by_name(N)       ofa_idbms_get_instance_by_name( N )
+
 void         *ofa_idbms_connect                       ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *dbname,
@@ -549,8 +553,6 @@ void          ofa_idbms_close                         ( const ofaIDbms *instance
 															void *handle );
 
 ofaIDbms     *ofa_idbms_get_provider_from_dossier     ( const gchar *dossier_name );
-
-ofaIDbms     *ofa_idbms_get_provider_by_name          ( const gchar *pname );
 
 const gchar  *ofa_idbms_get_provider_name             ( const ofaIDbms *instance );
 
