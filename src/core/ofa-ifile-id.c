@@ -187,36 +187,13 @@ ofa_ifile_id_get_provider_name( const ofaIFileId *instance )
  * Returns: a new reference to the provider instance which should be
  * g_object_unref() by the caller.
  */
-ofaIDbms *
+ofaIDBProvider *
 ofa_ifile_id_get_provider_instance( const ofaIFileId *instance )
 {
 	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
 
 	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance ){
 		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance( instance ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_ifile_id_get_periods:
- * @instance: this #ofaIFileId instance.
- *
- * Returns: the list of defined financial periods as a #GList of any
- * GObject -derived object, as long as they implement the
- * #ofaIFilePeriod interface.
- *
- * The returned list should be #ofa_ifile_id_free_periods() by the
- * caller.
- */
-GList *
-ofa_ifile_id_get_periods( const ofaIFileId *instance )
-{
-	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
-
-	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_periods ){
-		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_periods( instance ));
 	}
 
 	return( NULL );

@@ -35,22 +35,20 @@
 /* priv instance data
  */
 struct _ofaDossierIdPrivate {
-	gboolean  dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* runtime data
 	 */
-	gchar    *dos_name;
-	gchar    *prov_name;
-	ofaIDbms *prov_instance;
-	GList    *periods;
+	gchar          *dos_name;
+	gchar          *prov_name;
+	ofaIDBProvider *prov_instance;
 };
 
-static void      ifile_id_iface_init( ofaIFileIdInterface *iface );
-static guint     ifile_id_get_interface_version( const ofaIFileId *instance );
-static gchar    *ifile_id_get_dossier_name( const ofaIFileId *instance );
-static gchar    *ifile_id_get_provider_name( const ofaIFileId *instance );
-static ofaIDbms *ifile_id_get_provider_instance( const ofaIFileId *instance );
-static GList    *ifile_id_get_periods( const ofaIFileId *instance );
+static void            ifile_id_iface_init( ofaIFileIdInterface *iface );
+static guint           ifile_id_get_interface_version( const ofaIFileId *instance );
+static gchar          *ifile_id_get_dossier_name( const ofaIFileId *instance );
+static gchar          *ifile_id_get_provider_name( const ofaIFileId *instance );
+static ofaIDBProvider *ifile_id_get_provider_instance( const ofaIFileId *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierId, ofa_dossier_id, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_ID, ifile_id_iface_init ));
@@ -89,7 +87,6 @@ dossier_id_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->prov_instance );
-		ofa_ifile_id_free_periods( priv->periods );
 	}
 
 	/* chain up to the parent class */
@@ -134,7 +131,6 @@ ifile_id_iface_init( ofaIFileIdInterface *iface )
 	iface->get_dossier_name = ifile_id_get_dossier_name;
 	iface->get_provider_name = ifile_id_get_provider_name;
 	iface->get_provider_instance = ifile_id_get_provider_instance;
-	iface->get_periods = ifile_id_get_periods;
 }
 
 static guint
@@ -175,7 +171,7 @@ ifile_id_get_provider_name( const ofaIFileId *instance )
 	return( NULL );
 }
 
-static ofaIDbms *
+static ofaIDBProvider *
 ifile_id_get_provider_instance( const ofaIFileId *instance )
 {
 	ofaDossierIdPrivate *priv;
@@ -187,24 +183,6 @@ ifile_id_get_provider_instance( const ofaIFileId *instance )
 	if( !priv->dispose_has_run ){
 		return( g_object_ref( priv->prov_instance ));
 	}
-
-	return( NULL );
-}
-
-static GList *
-ifile_id_get_periods( const ofaIFileId *instance )
-{
-#if 0
-	ofaDossierIdPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_DOSSIER_ID( instance ), NULL );
-
-	priv = OFA_DOSSIER_ID( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( ofa_idbms_get_periods( priv->prov_instance, priv->dos_name, priv->collection ));
-	}
-#endif
 
 	return( NULL );
 }
@@ -222,11 +200,7 @@ ofa_dossier_id_new( void )
 {
 	ofaDossierId *id;
 
-	//g_return_val_if_fail( collection && OFA_IS_IFILE_COLLECTION( collection ), NULL );
-	//g_return_val_if_fail( collection && OFA_IS_DOSSIER_DIR( collection ), NULL );
-
 	id = g_object_new( OFA_TYPE_DOSSIER_ID, NULL );
-	//id->priv->collection = collection;
 
 	return( id );
 }
@@ -276,7 +250,7 @@ ofa_dossier_id_set_provider_name( ofaDossierId *id, const gchar *name )
 
 		g_clear_object( &priv->prov_instance );
 		if( my_strlen( name )){
-			priv->prov_instance = ofa_idbms_get_instance_by_name( priv->prov_name );
+			priv->prov_instance = ofa_idbprovider_get_instance_by_name( priv->prov_name );
 		}
 	}
 }

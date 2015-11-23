@@ -40,7 +40,7 @@
  * the #ofaFileDir singleton.
  */
 
-#include "api/ofa-idbms.h"
+#include "api/ofa-idbprovider.h"
 
 G_BEGIN_DECLS
 
@@ -80,7 +80,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint      ( *get_interface_version )( const ofaIFileId *instance );
+	guint            ( *get_interface_version )( const ofaIFileId *instance );
 
 	/**
 	 * get_dossier_name:
@@ -89,7 +89,7 @@ typedef struct {
 	 * Returns: the identifier name of the dossier as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *    ( *get_dossier_name )     ( const ofaIFileId *instance );
+	gchar *          ( *get_dossier_name )     ( const ofaIFileId *instance );
 
 	/**
 	 * get_provider_name:
@@ -98,7 +98,7 @@ typedef struct {
 	 * Returns: the provider name as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *    ( *get_provider_name )    ( const ofaIFileId *instance );
+	gchar *          ( *get_provider_name )    ( const ofaIFileId *instance );
 
 	/**
 	 * get_provider_instance:
@@ -107,40 +107,21 @@ typedef struct {
 	 * Returns: a new reference to the provider instance which should
 	 * be g_object_unref() by the caller.
 	 */
-	ofaIDbms * ( *get_provider_instance )( const ofaIFileId *instance );
-
-	/**
-	 * get_periods:
-	 * @instance: the #ofaIFileId instance.
-	 *
-	 * Returns: the list of defined financial periods as a #GList of
-	 * any GObject -derived objects, as long as they implement the
-	 * #ofaIFilePeriod interface.
-	 *
-	 * The returned list should be
-	 * #g_list_free_full( <list>, ( GDestroyNotify ) g_object_unref )
-	 * by the caller. The #ofa_ifile_id_free_periods() method is also
-	 * a convenience method for this.
-	 */
-	GList *    ( *get_periods )          ( const ofaIFileId *instance );
+	ofaIDBProvider * ( *get_provider_instance )( const ofaIFileId *instance );
 }
 	ofaIFileIdInterface;
 
-GType     ofa_ifile_id_get_type                  ( void );
+GType           ofa_ifile_id_get_type                  ( void );
 
-guint     ofa_ifile_id_get_interface_last_version( void );
+guint           ofa_ifile_id_get_interface_last_version( void );
 
-guint     ofa_ifile_id_get_interface_version     ( const ofaIFileId *instance );
+guint           ofa_ifile_id_get_interface_version     ( const ofaIFileId *instance );
 
-gchar    *ofa_ifile_id_get_dossier_name          ( const ofaIFileId *instance );
+gchar          *ofa_ifile_id_get_dossier_name          ( const ofaIFileId *instance );
 
-gchar    *ofa_ifile_id_get_provider_name         ( const ofaIFileId *instance );
+gchar          *ofa_ifile_id_get_provider_name         ( const ofaIFileId *instance );
 
-ofaIDbms *ofa_ifile_id_get_provider_instance     ( const ofaIFileId *instance );
-
-GList    *ofa_ifile_id_get_periods               ( const ofaIFileId *instance );
-
-#define ofa_ifile_id_free_periods(L)           g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+ofaIDBProvider *ofa_ifile_id_get_provider_instance     ( const ofaIFileId *instance );
 
 G_END_DECLS
 
