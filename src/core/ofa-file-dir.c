@@ -29,9 +29,9 @@
 #include "api/my-file-monitor.h"
 #include "api/my-settings.h"
 #include "api/my-utils.h"
-#include "api/ofa-file-dir.h"
 
 #include "ofa-dossier-id.h"
+#include "ofa-file-dir.h"
 
 /* private instance data
  */
