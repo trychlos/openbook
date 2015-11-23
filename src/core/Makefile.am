@@ -83,6 +83,8 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-id.c									\
 	ofa-dossier-id.h									\
 	ofa-dossier-misc.c									\
+	ofa-dossier-period.c								\
+	ofa-dossier-period.h								\
 	ofa-file-dir.c										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
