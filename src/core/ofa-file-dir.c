@@ -61,6 +61,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void   setup_settings( ofaFileDir *dir );
 static void   on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
 static GList *load_dossiers( ofaFileDir *dir );
+static gchar *get_group_for_file( const ofaFileDir *dir, const ofaIFileId *file );
 
 G_DEFINE_TYPE( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT )
 
@@ -287,4 +288,46 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 	}
 
 	return( count );
+}
+
+/**
+ * ofa_file_dir_get_dossier_periods:
+ * @dir: this #ofaFileDir instance.
+ * @file: an #ofaIFileId instance which identifies the dossier.
+ *
+ * Returns: the list of periods for this dossier, as a #GList which
+ * should be #ofa_ifile_id_free_periods() by the caller.
+ */
+GList *
+ofa_file_dir_get_dossier_periods( const ofaFileDir *dir, const ofaIFileId *file )
+{
+	ofaFileDirPrivate *priv;
+	GList *list;
+	gchar *group;
+	ofaIDBProvider *dbms;
+
+	priv = dir->priv;
+	list = NULL;
+
+	if( !priv->dispose_has_run ){
+		group = get_group_for_file( dir, file );
+		dbms = ofa_ifile_id_get_provider_instance( file );
+		list = ofa_idbprovider_get_dossier_periods( dbms, priv->settings, group );
+		g_object_unref( dbms );
+		g_free( group );
+	}
+
+	return( list );
+}
+
+static gchar *
+get_group_for_file( const ofaFileDir *dir, const ofaIFileId *file )
+{
+	gchar *name, *group;
+
+	name = ofa_ifile_id_get_dossier_name( file );
+	group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, name );
+	g_free( name );
+
+	return( group );
 }

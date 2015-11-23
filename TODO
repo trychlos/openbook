@@ -471,7 +471,9 @@
 
  890 2015-11-23 remove ofa_idbms_get_provider_by_name()
 
- 891
+ 891 2015-11-23 remove ofaDossierStore() from ofaApplication
+
+ 892
 
 -----------------------------------------------------------------------
  DONE
