@@ -59,6 +59,7 @@ libofa_core_la_SOURCES = \
 	my-field-combo.h									\
 	my-progress-bar.c									\
 	my-progress-bar.h									\
+	my-settings.c										\
 	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\

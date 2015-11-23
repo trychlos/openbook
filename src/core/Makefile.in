@@ -166,19 +166,19 @@ libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = ofo-marshal.lo
 am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-dialog.lo my-double.lo \
-	my-field-combo.lo my-progress-bar.lo my-timeout.lo my-utils.lo \
-	my-window.lo ofa-admin-credentials-bin.lo ofa-box.lo \
-	ofa-collection.lo ofa-concil-collection.lo \
-	ofa-dbms-root-bin.lo ofa-dbms.lo ofa-ddl-update.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-dossier-misc.lo \
-	ofa-file-format.lo ofa-file-format-bin.lo ofa-iabout.lo \
-	ofa-icollector.lo ofa-iconcil.lo ofa-idataset.lo ofa-idbms.lo \
-	ofa-iexportable.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ipreferences.lo ofa-plugin.lo ofa-preferences.lo \
-	ofa-settings.lo ofa-settings-monitor.lo ofo-account.lo \
-	ofo-base.lo ofo-bat.lo ofo-bat-line.lo ofo-class.lo \
-	ofo-concil.lo ofo-currency.lo ofo-dossier.lo ofo-entry.lo \
-	ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	my-field-combo.lo my-progress-bar.lo my-settings.lo \
+	my-timeout.lo my-utils.lo my-window.lo \
+	ofa-admin-credentials-bin.lo ofa-box.lo ofa-collection.lo \
+	ofa-concil-collection.lo ofa-dbms-root-bin.lo ofa-dbms.lo \
+	ofa-ddl-update.lo ofa-dossier-delete-prefs-bin.lo \
+	ofa-dossier-misc.lo ofa-file-format.lo ofa-file-format-bin.lo \
+	ofa-iabout.lo ofa-icollector.lo ofa-iconcil.lo ofa-idataset.lo \
+	ofa-idbms.lo ofa-iexportable.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-ipreferences.lo ofa-plugin.lo \
+	ofa-preferences.lo ofa-settings.lo ofa-settings-monitor.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
 	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
 	ofs-currency.lo ofs-ope.lo
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
@@ -455,6 +455,7 @@ libofa_core_la_SOURCES = \
 	my-field-combo.h									\
 	my-progress-bar.c									\
 	my-progress-bar.h									\
+	my-settings.c										\
 	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\
@@ -633,6 +634,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-timeout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-window.Plo@am__quote@
