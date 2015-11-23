@@ -30,6 +30,7 @@
 
  Other changes:
 
+   - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
    - ofaDossierId: new class which implements ofaIFileId interface.
    - ofaIFileId: new dossier meta properties management interface.
