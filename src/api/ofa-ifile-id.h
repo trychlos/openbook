@@ -55,7 +55,7 @@ typedef struct _ofaIFileId                     ofaIFileId;
  * ofaIFileIdInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_name: [must]: returns the identifier name of the dossier.
+ * @get_dossier_name: [must]: returns the identifier name of the dossier.
  * @get_provider_name: [should]: returns the IDbms provider name.
  * @get_periods: [should]: returns the defined financial periods.
  *
