@@ -465,7 +465,11 @@
  886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
                 bat files and entries are purged
 
- 888
+ 888 2015-11-23 review ofaSettings class to use mySettings
+
+ 889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
+
+ 890
 
 -----------------------------------------------------------------------
  DONE

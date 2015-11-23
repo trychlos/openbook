@@ -30,6 +30,7 @@
 
  Other changes:
 
+   - myFileMonitor: new class.
    - mySettings: new class.
    - ofa-entry-columns.{c,h}: removed obsolete files.
    - ofa-reconcil-columns.{c,h}: removed obsolete files.
