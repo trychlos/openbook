@@ -35,6 +35,8 @@
  * Openbook software suite. It takes care of maintaining itself up-to-
  * date.
  *
+ * The instance sends a 'changed' signal when the directory changes.
+ *
  * This is an Openbook software suite decision to have the dossiers
  * directory stored in a single dedicated ini file, said dossiers
  * settings.
