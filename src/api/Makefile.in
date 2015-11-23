@@ -403,6 +403,7 @@ api_include_HEADERS = \
 	ofa-dbms.h											\
 	ofa-dbms-def.h										\
 	ofa-dossier-misc.h									\
+	ofa-file-dir.h										\
 	ofa-plugin.h										\
 	ofa-preferences.h									\
 	ofa-settings.h										\
