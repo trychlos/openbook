@@ -30,6 +30,7 @@
 
  Other changes:
 
+   - ofaIDBProvider: new interface.
    - ofaDossierPeriod: new class which implements ofaIFilePeriod interface.
    - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.

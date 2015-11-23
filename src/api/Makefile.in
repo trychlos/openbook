@@ -384,6 +384,7 @@ api_include_HEADERS = \
 	ofa-iabout.h										\
 	ofa-idataset.h										\
 	ofa-idbms.h											\
+	ofa-idbprovider.h									\
 	ofa-iexportable.h									\
 	ofa-ifile-id.h										\
 	ofa-ifile-period.h									\

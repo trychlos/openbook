@@ -174,13 +174,13 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	ofa-dossier-id.lo ofa-dossier-misc.lo ofa-dossier-period.lo \
 	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
 	ofa-iabout.lo ofa-icollector.lo ofa-iconcil.lo ofa-idataset.lo \
-	ofa-idbms.lo ofa-iexportable.lo ofa-ifile-id.lo \
-	ofa-ifile-period.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ipreferences.lo ofa-plugin.lo ofa-preferences.lo \
-	ofa-settings.lo ofa-settings-monitor.lo ofo-account.lo \
-	ofo-base.lo ofo-bat.lo ofo-bat-line.lo ofo-class.lo \
-	ofo-concil.lo ofo-currency.lo ofo-dossier.lo ofo-entry.lo \
-	ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofa-idbms.lo ofa-idbprovider.lo ofa-iexportable.lo \
+	ofa-ifile-id.lo ofa-ifile-period.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-ipreferences.lo ofa-plugin.lo \
+	ofa-preferences.lo ofa-settings.lo ofa-settings-monitor.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
 	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
 	ofs-currency.lo ofs-ope.lo
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
@@ -495,6 +495,7 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
 	ofa-idbms.c											\
+	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
 	ofa-ifile-id.c										\
 	ofa-ifile-period.c									\
@@ -669,6 +670,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iconcil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idataset.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbms.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ifile-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ifile-period.Plo@am__quote@
