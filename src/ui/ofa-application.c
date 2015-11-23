@@ -757,8 +757,10 @@ setup_actions_monitor( ofaApplication *application )
 	/* dossiers directory monitoring
 	 */
 	priv->file_dir = ofa_file_dir_new();
-	g_signal_connect( priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
-	on_file_dir_changed( priv->file_dir, ofa_file_dir_get_count( priv->file_dir ), application );
+	g_signal_connect(
+			priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
+	on_file_dir_changed(
+			priv->file_dir, ofa_file_dir_get_dossiers_count( priv->file_dir ), application );
 
 	priv->dos_store = ofa_dossier_store_new();
 	g_signal_connect(

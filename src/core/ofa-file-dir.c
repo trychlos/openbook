@@ -268,13 +268,13 @@ load_dossiers( ofaFileDir *dir )
 }
 
 /**
- * ofa_file_dir_get_count:
+ * ofa_file_dir_get_dossiers_count:
  * @dir: this #ofaFileDir instance.
  *
  * Returns: the count of loaded dossiers.
  */
 guint
-ofa_file_dir_get_count( const ofaFileDir *dir )
+ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 {
 	ofaFileDirPrivate *priv;
 	guint count;
