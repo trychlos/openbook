@@ -78,6 +78,8 @@ GList      *ofa_file_dir_get_dossiers     ( ofaFileDir *dir );
 
 #define     ofa_file_dir_free_dossiers(L) g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
+guint       ofa_file_dir_get_count        ( const ofaFileDir *dir );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_FILE_DIR_H__ */

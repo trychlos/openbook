@@ -185,6 +185,7 @@ setup_settings( ofaFileDir *dir )
 	g_free( filename );
 
 	g_signal_connect( priv->monitor, "changed", G_CALLBACK( on_settings_changed ), dir );
+	on_settings_changed( priv->monitor, NULL, dir );
 }
 
 /**
@@ -214,6 +215,10 @@ ofa_file_dir_get_dossiers( ofaFileDir *dir )
 	return( list );
 }
 
+/*
+ * filename: may be %NULL when the handler is directly called
+ * (and typically just after signal connection)
+ */
 static void
 on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir )
 {
@@ -223,6 +228,8 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 
 	ofa_file_dir_free_dossiers( priv->list );
 	priv->list = load_dossiers( dir );
+
+	g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ));
 }
 
 static GList *
@@ -258,4 +265,26 @@ load_dossiers( ofaFileDir *dir )
 	my_settings_free_groups( inlist );
 
 	return( g_list_reverse( outlist ));
+}
+
+/**
+ * ofa_file_dir_get_count:
+ * @dir: this #ofaFileDir instance.
+ *
+ * Returns: the count of loaded dossiers.
+ */
+guint
+ofa_file_dir_get_count( const ofaFileDir *dir )
+{
+	ofaFileDirPrivate *priv;
+	guint count;
+
+	priv = dir->priv;
+	count = 0;
+
+	if( !priv->dispose_has_run ){
+		count = g_list_length( priv->list );
+	}
+
+	return( count );
 }
