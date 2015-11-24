@@ -28,7 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-dossier-misc.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-exercice-store.h"
@@ -43,8 +43,11 @@ struct _ofaExerciceStorePrivate {
 };
 
 static GType st_col_types[EXERCICE_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* status, begin, end */
-		G_TYPE_STRING, G_TYPE_STRING				 	/* dbname, label */
+		G_TYPE_STRING,					/* localized status */
+		G_TYPE_STRING, 					/* begin date (user display) */
+		G_TYPE_STRING,					/* end date (user display) */
+		G_TYPE_STRING,				 	/* localized label */
+		G_TYPE_OBJECT					/* ofaIFilePeriod */
 };
 
 G_DEFINE_TYPE( ofaExerciceStore, ofa_exercice_store, GTK_TYPE_LIST_STORE )
@@ -173,52 +176,60 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 
 /**
  * ofa_exercice_store_set_dossier:
+ * @store: this #ofaExerciceStore instance.
+ * @meta: the #ofaIFileMeta dossier.
+ *
+ * Set the store with defined financial periods for the @meta dossier.
  */
 void
-ofa_exercice_store_set_dossier( ofaExerciceStore *store, const gchar *dname )
+ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIFileMeta *meta )
 {
 	ofaExerciceStorePrivate *priv;
-	GSList *list, *it;
-	gchar **array;
-	GtkTreeIter iter;
+	GList *period_list, *it;
+	ofaIFilePeriod *period;
 	GDate date;
-	gchar *sdbegin, *sdend;
+	GtkTreeIter iter;
+	gchar *begin, *end, *status, *label;
 
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
-	g_return_if_fail( my_strlen( dname ));
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
 
 	priv = store->priv;
 
 	if( !priv->dispose_has_run ){
 
 		gtk_list_store_clear( GTK_LIST_STORE( store ));
+		period_list = ofa_ifile_meta_get_periods( meta );
 
-		list = ofa_dossier_misc_get_exercices( dname );
+		for( it=period_list; it ; it=it->next ){
+			period = ( ofaIFilePeriod * ) it->data;
 
-		for( it=list ; it ; it=it->next ){
-			array = g_strsplit(( const gchar * ) it->data, ";", -1 );
-
-			my_date_set_from_sql( &date, *(array+2));
-			sdbegin = my_date_to_str( &date, ofa_prefs_date_display());
-
-			my_date_set_from_sql( &date, *(array+3));
-			sdend = my_date_to_str( &date, ofa_prefs_date_display());
+			label = ofa_ifile_period_get_label( period );
+			status = ofa_ifile_period_get_status( period );
+			begin = my_date_to_str(
+							ofa_ifile_period_get_begin_date( period, &date ),
+							ofa_prefs_date_display());
+			end = my_date_to_str(
+							ofa_ifile_period_get_end_date( period, &date ),
+							ofa_prefs_date_display());
 
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( store ),
 					&iter,
 					-1,
-					EXERCICE_COL_LABEL,  *array,
-					EXERCICE_COL_DBNAME, *(array+1),
-					EXERCICE_COL_BEGIN,  sdbegin,
-					EXERCICE_COL_END,    sdend,
-					EXERCICE_COL_STATUS, *(array+4),
+					EXERCICE_COL_LABEL,  label,
+					EXERCICE_COL_BEGIN,  begin,
+					EXERCICE_COL_END,    end,
+					EXERCICE_COL_STATUS, status,
+					EXERCICE_COL_PERIOD, period,
 					-1 );
-			g_strfreev( array );
-			g_free( sdbegin );
-			g_free( sdend );
+
+			g_free( begin );
+			g_free( end );
+			g_free( status );
+			g_free( label );
 		}
 
-		ofa_dossier_misc_free_exercices( list );
+		ofa_ifile_meta_free_periods( period_list );
 	}
 }

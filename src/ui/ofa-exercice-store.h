@@ -34,7 +34,7 @@
  * exercices available on a dossier.
  */
 
-#include <gtk/gtk.h>
+#include "api/ofa-ifile-meta.h"
 
 G_BEGIN_DECLS
 
@@ -67,8 +67,8 @@ typedef struct {
  * @EXERCICE_COL_STATUS: localized status string
  * @EXERCICE_COL_BEGIN:  begin of exercice
  * @EXERCICE_COL_END:    end of exercice
- * @EXERCICE_COL_DBNAME: database name
  * @EXERCICE_COL_LABEL:  localized exercice description string
+ * @EXERCICE_COL_PERIOD: ofaIFilePeriod object
  *
  * The identifiers of the columns stored in the subjacent #GtkListStore.
  */
@@ -76,8 +76,8 @@ typedef enum {
 	EXERCICE_COL_STATUS = 0,
 	EXERCICE_COL_BEGIN,
 	EXERCICE_COL_END,
-	EXERCICE_COL_DBNAME,
 	EXERCICE_COL_LABEL,
+	EXERCICE_COL_PERIOD,
 	EXERCICE_N_COLUMNS
 }
 	ofaExerciceStoreColumn;
@@ -88,7 +88,6 @@ typedef enum {
  * @EXERCICE_DISP_BEGIN:  begin of exercice
  * @EXERCICE_DISP_END:    end of exercice
  * @EXERCICE_DISP_LABEL:  localized exercice description string
- * @EXERCICE_DISP_DBNAME: database name
  *
  * The columns displayed in the views.
  */
@@ -97,7 +96,6 @@ typedef enum {
 	EXERCICE_DISP_BEGIN     = 1 << 1,
 	EXERCICE_DISP_END       = 1 << 2,
 	EXERCICE_DISP_LABEL     = 1 << 3,
-	EXERCICE_DISP_DBNAME    = 1 << 4,
 }
 	ofaExerciceDispColumn;
 
@@ -106,7 +104,7 @@ GType             ofa_exercice_store_get_type    ( void ) G_GNUC_CONST;
 ofaExerciceStore *ofa_exercice_store_new         ( void );
 
 void              ofa_exercice_store_set_dossier ( ofaExerciceStore *combo,
-															const gchar *dname );
+															ofaIFileMeta *meta );
 
 G_END_DECLS
 
