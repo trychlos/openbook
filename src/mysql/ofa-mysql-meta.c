@@ -50,6 +50,8 @@ static guint           ifile_meta_get_interface_version( const ofaIFileMeta *ins
 static gchar          *ifile_meta_get_dossier_name( const ofaIFileMeta *instance );
 static gchar          *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
 static ofaIDBProvider *ifile_meta_get_provider_instance( const ofaIFileMeta *instance );
+static mySettings     *ifile_meta_get_settings( const ofaIFileMeta *instance );
+static gchar          *ifile_meta_get_group_name( const ofaIFileMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -130,6 +132,8 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	iface->get_dossier_name = ifile_meta_get_dossier_name;
 	iface->get_provider_name = ifile_meta_get_provider_name;
 	iface->get_provider_instance = ifile_meta_get_provider_instance;
+	iface->get_settings = ifile_meta_get_settings;
+	iface->get_group_name = ifile_meta_get_group_name;
 }
 
 static guint
@@ -165,6 +169,38 @@ ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 
 	if( !priv->dispose_has_run ){
 		return( g_strdup( ofa_mysql_idbprovider_get_provider_name( priv->prov_instance )));
+	}
+
+	return( NULL );
+}
+
+static mySettings *
+ifile_meta_get_settings( const ofaIFileMeta *instance )
+{
+	ofaMySQLMetaPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
+
+	priv = OFA_MYSQL_META( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+		return( priv->settings );
+	}
+
+	return( NULL );
+}
+
+static gchar *
+ifile_meta_get_group_name( const ofaIFileMeta *instance )
+{
+	ofaMySQLMetaPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
+
+	priv = OFA_MYSQL_META( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+		return( g_strdup( priv->group_name ));
 	}
 
 	return( NULL );

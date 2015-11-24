@@ -26,18 +26,22 @@
 #include <config.h>
 #endif
 
+#include <api/my-date.h>
 #include <api/my-settings.h>
+#include <api/my-utils.h>
 #include <api/ofa-ifile-meta.h>
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
+#include "ofa-mysql-period.h"
 
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 
-static guint         idbprovider_get_interface_version( const ofaIDBProvider *instance );
-static ofaIFileMeta *idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group );
-static GList        *idbprovider_get_dossier_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group );
+static guint           idbprovider_get_interface_version( const ofaIDBProvider *instance );
+static ofaIFileMeta   *idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group );
+static GList          *idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta );
+static ofaMySQLPeriod *get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
 
 /*
  * #ofaIDBProvider interface setup
@@ -87,21 +91,77 @@ idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossi
 }
 
 /*
- * connect to the specified instance and database
+ * list the defined periods
  */
 static GList *
-idbprovider_get_dossier_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group )
+idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta )
 {
 	GList *outlist;
+	mySettings *settings;
+	gchar *group;
 	GList *keys, *itk;
 	const gchar *cstr;
+	ofaMySQLPeriod *period;
 
+	settings = ofa_ifile_meta_get_settings( meta );
+	group = ofa_ifile_meta_get_group_name( meta );
 	keys = my_settings_get_keys( settings, group );
+	outlist = NULL;
+
 	for( itk=keys ; itk ; itk=itk->next ){
 		cstr = ( const gchar * ) itk->data;
 		if( g_str_has_prefix( cstr, MYSQL_DATABASE_KEY_PREFIX )){
-
+			period = get_period_from_settings( instance, settings, group, cstr );
+			outlist = g_list_prepend( outlist, period );
 		}
 	}
+
+	my_settings_free_keys( keys );
+	g_free( group );
+
 	return( outlist );
+}
+
+/*
+ * a financial period is set in settings as:
+ * key = <PREFIX> + <database_name>
+ * string = current / begin / end
+ */
+static ofaMySQLPeriod *
+get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
+{
+	ofaMySQLPeriod *period;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean current;
+	GDate begin, end;
+	gchar *dbname;
+
+	period = NULL;
+	dbname = g_strdup( group+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
+
+	strlist = my_settings_get_string_list( settings, group, key );
+
+	/* first element: current as a True/False string */
+	it = strlist;
+	cstr = it ? it->data : NULL;
+	current = my_utils_boolean_from_str( cstr );
+
+	/* second element: beginning date as YYYYMMDD */
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	my_date_set_from_str( &begin, cstr, MY_DATE_YYMD );
+
+	/* third element: ending date as YYYYMMDD */
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	my_date_set_from_str( &end, cstr, MY_DATE_YYMD );
+
+	my_settings_free_string_list( strlist );
+
+	period = ofa_mysql_period_new( current, &begin, &end, dbname );
+
+	g_free( dbname );
+
+	return( period );
 }

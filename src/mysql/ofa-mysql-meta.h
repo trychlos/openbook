@@ -47,7 +47,7 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_META_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_META ))
 #define OFA_MYSQL_META_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_META, ofaMySQLMetaClass ))
 
-typedef struct _ofaMySQLMetaPrivate         ofaMySQLMetaPrivate;
+typedef struct _ofaMySQLMetaPrivate        ofaMySQLMetaPrivate;
 
 typedef struct {
 	/*< public members >*/
