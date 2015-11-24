@@ -52,7 +52,7 @@ typedef struct _ofaIFilePeriod                     ofaIFilePeriod;
  *                         interface that the plugin implements.
  * @get_begin_date: [should]: returns the beginning date.
  * @get_end_date: [should]: returns the ending date.
- * @get_status: [should]: returns the localized status.
+ * @get_current: [should]: whether the period is current.
  *
  * This defines the interface that an #ofaIFilePeriod should/must
  * implement.
@@ -104,15 +104,6 @@ typedef struct {
 	 * modified) or not.
 	 */
 	gboolean ( *get_current )          ( const ofaIFilePeriod *instance );
-
-	/**
-	 * get_status:
-	 * @instance: the #ofaIFilePeriod instance.
-	 *
-	 * Returns: the status of the period as a newly allocated localized
-	 * string which should be g_free() by the caller.
-	 */
-	gchar *  ( *get_status )           ( const ofaIFilePeriod *instance );
 }
 	ofaIFilePeriodInterface;
 
@@ -120,17 +111,17 @@ GType    ofa_ifile_period_get_type                  ( void );
 
 guint    ofa_ifile_period_get_interface_last_version( void );
 
-guint    ofa_ifile_period_get_interface_version     ( const ofaIFilePeriod *instance );
+guint    ofa_ifile_period_get_interface_version     ( const ofaIFilePeriod *period );
 
-GDate   *ofa_ifile_period_get_begin_date            ( const ofaIFilePeriod *instance,
+GDate   *ofa_ifile_period_get_begin_date            ( const ofaIFilePeriod *period,
 																GDate *date );
 
-GDate   *ofa_ifile_period_get_end_date              ( const ofaIFilePeriod *instance,
+GDate   *ofa_ifile_period_get_end_date              ( const ofaIFilePeriod *period,
 																GDate *date );
 
-gboolean ofa_ifile_period_get_current               ( const ofaIFilePeriod *instance );
+gboolean ofa_ifile_period_get_current               ( const ofaIFilePeriod *period );
 
-gchar   *ofa_ifile_period_get_status                ( const ofaIFilePeriod *instance );
+gchar   *ofa_ifile_period_get_status                ( const ofaIFilePeriod *period );
 
 
 G_END_DECLS

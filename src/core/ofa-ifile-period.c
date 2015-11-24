@@ -26,7 +26,9 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-ifile-period.h"
+#include <glib/gi18n.h>
+
+#include <api/ofa-ifile-period.h>
 
 #define IFILE_PERIOD_LAST_VERSION       1
 
@@ -124,19 +126,19 @@ ofa_ifile_period_get_interface_last_version( void )
 
 /**
  * ofa_ifile_period_get_interface_version:
- * @instance: this #ofaIFilePeriod instance.
+ * @period: this #ofaIFilePeriod instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_ifile_period_get_interface_version( const ofaIFilePeriod *instance )
+ofa_ifile_period_get_interface_version( const ofaIFilePeriod *period )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_PERIOD( instance ), 0 );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), 0 );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_interface_version( instance ));
+	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_interface_version ){
+		return( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_interface_version( period ));
 	}
 
 	return( 1 );
@@ -144,19 +146,19 @@ ofa_ifile_period_get_interface_version( const ofaIFilePeriod *instance )
 
 /**
  * ofa_ifile_period_get_begin_date:
- * @instance: this #ofaIFilePeriod instance.
+ * @period: this #ofaIFilePeriod instance.
  * @date: a pointer to a GDate storage space, to set the date.
  *
  * Returns: the same @date pointer, in order the function may be chained.
  */
 GDate *
-ofa_ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date )
+ofa_ifile_period_get_begin_date( const ofaIFilePeriod *period, GDate *date )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_PERIOD( instance ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
 	g_return_val_if_fail( date, NULL );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_begin_date ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_begin_date( instance, date ));
+	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_begin_date ){
+		return( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_begin_date( period, date ));
 	}
 
 	return( NULL );
@@ -164,19 +166,19 @@ ofa_ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date )
 
 /**
  * ofa_ifile_period_get_end_date:
- * @instance: this #ofaIFilePeriod instance.
+ * @period: this #ofaIFilePeriod instance.
  * @date: a pointer to a GDate storage space, to set the date.
  *
  * Returns: the same @date pointer, in order the function may be chained.
  */
 GDate *
-ofa_ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date )
+ofa_ifile_period_get_end_date( const ofaIFilePeriod *period, GDate *date )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_PERIOD( instance ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
 	g_return_val_if_fail( date, NULL );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_end_date ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_end_date( instance, date ));
+	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_end_date ){
+		return( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_end_date( period, date ));
 	}
 
 	return( NULL );
@@ -184,18 +186,18 @@ ofa_ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date )
 
 /**
  * ofa_ifile_period_get_current:
- * @instance: this #ofaIFilePeriod instance.
+ * @period: this #ofaIFilePeriod instance.
  *
  * Returns: %TRUE if the financier period is current, i.e. may be
  * modified, %FALSE else.
  */
 gboolean
-ofa_ifile_period_get_current( const ofaIFilePeriod *instance )
+ofa_ifile_period_get_current( const ofaIFilePeriod *period )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_PERIOD( instance ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_current ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_current( instance ));
+	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_current ){
+		return( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_current( period ));
 	}
 
 	return( FALSE );
@@ -203,7 +205,7 @@ ofa_ifile_period_get_current( const ofaIFilePeriod *instance )
 
 /**
  * ofa_ifile_period_get_status:
- * @instance: this #ofaIFilePeriod instance.
+ * @period: this #ofaIFilePeriod instance.
  *
  * Returns: the localized status string, as a newly allocated string
  * which should be g_free() by the caller.
@@ -213,13 +215,9 @@ ofa_ifile_period_get_current( const ofaIFilePeriod *instance )
  * - 'Archived' for any closed period.
  */
 gchar *
-ofa_ifile_period_get_status( const ofaIFilePeriod *instance )
+ofa_ifile_period_get_status( const ofaIFilePeriod *period )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_PERIOD( instance ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_status ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( instance )->get_status( instance ));
-	}
-
-	return( NULL );
+	return( g_strdup( ofa_ifile_period_get_current( period ) ? _( "Current") : _( "Archived" )));
 }
