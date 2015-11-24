@@ -38,9 +38,18 @@
  * The #ofaDossierStore is kept sorted in ascending alphabetical order
  * of dossier name, and descending exercice order (the most recent
  * first).
+ *
+ * The #ofaDossierStore maintains itself up-to-date by connecting to
+ * the #ofaFileDir 'changed' signal.
+ *
+ * The #ofaDossierStore is managed as a singleton: the first
+ * instanciation actually builds the store, while next only returns a
+ * new reference on this same instance.
+ * The #ofaApplication take ownership on this singleton so that it is
+ * always available during the run.
  */
 
-#include <gtk/gtk.h>
+#include "core/ofa-file-dir.h"
 
 G_BEGIN_DECLS
 
@@ -125,11 +134,7 @@ typedef enum {
 
 GType            ofa_dossier_store_get_type       ( void );
 
-ofaDossierStore *ofa_dossier_store_new            ( void );
-
-void             ofa_dossier_store_free           ( void );
-
-gboolean         ofa_dossier_store_is_empty       ( ofaDossierStore *store );
+ofaDossierStore *ofa_dossier_store_new            ( ofaFileDir *dir );
 
 void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
 														const gchar *dname,

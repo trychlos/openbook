@@ -29,6 +29,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
@@ -38,11 +40,6 @@
  */
 struct _ofaDossierStorePrivate {
 	gboolean            dispose_has_run;
-
-	/* runtime data
-	 */
-	ofaSettingsMonitor *settings_monitor;
-	guint               rows_count;
 };
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
@@ -64,15 +61,15 @@ enum {
 	N_SIGNALS
 };
 
-static guint st_signals[ N_SIGNALS ]    = { 0 };
+static ofaDossierStore *st_store                = NULL;
+static guint            st_signals[ N_SIGNALS ] = { 0 };
 
-static void     on_dossier_settings_changed( ofaSettingsMonitor *monitor, guint target, ofaDossierStore *store );
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
-static guint    load_dataset( ofaDossierStore *store );
-static void     insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist );
-static void     set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter );
+static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store );
+static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
+static void     insert_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period );
+static void     set_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter );
 static gboolean get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter );
-static guint    dossier_store_reload( void );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
 
@@ -106,9 +103,6 @@ dossier_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( priv->settings_monitor ){
-			g_object_unref( priv->settings_monitor );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -165,83 +159,47 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
+ * @dir: [allow-none]: the #ofaFileDir instance which centralize the
+ *  list of defined dossiers. This must be non-null at first call
+ *  (instanciation time), while is not used on successive calls.
  *
  * The #ofaDossierStore class implements a singleton. Each returned
  * pointer is a new reference to the same instance of the class.
  * This unique instance is allocated on demand, when the
  * #ofa_dossier_store_new() method is called for the first time.
  *
- * Returns: the #ofaDossierStore instance.
+ * Returns: a new reference on the #ofaDossierStore instance, which
+ * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( void )
+ofa_dossier_store_new( ofaFileDir *dir )
 {
-	if( !st_store ){
-
-		/* define the store */
-		st_store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
-
-		gtk_list_store_set_column_types(
-				GTK_LIST_STORE( st_store ), DOSSIER_N_COLUMNS, st_col_types );
-
-		gtk_tree_sortable_set_default_sort_func(
-				GTK_TREE_SORTABLE( st_store ), ( GtkTreeIterCompareFunc ) on_sort_model, st_store, NULL );
-
-		gtk_tree_sortable_set_sort_column_id(
-				GTK_TREE_SORTABLE( st_store ),
-				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
-
-		/* load the data */
-		load_dataset( st_store );
-
-		/* monitor the settings */
-		st_store->priv->settings_monitor = ofa_settings_monitor_new( SETTINGS_TARGET_DOSSIER );
-
-		g_signal_connect(
-				st_store->priv->settings_monitor,
-				"changed",
-				G_CALLBACK( on_dossier_settings_changed ),
-				st_store );
-	}
-
-	return( g_object_ref( st_store ));
-}
-
-/*
- * callback triggered when the dossier settings has changed
- */
-static void
-on_dossier_settings_changed( ofaSettingsMonitor *monitor, guint target, ofaDossierStore *store )
-{
-	static const gchar *thisfn = "ofa_dossier_store_on_dossier_settings_changed";
-	guint count;
-
-	g_debug( "%s: target=%u", thisfn, target );
-
-	g_return_if_fail( target == SETTINGS_TARGET_DOSSIER );
-
-	count = dossier_store_reload();
-
-	g_signal_emit_by_name( store, "changed", count );
-}
-
-/**
- * ofa_dossier_store_free:
- *
- * This function is expected to be only called from application dispose.
- * It unrefs all left references on the ofaDossierStore singleton.
- */
-void
-ofa_dossier_store_free( void )
-{
-	guint i, count;
+	ofaDossierStore *store;
 
 	if( st_store ){
-		count = G_OBJECT( st_store )->ref_count;
-		for( i=count ; i>0 ; --i ){
-			g_object_unref( st_store );
-		}
+		store = g_object_ref( st_store );
+
+	} else {
+		store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
+
+		gtk_list_store_set_column_types(
+				GTK_LIST_STORE( store ), DOSSIER_N_COLUMNS, st_col_types );
+
+		gtk_tree_sortable_set_default_sort_func(
+				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
+
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( store ),
+				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+
+		g_signal_connect( dir, "changed", G_CALLBACK( on_file_dir_changed ), store );
+
+		load_dataset( store, dir );
+
+		st_store = store;
 	}
+
+	return( store );
 }
 
 /*
@@ -280,133 +238,84 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 	return( cmp );
 }
 
+static void
+on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store )
+{
+	gtk_tree_store_clear( GTK_TREE_STORE( store ));
+	load_dataset( store, dir );
+}
+
 /*
  * load the dataset
  */
-static guint
-load_dataset( ofaDossierStore *store )
+static void
+load_dataset( ofaDossierStore *store, ofaFileDir *dir )
 {
-	GSList *dataset, *it;
-	gchar **array;
-	const gchar *dname, *provider;
-	GSList *exeset, *ite;
-	guint count;
+	GList *dossier_list, *itd;
+	ofaIFileMeta *meta;
+	GList *period_list, *itp;
+	ofaIFilePeriod *period;
 
-	dataset = ofa_dossier_misc_get_dossiers();
-	count = 0;
+	dossier_list = ofa_file_dir_get_dossiers( dir );
 
-	for( it=dataset ; it ; it=it->next ){
-		array = g_strsplit(( const gchar * ) it->data, ";", -1 );
-		dname = ( const gchar * ) *array;
-		provider = ( const gchar * ) *( array+1 );
+	for( itd=dossier_list ; itd ; itd=itd->next ){
+		meta = ( ofaIFileMeta * ) itd->data;
+		g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
 
-		exeset = ofa_dossier_misc_get_exercices( dname );
-		for( ite=exeset ; ite ; ite=ite->next ){
-			insert_row( store, dname, provider, ( const gchar * ) ite->data );
-			count += 1;
+		period_list = ofa_ifile_meta_get_periods( meta );
+		for( itp=period_list ; itp ; itp=itp->next ){
+			period = ( ofaIFilePeriod * ) itp->data;
+			g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+
+			insert_row( store, meta, period );
 		}
-		ofa_dossier_misc_free_exercices( exeset );
-
-		g_strfreev( array );
+		ofa_ifile_meta_free_periods( period_list );
 	}
 
-	ofa_dossier_misc_free_dossiers( dataset );
-	store->priv->rows_count = count;
-
-	return( count );
+	ofa_file_dir_free_dossiers( dossier_list );
 }
 
 static void
-insert_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist )
+insert_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_store_insert_row";
 	GtkTreeIter iter;
 
-	g_debug( "%s: store=%p, dname=%s, provider=%s, strlist=%s",
-			thisfn, ( void * ) store, dname, provider, strlist );
+	g_debug( "%s: store=%p, meta=%p, period=%p",
+			thisfn, ( void * ) store, ( void * ) meta, ( void * ) period );
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, dname, provider, strlist, &iter );
+	set_row( store, meta, period, &iter );
 }
 
 static void
-set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, const gchar *strlist, GtkTreeIter *iter )
+set_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter )
 {
-	gchar **array;
-	const gchar *dbname, *sbegin, *send, *status, *code;
-	gchar *sdbegin, *sdend;
-	GDate dbegin, dend;
+	gchar *dosname, *provname, *begin, *end, *status;
+	GDate date;
 
-	array = g_strsplit( strlist, ";", -1 );
-	dbname = ( const gchar * ) *( array+1 );
-	sbegin = ( const gchar * ) *( array+2 );
-	send = ( const gchar * ) *( array+3 );
-	status = ( const gchar * ) *( array+4 );
-	code = ( const gchar * ) *( array+5 );
+	dosname = ofa_ifile_meta_get_dossier_name( meta );
+	provname = ofa_ifile_meta_get_provider_name( meta );
 
-	my_date_set_from_str( &dbegin, sbegin, MY_DATE_SQL );
-	my_date_set_from_str( &dend, send, MY_DATE_SQL );
-
-	sdbegin = my_date_to_str( &dbegin, ofa_prefs_date_display());
-	sdend = my_date_to_str( &dend, ofa_prefs_date_display());
+	begin = my_date_to_str( ofa_ifile_period_get_begin_date( period, &date ), ofa_prefs_date_display());
+	end = my_date_to_str( ofa_ifile_period_get_end_date( period, &date ), ofa_prefs_date_display());
+	status = ofa_ifile_period_get_status( period );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
-			DOSSIER_COL_DOSNAME,  dname,
-			DOSSIER_COL_PROVNAME,   provider,
-			DOSSIER_COL_DBNAME, dbname,
-			DOSSIER_COL_BEGIN,  sdbegin,
-			DOSSIER_COL_END,    sdend,
-			DOSSIER_COL_STATUS, status,
-			DOSSIER_COL_CODE,   code,
+			DOSSIER_COL_DOSNAME,  dosname,
+			DOSSIER_COL_PROVNAME, provname,
+			DOSSIER_COL_BEGIN,    begin,
+			DOSSIER_COL_END,      end,
+			DOSSIER_COL_STATUS,   status,
 			-1 );
 
-	g_free( sdbegin );
-	g_free( sdend );
-	g_strfreev( array );
-}
-
-/*
- * ofa_dossier_store_reload:
- *
- * Reset and reload the datastore content.
- */
-static guint
-dossier_store_reload( void )
-{
-	guint count = 0;
-
-	if( st_store ){
-		gtk_list_store_clear( GTK_LIST_STORE( st_store ));
-		count = load_dataset( st_store );
-	}
-
-	return( count );
-}
-
-/*
- * ofa_dossier_store_is_empty:
- * @store: the #ofaDossierStore instance.
- *
- * Returns: %TRUE if the store is empty, %FALSE else
- */
-gboolean
-ofa_dossier_store_is_empty( ofaDossierStore *store )
-{
-	ofaDossierStorePrivate *priv;
-	gboolean is_empty;
-
-	g_return_val_if_fail( store && OFA_IS_DOSSIER_STORE( store ), TRUE );
-
-	priv = store->priv;
-	is_empty = TRUE;
-
-	if( !priv->dispose_has_run ){
-		is_empty = ( priv->rows_count == 0 );
-	}
-
-	return( is_empty );
+	g_free( begin );
+	g_free( end );
+	g_free( dosname );
+	g_free( provname );
+	g_free( status );
 }
 
 /**

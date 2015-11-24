@@ -379,7 +379,7 @@ create_treeview_store( ofaDossierTreeview *view )
 
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
-		priv->store = ofa_dossier_store_new();
+		priv->store = ofa_dossier_store_new( NULL );
 		priv->tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->store ), NULL );
 		/* unref the store so that it will be automatically unreffed
 		 * at the same time the treeview will be. */
