@@ -123,6 +123,8 @@ gboolean ofa_ifile_period_get_current               ( const ofaIFilePeriod *peri
 
 gchar   *ofa_ifile_period_get_status                ( const ofaIFilePeriod *period );
 
+gchar   *ofa_ifile_period_get_label                 ( const ofaIFilePeriod *period );
+
 
 G_END_DECLS
 

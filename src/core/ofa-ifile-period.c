@@ -28,7 +28,9 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
 #include "api/ofa-ifile-period.h"
+#include "api/ofa-preferences.h"
 
 #define IFILE_PERIOD_LAST_VERSION       1
 
@@ -220,4 +222,45 @@ ofa_ifile_period_get_status( const ofaIFilePeriod *period )
 	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
 
 	return( g_strdup( ofa_ifile_period_get_current( period ) ? _( "Current") : _( "Archived" )));
+}
+
+/**
+ * ofa_ifile_period_get_label:
+ * @period: this #ofaIFilePeriod instance.
+ *
+ * Returns: a localized string which describes and qualifies the @period,
+ *  as a newly allocated string which should be g_free() by the caller.
+ *
+ * English example:
+ * - 'Current' for the currently opened period
+ * - 'Archived' for any closed period.
+ */
+gchar *
+ofa_ifile_period_get_label( const ofaIFilePeriod *period )
+{
+	GString *svalue;
+	gchar *sdate;
+	GDate date;
+
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+
+	svalue = g_string_new( ofa_ifile_period_get_current( period )
+					? _( "Current exercice" )
+					: _( "Archived exercice" ));
+
+	ofa_ifile_period_get_begin_date( period, &date );
+	if( my_date_is_valid( &date )){
+		sdate = my_date_to_str( &date , ofa_prefs_date_display());
+		g_string_append_printf( svalue, _( " from %s" ), sdate );
+		g_free( sdate );
+	}
+
+	ofa_ifile_period_get_end_date( period, &date );
+	if( my_date_is_valid( &date )){
+		sdate = my_date_to_str( &date , ofa_prefs_date_display());
+		g_string_append_printf( svalue, _( " to %s" ), sdate );
+		g_free( sdate );
+	}
+
+	return( g_string_free( svalue, FALSE ));
 }
