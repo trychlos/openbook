@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-ifile-meta.h"
+#include <api/ofa-ifile-meta.h>
 
 #define IFILE_META_LAST_VERSION           1
 
@@ -124,19 +124,19 @@ ofa_ifile_meta_get_interface_last_version( void )
 
 /**
  * ofa_ifile_meta_get_interface_version:
- * @instance: this #ofaIFileMeta instance.
+ * @meta: this #ofaIFileMeta instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_ifile_meta_get_interface_version( const ofaIFileMeta *instance )
+ofa_ifile_meta_get_interface_version( const ofaIFileMeta *meta )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), 0 );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), 0 );
 
-	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_interface_version( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version( meta ));
 	}
 
 	return( 1 );
@@ -144,18 +144,18 @@ ofa_ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 
 /**
  * ofa_ifile_meta_get_dossier_name:
- * @instance: this #ofaIFileMeta instance.
+ * @meta: this #ofaIFileMeta instance.
  *
  * Returns: the identifier name of the dossier as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *instance )
+ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *meta )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_dossier_name ){
-		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_dossier_name( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_dossier_name ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_dossier_name( meta ));
 	}
 
 	return( NULL );
@@ -163,18 +163,18 @@ ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *instance )
 
 /**
  * ofa_ifile_meta_get_provider_name:
- * @instance: this #ofaIFileMeta instance.
+ * @meta: this #ofaIFileMeta instance.
  *
  * Returns: the provider name as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ifile_meta_get_provider_name( const ofaIFileMeta *instance )
+ofa_ifile_meta_get_provider_name( const ofaIFileMeta *meta )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_name ){
-		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_name( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_name ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_name( meta ));
 	}
 
 	return( NULL );
@@ -182,18 +182,91 @@ ofa_ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 
 /**
  * ofa_ifile_meta_get_provider_instance:
- * @instance: this #ofaIFileMeta instance.
+ * @meta: this #ofaIFileMeta instance.
  *
  * Returns: a new reference to the provider instance which should be
  * g_object_unref() by the caller.
  */
 ofaIDBProvider *
-ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *instance )
+ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *meta )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_instance ){
-		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_instance( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_instance ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_instance( meta ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_ifile_meta_get_periods:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: a list of defined financial periods (exercices) for this
+ * file (dossier), as a #GList of #ofaIFilePeriod object, which should
+ * be #ofa_ifile_meta_free_periods() by the caller.
+ */
+GList *
+ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_get_periods";
+	ofaIDBProvider *provider;
+	GList *list;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	provider = ofa_ifile_meta_get_provider_instance( meta );
+	if( !provider ){
+		g_warning( "%s: unable to get a provider instance", thisfn );
+		return( NULL );
+	}
+	list = ofa_idbprovider_get_dossier_periods( provider, meta );
+	g_object_unref( provider );
+
+	return( list );
+}
+
+/**
+ * ofa_ifile_meta_get_settings:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: the #mySettings object which was set when instanciating
+ * this @meta instance.
+ *
+ * The returned reference is owned by the implementation, and should
+ * not be freed by the caller.
+ */
+mySettings *
+ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
+{
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_settings ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_settings( meta ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_ifile_meta_get_group_name:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: the name of the group which holds all dossier informations
+ * in the settings file. This name was first set when instanciating
+ * this @meta instance.
+ *
+ * The name is returned as a newly allocated string which should be
+ * g_free() by the caller.
+ */
+gchar *
+ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
+{
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_group_name ){
+		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_group_name( meta ));
 	}
 
 	return( NULL );
