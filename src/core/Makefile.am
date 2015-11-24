@@ -81,8 +81,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
-	ofa-dossier-period.c								\
-	ofa-dossier-period.h								\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\

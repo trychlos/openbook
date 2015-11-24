@@ -31,7 +31,7 @@
  Other changes:
 
    - ofaIDBProvider: new DBMS directory management interface.
-   - ofaDossierPeriod: new class which implements ofaIFilePeriod interface.
+   - ofaMySQLPeriod: new class which implements ofaIFilePeriod interface.
    - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
    - ofaDossierId: new class which implements ofaIFileMeta interface.
