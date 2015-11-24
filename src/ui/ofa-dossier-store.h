@@ -32,25 +32,12 @@
  * @include: ui/ofa-dossier-store.h
  *
  * The #ofaDossierStore derived from #GtkListStore. It is populated
- * with all the known dossiers and exercices at time of the creation,
+ * with all the known dossiers and exercices at instanciation time,
  * with one row per dossier/exercice.
  *
  * The #ofaDossierStore is kept sorted in ascending alphabetical order
  * of dossier name, and descending exercice order (the most recent
  * first).
- *
- * This class defines a singleton. Only one instance of this class is
- * allocated the first time #ofa_dossier_store_new() is called. A new
- * reference to the same instance is then returned on successive calls.
- *
- * Actually the first #ofaDossierStore instance is allocated when
- * opening the application, in order to be able to enable the 'open'
- * action. As a consequence, the application also takes care of
- * releasing the last reference to the #ofaDossierStore instance.
- *
- * The #ofaDossierStore instance monitors the dossier configuration
- * file, in order to maintain itself up to date. This is because this
- * configuration file is updated directly by DBMS providers.
  */
 
 #include <gtk/gtk.h>
@@ -86,45 +73,48 @@ typedef struct {
 
 /**
  * ofaDossierStoreColumn:
- * @DOSSIER_COL_DNAME:  dossier name
- * @DOSSIER_COL_DBMS:   dbms provider
+ * @DOSSIER_COL_DOSNAME:  dossier name
+ * @DOSSIER_COL_PROVNAME: dbms provider name
  * @DOSSIER_COL_DBNAME: database name
- * @DOSSIER_COL_END:    end of exercice
- * @DOSSIER_COL_BEGIN:  begin of exercice
- * @DOSSIER_COL_STATUS: localized status of the exercice
+ * @DOSSIER_COL_END:      end of exercice
+ * @DOSSIER_COL_BEGIN:    begin of exercice
+ * @DOSSIER_COL_STATUS:   localized status of the exercice
  * @DOSSIER_COL_CODE:   status code (from api/ofo-dossier.h) of the exercice
+ * @DOSSIER_COL_META:     ofaIFileMeta object
+ * @DOSSIER_COL_PERIOD:   ofaIFilePeriod object
  *
  * The columns stored in the subjacent #GtkListStore.
- * Cf. also #ofa_dossier_misc_get_exercices().
  */
 typedef enum {
-	DOSSIER_COL_DNAME = 0,
-	DOSSIER_COL_DBMS,
+	DOSSIER_COL_DOSNAME = 0,
+	DOSSIER_COL_PROVNAME,
 	DOSSIER_COL_DBNAME,
 	DOSSIER_COL_END,
 	DOSSIER_COL_BEGIN,
 	DOSSIER_COL_STATUS,					/* the displayable status */
 	DOSSIER_COL_CODE,					/* the status as a single-char code */
+	DOSSIER_COL_META,
+	DOSSIER_COL_PERIOD,
 	DOSSIER_N_COLUMNS
 }
 	ofaDossierStoreColumn;
 
 /**
  * ofaDossierDispColumn:
- * @DOSSIER_DISP_DNAME:  dossier name
- * @DOSSIER_DISP_DBMS:   dbms provider
+ * @DOSSIER_DISP_DOSNAME:  dossier name
+ * @DOSSIER_DISP_PROVNAME: dbms provider name
  * @DOSSIER_DISP_DBNAME: database name
- * @DOSSIER_DISP_END:    end of exercice
- * @DOSSIER_DISP_BEGIN:  begin of exercice
- * @DOSSIER_DISP_STATUS: localized status of the exercice
+ * @DOSSIER_DISP_END:      end of exercice
+ * @DOSSIER_DISP_BEGIN:    begin of exercice
+ * @DOSSIER_DISP_STATUS:   localized status of the exercice
  * @DOSSIER_DISP_CODE:   status code (from api/ofo-dossier.h) of the exercice
  *
  * The columns displayed in the views.
  * Cf. also #ofa_dossier_misc_get_exercices().
  */
 typedef enum {
-	DOSSIER_DISP_DNAME = 1,
-	DOSSIER_DISP_DBMS,
+	DOSSIER_DISP_DOSNAME = 1,
+	DOSSIER_DISP_PROVNAME,
 	DOSSIER_DISP_DBNAME,
 	DOSSIER_DISP_END,
 	DOSSIER_DISP_BEGIN,

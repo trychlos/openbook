@@ -196,8 +196,8 @@ setup_treeview( ofaDossierManager *self )
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DNAME, DOSSIER_DISP_BEGIN, DOSSIER_DISP_END,
-			DOSSIER_DISP_STATUS, DOSSIER_DISP_DBNAME, DOSSIER_DISP_DBMS,
+			DOSSIER_DISP_DOSNAME, DOSSIER_DISP_BEGIN, DOSSIER_DISP_END,
+			DOSSIER_DISP_STATUS, DOSSIER_DISP_DBNAME, DOSSIER_DISP_PROVNAME,
 			0 };
 
 	priv = self->priv;
@@ -264,7 +264,7 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 	gchar *dname, *dbname;
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DNAME );
+	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DOSNAME );
 	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
 	open_dossier( self, dname, dbname );
 	g_free( dname );
@@ -312,7 +312,7 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DNAME );
+	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DOSNAME );
 	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
 
 	if( confirm_delete( self, dname, dbname )){

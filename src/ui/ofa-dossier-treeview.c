@@ -312,17 +312,17 @@ create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns
 	priv = view->priv;
 
 	for( i=0 ; columns[i] ; ++i ){
-		if( columns[i] == DOSSIER_DISP_DNAME ){
+		if( columns[i] == DOSSIER_DISP_DOSNAME ){
 			cell = gtk_cell_renderer_text_new();
 			column = gtk_tree_view_column_new_with_attributes(
-							_( "Dossier" ), cell, "text", DOSSIER_COL_DNAME, NULL );
+							_( "Dossier" ), cell, "text", DOSSIER_COL_DOSNAME, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 
-		if( columns[i] == DOSSIER_DISP_DBMS ){
+		if( columns[i] == DOSSIER_DISP_PROVNAME ){
 			cell = gtk_cell_renderer_text_new();
 			column = gtk_tree_view_column_new_with_attributes(
-							_( "Provider" ), cell, "text", DOSSIER_COL_DBMS, NULL );
+							_( "Provider" ), cell, "text", DOSSIER_COL_PROVNAME, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 
@@ -457,7 +457,7 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
 		gtk_tree_model_get( model, &iter,
-				DOSSIER_COL_DNAME, &dname,
+				DOSSIER_COL_DOSNAME, &dname,
 				DOSSIER_COL_DBNAME, &dbname,
 				-1 );
 		g_signal_emit_by_name( self, signal, dname, dbname );
@@ -575,7 +575,7 @@ ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *
 		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->tfilter ), &iter )){
 			while( TRUE ){
 				gtk_tree_model_get(
-						GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DNAME, &str, -1 );
+						GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DOSNAME, &str, -1 );
 				cmp = g_utf8_collate( str, dname );
 				g_free( str );
 				if( cmp == 0 ){

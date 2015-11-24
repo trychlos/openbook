@@ -30,10 +30,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings-monitor.h"
 
 #include "ui/ofa-dossier-store.h"
 
@@ -49,12 +46,16 @@ struct _ofaDossierStorePrivate {
 };
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dname, dbms, dbname */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* end, begin, displayable status */
-		G_TYPE_STRING									/* code status */
+		G_TYPE_STRING, 					/* dossier name */
+		G_TYPE_STRING, 					/* DBMS provider name */
+		G_TYPE_STRING,					/* dbname */
+		G_TYPE_STRING, 					/* end date (user display) */
+		G_TYPE_STRING, 					/* begin date (user display) */
+		G_TYPE_STRING, 					/* localized status */
+		G_TYPE_STRING,					/* code status */
+		G_TYPE_OBJECT,					/* ofaIFileMeta */
+		G_TYPE_OBJECT					/* ofaIFilePeriod */
 };
-
-static ofaDossierStore *st_store        = NULL;
 
 /* signals defined here
  */
@@ -257,8 +258,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 	gchar *adname, *abegin, *bdname, *bbegin;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, DOSSIER_COL_DNAME, &adname, DOSSIER_COL_BEGIN, &abegin, -1 );
-	gtk_tree_model_get( tmodel, b, DOSSIER_COL_DNAME, &bdname, DOSSIER_COL_BEGIN, &bbegin, -1 );
+	gtk_tree_model_get( tmodel, a, DOSSIER_COL_DOSNAME, &adname, DOSSIER_COL_BEGIN, &abegin, -1 );
+	gtk_tree_model_get( tmodel, b, DOSSIER_COL_DOSNAME, &bdname, DOSSIER_COL_BEGIN, &bbegin, -1 );
 
 	cmp = g_utf8_collate( adname, bdname );
 	if( cmp == 0 ){
@@ -352,8 +353,8 @@ set_row( ofaDossierStore *store, const gchar *dname, const gchar *provider, cons
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
-			DOSSIER_COL_DNAME,  dname,
-			DOSSIER_COL_DBMS,   provider,
+			DOSSIER_COL_DOSNAME,  dname,
+			DOSSIER_COL_PROVNAME,   provider,
 			DOSSIER_COL_DBNAME, dbname,
 			DOSSIER_COL_BEGIN,  sdbegin,
 			DOSSIER_COL_END,    sdend,
@@ -444,7 +445,7 @@ get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *d
 		while( TRUE ){
 			gtk_tree_model_get(
 					GTK_TREE_MODEL( store ), iter,
-					DOSSIER_COL_DNAME, &row_dname, DOSSIER_COL_DBNAME, &row_dbname, -1 );
+					DOSSIER_COL_DOSNAME, &row_dname, DOSSIER_COL_DBNAME, &row_dbname, -1 );
 			found = g_utf8_collate( row_dname, dname ) == 0 &&
 					g_utf8_collate( row_dbname, dbname ) == 0;
 			g_free( row_dname );

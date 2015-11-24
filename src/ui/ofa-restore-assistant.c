@@ -477,7 +477,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent;
 	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DNAME,
+			DOSSIER_DISP_DOSNAME,
 			0 };
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -582,7 +582,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 
 	g_free( priv->p2_dossier );
 	priv->p2_dossier =
-			ofa_dossier_treeview_get_selected( priv->p2_dossier_treeview, DOSSIER_COL_DNAME );
+			ofa_dossier_treeview_get_selected( priv->p2_dossier_treeview, DOSSIER_COL_DOSNAME );
 	ok = my_strlen( priv->p2_dossier ) > 0;
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );

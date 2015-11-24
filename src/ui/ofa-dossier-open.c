@@ -201,7 +201,7 @@ v_init_dialog( myDialog *dialog )
 	ofaUserCredentialsBin *user_credentials;
 	GtkSizeGroup *group;
 	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DNAME,
+			DOSSIER_DISP_DOSNAME,
 			0 };
 
 	priv = OFA_DOSSIER_OPEN( dialog )->priv;

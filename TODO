@@ -473,7 +473,13 @@
 
  891 2015-11-23 remove ofaDossierStore() from ofaApplication
 
- 892
+ 892 2015-11-24 remove from ofaDossierStore:
+                - DOSSIER_COL_DBNAME
+                - DOSSIER_COL_CODE
+                - DOSSIER_DISP_DBNAME
+                - DOSSIER_DISP_CODE
+
+ 893
 
 -----------------------------------------------------------------------
  DONE
