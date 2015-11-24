@@ -64,7 +64,9 @@
  *            ofa_application_activate: main window instanciated at 0xfe43d0
  */
 
-#include "ui/ofa-application-def.h"
+#include "core/ofa-file-dir.h"
+
+#include "ofa-application-def.h"
 
 G_BEGIN_DECLS
 
@@ -108,6 +110,8 @@ int             ofa_application_run_with_args ( ofaApplication *application, int
 GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
 
 const gchar    *ofa_application_get_copyright ( const ofaApplication *application );
+
+ofaFileDir     *ofa_application_get_file_dir  ( const ofaApplication *application );
 
 G_END_DECLS
 

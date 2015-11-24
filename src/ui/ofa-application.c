@@ -44,7 +44,6 @@
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
-#include "ui/ofa-dossier-store.h"
 #include "api/ofa-preferences.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore-assistant.h"
@@ -52,14 +51,14 @@
 /* private instance data
  */
 struct _ofaApplicationPrivate {
-	gboolean            dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry       *options;
-	gchar              *application_name;
-	gchar              *description;
-	gchar              *icon_name;
+	GOptionEntry  *options;
+	gchar         *application_name;
+	gchar         *description;
+	gchar         *icon_name;
 
 	/* command-line args
 	 */
@@ -67,17 +66,16 @@ struct _ofaApplicationPrivate {
 
 	/* internals
 	 */
-	int                 argc;
-	GStrv               argv;
-	int                 code;
-	ofaMainWindow      *main_window;
-	GMenuModel         *menu;
-	ofaDossierStore    *dos_store;
-	ofaFileDir         *file_dir;
+	int            argc;
+	GStrv          argv;
+	int            code;
+	ofaMainWindow *main_window;
+	GMenuModel    *menu;
+	ofaFileDir    *file_dir;
 
 	/* menu items
 	 */
-	GSimpleAction      *action_open;
+	GSimpleAction *action_open;
 };
 
 /* class properties
@@ -138,7 +136,6 @@ static void     maintainer_test_function( void );
 
 static void     setup_actions_monitor( ofaApplication *application );
 static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application );
-static void     on_dossier_store_changed( ofaDossierStore *store, guint count, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -761,12 +758,6 @@ setup_actions_monitor( ofaApplication *application )
 			priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
 	on_file_dir_changed(
 			priv->file_dir, ofa_file_dir_get_dossiers_count( priv->file_dir ), application );
-
-	priv->dos_store = ofa_dossier_store_new();
-	g_signal_connect(
-			priv->dos_store, "changed", G_CALLBACK( on_dossier_store_changed ), application );
-	enable_action_open(
-			application, !ofa_dossier_store_is_empty( priv->dos_store ));
 }
 
 static void
@@ -776,16 +767,6 @@ on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application )
 
 	g_debug( "%s: dir=%p, count=%u, application=%p",
 			thisfn, ( void * ) dir, count, ( void * ) application );
-
-	enable_action_open( application, count > 0 );
-}
-
-static void
-on_dossier_store_changed( ofaDossierStore *store, guint count, ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_on_dossier_store_changed";
-
-	g_debug( "%s: count=%u", thisfn, count );
 
 	enable_action_open( application, count > 0 );
 }
@@ -967,11 +948,15 @@ on_version( ofaApplication *application )
 GMenuModel *
 ofa_application_get_menu_model( const ofaApplication *application )
 {
+	ofaApplicationPrivate *priv;
+
 	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
 
-	if( !application->priv->dispose_has_run ){
+	priv = application->priv;
 
-		return( application->priv->menu );
+	if( !priv->dispose_has_run ){
+
+		return( priv->menu );
 	}
 
 	return( NULL );
@@ -989,6 +974,27 @@ ofa_application_get_copyright( const ofaApplication *application )
 	if( !application->priv->dispose_has_run ){
 
 		return( _( "Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)" ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_application_get_file_dir:
+ * @application:
+ */
+ofaFileDir *
+ofa_application_get_file_dir( const ofaApplication *application )
+{
+	ofaApplicationPrivate *priv;
+
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+
+	priv = application->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->file_dir );
 	}
 
 	return( NULL );
