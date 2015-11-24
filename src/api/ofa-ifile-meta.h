@@ -109,24 +109,6 @@ typedef struct {
 	 * be g_object_unref() by the caller.
 	 */
 	ofaIDBProvider * ( *get_provider_instance )( const ofaIFileMeta *instance );
-
-	/**
-	 * get_settings:
-	 * @instance: the #ofaIFileMeta instance.
-	 *
-	 * Returns: the #mySettings object which manages the dossier meta
-	 * datas.
-	 */
-	mySettings *     ( *get_settings )( const ofaIFileMeta *instance );
-
-	/**
-	 * get_group_name:
-	 * @instance: the #ofaIFileMeta instance.
-	 *
-	 * Returns: the settings group name as a newly allocated string
-	 * which should be g_free() by the caller.
-	 */
-	gchar *          ( *get_group_name )( const ofaIFileMeta *instance );
 }
 	ofaIFileMetaInterface;
 
@@ -149,7 +131,13 @@ GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *m
 
 mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *meta );
 
-gchar          *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
+void            ofa_ifile_meta_set_settings              ( ofaIFileMeta *meta,
+																	mySettings *settings );
+
+const gchar    *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_set_group_name            ( ofaIFileMeta *meta,
+																	const gchar *group_name );
 
 G_END_DECLS
 

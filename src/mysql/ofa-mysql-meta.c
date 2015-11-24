@@ -41,8 +41,6 @@ struct _ofaMySQLMetaPrivate {
 	 */
 	const ofaIDBProvider *prov_instance;
 	gchar                *dos_name;
-	mySettings           *settings;
-	gchar                *group_name;
 };
 
 static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
@@ -50,8 +48,6 @@ static guint           ifile_meta_get_interface_version( const ofaIFileMeta *ins
 static gchar          *ifile_meta_get_dossier_name( const ofaIFileMeta *instance );
 static gchar          *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
 static ofaIDBProvider *ifile_meta_get_provider_instance( const ofaIFileMeta *instance );
-static mySettings     *ifile_meta_get_settings( const ofaIFileMeta *instance );
-static gchar          *ifile_meta_get_group_name( const ofaIFileMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -88,6 +84,7 @@ mysql_meta_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->prov_instance );
 	}
 
 	/* chain up to the parent class */
@@ -132,8 +129,6 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	iface->get_dossier_name = ifile_meta_get_dossier_name;
 	iface->get_provider_name = ifile_meta_get_provider_name;
 	iface->get_provider_instance = ifile_meta_get_provider_instance;
-	iface->get_settings = ifile_meta_get_settings;
-	iface->get_group_name = ifile_meta_get_group_name;
 }
 
 static guint
@@ -174,38 +169,6 @@ ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 	return( NULL );
 }
 
-static mySettings *
-ifile_meta_get_settings( const ofaIFileMeta *instance )
-{
-	ofaMySQLMetaPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
-
-	priv = OFA_MYSQL_META( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( priv->settings );
-	}
-
-	return( NULL );
-}
-
-static gchar *
-ifile_meta_get_group_name( const ofaIFileMeta *instance )
-{
-	ofaMySQLMetaPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
-
-	priv = OFA_MYSQL_META( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_strdup( priv->group_name ));
-	}
-
-	return( NULL );
-}
-
 static ofaIDBProvider *
 ifile_meta_get_provider_instance( const ofaIFileMeta *instance )
 {
@@ -240,10 +203,8 @@ ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, m
 
 	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
 	priv = meta->priv;
-	priv->prov_instance = instance;
+	priv->prov_instance = g_object_ref(( gpointer ) instance );
 	priv->dos_name = g_strdup( dossier_name );
-	priv->settings = settings;
-	priv->group_name = g_strdup( group );
 
 	return( meta );
 }

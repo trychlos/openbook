@@ -28,13 +28,26 @@
 
 #include <api/ofa-ifile-meta.h>
 
-#define IFILE_META_LAST_VERSION           1
+/* some data attached to each IFileMeta instance
+ * we store here the data provided by the application
+ * which do not depend of a specific implementation
+ */
+typedef struct {
+	mySettings *settings;
+	gchar      *group_name;
+}
+	sIFileMeta;
+
+#define IFILE_META_LAST_VERSION         1
+#define IFILE_META_DATA                 "ifile-meta-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType register_type( void );
-static void  interface_base_init( ofaIFileMetaInterface *klass );
-static void  interface_base_finalize( ofaIFileMetaInterface *klass );
+static GType       register_type( void );
+static void        interface_base_init( ofaIFileMetaInterface *klass );
+static void        interface_base_finalize( ofaIFileMetaInterface *klass );
+static sIFileMeta *get_ifile_meta_data( const ofaIFileMeta *meta );
+static void        on_meta_finalized( sIFileMeta *data, GObject *finalized_meta );
 
 /**
  * ofa_ifile_meta_get_type:
@@ -231,22 +244,43 @@ ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
  * ofa_ifile_meta_get_settings:
  * @meta: this #ofaIFileMeta instance.
  *
- * Returns: the #mySettings object which was set when instanciating
- * this @meta instance.
+ * Returns: the #mySettings object.
  *
- * The returned reference is owned by the implementation, and should
+ * The returned reference is owned by the interface, and should
  * not be freed by the caller.
  */
 mySettings *
 ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
 {
+	sIFileMeta *data;
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_settings ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_settings( meta ));
-	}
+	data = get_ifile_meta_data( meta );
 
-	return( NULL );
+	return( data->settings );
+}
+
+/**
+ * ofa_ifile_meta_set_settings:
+ * @meta: this #ofaIFileMeta instance.
+ * @settings: the #mySettings which holds the dossier settings.
+ *
+ * The interface takes a reference on the @settings object, to make
+ * sure it stays available. This reference will be automatically
+ * released on @meta finalization. It is so important to not call
+ * this method more than once.
+ */
+void
+ofa_ifile_meta_set_settings( ofaIFileMeta *meta, mySettings *settings )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_clear_object( &data->settings );
+	data->settings = g_object_ref( settings );
 }
 
 /**
@@ -254,20 +288,64 @@ ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
  * @meta: this #ofaIFileMeta instance.
  *
  * Returns: the name of the group which holds all dossier informations
- * in the settings file. This name was first set when instanciating
- * this @meta instance.
+ * in the settings file.
  *
- * The name is returned as a newly allocated string which should be
- * g_free() by the caller.
+ * The returned name is owned by the interface, and should not be freed
+ * by the caller.
  */
-gchar *
+const gchar *
 ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
 {
+	sIFileMeta *data;
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_group_name ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_group_name( meta ));
+	data = get_ifile_meta_data( meta );
+
+	return(( const gchar * ) data->group_name );
+}
+
+/**
+ * ofa_ifile_meta_set_group_name:
+ * @meta: this #ofaIFileMeta instance.
+ * @group_name: the group name for the dossier.
+ */
+void
+ofa_ifile_meta_set_group_name( ofaIFileMeta *meta, const gchar *group_name )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_free( data->group_name );
+	data->group_name = g_strdup( group_name );
+}
+
+static sIFileMeta *
+get_ifile_meta_data( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+
+	data = ( sIFileMeta * ) g_object_get_data( G_OBJECT( meta ), IFILE_META_DATA );
+
+	if( !data ){
+		data = g_new0( sIFileMeta, 1 );
+		g_object_set_data( G_OBJECT( meta ), IFILE_META_DATA, data );
+		g_object_weak_ref( G_OBJECT( meta ), ( GWeakNotify ) on_meta_finalized, data );
 	}
 
-	return( NULL );
+	return( data );
+}
+
+static void
+on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_on_meta_finalized";
+
+	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
+
+	g_object_unref( data->settings );
+	g_free( data->group_name );
+	g_free( data );
 }
