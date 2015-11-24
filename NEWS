@@ -30,12 +30,12 @@
 
  Other changes:
 
-   - ofaIDBProvider: new interface.
+   - ofaIDBProvider: new DBMS directory management interface.
    - ofaDossierPeriod: new class which implements ofaIFilePeriod interface.
    - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
-   - ofaDossierId: new class which implements ofaIFileId interface.
-   - ofaIFileId: new dossier meta properties management interface.
+   - ofaDossierId: new class which implements ofaIFileMeta interface.
+   - ofaIFileMeta: new dossier meta properties management interface.
    - myFileMonitor: new class.
    - mySettings: new class.
    - ofa-entry-columns.{c,h}: removed obsolete files.

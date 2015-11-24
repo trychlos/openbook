@@ -41,6 +41,7 @@
  */
 
 #include "my-settings.h"
+#include "ofa-ifile-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -77,7 +78,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint         ( *get_interface_version )( const ofaIDBProvider *instance );
+	guint          ( *get_interface_version )( const ofaIDBProvider *instance );
 
 	/**
 	 * get_provider_name:
@@ -96,13 +97,31 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	const gchar * ( *get_provider_name )    ( const ofaIDBProvider *instance );
+	const gchar *  ( *get_provider_name )    ( const ofaIDBProvider *instance );
+
+	/**
+	 * get_dossier_meta:
+	 * @instance: the #ofaIDBProvider provider.
+	 * @dssier_name: the name of the dossier.
+	 * @settings: the #mySettings instance.
+	 * @group: the group name in the settings.
+	 *
+	 * Return value: an #ofaIFileMeta object which holds dossier name
+	 * and other external properties. The returned reference should be
+	 * g_object_unref() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	ofaIFileMeta * ( *get_dossier_meta )     ( const ofaIDBProvider *instance,
+														const gchar *dossier_name,
+														mySettings *settings,
+														const gchar *group );
 
 	/**
 	 * get_dossier_periods:
 	 * @instance: the #ofaIDBProvider provider.
-	 * @group: the group name in the settings.
 	 * @settings: the #mySettings instance.
+	 * @group: the group name in the settings.
 	 *
 	 * Return value: the list of defined periods for the identified
 	 * dossier, as a #GList of GObject -derived objects which implement
@@ -113,7 +132,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GList *       ( *get_dossier_periods )  ( const ofaIDBProvider *instance,
+	GList *        ( *get_dossier_periods )  ( const ofaIDBProvider *instance,
 														mySettings *settings,
 														const gchar *group );
 }
@@ -125,7 +144,10 @@ guint           ofa_idbprovider_get_interface_last_version( void );
 
 guint           ofa_idbprovider_get_interface_version     ( const ofaIDBProvider *instance );
 
-const gchar    *ofa_idbprovider_get_provider_name         ( const ofaIDBProvider *instance );
+ofaIFileMeta   *ofa_idbprovider_get_dossier_meta          ( const ofaIDBProvider *instance,
+																		const gchar *dossier_name,
+																		mySettings *settings,
+																		const gchar *group );
 
 GList          *ofa_idbprovider_get_dossier_periods       ( const ofaIDBProvider *instance,
 																		mySettings *settings,

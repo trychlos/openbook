@@ -22,56 +22,55 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DOSSIER_ID_H__
-#define __OFA_DOSSIER_ID_H__
+#ifndef __OFA_MYSQL_META_H__
+#define __OFA_MYSQL_META_H__
 
 /**
- * SECTION: ofa_dossier_id
- * @short_description: #ofaDossierId class definition.
- * @include: core/ofa-dossier-id.h
+ * SECTION: ofa_mysql_meta
+ * @short_description: #ofaMySQLMeta class definition.
+ * @include: mysql/ofa-mysql-meta.h
  *
  * A class to manage dossier identification and other external
- * properties. In particular, it implements #ofaIFileId interface.
+ * properties. In particular, it implements #ofaIFileMeta interface.
  */
 
-#include <glib-object.h>
+#include <api/my-settings.h>
+
+#include "ofa-mysql-idbprovider.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_DOSSIER_ID                ( ofa_dossier_id_get_type())
-#define OFA_DOSSIER_ID( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DOSSIER_ID, ofaDossierId ))
-#define OFA_DOSSIER_ID_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DOSSIER_ID, ofaDossierIdClass ))
-#define OFA_IS_DOSSIER_ID( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DOSSIER_ID ))
-#define OFA_IS_DOSSIER_ID_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_ID ))
-#define OFA_DOSSIER_ID_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_ID, ofaDossierIdClass ))
+#define OFA_TYPE_MYSQL_META                ( ofa_mysql_meta_get_type())
+#define OFA_MYSQL_META( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_META, ofaMySQLMeta ))
+#define OFA_MYSQL_META_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_META, ofaMySQLMetaClass ))
+#define OFA_IS_MYSQL_META( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_META ))
+#define OFA_IS_MYSQL_META_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_META ))
+#define OFA_MYSQL_META_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_META, ofaMySQLMetaClass ))
 
-typedef struct _ofaDossierIdPrivate        ofaDossierIdPrivate;
+typedef struct _ofaMySQLMetaPrivate         ofaMySQLMetaPrivate;
 
 typedef struct {
 	/*< public members >*/
 	GObject              parent;
 
 	/*< private members >*/
-	ofaDossierIdPrivate *priv;
+	ofaMySQLMetaPrivate *priv;
 }
-	ofaDossierId;
+	ofaMySQLMeta;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass         parent;
 }
-	ofaDossierIdClass;
+	ofaMySQLMetaClass;
 
-GType         ofa_dossier_id_get_type         ( void ) G_GNUC_CONST;
+GType         ofa_mysql_meta_get_type( void ) G_GNUC_CONST;
 
-ofaDossierId *ofa_dossier_id_new              ( void );
-
-void          ofa_dossier_id_set_dossier_name ( ofaDossierId *id,
-															const gchar *name );
-
-void          ofa_dossier_id_set_provider_name( ofaDossierId *id,
-															const gchar *name );
+ofaMySQLMeta *ofa_mysql_meta_new     ( const ofaIDBProvider *provider,
+												const gchar *dossier_name,
+												mySettings *settings,
+												const gchar *group );
 
 G_END_DECLS
 
-#endif /* __OFA_DOSSIER_ID_H__ */
+#endif /* __OFA_MYSQL_META_H__ */

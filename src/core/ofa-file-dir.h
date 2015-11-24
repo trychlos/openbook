@@ -42,7 +42,7 @@
  * settings.
  */
 
-#include "api/ofa-ifile-id.h"
+#include "api/ofa-ifile-meta.h"
 
 G_BEGIN_DECLS
 
@@ -82,7 +82,7 @@ GList      *ofa_file_dir_get_dossiers       ( ofaFileDir *dir );
 guint       ofa_file_dir_get_dossiers_count ( const ofaFileDir *dir );
 
 GList      *ofa_file_dir_get_dossier_periods( const ofaFileDir *dir,
-													const ofaIFileId *id );
+													const ofaIFileMeta *id );
 
 G_END_DECLS
 

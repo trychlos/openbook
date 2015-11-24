@@ -22,17 +22,18 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IFILE_ID_H__
-#define __OPENBOOK_API_OFA_IFILE_ID_H__
+#ifndef __OPENBOOK_API_OFA_IFILE_META_H__
+#define __OPENBOOK_API_OFA_IFILE_META_H__
 
 /**
- * SECTION: ifile_id
- * @title: ofaIFileId
+ * SECTION: ifile_meta
+ * @title: ofaIFileMeta
  * @short_description: An interface to manage dossiers meta properties.
- * @include: openbook/ofa-ifile-id.h
+ * @include: openbook/ofa-ifile-meta.h
  *
- * The #ofaIFileId interface manages the identification of the dossiers,
- * and other external properties.
+ * The #ofaIFileMeta interface manages the identification of the dossiers,
+ * and other external properties. This interface is expected to be
+ * implemented by objects instanciated by DBMS plugins.
  *
  * This is an Openbook software suite decision to have all these meta
  * properties stored in a single dedicated ini file, said dossiers
@@ -41,26 +42,24 @@
  */
 
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-ifile-meta-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IFILE_ID                      ( ofa_ifile_id_get_type())
-#define OFA_IFILE_ID( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IFILE_ID, ofaIFileId ))
-#define OFA_IS_IFILE_ID( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IFILE_ID ))
-#define OFA_IFILE_ID_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IFILE_ID, ofaIFileIdInterface ))
-
-typedef struct _ofaIFileId                     ofaIFileId;
+#define OFA_TYPE_IFILE_META                      ( ofa_ifile_meta_get_type())
+#define OFA_IFILE_META( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IFILE_META, ofaIFileMeta ))
+#define OFA_IS_IFILE_META( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IFILE_META ))
+#define OFA_IFILE_META_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IFILE_META, ofaIFileMetaInterface ))
 
 /**
- * ofaIFileIdInterface:
+ * ofaIFileMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
  * @get_dossier_name: [must]: returns the identifier name of the dossier.
  * @get_provider_name: [should]: returns the IDbms provider name.
  * @get_provider_instance: [should]: returns the IDbms provider instance.
- * @get_periods: [should]: returns the defined financial periods.
  *
- * This defines the interface that an #ofaIFileId should/must
+ * This defines the interface that an #ofaIFileMeta should/must
  * implement.
  */
 typedef struct {
@@ -70,7 +69,7 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIFileId instance.
+	 * @instance: the #ofaIFileMeta instance.
 	 *
 	 * The interface calls this method each time it need to know which
 	 * version is implemented by the instance.
@@ -80,49 +79,49 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint            ( *get_interface_version )( const ofaIFileId *instance );
+	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
 
 	/**
 	 * get_dossier_name:
-	 * @instance: the #ofaIFileId instance.
+	 * @instance: the #ofaIFileMeta instance.
 	 *
 	 * Returns: the identifier name of the dossier as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *          ( *get_dossier_name )     ( const ofaIFileId *instance );
+	gchar *          ( *get_dossier_name )     ( const ofaIFileMeta *instance );
 
 	/**
 	 * get_provider_name:
-	 * @instance: the #ofaIFileId instance.
+	 * @instance: the #ofaIFileMeta instance.
 	 *
 	 * Returns: the provider name as a newly allocated
 	 * string which should be g_free() by the caller.
 	 */
-	gchar *          ( *get_provider_name )    ( const ofaIFileId *instance );
+	gchar *          ( *get_provider_name )    ( const ofaIFileMeta *instance );
 
 	/**
 	 * get_provider_instance:
-	 * @instance: the #ofaIFileId instance.
+	 * @instance: the #ofaIFileMeta instance.
 	 *
 	 * Returns: a new reference to the provider instance which should
 	 * be g_object_unref() by the caller.
 	 */
-	ofaIDBProvider * ( *get_provider_instance )( const ofaIFileId *instance );
+	ofaIDBProvider * ( *get_provider_instance )( const ofaIFileMeta *instance );
 }
-	ofaIFileIdInterface;
+	ofaIFileMetaInterface;
 
-GType           ofa_ifile_id_get_type                  ( void );
+GType           ofa_ifile_meta_get_type                  ( void );
 
-guint           ofa_ifile_id_get_interface_last_version( void );
+guint           ofa_ifile_meta_get_interface_last_version( void );
 
-guint           ofa_ifile_id_get_interface_version     ( const ofaIFileId *instance );
+guint           ofa_ifile_meta_get_interface_version     ( const ofaIFileMeta *instance );
 
-gchar          *ofa_ifile_id_get_dossier_name          ( const ofaIFileId *instance );
+gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *instance );
 
-gchar          *ofa_ifile_id_get_provider_name         ( const ofaIFileId *instance );
+gchar          *ofa_ifile_meta_get_provider_name         ( const ofaIFileMeta *instance );
 
-ofaIDBProvider *ofa_ifile_id_get_provider_instance     ( const ofaIFileId *instance );
+ofaIDBProvider *ofa_ifile_meta_get_provider_instance     ( const ofaIFileMeta *instance );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IFILE_ID_H__ */
+#endif /* __OPENBOOK_API_OFA_IFILE_META_H__ */

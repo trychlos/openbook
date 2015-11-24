@@ -38,6 +38,7 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *get_provider_by_name( GList *modules, const gchar *name );
+static const gchar    *get_provider_name( const ofaIDBProvider *instance );
 
 /**
  * ofa_idbprovider_get_type:
@@ -144,21 +145,26 @@ ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
 }
 
 /**
- * ofa_idbprovider_get_provider_name:
+ * ofa_idbprovider_get_dossier_meta:
  * @instance: this #ofaIDBProvider instance.
+ * @dossier_name: the name of the dossier.
+ * @settings: the #mySettings instance in which the application has
+ *  chosen to store its dossiers meta datas
+ * @group: the group name identifying the desired dossier.
  *
- * Returns: the identifier name of the @instance.
- *
- * The returned identifier is owned by the #ofaIDBProvider instance,
- * and should not be released by the caller.
+ * Returns: an #ofaIFileMeta object which should be g_object_unref() by
+ * the caller.
  */
-const gchar *
-ofa_idbprovider_get_provider_name( const ofaIDBProvider *instance )
+ofaIFileMeta *
+ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
 {
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
+	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta( instance, dossier_name, settings, group ));
 	}
 
 	return( NULL );
@@ -221,7 +227,7 @@ get_provider_by_name( GList *modules, const gchar *name )
 	instance = NULL;
 
 	for( im=modules ; im ; im=im->next ){
-		provider_name = ofa_idbprovider_get_provider_name( OFA_IDBPROVIDER( im->data ));
+		provider_name = get_provider_name( OFA_IDBPROVIDER( im->data ));
 		if( !g_utf8_collate( provider_name, name )){
 			instance = g_object_ref( OFA_IDBPROVIDER( im->data ));
 			break;
@@ -229,4 +235,14 @@ get_provider_by_name( GList *modules, const gchar *name )
 	}
 
 	return( instance );
+}
+
+static const gchar *
+get_provider_name( const ofaIDBProvider *instance )
+{
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
+	}
+
+	return( NULL );
 }

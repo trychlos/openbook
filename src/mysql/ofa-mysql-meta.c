@@ -27,126 +27,125 @@
 #endif
 
 #include "api/my-utils.h"
-#include "api/ofa-idbms.h"
-#include "api/ofa-ifile-id.h"
+#include "api/ofa-ifile-meta.h"
 
-#include "ofa-dossier-id.h"
+#include "ofa-mysql-idbprovider.h"
+#include "ofa-mysql-meta.h"
 
 /* priv instance data
  */
-struct _ofaDossierIdPrivate {
-	gboolean        dispose_has_run;
+struct _ofaMySQLMetaPrivate {
+	gboolean              dispose_has_run;
 
-	/* runtime data
+	/* initialization data
 	 */
-	gchar          *dos_name;
-	gchar          *prov_name;
-	ofaIDBProvider *prov_instance;
+	const ofaIDBProvider *prov_instance;
+	gchar                *dos_name;
+	mySettings           *settings;
+	gchar                *group_name;
 };
 
-static void            ifile_id_iface_init( ofaIFileIdInterface *iface );
-static guint           ifile_id_get_interface_version( const ofaIFileId *instance );
-static gchar          *ifile_id_get_dossier_name( const ofaIFileId *instance );
-static gchar          *ifile_id_get_provider_name( const ofaIFileId *instance );
-static ofaIDBProvider *ifile_id_get_provider_instance( const ofaIFileId *instance );
+static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
+static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
+static gchar          *ifile_meta_get_dossier_name( const ofaIFileMeta *instance );
+static gchar          *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
+static ofaIDBProvider *ifile_meta_get_provider_instance( const ofaIFileMeta *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaDossierId, ofa_dossier_id, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_ID, ifile_id_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
 
 static void
-dossier_id_finalize( GObject *instance )
+mysql_meta_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_id_finalize";
-	ofaDossierIdPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_meta_finalize";
+	ofaMySQLMetaPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_DOSSIER_ID( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_ID( instance )->priv;
+	priv = OFA_MYSQL_META( instance )->priv;
 
 	g_free( priv->dos_name );
-	g_free( priv->prov_name );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_id_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_meta_parent_class )->finalize( instance );
 }
 
 static void
-dossier_id_dispose( GObject *instance )
+mysql_meta_dispose( GObject *instance )
 {
-	ofaDossierIdPrivate *priv;
+	ofaMySQLMetaPrivate *priv;
 
-	priv = OFA_DOSSIER_ID( instance )->priv;
+	priv = OFA_MYSQL_META( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->prov_instance );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_id_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_meta_parent_class )->dispose( instance );
 }
 
 static void
-ofa_dossier_id_init( ofaDossierId *self )
+ofa_mysql_meta_init( ofaMySQLMeta *self )
 {
-	static const gchar *thisfn = "ofa_dossier_id_init";
+	static const gchar *thisfn = "ofa_mysql_meta_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_ID, ofaDossierIdPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_META, ofaMySQLMetaPrivate );
 }
 
 static void
-ofa_dossier_id_class_init( ofaDossierIdClass *klass )
+ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
 {
-	static const gchar *thisfn = "ofa_dossier_id_class_init";
+	static const gchar *thisfn = "ofa_mysql_meta_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = dossier_id_dispose;
-	G_OBJECT_CLASS( klass )->finalize = dossier_id_finalize;
+	G_OBJECT_CLASS( klass )->dispose = mysql_meta_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_meta_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaDossierIdPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaMySQLMetaPrivate ));
 }
 
 /*
- * ofaIFileId interface management
+ * ofaIFileMeta interface management
  */
 static void
-ifile_id_iface_init( ofaIFileIdInterface *iface )
+ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 {
-	static const gchar *thisfn = "ofa_dossier_id_ifile_id_iface_init";
+	static const gchar *thisfn = "ofa_mysql_meta_ifile_meta_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = ifile_id_get_interface_version;
-	iface->get_dossier_name = ifile_id_get_dossier_name;
-	iface->get_provider_name = ifile_id_get_provider_name;
-	iface->get_provider_instance = ifile_id_get_provider_instance;
+	iface->get_interface_version = ifile_meta_get_interface_version;
+	iface->get_dossier_name = ifile_meta_get_dossier_name;
+	iface->get_provider_name = ifile_meta_get_provider_name;
+	iface->get_provider_instance = ifile_meta_get_provider_instance;
 }
 
 static guint
-ifile_id_get_interface_version( const ofaIFileId *instance )
+ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
 	return( 1 );
 }
 
 static gchar *
-ifile_id_get_dossier_name( const ofaIFileId *instance )
+ifile_meta_get_dossier_name( const ofaIFileMeta *instance )
 {
-	ofaDossierIdPrivate *priv;
+	ofaMySQLMetaPrivate *priv;
 
-	g_return_val_if_fail( instance && OFA_IS_DOSSIER_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
 
-	priv = OFA_DOSSIER_ID( instance )->priv;
+	priv = OFA_MYSQL_META( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 		return( g_strdup( priv->dos_name ));
@@ -156,101 +155,59 @@ ifile_id_get_dossier_name( const ofaIFileId *instance )
 }
 
 static gchar *
-ifile_id_get_provider_name( const ofaIFileId *instance )
+ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 {
-	ofaDossierIdPrivate *priv;
+	ofaMySQLMetaPrivate *priv;
 
-	g_return_val_if_fail( instance && OFA_IS_DOSSIER_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
 
-	priv = OFA_DOSSIER_ID( instance )->priv;
+	priv = OFA_MYSQL_META( instance )->priv;
 
 	if( !priv->dispose_has_run ){
-		return( g_strdup( priv->prov_name ));
+		return( g_strdup( ofa_mysql_idbprovider_get_provider_name( priv->prov_instance )));
 	}
 
 	return( NULL );
 }
 
 static ofaIDBProvider *
-ifile_id_get_provider_instance( const ofaIFileId *instance )
+ifile_meta_get_provider_instance( const ofaIFileMeta *instance )
 {
-	ofaDossierIdPrivate *priv;
+	ofaMySQLMetaPrivate *priv;
 
-	g_return_val_if_fail( instance && OFA_IS_DOSSIER_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
 
-	priv = OFA_DOSSIER_ID( instance )->priv;
+	priv = OFA_MYSQL_META( instance )->priv;
 
 	if( !priv->dispose_has_run ){
-		return( g_object_ref( priv->prov_instance ));
+		return( g_object_ref(( gpointer ) priv->prov_instance ));
 	}
 
 	return( NULL );
 }
 
 /**
- * ofa_dossier_id_new:
- * @collection: the #ofaIFileCollection this creation originates from.
+ * ofa_mysql_meta_new:
+ * @instance: the #ofaIDBProvider which manages this dossier.
+ * @dossier_name: the name of the dossier.
+ * @settings: the dossier settings file provided by the application.
+ * @group: the settings group name.
  *
- * Returns: a new reference to a #ofaDossierId instance.
- *
- * The returned reference should be #g_object_unref() by the caller.
+ * Returns: a new reference to a #ofaMySQLMeta instance, which should
+ * be #g_object_unref() by the caller.
  */
-ofaDossierId *
-ofa_dossier_id_new( void )
+ofaMySQLMeta *
+ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
 {
-	ofaDossierId *id;
+	ofaMySQLMeta *meta;
+	ofaMySQLMetaPrivate *priv;
 
-	id = g_object_new( OFA_TYPE_DOSSIER_ID, NULL );
+	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
+	priv = meta->priv;
+	priv->prov_instance = instance;
+	priv->dos_name = g_strdup( dossier_name );
+	priv->settings = settings;
+	priv->group_name = g_strdup( group );
 
-	return( id );
-}
-
-/**
- * ofa_dossier_id_set_dossier_name:
- * @instance: this #ofaDossierId instance.
- * @name: the identifier name of the dossier.
- *
- * Set the name of the dossier.
- */
-void
-ofa_dossier_id_set_dossier_name( ofaDossierId *id, const gchar *name )
-{
-	ofaDossierIdPrivate *priv;
-
-	g_return_if_fail( id && OFA_IS_DOSSIER_ID( id ));
-
-	priv = id->priv;
-
-	if( !priv->dispose_has_run ){
-		g_free( priv->dos_name );
-		priv->dos_name = g_strdup( name );
-	}
-}
-
-/**
- * ofa_dossier_id_set_provider_name:
- * @instance: this #ofaDossierId instance.
- * @name: the provider name for the dossier.
- *
- * Set the name of the provider.
- */
-void
-ofa_dossier_id_set_provider_name( ofaDossierId *id, const gchar *name )
-{
-	ofaDossierIdPrivate *priv;
-
-	g_return_if_fail( id && OFA_IS_DOSSIER_ID( id ));
-
-	priv = id->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_free( priv->prov_name );
-		priv->prov_name = g_strdup( name );
-
-		g_clear_object( &priv->prov_instance );
-		if( my_strlen( name )){
-			priv->prov_instance = ofa_idbprovider_get_instance_by_name( priv->prov_name );
-		}
-	}
+	return( meta );
 }

@@ -80,8 +80,6 @@ libofa_core_la_SOURCES = \
 	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
-	ofa-dossier-id.c									\
-	ofa-dossier-id.h									\
 	ofa-dossier-misc.c									\
 	ofa-dossier-period.c								\
 	ofa-dossier-period.h								\
@@ -99,7 +97,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbms.c											\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
-	ofa-ifile-id.c										\
+	ofa-ifile-meta.c									\
 	ofa-ifile-period.c									\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\

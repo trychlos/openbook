@@ -26,23 +26,23 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-ifile-id.h"
+#include "api/ofa-ifile-meta.h"
 
-#define IFILE_ID_LAST_VERSION           1
+#define IFILE_META_LAST_VERSION           1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaIFileIdInterface *klass );
-static void  interface_base_finalize( ofaIFileIdInterface *klass );
+static void  interface_base_init( ofaIFileMetaInterface *klass );
+static void  interface_base_finalize( ofaIFileMetaInterface *klass );
 
 /**
- * ofa_ifile_id_get_type:
+ * ofa_ifile_meta_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_ifile_id_get_type( void )
+ofa_ifile_meta_get_type( void )
 {
 	static GType type = 0;
 
@@ -54,18 +54,18 @@ ofa_ifile_id_get_type( void )
 }
 
 /*
- * ofa_ifile_id_register_type:
+ * ofa_ifile_meta_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_ifile_id_register_type";
+	static const gchar *thisfn = "ofa_ifile_meta_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIFileIdInterface ),
+		sizeof( ofaIFileMetaInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -78,7 +78,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIFileId", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIFileMeta", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -86,9 +86,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIFileIdInterface *klass )
+interface_base_init( ofaIFileMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_id_interface_base_init";
+	static const gchar *thisfn = "ofa_ifile_meta_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
@@ -100,9 +100,9 @@ interface_base_init( ofaIFileIdInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIFileIdInterface *klass )
+interface_base_finalize( ofaIFileMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_id_interface_base_finalize";
+	static const gchar *thisfn = "ofa_ifile_meta_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -112,88 +112,88 @@ interface_base_finalize( ofaIFileIdInterface *klass )
 }
 
 /**
- * ofa_ifile_id_get_interface_last_version:
+ * ofa_ifile_meta_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_ifile_id_get_interface_last_version( void )
+ofa_ifile_meta_get_interface_last_version( void )
 {
-	return( IFILE_ID_LAST_VERSION );
+	return( IFILE_META_LAST_VERSION );
 }
 
 /**
- * ofa_ifile_id_get_interface_version:
- * @instance: this #ofaIFileId instance.
+ * ofa_ifile_meta_get_interface_version:
+ * @instance: this #ofaIFileMeta instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_ifile_id_get_interface_version( const ofaIFileId *instance )
+ofa_ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), 0 );
+	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), 0 );
 
-	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_interface_version( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
 	return( 1 );
 }
 
 /**
- * ofa_ifile_id_get_dossier_name:
- * @instance: this #ofaIFileId instance.
+ * ofa_ifile_meta_get_dossier_name:
+ * @instance: this #ofaIFileMeta instance.
  *
  * Returns: the identifier name of the dossier as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ifile_id_get_dossier_name( const ofaIFileId *instance )
+ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *instance )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
 
-	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_dossier_name ){
-		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_dossier_name( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_dossier_name ){
+		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_dossier_name( instance ));
 	}
 
 	return( NULL );
 }
 
 /**
- * ofa_ifile_id_get_provider_name:
- * @instance: this #ofaIFileId instance.
+ * ofa_ifile_meta_get_provider_name:
+ * @instance: this #ofaIFileMeta instance.
  *
  * Returns: the provider name as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ifile_id_get_provider_name( const ofaIFileId *instance )
+ofa_ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
 
-	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_name ){
-		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_name( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_name ){
+		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_name( instance ));
 	}
 
 	return( NULL );
 }
 
 /**
- * ofa_ifile_id_get_provider_instance:
- * @instance: this #ofaIFileId instance.
+ * ofa_ifile_meta_get_provider_instance:
+ * @instance: this #ofaIFileMeta instance.
  *
  * Returns: a new reference to the provider instance which should be
  * g_object_unref() by the caller.
  */
 ofaIDBProvider *
-ofa_ifile_id_get_provider_instance( const ofaIFileId *instance )
+ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *instance )
 {
-	g_return_val_if_fail( instance && OFA_IS_IFILE_ID( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IFILE_META( instance ), NULL );
 
-	if( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance ){
-		return( OFA_IFILE_ID_GET_INTERFACE( instance )->get_provider_instance( instance ));
+	if( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_instance ){
+		return( OFA_IFILE_META_GET_INTERFACE( instance )->get_provider_instance( instance ));
 	}
 
 	return( NULL );

@@ -48,8 +48,12 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-connect-display-bin.h					\
 	ofa-mysql-connect-enter-bin.c					\
 	ofa-mysql-connect-enter-bin.h					\
+	ofa-mysql-meta.c								\
+	ofa-mysql-meta.h								\
 	ofa-mysql-idbms.c								\
 	ofa-mysql-idbms.h								\
+	ofa-mysql-idbprovider.c							\
+	ofa-mysql-idbprovider.h							\
 	ofa-mysql-ipreferences.c						\
 	ofa-mysql-ipreferences.h						\
 	ofa-mysql-prefs-bin.c							\

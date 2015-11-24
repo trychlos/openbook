@@ -29,8 +29,9 @@
 #include "api/my-file-monitor.h"
 #include "api/my-settings.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-ifile-meta.h"
 
-#include "ofa-dossier-id.h"
 #include "ofa-file-dir.h"
 
 /* private instance data
@@ -61,7 +62,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void   setup_settings( ofaFileDir *dir );
 static void   on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
 static GList *load_dossiers( ofaFileDir *dir );
-static gchar *get_group_for_file( const ofaFileDir *dir, const ofaIFileId *file );
+static gchar *get_group_for_file( const ofaFileDir *dir, const ofaIFileMeta *file );
 
 G_DEFINE_TYPE( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT )
 
@@ -194,7 +195,7 @@ setup_settings( ofaFileDir *dir )
  * @dir: this #ofaFileDir instance.
  *
  * Returns: a list of defined dossiers as a #GList of GObject -derived
- * objects which implement the #ofaIFileId interface.
+ * objects which implement the #ofaIFileMeta interface.
  *
  * The returned list should be
  *  #g_list_free_full( <list>, ( GDestroyNotify ) g_object_unref ) by
@@ -236,13 +237,15 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 static GList *
 load_dossiers( ofaFileDir *dir )
 {
+	static const gchar *thisfn = "ofa_file_dir_load_dossiers";
 	ofaFileDirPrivate *priv;
 	GList *outlist;
 	GList *inlist, *it;
 	gulong prefix_len;
 	const gchar *cstr;
 	gchar *dos_name, *prov_name;
-	ofaDossierId *dossier;
+	ofaIDBProvider *idbprovider;
+	ofaIFileMeta *dossier;
 
 	priv = dir->priv;
 	outlist = NULL;
@@ -253,10 +256,24 @@ load_dossiers( ofaFileDir *dir )
 		cstr = ( const gchar * ) it->data;
 		if( g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
 			dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
+			if( !my_strlen( dos_name )){
+				g_warning( "%s: found empty dossier name", thisfn );
+				ofa_file_dir_free_dossiers( outlist );
+				return( NULL );
+			}
 			prov_name = my_settings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
-			dossier = ofa_dossier_id_new();
-			ofa_dossier_id_set_dossier_name( dossier, dos_name );
-			ofa_dossier_id_set_provider_name( dossier, prov_name );
+			if( !my_strlen( prov_name )){
+				g_warning( "%s: found empty DBMS provider name", thisfn );
+				ofa_file_dir_free_dossiers( outlist );
+				return( NULL );
+			}
+			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
+			if( !idbprovider ){
+				g_warning( "%s: unable to find an instance for %s DBMS provider name", thisfn, prov_name );
+				ofa_file_dir_free_dossiers( outlist );
+				return( NULL );
+			}
+			dossier = ofa_idbprovider_get_dossier_meta( idbprovider, dos_name, priv->settings, cstr );
 			outlist = g_list_prepend( outlist, dossier );
 			g_free( prov_name );
 			g_free( dos_name );
@@ -293,13 +310,13 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 /**
  * ofa_file_dir_get_dossier_periods:
  * @dir: this #ofaFileDir instance.
- * @file: an #ofaIFileId instance which identifies the dossier.
+ * @file: an #ofaIFileMeta instance which identifies the dossier.
  *
  * Returns: the list of periods for this dossier, as a #GList which
- * should be #ofa_ifile_id_free_periods() by the caller.
+ * should be #ofa_ifile_meta_free_periods() by the caller.
  */
 GList *
-ofa_file_dir_get_dossier_periods( const ofaFileDir *dir, const ofaIFileId *file )
+ofa_file_dir_get_dossier_periods( const ofaFileDir *dir, const ofaIFileMeta *file )
 {
 	ofaFileDirPrivate *priv;
 	GList *list;
@@ -311,7 +328,7 @@ ofa_file_dir_get_dossier_periods( const ofaFileDir *dir, const ofaIFileId *file 
 
 	if( !priv->dispose_has_run ){
 		group = get_group_for_file( dir, file );
-		dbms = ofa_ifile_id_get_provider_instance( file );
+		dbms = ofa_ifile_meta_get_provider_instance( file );
 		list = ofa_idbprovider_get_dossier_periods( dbms, priv->settings, group );
 		g_object_unref( dbms );
 		g_free( group );
@@ -321,11 +338,11 @@ ofa_file_dir_get_dossier_periods( const ofaFileDir *dir, const ofaIFileId *file 
 }
 
 static gchar *
-get_group_for_file( const ofaFileDir *dir, const ofaIFileId *file )
+get_group_for_file( const ofaFileDir *dir, const ofaIFileMeta *file )
 {
 	gchar *name, *group;
 
-	name = ofa_ifile_id_get_dossier_name( file );
+	name = ofa_ifile_meta_get_dossier_name( file );
 	group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, name );
 	g_free( name );
 
