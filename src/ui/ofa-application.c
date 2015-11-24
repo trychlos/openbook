@@ -44,6 +44,7 @@
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-dossier-store.h"
 #include "api/ofa-preferences.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore-assistant.h"
@@ -51,14 +52,14 @@
 /* private instance data
  */
 struct _ofaApplicationPrivate {
-	gboolean       dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry  *options;
-	gchar         *application_name;
-	gchar         *description;
-	gchar         *icon_name;
+	GOptionEntry    *options;
+	gchar           *application_name;
+	gchar           *description;
+	gchar           *icon_name;
 
 	/* command-line args
 	 */
@@ -66,16 +67,17 @@ struct _ofaApplicationPrivate {
 
 	/* internals
 	 */
-	int            argc;
-	GStrv          argv;
-	int            code;
-	ofaMainWindow *main_window;
-	GMenuModel    *menu;
-	ofaFileDir    *file_dir;
+	int              argc;
+	GStrv            argv;
+	int              code;
+	ofaMainWindow   *main_window;
+	GMenuModel      *menu;
+	ofaFileDir      *file_dir;
+	ofaDossierStore *dos_store;
 
 	/* menu items
 	 */
-	GSimpleAction *action_open;
+	GSimpleAction   *action_open;
 };
 
 /* class properties
@@ -199,9 +201,7 @@ application_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->file_dir );
-		if( priv->dos_store ){
-			ofa_dossier_store_free();
-		}
+		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
 		ofa_plugin_release_modules();
 		ofa_settings_free();
@@ -588,6 +588,7 @@ application_startup( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_startup";
 	ofaApplication *appli;
+	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
 	GError *error;
@@ -596,6 +597,7 @@ application_startup( GApplication *application )
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 	appli = OFA_APPLICATION( application );
+	priv = appli->priv;
 
 	/* chain up to the parent class */
 	if( G_APPLICATION_CLASS( ofa_application_parent_class )->startup ){
@@ -631,6 +633,10 @@ application_startup( GApplication *application )
 
 	/* setup the monitoring of action items */
 	setup_actions_monitor( OFA_APPLICATION( application ));
+
+	/* takes the ownership on the dossier store so that we are sure
+	 * it will be available during the run */
+	priv->dos_store = ofa_dossier_store_new( priv->file_dir );
 }
 
 /*
