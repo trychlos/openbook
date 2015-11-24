@@ -232,8 +232,8 @@ ofa_ifile_period_get_status( const ofaIFilePeriod *period )
  *  as a newly allocated string which should be g_free() by the caller.
  *
  * English example:
- * - 'Current' for the currently opened period
- * - 'Archived' for any closed period.
+ * - 'Current exercice to 31/12/2013' for the currently opened period
+ * - 'Archived exercice from 01/01/2012 to 31/12/2012'.
  */
 gchar *
 ofa_ifile_period_get_label( const ofaIFilePeriod *period )
@@ -263,4 +263,48 @@ ofa_ifile_period_get_label( const ofaIFilePeriod *period )
 	}
 
 	return( g_string_free( svalue, FALSE ));
+}
+
+/**
+ * ofa_ifile_period_compare:
+ * @a: a #ofaIFilePeriod instance.
+ * @b: another #ofaIFilePeriod instance.
+ *
+ * Compare the two periods by their dates.
+ *
+ * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
+ */
+gint
+ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
+{
+	gint cmp;
+	GDate a_begin, a_end, b_begin, b_end;
+
+	cmp = 0;
+
+	if( a ){
+		ofa_ifile_period_get_begin_date( a, &a_begin );
+		ofa_ifile_period_get_end_date( a, &a_end );
+
+		if( b ){
+			ofa_ifile_period_get_begin_date( b, &b_begin );
+			ofa_ifile_period_get_end_date( b, &b_end );
+
+			cmp = my_date_compare( &a_begin, &b_begin );
+			if( cmp == 0 ){
+				cmp = my_date_compare( &a_end, &b_end );
+			}
+			return( cmp );
+		}
+		/* if a is set, and b is not set, then a > b */
+		return( 1 );
+
+	} else if( b ) {
+		/* if a is not set and b is set, then a < b */
+		return( -1 );
+
+	} else {
+		/* both a and b are unset */
+		return( 0 );
+	}
 }

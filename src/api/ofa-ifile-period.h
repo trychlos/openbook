@@ -125,6 +125,9 @@ gchar   *ofa_ifile_period_get_status                ( const ofaIFilePeriod *peri
 
 gchar   *ofa_ifile_period_get_label                 ( const ofaIFilePeriod *period );
 
+gint     ofa_ifile_period_compare                   ( const ofaIFilePeriod *a,
+																const ofaIFilePeriod *b );
+
 
 G_END_DECLS
 
