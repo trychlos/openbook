@@ -81,9 +81,6 @@ GList      *ofa_file_dir_get_dossiers       ( ofaFileDir *dir );
 
 guint       ofa_file_dir_get_dossiers_count ( const ofaFileDir *dir );
 
-GList      *ofa_file_dir_get_dossier_periods( const ofaFileDir *dir,
-													const ofaIFileMeta *id );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_FILE_DIR_H__ */
