@@ -120,21 +120,19 @@ typedef struct {
 	/**
 	 * get_dossier_periods:
 	 * @instance: the #ofaIDBProvider provider.
-	 * @settings: the #mySettings instance.
-	 * @group: the group name in the settings.
+	 * @meta: the #ofaIFileMeta instance which manages the dossier.
 	 *
 	 * Return value: the list of defined periods for the identified
 	 * dossier, as a #GList of GObject -derived objects which implement
 	 * the #ofaIFilePeriod interface.
 	 *
 	 * The returned list is expected to be free by the caller via
-	 * #ofa_idbprovider_free_dossier_periods().
+	 * #ofa_ifile_meta_free_periods().
 	 *
 	 * Since: version 1
 	 */
 	GList *        ( *get_dossier_periods )  ( const ofaIDBProvider *instance,
-														mySettings *settings,
-														const gchar *group );
+														const ofaIFileMeta *meta );
 }
 	ofaIDBProviderInterface;
 
@@ -150,11 +148,7 @@ ofaIFileMeta   *ofa_idbprovider_get_dossier_meta          ( const ofaIDBProvider
 																		const gchar *group );
 
 GList          *ofa_idbprovider_get_dossier_periods       ( const ofaIDBProvider *instance,
-																		mySettings *settings,
-																		const gchar *group );
-
-#define         ofa_idbprovider_free_dossier_periods(L)   g_list_free_full(( L ), \
-																		( GDestroyNotify ) g_object_unref )
+																		const ofaIFileMeta *meta );
 
 ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
 

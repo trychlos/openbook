@@ -32,9 +32,9 @@
 
    - ofaIDBProvider: new DBMS directory management interface.
    - ofaMySQLPeriod: new class which implements ofaIFilePeriod interface.
+   - ofaMySQLMeta: new class which implements ofaIFileMeta interface.
    - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
-   - ofaDossierId: new class which implements ofaIFileMeta interface.
    - ofaIFileMeta: new dossier meta properties management interface.
    - myFileMonitor: new class.
    - mySettings: new class.

@@ -26,9 +26,10 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
-#include "api/ofa-idbprovider.h"
-#include "api/ofa-plugin.h"
+#include <api/my-utils.h>
+#include <api/ofa-idbprovider.h>
+#include <api/ofa-ifile-meta.h>
+#include <api/ofa-plugin.h>
 
 #define IDBPROVIDER_LAST_INTERFACE_VERSION  1
 
@@ -173,23 +174,23 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
 /**
  * ofa_idbprovider_get_dossier_periods:
  * @instance: this #ofaIDBProvider instance.
- * @settings: the #mySettings instance in which the application has
- *  chosen to store its dossiers meta datas
- * @group: the group name identifying the desired dossier.
+ * @meta: the #ofaIFileMeta instance which manages the dossier.
  *
  * Returns: the list of defined periods, as a #GList of #ofaIFilePeriod
- * objects, which should be #ofa_idbprovider_free_dossier_periods() by
+ * objects, which should be #ofa_ifile_meta_free_periods() by
  * the caller.
+ *
+ * This method is expected to be called from #ofaIFileMeta interface
+ * (see #ofa_ifile_meta_get_periods() method).
  */
 GList *
-ofa_idbprovider_get_dossier_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group )
+ofa_idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta )
 {
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_periods ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_periods( instance, settings, group ));
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_periods( instance, meta ));
 	}
 
 	return( NULL );
