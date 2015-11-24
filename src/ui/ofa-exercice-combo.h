@@ -31,9 +31,14 @@
  * @include: ui/ofa-exercice-combo.h
  *
  * This class manages a combobox which display the known exercices.
+ *
+ * It sends an 'ofa-changed' message on selection change.
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
@@ -66,11 +71,10 @@ GType             ofa_exercice_combo_get_type    ( void ) G_GNUC_CONST;
 ofaExerciceCombo *ofa_exercice_combo_new         ( void );
 
 void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
-															const gchar *dname );
+															ofaIFileMeta *meta );
 
 void              ofa_exercice_combo_set_selected( ofaExerciceCombo *combo,
-															guint column,
-															const gchar *value );
+															ofaIFilePeriod *period );
 
 G_END_DECLS
 

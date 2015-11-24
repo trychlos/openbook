@@ -26,10 +26,6 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
-#include "api/ofa-dossier-misc.h"
-#include "api/ofa-settings.h"
-
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
 
@@ -56,7 +52,6 @@ G_DEFINE_TYPE( ofaExerciceCombo, ofa_exercice_combo, GTK_TYPE_COMBO_BOX )
 
 static void setup_combo( ofaExerciceCombo *combo );
 static void on_exercice_changed( ofaExerciceCombo *combo, void *empty );
-static void on_exercice_changed_cleanup_handler( ofaExerciceCombo *combo, gchar *label, gchar *dbname );
 
 static void
 exercice_combo_finalize( GObject *instance )
@@ -123,32 +118,28 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaExerciceComboPrivate ));
 
 	/**
-	 * ofaExerciceCombo::changed:
+	 * ofaExerciceCombo::ofa-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
-	 * Arguments is the label and the database name of the selected
-	 * exercice.
-	 *
-	 * The cleanup handler will take care of freeing these strings.
+	 * Arguments is the ofaIFilePeriod object.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaExerciceCombo *combo,
-	 * 						const gchar    *label,
-	 * 						const gchar    *dbname,
+	 * 						ofaIFilePeriod *period,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
 				OFA_TYPE_EXERCICE_COMBO,
 				G_SIGNAL_RUN_CLEANUP,
-				G_CALLBACK( on_exercice_changed_cleanup_handler ),
+				NULL,
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
+				1,
+				G_TYPE_OBJECT );
 }
 
 /**
@@ -190,47 +181,31 @@ on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *label, *dbname;
-
-	label = NULL;
+	ofaIFilePeriod *period;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
 		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter,
-				EXERCICE_COL_LABEL, &label,
-				EXERCICE_COL_DBNAME, &dbname,
+				EXERCICE_COL_PERIOD, &period,
 				-1 );
-		g_signal_emit_by_name( combo, "ofa-changed", label, dbname );
+		g_signal_emit_by_name( combo, "ofa-changed", period );
+		g_object_unref( period );
 	}
-}
-
-static void
-on_exercice_changed_cleanup_handler( ofaExerciceCombo *combo, gchar *label, gchar *dbname )
-{
-	static const gchar *thisfn = "ofa_exercice_combo_on_exercice_changed_cleanup_handler";
-
-	g_debug( "%s: combo=%p, label=%s, dbname=%s", thisfn, ( void * ) combo, label, dbname );
-
-	g_free( dbname );
-	g_free( label );
 }
 
 /**
  * ofa_exercice_combo_set_dossier:
  * @combo: this #ofaExerciceCombo instance.
- * @dname: the name of the dossier from which we want known exercices
+ * @meta: the #ofaIFileMeta which handles the dossier.
  */
 void
-ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, const gchar *dname )
+ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIFileMeta *meta )
 {
-	static const gchar *thisfn = "ofa_exercice_combo_set_dossier";
 	ofaExerciceComboPrivate *priv;
-
-	g_debug( "%s: combo=%p, dname=%s", thisfn, ( void * ) combo, dname );
 
 	priv = combo->priv;
 
-	ofa_exercice_store_set_dossier( priv->store, dname );
+	ofa_exercice_store_set_dossier( priv->store, meta );
 
 	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }
@@ -272,24 +247,20 @@ ofa_exercice_combo_get_selected( ofaExerciceCombo *self )
 /**
  * ofa_exercice_combo_set_selected:
  * @combo: this #ofaExerciceCombo box.
- * @column: the #ofaExerciceStoreColumn column identifier as defined in
- *  ofa-exercice-store.h
- * @value: the value to be selected
+ * @period: the #ofaIFilePeriod object to be selected.
  *
  * Select the first row where the specified @column holds the specified
- * @value.
+ * @value (there should be only one row).
  */
 void
-ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, guint column, const gchar *value )
+ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIFilePeriod *period )
 {
 	static const gchar *thisfn = "ofa_exercice_combo_set_selected";
 	ofaExerciceComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *string;
+	ofaIFilePeriod *row_period;
 	gint cmp;
-
-	g_debug( "%s: combo=%p, column=%u, value=%s", thisfn, ( void * ) combo, column, value );
 
 	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
 
@@ -302,18 +273,22 @@ ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, guint column, const gc
 
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 			while( TRUE ){
-				gtk_tree_model_get( tmodel, &iter, column, &string, -1 );
-				cmp = g_utf8_collate( string, value );
-				g_free( string );
+				gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
+				cmp = ofa_ifile_period_compare( period, row_period );
+				g_object_unref( row_period );
 
 				if( cmp == 0 ){
 					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
-					break;
+					return;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){
 					break;
 				}
 			}
 		}
+
+		/* if not found, then select the first row */
+		g_debug( "%s: asked period not found", thisfn );
+		gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 	}
 }
