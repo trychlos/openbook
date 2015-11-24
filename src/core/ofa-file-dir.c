@@ -47,7 +47,7 @@ struct _ofaFileDirPrivate {
 };
 
 #define FILE_DIR_SIGNAL_CHANGED         "changed"
-#define FILE_DIR_DOSSIER_GROUP_PREFIX   "DOSSIER-"
+#define FILE_DIR_DOSSIER_GROUP_PREFIX   "Dossier "
 #define FILE_DIR_PROVIDER_KEY           "ofa-DBMSProvider"
 
 /* signals defined here
