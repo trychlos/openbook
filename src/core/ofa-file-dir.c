@@ -210,7 +210,7 @@ ofa_file_dir_get_dossiers( ofaFileDir *dir )
 	list = NULL;
 
 	if( !priv->dispose_has_run ){
-		list = priv->list;
+		list = g_list_copy_deep( priv->list, ( GCopyFunc ) g_object_ref, NULL );
 	}
 
 	return( list );
