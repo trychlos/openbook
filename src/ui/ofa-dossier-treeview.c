@@ -29,7 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-treeview.h"
@@ -401,34 +401,25 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
-	gchar *code;
+	ofaIFilePeriod *period;
 
 	priv = tview->priv;
-	visible = FALSE;
-	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_CODE, &code, -1 );
-
-	/* code may not be set when coming from DossierNewMini */
-	if( !my_strlen( code )){
-		visible = TRUE;
-
-	} else {
+	visible = TRUE;
+	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_PERIOD, &period, -1 );
+	if( period ){
 		switch( priv->show_mode ){
 			case DOSSIER_SHOW_ALL:
 				visible = TRUE;
 				break;
 			case DOSSIER_SHOW_CURRENT:
-				visible = ( g_utf8_collate( code, DOS_STATUS_OPENED ) == 0 );
+				visible = ofa_ifile_period_get_current( period );
 				break;
 			case DOSSIER_SHOW_ARCHIVED:
-				visible = ( g_utf8_collate( code, DOS_STATUS_CLOSED ) == 0 );
+				visible = !ofa_ifile_period_get_current( period );
 				break;
 		}
+		g_object_unref( period );
 	}
-	/*
-	g_debug( "is_visible_row: show_mode=%u, code=%s, visible=%s",
-			priv->show_mode, code, visible ? "True":"False" );
-	*/
-	g_free( code );
 
 	return( visible );
 }
