@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <api/ofa-ifile-meta.h>
+#include "api/ofa-ifile-meta.h"
 
 /* some data attached to each IFileMeta instance
  * we store here the data provided by the application

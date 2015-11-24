@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <api/ofa-iabout.h>
+#include "api/ofa-iabout.h"
 
 #define IABOUT_LAST_VERSION       1
 

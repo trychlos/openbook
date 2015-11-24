@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <api/ofa-ipreferences.h>
+#include "api/ofa-ipreferences.h"
 
 #define IPREFERENCES_LAST_VERSION       1
 

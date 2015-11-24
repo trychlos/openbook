@@ -32,7 +32,7 @@
  * #ofaIDbms interface management.
  */
 
-#include <api/ofa-idbms.h>
+#include "api/ofa-idbms.h"
 
 G_BEGIN_DECLS
 

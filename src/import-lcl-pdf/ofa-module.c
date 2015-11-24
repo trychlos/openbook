@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <api/ofa-extension.h>
+#include "api/ofa-extension.h"
 
 #include "import-lcl-pdf/ofa-importer.h"
 

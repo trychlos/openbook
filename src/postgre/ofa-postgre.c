@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include <api/ofa-idbms.h>
+#include "api/ofa-idbms.h"
 
 #include "ofa-postgre.h"
 

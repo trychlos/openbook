@@ -34,7 +34,7 @@
  * properties. In particular, it implements #ofaIFileMeta interface.
  */
 
-#include <api/my-settings.h>
+#include "api/my-settings.h"
 
 #include "ofa-mysql-idbprovider.h"
 

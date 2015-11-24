@@ -26,10 +26,10 @@
 #include <config.h>
 #endif
 
-#include <api/my-date.h>
-#include <api/my-settings.h>
-#include <api/my-utils.h>
-#include <api/ofa-ifile-meta.h>
+#include "api/my-date.h"
+#include "api/my-settings.h"
+#include "api/my-utils.h"
+#include "api/ofa-ifile-meta.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbprovider.h"

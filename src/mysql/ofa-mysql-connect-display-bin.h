@@ -41,7 +41,7 @@
 
 #include <gtk/gtk.h>
 
-#include <api/ofa-idbms.h>
+#include "api/ofa-idbms.h"
 
 G_BEGIN_DECLS
 

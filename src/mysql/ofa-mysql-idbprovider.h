@@ -32,7 +32,7 @@
  * #ofaIDBProvider interface management.
  */
 
-#include <api/ofa-idbprovider.h>
+#include "api/ofa-idbprovider.h"
 
 G_BEGIN_DECLS
 

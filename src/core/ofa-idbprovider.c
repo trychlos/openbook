@@ -26,10 +26,10 @@
 #include <config.h>
 #endif
 
-#include <api/my-utils.h>
-#include <api/ofa-idbprovider.h>
-#include <api/ofa-ifile-meta.h>
-#include <api/ofa-plugin.h>
+#include "api/my-utils.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-plugin.h"
 
 #define IDBPROVIDER_LAST_INTERFACE_VERSION  1
 

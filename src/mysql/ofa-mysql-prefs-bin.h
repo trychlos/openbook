@@ -38,7 +38,7 @@
  * - current:    no
  */
 
-#include <api/ofa-ipreferences.h>
+#include "api/ofa-ipreferences.h"
 
 G_BEGIN_DECLS
 

@@ -38,8 +38,8 @@
 
 #include <mysql/mysql.h>
 
-#include <api/ofa-idbms.h>
-#include <api/ofa-ipreferences.h>
+#include "api/ofa-idbms.h"
+#include "api/ofa-ipreferences.h"
 
 G_BEGIN_DECLS
 

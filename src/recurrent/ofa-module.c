@@ -28,7 +28,7 @@
 
 #include <gtk/gtk.h>
 
-#include <api/ofa-extension.h>
+#include "api/ofa-extension.h"
 
 #include "ofa-recurrent.h"
 

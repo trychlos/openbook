@@ -26,9 +26,9 @@
 #include <config.h>
 #endif
 
-#include <api/my-date.h>
-#include <api/my-utils.h>
-#include <api/ofa-ifile-period.h>
+#include "api/my-date.h"
+#include "api/my-utils.h"
+#include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-period.h"

@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include <api/ofa-ifile-period.h>
+#include "api/ofa-ifile-period.h"
 
 #define IFILE_PERIOD_LAST_VERSION       1
 
