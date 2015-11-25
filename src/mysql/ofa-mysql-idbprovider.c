@@ -26,12 +26,17 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "api/my-date.h"
 #include "api/my-settings.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql.h"
+#include "ofa-mysql-connect.h"
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
@@ -42,6 +47,8 @@ static guint           idbprovider_get_interface_version( const ofaIDBProvider *
 static ofaIFileMeta   *idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group );
 static GList          *idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta );
 static ofaMySQLPeriod *get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
+static ofaIDBConnect  *idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg );
+static void            set_message( gchar **dest, const gchar *message );
 
 /*
  * #ofaIDBProvider interface setup
@@ -57,6 +64,7 @@ ofa_mysql_idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	iface->get_provider_name = ofa_mysql_idbprovider_get_provider_name;
 	iface->get_dossier_meta = idbprovider_get_dossier_meta;
 	iface->get_dossier_periods = idbprovider_get_dossier_periods;
+	iface->connect_dossier = idbprovider_connect_dossier;
 }
 
 /*
@@ -163,4 +171,42 @@ get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, 
 	g_free( dbname );
 
 	return( period );
+}
+
+static ofaIDBConnect *
+idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg )
+{
+	ofaMySQLConnect *connect;
+
+	if( !meta ){
+		set_message( msg, _( "Unspecified dossier." ));
+		return( NULL );
+	}
+	g_return_val_if_fail( OFA_IS_MYSQL_META( meta ), NULL );
+	if( !period ){
+		set_message( msg, _( "Unspecified exercice." ));
+		return( NULL );
+	}
+	g_return_val_if_fail( OFA_IS_MYSQL_PERIOD( period ), NULL );
+	if( !my_strlen( account )){
+		set_message( msg, _( "Unspecified user account." ));
+		return( NULL );
+	}
+	if( !my_strlen( password )){
+		set_message( msg, _( "Unspecified user password." ));
+		return( NULL );
+	}
+
+	connect = ofa_mysql_connect_new(
+					OFA_MYSQL_META( meta ), OFA_MYSQL_PERIOD( period ), account, password, msg );
+
+	return( OFA_IDBCONNECT( connect ));
+}
+
+static void
+set_message( gchar **dest, const gchar *message )
+{
+	if( dest ){
+		*dest = g_strdup( message );
+	}
 }
