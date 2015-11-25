@@ -35,29 +35,22 @@
 /* priv instance data
  */
 struct _ofaMySQLMetaPrivate {
-	gboolean              dispose_has_run;
-
-	/* initialization data
-	 */
-	const ofaIDBProvider *prov_instance;
-	gchar                *dos_name;
+	gboolean dispose_has_run;
 
 	/* server connection infos
 	 */
-	gchar                *host;
-	gchar                *socket;
-	gint                  port;
+	gchar   *host;
+	gchar   *socket;
+	gint     port;
 };
 
 #define MYSQL_HOST_KEY                  "mysql-host"
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
-static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
-static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
-static gchar          *ifile_meta_get_dossier_name( const ofaIFileMeta *instance );
-static gchar          *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
-static ofaIDBProvider *ifile_meta_get_provider_instance( const ofaIFileMeta *instance );
+static void   ifile_meta_iface_init( ofaIFileMetaInterface *iface );
+static guint  ifile_meta_get_interface_version( const ofaIFileMeta *instance );
+static gchar *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -76,7 +69,6 @@ mysql_meta_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_MYSQL_META( instance )->priv;
 
-	g_free( priv->dos_name );
 	g_free( priv->host );
 	g_free( priv->socket );
 
@@ -96,7 +88,6 @@ mysql_meta_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->prov_instance );
 	}
 
 	/* chain up to the parent class */
@@ -138,31 +129,13 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_meta_get_interface_version;
-	iface->get_dossier_name = ifile_meta_get_dossier_name;
 	iface->get_provider_name = ifile_meta_get_provider_name;
-	iface->get_provider_instance = ifile_meta_get_provider_instance;
 }
 
 static guint
 ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
 	return( 1 );
-}
-
-static gchar *
-ifile_meta_get_dossier_name( const ofaIFileMeta *instance )
-{
-	ofaMySQLMetaPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
-
-	priv = OFA_MYSQL_META( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_strdup( priv->dos_name ));
-	}
-
-	return( NULL );
 }
 
 static gchar *
@@ -175,23 +148,7 @@ ifile_meta_get_provider_name( const ofaIFileMeta *instance )
 	priv = OFA_MYSQL_META( instance )->priv;
 
 	if( !priv->dispose_has_run ){
-		return( g_strdup( ofa_mysql_idbprovider_get_provider_name( priv->prov_instance )));
-	}
-
-	return( NULL );
-}
-
-static ofaIDBProvider *
-ifile_meta_get_provider_instance( const ofaIFileMeta *instance )
-{
-	ofaMySQLMetaPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
-
-	priv = OFA_MYSQL_META( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_object_ref(( gpointer ) priv->prov_instance ));
+		return( g_strdup( ofa_mysql_idbprovider_get_provider_name( NULL )));
 	}
 
 	return( NULL );
@@ -215,8 +172,6 @@ ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, m
 
 	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
 	priv = meta->priv;
-	priv->prov_instance = g_object_ref(( gpointer ) instance );
-	priv->dos_name = g_strdup( dossier_name );
 
 	/* get server connection infos */
 	priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );

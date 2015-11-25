@@ -479,7 +479,27 @@
                 - DOSSIER_DISP_DBNAME
                 - DOSSIER_DISP_CODE
 
- 893
+ 893 2015-11-24 remove ofa_dossier_misc_get_dossiers
+
+ 894 2015-11-24 remove database name from dossier store
+
+ 895 2015-11-24 DossierTreeview: the filter is just for displaying
+                a) only dossiers, or b) all exercices
+                so DOSSIER_SHOW_ARCHIVED is useless
+
+ 896 2015-11-24 remove database name from exercice store
+
+ 897 2015-11-24 remove database name from command-line application
+
+ 898 2015-11-24 DossierManager: review
+                - on_open_clicked(),
+                - open_dossier()
+
+ 899 2015-11-25 remove ofsDossierOpen structure & associated signal
+
+ 901 2015-11-25 attach periods to meta (do no re-read settings)
+
+ 902
 
 -----------------------------------------------------------------------
  DONE
@@ -4208,6 +4228,9 @@
 
  887 2015-11-10 Reconciliation: implement ofaIColumns interface
      2015-11-12 done
+
+ 900 2015-11-25 set provider instance/dossier name in IFileMeta data
+     2015-11-25 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

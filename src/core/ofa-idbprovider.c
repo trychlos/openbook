@@ -178,6 +178,8 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta ){
 		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta( instance, dossier_name, settings, group );
+		ofa_ifile_meta_set_provider_instance( meta, instance );
+		ofa_ifile_meta_set_dossier_name( meta, dossier_name );
 		ofa_ifile_meta_set_settings( meta, settings );
 		ofa_ifile_meta_set_group_name( meta, group );
 		return( meta );

@@ -36,8 +36,10 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	mySettings *settings;
-	gchar      *group_name;
+	ofaIDBProvider *prov_instance;
+	gchar          *dossier_name;
+	mySettings     *settings;
+	gchar          *group_name;
 }
 	sIFileMeta;
 
@@ -168,13 +170,31 @@ ofa_ifile_meta_get_interface_version( const ofaIFileMeta *meta )
 gchar *
 ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *meta )
 {
+	sIFileMeta *data;
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_dossier_name ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_dossier_name( meta ));
-	}
+	data = get_ifile_meta_data( meta );
+	return( g_strdup( data->dossier_name ));
+}
 
-	return( NULL );
+/**
+ * ofa_ifile_meta_set_dossier_name:
+ * @meta: this #ofaIFileMeta instance.
+ * @dossier_name: the name of the dossier.
+ *
+ * Stores the name of the dossier as an interface data.
+ */
+void
+ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_free( data->dossier_name );
+	data->dossier_name = g_strdup( dossier_name );
 }
 
 /**
@@ -206,13 +226,34 @@ ofa_ifile_meta_get_provider_name( const ofaIFileMeta *meta )
 ofaIDBProvider *
 ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *meta )
 {
+	sIFileMeta *data;
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_instance ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_instance( meta ));
-	}
+	data = get_ifile_meta_data( meta );
+	return( g_object_ref( data->prov_instance ));
+}
 
-	return( NULL );
+/**
+ * ofa_ifile_meta_set_provider_instance:
+ * @meta: this #ofaIFileMeta instance.
+ * @instance: the #ofaIDBProvider which manages the dossier.
+ *
+ * The interface takes a reference on the @instance object, to make
+ * sure it stays available. This reference will be automatically
+ * released on @meta finalization. It is so important to not call
+ * this method more than once.
+ */
+void
+ofa_ifile_meta_set_provider_instance( ofaIFileMeta *meta, const ofaIDBProvider *instance )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_clear_object( &data->prov_instance );
+	data->prov_instance = g_object_ref(( gpointer ) instance );
 }
 
 /**
@@ -405,7 +446,9 @@ on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
 
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
-	g_object_unref( data->settings );
+	g_clear_object( &data->prov_instance );
+	g_free( data->dossier_name );
+	g_clear_object( &data->settings );
 	g_free( data->group_name );
 	g_free( data );
 }

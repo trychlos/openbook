@@ -86,15 +86,6 @@ typedef struct {
 	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
 
 	/**
-	 * get_dossier_name:
-	 * @instance: the #ofaIFileMeta instance.
-	 *
-	 * Returns: the identifier name of the dossier as a newly allocated
-	 * string which should be g_free() by the caller.
-	 */
-	gchar *          ( *get_dossier_name )     ( const ofaIFileMeta *instance );
-
-	/**
 	 * get_provider_name:
 	 * @instance: the #ofaIFileMeta instance.
 	 *
@@ -102,15 +93,6 @@ typedef struct {
 	 * string which should be g_free() by the caller.
 	 */
 	gchar *          ( *get_provider_name )    ( const ofaIFileMeta *instance );
-
-	/**
-	 * get_provider_instance:
-	 * @instance: the #ofaIFileMeta instance.
-	 *
-	 * Returns: a new reference to the provider instance which should
-	 * be g_object_unref() by the caller.
-	 */
-	ofaIDBProvider * ( *get_provider_instance )( const ofaIFileMeta *instance );
 }
 	ofaIFileMetaInterface;
 
@@ -122,9 +104,15 @@ guint           ofa_ifile_meta_get_interface_version     ( const ofaIFileMeta *m
 
 gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *meta );
 
+void            ofa_ifile_meta_set_dossier_name          ( ofaIFileMeta *meta,
+																	const gchar *dossier_name );
+
 gchar          *ofa_ifile_meta_get_provider_name         ( const ofaIFileMeta *meta );
 
 ofaIDBProvider *ofa_ifile_meta_get_provider_instance     ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_set_provider_instance     ( ofaIFileMeta *meta,
+																	const ofaIDBProvider *instance );
 
 GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *meta );
 
