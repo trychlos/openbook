@@ -145,7 +145,7 @@ get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, 
 	gchar *dbname;
 
 	period = NULL;
-	dbname = g_strdup( group+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
+	dbname = g_strdup( key+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
 
 	strlist = my_settings_get_string_list( settings, group, key );
 
