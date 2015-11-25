@@ -32,10 +32,18 @@
  * Manage the MySQL database server.
  *
  * The class is instanciated once when loading the module.
+ * It implements the #ofaIDBProvider and #ofaIPreferences interfaces.
+ *
+ * The companion classes #ofaMySQLMeta, #ofaMySQLPeriod,
+ * #ofaMySQLConnect respectively implement the #ofaIFileMeta,
+ * #ofaIFilePeriod and #ofaIDBConnect interfaces.
+ *
+ * As the Openbook software suite has chosen to store its meta datas
+ * in a dossier settings file, server and database(s) keys are stored
+ * in #ofaMySQLMeta (server keys) and #ofaMySQLPeriod (database key).
  */
 
 #include <glib-object.h>
-
 #include <mysql/mysql.h>
 
 #include "api/ofa-idbms.h"
@@ -63,7 +71,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass     parent;
 }
 	ofaMysqlClass;
 
