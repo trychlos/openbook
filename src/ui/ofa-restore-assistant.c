@@ -32,6 +32,8 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -169,8 +171,8 @@ static gboolean p1_check_for_complete( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p2_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
-static void     p2_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
 static void     p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
@@ -529,13 +531,13 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p2_on_dossier_changed( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant )
+p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
 	p2_check_for_complete( assistant );
 }
 
 static void
-p2_on_dossier_activated( ofaDossierTreeview *view, const gchar *dname, const gchar *dbname, ofaRestoreAssistant *assistant )
+p2_on_dossier_activated( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
 	if( p2_check_for_complete( assistant )){
 		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( assistant )));

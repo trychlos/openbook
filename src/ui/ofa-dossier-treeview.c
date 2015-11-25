@@ -140,12 +140,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments are the selected dossier + database names.
+	 * Arguments are the selected ofaIFileMeta and ofaIFilePeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
-	 * 						const gchar      *dname,
-	 * 						const gchar      *dbname,
+	 * 						ofaIFileMeta     *meta,
+	 * 						ofaIFilePeriod   *period,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -158,7 +158,7 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				2,
-				G_TYPE_STRING, G_TYPE_STRING );
+				G_TYPE_OBJECT, G_TYPE_OBJECT );
 
 	/**
 	 * ofaDossierTreeview::activated:
@@ -166,12 +166,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments are the selected dossier + database names.
+	 * Arguments are the selected ofaIFileMeta and ofaIFilePeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
-	 * 						const gchar      *dname,
-	 * 						const gchar      *dbname,
+	 * 						ofaIFileMeta     *meta,
+	 * 						ofaIFilePeriod   *period,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -184,7 +184,7 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				2,
-				G_TYPE_STRING, G_TYPE_STRING );
+				G_TYPE_OBJECT, G_TYPE_OBJECT );
 }
 
 /**
@@ -444,16 +444,17 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 {
 	GtkTreeIter iter;
 	GtkTreeModel *model;
-	gchar *dname, *dbname;
+	ofaIFileMeta *meta;
+	ofaIFilePeriod *period;
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
 		gtk_tree_model_get( model, &iter,
-				DOSSIER_COL_DOSNAME, &dname,
-				DOSSIER_COL_DBNAME, &dbname,
+				DOSSIER_COL_META,   &meta,
+				DOSSIER_COL_PERIOD, &period,
 				-1 );
-		g_signal_emit_by_name( self, signal, dname, dbname );
-		g_free( dname );
-		g_free( dbname );
+		g_signal_emit_by_name( self, signal, meta, period );
+		g_object_unref( meta );
+		g_object_unref( period );
 	}
 }
 

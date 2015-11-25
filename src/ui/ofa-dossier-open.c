@@ -31,6 +31,8 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -47,12 +49,10 @@ struct _ofaDossierOpenPrivate {
 
 	/* data
 	 */
-	gchar              *dname;			/* name of the dossier (from settings) */
-	gchar              *label;			/* label of the exercice (from settings) */
-	gchar              *dbname;			/* database name (from last selection) */
-	gchar              *account;
+	ofaIFileMeta       *meta;			/* the selected dossier */
+	ofaIFilePeriod     *period;			/* the selected exercice */
+	gchar              *account;		/* user credentials */
 	gchar              *password;
-	gchar              *open_db;		/* database name on ofa_dossier_open_run() */
 
 	/* UI
 	 */
@@ -74,8 +74,8 @@ static const gchar  *st_ui_id  = "DossierOpenDlg";
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, const gchar *dbname, ofaDossierOpen *self );
-static void      on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self );
+static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -97,12 +97,8 @@ dossier_open_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_DOSSIER_OPEN( instance )->priv;
 
-	g_free( priv->dbname );
-	g_free( priv->label );
-	g_free( priv->dname );
 	g_free( priv->account );
 	g_free( priv->password );
-	g_free( priv->open_db );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_open_parent_class )->finalize( instance );
@@ -111,11 +107,17 @@ dossier_open_finalize( GObject *instance )
 static void
 dossier_open_dispose( GObject *instance )
 {
+	ofaDossierOpenPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
+		priv = OFA_DOSSIER_OPEN( instance )->priv;
+
 		/* unref object members here */
+		g_clear_object( &priv->meta );
+		g_clear_object( &priv->period );
 	}
 
 	/* chain up to the parent class */
@@ -181,8 +183,6 @@ ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname, const gcha
 				NULL );
 
 	priv = self->priv;
-	priv->dname = g_strdup( dname );
-	priv->open_db = g_strdup( dbname );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -246,15 +246,17 @@ v_init_dialog( myDialog *dialog )
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
 	gtk_size_group_add_widget( group, label );
 
+#if 0
 	if( priv->dname ){
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
 		if( priv->open_db ){
-			ofa_exercice_combo_set_selected( priv->exercice_combo, EXERCICE_COL_DBNAME, priv->open_db );
+			//ofa_exercice_combo_set_selected( priv->exercice_combo, EXERCICE_COL_DBNAME, priv->open_db );
 			focus = NULL;
 		}
 	}
+#endif
 
 	/* setup account and password */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-user-parent" );
@@ -281,39 +283,30 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, const gchar *dbname, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_dossier_open_on_dossier_changed";
 	ofaDossierOpenPrivate *priv;
 
-	g_debug( "%s: tview=%p, name=%s, dbname=%s, self=%p",
-			thisfn, ( void * ) tview, name, dbname, ( void * ) self );
-
 	priv = self->priv;
-
-	g_free( priv->dname );
-	priv->dname = g_strdup( name );
-
-	ofa_exercice_combo_set_dossier( priv->exercice_combo, name );
+	g_clear_object( &priv->meta );
+	if( meta ){
+		priv->meta = g_object_ref( meta );
+	}
+	ofa_exercice_combo_set_dossier( priv->exercice_combo, meta );
 
 	check_for_enable_dlg( self );
 }
 
 static void
-on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self )
+on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_exercice_combo_on_exercice_changed";
 	ofaDossierOpenPrivate *priv;
 
-	g_debug( "%s: combo=%p, label=%s, dbname=%s, self=%p",
-			thisfn, ( void * ) combo, label, dbname, ( void * ) self );
-
 	priv = self->priv;
-
-	g_free( priv->label );
-	priv->label = g_strdup( label );
-	g_free( priv->dbname );
-	priv->dbname = g_strdup( dbname );
+	g_clear_object( &priv->period );
+	if( period ){
+		priv->period = g_object_ref( period );
+	}
 
 	check_for_enable_dlg( self );
 }
@@ -344,12 +337,10 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	set_message( self, "" );
 	ok_enable = FALSE;
 
-	if( !my_strlen( priv->dname )){
+	if( !priv->meta ){
 		set_message( self, _( "No selected dossier" ));
-	} else if( !my_strlen( priv->label )){
+	} else if( !priv->period ){
 		set_message( self, _( "No selected exercice" ));
-	} else if( !my_strlen( priv->dbname )){
-		set_message( self, _( "Empty database name" ));
 	} else if( !my_strlen( priv->account )){
 		set_message( self, _( "Empty connection account" ));
 	} else if( !my_strlen( priv->password )){
@@ -381,7 +372,7 @@ connection_is_valid( ofaDossierOpen *self )
 	priv = self->priv;
 
 	dbms = ofa_dbms_new();
-	valid = ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
+	valid = FALSE; //ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
 	g_object_unref( dbms );
 
 	if( !valid ){
@@ -406,8 +397,8 @@ do_open( ofaDossierOpen *self )
 	priv = self->priv;
 
 	sdo = g_new0( ofsDossierOpen, 1 );
-	sdo->dname = g_strdup( priv->dname );
-	sdo->dbname = g_strdup( priv->dbname );
+	//sdo->dname = g_strdup( priv->dname );
+	//sdo->dbname = g_strdup( priv->dbname );
 	sdo->account = g_strdup( priv->account );
 	sdo->password = g_strdup( priv->password );
 	priv->sdo = sdo;

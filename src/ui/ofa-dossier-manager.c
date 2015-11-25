@@ -32,6 +32,8 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -65,11 +67,11 @@ G_DEFINE_TYPE( ofaDossierManager, ofa_dossier_manager, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
-static void      on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self );
-static void      on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self );
+static void      on_tview_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self );
+static void      on_tview_activated( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
-static void      open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
+static void      open_dossier( ofaDossierManager *self, ofaIFileMeta *meta, ofaIFilePeriod *period );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
 static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
@@ -219,23 +221,23 @@ setup_treeview( ofaDossierManager *self )
 }
 
 static void
-on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self )
+on_tview_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok;
 
 	priv = self->priv;
-	ok = my_strlen( dname ) && my_strlen( dbname );
+	ok = ( meta && period );
 
 	gtk_widget_set_sensitive( priv->open_btn, ok );
 	gtk_widget_set_sensitive( priv->delete_btn, ok );
 }
 
 static void
-on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, const gchar *dbname, ofaDossierManager *self )
+on_tview_activated( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self )
 {
-	if( my_strlen( dname ) && my_strlen( dbname )){
-		open_dossier( self, dname, dbname );
+	if( meta && period ){
+		open_dossier( self, meta, period );
 	}
 }
 
@@ -266,14 +268,17 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 	priv = self->priv;
 	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DOSNAME );
 	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
+#if 0
 	open_dossier( self, dname, dbname );
+#endif
 	g_free( dname );
 	g_free( dbname );
 }
 
 static void
-open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
+open_dossier( ofaDossierManager *self, ofaIFileMeta *meta, ofaIFilePeriod *period )
 {
+#if 0
 	ofaDossierManagerPrivate *priv;
 	ofsDossierOpen *sdo;
 	gchar *account, *password;
@@ -299,6 +304,7 @@ open_dossier( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
 		g_free( account );
 		g_free( password );
 	}
+#endif
 }
 
 static void
