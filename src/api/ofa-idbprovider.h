@@ -54,6 +54,10 @@ typedef struct _ofaIDBProvider                    ofaIDBProvider;
 
 /**
  * ofaIDBProviderInterface:
+ * @get_interface_version: [should]: returns the implemented version number.
+ * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
+ * @get_dossier_meta: [should]: returns the dossier meta datas.
+ * @get_dossier_periods: [should]: returns the defined periods of the dossier.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -84,15 +88,15 @@ typedef struct {
 	 * get_provider_name:
 	 * @instance: the #ofaIDBProvider provider.
 	 *
-	 * Returns the name of this DBPROVIDER provider.
+	 * Returns the name of this DBMS provider.
 	 *
-	 * This name acts as an identifier for the DBPROVIDER provider, and is
+	 * This name acts as an identifier for the DBMS provider, and is
 	 * not localized. It is recorded in the user configuration file as
 	 * an access key to the dossier external properties.
 	 *
-	 * Return value: the name of this DBPROVIDER provider.
+	 * Return value: the name of this DBMS provider.
 	 *
-	 * The returned value is owned by the DBPROVIDER provider, and should not
+	 * The returned value is owned by the DBMS provider, and should not
 	 * be released by the caller.
 	 *
 	 * Since: version 1
