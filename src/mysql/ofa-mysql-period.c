@@ -214,3 +214,28 @@ ofa_mysql_period_new( gboolean current, const GDate *begin, const GDate *end, co
 
 	return( period );
 }
+
+/**
+ * ofa_mysql_period_get_database:
+ * @period: this #ofaMySQLPeriod object.
+ *
+ * Returns: the database name.
+ *
+ * The returned string is owned by the @period object, and should not
+ * be freed by the caller.
+ */
+const gchar *
+ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
+{
+	ofaMySQLPeriodPrivate *priv;
+
+	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), NULL );
+
+	priv = period->priv;
+
+	if( !priv->dispose_has_run ){
+		return(( const gchar * ) priv->dbname );
+	}
+
+	return( NULL );
+}
