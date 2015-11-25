@@ -93,6 +93,7 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
 	ofa-idbms.c											\
+	ofa-idbconnect.c									\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
 	ofa-ifile-meta.c									\
