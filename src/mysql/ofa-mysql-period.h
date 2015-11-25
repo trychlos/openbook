@@ -64,10 +64,10 @@ typedef struct {
 
 GType           ofa_mysql_period_get_type    ( void ) G_GNUC_CONST;
 
-ofaMySQLPeriod *ofa_mysql_period_new         ( gboolean current,
-												const GDate *begin,
-												const GDate *end,
-												const gchar *database_name );
+ofaMySQLPeriod *ofa_mysql_period_new         ( const ofaIDBProvider *provider,
+														mySettings *settings,
+														const gchar *group,
+														const gchar *key );
 
 const gchar    *ofa_mysql_period_get_database( const ofaMySQLPeriod *period );
 

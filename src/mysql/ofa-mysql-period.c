@@ -46,11 +46,14 @@ struct _ofaMySQLPeriodPrivate {
 	gchar    *dbname;
 };
 
-static void     ifile_period_iface_init( ofaIFilePeriodInterface *iface );
-static guint    ifile_period_get_interface_version( const ofaIFilePeriod *instance );
-static GDate   *ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date );
-static GDate   *ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date );
-static gboolean ifile_period_get_current( const ofaIFilePeriod *instance );
+#define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
+
+static void            ifile_period_iface_init( ofaIFilePeriodInterface *iface );
+static guint           ifile_period_get_interface_version( const ofaIFilePeriod *instance );
+static GDate          *ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date );
+static GDate          *ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date );
+static gboolean        ifile_period_get_current( const ofaIFilePeriod *instance );
+static ofaMySQLPeriod *get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_PERIOD, ifile_period_iface_init ));
@@ -191,26 +194,68 @@ ifile_period_get_current( const ofaIFilePeriod *instance )
 
 /**
  * ofa_mysql_period_new:
- * @current: whether this period is current.
- * @begin: [allow-none]: the beginning date of the period.
- * @end: [allow-none]: the ending date of the period.
- * @database_name: the name of the database for this period.
+ * @instance: the #ofaIDBProvider which manages the dossier.
+ * @settings: the dossier settings file provided by the application.
+ * @group: the settings group name.
+ * @key: the key to be examined.
  *
- * Returns: a new reference to a #ofaMySQLPeriod instance, which should
- * be #g_object_unref() by the caller.
+ * Returns: a reference to a new #ofaMySQLPeriod object, which
+ * implements the #ofaIFilePeriod interface, if the provided @key is
+ * suitable to define a financial period (an exercice), or %NULL.
+ *
+ * When non null, the returned reference should be #g_object_unref()
+ * by the caller.
  */
 ofaMySQLPeriod *
-ofa_mysql_period_new( gboolean current, const GDate *begin, const GDate *end, const gchar *database_name )
+ofa_mysql_period_new( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
+{
+	ofaMySQLPeriod *period;
+
+	period = NULL;
+
+	if( g_str_has_prefix( key, MYSQL_DATABASE_KEY_PREFIX )){
+		period = get_period_from_settings( instance, settings, group, key );
+	}
+
+	return( period );
+}
+
+/*
+ * a financial period is set in settings as:
+ * key = <PREFIX> + <database_name>
+ * string = current / begin / end
+ */
+static ofaMySQLPeriod *
+get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
 {
 	ofaMySQLPeriod *period;
 	ofaMySQLPeriodPrivate *priv;
+	GList *strlist, *it;
+	const gchar *cstr;
 
 	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
 	priv = period->priv;
-	priv->current = current;
-	my_date_set_from_date( &priv->begin, begin );
-	my_date_set_from_date( &priv->end, end );
-	priv->dbname = g_strdup( database_name );
+
+	priv->dbname = g_strdup( key+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
+
+	strlist = my_settings_get_string_list( settings, group, key );
+
+	/* first element: current as a True/False string */
+	it = strlist;
+	cstr = it ? it->data : NULL;
+	priv->current = my_utils_boolean_from_str( cstr );
+
+	/* second element: beginning date as YYYYMMDD */
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	my_date_set_from_str( &priv->begin, cstr, MY_DATE_YYMD );
+
+	/* third element: ending date as YYYYMMDD */
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	my_date_set_from_str( &priv->end, cstr, MY_DATE_YYMD );
+
+	my_settings_free_string_list( strlist );
 
 	return( period );
 }
