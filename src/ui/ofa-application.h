@@ -105,7 +105,9 @@ GType           ofa_application_get_type      ( void ) G_GNUC_CONST;
 
 ofaApplication *ofa_application_new           ( void );
 
-int             ofa_application_run_with_args ( ofaApplication *application, int argc, GStrv argv );
+int             ofa_application_run_with_args ( ofaApplication *application,
+														int argc,
+														GStrv argv );
 
 GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
 
