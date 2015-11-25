@@ -41,7 +41,9 @@
  */
 
 #include "my-settings.h"
+#include "ofa-idbconnect.h"
 #include "ofa-ifile-meta-def.h"
+#include "ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
@@ -58,6 +60,7 @@ typedef struct _ofaIDBProvider                    ofaIDBProvider;
  * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
  * @get_dossier_meta: [should]: returns the dossier meta datas.
  * @get_dossier_periods: [should]: returns the defined periods of the dossier.
+ * @connect_dossier: [should]: connect to the specified dossier.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -82,7 +85,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint          ( *get_interface_version )( const ofaIDBProvider *instance );
+	guint           ( *get_interface_version )( const ofaIDBProvider *instance );
 
 	/**
 	 * get_provider_name:
@@ -101,7 +104,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	const gchar *  ( *get_provider_name )    ( const ofaIDBProvider *instance );
+	const gchar *   ( *get_provider_name )    ( const ofaIDBProvider *instance );
 
 	/**
 	 * get_dossier_meta:
@@ -116,7 +119,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	ofaIFileMeta * ( *get_dossier_meta )     ( const ofaIDBProvider *instance,
+	ofaIFileMeta *  ( *get_dossier_meta )     ( const ofaIDBProvider *instance,
 														const gchar *dossier_name,
 														mySettings *settings,
 														const gchar *group );
@@ -135,8 +138,30 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GList *        ( *get_dossier_periods )  ( const ofaIDBProvider *instance,
+	GList *         ( *get_dossier_periods )  ( const ofaIDBProvider *instance,
 														const ofaIFileMeta *meta );
+
+	/**
+	 * connect_dossier:
+	 * @instance: the #ofaIDBProvider provider.
+	 * @meta: the #ofaIFileMeta instance which manages the dossier.
+	 * @period: the #ofaIFilePeriod which identifies the exercice.
+	 * @account: the user account.
+	 * @password: the user password.
+	 * @msg: an error message placeholder.
+	 *
+	 * Return value: an object which implements the #ofaIDBConnect
+	 * interface, and handles the dossier connection to its database,
+	 * or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBConnect * ( *connect_dossier )      ( const ofaIDBProvider *instance,
+														ofaIFileMeta *meta,
+														ofaIFilePeriod *period,
+														const gchar *account,
+														const gchar *password,
+														gchar **msg );
 }
 	ofaIDBProviderInterface;
 
@@ -153,6 +178,13 @@ ofaIFileMeta   *ofa_idbprovider_get_dossier_meta          ( const ofaIDBProvider
 
 GList          *ofa_idbprovider_get_dossier_periods       ( const ofaIDBProvider *instance,
 																		const ofaIFileMeta *meta );
+
+ofaIDBConnect  *ofa_idbprovider_connect_dossier           ( const ofaIDBProvider *instance,
+																		ofaIFileMeta *meta,
+																		ofaIFilePeriod *period,
+																		const gchar *account,
+																		const gchar *password,
+																		gchar **msg );
 
 ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
 
