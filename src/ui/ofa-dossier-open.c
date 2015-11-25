@@ -51,6 +51,7 @@ struct _ofaDossierOpenPrivate {
 	ofaIFilePeriod     *period;			/* the selected exercice */
 	gchar              *account;		/* user credentials */
 	gchar              *password;
+	ofaIDBConnect      *connect;		/* the DB connection */
 
 	/* UI
 	 */
@@ -70,8 +71,9 @@ static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIFileMeta *me
 static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
+static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  is_connection_valid( ofaDossierOpen *self );
+static gboolean  is_connection_valid( ofaDossierOpen *self, gchar **msg );
 static gboolean  do_open_dossier( ofaDossierOpen *self );
 static void      set_message( ofaDossierOpen *self, const gchar *msg );
 
@@ -110,6 +112,7 @@ dossier_open_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->meta );
 		g_clear_object( &priv->period );
+		g_clear_object( &priv->connect );
 	}
 
 	/* chain up to the parent class */
@@ -186,7 +189,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window,
 	priv->account = g_strdup( account );
 	priv->password = g_strdup( password );
 
-	if( is_connection_valid( self )){
+	if( are_data_set( self, NULL ) && is_connection_valid( self, NULL )){
 		do_open_dossier( self );
 	} else {
 		my_dialog_run_dialog( MY_DIALOG( self ));
@@ -330,58 +333,102 @@ on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *ac
 	check_for_enable_dlg( self );
 }
 
+/*
+ * For security reasons, we do not check automatically the user
+ * credentials. Instead, we check automatically that they are set, but
+ * only check for the DB connection when the user clicks OK
+ */
 static void
 check_for_enable_dlg( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	gboolean ok_enable;
+	gchar *msg;
 
 	priv = self->priv;
+	msg = NULL;
 	set_message( self, "" );
-	ok_enable = FALSE;
 
-	if( !priv->meta ){
-		set_message( self, _( "No selected dossier" ));
-	} else if( !priv->period ){
-		set_message( self, _( "No selected exercice" ));
-	} else if( !my_strlen( priv->account )){
-		set_message( self, _( "Empty connection account" ));
-	} else if( !my_strlen( priv->password )){
-		set_message( self, _( "Empty connection password" ));
-	} else {
-		ok_enable = TRUE;
-	}
+	ok_enable = are_data_set( self, &msg );
+	set_message( self, msg );
+	g_free( msg );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
 }
 
 static gboolean
+are_data_set( ofaDossierOpen *self, gchar **msg )
+{
+	ofaDossierOpenPrivate *priv;
+	gboolean valid;
+
+	priv = self->priv;
+	valid = FALSE;
+
+	if( !priv->meta ){
+		if( msg ){
+			*msg = g_strdup( _( "No selected dossier" ));
+		}
+	} else if( !priv->period ){
+		if( msg ){
+			*msg = g_strdup( _( "No selected exercice" ));
+		}
+	} else if( !my_strlen( priv->account )){
+		if( msg ){
+			*msg = g_strdup( _( "Empty connection account" ));
+		}
+	} else if( !my_strlen( priv->password )){
+		if( msg ){
+			*msg = g_strdup(_( "Empty connection password" ));
+		}
+	} else {
+		valid = TRUE;
+	}
+
+	return( valid );
+}
+
+/*
+ * all data are expected to be set
+ * but we have yet to check the DB connection
+ */
+static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	if( is_connection_valid( OFA_DOSSIER_OPEN( dialog ))){
+	ofaDossierOpen *self;
+	gchar *msg;
+
+	self = OFA_DOSSIER_OPEN( dialog );
+
+	g_return_val_if_fail( are_data_set( self, NULL ), FALSE );
+
+	if( is_connection_valid( self, &msg )){
 		return( do_open_dossier( OFA_DOSSIER_OPEN( dialog )));
 	}
+
+	my_utils_dialog_warning( msg );
+	g_free( msg );
+
 	return( FALSE );
 }
 
 static gboolean
-is_connection_valid( ofaDossierOpen *self )
+is_connection_valid( ofaDossierOpen *self, gchar **msg )
 {
 	ofaDossierOpenPrivate *priv;
 	gboolean valid;
-	ofaDbms *dbms;
-	gchar *str;
 
 	priv = self->priv;
+	g_clear_object( &priv->connect );
+	valid = FALSE;
 
-	dbms = ofa_dbms_new();
-	valid = FALSE; //ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
-	g_object_unref( dbms );
+	priv->connect = ofa_ifile_meta_get_connection(
+							priv->meta, priv->period, priv->account, priv->password, msg );
+	if( priv->connect ){
+		valid = TRUE;
 
-	if( !valid ){
-		str = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
-		my_utils_dialog_warning( str );
-		g_free( str );
+	} else if( msg ){
+		*msg = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
 	}
 
 	return( valid );
