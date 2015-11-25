@@ -165,6 +165,13 @@ ofa_mysql_connect_new( const ofaMySQLMeta *meta, const ofaMySQLPeriod *period, c
 							ofa_mysql_meta_get_port( meta ),
 							ofa_mysql_meta_get_socket( meta ),
 							CLIENT_MULTI_RESULTS )){
+
+		/*
+		g_debug( "%s: error: host=%s, socket=%s, port=%d, database=%s, account=%s, password=%s",
+				thisfn, ofa_mysql_meta_get_host( meta ), ofa_mysql_meta_get_socket( meta ),
+				ofa_mysql_meta_get_port( meta ), dbname, account, password );
+				*/
+
 		g_free( mysql );
 		return( NULL );
 	}
