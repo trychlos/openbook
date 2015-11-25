@@ -41,7 +41,17 @@ struct _ofaMySQLMetaPrivate {
 	 */
 	const ofaIDBProvider *prov_instance;
 	gchar                *dos_name;
+
+	/* server connection infos
+	 */
+	gchar                *host;
+	gchar                *socket;
+	gint                  port;
 };
+
+#define MYSQL_HOST_KEY                  "mysql-host"
+#define MYSQL_SOCKET_KEY                "mysql-socket"
+#define MYSQL_PORT_KEY                  "mysql-port"
 
 static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
 static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
@@ -67,6 +77,8 @@ mysql_meta_finalize( GObject *instance )
 	priv = OFA_MYSQL_META( instance )->priv;
 
 	g_free( priv->dos_name );
+	g_free( priv->host );
+	g_free( priv->socket );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_meta_parent_class )->finalize( instance );
@@ -206,5 +218,86 @@ ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, m
 	priv->prov_instance = g_object_ref(( gpointer ) instance );
 	priv->dos_name = g_strdup( dossier_name );
 
+	/* get server connection infos */
+	priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );
+	priv->socket = my_settings_get_string( settings, group, MYSQL_SOCKET_KEY );
+	priv->port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
+	if( priv->port == -1 ){
+		priv->port = 0;
+	}
+
 	return( meta );
+}
+
+/**
+ * ofa_mysql_meta_get_host:
+ * @meta: this #ofaMySQLMeta object.
+ *
+ * Returns: the hostname which hosts the dataserver.
+ *
+ * The returned string is owned by the @meta object, and should not be
+ * freed by the caller.
+ */
+const gchar *
+ofa_mysql_meta_get_host( const ofaMySQLMeta *meta )
+{
+	ofaMySQLMetaPrivate *priv;
+
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
+
+	priv = meta->priv;
+
+	if( !priv->dispose_has_run ){
+		return(( const gchar * ) priv->host );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_mysql_meta_get_socket:
+ * @meta: this #ofaMySQLMeta object.
+ *
+ * Returns: the listening socket path of the dataserver, or %NULL.
+ *
+ * The returned string is owned by the @meta object, and should not be
+ * freed by the caller.
+ */
+const gchar *
+ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
+{
+	ofaMySQLMetaPrivate *priv;
+
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
+
+	priv = meta->priv;
+
+	if( !priv->dispose_has_run ){
+		return(( const gchar * ) priv->socket );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_mysql_meta_get_port:
+ * @meta: this #ofaMySQLMeta object.
+ *
+ * Returns: the listening port of the dataserver, or zero for the
+ * default value.
+ */
+gint
+ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
+{
+	ofaMySQLMetaPrivate *priv;
+
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), 0 );
+
+	priv = meta->priv;
+
+	if( !priv->dispose_has_run ){
+		return( priv->port );
+	}
+
+	return( 0 );
 }

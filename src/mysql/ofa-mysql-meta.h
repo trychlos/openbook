@@ -64,12 +64,18 @@ typedef struct {
 }
 	ofaMySQLMetaClass;
 
-GType         ofa_mysql_meta_get_type( void ) G_GNUC_CONST;
+GType         ofa_mysql_meta_get_type  ( void ) G_GNUC_CONST;
 
-ofaMySQLMeta *ofa_mysql_meta_new     ( const ofaIDBProvider *provider,
+ofaMySQLMeta *ofa_mysql_meta_new       ( const ofaIDBProvider *provider,
 												const gchar *dossier_name,
 												mySettings *settings,
 												const gchar *group );
+
+const gchar  *ofa_mysql_meta_get_host  ( const ofaMySQLMeta *meta );
+
+const gchar  *ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta );
+
+gint          ofa_mysql_meta_get_port  ( const ofaMySQLMeta *meta );
 
 G_END_DECLS
 
