@@ -41,8 +41,10 @@
  * the #ofaFileDir singleton.
  */
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-ifile-meta-def.h"
+#include "api/ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
@@ -138,6 +140,12 @@ const gchar    *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *m
 
 void            ofa_ifile_meta_set_group_name            ( ofaIFileMeta *meta,
 																	const gchar *group_name );
+
+ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
+																	ofaIFilePeriod *period,
+																	const gchar *account,
+																	const gchar *password,
+																	gchar **msg );
 
 G_END_DECLS
 

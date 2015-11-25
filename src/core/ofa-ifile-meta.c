@@ -26,6 +26,9 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
+#include "api/my-utils.h"
 #include "api/ofa-ifile-meta.h"
 
 /* some data attached to each IFileMeta instance
@@ -320,6 +323,63 @@ ofa_ifile_meta_set_group_name( ofaIFileMeta *meta, const gchar *group_name )
 	data = get_ifile_meta_data( meta );
 	g_free( data->group_name );
 	data->group_name = g_strdup( group_name );
+}
+
+/**
+ * ofa_ifile_meta_get_connection:
+ * @meta: this #ofaIFileMeta instance.
+ * @period: the #ofaIFilePeriod considered exercice.
+ * @account: the user account.
+ * @password: the user password.
+ * @msg: [allow-none]: the error message if any.
+ *
+ * Open a connection on the specified dossier for the specified
+ * exercice.
+ *
+ * Returns: an object allocated by the DBMS provider which handles all
+ * the connection informations, and implements the #ofaIDBConnect
+ * interface.
+ *
+ * The DBMS provider is responsible to gracefully close the connection
+ * when the caller g_object_unref() this object.
+ *
+ * The interface takes care of having one of these two states:
+ * - the returned value is non %NULL and implements the #ofaIDBConnect
+ *   interface; the error message pointer is %NULL
+ * - the returned value is %NULL; an error message is set. This error
+ *   message should be g_free() by the caller.
+ */
+ofaIDBConnect *
+ofa_ifile_meta_get_connection( ofaIFileMeta *meta,
+		ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_get_connection";
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	if( msg ){
+		*msg = NULL;
+	}
+
+	provider = ofa_ifile_meta_get_provider_instance( meta );
+	if( !provider ){
+		if( msg ){
+			*msg = g_strdup( _( "Unable to get a DB provider instance" ));
+		}
+		g_warning( "%s: %s", thisfn, *msg );
+		return( NULL );
+	}
+
+	connect = ofa_idbprovider_connect_dossier( provider, meta, period, account, password, msg );
+	if( !connect ){
+		if( msg && !my_strlen( *msg )){
+			*msg = g_strdup( _( "Unable to get a DB connection" ));
+		}
+	}
+
+	return( connect );
 }
 
 static sIFileMeta *
