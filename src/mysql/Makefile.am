@@ -44,6 +44,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql.h										\
 	ofa-mysql-backup.c								\
 	ofa-mysql-backup.h								\
+	ofa-mysql-connect.c								\
+	ofa-mysql-connect.h								\
 	ofa-mysql-connect-display-bin.c					\
 	ofa-mysql-connect-display-bin.h					\
 	ofa-mysql-connect-enter-bin.c					\
