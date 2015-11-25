@@ -39,6 +39,8 @@
  */
 
 #include "api/my-dialog.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 
 #include "ui/ofa-main-window-def.h"
 
@@ -68,11 +70,13 @@ typedef struct {
 }
 	ofaDossierOpenClass;
 
-GType           ofa_dossier_open_get_type( void ) G_GNUC_CONST;
+GType  ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 
-ofsDossierOpen *ofa_dossier_open_run     ( ofaMainWindow *parent,
-													const gchar *dname,
-													const gchar *dbname );
+void   ofa_dossier_open_run     ( ofaMainWindow *main_widow,
+											ofaIFileMeta *meta,
+											ofaIFilePeriod *period,
+											const gchar *account,
+											const gchar *password );
 
 G_END_DECLS
 

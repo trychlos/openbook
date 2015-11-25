@@ -31,8 +31,6 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-dbms.h"
-#include "api/ofa-ifile-meta.h"
-#include "api/ofa-ifile-period.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -60,16 +58,10 @@ struct _ofaDossierOpenPrivate {
 	ofaExerciceCombo   *exercice_combo;
 	GtkWidget          *message_label;
 	GtkWidget          *ok_btn;
-
-	/* return value
-	 * the structure itself, along with its datas, will be freed by the
-	 * MainWindow signal final handler
-	 */
-	ofsDossierOpen     *sdo;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-open.ui";
-static const gchar  *st_ui_id  = "DossierOpenDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-open.ui";
+static const gchar *st_ui_id            = "DossierOpenDlg";
 
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
@@ -79,8 +71,8 @@ static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *p
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  connection_is_valid( ofaDossierOpen *self );
-static gboolean  do_open( ofaDossierOpen *self );
+static gboolean  is_connection_valid( ofaDossierOpen *self );
+static gboolean  do_open_dossier( ofaDossierOpen *self );
 static void      set_message( ofaDossierOpen *self, const gchar *msg );
 
 static void
@@ -155,25 +147,27 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 
 /**
  * ofa_dossier_open_run:
- * @main: the main window of the application.
- * @dname: the name of the dossier to be opened, or %NULL.
- * @dbname: the name of the database, or %NULL.
+ * @main_window: the main window of the application.
+ * @meta: [allow-none]: the dossier to be opened.
+ * @period: [allow-none]: the exercice to be opened.
+ * @account: [allow-none]: the user account.
+ * @password: [allow-none]: the user password.
  *
- * Run the selection dialog to choose a dossier to be opened, and
- * get the user's credentials.
+ * Open the specified dossier, requiring the missing informations
+ * if needed.
  */
-ofsDossierOpen *
-ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname, const gchar *dbname )
+void
+ofa_dossier_open_run( ofaMainWindow *main_window,
+		ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
-	ofsDossierOpen *sdo;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	g_debug( "%s: main_window=%p, dname=%s, dbname=%s",
-			thisfn, ( void * ) main_window, dname, dbname );
+	g_debug( "%s: main_window=%p, meta=%p, period=%p, account=%s, password=%s",
+			thisfn, ( void * ) main_window, ( void * ) meta, ( void * ) period, account, password );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
@@ -183,13 +177,22 @@ ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname, const gcha
 				NULL );
 
 	priv = self->priv;
+	if( meta ){
+		priv->meta = g_object_ref( meta );
+		if( period ){
+			priv->period = g_object_ref( period );
+		}
+	}
+	priv->account = g_strdup( account );
+	priv->password = g_strdup( password );
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
+	if( is_connection_valid( self )){
+		do_open_dossier( self );
+	} else {
+		my_dialog_run_dialog( MY_DIALOG( self ));
+	}
 
-	sdo = priv->sdo;
 	g_object_unref( self );
-
-	return( sdo );
 }
 
 static void
@@ -355,14 +358,14 @@ check_for_enable_dlg( ofaDossierOpen *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	if( connection_is_valid( OFA_DOSSIER_OPEN( dialog ))){
-		return( do_open( OFA_DOSSIER_OPEN( dialog )));
+	if( is_connection_valid( OFA_DOSSIER_OPEN( dialog ))){
+		return( do_open_dossier( OFA_DOSSIER_OPEN( dialog )));
 	}
 	return( FALSE );
 }
 
 static gboolean
-connection_is_valid( ofaDossierOpen *self )
+is_connection_valid( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	gboolean valid;
@@ -389,20 +392,8 @@ connection_is_valid( ofaDossierOpen *self )
  * return %TRUE if we can open a connection, %FALSE else
  */
 static gboolean
-do_open( ofaDossierOpen *self )
+do_open_dossier( ofaDossierOpen *self )
 {
-	ofaDossierOpenPrivate *priv;
-	ofsDossierOpen *sdo;
-
-	priv = self->priv;
-
-	sdo = g_new0( ofsDossierOpen, 1 );
-	//sdo->dname = g_strdup( priv->dname );
-	//sdo->dbname = g_strdup( priv->dbname );
-	sdo->account = g_strdup( priv->account );
-	sdo->password = g_strdup( priv->password );
-	priv->sdo = sdo;
-
 	return( TRUE );
 }
 

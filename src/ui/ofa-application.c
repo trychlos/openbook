@@ -824,7 +824,6 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_application_on_open";
 	ofaApplicationPrivate *priv;
-	ofsDossierOpen *sdo;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -834,10 +833,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	sdo = ofa_dossier_open_run( priv->main_window, NULL, NULL );
-	if( sdo ){
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
-	}
+	ofa_dossier_open_run( priv->main_window, NULL, NULL, NULL, NULL );
 }
 
 static void
