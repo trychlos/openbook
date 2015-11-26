@@ -31,6 +31,7 @@
 
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
+#include "ofa-mysql-period.h"
 
 /* priv instance data
  */
@@ -50,6 +51,7 @@ struct _ofaMySQLMetaPrivate {
 
 static void   ifile_meta_iface_init( ofaIFileMetaInterface *iface );
 static guint  ifile_meta_get_interface_version( const ofaIFileMeta *instance );
+static void   ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -128,12 +130,30 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_meta_get_interface_version;
+	iface->update_period = ifile_meta_update_period;
 }
 
 static guint
 ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
 	return( 1 );
+}
+
+static void
+ifile_meta_update_period( ofaIFileMeta *instance,
+		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
+{
+	mySettings *settings;
+	gchar *group;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
+	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
+
+	settings = ofa_ifile_meta_get_settings( instance );
+	group = ofa_ifile_meta_get_group_name( instance );
+	ofa_mysql_period_update( OFA_MYSQL_PERIOD( period ), settings, group, current, begin, end );
+
+	g_free( group );
 }
 
 /**
