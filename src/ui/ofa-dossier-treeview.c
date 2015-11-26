@@ -414,9 +414,6 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 			case DOSSIER_SHOW_CURRENT:
 				visible = ofa_ifile_period_get_current( period );
 				break;
-			case DOSSIER_SHOW_ARCHIVED:
-				visible = !ofa_ifile_period_get_current( period );
-				break;
 		}
 		g_object_unref( period );
 	}

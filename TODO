@@ -483,10 +483,6 @@
 
  894 2015-11-24 remove database name from dossier store
 
- 895 2015-11-24 DossierTreeview: the filter is just for displaying
-                a) only dossiers, or b) all exercices
-                so DOSSIER_SHOW_ARCHIVED is useless
-
  896 2015-11-24 remove database name from exercice store
 
  897 2015-11-24 remove database name from command-line application
@@ -496,8 +492,6 @@
                 - open_dossier()
 
  899 2015-11-25 remove ofsDossierOpen structure & associated signal
-
- 902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
 
  903
 
@@ -4229,10 +4223,18 @@
  887 2015-11-10 Reconciliation: implement ofaIColumns interface
      2015-11-12 done
 
+ 895 2015-11-24 DossierTreeview: the filter is just for displaying
+                a) only dossiers, or b) all exercices
+                so DOSSIER_SHOW_ARCHIVED is useless
+     2015-11-26 done
+
  900 2015-11-25 set provider instance/dossier name in IFileMeta data
      2015-11-25 done
 
  901 2015-11-25 attach periods to meta (do no re-read settings)
+     2015-11-26 done
+
+ 902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
      2015-11-26 done
 
 -----------------------------------------------------------------------

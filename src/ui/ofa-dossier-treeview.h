@@ -72,8 +72,7 @@ typedef struct {
  */
 typedef enum {
 	DOSSIER_SHOW_ALL = 1,
-	DOSSIER_SHOW_CURRENT,
-	DOSSIER_SHOW_ARCHIVED,
+	DOSSIER_SHOW_CURRENT
 }
 	ofaDossierShow;
 
