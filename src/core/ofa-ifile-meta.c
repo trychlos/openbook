@@ -396,6 +396,27 @@ ofa_ifile_meta_set_periods( ofaIFileMeta *meta, GList *periods )
 }
 
 /**
+ * ofa_ifile_meta_update_period:
+ * @meta: this #ofaIFileMeta instance.
+ * @period: the #ofaIFilePeriod to be updated.
+ * @current: whether the financial period (exercice) is current.
+ * @begin: [allow-none]: the beginning date.
+ * @end: [allow-none]: the ending date.
+ *
+ * Update the dossier settings for this @period with the specified datas.
+ */
+void
+ofa_ifile_meta_update_period( ofaIFileMeta *meta,
+		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
+{
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->update_period ){
+		OFA_IFILE_META_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
+	}
+}
+
+/**
  * ofa_ifile_meta_get_connection:
  * @meta: this #ofaIFileMeta instance.
  * @period: the #ofaIFilePeriod considered exercice.
