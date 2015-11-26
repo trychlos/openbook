@@ -74,7 +74,7 @@ static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  is_connection_valid( ofaDossierOpen *self, gchar **msg );
-static gboolean  do_open_dossier( ofaDossierOpen *self );
+static void      do_open_dossier( ofaDossierOpen *self );
 static void      set_message( ofaDossierOpen *self, const gchar *msg );
 
 static void
@@ -403,7 +403,8 @@ v_quit_on_ok( myDialog *dialog )
 	g_return_val_if_fail( are_data_set( self, NULL ), FALSE );
 
 	if( is_connection_valid( self, &msg )){
-		return( do_open_dossier( OFA_DOSSIER_OPEN( dialog )));
+		do_open_dossier( OFA_DOSSIER_OPEN( dialog ));
+		return( TRUE );
 	}
 
 	my_utils_dialog_warning( msg );
@@ -436,12 +437,17 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 
 /*
  * is called when the user click on the 'Open' button
- * return %TRUE if we can open a connection, %FALSE else
  */
-static gboolean
+static void
 do_open_dossier( ofaDossierOpen *self )
 {
-	return( TRUE );
+	ofaDossierOpenPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_main_window_open_dossier(
+			OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( self ))),
+			priv->connect );
 }
 
 static void
