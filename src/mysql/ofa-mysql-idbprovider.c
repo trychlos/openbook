@@ -43,7 +43,7 @@
 
 static guint          idbprovider_get_interface_version( const ofaIDBProvider *instance );
 static ofaIFileMeta  *idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group );
-static GList         *idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta );
+static GList         *get_meta_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group );
 static ofaIDBConnect *idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg );
 static void           set_message( gchar **dest, const gchar *message );
 
@@ -60,7 +60,6 @@ ofa_mysql_idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	iface->get_interface_version = idbprovider_get_interface_version;
 	iface->get_provider_name = ofa_mysql_idbprovider_get_provider_name;
 	iface->get_dossier_meta = idbprovider_get_dossier_meta;
-	iface->get_dossier_periods = idbprovider_get_dossier_periods;
 	iface->connect_dossier = idbprovider_connect_dossier;
 }
 
@@ -89,8 +88,13 @@ static ofaIFileMeta *
 idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
 {
 	ofaMySQLMeta *meta;
+	GList *periods;
 
 	meta = ofa_mysql_meta_new( instance, dossier_name, settings, group );
+
+	periods = get_meta_periods( instance, settings, group );
+	ofa_ifile_meta_set_periods( OFA_IFILE_META( meta ), periods );
+	ofa_ifile_meta_free_periods( periods );
 
 	return( OFA_IFILE_META( meta ));
 }
@@ -99,17 +103,13 @@ idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossi
  * list the defined periods
  */
 static GList *
-idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta )
+get_meta_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group )
 {
 	GList *outlist;
-	mySettings *settings;
-	gchar *group;
 	GList *keys, *itk;
 	const gchar *cstr;
 	ofaMySQLPeriod *period;
 
-	settings = ofa_ifile_meta_get_settings( meta );
-	group = ofa_ifile_meta_get_group_name( meta );
 	keys = my_settings_get_keys( settings, group );
 	outlist = NULL;
 
@@ -121,7 +121,6 @@ idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileM
 		}
 	}
 
-	g_free( group );
 	my_settings_free_keys( keys );
 
 	return( g_list_reverse( outlist ));

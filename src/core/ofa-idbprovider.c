@@ -189,31 +189,6 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
 }
 
 /**
- * ofa_idbprovider_get_dossier_periods:
- * @instance: this #ofaIDBProvider instance.
- * @meta: the #ofaIFileMeta instance which manages the dossier.
- *
- * Returns: the list of defined periods, as a #GList of #ofaIFilePeriod
- * objects, which should be #ofa_ifile_meta_free_periods() by
- * the caller.
- *
- * This method is expected to be called from #ofaIFileMeta interface
- * (see #ofa_ifile_meta_get_periods() method).
- */
-GList *
-ofa_idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileMeta *meta )
-{
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_periods ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_periods( instance, meta ));
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_idbprovider_connect_dossier:
  * @instance: this #ofaIDBProvider instance.
  * @meta: the #ofaIFileMeta instance which manages the dossier.
