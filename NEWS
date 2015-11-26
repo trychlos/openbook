@@ -31,9 +31,11 @@
  Other changes:
 
    - ofa_application_get_file_dir(): new method.
+   - ofa_dossier_misc_get_current_dbname(): removed function.
    - ofa_dossier_misc_get_dossiers(): removed function (todo #893).
    - ofa_dossier_misc_get_exercices(): removed function.
    - ofa_dossier_misc_get_exercice_label(): removed function.
+   - ofa_dossier_misc_set_current(): removed function.
    - ofa_main_window_open_dossier(): new method.
    - ofaIDBConnect: new DBMS connection management interface.
    - ofaIDBProvider: new DBMS directory management interface.

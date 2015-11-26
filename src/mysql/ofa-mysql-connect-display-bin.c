@@ -194,7 +194,7 @@ setup_bin( ofaMySQLConnectDisplayBin *bin )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "database" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	text = ofa_dossier_misc_get_current_dbname( priv->dname );
+	text = g_strdup( "" ); //ofa_dossier_misc_get_current_dbname( priv->dname );
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
 

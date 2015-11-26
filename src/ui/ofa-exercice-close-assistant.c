@@ -512,7 +512,7 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	ofo_dossier_set_exe_begin( priv->dossier, begin_cur );
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
-	ofa_dossier_misc_set_current( priv->dname, begin_cur, end_cur );
+	g_signal_emit_by_name( priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED, begin_cur, end_cur );
 	ofa_main_window_update_title( priv->main_window );
 
 	ofa_closing_parms_bin_apply( priv->p1_closing_parms );

@@ -606,7 +606,6 @@ check_db_vs_settings( ofoDossier *dossier )
 	settings_current = ofa_ifile_period_get_current( period );
 	settings_begin = ofa_ifile_period_get_begin_date( period );
 	settings_end = ofa_ifile_period_get_end_date( period );
-	g_object_unref( period );
 
 	/* update settings if not equal */
 	if( db_current != settings_current ||
@@ -632,6 +631,8 @@ check_db_vs_settings( ofoDossier *dossier )
 		ofa_ifile_meta_update_period( meta, period, db_current, db_begin, db_end );
 		g_object_unref( meta );
 	}
+
+	g_object_unref( period );
 }
 
 /*
@@ -699,13 +700,26 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 	g_free( query );
 }
 
+/*
+ * changing beginning or ending date is only possible for current
+ *  exercice
+ */
 static void
 on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
-	ofa_dossier_misc_set_current(
-			ofo_dossier_get_name( dossier ),
-			ofo_dossier_get_exe_begin( dossier ),
-			ofo_dossier_get_exe_end( dossier ));
+	const ofaIDBConnect *cnx;
+	ofaIFileMeta *meta;
+	ofaIFilePeriod *period;
+
+	cnx = ofo_dossier_get_connect( dossier );
+	meta = ofa_idbconnect_get_meta( cnx );
+	period = ofa_idbconnect_get_period( cnx );
+
+	ofa_ifile_meta_update_period( meta, period,
+			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
+
+	g_object_unref( period );
+	g_object_unref( meta );
 }
 
 /**

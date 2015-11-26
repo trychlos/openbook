@@ -42,60 +42,6 @@ static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
 /**
- * ofa_dossier_misc_get_current_dbname:
- * @dname: the name of the dossier
- *
- * Returns the name of the database for the current exercice as a newly
- * allocated string which should be g_free() by the caller.
- */
-gchar *
-ofa_dossier_misc_get_current_dbname( const gchar *dname )
-{
-	GList *slist;
-	gchar *dbname;
-
-	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DBMS_DATABASE );
-	dbname = g_strdup( slist ? slist->data : "" );
-	ofa_settings_free_string_list( slist );
-
-	return( dbname );
-}
-
-/**
- * ofa_dossier_misc_set_current:
- * @dname:
- * @begin:
- * @end:
- *
- * Set the settings with the dates of the current exercice.
- */
-void
-ofa_dossier_misc_set_current( const gchar *dname, const GDate *begin, const GDate *end )
-{
-	GList *list, *it;
-	gchar *dbname, *sbegin, *send, *str;
-
-	list = ofa_settings_dossier_get_string_list( dname, SETTINGS_DBMS_DATABASE );
-	dbname = NULL;
-	it = list;
-	if( it ){
-		dbname = g_strdup(( const gchar * ) it->data );
-	}
-	ofa_settings_free_string_list( list );
-
-	sbegin = my_date_to_str( begin, MY_DATE_YYMD );
-	send = my_date_to_str( end, MY_DATE_YYMD );
-	str = g_strdup_printf( "%s;%s;%s;", dbname, sbegin, send );
-
-	ofa_settings_dossier_set_string( dname, SETTINGS_DBMS_DATABASE, str );
-
-	g_free( dbname );
-	g_free( str );
-	g_free( sbegin );
-	g_free( send );
-}
-
-/**
  * ofa_dossier_misc_set_new_exercice:
  * @dname:
  * @dbname:

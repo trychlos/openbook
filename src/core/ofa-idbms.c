@@ -640,7 +640,7 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
 
 	/* define the dossier administrative account */
 	if( ok ){
-		dbname = ofa_dossier_misc_get_current_dbname( dname );
+		dbname = g_strdup( "" ); //ofa_dossier_misc_get_current_dbname( dname );
 
 		handle = ofa_idbms_connect( instance, dname, dbname, root_account, root_password );
 		query = g_strdup_printf(

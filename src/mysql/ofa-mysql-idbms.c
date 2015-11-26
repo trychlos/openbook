@@ -379,7 +379,7 @@ ofa_mysql_get_connect_infos( const gchar *dname )
 	infos->dname = g_strdup( dname );
 	setup_infos( infos );
 
-	infos->dbname = ofa_dossier_misc_get_current_dbname( dname );
+	infos->dbname = g_strdup( "" ); //ofa_dossier_misc_get_current_dbname( dname );
 
 	return( infos );
 }

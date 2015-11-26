@@ -607,7 +607,7 @@ p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	priv->p2_idbms = ofa_idbms_get_provider_by_name( provider );
 	g_return_if_fail( priv->p2_idbms && OFA_IS_IDBMS( priv->p2_idbms ));
 
-	priv->p2_database = ofa_dossier_misc_get_current_dbname( priv->p2_dossier );
+	priv->p2_database = g_strdup( "" ); //ofa_dossier_misc_get_current_dbname( priv->p2_dossier );
 
 	g_free( provider );
 
