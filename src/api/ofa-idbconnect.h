@@ -37,7 +37,9 @@
  * by a DBMS backend should implement for the needs of the application.
  */
 
-#include <glib-object.h>
+#include "ofa-idbprovider-def.h"
+#include "ofa-ifile-meta-def.h"
+#include "ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
@@ -79,7 +81,26 @@ typedef struct {
 }
 	ofaIDBConnectInterface;
 
-GType ofa_idbconnect_get_type( void );
+GType           ofa_idbconnect_get_type                  ( void );
+
+guint           ofa_idbconnect_get_interface_last_version( void );
+
+guint           ofa_idbconnect_get_interface_version     ( const ofaIDBConnect *connect );
+
+ofaIFileMeta   *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
+
+void            ofa_idbconnect_set_meta                  ( ofaIDBConnect *connect,
+																const ofaIFileMeta *meta );
+
+ofaIFilePeriod *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
+
+void            ofa_idbconnect_set_period                ( ofaIDBConnect *connect,
+																const ofaIFilePeriod *period );
+
+gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *connect );
+
+void            ofa_idbconnect_set_account               ( ofaIDBConnect *connect,
+																const gchar *account );
 
 G_END_DECLS
 
