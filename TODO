@@ -479,7 +479,7 @@
                 - DOSSIER_DISP_DBNAME
                 - DOSSIER_DISP_CODE
 
- 894 2015-11-24 remove database name from dossier store
+ 894 2015-11-24 remove database name + dossier code from dossier store
 
  896 2015-11-24 remove database name from exercice store
 

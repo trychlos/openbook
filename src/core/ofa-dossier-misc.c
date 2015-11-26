@@ -37,54 +37,9 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-static gchar  *exercice_get_description( const gchar *dname, const gchar *key );
 static GSList *get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings );
 static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
-
-/**
- * ofa_dossier_misc_get_exercices:
- * @dname: the name of the dossier from settings.
- *
- * Returns: the list of known exercices for the dossier.
- *
- * The returned list should be #ofa_dossier_misc_free_exercices() by
- * the caller.
- *
- * Each item of this #GSList is the result of the concatenation of the
- * two strings:
- * - a displayable label
- * - the database name
- * - the exercice begin date as a sql-formatted string yyyy-mm-dd
- * - the exercice end date as a sql-formatted string yyyy-mm-dd
- * - the status of the exercice as a displayable string
- * - the status code of the exercice (from ofa-dossier-def.h).
- *
- * The strings are semi-colon separated.
- */
-GSList *
-ofa_dossier_misc_get_exercices( const gchar *dname )
-{
-	GSList *keys_list, *it;
-	GSList *out_list;
-	const gchar *cstr;
-	gchar *line;
-
-	out_list = NULL;
-	keys_list = ofa_settings_dossier_get_keys( dname );
-
-	for( it=keys_list ; it ; it=it->next ){
-		cstr = ( const gchar * ) it->data;
-		if( g_str_has_prefix( cstr, SETTINGS_DBMS_DATABASE )){
-			line = exercice_get_description( dname, cstr );
-			out_list = g_slist_prepend( out_list, line );
-		}
-	}
-
-	ofa_settings_dossier_free_keys( keys_list );
-
-	return( out_list );
-}
 
 /**
  * ofa_dossier_misc_get_exercice_label:
@@ -113,72 +68,6 @@ ofa_dossier_misc_get_exercice_label( const GDate *begin, const GDate *end, gbool
 	}
 
 	return( g_string_free( svalue, FALSE ));
-}
-
-/*
- * returned the current exercice description as a semi-colon separated
- * string:
- * - a displayable label
- * - the database name
- * - the begin of exercice yyyy-mm-dd
- * - the end of exercice yyyy-mm-dd
- * - the status
- */
-static gchar *
-exercice_get_description( const gchar *dname, const gchar *key )
-{
-	GList *strlist, *it;
-	const gchar *sdb, *sbegin;
-	gchar *send;
-	gchar **array;
-	gboolean is_current;
-	GDate begin, end;
-	gchar *label, *svalue, *sdbegin, *sdend, *status;
-
-	strlist = ofa_settings_dossier_get_string_list( dname, key );
-
-	sdb = sbegin = send = NULL;
-	it = strlist;
-	sdb = ( const gchar * ) it->data;
-	it = it->next;
-	if( it ){
-		sbegin = ( const gchar * ) it->data;
-	}
-	if( g_utf8_collate( key, SETTINGS_DBMS_DATABASE )){
-		array = g_strsplit( key, "_", -1 );
-		send = g_strdup( *(array+1 ));
-		g_strfreev( array );
-		is_current = FALSE;
-	} else {
-		it = it ? it->next : NULL;
-		if( it ){
-			send = g_strdup(( const gchar * ) it->data );
-		}
-		is_current = TRUE;
-	}
-
-	status = g_strdup( is_current ? _( "Current" ) : _( "Archived" ));
-
-	my_date_set_from_str( &begin, sbegin, MY_DATE_YYMD );
-	sdbegin = my_date_to_str( &begin, MY_DATE_SQL );
-
-	my_date_set_from_str( &end, send, MY_DATE_YYMD );
-	sdend = my_date_to_str( &end, MY_DATE_SQL );
-
-	label = ofa_dossier_misc_get_exercice_label( &begin, &end, is_current );
-
-	svalue = g_strdup_printf( "%s;%s;%s;%s;%s;%s;",
-			label, sdb, sdbegin, sdend, status, is_current ? DOS_STATUS_OPENED : DOS_STATUS_CLOSED );
-
-	g_free( label );
-	g_free( send );
-	g_free( sdbegin );
-	g_free( sdend );
-	g_free( status );
-
-	ofa_settings_free_string_list( strlist );
-
-	return( svalue );
 }
 
 /**

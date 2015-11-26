@@ -119,7 +119,6 @@ typedef enum {
  * @DOSSIER_DISP_CODE:   status code (from api/ofo-dossier.h) of the exercice
  *
  * The columns displayed in the views.
- * Cf. also #ofa_dossier_misc_get_exercices().
  */
 typedef enum {
 	DOSSIER_DISP_DOSNAME = 1,

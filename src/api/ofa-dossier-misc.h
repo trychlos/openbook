@@ -41,9 +41,6 @@
 
 G_BEGIN_DECLS
 
-GSList   *ofa_dossier_misc_get_exercices     ( const gchar *dname );
-#define   ofa_dossier_misc_free_exercices(L) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
-
 gchar    *ofa_dossier_misc_get_exercice_label( const GDate *begin,
 													const GDate *end,
 													gboolean is_current );
