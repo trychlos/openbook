@@ -33,9 +33,9 @@
 #include "api/ofa-ifile-meta.h"
 #include "api/ofa-plugin.h"
 
-#define IDBPROVIDER_LAST_INTERFACE_VERSION  1
+#define IDBPROVIDER_LAST_VERSION        1
 
-static guint st_initializations             = 0;	/* interface initialization count */
+static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
@@ -126,12 +126,12 @@ interface_base_finalize( ofaIDBProviderInterface *klass )
 guint
 ofa_idbprovider_get_interface_last_version( void )
 {
-	return( IDBPROVIDER_LAST_INTERFACE_VERSION );
+	return( IDBPROVIDER_LAST_VERSION );
 }
 
 /**
  * ofa_idbprovider_get_interface_version:
- * @instance: this #ofa IDBProvider instance.
+ * @instance: this #ofaIDBProvider instance.
  *
  * Returns: the version number of this interface the plugin implements.
  */
