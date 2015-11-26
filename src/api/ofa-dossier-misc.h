@@ -41,9 +41,6 @@
 
 G_BEGIN_DECLS
 
-GSList   *ofa_dossier_misc_get_dossiers      ( void );
-#define   ofa_dossier_misc_free_dossiers(L)  g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
-
 GSList   *ofa_dossier_misc_get_exercices     ( const gchar *dname );
 #define   ofa_dossier_misc_free_exercices(L) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 

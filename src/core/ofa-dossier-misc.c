@@ -43,54 +43,6 @@ static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
 /**
- * ofa_dossier_misc_get_dossiers:
- *
- * Returns: the list of all defined dossiers.
- *
- * Each string of the returned list is a semi-colon separated list of
- * - the dossier name
- * - the DBMS provider name.
- *
- * The returned list should be #ofa_dossier_misc_free_dossiers() by the
- * caller.
- */
-GSList *
-ofa_dossier_misc_get_dossiers( void )
-{
-	static const gchar *thisfn = "ofa_dossier_misc_get_dossiers";
-	GSList *slist_in, *it;
-	GSList *slist_out;
-	gchar *prefix, *dname, *dbms, *out_str;
-	gint spfx;
-	const gchar *cstr;
-
-	g_debug( "%s", thisfn );
-
-	prefix = g_strdup_printf( "%s ", SETTINGS_GROUP_DOSSIER );
-	spfx = my_strlen( prefix );
-
-	slist_in = ofa_settings_get_groups( SETTINGS_TARGET_DOSSIER );
-	slist_out = NULL;
-
-	for( it=slist_in ; it ; it=it->next ){
-		cstr = ( const gchar * ) it->data;
-		if( g_str_has_prefix( cstr, prefix )){
-			dname = g_strstrip( g_strdup( cstr+spfx ));
-			dbms = ofa_settings_get_dossier_provider( dname );
-			out_str = g_strdup_printf( "%s;%s;", dname, dbms );
-			slist_out = g_slist_append( slist_out, out_str );
-			g_free( dbms );
-			g_free( dname );
-		}
-	}
-
-	g_free( prefix );
-	ofa_settings_free_groups( slist_in );
-
-	return( slist_out );
-}
-
-/**
  * ofa_dossier_misc_get_exercices:
  * @dname: the name of the dossier from settings.
  *

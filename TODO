@@ -479,8 +479,6 @@
                 - DOSSIER_DISP_DBNAME
                 - DOSSIER_DISP_CODE
 
- 893 2015-11-24 remove ofa_dossier_misc_get_dossiers
-
  894 2015-11-24 remove database name from dossier store
 
  896 2015-11-24 remove database name from exercice store
@@ -4241,6 +4239,9 @@
 
  887 2015-11-10 Reconciliation: implement ofaIColumns interface
      2015-11-12 done
+
+ 893 2015-11-24 remove ofa_dossier_misc_get_dossiers
+     2015-11-26 done
 
  895 2015-11-24 DossierTreeview: the filter is just for displaying
                 a) only dossiers, or b) all exercices
