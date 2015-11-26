@@ -56,36 +56,37 @@ struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	gchar      *dname;					/* the name of the dossier in settings */
-	ofaDbms    *dbms;
-	gchar      *userid;
+	gchar         *dname;				/* the name of the dossier in settings */
+	ofaDbms       *dbms;
+	gchar         *userid;
+	ofaIDBConnect *cnx;
 
 	/* row id 1
 	 */
-	gchar      *currency;
-	GDate       exe_begin;
-	GDate       exe_end;
-	gint        exe_length;				/* exercice length (in month) */
-	gchar      *exe_notes;
-	gchar      *forward_ope;
-	gchar      *import_ledger;
-	gchar      *label;					/* raison sociale */
-	gchar      *notes;					/* notes */
-	gchar      *siren;
-	gchar      *sld_ope;
-	gchar      *upd_user;
-	GTimeVal    upd_stamp;
-	ofxCounter  last_bat;
-	ofxCounter  last_batline;
-	ofxCounter  last_entry;
-	ofxCounter  last_settlement;
-	ofxCounter  last_concil;
-	gchar      *status;
-	GDate       last_closing;
-	ofxCounter  prev_exe_last_entry;
+	gchar         *currency;
+	GDate          exe_begin;
+	GDate          exe_end;
+	gint           exe_length;			/* exercice length (in months) */
+	gchar         *exe_notes;
+	gchar         *forward_ope;
+	gchar         *import_ledger;
+	gchar         *label;				/* raison sociale */
+	gchar         *notes;				/* notes */
+	gchar         *siren;
+	gchar         *sld_ope;
+	gchar         *upd_user;
+	GTimeVal       upd_stamp;
+	ofxCounter     last_bat;
+	ofxCounter     last_batline;
+	ofxCounter     last_entry;
+	ofxCounter     last_settlement;
+	ofxCounter     last_concil;
+	gchar         *status;
+	GDate          last_closing;
+	ofxCounter     prev_exe_last_entry;
 
-	GList      *cur_details;			/* a list of details per currency */
-	GList      *datasets;				/* a list of datasets managed by ofaIDataset */
+	GList         *cur_details;			/* a list of details per currency */
+	GList         *datasets;			/* a list of datasets managed by ofaIDataset */
 };
 
 typedef struct {
@@ -115,6 +116,7 @@ static ofoBaseClass *ofo_dossier_parent_class = NULL;
 static GType       register_type( void );
 static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
+static gboolean    do_open( ofoDossier *dossier );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -138,10 +140,10 @@ static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBa
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
-static gboolean    dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
-static gboolean    do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
-static gboolean    dossier_do_update_currencies( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
-static gboolean    do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
+static gboolean    dossier_do_update( ofoDossier *dossier );
+static gboolean    do_update_properties( ofoDossier *dossier );
+static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
+static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
@@ -264,6 +266,7 @@ dossier_dispose( GObject *instance )
 		free_cur_details( priv->cur_details );
 		free_datasets( priv->datasets );
 		g_clear_object( &priv->dbms );
+		g_clear_object( &priv->cnx );
 
 		ofa_icollector_dispose( OFA_ICOLLECTOR( instance ));
 	}
@@ -474,13 +477,25 @@ dossier_class_init( ofoDossierClass *klass )
 
 /**
  * ofo_dossier_new:
+ * @cnx: a #ofaIDBConnect object which handles an already opened
+ *  connection.
+ *
+ * Returns: a newly allocated #ofoDossier object, or %NULL if an error
+ * has occured.
  */
 ofoDossier *
-ofo_dossier_new( void )
+ofo_dossier_new( ofaIDBConnect *cnx )
 {
 	ofoDossier *dossier;
 
+	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
+
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
+	dossier->priv->cnx = g_object_ref( cnx );
+
+	if( !do_open( dossier )){
+		g_clear_object( &dossier );
+	}
 
 	return( dossier );
 }
@@ -540,45 +555,12 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 }
 #endif
 
-/**
- * ofo_dossier_open:
- * @dossier: this #ofoDossier object
- * @dname: the name of the dossier, as read from settings
- * @dbname: [allow-none]: the exercice database to be selected
- * @account:
- * @password:
- */
-gboolean
-ofo_dossier_open( ofoDossier *dossier,
-						const gchar *dname, const gchar *dbname,
-						const gchar *account, const gchar *password )
+static gboolean
+do_open( ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_dossier_open";
-	ofoDossierPrivate *priv;
-	ofaDbms *dbms;
 	gboolean ok;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( my_strlen( dname ), FALSE );
-	g_return_val_if_fail( my_strlen( account ), FALSE );
-	g_return_val_if_fail( my_strlen( password ), FALSE );
-
-	g_debug( "%s: dossier=%p, dname=%s, dbname=%s, account=%s, password=%s",
-			thisfn,
-			( void * ) dossier, dname, dbname, account, password );
-
-	priv = dossier->priv;
 	ok = FALSE;
-
-	dbms = ofa_dbms_new();;
-	if( !ofa_dbms_connect( dbms, dname, dbname, account, password, TRUE )){
-		g_object_unref( dbms );
-		return( FALSE );
-	}
-
-	priv->dname = g_strdup( dname );
-	priv->dbms = dbms;
-	priv->userid = g_strdup( account );
 
 	if( ofa_ddl_update_run( dossier )){
 		connect_objects_handlers( dossier );
@@ -658,7 +640,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_DOSSIER "
 					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 
 	g_free( query );
 }
@@ -725,6 +707,29 @@ ofo_dossier_get_dbms( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const ofaDbms * ) dossier->priv->dbms );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_connect:
+ * @dossier: this #ofoDossier object.
+ *
+ * Returns: the handle on the current DBMS connection.
+ *
+ * The returned reference is owned by the #ofoDossier object, and
+ * should not be released by the caller.
+ */
+const ofaIDBConnect *
+ofo_dossier_get_connect( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const ofaIDBConnect * ) dossier->priv->cnx );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -841,7 +846,7 @@ dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
 					field, mnemo, THIS_DOS_ID );
 
-	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 
 	g_free( query );
 
@@ -857,7 +862,7 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
 					field, mnemo, THIS_DOS_ID );
 
-	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 
 	g_free( query );
 
@@ -882,8 +887,8 @@ ofo_dossier_get_database_version( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		ofa_dbms_query_int(
-				ofo_dossier_get_dbms( dossier ),
+		ofa_idbconnect_query_int(
+				ofo_dossier_get_connect( dossier ),
 				"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", &vmax, FALSE );
 	}
 
@@ -1428,7 +1433,7 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 			"	WHERE DOS_ID=%d",
 					field, next_number, THIS_DOS_ID );
 
-	ofa_dbms_query( dossier->priv->dbms, query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -2199,7 +2204,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	if( ofa_dbms_query_ex( dossier->priv->dbms, query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query, &result, TRUE )){
 		icol = ( GSList * ) result->data;
 		cstr = icol->data;
 		if( my_strlen( cstr )){
@@ -2307,7 +2312,7 @@ dossier_read_properties( ofoDossier *dossier )
 		}
 
 		ok = TRUE;
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 
 	g_free( query );
@@ -2317,7 +2322,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"	FROM OFA_T_DOSSIER_CUR "
 			"	WHERE DOS_ID=%d ORDER BY DOS_CURRENCY ASC", THIS_DOS_ID );
 
-	if( ofa_dbms_query_ex( dossier->priv->dbms, query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			currency = icol->data;
@@ -2330,6 +2335,7 @@ dossier_read_properties( ofoDossier *dossier )
 				}
 			}
 		}
+		ofa_idbconnect_free_results( result );
 	}
 
 	return( ok );
@@ -2351,8 +2357,7 @@ ofo_dossier_update( ofoDossier *dossier )
 
 		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-		return( dossier_do_update(
-					dossier, dossier->priv->dbms, dossier->priv->userid ));
+		return( dossier_do_update( dossier ));
 	}
 
 	g_assert_not_reached();
@@ -2360,23 +2365,26 @@ ofo_dossier_update( ofoDossier *dossier )
 }
 
 static gboolean
-dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+dossier_do_update( ofoDossier *dossier )
 {
-	return( do_update_properties( dossier, dbms, user ));
+	return( do_update_properties( dossier ));
 }
 
 static gboolean
-do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+do_update_properties( ofoDossier *dossier )
 {
+	const ofaIDBConnect *cnx;
 	GString *query;
 	gchar *label, *notes, *stamp_str, *sdate;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *cstr;
+	const gchar *cstr, *userid;
 	const GDate *date;
 	ofxCounter number;
 
 	ok = FALSE;
+	cnx = ofo_dossier_get_connect( dossier );
+	userid = ofo_dossier_get_user( dossier );
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	cstr = ofo_dossier_get_default_currency( dossier );
@@ -2481,13 +2489,13 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query,
-			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", user, stamp_str );
+			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", userid, stamp_str );
 	g_free( stamp_str );
 
 	g_string_append_printf( query, "WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
-		dossier_set_upd_user( dossier, user );
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
+		dossier_set_upd_user( dossier, userid );
 		dossier_set_upd_stamp( dossier, &stamp );
 		ok = TRUE;
 	}
@@ -2512,8 +2520,7 @@ ofo_dossier_update_currencies( ofoDossier *dossier )
 
 		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-		return( dossier_do_update_currencies(
-					dossier, dossier->priv->dbms, dossier->priv->userid ));
+		return( dossier_do_update_currencies( dossier ));
 	}
 
 	g_assert_not_reached();
@@ -2521,13 +2528,13 @@ ofo_dossier_update_currencies( ofoDossier *dossier )
 }
 
 static gboolean
-dossier_do_update_currencies( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+dossier_do_update_currencies( ofoDossier *dossier )
 {
-	return( do_update_currency_properties( dossier, dbms, user ));
+	return( do_update_currency_properties( dossier ));
 }
 
 static gboolean
-do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+do_update_currency_properties( ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
 	gchar *query;
@@ -2537,19 +2544,21 @@ do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const g
 	GTimeVal stamp;
 	gchar *stamp_str;
 	gint count;
+	const gchar *userid;
 
-	ok = ofa_dbms_query( dbms, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
+	priv = dossier->priv;
+	ok = ofa_idbconnect_query( priv->cnx, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
 	count = 0;
 
 	if( ok ){
-		priv = dossier->priv;
+		userid = ofo_dossier_get_user( dossier );
 
 		for( it=priv->cur_details ; it && ok ; it=it->next ){
 			sdet = ( sCurrency * ) it->data;
 			query = g_strdup_printf(
 					"INSERT INTO OFA_T_DOSSIER_CUR (DOS_ID,DOS_CURRENCY,DOS_SLD_ACCOUNT) VALUES "
 					"	(%d,'%s','%s')", THIS_DOS_ID, sdet->currency, sdet->sld_account );
-			ok &= ofa_dbms_query( dbms, query, TRUE );
+			ok &= ofa_idbconnect_query( priv->cnx, query, TRUE );
 			g_free( query );
 			count += 1;
 		}
@@ -2560,13 +2569,13 @@ do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const g
 			query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER SET "
 					"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' "
-					"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
+					"	WHERE DOS_ID=%d", userid, stamp_str, THIS_DOS_ID );
 			g_free( stamp_str );
 
-			if( !ofa_dbms_query( dbms, query, TRUE )){
+			if( !ofa_idbconnect_query( priv->cnx, query, TRUE )){
 				ok = FALSE;
 			} else {
-				dossier_set_upd_user( dossier, user );
+				dossier_set_upd_user( dossier, userid );
 				dossier_set_upd_stamp( dossier, &stamp );
 			}
 		}

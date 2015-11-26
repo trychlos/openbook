@@ -32,8 +32,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
@@ -52,34 +52,34 @@ struct _ofaDDLUpdatePrivate {
 
 	/* input data
 	 */
-	ofoDossier    *dossier;
+	ofoDossier          *dossier;
 
 	/* runtime data
 	 */
-	gint           cur_version;
-	gint           last_version;
-	const ofaDbms *dbms;
-	gint           row;
-	gulong         total;				/* for the lastly added row */
-	gulong         current;				/* for the lastly added row */
+	gint                 cur_version;
+	gint                 last_version;
+	const ofaIDBConnect *cnx;
+	gint                 row;
+	gulong               total;				/* for the lastly added row */
+	gulong               current;			/* for the lastly added row */
 
 	/* UI
 	 */
-	GtkWidget     *close_btn;
-	GtkWidget     *paned;
-	GtkWidget     *grid;
-	GtkWidget     *textview;
-	GtkTextBuffer *buffer;
-	GtkSizeGroup  *hgroup;
-	GtkWidget     *bar;					/* the bar for the lastly added row */
+	GtkWidget           *close_btn;
+	GtkWidget           *paned;
+	GtkWidget           *grid;
+	GtkWidget           *textview;
+	GtkTextBuffer       *buffer;
+	GtkSizeGroup        *hgroup;
+	GtkWidget           *bar;				/* the bar for the lastly added row */
 
 	/* settings
 	 */
-	gint           paned_pos;
+	gint                 paned_pos;
 
 	/* returned value
 	 */
-	gboolean       up_to_date;
+	gboolean             up_to_date;
 };
 
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-ddl-update.ui";
@@ -365,7 +365,7 @@ do_run( ofaDDLUpdate *self )
 
 	priv = self->priv;
 	ok = TRUE;
-	priv->dbms = ofo_dossier_get_dbms( priv->dossier );
+	priv->cnx = ofo_dossier_get_connect( priv->dossier );
 
 	for( i=0 ; st_migrates[i].ver_target ; ++i ){
 		if( priv->cur_version < st_migrates[i].ver_target ){
@@ -486,7 +486,7 @@ exec_query( ofaDDLUpdate *self, const gchar *query )
 	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
 	gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
 
-	ok = ofa_dbms_query( priv->dbms, query, TRUE );
+	ok = ofa_idbconnect_query( priv->cnx, query, TRUE );
 
 	priv->current += 1;
 	set_bar_progression( self );
@@ -1102,7 +1102,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	}
 
 	/* not counted */
-	if( !ofa_dbms_query_ex( priv->dbms,
+	if( !ofa_idbconnect_query_ex( priv->cnx,
 			"SELECT ENT_NUMBER,ENT_CONCIL_DVAL,ENT_CONCIL_USER,ENT_CONCIL_STAMP "
 			"	FROM OFA_T_ENTRIES "
 			"	WHERE ENT_CONCIL_DVAL IS NOT NULL", &result, TRUE )){
@@ -1146,7 +1146,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 				break;
 			}
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -1162,7 +1162,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	}
 
 	/* not counted */
-	if( !ofa_dbms_query_ex( priv->dbms,
+	if( !ofa_idbconnect_query_ex( priv->cnx,
 			"SELECT a.BAT_LINE_ID,b.REC_ID "
 			"	FROM OFA_T_BAT_CONCIL a, OFA_T_CONCIL_IDS b "
 			"	WHERE a.BAT_REC_ENTRY=b.REC_IDS_OTHER "
@@ -1185,7 +1185,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 			ok = exec_query( self, query );
 			g_free( query );
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -1351,7 +1351,7 @@ count_rows( const ofoDossier *dossier, const gchar *table )
 	gchar *query;
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
-	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 	g_free( query );
 
 	return( count );

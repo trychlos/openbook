@@ -731,48 +731,43 @@ do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect )
 	const gchar *main_notes, *exe_notes;
 
 	priv = main_window->priv;
+	priv->dossier = ofo_dossier_new( connect );
 
-	priv->dossier = ofo_dossier_new();
-	/*
-	if( !ofo_dossier_open( priv->dossier, connect )){
-		g_clear_object( &priv->dossier );
-		return;
-	}
-	*/
+	if( priv->dossier ){
+		priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
+		gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
+		pane_restore_position( priv->pane );
+		add_treeview_to_pane_left( main_window );
+		add_empty_notebook_to_pane_right( main_window );
 
-	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
-	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
-	pane_restore_position( priv->pane );
-	add_treeview_to_pane_left( main_window );
-	add_empty_notebook_to_pane_right( main_window );
+		set_menubar( main_window, priv->menu );
+		set_window_title( main_window );
 
-	set_menubar( main_window, priv->menu );
-	set_window_title( main_window );
-
-	/* warns if begin or end of exercice is not set */
-	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
-	exe_end = ofo_dossier_get_exe_end( priv->dossier );
-	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
-		warning_exercice_unset( main_window );
-	}
-
-	/* display dossier notes */
-	if( ofa_prefs_dossier_open_notes()){
-		main_notes = ofo_dossier_get_notes( priv->dossier );
-		exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
-		if( my_strlen( main_notes ) ||
-				my_strlen( exe_notes ) ||
-				ofa_prefs_dossier_open_notes_if_empty()){
-			ofa_dossier_display_notes_run( main_window, main_notes, exe_notes );
+		/* warns if begin or end of exercice is not set */
+		exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
+		exe_end = ofo_dossier_get_exe_end( priv->dossier );
+		if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
+			warning_exercice_unset( main_window );
 		}
-	}
 
-	/* display dossier properties */
-	if( ofa_prefs_dossier_open_properties()){
-		g_signal_emit_by_name(( gpointer ) main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
-	}
+		/* display dossier notes */
+		if( ofa_prefs_dossier_open_notes()){
+			main_notes = ofo_dossier_get_notes( priv->dossier );
+			exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
+			if( my_strlen( main_notes ) ||
+					my_strlen( exe_notes ) ||
+					ofa_prefs_dossier_open_notes_if_empty()){
+				ofa_dossier_display_notes_run( main_window, main_notes, exe_notes );
+			}
+		}
 
-	g_signal_emit_by_name( main_window, "ofa-opened-dossier", priv->dossier );
+		/* display dossier properties */
+		if( ofa_prefs_dossier_open_properties()){
+			g_signal_emit_by_name(( gpointer ) main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
+		}
+
+		g_signal_emit_by_name( main_window, "ofa-opened-dossier", priv->dossier );
+	}
 }
 
 static void
