@@ -42,8 +42,11 @@ struct _ofaMySQLConnectPrivate {
 	gchar   *account;
 };
 
-static void  idbconnect_iface_init( ofaIDBConnectInterface *iface );
-static guint idbconnect_get_interface_version( const ofaIDBConnect *instance );
+static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
+static guint    idbconnect_get_interface_version( const ofaIDBConnect *instance );
+static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
+static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
+static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBCONNECT, idbconnect_iface_init ));
@@ -123,12 +126,76 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbconnect_get_interface_version;
+	iface->query = idbconnect_query;
+	iface->query_ex = idbconnect_query_ex;
+	iface->get_last_error = idbconnect_get_last_error;
 }
 
 static guint
 idbconnect_get_interface_version( const ofaIDBConnect *instance )
 {
 	return( 1 );
+}
+
+/*
+ * an update/delete query (does not return any result)
+ */
+static gboolean
+idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
+{
+	ofaMySQLConnect *connect;
+	gboolean ok;
+
+	connect = OFA_MYSQL_CONNECT( instance );
+	ok = ( mysql_query( connect->priv->mysql, query ) == 0 );
+
+	return( ok );
+}
+
+static gboolean
+idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result )
+{
+	ofaMySQLConnect *connect;
+	gboolean ok;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	gint fields_count, i;
+
+	ok = FALSE;
+	*result = NULL;
+
+	if( idbconnect_query( instance, query )){
+		ok = TRUE;
+		connect = OFA_MYSQL_CONNECT( instance );
+		res = mysql_store_result( connect->priv->mysql );
+		if( res ){
+			fields_count = mysql_num_fields( res );
+			while(( row = mysql_fetch_row( res ))){
+				GSList *col = NULL;
+				for( i=0 ; i<fields_count ; ++i ){
+					col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
+				}
+				col = g_slist_reverse( col );
+				*result = g_slist_prepend( *result, col );
+			}
+			*result = g_slist_reverse( *result );
+		}
+		mysql_free_result( res );
+	}
+
+	return( ok );
+}
+
+static gchar *
+idbconnect_get_last_error( const ofaIDBConnect *instance )
+{
+	ofaMySQLConnect *connect;
+	gchar *msg;
+
+	connect = OFA_MYSQL_CONNECT( instance );
+	msg = g_strdup( mysql_error( connect->priv->mysql ));
+
+	return( msg );
 }
 
 /**
