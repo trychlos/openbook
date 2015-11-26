@@ -190,7 +190,7 @@ ofa_ifile_period_get_end_date( const ofaIFilePeriod *period, GDate *date )
  * ofa_ifile_period_get_current:
  * @period: this #ofaIFilePeriod instance.
  *
- * Returns: %TRUE if the financier period is current, i.e. may be
+ * Returns: %TRUE if the financial period is current, i.e. may be
  * modified, %FALSE else.
  */
 gboolean

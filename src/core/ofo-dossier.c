@@ -570,10 +570,12 @@ do_open( ofoDossier *dossier )
 			/* when opening the dossier, make sure the settings are up to date
 			 * (this may not be the case when the dossier has just been restored
 			 *  or created) */
+			/*
 			if( !g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED )){
 				ofa_dossier_misc_set_current( ofo_dossier_get_name( dossier ),
 						ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 			}
+			*/
 		}
 	}
 
