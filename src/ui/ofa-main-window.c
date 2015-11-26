@@ -308,20 +308,19 @@ G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
 static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void             do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             set_window_title( const ofaMainWindow *window );
-static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
+static void             on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gpointer user_data );
 static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             warning_archived_dossier( const ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
-static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void             on_dossier_open_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo );
 static void             on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
 static void             enable_action_settlement( ofaMainWindow *window, gboolean enable );
@@ -525,29 +524,22 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	/**
 	 * ofaMainWindow::ofa-signal-dossier-open:
 	 *
-	 * This signal is to be sent to the main window when someone asks
-	 * for opening a dossier.
+	 * This signal is to be sent to the main window in order a dossier
+	 * be opened in the user interface.
 	 *
-	 * Arguments are the name of the dossier, along with the connection
-	 * parameters: account and password. The connection to the DBMS
-	 * itself is supposed to have already been validated.
-	 *
-	 * Arguments must be allocated by the emitter, and passed in a
-	 * newly allocated ofsDossierOpen structure.
-	 *
-	 * The cleanup handler will take care of freeing the structure and
-	 * the arguments.
+	 * Argument is the #ofaIDBConnect object which handles the
+	 * (already opened et validated) connection.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 * 						ofsDossierOpen *sdo,
-	 * 						gpointer user_data );
+	 * void ( *handler )( ofaMainWindow   *window,
+	 * 						ofaIDBConnect *connect,
+	 * 						gpointer        user_data );
 	 */
 	st_signals[ DOSSIER_OPEN ] = g_signal_new_class_handler(
 				OFA_SIGNAL_DOSSIER_OPEN,
 				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_dossier_open_cleanup_handler ),
+				G_SIGNAL_ACTION,
+				NULL,
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
 				NULL,
@@ -683,11 +675,104 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 	return( !ok_to_quit );
 }
 
+/**
+ * ofa_main_window_is_willing_to_quit:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Ask a user for a confirmation when quitting.
+ *
+ * Returns: %TRUE is the user confirms he wants quit the application,
+ * %FALSE else.
+ */
 gboolean
-ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
+ofa_main_window_is_willing_to_quit( ofaMainWindow *main_window )
 {
 	return( my_utils_dialog_question(
 			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
+}
+
+/**
+ * ofa_main_window_open_dossier:
+ * @main_window: this #ofaMainWindow instance.
+ * @connect: the #ofaIDBConnect object which handles the opened
+ *  connection.
+ *
+ * Open the dossier in the user interface.
+ */
+void
+ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect )
+{
+	static const gchar *thisfn = "ofa_main_window_open_dossier";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: main_window=%p, connect=%p", thisfn, ( void * ) main_window, ( void * ) connect );
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	priv = main_window->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( priv->dossier ){
+			g_return_if_fail( OFO_IS_DOSSIER( priv->dossier ));
+			do_close_dossier( main_window );
+		}
+
+		do_open_dossier( main_window, connect );
+	}
+}
+
+static void
+do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect )
+{
+	ofaMainWindowPrivate *priv;
+	const GDate *exe_begin, *exe_end;
+	const gchar *main_notes, *exe_notes;
+
+	priv = main_window->priv;
+
+	priv->dossier = ofo_dossier_new();
+	/*
+	if( !ofo_dossier_open( priv->dossier, connect )){
+		g_clear_object( &priv->dossier );
+		return;
+	}
+	*/
+
+	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
+	pane_restore_position( priv->pane );
+	add_treeview_to_pane_left( main_window );
+	add_empty_notebook_to_pane_right( main_window );
+
+	set_menubar( main_window, priv->menu );
+	set_window_title( main_window );
+
+	/* warns if begin or end of exercice is not set */
+	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
+	exe_end = ofo_dossier_get_exe_end( priv->dossier );
+	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
+		warning_exercice_unset( main_window );
+	}
+
+	/* display dossier notes */
+	if( ofa_prefs_dossier_open_notes()){
+		main_notes = ofo_dossier_get_notes( priv->dossier );
+		exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
+		if( my_strlen( main_notes ) ||
+				my_strlen( exe_notes ) ||
+				ofa_prefs_dossier_open_notes_if_empty()){
+			ofa_dossier_display_notes_run( main_window, main_notes, exe_notes );
+		}
+	}
+
+	/* display dossier properties */
+	if( ofa_prefs_dossier_open_properties()){
+		g_signal_emit_by_name(( gpointer ) main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
+	}
+
+	g_signal_emit_by_name( main_window, "ofa-opened-dossier", priv->dossier );
 }
 
 static void
@@ -828,80 +913,12 @@ set_window_title( const ofaMainWindow *window )
 }
 
 static void
-on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data )
+on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
-	ofaMainWindowPrivate *priv;
-	const GDate *exe_begin, *exe_end;
-	const gchar *main_notes, *exe_notes;
 
-	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s, user_data=%p",
-			thisfn, ( void * ) window,
-			( void * ) sdo, sdo->dname, sdo->dbname, sdo->account, sdo->password,
-			( void * ) user_data );
-
-	priv = window->priv;
-
-	/* database name defaults to current */
-	if( !sdo->dbname ){
-		sdo->dbname = ofa_dossier_misc_get_current_dbname( sdo->dname );
-	}
-
-	/* no default for credentials - so have to set them */
-	if( !check_for_account( window, sdo )){
-		return;
-	}
-
-	if( priv->dossier ){
-		g_return_if_fail( OFO_IS_DOSSIER( priv->dossier ));
-		do_close_dossier( window );
-	}
-
-	priv->dossier = ofo_dossier_new();
-
-	if( !ofo_dossier_open( priv->dossier, sdo->dname, sdo->dbname, sdo->account, sdo->password )){
-		g_clear_object( &priv->dossier );
-		return;
-	}
-
-	priv->dos_account = g_strdup( sdo->account );
-	priv->dos_password = g_strdup( sdo->password );
-	priv->dos_dbname = g_strdup( sdo->dbname );
-
-	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
-	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
-	pane_restore_position( priv->pane );
-	add_treeview_to_pane_left( window );
-	add_empty_notebook_to_pane_right( window );
-
-	set_menubar( window, priv->menu );
-	set_window_title( window );
-
-	/* warns if begin or end of exercice is not set */
-	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
-	exe_end = ofo_dossier_get_exe_end( priv->dossier );
-	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
-		warning_exercice_unset( window );
-	}
-
-	/* display dossier notes */
-	if( ofa_prefs_dossier_open_notes()){
-		main_notes = ofo_dossier_get_notes( priv->dossier );
-		exe_notes = ofo_dossier_get_exe_notes( priv->dossier );
-		if( my_strlen( main_notes ) ||
-				my_strlen( exe_notes ) ||
-				ofa_prefs_dossier_open_notes_if_empty()){
-			ofa_dossier_display_notes_run( window, main_notes, exe_notes );
-		}
-	}
-
-	/* display dossier properties */
-	if( ofa_prefs_dossier_open_properties()){
-		g_signal_emit_by_name(( gpointer ) window, OFA_SIGNAL_DOSSIER_PROPERTIES );
-	}
-
-	g_signal_emit_by_name( window, "ofa-opened-dossier", g_object_ref( priv->dossier ));
-	g_object_unref( priv->dossier );
+	g_debug( "%s: window=%p, connect=%p, user_data=%p",
+			thisfn, ( void * ) window, ( void * ) connect, ( void * ) user_data );
 }
 
 /*
@@ -955,20 +972,6 @@ warning_archived_dossier( const ofaMainWindow *window )
 	my_utils_dialog_warning( str );
 
 	g_free( str );
-}
-
-/*
- * If account and/or user password are empty, then let the user enter
- * a new pair of account/password.
- */
-static gboolean
-check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo )
-{
-	if( !my_strlen( sdo->account ) || !my_strlen( sdo->password )){
-		ofa_dossier_login_run( main_window, sdo->dname, sdo->dbname, &sdo->account, &sdo->password );
-	}
-
-	return( my_strlen( sdo->account ) && my_strlen( sdo->password ));
 }
 
 static void
@@ -1093,22 +1096,6 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 			G_OBJECT( book ), "page-removed", G_CALLBACK( on_page_removed ), window );
 
 	gtk_paned_pack2( window->priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
-}
-
-static void
-on_dossier_open_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo )
-{
-	static const gchar *thisfn = "ofa_main_window_on_dossier_open_cleanup_handler";
-
-	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s",
-			thisfn, ( void * ) window,
-			( void * ) sdo, sdo->dname, sdo->dbname, sdo->account, sdo->password );
-
-	g_free( sdo->dname );
-	g_free( sdo->dbname );
-	g_free( sdo->account );
-	g_free( sdo->password );
-	g_free( sdo );
 }
 
 /*

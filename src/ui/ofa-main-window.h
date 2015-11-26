@@ -59,6 +59,7 @@
  * +------------------------------------------------------------------+
  */
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofo-dossier-def.h"
 
 #include "ui/ofa-application-def.h"
@@ -94,6 +95,9 @@ ofaMainWindow *ofa_main_window_new                    ( const ofaApplication *ap
 ofaPage       *ofa_main_window_activate_theme         ( const ofaMainWindow *window, gint theme_id );
 
 gboolean       ofa_main_window_is_willing_to_quit     ( ofaMainWindow *window );
+
+void           ofa_main_window_open_dossier           ( ofaMainWindow *window,
+																ofaIDBConnect *connect );
 
 ofoDossier    *ofa_main_window_get_dossier            ( const ofaMainWindow *window );
 
