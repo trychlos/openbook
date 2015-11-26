@@ -71,6 +71,13 @@ ofaMySQLPeriod *ofa_mysql_period_new         ( const ofaIDBProvider *provider,
 
 const gchar    *ofa_mysql_period_get_database( const ofaMySQLPeriod *period );
 
+void            ofa_mysql_period_update      ( ofaMySQLPeriod *period,
+														mySettings *settings,
+														const gchar *group,
+														gboolean current,
+														const GDate *begin,
+														const GDate *end);
+
 G_END_DECLS
 
 #endif /* __OFA_MYSQL_PERIOD_H__ */

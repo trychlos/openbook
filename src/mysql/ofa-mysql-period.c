@@ -53,7 +53,8 @@ static guint           ifile_period_get_interface_version( const ofaIFilePeriod 
 static GDate          *ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date );
 static GDate          *ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date );
 static gboolean        ifile_period_get_current( const ofaIFilePeriod *instance );
-static ofaMySQLPeriod *get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
+static ofaMySQLPeriod *read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
+static void            write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_PERIOD, ifile_period_iface_init ));
@@ -214,7 +215,7 @@ ofa_mysql_period_new( const ofaIDBProvider *instance, mySettings *settings, cons
 	period = NULL;
 
 	if( g_str_has_prefix( key, MYSQL_DATABASE_KEY_PREFIX )){
-		period = get_period_from_settings( instance, settings, group, key );
+		period = read_period_from_settings( instance, settings, group, key );
 	}
 
 	return( period );
@@ -226,7 +227,7 @@ ofa_mysql_period_new( const ofaIDBProvider *instance, mySettings *settings, cons
  * string = current / begin / end
  */
 static ofaMySQLPeriod *
-get_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
+read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
 {
 	ofaMySQLPeriod *period;
 	ofaMySQLPeriodPrivate *priv;
@@ -283,4 +284,58 @@ ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_mysql_period_update:
+ * @period: this #ofaMySQLPeriod object.
+ * @settings: the #mySettings object.
+ * @group: the group name in the settings.
+ * @current: whether the financial period is current.
+ * @begin: [allow-none]: the beginning date.
+ * @end: [allow-none]: the ending date.
+ *
+ * Update the dossier settings for this @period with the specified datas.
+ */
+void
+ofa_mysql_period_update( ofaMySQLPeriod *period,
+		mySettings *settings, const gchar *group, gboolean current, const GDate *begin, const GDate *end )
+{
+	ofaMySQLPeriodPrivate *priv;
+
+	priv = period->priv;
+
+	if( !priv->dispose_has_run ){
+
+		/* we update the internal data of the object through this is
+		 * pretty useless as writing into dossier settings file will
+		 * trigger a reload of all data (through the myFileMonitor) */
+		priv->current = current;
+		my_date_set_from_date( &priv->begin, begin );
+		my_date_set_from_date( &priv->end, end );
+
+		/* next update the settings */
+		write_period_in_settings( period, settings, group );
+	}
+}
+
+static void
+write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
+{
+	ofaMySQLPeriodPrivate *priv;
+	gchar *key, *content, *begin, *end;
+
+	priv = period->priv;
+
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->dbname );
+
+	begin = my_date_to_str( &priv->begin, MY_DATE_YYMD );
+	end = my_date_to_str( &priv->end, MY_DATE_YYMD );
+	content = g_strdup_printf( "%s;%s;%s;", priv->current ? "True":"False", begin, end );
+	my_settings_set_string( settings, group, key, content );
+
+	g_free( begin );
+	g_free( end );
+	g_free( content );
+	g_free( key );
 }
