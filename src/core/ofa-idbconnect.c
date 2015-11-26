@@ -288,7 +288,7 @@ ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 gboolean
 ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
 {
-	static const gchar *thisfn = "ofa_dbms_query_ex";
+	static const gchar *thisfn = "ofa_idbconnect_query";
 	gboolean ok;
 
 	g_debug( "%s: connect=%p, query='%s', display_error=%s",
@@ -336,7 +336,7 @@ ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean
 gboolean
 ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSList **result, gboolean display_error )
 {
-	static const gchar *thisfn = "ofa_dbms_query_ex";
+	static const gchar *thisfn = "ofa_idbconnect_query_ex";
 	gboolean ok;
 
 	g_debug( "%s: connect=%p, query='%s', result=%p, display_error=%s",
