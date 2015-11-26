@@ -31,6 +31,7 @@ api_include_HEADERS = \
 	ofa-idbms.h											\
 	ofa-idbconnect.h									\
 	ofa-idbprovider.h									\
+	ofa-idbprovider-def.h								\
 	ofa-iexportable.h									\
 	ofa-ifile-meta.h									\
 	ofa-ifile-meta-def.h								\
