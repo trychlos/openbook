@@ -26,6 +26,10 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+#include <stdlib.h>
+
+#include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 
 /* some data attached to each IDBConnect instance
@@ -47,6 +51,9 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType        register_type( void );
 static void         interface_base_init( ofaIDBConnectInterface *klass );
 static void         interface_base_finalize( ofaIDBConnectInterface *klass );
+static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
+static gchar       *quote_query( const gchar *query );
+static void         error_query( const ofaIDBConnect *connect, const gchar *query );
 static sIDBConnect *get_idbconnect_data( const ofaIDBConnect *connect );
 static void         on_dbconnect_finalized( sIDBConnect *data, GObject *finalized_dbconnect );
 
@@ -267,6 +274,194 @@ ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 	data = get_idbconnect_data( connect );
 	g_free( data->account );
 	data->account = g_strdup( account );
+}
+
+/**
+ * ofa_idbconnect_query:
+ * @connect: this #ofaIDBConnect instance.
+ * @query: the query to be executed.
+ * @display_error: whether the error should be published in a dialog box.
+ *
+ * Returns: %TRUE if the sentence has been successfully executed,
+ * %FALSE else.
+ */
+gboolean
+ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_dbms_query_ex";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) connect, query, display_error ? "True":"False" );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( query ), FALSE );
+
+	ok = FALSE;
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->query ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->query( connect, query );
+		if( !ok && display_error ){
+			error_query( connect, query );
+		}
+		if( ok ){
+			audit_query( connect, query );
+		}
+
+	} else if( display_error ){
+		my_utils_dialog_warning(
+				_( "The IDBConnect instance does not implement the query() method." ));
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbconnect_query_ex:
+ * @connect: this #ofaIDBConnect instance.
+ * @query: the query to be executed.
+ * @result: [out]: the result set as a GSList of ordered rows.
+ * @display_error: whether the error should be published in a dialog box.
+ *
+ * Returns: %TRUE if the sentence has been successfully executed,
+ * %FALSE else.
+ *
+ * Each GSList->data of the result set is a pointer to a GSList of
+ * ordered columns. A field is so the GSList[column] data ; it is
+ * always allocated (though maybe of a zero length), or NULL (SQL-NULL
+ * translation).
+ *
+ * The result set should be freed with #ofa_idbconnect_free_results().
+ */
+gboolean
+ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSList **result, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_dbms_query_ex";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, query='%s', result=%p, display_error=%s",
+			thisfn, ( void * ) connect, query, ( void * ) result, display_error ? "True":"False" );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( query ), FALSE );
+	g_return_val_if_fail( result, FALSE );
+
+	ok = FALSE;
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->query_ex ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->query_ex( connect, query, result );
+		if( !ok && display_error ){
+			error_query( connect, query );
+		}
+
+	} else if( display_error ){
+		my_utils_dialog_warning(
+				_( "The IDBConnect instance does not implement the query_ex() method." ));
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbconnect_query_int:
+ * @connect: this #ofaIDBConnect instance.
+ * @query: the query to be executed
+ * @result: [out]: the returned integer value
+ * @display_error: whether the error should be published in a dialog box
+ *
+ * A simple query for getting a single int.
+ *
+ * Returns: %TRUE if the sentence has been successfully executed,
+ * %FALSE else.
+ */
+gboolean
+ofa_idbconnect_query_int( const ofaIDBConnect *connect, const gchar *query, gint *result, gboolean display_error )
+{
+	gboolean ok;
+	GSList *reslist, *icol;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( query ), FALSE );
+	g_return_val_if_fail( result, FALSE );
+
+	*result = 0;
+	ok = ofa_idbconnect_query_ex( connect, query, &reslist, display_error );
+
+	if( ok ){
+		icol = ( GSList * ) reslist->data;
+		if( icol && icol->data ){
+			*result = atoi(( gchar * ) icol->data );
+		}
+		ofa_idbconnect_free_results( reslist );
+	}
+
+	return( ok );
+}
+
+static void
+audit_query( const ofaIDBConnect *connect, const gchar *query )
+{
+	gchar *quoted;
+	gchar *audit;
+
+	quoted = quote_query( query );
+	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
+
+	ofa_idbconnect_query( connect, audit, FALSE );
+
+	g_free( quoted );
+	g_free( audit );
+}
+
+static gchar *
+quote_query( const gchar *query )
+{
+	gchar *quoted;
+	GRegex *regex;
+	gchar *new_str;
+
+	new_str = g_strdup( query );
+
+	regex = g_regex_new( "\\\\", 0, 0, NULL );
+	if( regex ){
+		g_free( new_str );
+		new_str = g_regex_replace_literal( regex, query, -1, 0, "", 0, NULL );
+		g_regex_unref( regex );
+	}
+
+	quoted = my_utils_quote( new_str );
+	g_free( new_str );
+
+	return( quoted );
+}
+
+static void
+error_query( const ofaIDBConnect *connect, const gchar *query )
+{
+	GtkWidget *dlg;
+	gchar *str;
+
+	dlg = gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", query );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error ){
+		str = OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error( connect );
+	} else {
+		str = g_strdup(
+				_( "The IDBConnect instance does not implement the get_last_error() method." ));
+	}
+	/* query_ex returns NULL if the result is empty: this is not an error */
+	if( my_strlen( str )){
+		gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dlg ), "%s", str );
+	}
+	g_free( str );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( dlg );
 }
 
 static sIDBConnect *

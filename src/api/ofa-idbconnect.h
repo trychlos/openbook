@@ -53,6 +53,10 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
 /**
  * ofaIDBConnectInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @query: [should]: executes an insert/update/delete query.
+ * @query_ex: [should]: executes a select query.
+ * @query_int: [should]: returns an integer from a select query.
+ * @get_last_error: [should]: returns the last error.
  *
  * This defines the interface that an #ofaIDBConnect should implement.
  */
@@ -63,7 +67,7 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBConnect provider.
+	 * @instance: the #ofaIDBConnect instance.
 	 *
 	 * The application calls this method each time it needs to know
 	 * which version of this interface the plugin implements.
@@ -77,7 +81,53 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint ( *get_interface_version )( const ofaIDBConnect *instance );
+	guint    ( *get_interface_version )( const ofaIDBConnect *instance );
+
+	/**
+	 * query:
+	 * @instance: the #ofaIDBConnect instance.
+	 * @query: the SQL query to be executed.
+	 *
+	 * Execute a modification query (INSERT, UPDATE, DELETE, DROP,
+	 * TRUNCATE) on the DBMS.
+	 *
+	 * Return value: %TRUE if the statement successfully executed,
+	 * %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *query )                ( const ofaIDBConnect *instance,
+											const gchar *query );
+
+	/**
+	 * query_ex:
+	 * @instance: the #ofaIDBConnect instance.
+	 * @query: the SQL query to be executed.
+	 * @result: a GSList * which will hold the result set;
+	 *  each item of the returned GSList is itself a GSList of rows,
+	 *  each item of a GSList row being a field.
+	 *
+	 * Execute a SELECT query on the DBMS.
+	 *
+	 * Return value: %TRUE if the statement successfully executed,
+	 * %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *query_ex )             ( const ofaIDBConnect *instance,
+											const gchar *query,
+											GSList **result );
+
+	/**
+	 * get_last_error:
+	 * @instance: the #ofaIDBConnect instance.
+	 *
+	 * Returns: the last error message as a newly allocated string
+	 * which should be g_free() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
 }
 	ofaIDBConnectInterface;
 
@@ -101,6 +151,24 @@ gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *
 
 void            ofa_idbconnect_set_account               ( ofaIDBConnect *connect,
 																const gchar *account );
+
+gboolean        ofa_idbconnect_query                     ( const ofaIDBConnect *connect,
+															const gchar *query,
+															gboolean display_error );
+
+gboolean        ofa_idbconnect_query_ex                  ( const ofaIDBConnect *connect,
+															const gchar *query,
+															GSList **result,
+															gboolean display_error );
+
+gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *connect,
+																const gchar *query,
+																gint *result,
+																gboolean display_error );
+
+#define         ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
+																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
+																g_slist_free( L )
 
 G_END_DECLS
 
