@@ -403,7 +403,7 @@ pane_save_position( GtkPaned *pane )
 static void
 main_window_constructed( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_main_instance_constructed";
+	static const gchar *thisfn = "ofa_main_window_constructed";
 	ofaMainWindowPrivate *priv;
 	GError *error;
 	GtkBuilder *builder;
