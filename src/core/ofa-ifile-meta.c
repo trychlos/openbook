@@ -286,12 +286,10 @@ ofa_ifile_meta_set_settings( ofaIFileMeta *meta, mySettings *settings )
  * @meta: this #ofaIFileMeta instance.
  *
  * Returns: the name of the group which holds all dossier informations
- * in the settings file.
- *
- * The returned name is owned by the interface, and should not be freed
- * by the caller.
+ * in the settings file, as a newly allocated string which should be
+ * g_free() by the caller.
  */
-const gchar *
+ gchar *
 ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
 {
 	sIFileMeta *data;
@@ -300,7 +298,7 @@ ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
 
 	data = get_ifile_meta_data( meta );
 
-	return(( const gchar * ) data->group_name );
+	return( g_strdup( data->group_name ));
 }
 
 /**

@@ -103,7 +103,7 @@ idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileM
 {
 	GList *outlist;
 	mySettings *settings;
-	const gchar *group;
+	gchar *group;
 	GList *keys, *itk;
 	const gchar *cstr;
 	ofaMySQLPeriod *period;
@@ -121,6 +121,7 @@ idbprovider_get_dossier_periods( const ofaIDBProvider *instance, const ofaIFileM
 		}
 	}
 
+	g_free( group );
 	my_settings_free_keys( keys );
 
 	return( g_list_reverse( outlist ));

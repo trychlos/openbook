@@ -108,7 +108,7 @@ mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *m
 void            ofa_ifile_meta_set_settings              ( ofaIFileMeta *meta,
 																	mySettings *settings );
 
-const gchar    *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
+gchar          *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
 
 void            ofa_ifile_meta_set_group_name            ( ofaIFileMeta *meta,
 																	const gchar *group_name );
