@@ -57,11 +57,11 @@ G_BEGIN_DECLS
  * ofaIFileMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_dossier_name: [must]: returns the identifier name of the dossier.
  * @get_provider_name: [should]: returns the IDbms provider name.
  * @get_provider_instance: [should]: returns the IDbms provider instance.
  * @get_settings: [should]: returns the mySettings instance.
  * @get_group_name: [should]: returns the settings group name.
+ * @get_dossier_name: [must]: returns the identifier name of the dossier.
  *
  * This defines the interface that an #ofaIFileMeta should/must
  * implement.
@@ -84,15 +84,6 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
-
-	/**
-	 * get_provider_name:
-	 * @instance: the #ofaIFileMeta instance.
-	 *
-	 * Returns: the provider name as a newly allocated
-	 * string which should be g_free() by the caller.
-	 */
-	gchar *          ( *get_provider_name )    ( const ofaIFileMeta *instance );
 }
 	ofaIFileMetaInterface;
 
@@ -102,22 +93,15 @@ guint           ofa_ifile_meta_get_interface_last_version( void );
 
 guint           ofa_ifile_meta_get_interface_version     ( const ofaIFileMeta *meta );
 
-gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *meta );
-
-void            ofa_ifile_meta_set_dossier_name          ( ofaIFileMeta *meta,
-																	const gchar *dossier_name );
-
 gchar          *ofa_ifile_meta_get_provider_name         ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_set_provider_name         ( ofaIFileMeta *meta,
+																	const gchar *provider_name );
 
 ofaIDBProvider *ofa_ifile_meta_get_provider_instance     ( const ofaIFileMeta *meta );
 
 void            ofa_ifile_meta_set_provider_instance     ( ofaIFileMeta *meta,
 																	const ofaIDBProvider *instance );
-
-GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *meta );
-
-#define         ofa_ifile_meta_free_periods(L)           g_list_free_full(( L ), \
-																	( GDestroyNotify ) g_object_unref )
 
 mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *meta );
 
@@ -128,6 +112,16 @@ const gchar    *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *m
 
 void            ofa_ifile_meta_set_group_name            ( ofaIFileMeta *meta,
 																	const gchar *group_name );
+
+gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_set_dossier_name          ( ofaIFileMeta *meta,
+																	const gchar *dossier_name );
+
+GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *meta );
+
+#define         ofa_ifile_meta_free_periods(L)           g_list_free_full(( L ), \
+																	( GDestroyNotify ) g_object_unref )
 
 ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	ofaIFilePeriod *period,

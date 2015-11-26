@@ -50,7 +50,6 @@ struct _ofaMySQLMetaPrivate {
 
 static void   ifile_meta_iface_init( ofaIFileMetaInterface *iface );
 static guint  ifile_meta_get_interface_version( const ofaIFileMeta *instance );
-static gchar *ifile_meta_get_provider_name( const ofaIFileMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -129,29 +128,12 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_meta_get_interface_version;
-	iface->get_provider_name = ifile_meta_get_provider_name;
 }
 
 static guint
 ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
 	return( 1 );
-}
-
-static gchar *
-ifile_meta_get_provider_name( const ofaIFileMeta *instance )
-{
-	ofaMySQLMetaPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_META( instance ), NULL );
-
-	priv = OFA_MYSQL_META( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_strdup( ofa_mysql_idbprovider_get_provider_name( NULL )));
-	}
-
-	return( NULL );
 }
 
 /**

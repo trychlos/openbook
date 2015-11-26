@@ -37,6 +37,7 @@
  */
 typedef struct {
 	ofaIDBProvider *prov_instance;
+	gchar          *prov_name;
 	gchar          *dossier_name;
 	mySettings     *settings;
 	gchar          *group_name;
@@ -161,43 +162,6 @@ ofa_ifile_meta_get_interface_version( const ofaIFileMeta *meta )
 }
 
 /**
- * ofa_ifile_meta_get_dossier_name:
- * @meta: this #ofaIFileMeta instance.
- *
- * Returns: the identifier name of the dossier as a newly allocated
- * string which should be g_free() by the caller.
- */
-gchar *
-ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *meta )
-{
-	sIFileMeta *data;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	data = get_ifile_meta_data( meta );
-	return( g_strdup( data->dossier_name ));
-}
-
-/**
- * ofa_ifile_meta_set_dossier_name:
- * @meta: this #ofaIFileMeta instance.
- * @dossier_name: the name of the dossier.
- *
- * Stores the name of the dossier as an interface data.
- */
-void
-ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
-{
-	sIFileMeta *data;
-
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
-
-	data = get_ifile_meta_data( meta );
-	g_free( data->dossier_name );
-	data->dossier_name = g_strdup( dossier_name );
-}
-
-/**
  * ofa_ifile_meta_get_provider_name:
  * @meta: this #ofaIFileMeta instance.
  *
@@ -207,13 +171,31 @@ ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
 gchar *
 ofa_ifile_meta_get_provider_name( const ofaIFileMeta *meta )
 {
+	sIFileMeta *data;
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_name ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_provider_name( meta ));
-	}
+	data = get_ifile_meta_data( meta );
+	return( g_strdup( data->prov_name ));
+}
 
-	return( NULL );
+/**
+ * ofa_ifile_meta_set_provider_name:
+ * @meta: this #ofaIFileMeta instance.
+ * @provider_name: the name of the DB provider.
+ *
+ * Stores the name of the prov as an interface data.
+ */
+void
+ofa_ifile_meta_set_provider_name( ofaIFileMeta *meta, const gchar *provider_name )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_free( data->prov_name );
+	data->prov_name = g_strdup( provider_name );
 }
 
 /**
@@ -254,34 +236,6 @@ ofa_ifile_meta_set_provider_instance( ofaIFileMeta *meta, const ofaIDBProvider *
 	data = get_ifile_meta_data( meta );
 	g_clear_object( &data->prov_instance );
 	data->prov_instance = g_object_ref(( gpointer ) instance );
-}
-
-/**
- * ofa_ifile_meta_get_periods:
- * @meta: this #ofaIFileMeta instance.
- *
- * Returns: a list of defined financial periods (exercices) for this
- * file (dossier), as a #GList of #ofaIFilePeriod object, which should
- * be #ofa_ifile_meta_free_periods() by the caller.
- */
-GList *
-ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
-{
-	static const gchar *thisfn = "ofa_ifile_meta_get_periods";
-	ofaIDBProvider *provider;
-	GList *list;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	provider = ofa_ifile_meta_get_provider_instance( meta );
-	if( !provider ){
-		g_warning( "%s: unable to get a provider instance", thisfn );
-		return( NULL );
-	}
-	list = ofa_idbprovider_get_dossier_periods( provider, meta );
-	g_object_unref( provider );
-
-	return( list );
 }
 
 /**
@@ -367,6 +321,71 @@ ofa_ifile_meta_set_group_name( ofaIFileMeta *meta, const gchar *group_name )
 }
 
 /**
+ * ofa_ifile_meta_get_dossier_name:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: the identifier name of the dossier as a newly allocated
+ * string which should be g_free() by the caller.
+ */
+gchar *
+ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	data = get_ifile_meta_data( meta );
+	return( g_strdup( data->dossier_name ));
+}
+
+/**
+ * ofa_ifile_meta_set_dossier_name:
+ * @meta: this #ofaIFileMeta instance.
+ * @dossier_name: the name of the dossier.
+ *
+ * Stores the name of the dossier as an interface data.
+ */
+void
+ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	g_free( data->dossier_name );
+	data->dossier_name = g_strdup( dossier_name );
+}
+
+/**
+ * ofa_ifile_meta_get_periods:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: a list of defined financial periods (exercices) for this
+ * file (dossier), as a #GList of #ofaIFilePeriod object, which should
+ * be #ofa_ifile_meta_free_periods() by the caller.
+ */
+GList *
+ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_get_periods";
+	ofaIDBProvider *provider;
+	GList *list;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	provider = ofa_ifile_meta_get_provider_instance( meta );
+	if( !provider ){
+		g_warning( "%s: unable to get a provider instance", thisfn );
+		return( NULL );
+	}
+	list = ofa_idbprovider_get_dossier_periods( provider, meta );
+	g_object_unref( provider );
+
+	return( list );
+}
+
+/**
  * ofa_ifile_meta_get_connection:
  * @meta: this #ofaIFileMeta instance.
  * @period: the #ofaIFilePeriod considered exercice.
@@ -447,6 +466,7 @@ on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
 	g_clear_object( &data->prov_instance );
+	g_free( data->prov_name );
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );
