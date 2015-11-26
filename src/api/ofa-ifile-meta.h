@@ -123,6 +123,9 @@ GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *m
 #define         ofa_ifile_meta_free_periods(L)           g_list_free_full(( L ), \
 																	( GDestroyNotify ) g_object_unref )
 
+void            ofa_ifile_meta_set_periods               ( ofaIFileMeta *meta,
+																	GList *periods );
+
 ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	ofaIFilePeriod *period,
 																	const gchar *account,

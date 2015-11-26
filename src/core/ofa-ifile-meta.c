@@ -41,6 +41,7 @@ typedef struct {
 	gchar          *dossier_name;
 	mySettings     *settings;
 	gchar          *group_name;
+	GList          *periods;
 }
 	sIFileMeta;
 
@@ -366,21 +367,32 @@ ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
 GList *
 ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_get_periods";
-	ofaIDBProvider *provider;
-	GList *list;
+	sIFileMeta *data;
 
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
 
-	provider = ofa_ifile_meta_get_provider_instance( meta );
-	if( !provider ){
-		g_warning( "%s: unable to get a provider instance", thisfn );
-		return( NULL );
-	}
-	list = ofa_idbprovider_get_dossier_periods( provider, meta );
-	g_object_unref( provider );
+	data = get_ifile_meta_data( meta );
+	return( g_list_copy_deep( data->periods, ( GCopyFunc ) g_object_ref, NULL ));
+}
 
-	return( list );
+/**
+ * ofa_ifile_meta_set_periods:
+ * @meta: this #ofaIFileMeta instance.
+ * @list: the list of the periods for the dossier.
+ *
+ * Stores the list of the defined financial periods (exercices) of the
+ * dossier, as a deep copy of the provided @list.
+ */
+void
+ofa_ifile_meta_set_periods( ofaIFileMeta *meta, GList *periods )
+{
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+	ofa_ifile_meta_free_periods( data->periods );
+	data->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
 }
 
 /**
@@ -468,5 +480,6 @@ on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );
+	ofa_ifile_meta_free_periods( data->periods );
 	g_free( data );
 }

@@ -497,9 +497,9 @@
 
  899 2015-11-25 remove ofsDossierOpen structure & associated signal
 
- 901 2015-11-25 attach periods to meta (do no re-read settings)
+ 902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
 
- 902
+ 903
 
 -----------------------------------------------------------------------
  DONE
@@ -4231,6 +4231,9 @@
 
  900 2015-11-25 set provider instance/dossier name in IFileMeta data
      2015-11-25 done
+
+ 901 2015-11-25 attach periods to meta (do no re-read settings)
+     2015-11-26 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
