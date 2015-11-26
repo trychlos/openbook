@@ -187,7 +187,6 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIFileMeta *meta )
 	ofaExerciceStorePrivate *priv;
 	GList *period_list, *it;
 	ofaIFilePeriod *period;
-	GDate date;
 	GtkTreeIter iter;
 	gchar *begin, *end, *status, *label;
 
@@ -207,10 +206,10 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIFileMeta *meta )
 			label = ofa_ifile_period_get_label( period );
 			status = ofa_ifile_period_get_status( period );
 			begin = my_date_to_str(
-							ofa_ifile_period_get_begin_date( period, &date ),
+							ofa_ifile_period_get_begin_date( period ),
 							ofa_prefs_date_display());
 			end = my_date_to_str(
-							ofa_ifile_period_get_end_date( period, &date ),
+							ofa_ifile_period_get_end_date( period ),
 							ofa_prefs_date_display());
 
 			gtk_list_store_insert_with_values(

@@ -34,6 +34,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-ifile-meta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -117,6 +118,7 @@ static GType       register_type( void );
 static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
 static gboolean    do_open( ofoDossier *dossier );
+static void        check_db_vs_settings( ofoDossier *dossier );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -565,21 +567,71 @@ do_open( ofoDossier *dossier )
 	if( ofa_ddl_update_run( dossier )){
 		connect_objects_handlers( dossier );
 		if( dossier_do_read( dossier )){
+			check_db_vs_settings( dossier );
 			ok = TRUE;
-
-			/* when opening the dossier, make sure the settings are up to date
-			 * (this may not be the case when the dossier has just been restored
-			 *  or created) */
-			/*
-			if( !g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED )){
-				ofa_dossier_misc_set_current( ofo_dossier_get_name( dossier ),
-						ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
-			}
-			*/
 		}
 	}
 
 	return( ok );
+}
+
+/* when opening the dossier, make sure the settings are up to date
+ * (this may not be the case when the dossier has just been restored
+ *  or created)
+ * The datas found in the dossier database take precedence over those
+ * read from dossier settings. This is because dossier database is
+ * (expected to be) updated via the Openbook software suite and so be
+ * controlled, while the dossier settings may easily be tweaked by the
+ * user.
+ */
+static void
+check_db_vs_settings( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_check_db_vs_settings";
+	gboolean db_current, settings_current;
+	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
+	const ofaIDBConnect *cnx;
+	ofaIFilePeriod *period;
+	ofaIFileMeta *meta;
+	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
+
+	/* data from db */
+	db_current = ( g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED ) == 0 );
+	db_begin = ofo_dossier_get_exe_begin( dossier );
+	db_end = ofo_dossier_get_exe_end( dossier );
+
+	/* data from settings */
+	cnx = ofo_dossier_get_connect( dossier );
+	period = ofa_idbconnect_get_period( cnx );
+	settings_current = ofa_ifile_period_get_current( period );
+	settings_begin = ofa_ifile_period_get_begin_date( period );
+	settings_end = ofa_ifile_period_get_end_date( period );
+	g_object_unref( period );
+
+	/* update settings if not equal */
+	if( db_current != settings_current ||
+			my_date_compare_ex( db_begin, settings_begin, TRUE ) != 0 ||
+			my_date_compare_ex( db_end, settings_end, FALSE ) != 0 ){
+
+		sdbbegin = my_date_to_str( db_begin, MY_DATE_SQL );
+		sdbend = my_date_to_str( db_end, MY_DATE_SQL );
+		ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
+		ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
+
+		g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s: updating settings",
+				thisfn,
+				db_current ? "True":"False", sdbbegin, sdbend,
+				settings_current ? "True":"False", ssetbegin, ssetend );
+
+		g_free( sdbbegin );
+		g_free( sdbend );
+		g_free( ssetbegin );
+		g_free( ssetend );
+
+		meta = ofa_idbconnect_get_meta( cnx );
+		ofa_ifile_meta_update_period( meta, period, db_current, db_begin, db_end );
+		g_object_unref( meta );
+	}
 }
 
 /*

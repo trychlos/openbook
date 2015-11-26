@@ -292,13 +292,12 @@ static void
 set_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter )
 {
 	gchar *dosname, *provname, *begin, *end, *status;
-	GDate date;
 
 	dosname = ofa_ifile_meta_get_dossier_name( meta );
 	provname = ofa_ifile_meta_get_provider_name( meta );
 
-	begin = my_date_to_str( ofa_ifile_period_get_begin_date( period, &date ), ofa_prefs_date_display());
-	end = my_date_to_str( ofa_ifile_period_get_end_date( period, &date ), ofa_prefs_date_display());
+	begin = my_date_to_str( ofa_ifile_period_get_begin_date( period ), ofa_prefs_date_display());
+	end = my_date_to_str( ofa_ifile_period_get_end_date( period ), ofa_prefs_date_display());
 	status = ofa_ifile_period_get_status( period );
 
 	gtk_list_store_set(

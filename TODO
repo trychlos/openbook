@@ -493,7 +493,26 @@
 
  899 2015-11-25 remove ofsDossierOpen structure & associated signal
 
- 903
+ 903 2015-11-26 ofa_main_window_get_dossier_credentials(): should be
+                obsoleted in favor of ofa_idbconnect method - this
+                should allow of removing user credentials from main
+                window
+
+ 904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
+                boolean (Y/N in the database, true/false in the code)
+                + should we store this in the db
+                  (as this is already recorded in the settings) ??
+                => yes, it must be stored, because an archived (closed)
+                dossier is expected to be read-only - so that it is not
+                enough to just change a settings to force the dossier
+                to be updatable
+
+ 905 2015-11-26 remove account from ofaMySQLConnect
+
+ 907 2015-11-26 define a myISettings interface to be used in the plugins
+                (instead of directly the mySettings object)
+
+ 908
 
 -----------------------------------------------------------------------
  DONE
@@ -4235,6 +4254,12 @@
      2015-11-26 done
 
  902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
+     2015-11-26 done
+
+ 906 2015-11-26 when opening a dossier, check that begin/end dates
+                are consistent with settings - else remediate
+                + set also status
+                (cf. ofoDossier:do_open)
      2015-11-26 done
 
 -----------------------------------------------------------------------

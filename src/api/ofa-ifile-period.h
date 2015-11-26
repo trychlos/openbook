@@ -50,9 +50,6 @@ typedef struct _ofaIFilePeriod                     ofaIFilePeriod;
  * ofaIFilePeriodInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_begin_date: [should]: returns the beginning date.
- * @get_end_date: [should]: returns the ending date.
- * @get_current: [should]: whether the period is current.
  *
  * This defines the interface that an #ofaIFilePeriod should/must
  * implement.
@@ -75,57 +72,35 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint    ( *get_interface_version )( const ofaIFilePeriod *instance );
-
-	/**
-	 * get_begin_date:
-	 * @instance: the #ofaIFilePeriod instance.
-	 * @date: a GDate
-	 *
-	 * Returns: the beginning date of the period.
-	 */
-	GDate *  ( *get_begin_date )       ( const ofaIFilePeriod *instance,
-													GDate *date );
-
-	/**
-	 * get_end_date:
-	 * @instance: the #ofaIFilePeriod instance.
-	 * @date: a GDate
-	 *
-	 * Returns: the ending date of the period.
-	 */
-	GDate *  ( *get_end_date )         ( const ofaIFilePeriod *instance,
-													GDate *date );
-
-	/**
-	 * get_current:
-	 * @instance: the #ofaIFilePeriod instance.
-	 *
-	 * Returns: whether the @instance period is current (can be
-	 * modified) or not.
-	 */
-	gboolean ( *get_current )          ( const ofaIFilePeriod *instance );
 }
 	ofaIFilePeriodInterface;
 
-GType    ofa_ifile_period_get_type                  ( void );
+GType        ofa_ifile_period_get_type                  ( void );
 
-guint    ofa_ifile_period_get_interface_last_version( void );
+guint        ofa_ifile_period_get_interface_last_version( void );
 
-guint    ofa_ifile_period_get_interface_version     ( const ofaIFilePeriod *period );
+guint        ofa_ifile_period_get_interface_version     ( const ofaIFilePeriod *period );
 
-GDate   *ofa_ifile_period_get_begin_date            ( const ofaIFilePeriod *period,
-																GDate *date );
+const GDate *ofa_ifile_period_get_begin_date            ( const ofaIFilePeriod *period );
 
-GDate   *ofa_ifile_period_get_end_date              ( const ofaIFilePeriod *period,
-																GDate *date );
+void         ofa_ifile_period_set_begin_date            ( ofaIFilePeriod *period,
+																const GDate *date );
 
-gboolean ofa_ifile_period_get_current               ( const ofaIFilePeriod *period );
+const GDate *ofa_ifile_period_get_end_date              ( const ofaIFilePeriod *period );
 
-gchar   *ofa_ifile_period_get_status                ( const ofaIFilePeriod *period );
+void         ofa_ifile_period_set_end_date              ( ofaIFilePeriod *period,
+																const GDate *date );
 
-gchar   *ofa_ifile_period_get_label                 ( const ofaIFilePeriod *period );
+gboolean     ofa_ifile_period_get_current               ( const ofaIFilePeriod *period );
 
-gint     ofa_ifile_period_compare                   ( const ofaIFilePeriod *a,
+void         ofa_ifile_period_set_current               ( ofaIFilePeriod *period,
+																gboolean current );
+
+gchar       *ofa_ifile_period_get_status                ( const ofaIFilePeriod *period );
+
+gchar       *ofa_ifile_period_get_label                 ( const ofaIFilePeriod *period );
+
+gint         ofa_ifile_period_compare                   ( const ofaIFilePeriod *a,
 																const ofaIFilePeriod *b );
 
 

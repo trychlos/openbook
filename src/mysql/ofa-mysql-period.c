@@ -38,11 +38,8 @@
 struct _ofaMySQLPeriodPrivate {
 	gboolean  dispose_has_run;
 
-	/* initialization data
+	/* runtime data
 	 */
-	GDate     begin;
-	GDate     end;
-	gboolean  current;
 	gchar    *dbname;
 };
 
@@ -50,9 +47,6 @@ struct _ofaMySQLPeriodPrivate {
 
 static void            ifile_period_iface_init( ofaIFilePeriodInterface *iface );
 static guint           ifile_period_get_interface_version( const ofaIFilePeriod *instance );
-static GDate          *ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date );
-static GDate          *ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date );
-static gboolean        ifile_period_get_current( const ofaIFilePeriod *instance );
 static ofaMySQLPeriod *read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
 static void            write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
 
@@ -132,65 +126,12 @@ ifile_period_iface_init( ofaIFilePeriodInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_period_get_interface_version;
-	iface->get_begin_date = ifile_period_get_begin_date;
-	iface->get_end_date = ifile_period_get_end_date;
-	iface->get_current = ifile_period_get_current;
 }
 
 static guint
 ifile_period_get_interface_version( const ofaIFilePeriod *instance )
 {
 	return( 1 );
-}
-
-static GDate *
-ifile_period_get_begin_date( const ofaIFilePeriod *instance, GDate *date )
-{
-	ofaMySQLPeriodPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PERIOD( instance ), NULL );
-
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		my_date_set_from_date( date, &priv->begin );
-		return( date );
-	}
-
-	return( NULL );
-}
-
-static GDate *
-ifile_period_get_end_date( const ofaIFilePeriod *instance, GDate *date )
-{
-	ofaMySQLPeriodPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PERIOD( instance ), NULL );
-
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		my_date_set_from_date( date, &priv->end );
-		return( date );
-	}
-
-	return( NULL );
-}
-
-static gboolean
-ifile_period_get_current( const ofaIFilePeriod *instance )
-{
-	ofaMySQLPeriodPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PERIOD( instance ), FALSE );
-
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
-
-	if( !priv->dispose_has_run ){
-		return( priv->current );
-	}
-
-	return( FALSE );
 }
 
 /**
@@ -233,6 +174,7 @@ read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings,
 	ofaMySQLPeriodPrivate *priv;
 	GList *strlist, *it;
 	const gchar *cstr;
+	GDate date;
 
 	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
 	priv = period->priv;
@@ -244,17 +186,20 @@ read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings,
 	/* first element: current as a True/False string */
 	it = strlist;
 	cstr = it ? it->data : NULL;
-	priv->current = my_utils_boolean_from_str( cstr );
+	ofa_ifile_period_set_current(
+			OFA_IFILE_PERIOD( period ), my_utils_boolean_from_str( cstr ));
 
 	/* second element: beginning date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	my_date_set_from_str( &priv->begin, cstr, MY_DATE_YYMD );
+	ofa_ifile_period_set_begin_date(
+			OFA_IFILE_PERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 
 	/* third element: ending date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	my_date_set_from_str( &priv->end, cstr, MY_DATE_YYMD );
+	ofa_ifile_period_set_end_date(
+			OFA_IFILE_PERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 
 	my_settings_free_string_list( strlist );
 
@@ -310,9 +255,9 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 		/* we update the internal data of the object through this is
 		 * pretty useless as writing into dossier settings file will
 		 * trigger a reload of all data (through the myFileMonitor) */
-		priv->current = current;
-		my_date_set_from_date( &priv->begin, begin );
-		my_date_set_from_date( &priv->end, end );
+		ofa_ifile_period_set_current( OFA_IFILE_PERIOD( period ), current );
+		ofa_ifile_period_set_begin_date( OFA_IFILE_PERIOD( period ), begin );
+		ofa_ifile_period_set_end_date( OFA_IFILE_PERIOD( period ), end );
 
 		/* next update the settings */
 		write_period_in_settings( period, settings, group );
@@ -329,9 +274,11 @@ write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gc
 
 	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->dbname );
 
-	begin = my_date_to_str( &priv->begin, MY_DATE_YYMD );
-	end = my_date_to_str( &priv->end, MY_DATE_YYMD );
-	content = g_strdup_printf( "%s;%s;%s;", priv->current ? "True":"False", begin, end );
+	begin = my_date_to_str( ofa_ifile_period_get_begin_date( OFA_IFILE_PERIOD( period )), MY_DATE_YYMD );
+	end = my_date_to_str( ofa_ifile_period_get_end_date( OFA_IFILE_PERIOD( period )), MY_DATE_YYMD );
+	content = g_strdup_printf( "%s;%s;%s;",
+					ofa_ifile_period_get_current( OFA_IFILE_PERIOD( period )) ? "True":"False",
+					begin, end );
 	my_settings_set_string( settings, group, key, content );
 
 	g_free( begin );
