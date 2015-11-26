@@ -42,35 +42,6 @@ static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
 /**
- * ofa_dossier_misc_get_exercice_label:
- *
- * Returns: the exercice label description as a newly allocated string
- * which should be g_free() by the caller.
- */
-gchar *
-ofa_dossier_misc_get_exercice_label( const GDate *begin, const GDate *end, gboolean is_current )
-{
-	GString *svalue;
-	gchar *sdate;
-
-	svalue = g_string_new( is_current ? _( "Current exercice" ) : _( "Archived exercice" ));
-
-	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin , ofa_prefs_date_display());
-		g_string_append_printf( svalue, _( " from %s" ), sdate );
-		g_free( sdate );
-	}
-
-	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, ofa_prefs_date_display());
-		g_string_append_printf( svalue, _( " to %s" ), sdate );
-		g_free( sdate );
-	}
-
-	return( g_string_free( svalue, FALSE ));
-}
-
-/**
  * ofa_dossier_misc_get_current_dbname:
  * @dname: the name of the dossier
  *

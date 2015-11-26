@@ -510,7 +510,10 @@
  907 2015-11-26 define a myISettings interface to be used in the plugins
                 (instead of directly the mySettings object)
 
- 908
+ 908 2015-11-26 replace ofo_dossier_get_name() with
+                ofo_dossier_get_meta_name()
+
+ 909
 
 -----------------------------------------------------------------------
  DONE

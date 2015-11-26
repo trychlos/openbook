@@ -41,10 +41,6 @@
 
 G_BEGIN_DECLS
 
-gchar    *ofa_dossier_misc_get_exercice_label( const GDate *begin,
-													const GDate *end,
-													gboolean is_current );
-
 gchar    *ofa_dossier_misc_get_current_dbname( const gchar *dname );
 
 void      ofa_dossier_misc_set_current       ( const gchar *dname,

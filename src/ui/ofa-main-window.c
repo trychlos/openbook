@@ -886,19 +886,31 @@ static void
 set_window_title( const ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
-	gchar *title;
+	const ofaIDBConnect *cnx;
+	ofaIFileMeta *meta;
+	ofaIFilePeriod *period;
+	gchar *title, *dos_name, *label;
 
 	priv = window->priv;
 
 	if( priv->dossier ){
+		cnx = ofo_dossier_get_connect( priv->dossier );
+		meta = ofa_idbconnect_get_meta( cnx );
+		period = ofa_idbconnect_get_period( cnx );
+		dos_name = ofa_ifile_meta_get_dossier_name( meta );
+		label = ofa_ifile_period_get_label( period );
+
 		title = g_strdup_printf( "%s (%s) %s - %s",
-				ofo_dossier_get_name( priv->dossier ),
+				dos_name,
 				priv->dos_dbname,
-				ofa_dossier_misc_get_exercice_label(
-						ofo_dossier_get_exe_begin( priv->dossier ),
-						ofo_dossier_get_exe_end( priv->dossier ),
-						g_utf8_collate( ofo_dossier_get_status( priv->dossier ), DOS_STATUS_OPENED ) == 0 ),
+				label,
 				priv->orig_title );
+
+		g_free( dos_name );
+		g_free( label );
+		g_object_unref( period );
+		g_object_unref( meta );
+
 	} else {
 		title = g_strdup( priv->orig_title );
 	}
