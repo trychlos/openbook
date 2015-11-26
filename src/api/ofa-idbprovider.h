@@ -52,8 +52,6 @@ G_BEGIN_DECLS
 #define OFA_IS_IDBPROVIDER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBPROVIDER ))
 #define OFA_IDBPROVIDER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBPROVIDER, ofaIDBProviderInterface ))
 
-typedef struct _ofaIDBProvider                    ofaIDBProvider;
-
 /**
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
@@ -135,7 +133,7 @@ typedef struct {
 	 *
 	 * Return value: an object which implements the #ofaIDBConnect
 	 * interface, and handles the dossier connection to its database,
-	 * or %NULL.
+	 * or %NULL if unable to open a valid connection.
 	 *
 	 * Since: version 1
 	 */

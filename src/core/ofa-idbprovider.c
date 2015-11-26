@@ -197,20 +197,34 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
  * @password: the user password.
  * @msg: a placeholder for error message.
  *
- * Returns: a handle to the connection, or %NULL.
+ * Returns: a handle to the opened connection if user credentials are
+ * valid, or %NULL.
+
+ * When the connection is successfully opened, the interface keeps a
+ * reference on @meta and @period objects, and user account (user
+ * password is not kept for security reasons).
  *
- * The implementation takes care of carefully closing the DB connection
- * when the object is released.
+ * The implementation is expected to take care of gracefully closing
+ * the DB connection when the object is released.
  */
 ofaIDBConnect *
 ofa_idbprovider_connect_dossier( const ofaIDBProvider *instance,
 		ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg )
 {
+	ofaIDBConnect *connect;
+
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_dossier ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_dossier( instance, meta, period, account, password, msg ));
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_dossier( instance, meta, period, account, password, msg );
+		if( connect ){
+			ofa_idbconnect_set_meta( connect, meta );
+			ofa_idbconnect_set_period( connect, period );
+			ofa_idbconnect_set_account( connect, account );
+		}
+		return( connect );
 	}
+
 	if( msg ){
 		*msg = g_strdup( _( "The IDBProvider does not provide 'connect_dossier' interface" ));
 	}
