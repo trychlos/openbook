@@ -241,7 +241,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 static void
 on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store )
 {
-	gtk_tree_store_clear( GTK_TREE_STORE( store ));
+	gtk_list_store_clear( GTK_LIST_STORE( store ));
 	load_dataset( store, dir );
 }
 
