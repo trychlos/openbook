@@ -256,21 +256,21 @@ load_dossiers( ofaFileDir *dir )
 		if( g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
 			dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
 			if( !my_strlen( dos_name )){
-				g_warning( "%s: found empty dossier name", thisfn );
-				ofa_file_dir_free_dossiers( outlist );
-				return( NULL );
+				g_warning( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
+				continue;
 			}
 			prov_name = my_settings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
-				g_warning( "%s: found empty DBMS provider name", thisfn );
-				ofa_file_dir_free_dossiers( outlist );
-				return( NULL );
+				g_warning( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
+				g_free( dos_name );
+				continue;
 			}
 			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
 			if( !idbprovider ){
-				g_warning( "%s: unable to find an instance for %s DBMS provider name", thisfn, prov_name );
-				ofa_file_dir_free_dossiers( outlist );
-				return( NULL );
+				g_warning( "%s: unable to find an instance for %s DBMS provider name, skipping", thisfn, prov_name );
+				g_free( dos_name );
+				g_free( prov_name );
+				continue;
 			}
 			dossier = ofa_idbprovider_get_dossier_meta( idbprovider, dos_name, priv->settings, cstr );
 			outlist = g_list_prepend( outlist, dossier );
