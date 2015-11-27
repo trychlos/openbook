@@ -36,6 +36,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-ifile-meta.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -48,10 +49,12 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-dbms-root-bin.h"
+#include "core/ofa-file-dir.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
+#include "ui/ofa-application.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"
@@ -1103,14 +1106,18 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
+	const ofaIDBConnect *cnx;
+	ofaIFileMeta *meta;
+	ofaIFilePeriod *period;
 	gboolean ok;
 	const GDate *begin_next, *end_next;
-	ofsDossierOpen *sdo;
+	GtkApplication *application;
+	ofaFileDir *dir;
+	gchar *msg;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-	ok = FALSE;
 
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
@@ -1119,27 +1126,65 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_update( priv->dossier );
 	ofa_main_window_update_title( priv->main_window );
 
+	cnx = ofo_dossier_get_connect( priv->dossier );
+	meta = ofa_idbconnect_get_meta( cnx );
+	period = ofa_idbconnect_get_period( cnx );
+	/*
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p2_account, priv->p2_password,
 				priv->cur_account, begin_next, end_next )){
+				*/
+	ok = ofa_ifile_meta_archive_and_new(
+				meta, period, priv->p2_account, priv->p2_password,
+				priv->cur_account, begin_next, end_next );
+
+	g_object_unref( period );
+	g_object_unref( meta );
+
+	if( !ok ){
 		my_utils_dialog_warning( _( "Unable to archive the dossier" ));
 		my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 		my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
 
 	} else {
 		/* open the new exercice */
-		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->dname = g_strdup( priv->dname );
-		sdo->account = g_strdup( priv->cur_account );
-		sdo->password = g_strdup( priv->cur_password );
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
+		application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+		g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), FALSE );
 
+		dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
+		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
+
+		meta = ofa_file_dir_get_meta( dir, priv->dname );
+		g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+
+		period = ofa_ifile_meta_get_current_period( meta );
+		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+
+		cnx = ofa_ifile_meta_get_connection(
+						meta, period, priv->cur_account, priv->cur_password, &msg);
+
+		ok = FALSE;
+		g_object_unref( meta );
+		g_object_unref( period );
+	}
+
+	if( !cnx ){
+		my_utils_dialog_warning( msg );
+		g_free( msg );
+		my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
+		my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
+
+	} else {
+		ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
 		priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+
 		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			ofo_dossier_set_status( priv->dossier, DOS_STATUS_OPENED );
 			ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 			ofo_dossier_set_exe_end( priv->dossier, end_next );
 			ofo_dossier_update( priv->dossier );
+
+			/* re-emit the opened signal after changes */
 			g_signal_emit_by_name( priv->main_window, "ofa-opened-dossier", priv->dossier );
 			ofa_main_window_update_title( priv->main_window );
 
