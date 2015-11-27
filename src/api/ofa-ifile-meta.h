@@ -155,14 +155,6 @@ ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	const gchar *password,
 																	gchar **msg );
 
-gboolean        ofa_ifile_meta_archive_and_new           ( ofaIFileMeta *meta,
-																	ofaIFilePeriod *period,
-																	const gchar *root_account,
-																	const gchar *root_password,
-																	const gchar *user_account,
-																	const GDate *begin_next,
-																	const GDate *end_next );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IFILE_META_H__ */
