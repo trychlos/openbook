@@ -143,6 +143,38 @@ typedef struct {
 														const gchar *account,
 														const gchar *password,
 														gchar **msg );
+
+	/**
+	 * archive_and_new:
+	 * @instance: the #ofaIDBProvider DBMS provider.
+	 * @meta: the #ofaIFileMeta instance of the dossier.
+	 * @period: the #ofaIFilePeriod instance of the source exercice.
+	 * @root_account: the root account of the DBMS server.
+	 * @root_password: the corresponding password.
+	 * @user_account: the account whose privileges are to be duplicated.
+	 * @begin_next: the beginning date of the next exercice.
+	 * @end_next: the ending date of the next exercice.
+	 *
+	 * Duplicate the current @period exercice into a new one.
+	 *
+	 * It is up to the DBMS provider to choose whether to archive the
+	 * current exercice, and to create a new database for the new
+	 * exercice, or to archive the current exercice into a new database,
+	 * keeping the current database for the new exercice, provided that
+	 * dossier settings be updated accordingly.
+	 *
+	 * Return value: %TRUE if OK.
+	 *
+	 * Since: version 1
+	 */
+	gboolean        ( *archive_and_new )      ( const ofaIDBProvider *instance,
+														ofaIFileMeta *meta,
+														ofaIFilePeriod *period,
+														const gchar *root_account,
+														const gchar *root_password,
+														const gchar *user_account,
+														const GDate *begin_next,
+														const GDate *end_next );
 }
 	ofaIDBProviderInterface;
 
@@ -163,6 +195,15 @@ ofaIDBConnect  *ofa_idbprovider_connect_dossier           ( const ofaIDBProvider
 																		const gchar *account,
 																		const gchar *password,
 																		gchar **msg );
+
+gboolean        ofa_idbprovider_archive_and_new           ( const ofaIDBProvider *instance,
+																	ofaIFileMeta *meta,
+																	ofaIFilePeriod *period,
+																	const gchar *root_account,
+																	const gchar *root_password,
+																	const gchar *user_account,
+																	const GDate *begin_next,
+																	const GDate *end_next );
 
 ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
 

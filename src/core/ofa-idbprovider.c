@@ -232,6 +232,44 @@ ofa_idbprovider_connect_dossier( const ofaIDBProvider *instance,
 }
 
 /**
+ * ofa_idbprovider_archive_and_new:
+ * @instance: this #ofaIDBProvider instance.
+ * @meta: the #ofaIFileMeta dossier.
+ * @period: the #ofaIFilePeriod exercice.
+ * @root_account: the DBMS root account.
+ * @root_password: the DBMS root password.
+ * @user_account: the first administrative user account of the new exercice.
+ * @begin_next: the beginning date of the new exercice.
+ * @end_next: the ending date of the new exercice.
+ *
+ * Duplicate the storage space (the database) of the @period exercice
+ * to a new one, and records the new properties as a new financial
+ * period in the dossier settings.
+ * Initialize @user_account with required permissions.
+ *
+ * Returns: %TRUE if successfull.
+ *
+ * This function is expected to be called from #ofaIFileMeta interface.
+ */
+gboolean
+ofa_idbprovider_archive_and_new( const ofaIDBProvider *instance,
+		ofaIFileMeta *meta, ofaIFilePeriod *period,
+		const gchar *root_account, const gchar *root_password, const gchar *user_account,
+		const GDate *begin_next, const GDate *end_next )
+{
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->archive_and_new ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->archive_and_new(
+				instance, meta, period, root_account, root_password, user_account, begin_next, end_next ));
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofa_idbprovider_get_instance_by_name:
  * @provider_name: the name of the provider as published in the
  *  settings.
