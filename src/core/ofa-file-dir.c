@@ -305,3 +305,43 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 
 	return( count );
 }
+
+/**
+ * ofa_file_dir_get_meta:
+ * @dir: this #ofaFileDir instance.
+ * @dossier_name: the named of the searched dossier.
+ *
+ * Returns: a new reference to the #ofaIFileMeta instance which holds
+ * the meta datas for the specified @dossier_name, or %NULL if not
+ * found.
+ *
+ * the returned reference should be g_object_unref() by the caller.
+ */
+ofaIFileMeta *
+ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
+{
+	ofaFileDirPrivate *priv;
+	GList *it;
+	ofaIFileMeta *meta;
+	gchar *meta_dos_name;
+	gint cmp;
+
+	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
+
+	priv = dir->priv;
+
+	if( !priv->dispose_has_run ){
+		for( it=priv->list ; it ; it=it->next ){
+			meta = ( ofaIFileMeta * ) it->data;
+			g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+			meta_dos_name = ofa_ifile_meta_get_dossier_name( meta );
+			cmp = g_utf8_collate( meta_dos_name, dossier_name );
+			g_free( meta_dos_name );
+			if( cmp == 0 ){
+				return( g_object_ref( meta ));
+			}
+		}
+	}
+
+	return( NULL );
+}
