@@ -984,6 +984,11 @@ ofa_application_get_copyright( const ofaApplication *application )
 /**
  * ofa_application_get_file_dir:
  * @application:
+ *
+ * Returns: the #ofaFileDir object.
+ *
+ * The returned reference is owned by the @application object, and
+ * should not be released by the caller.
  */
 ofaFileDir *
 ofa_application_get_file_dir( const ofaApplication *application )
