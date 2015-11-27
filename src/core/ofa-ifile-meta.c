@@ -396,6 +396,35 @@ ofa_ifile_meta_set_periods( ofaIFileMeta *meta, GList *periods )
 }
 
 /**
+ * ofa_ifile_meta_get_current_period:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: a new reference of the #ofaIFilePeriod which identifies the
+ * current financial period. This reference should be g_object_unref()
+ * by the caller.
+ */
+ofaIFilePeriod *
+ofa_ifile_meta_get_current_period( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+	GList *it;
+	ofaIFilePeriod *period;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	data = get_ifile_meta_data( meta );
+	for( it=data->periods ; it ; it=it->next ){
+		period = ( ofaIFilePeriod * ) it->data;
+		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+		if( ofa_ifile_period_get_current( period )){
+			return( g_object_ref( period ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_ifile_meta_update_period:
  * @meta: this #ofaIFileMeta instance.
  * @period: the #ofaIFilePeriod to be updated.
@@ -471,6 +500,44 @@ ofa_ifile_meta_get_connection( ofaIFileMeta *meta,
 	}
 
 	return( connect );
+}
+
+/**
+ * ofa_ifile_meta_archive_and_new:
+ * @meta: this #ofaIFileMeta instance.
+ * @period: the #ofaIFilePeriod exercice.
+ * @root_account: the DBMS root account.
+ * @root_password: the DBMS root password.
+ * @user_account: the first administrative user account of the new exercice.
+ * @begin_next: the beginning date of the new exercice.
+ * @end_next: the ending date of the new exercice.
+ *
+ * Duplicate the storage space (the database) of the @period exercice
+ * to a new one, and records the new properties as a new financial
+ * period in the dossier settings.
+ * Initialize @user_account with required permissions.
+ *
+ * Returns: %TRUE if successfull.
+ */
+gboolean
+ofa_ifile_meta_archive_and_new( ofaIFileMeta *meta, ofaIFilePeriod *period,
+		const gchar *root_account, const gchar *root_password, const gchar *user_account,
+		const GDate *begin_next, const GDate *end_next )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_archive_and_new";
+	ofaIDBProvider *provider;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+
+	provider = ofa_ifile_meta_get_provider_instance( meta );
+	if( !provider ){
+		g_warning( "%s: Unable to get a DB provider instance", thisfn );
+		return( FALSE );
+	}
+
+	return( ofa_idbprovider_archive_and_new(
+					provider, meta, period, root_account, root_password, user_account, begin_next, end_next ));
 }
 
 static sIFileMeta *

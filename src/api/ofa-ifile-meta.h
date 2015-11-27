@@ -141,6 +141,8 @@ GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *m
 void            ofa_ifile_meta_set_periods               ( ofaIFileMeta *meta,
 																	GList *periods );
 
+ofaIFilePeriod *ofa_ifile_meta_get_current_period        ( const ofaIFileMeta *meta );
+
 void            ofa_ifile_meta_update_period             ( ofaIFileMeta *meta,
 																	ofaIFilePeriod *period,
 																	gboolean current,
@@ -152,6 +154,14 @@ ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	const gchar *account,
 																	const gchar *password,
 																	gchar **msg );
+
+gboolean        ofa_ifile_meta_archive_and_new           ( ofaIFileMeta *meta,
+																	ofaIFilePeriod *period,
+																	const gchar *root_account,
+																	const gchar *root_password,
+																	const gchar *user_account,
+																	const GDate *begin_next,
+																	const GDate *end_next );
 
 G_END_DECLS
 
