@@ -57,6 +57,7 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
  * @query_ex: [should]: executes a select query.
  * @query_int: [should]: returns an integer from a select query.
  * @get_last_error: [should]: returns the last error.
+ * @archive_and_new: [should]: archives the current and defines a new exercice.
  *
  * This defines the interface that an #ofaIDBConnect should implement.
  */
@@ -128,6 +129,32 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
+
+	/**
+	 * archive_and_new:
+	 * @instance: the #ofaIDBConnect connection.
+	 * @root_account: the root account of the DBMS server.
+	 * @root_password: the corresponding password.
+	 * @begin_next: the beginning date of the next exercice.
+	 * @end_next: the ending date of the next exercice.
+	 *
+	 * Duplicate the current exercice into a new one.
+	 *
+	 * It is up to the DBMS provider to choose whether to archive the
+	 * current exercice, and to create a new database for the new
+	 * exercice, or to archive the current exercice into a new database,
+	 * keeping the current database for the new exercice, provided that
+	 * dossier settings be updated accordingly.
+	 *
+	 * Return value: %TRUE if OK.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *archive_and_new )      ( const ofaIDBConnect *instance,
+											const gchar *root_account,
+											const gchar *root_password,
+											const GDate *begin_next,
+											const GDate *end_next );
 }
 	ofaIDBConnectInterface;
 
@@ -169,6 +196,12 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 #define         ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
 																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
 																g_slist_free( L )
+
+gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
+															const gchar *root_account,
+															const gchar *root_password,
+															const GDate *begin_next,
+															const GDate *end_next );
 
 G_END_DECLS
 

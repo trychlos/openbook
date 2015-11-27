@@ -464,6 +464,35 @@ error_query( const ofaIDBConnect *connect, const gchar *query )
 	gtk_widget_destroy( dlg );
 }
 
+/**
+ * ofa_idbconnect_archive_and_new:
+ * @connect: this #ofaIDBConnect instance.
+ * @root_account: the DBMS root account.
+ * @root_password: the DBMS root password.
+ * @begin_next: the beginning date of the new exercice.
+ * @end_next: the ending date of the new exercice.
+ *
+ * Duplicate the storage space (the database) of the period
+ * to a new one, and records the new properties as a new financial
+ * period in the dossier settings.
+ * Initialize user account with required permissions.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
+		const gchar *root_account, const gchar *root_password,
+		const GDate *begin_next, const GDate *end_next )
+{
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new ){
+		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new( connect, root_account, root_password, begin_next, end_next ));
+	}
+
+	return( FALSE );
+}
+
 static sIDBConnect *
 get_idbconnect_data( const ofaIDBConnect *connect )
 {
