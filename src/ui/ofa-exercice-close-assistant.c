@@ -1116,9 +1116,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				priv->dbms, priv->dname, priv->p2_account, priv->p2_password,
 				priv->cur_account, begin_next, end_next )){
 				*/
-	ok = ofa_ifile_meta_archive_and_new(
-				priv->meta, period, priv->p2_account, priv->p2_password,
-				priv->cur_account, begin_next, end_next );
+	ok = ofa_idbconnect_archive_and_new(
+				priv->connect, priv->p2_account, priv->p2_password, begin_next, end_next );
 
 	g_object_unref( period );
 
