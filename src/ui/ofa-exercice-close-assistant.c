@@ -70,7 +70,6 @@ struct _ofaExerciceCloseAssistantPrivate {
 	 */
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
-	ofaIFileMeta         *meta;
 	gchar                *dos_name;
 	const gchar          *cur_account;
 	const gchar          *cur_password;
@@ -218,16 +217,11 @@ exercice_close_assistant_finalize( GObject *instance )
 static void
 exercice_close_assistant_dispose( GObject *instance )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_EXERCICE_CLOSE_ASSISTANT( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_EXERCICE_CLOSE_ASSISTANT( instance )->priv;
-
-		g_clear_object( &priv->meta );
 	}
 
 	/* chain up to the parent class */
@@ -297,6 +291,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
+	ofaIFileMeta *meta;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -305,8 +300,9 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->connect = ofo_dossier_get_connect( priv->dossier );
-	priv->meta = ofa_idbconnect_get_meta( priv->connect );
-	priv->dos_name = ofa_ifile_meta_get_dossier_name( priv->meta );
+	meta = ofa_idbconnect_get_meta( priv->connect );
+	priv->dos_name = ofa_ifile_meta_get_dossier_name( meta );
+	g_object_unref( meta );
 }
 
 static void
@@ -1157,7 +1153,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
 			priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 			priv->connect = ofo_dossier_get_connect( priv->dossier );
-			g_clear_object( &priv->meta );
 
 			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 				ofo_dossier_set_status( priv->dossier, DOS_STATUS_OPENED );
