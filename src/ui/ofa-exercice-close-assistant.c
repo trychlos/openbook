@@ -33,12 +33,10 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-dbms.h"
-#include "api/ofa-dossier-misc.h"
-#include "api/ofa-idbms.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -71,9 +69,9 @@ struct _ofaExerciceCloseAssistantPrivate {
 	/* dossier
 	 */
 	ofoDossier           *dossier;
-	gchar                *dname;
-	gchar                *provider;
-	ofaIDbms             *dbms;
+	const ofaIDBConnect  *connect;
+	ofaIFileMeta         *meta;
+	gchar                *dos_name;
 	const gchar          *cur_account;
 	const gchar          *cur_password;
 
@@ -209,8 +207,7 @@ exercice_close_assistant_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_EXERCICE_CLOSE_ASSISTANT( instance )->priv;
 
-	g_free( priv->dname );
-	g_free( priv->provider );
+	g_free( priv->dos_name );
 	g_free( priv->p2_account );
 	g_free( priv->p2_password );
 
@@ -230,7 +227,7 @@ exercice_close_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFA_EXERCICE_CLOSE_ASSISTANT( instance )->priv;
 
-		g_clear_object( &priv->dbms );
+		g_clear_object( &priv->meta );
 	}
 
 	/* chain up to the parent class */
@@ -287,7 +284,6 @@ ofa_exercice_close_assistant_run( ofaMainWindow *main_window )
 					NULL );
 
 	self->priv->main_window = main_window;
-	self->priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 	my_assistant_run( MY_ASSISTANT( self ));
@@ -307,22 +303,10 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv = self->priv;
 
-	g_free( priv->dname );
-	priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
-
-	g_free( priv->provider );
-	priv->provider = ofa_settings_get_dossier_provider( priv->dname );
-	if( !my_strlen( priv->provider )){
-		g_warning( "%s: unable to get dossier provider", thisfn );
-	} else {
-		priv->dbms = ofa_idbms_get_provider_by_name( priv->provider );
-		if( !priv->dbms ){
-			g_warning( "%s: unable to access to '%s' provider", thisfn, priv->provider );
-		} else {
-			ofa_main_window_get_dossier_credentials(
-					priv->main_window, &priv->cur_account, &priv->cur_password );
-		}
-	}
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->connect = ofo_dossier_get_connect( priv->dossier );
+	priv->meta = ofa_idbconnect_get_meta( priv->connect );
+	priv->dos_name = ofa_ifile_meta_get_dossier_name( priv->meta );
 }
 
 static void
@@ -539,7 +523,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbms_credentials ));
-	ofa_dbms_root_bin_set_dossier( priv->p2_dbms_credentials, priv->dname );
+	ofa_dbms_root_bin_set_dossier( priv->p2_dbms_credentials, priv->dos_name );
 
 	g_signal_connect(
 			priv->p2_dbms_credentials, "ofa-changed", G_CALLBACK( p2_on_dbms_root_changed ), self );
@@ -1126,20 +1110,17 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_update( priv->dossier );
 	ofa_main_window_update_title( priv->main_window );
 
-	cnx = ofo_dossier_get_connect( priv->dossier );
-	meta = ofa_idbconnect_get_meta( cnx );
-	period = ofa_idbconnect_get_period( cnx );
+	period = ofa_idbconnect_get_period( priv->connect );
 	/*
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p2_account, priv->p2_password,
 				priv->cur_account, begin_next, end_next )){
 				*/
 	ok = ofa_ifile_meta_archive_and_new(
-				meta, period, priv->p2_account, priv->p2_password,
+				priv->meta, period, priv->p2_account, priv->p2_password,
 				priv->cur_account, begin_next, end_next );
 
 	g_object_unref( period );
-	g_object_unref( meta );
 
 	if( !ok ){
 		my_utils_dialog_warning( _( "Unable to archive the dossier" ));
@@ -1154,7 +1135,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
 		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
 
-		meta = ofa_file_dir_get_meta( dir, priv->dname );
+		meta = ofa_file_dir_get_meta( dir, priv->dos_name );
 		g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
 
 		period = ofa_ifile_meta_get_current_period( meta );
@@ -1163,32 +1144,32 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		cnx = ofa_ifile_meta_get_connection(
 						meta, period, priv->cur_account, priv->cur_password, &msg);
 
-		ok = FALSE;
 		g_object_unref( meta );
 		g_object_unref( period );
-	}
 
-	if( !cnx ){
-		my_utils_dialog_warning( msg );
-		g_free( msg );
-		my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
-		my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
+		if( !cnx ){
+			my_utils_dialog_warning( msg );
+			g_free( msg );
+			my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
+			my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
+			ok = FALSE;
 
-	} else {
-		ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
-		priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+		} else {
+			ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
+			priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+			priv->connect = ofo_dossier_get_connect( priv->dossier );
+			g_clear_object( &priv->meta );
 
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			ofo_dossier_set_status( priv->dossier, DOS_STATUS_OPENED );
-			ofo_dossier_set_exe_begin( priv->dossier, begin_next );
-			ofo_dossier_set_exe_end( priv->dossier, end_next );
-			ofo_dossier_update( priv->dossier );
+			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+				ofo_dossier_set_status( priv->dossier, DOS_STATUS_OPENED );
+				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
+				ofo_dossier_set_exe_end( priv->dossier, end_next );
+				ofo_dossier_update( priv->dossier );
 
-			/* re-emit the opened signal after changes */
-			g_signal_emit_by_name( priv->main_window, "ofa-opened-dossier", priv->dossier );
-			ofa_main_window_update_title( priv->main_window );
-
-			ok = TRUE;
+				/* re-emit the opened signal after changes */
+				g_signal_emit_by_name( priv->main_window, "ofa-opened-dossier", priv->dossier );
+				ofa_main_window_update_title( priv->main_window );
+			}
 		}
 	}
 
@@ -1210,7 +1191,6 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_cleanup";
 	ofaExerciceCloseAssistantPrivate *priv;
 	gchar *query;
-	const ofaDbms *dbms;
 	gboolean ok;
 	GtkWidget *label;
 
@@ -1218,11 +1198,8 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	dbms = ofo_dossier_get_dbms( priv->dossier );
-	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
-
 	query = g_strdup( "TRUNCATE TABLE OFA_T_AUDIT" );
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 	g_free( query );
 
 	/* archive deleted (non-reported) entries
@@ -1231,7 +1208,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_ENTRIES" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
@@ -1243,26 +1220,26 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='E'))) AND "
 					"		ENT_STATUS!=%d AND ENT_STATUS!=%d",
 					ENT_STATUS_DELETED, ENT_STATUS_FUTURE );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_ENTRIES" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_DELETED_ENTRIES "
 					"SELECT * FROM OFA_T_ENTRIES WHERE "
 					"	ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_ENTRIES "
 					"WHERE ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
@@ -1270,7 +1247,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	if( ok ){
 		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
 					"ENT_STATUS=%d WHERE ENT_STATUS!=%d", ENT_STATUS_PAST, ENT_STATUS_FUTURE );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
@@ -1279,7 +1256,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_BATS" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
@@ -1288,45 +1265,45 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"	WHERE BAT_LINE_ID NOT IN "
 					"		(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
 					"			WHERE REC_IDS_TYPE='B')" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BATS" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BATS "
 					"SELECT * FROM OFA_T_BAT "
 					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BAT_LINES" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT_LINES "
 					"SELECT * FROM OFA_T_BAT_LINES "
 					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_BAT "
 					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_BAT_LINES "
 					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
@@ -1337,7 +1314,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"ACC_VAL_DEBIT=0, ACC_VAL_CREDIT=0, "
 					"ACC_ROUGH_DEBIT=0, ACC_ROUGH_CREDIT=0, "
 					"ACC_OPEN_DEBIT=0, ACC_OPEN_CREDIT=0" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
@@ -1345,7 +1322,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		query = g_strdup( "UPDATE OFA_T_LEDGERS_CUR SET "
 					"LED_CUR_VAL_DEBIT=0, LED_CUR_VAL_CREDIT=0, "
 					"LED_CUR_ROUGH_DEBIT=0, LED_CUR_ROUGH_CREDIT=0" );
-		ok = ofa_dbms_query( dbms, query, TRUE );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
