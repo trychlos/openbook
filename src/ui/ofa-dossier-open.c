@@ -447,7 +447,8 @@ do_open_dossier( ofaDossierOpen *self )
 
 	ofa_main_window_open_dossier(
 			OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( self ))),
-			priv->connect );
+			priv->connect,
+			TRUE );
 }
 
 static void

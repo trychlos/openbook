@@ -117,7 +117,7 @@ static ofoBaseClass *ofo_dossier_parent_class = NULL;
 static GType       register_type( void );
 static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
-static gboolean    do_open( ofoDossier *dossier );
+static gboolean    do_open( ofoDossier *dossier, gboolean remediation );
 static void        check_db_vs_settings( ofoDossier *dossier );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -481,12 +481,14 @@ dossier_class_init( ofoDossierClass *klass )
  * ofo_dossier_new:
  * @cnx: a #ofaIDBConnect object which handles an already opened
  *  connection.
+ * @remediation: whether remediate the dossier settings regarding
+ *  the actual content of the dossier database.
  *
  * Returns: a newly allocated #ofoDossier object, or %NULL if an error
  * has occured.
  */
 ofoDossier *
-ofo_dossier_new( ofaIDBConnect *cnx )
+ofo_dossier_new( ofaIDBConnect *cnx, gboolean remediation )
 {
 	ofoDossier *dossier;
 
@@ -495,7 +497,7 @@ ofo_dossier_new( ofaIDBConnect *cnx )
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
 	dossier->priv->cnx = g_object_ref( cnx );
 
-	if( !do_open( dossier )){
+	if( !do_open( dossier, remediation )){
 		g_clear_object( &dossier );
 	}
 
@@ -558,7 +560,7 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 #endif
 
 static gboolean
-do_open( ofoDossier *dossier )
+do_open( ofoDossier *dossier, gboolean remediation )
 {
 	gboolean ok;
 
@@ -567,7 +569,9 @@ do_open( ofoDossier *dossier )
 	if( ofa_ddl_update_run( dossier )){
 		connect_objects_handlers( dossier );
 		if( dossier_do_read( dossier )){
-			check_db_vs_settings( dossier );
+			if( remediation ){
+				check_db_vs_settings( dossier );
+			}
 			ok = TRUE;
 		}
 	}

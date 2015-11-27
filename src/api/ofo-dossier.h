@@ -56,7 +56,8 @@ G_BEGIN_DECLS
  */
 #define THIS_DOS_ID                     1
 
-ofoDossier          *ofo_dossier_new                       ( ofaIDBConnect *cnx );
+ofoDossier          *ofo_dossier_new                       ( ofaIDBConnect *cnx,
+																	gboolean remediation );
 
 gboolean             ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
 

@@ -97,7 +97,8 @@ ofaPage       *ofa_main_window_activate_theme         ( const ofaMainWindow *win
 gboolean       ofa_main_window_is_willing_to_quit     ( ofaMainWindow *window );
 
 void           ofa_main_window_open_dossier           ( ofaMainWindow *window,
-																ofaIDBConnect *connect );
+																ofaIDBConnect *connect,
+																gboolean remediation );
 
 ofoDossier    *ofa_main_window_get_dossier            ( const ofaMainWindow *window );
 

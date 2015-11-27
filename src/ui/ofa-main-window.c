@@ -308,7 +308,7 @@ G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
 static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void             do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect );
+static void             do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             set_window_title( const ofaMainWindow *window );
@@ -696,11 +696,13 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *main_window )
  * @main_window: this #ofaMainWindow instance.
  * @connect: the #ofaIDBConnect object which handles the opened
  *  connection.
+ * @remediation: whether remediate the dossier settings regarding
+ *  the actual content of the dossier database.
  *
  * Open the dossier in the user interface.
  */
 void
-ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect )
+ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation )
 {
 	static const gchar *thisfn = "ofa_main_window_open_dossier";
 	ofaMainWindowPrivate *priv;
@@ -719,19 +721,19 @@ ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect
 			do_close_dossier( main_window );
 		}
 
-		do_open_dossier( main_window, connect );
+		do_open_dossier( main_window, connect, remediation );
 	}
 }
 
 static void
-do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect )
+do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation )
 {
 	ofaMainWindowPrivate *priv;
 	const GDate *exe_begin, *exe_end;
 	const gchar *main_notes, *exe_notes;
 
 	priv = main_window->priv;
-	priv->dossier = ofo_dossier_new( connect );
+	priv->dossier = ofo_dossier_new( connect, remediation );
 
 	if( priv->dossier ){
 		priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
