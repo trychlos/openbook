@@ -736,7 +736,7 @@ on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const 
 const gchar *
 ofo_dossier_get_name( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -755,7 +755,7 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_user( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -842,7 +842,7 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 	const gchar *default_dev;
 	gint count;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -953,7 +953,7 @@ ofo_dossier_get_database_version( const ofoDossier *dossier )
 {
 	gint vmax;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	vmax = 0;
 
@@ -975,7 +975,7 @@ ofo_dossier_get_database_version( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_default_currency( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -993,7 +993,7 @@ ofo_dossier_get_default_currency( const ofoDossier *dossier )
 const GDate *
 ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1012,7 +1012,7 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 const GDate *
 ofo_dossier_get_exe_end( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1031,7 +1031,7 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier )
 gint
 ofo_dossier_get_exe_length( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1050,7 +1050,7 @@ ofo_dossier_get_exe_length( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1069,7 +1069,7 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1088,7 +1088,7 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1108,7 +1108,7 @@ ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_label( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1127,7 +1127,7 @@ ofo_dossier_get_label( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_notes( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1146,7 +1146,7 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_siren( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1165,7 +1165,7 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1185,7 +1185,7 @@ ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_upd_user( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1205,7 +1205,7 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 const GTimeVal *
 ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1228,7 +1228,7 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1251,7 +1251,7 @@ ofo_dossier_get_status_str( const ofoDossier *dossier )
 	static const gchar *thisfn = "ofo_dossier_get_status_str";
 	ofoDossierPrivate *priv;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1277,7 +1277,7 @@ ofo_dossier_get_status_str( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_bat( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1296,7 +1296,7 @@ ofo_dossier_get_last_bat( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_batline( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1315,7 +1315,7 @@ ofo_dossier_get_last_batline( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_entry( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1334,7 +1334,7 @@ ofo_dossier_get_last_entry( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1353,7 +1353,7 @@ ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_concil( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1373,7 +1373,7 @@ ofo_dossier_get_next_bat( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofxCounter next;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
@@ -1398,7 +1398,7 @@ ofo_dossier_get_next_batline( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofxCounter next;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
@@ -1425,7 +1425,7 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofxCounter next;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
@@ -1450,7 +1450,7 @@ ofo_dossier_get_next_settlement( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofxCounter next;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
@@ -1475,7 +1475,7 @@ ofo_dossier_get_next_concil( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofxCounter next;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
@@ -1520,7 +1520,7 @@ ofo_dossier_get_last_closing_date( const ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1543,7 +1543,7 @@ ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1573,6 +1573,7 @@ ofo_dossier_get_min_deffect( GDate *date, const ofoDossier *dossier, ofoLedger *
 	gint to_add;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
 	if( ledger ){
 		if( !OFO_IS_LEDGER( ledger )){
 			g_return_val_if_reached( NULL );
@@ -1763,7 +1764,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 gboolean
 ofo_dossier_is_current( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -2423,7 +2424,7 @@ ofo_dossier_update( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_update";
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -2586,7 +2587,7 @@ ofo_dossier_update_currencies( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_update_currencies";
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 

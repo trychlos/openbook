@@ -26,7 +26,6 @@
 #endif
 
 #include "api/ofa-box.h"
-#include "api/ofa-dbms.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -109,6 +108,8 @@ ofo_base_class_init( ofoBaseClass *klass )
 GList *
 ofo_base_init_fields_list( const ofsBoxDef *defs )
 {
+	g_return_val_if_fail( defs, NULL );
+
 	return( ofa_box_init_fields_list( defs ));
 }
 
@@ -116,7 +117,7 @@ ofo_base_init_fields_list( const ofsBoxDef *defs )
  * ofo_base_load_dataset:
  * @defs: the #ofsBoxDefs list of field definitions for this object
  * @dossier: the currently opened dossier
- * @dbms: the connection object
+ * @cnx: the #ofaIDBConnect connection object
  * @from: the 'from' part of the query
  * @type: the #GType of the #ofoBase -derived object to be allocated
  *
@@ -125,13 +126,17 @@ ofo_base_init_fields_list( const ofsBoxDef *defs )
  * Returns: the ordered list of loaded objects.
  */
 GList *
-ofo_base_load_dataset( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *from, GType type )
+ofo_base_load_dataset( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar *from, GType type )
 {
 	ofoBase *object;
 	GList *rows, *dataset, *it;
 
+	g_return_val_if_fail( defs, NULL );
+	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
+	g_return_val_if_fail( type, NULL );
+
 	dataset = NULL;
-	rows = ofo_base_load_rows( defs, dbms, from );
+	rows = ofo_base_load_rows( defs, cnx, from );
 
 	for( it=rows ; it ; it=it->next ){
 		object = g_object_new( type, NULL );
@@ -147,7 +152,7 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *
  * ofo_base_load_rows:
  * @defs: the #ofsBoxDefs list of field definitions for this object
  * @dossier: the currently opened dossier
- * @dbms: the connection object
+ * @cnx: the #ofaIDBConnect connection object
  * @from: the 'from' part of the query
  *
  * This function loads the specified rows.
@@ -155,22 +160,25 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *
  * Returns: the list of rows, each element being itself a list of fields.
  */
 GList *
-ofo_base_load_rows( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *from )
+ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar *from )
 {
 	gchar *columns, *query;
 	GSList *result, *irow;
 	GList *rows;
+
+	g_return_val_if_fail( defs, NULL );
+	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
 
 	rows = NULL;
 	columns = ofa_box_get_dbms_columns( defs );
 	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
 	g_free( columns );
 
-	if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( cnx, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			rows = g_list_prepend( rows, ofa_box_parse_dbms_result( defs, irow ));
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 	g_free( query );
 

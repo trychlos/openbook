@@ -33,9 +33,9 @@
 #include <string.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -68,10 +68,10 @@ static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
 static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
-static gboolean     currency_do_insert( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user );
-static gboolean     currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user );
-static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms *dbms, const gchar *user );
-static gboolean     currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms );
+static gboolean     currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *cnx );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
@@ -80,7 +80,7 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFil
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
-static gboolean     currency_do_drop_content( const ofaDbms *dbms );
+static gboolean     currency_do_drop_content( const ofaIDBConnect *cnx );
 
 OFA_IDATASET_LOAD( CURRENCY, currency );
 
@@ -207,13 +207,13 @@ currency_load_dataset( ofoDossier *dossier )
 	GSList *result, *irow, *icol;
 	ofoCurrency *currency;
 	GList *dataset;
-	const ofaDbms *dbms;
+	const ofaIDBConnect *cnx;
 	GTimeVal timeval;
 
 	dataset = NULL;
-	dbms = ofo_dossier_get_dbms( dossier );
+	cnx = ofo_dossier_get_connect( dossier );
 
-	if( ofa_dbms_query_ex( dbms,
+	if( ofa_idbconnect_query_ex( cnx,
 			"SELECT CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
 			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP "
 			"	FROM OFA_T_CURRENCIES", &result, TRUE )){
@@ -239,7 +239,7 @@ currency_load_dataset( ofoDossier *dossier )
 			dataset = g_list_prepend( dataset, currency );
 		}
 
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -297,7 +297,7 @@ ofo_currency_new( void )
 const gchar *
 ofo_currency_get_code( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -314,7 +314,7 @@ ofo_currency_get_code( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_label( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -331,7 +331,7 @@ ofo_currency_get_label( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_symbol( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -348,7 +348,7 @@ ofo_currency_get_symbol( const ofoCurrency *currency )
 gint
 ofo_currency_get_digits( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), 0 );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -365,7 +365,7 @@ ofo_currency_get_digits( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_notes( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -382,7 +382,7 @@ ofo_currency_get_notes( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_upd_user( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -399,7 +399,7 @@ ofo_currency_get_upd_user( const ofoCurrency *currency )
 const GTimeVal *
 ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 {
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -421,7 +421,7 @@ ofo_currency_get_precision( const ofoCurrency *currency )
 {
 	gint digits;
 
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), 0 );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -487,7 +487,7 @@ ofo_currency_is_valid( const gchar *code, const gchar *label, const gchar *symbo
 void
 ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -502,7 +502,7 @@ ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 void
 ofo_currency_set_label( ofoCurrency *currency, const gchar *label )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -517,7 +517,7 @@ ofo_currency_set_label( ofoCurrency *currency, const gchar *label )
 void
 ofo_currency_set_symbol( ofoCurrency *currency, const gchar *symbol )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -532,7 +532,7 @@ ofo_currency_set_symbol( ofoCurrency *currency, const gchar *symbol )
 void
 ofo_currency_set_digits( ofoCurrency *currency, gint digits )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -546,7 +546,7 @@ ofo_currency_set_digits( ofoCurrency *currency, gint digits )
 void
 ofo_currency_set_notes( ofoCurrency *currency, const gchar *notes )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -561,7 +561,7 @@ ofo_currency_set_notes( ofoCurrency *currency, const gchar *notes )
 static void
 currency_set_upd_user( ofoCurrency *currency, const gchar *user )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -576,7 +576,7 @@ currency_set_upd_user( ofoCurrency *currency, const gchar *user )
 static void
 currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 {
-	g_return_if_fail( OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
@@ -602,7 +602,7 @@ ofo_currency_insert( ofoCurrency *currency, ofoDossier *dossier )
 
 		if( currency_do_insert(
 					currency,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_ADD( dossier, CURRENCY, currency );
@@ -615,13 +615,13 @@ ofo_currency_insert( ofoCurrency *currency, ofoDossier *dossier )
 }
 
 static gboolean
-currency_do_insert( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user )
+currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user )
 {
-	return( currency_insert_main( currency, dbms, user ));
+	return( currency_insert_main( currency, cnx, user ));
 }
 
 static gboolean
-currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user )
+currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -657,7 +657,7 @@ currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *u
 			"'%s','%s')",
 			user, stamp_str );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		currency_set_upd_user( currency, user );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
@@ -690,7 +690,7 @@ ofo_currency_update( ofoCurrency *currency, ofoDossier *dossier, const gchar *pr
 		if( currency_do_update(
 					currency,
 					prev_code,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_UPDATE( dossier, CURRENCY, currency, prev_code );
@@ -703,7 +703,7 @@ ofo_currency_update( ofoCurrency *currency, ofoDossier *dossier, const gchar *pr
 }
 
 static gboolean
-currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms *dbms, const gchar *user )
+currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -735,7 +735,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms
 			"	CUR_UPD_USER='%s',CUR_UPD_STAMP='%s'"
 			"	WHERE CUR_CODE='%s'", user, stamp_str, prev_code );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		currency_set_upd_user( currency, user );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
@@ -768,7 +768,7 @@ ofo_currency_delete( ofoCurrency *currency, ofoDossier *dossier )
 
 		if( currency_do_delete(
 					currency,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			OFA_IDATASET_REMOVE( dossier, CURRENCY, currency );
 
@@ -780,7 +780,7 @@ ofo_currency_delete( ofoCurrency *currency, ofoDossier *dossier )
 }
 
 static gboolean
-currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms )
+currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -790,7 +790,7 @@ currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms )
 			"	WHERE CUR_CODE='%s'",
 					ofo_currency_get_code( currency ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -1012,12 +1012,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CURRENCY, FALSE );
 
-		currency_do_drop_content( ofo_dossier_get_dbms( dossier ));
+		currency_do_drop_content( ofo_dossier_get_connect( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
 			if( !currency_do_insert(
 					OFO_CURRENCY( it->data ),
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 				errors -= 1;
 			}
@@ -1037,7 +1037,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static gboolean
-currency_do_drop_content( const ofaDbms *dbms )
+currency_do_drop_content( const ofaIDBConnect *cnx )
 {
-	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
+	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
 }

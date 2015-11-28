@@ -34,9 +34,9 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -195,21 +195,21 @@ static void         on_updated_object_currency_code( ofoDossier *dossier, const 
 static void         on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static GList       *account_load_dataset( ofoDossier *dossier );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
-static gint         account_count_for_currency( const ofaDbms *dbms, const gchar *currency );
-static gint         account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
-static gint         account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number );
+static gint         account_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency );
+static gint         account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo );
+static gint         account_count_for_like( const ofaIDBConnect *cnx, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str, ofoDossier *dossier );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms );
+static gboolean     do_archive_open_balance( ofoAccount *account, const ofaIDBConnect *cnx );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
-static gboolean     account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user );
-static gboolean     account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number );
-static gboolean     account_do_update_amounts( ofoAccount *account, const ofaDbms *dbms );
-static gboolean     account_do_delete( ofoAccount *account, const ofaDbms *dbms );
+static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_number );
+static gboolean     account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *cnx );
+static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *cnx );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
@@ -218,7 +218,7 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFil
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
-static gboolean     account_do_drop_content( const ofaDbms *dbms );
+static gboolean     account_do_drop_content( const ofaIDBConnect *cnx );
 
 OFA_IDATASET_LOAD( ACCOUNT, account );
 
@@ -430,7 +430,7 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 			break;
 	}
 
-	if( account_do_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
+	if( account_do_update_amounts( account, ofo_dossier_get_connect( dossier ))){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
@@ -473,7 +473,7 @@ on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, cons
 					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
 						code, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 
 	g_free( query );
 
@@ -556,7 +556,7 @@ account_load_dataset( ofoDossier *dossier )
 {
 	return( ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
 					OFO_TYPE_ACCOUNT ));
 }
@@ -575,7 +575,7 @@ ofo_account_get_dataset_for_solde( ofoDossier *dossier )
 	GList *dataset;
 	gchar *query;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	query = g_strdup_printf( "OFA_T_ACCOUNTS WHERE "
 			"	ACC_TYPE!='R' AND "
@@ -583,7 +583,7 @@ ofo_account_get_dataset_for_solde( ofoDossier *dossier )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					query,
 					OFO_TYPE_ACCOUNT );
 
@@ -607,7 +607,7 @@ ofo_account_get_dataset_for_solde( ofoDossier *dossier )
 ofoAccount *
 ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !my_strlen( number )){
 		return( NULL );
@@ -649,7 +649,7 @@ ofo_account_use_class( ofoDossier *dossier, gint number )
 
 	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	return( account_count_for_like( ofo_dossier_get_dbms( dossier ), "ACC_NUMBER", number ) > 0 );
+	return( account_count_for_like( ofo_dossier_get_connect( dossier ), "ACC_NUMBER", number ) > 0 );
 }
 
 /**
@@ -670,17 +670,17 @@ ofo_account_use_currency( ofoDossier *dossier, const gchar *currency )
 
 	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	return( account_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
+	return( account_count_for_currency( ofo_dossier_get_connect( dossier ), currency ) > 0 );
 }
 
 static gint
-account_count_for_currency( const ofaDbms *dbms, const gchar *currency )
+account_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency )
 {
-	return( account_count_for( dbms, "ACC_CURRENCY", currency ));
+	return( account_count_for( cnx, "ACC_CURRENCY", currency ));
 }
 
 static gint
-account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
+account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -688,7 +688,7 @@ account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s='%s'", field, mnemo );
 
-	ofa_dbms_query_int( dbms, query, &count, TRUE );
+	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
 
 	g_free( query );
 
@@ -696,7 +696,7 @@ account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 }
 
 static gint
-account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number )
+account_count_for_like( const ofaIDBConnect *cnx, const gchar *field, gint number )
 {
 	gint count;
 	gchar *query;
@@ -705,7 +705,7 @@ account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s LIKE '%d%%'", field, number );
 
-	ofa_dbms_query_int( dbms, query, &count, TRUE );
+	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
 
 	g_free( query );
 
@@ -737,12 +737,11 @@ ofo_account_new( void )
 gint
 ofo_account_get_class( const ofoAccount *account )
 {
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( ofo_account_get_class_from_number(
-						ofo_account_get_number( account )));
+		return( ofo_account_get_class_from_number( ofo_account_get_number( account )));
 	}
 
 	return( 0 );
@@ -762,6 +761,8 @@ ofo_account_get_class_from_number( const gchar *account_number )
 {
 	gchar *number;
 	gint class;
+
+	g_return_val_if_fail( my_strlen( account_number ), 0 );
 
 	number = g_strdup( account_number );
 	number[1] = '\0';
@@ -1042,7 +1043,7 @@ ofo_account_is_root( const ofoAccount *account )
 	gboolean is_root;
 	const gchar *account_type;
 
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 	is_root = FALSE;
 
@@ -1442,8 +1443,8 @@ ofo_account_has_open_balance( const ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	ofa_dbms_query_int(
-			ofo_dossier_get_dbms( dossier ),
+	ofa_idbconnect_query_int(
+			ofo_dossier_get_connect( dossier ),
 			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_FUT_DEBIT>0 OR ACC_FUT_CREDIT>0",
 			&count, TRUE );
 
@@ -1479,7 +1480,7 @@ ofo_account_archive_open_balance( ofoAccount *account, ofoDossier *dossier )
 			ok = TRUE;
 
 		} else {
-			ok = do_archive_open_balance( account, ofo_dossier_get_dbms( dossier ));
+			ok = do_archive_open_balance( account, ofo_dossier_get_connect( dossier ));
 		}
 	}
 
@@ -1487,7 +1488,7 @@ ofo_account_archive_open_balance( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms )
+do_archive_open_balance( ofoAccount *account, const ofaIDBConnect *cnx )
 {
 	GString *query;
 	gchar *samount;
@@ -1511,7 +1512,7 @@ do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms )
 	g_string_append_printf( query,
 			"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1748,7 +1749,7 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 
 		if( account_do_insert(
 					account,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_ADD( dossier, ACCOUNT, account );
@@ -1761,7 +1762,7 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
+account_do_insert( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1826,7 +1827,7 @@ account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		account_set_upd_user( account, user );
 		account_set_upd_stamp( account, &stamp );
 		ok = TRUE;
@@ -1862,7 +1863,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 
 		if( account_do_update(
 					account,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ),
 					prev_number )){
 
@@ -1876,7 +1877,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 }
 
 static gboolean
-account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number )
+account_do_update( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_number )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1948,7 +1949,7 @@ account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, 
 					stamp_str,
 					prev_number );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		account_set_upd_user( account, user );
 		account_set_upd_stamp( account, &stamp );
 
@@ -1981,7 +1982,7 @@ ofo_account_update_amounts( ofoAccount *account, ofoDossier *dossier )
 
 		if( account_do_update_amounts(
 					account,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
@@ -1995,7 +1996,7 @@ ofo_account_update_amounts( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-account_do_update_amounts( ofoAccount *account, const ofaDbms *dbms )
+account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *cnx )
 {
 	GString *query;
 	gboolean ok;
@@ -2067,7 +2068,7 @@ account_do_update_amounts( ofoAccount *account, const ofaDbms *dbms )
 	g_string_append_printf( query,
 				"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -2093,7 +2094,7 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 
 		if( account_do_delete(
 					account,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			OFA_IDATASET_REMOVE( dossier, ACCOUNT, account );
 
@@ -2105,7 +2106,7 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-account_do_delete( ofoAccount *account, const ofaDbms *dbms )
+account_do_delete( ofoAccount *account, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -2115,7 +2116,7 @@ account_do_delete( ofoAccount *account, const ofaDbms *dbms )
 			"	WHERE ACC_NUMBER='%s'",
 					ofo_account_get_number( account ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -2412,12 +2413,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_ACCOUNT, FALSE );
 
-		account_do_drop_content( ofo_dossier_get_dbms( dossier ));
+		account_do_drop_content( ofo_dossier_get_connect( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
 			if( !account_do_insert(
 					OFO_ACCOUNT( it->data ),
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 				errors -= 1;
 			}
@@ -2437,7 +2438,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static gboolean
-account_do_drop_content( const ofaDbms *dbms )
+account_do_drop_content( const ofaIDBConnect *cnx )
 {
-	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
+	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
 }

@@ -31,10 +31,10 @@
 #include <string.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -181,18 +181,18 @@ static gboolean        on_update_ledger_mnemo( ofoDossier *dossier, const gchar 
 static gboolean        on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static GList          *ope_template_load_dataset( ofoDossier *dossier );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint            model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
-static gint            model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo );
+static gint            model_count_for_ledger( const ofaIDBConnect *cnx, const gchar *ledger );
+static gint            model_count_for_rate( const ofaIDBConnect *cnx, const gchar *mnemo );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
-static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user );
-static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user );
-static gboolean        model_delete_details( ofoOpeTemplate *model, const ofaDbms *dbms );
-static gboolean        model_insert_details_ex( ofoOpeTemplate *model, const ofaDbms *dbms );
-static gboolean        model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, GList *details );
-static gboolean        model_do_update( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user, const gchar *prev_mnemo );
-static gboolean        model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user, const gchar *prev_mnemo );
-static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaDbms *dbms );
+static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean        model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx );
+static gboolean        model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *cnx );
+static gboolean        model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang, GList *details );
+static gboolean        model_do_update( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
+static gboolean        model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
+static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *cnx );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
 static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
@@ -204,7 +204,7 @@ static guint           iimportable_get_interface_version( const ofaIImportable *
 static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
 static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, guint count, guint *errors );
 static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint count, guint *errors, gchar **mnemo );
-static gboolean        model_do_drop_content( const ofaDbms *dbms );
+static gboolean        model_do_drop_content( const ofaIDBConnect *cnx );
 
 OFA_IDATASET_LOAD( OPE_TEMPLATE, ope_template );
 
@@ -350,6 +350,8 @@ ofo_ope_template_connect_handlers( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_ope_template_connect_handlers";
 
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
@@ -402,7 +404,7 @@ on_update_ledger_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *pr
 					"	SET OTE_LED_MNEMO='%s' WHERE OTE_LED_MNEMO='%s'",
 								mnemo, prev_id );
 
-	ok = ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ok = ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 
 	g_free( query );
 
@@ -419,7 +421,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 {
 	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
 	gchar *query;
-	const ofaDbms *dbms;
+	const ofaIDBConnect *cnx;
 	GSList *result, *irow, *icol;
 	gchar *etp_mnemo, *det_debit, *det_credit;
 	gint det_row;
@@ -428,7 +430,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 	g_debug( "%s: dossier=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) dossier, mnemo, prev_id );
 
-	dbms = ofo_dossier_get_dbms( dossier );
+	cnx = ofo_dossier_get_connect( dossier );
 
 	query = g_strdup_printf(
 					"SELECT OTE_MNEMO,OTE_DET_ROW,OTE_DET_DEBIT,OTE_DET_CREDIT "
@@ -436,7 +438,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 					"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
 							prev_id, prev_id );
 
-	ok = ofa_dbms_query_ex( dbms, query, &result, TRUE );
+	ok = ofa_idbconnect_query_ex( cnx, query, &result, TRUE );
 	g_free( query );
 
 	if( ok ){
@@ -457,7 +459,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 									det_debit, det_credit,
 									etp_mnemo, det_row );
 
-			ofa_dbms_query( dbms, query, TRUE );
+			ofa_idbconnect_query( cnx, query, TRUE );
 
 			g_free( query );
 			g_free( det_credit );
@@ -483,7 +485,7 @@ ope_template_load_dataset( ofoDossier *dossier )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					"OFA_T_OPE_TEMPLATES ORDER BY OTE_MNEMO ASC",
 					OFO_TYPE_OPE_TEMPLATE );
 
@@ -493,7 +495,7 @@ ope_template_load_dataset( ofoDossier *dossier )
 				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 				ofo_ope_template_get_mnemo( template ));
 		template->priv->details =
-				ofo_base_load_rows( st_details_defs, ofo_dossier_get_dbms( dossier ), from );
+				ofo_base_load_rows( st_details_defs, ofo_dossier_get_connect( dossier ), from );
 		g_free( from );
 	}
 
@@ -513,7 +515,7 @@ ofo_ope_template_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	/*static const gchar *thisfn = "ofo_ope_template_get_by_mnemo";*/
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
@@ -550,11 +552,11 @@ ofo_ope_template_use_ledger( ofoDossier *dossier, const gchar *ledger )
 
 	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
-	return( model_count_for_ledger( ofo_dossier_get_dbms( dossier ), ledger ) > 0 );
+	return( model_count_for_ledger( ofo_dossier_get_connect( dossier ), ledger ) > 0 );
 }
 
 static gint
-model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
+model_count_for_ledger( const ofaIDBConnect *cnx, const gchar *ledger )
 {
 	gint count;
 	gchar *query;
@@ -562,7 +564,7 @@ model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES WHERE OTE_LED_MNEMO='%s'", ledger );
 
-	ofa_dbms_query_int( dbms, query, &count, TRUE );
+	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
 
 	g_free( query );
 
@@ -581,11 +583,11 @@ ofo_ope_template_use_rate( ofoDossier *dossier, const gchar *mnemo )
 
 	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
-	return( model_count_for_rate( ofo_dossier_get_dbms( dossier ), mnemo ) > 0 );
+	return( model_count_for_rate( ofo_dossier_get_connect( dossier ), mnemo ) > 0 );
 }
 
 static gint
-model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo )
+model_count_for_rate( const ofaIDBConnect *cnx, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -595,7 +597,7 @@ model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo )
 				"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
 					mnemo, mnemo );
 
-	ofa_dbms_query_int( dbms, query, &count, TRUE );
+	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
 
 	g_free( query );
 
@@ -919,7 +921,7 @@ ofo_ope_template_add_detail( ofoOpeTemplate *model, const gchar *comment,
 {
 	GList *fields;
 
-	g_return_if_fail( OFO_IS_OPE_TEMPLATE( model ));
+	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -960,14 +962,14 @@ ofo_ope_template_free_detail_all( ofoOpeTemplate *model )
 gint
 ofo_ope_template_get_detail_count( const ofoOpeTemplate *model )
 {
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), -1 );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), 0 );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
 		return( g_list_length( model->priv->details ));
 	}
 
-	return( -1 );
+	return( 0 );
 }
 
 /**
@@ -979,7 +981,8 @@ ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( idx >= 0, NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1001,7 +1004,8 @@ ofo_ope_template_get_detail_account( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( idx >= 0, NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1023,7 +1027,8 @@ ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint id
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( idx >= 0, FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1045,7 +1050,8 @@ ofo_ope_template_get_detail_label( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( idx >= 0, NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1067,7 +1073,8 @@ ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx 
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( idx >= 0, FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1089,7 +1096,8 @@ ofo_ope_template_get_detail_debit( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( idx >= 0, NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1111,7 +1119,8 @@ ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx 
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( idx >= 0, FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1133,7 +1142,8 @@ ofo_ope_template_get_detail_credit( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( idx >= 0, NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1155,7 +1165,8 @@ ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx
 {
 	GList *nth;
 
-	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( idx >= 0, FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -1189,7 +1200,7 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 
 		if( model_do_insert(
 					ope_template,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_ADD( dossier, OPE_TEMPLATE, ope_template );
@@ -1202,14 +1213,14 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 }
 
 static gboolean
-model_do_insert( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user )
+model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user )
 {
-	return( model_insert_main( model, dbms, user ) &&
-			model_insert_details_ex( model, dbms ));
+	return( model_insert_main( model, cnx, user ) &&
+			model_insert_details_ex( model, cnx ));
 }
 
 static gboolean
-model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user )
+model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user )
 {
 	gboolean ok;
 	GString *query;
@@ -1251,7 +1262,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp_str );
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	ope_template_set_upd_user( model, user );
 	ope_template_set_upd_stamp( model, &stamp );
@@ -1265,7 +1276,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 }
 
 static gboolean
-model_delete_details( ofoOpeTemplate *model, const ofaDbms *dbms )
+model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -1274,7 +1285,7 @@ model_delete_details( ofoOpeTemplate *model, const ofaDbms *dbms )
 			"DELETE FROM OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s'",
 			ofo_ope_template_get_mnemo( model ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -1282,7 +1293,7 @@ model_delete_details( ofoOpeTemplate *model, const ofaDbms *dbms )
 }
 
 static gboolean
-model_insert_details_ex( ofoOpeTemplate *model, const ofaDbms *dbms )
+model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *cnx )
 {
 	gboolean ok;
 	GList *idet;
@@ -1290,10 +1301,10 @@ model_insert_details_ex( ofoOpeTemplate *model, const ofaDbms *dbms )
 
 	ok = FALSE;
 
-	if( model_delete_details( model, dbms )){
+	if( model_delete_details( model, cnx )){
 		ok = TRUE;
 		for( idet=model->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !model_insert_details( model, dbms, rang, idet->data )){
+			if( !model_insert_details( model, cnx, rang, idet->data )){
 				ok = FALSE;
 				break;
 			}
@@ -1304,7 +1315,7 @@ model_insert_details_ex( ofoOpeTemplate *model, const ofaDbms *dbms )
 }
 
 static gboolean
-model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, GList *details )
+model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang, GList *details )
 {
 	GString *query;
 	gboolean ok;
@@ -1370,7 +1381,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, GLi
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1399,7 +1410,7 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, ofoDossier *dossier, cons
 
 		if( model_do_update(
 					ope_template,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ),
 					prev_mnemo )){
 
@@ -1413,14 +1424,14 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, ofoDossier *dossier, cons
 }
 
 static gboolean
-model_do_update( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user, const gchar *prev_mnemo )
+model_do_update( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo )
 {
-	return( model_update_main( model, dbms, user, prev_mnemo ) &&
-			model_insert_details_ex( model, dbms ));
+	return( model_update_main( model, cnx, user, prev_mnemo ) &&
+			model_insert_details_ex( model, cnx ));
 }
 
 static gboolean
-model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user, const gchar *prev_mnemo )
+model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo )
 {
 	gboolean ok;
 	GString *query;
@@ -1467,7 +1478,7 @@ model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 					stamp_str,
 					prev_mnemo );
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	ope_template_set_upd_user( model, user );
 	ope_template_set_upd_stamp( model, &stamp );
@@ -1499,7 +1510,7 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 
 		if( model_do_delete(
 					ope_template,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			OFA_IDATASET_REMOVE( dossier, OPE_TEMPLATE, ope_template );
 
@@ -1511,7 +1522,7 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 }
 
 static gboolean
-model_do_delete( ofoOpeTemplate *model, const ofaDbms *dbms )
+model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -1521,11 +1532,11 @@ model_do_delete( ofoOpeTemplate *model, const ofaDbms *dbms )
 			"	WHERE OTE_MNEMO='%s'",
 					ofo_ope_template_get_mnemo( model ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
-	ok &= model_delete_details( model, dbms );
+	ok &= model_delete_details( model, cnx );
 
 	return( ok );
 }
@@ -1784,13 +1795,13 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_OPE_TEMPLATE, FALSE );
 
-		model_do_drop_content( ofo_dossier_get_dbms( dossier ));
+		model_do_drop_content( ofo_dossier_get_connect( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
 			model = OFO_OPE_TEMPLATE( it->data );
 			if( !model_do_insert(
 					model,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 				errors -= 1;
 			}
@@ -1963,8 +1974,8 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 }
 
 static gboolean
-model_do_drop_content( const ofaDbms *dbms )
+model_do_drop_content( const ofaIDBConnect *cnx )
 {
-	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_OPE_TEMPLATES", TRUE ) &&
-			ofa_dbms_query( dbms, "DELETE FROM OFA_T_OPE_TEMPLATES_DET", TRUE ));
+	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_OPE_TEMPLATES", TRUE ) &&
+			ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_OPE_TEMPLATES_DET", TRUE ));
 }

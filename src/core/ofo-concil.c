@@ -30,7 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -56,12 +56,12 @@ struct _ofoConcilPrivate {
 
 G_DEFINE_TYPE( ofoConcil, ofo_concil, OFO_TYPE_BASE )
 
-static ofoConcil *concil_get_by_query( const gchar *query, const ofaDbms *dbms );
+static ofoConcil *concil_get_by_query( const gchar *query, const ofaIDBConnect *cnx );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
-static gboolean   concil_do_insert( ofoConcil *concil, const ofaDbms *dbms );
-static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaDbms *dbms );
-static gboolean   concil_do_delete( ofoConcil *concil, const ofaDbms *dbms );
+static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *cnx );
+static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *cnx );
+static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *cnx );
 
 static void
 concil_finalize( GObject *instance )
@@ -146,7 +146,7 @@ ofo_concil_get_by_id( const ofoDossier *dossier, ofxCounter rec_id )
 				"SELECT REC_ID,REC_DVAL,REC_USER,REC_STAMP FROM OFA_T_CONCIL "
 				"	WHERE REC_ID=%ld", rec_id );
 
-	concil = concil_get_by_query( query, ofo_dossier_get_dbms( dossier ));
+	concil = concil_get_by_query( query, ofo_dossier_get_connect( dossier ));
 
 	g_free( query );
 
@@ -169,6 +169,7 @@ ofo_concil_get_by_other_id( const ofoDossier *dossier, const gchar *type, ofxCou
 	gchar *query;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( my_strlen( type ), NULL );
 
 	query = g_strdup_printf(
 				"SELECT REC_ID,REC_DVAL,REC_USER,REC_STAMP FROM OFA_T_CONCIL "
@@ -176,7 +177,7 @@ ofo_concil_get_by_other_id( const ofoDossier *dossier, const gchar *type, ofxCou
 				"		(SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
 				"		WHERE REC_IDS_TYPE='%s' AND REC_IDS_OTHER=%ld)", type, other_id );
 
-	concil = concil_get_by_query( query, ofo_dossier_get_dbms( dossier ));
+	concil = concil_get_by_query( query, ofo_dossier_get_connect( dossier ));
 
 	g_free( query );
 
@@ -186,7 +187,7 @@ ofo_concil_get_by_other_id( const ofoDossier *dossier, const gchar *type, ofxCou
 /*
  */
 static ofoConcil *
-concil_get_by_query( const gchar *query, const ofaDbms *dbms )
+concil_get_by_query( const gchar *query, const ofaIDBConnect *cnx )
 {
 	ofoConcil *concil;
 	GSList *result, *irow, *icol;
@@ -198,7 +199,7 @@ concil_get_by_query( const gchar *query, const ofaDbms *dbms )
 
 	concil = NULL;
 
-	if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( cnx, query, &result, TRUE )){
 		if( g_slist_length( result ) == 1 ){
 			irow=result;
 			concil = ofo_concil_new();
@@ -213,14 +214,14 @@ concil_get_by_query( const gchar *query, const ofaDbms *dbms )
 			ofo_concil_set_stamp( concil,
 					my_utils_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 
 	if( concil ){
 		query2 = g_strdup_printf(
 				"SELECT REC_IDS_TYPE,REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
 				"	WHERE REC_ID=%ld", ofo_concil_get_id( concil ));
-		if( ofa_dbms_query_ex( dbms, query2, &result, TRUE )){
+		if( ofa_idbconnect_query_ex( cnx, query2, &result, TRUE )){
 			for( irow=result ; irow ; irow=irow->next ){
 				icol = ( GSList * ) irow->data;
 				type = g_strdup(( const gchar * ) icol->data );
@@ -229,7 +230,7 @@ concil_get_by_query( const gchar *query, const ofaDbms *dbms )
 				concil_add_other_id( concil, type, id );
 				g_free( type );
 			}
-			ofa_dbms_free_results( result );
+			ofa_idbconnect_free_results( result );
 		}
 		g_free( query2 );
 	}
@@ -474,7 +475,7 @@ ofo_concil_insert( ofoConcil *concil, ofoDossier *dossier )
 
 		if( concil_do_insert(
 					concil,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			g_signal_emit_by_name(
 					dossier, SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( concil ));
@@ -487,7 +488,7 @@ ofo_concil_insert( ofoConcil *concil, ofoDossier *dossier )
 }
 
 static gboolean
-concil_do_insert( ofoConcil *concil, const ofaDbms *dbms )
+concil_do_insert( ofoConcil *concil, const ofaIDBConnect *cnx )
 {
 	gchar *query, *sdate, *stamp;
 	gboolean ok;
@@ -501,7 +502,7 @@ concil_do_insert( ofoConcil *concil, const ofaDbms *dbms )
 			"	(%ld,'%s','%s','%s')",
 			ofo_concil_get_id( concil ), sdate, ofo_concil_get_user( concil ), stamp );
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( stamp );
 	g_free( sdate );
@@ -534,7 +535,7 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id, ofoDossi
 
 		if( concil_do_insert_id(
 					concil, type, id,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			g_signal_emit_by_name(
 					dossier, SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( concil ), NULL );
@@ -547,7 +548,7 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id, ofoDossi
 }
 
 static gboolean
-concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaDbms *dbms )
+concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -558,7 +559,7 @@ concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const 
 			"	(%ld,'%s',%ld)",
 			ofo_concil_get_id( concil ), type, id );
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -585,7 +586,7 @@ ofo_concil_delete( ofoConcil *concil, ofoDossier *dossier )
 
 		if( concil_do_delete(
 					concil,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			g_signal_emit_by_name(
 					dossier, SIGNAL_DOSSIER_DELETED_OBJECT, g_object_ref( concil ));
@@ -598,7 +599,7 @@ ofo_concil_delete( ofoConcil *concil, ofoDossier *dossier )
 }
 
 static gboolean
-concil_do_delete( ofoConcil *concil, const ofaDbms *dbms )
+concil_do_delete( ofoConcil *concil, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -608,7 +609,7 @@ concil_do_delete( ofoConcil *concil, const ofaDbms *dbms )
 			"	WHERE REC_ID=%ld",
 					ofo_concil_get_id( concil ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -617,7 +618,7 @@ concil_do_delete( ofoConcil *concil, const ofaDbms *dbms )
 			"	WHERE REC_ID=%ld",
 					ofo_concil_get_id( concil ));
 
-	ok &= ofa_dbms_query( dbms, query, TRUE );
+	ok &= ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 

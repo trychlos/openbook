@@ -32,9 +32,9 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-account.h"
@@ -97,9 +97,9 @@ static GList     *class_load_dataset( ofoDossier *dossier );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
-static gboolean   class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user );
-static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar *user );
-static gboolean   class_do_delete( ofoClass *class, const ofaDbms *dbms );
+static gboolean   class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean   class_do_delete( ofoClass *class, const ofaIDBConnect *cnx );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
@@ -108,7 +108,7 @@ static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileF
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
-static gboolean   class_do_drop_content( const ofaDbms *dbms );
+static gboolean   class_do_drop_content( const ofaIDBConnect *cnx );
 
 OFA_IDATASET_LOAD( CLASS, class );
 
@@ -243,7 +243,7 @@ class_load_dataset( ofoDossier *dossier )
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
 					OFO_TYPE_CLASS ));
 }
@@ -465,7 +465,7 @@ ofo_class_insert( ofoClass *class, ofoDossier *dossier )
 
 		if( class_do_insert(
 					class,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_ADD( dossier, CLASS, class );
@@ -478,7 +478,7 @@ ofo_class_insert( ofoClass *class, ofoDossier *dossier )
 }
 
 static gboolean
-class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user )
+class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -508,7 +508,7 @@ class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user )
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	if( ok ){
 		class_set_upd_user( class, user );
@@ -541,7 +541,7 @@ ofo_class_update( ofoClass *class, ofoDossier *dossier, gint prev_id )
 		if( class_do_update(
 					class,
 					prev_id,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			str = g_strdup_printf( "%d", prev_id );
@@ -556,7 +556,7 @@ ofo_class_update( ofoClass *class, ofoDossier *dossier, gint prev_id )
 }
 
 static gboolean
-class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar *user )
+class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -584,7 +584,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar
 			"	CLA_UPD_USER='%s',CLA_UPD_STAMP='%s'"
 			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		class_set_upd_user( class, user );
 		class_set_upd_stamp( class, &stamp );
 		ok = TRUE;
@@ -617,7 +617,7 @@ ofo_class_delete( ofoClass *class, ofoDossier *dossier )
 
 		if( class_do_delete(
 					class,
-					ofo_dossier_get_dbms( dossier ))){
+					ofo_dossier_get_connect( dossier ))){
 
 			OFA_IDATASET_REMOVE( dossier, CLASS, class );
 
@@ -629,7 +629,7 @@ ofo_class_delete( ofoClass *class, ofoDossier *dossier )
 }
 
 static gboolean
-class_do_delete( ofoClass *class, const ofaDbms *dbms )
+class_do_delete( ofoClass *class, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -639,7 +639,7 @@ class_do_delete( ofoClass *class, const ofaDbms *dbms )
 			"	WHERE CLA_NUMBER=%d",
 					ofo_class_get_number( class ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -842,12 +842,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, FALSE );
 
-		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
+		class_do_drop_content( ofo_dossier_get_connect( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
 			if( !class_do_insert(
 					OFO_CLASS( it->data ),
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 				errors -= 1;
 			}
@@ -867,7 +867,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static gboolean
-class_do_drop_content( const ofaDbms *dbms )
+class_do_drop_content( const ofaIDBConnect *cnx )
 {
-	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_CLASSES", TRUE ));
+	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_CLASSES", TRUE ));
 }

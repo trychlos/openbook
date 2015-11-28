@@ -34,7 +34,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-dbms-def.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -76,10 +76,10 @@ G_BEGIN_DECLS
 GList *ofo_base_init_fields_list( const ofsBoxDef *defs );
 
 GList *ofo_base_load_dataset    ( const ofsBoxDef *defs,
-											const ofaDbms *dbms, const gchar *from, GType type );
+											const ofaIDBConnect *cnx, const gchar *from, GType type );
 
 GList *ofo_base_load_rows       ( const ofsBoxDef *defs,
-											const ofaDbms *dbms, const gchar *from );
+											const ofaIDBConnect *cnx, const gchar *from );
 
 G_END_DECLS
 

@@ -33,8 +33,8 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
@@ -72,11 +72,11 @@ static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
-static gboolean    bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
-static gboolean    bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
-static gboolean    bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms );
-static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms );
+static gboolean    bat_do_insert( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean    bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx );
+static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *cnx );
 static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 
@@ -166,16 +166,16 @@ ofo_bat_new( void )
 static GList *
 bat_load_dataset( ofoDossier *dossier )
 {
-	const ofaDbms *dbms;
+	const ofaIDBConnect *cnx;
 	GSList *result, *irow, *icol;
 	ofoBat *bat;
 	GList *dataset;
 	GTimeVal timeval;
 
 	dataset = NULL;
-	dbms = ofo_dossier_get_dbms( dossier );
+	cnx = ofo_dossier_get_connect( dossier );
 
-	if( ofa_dbms_query_ex( dbms,
+	if( ofa_idbconnect_query_ex( cnx,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
@@ -241,7 +241,7 @@ bat_load_dataset( ofoDossier *dossier )
 			dataset = g_list_prepend( dataset, bat );
 		}
 
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -285,7 +285,7 @@ bat_find_by_id( GList *set, ofxCounter id )
 ofxCounter
 ofo_bat_get_id( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), OFO_BASE_UNSET_ID );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -302,7 +302,7 @@ ofo_bat_get_id( const ofoBat *bat )
 const gchar *
 ofo_bat_get_uri( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -319,7 +319,7 @@ ofo_bat_get_uri( const ofoBat *bat )
 const gchar *
 ofo_bat_get_format( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -336,7 +336,7 @@ ofo_bat_get_format( const ofoBat *bat )
 const GDate *
 ofo_bat_get_begin( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -353,7 +353,7 @@ ofo_bat_get_begin( const ofoBat *bat )
 const GDate *
 ofo_bat_get_end( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -370,7 +370,7 @@ ofo_bat_get_end( const ofoBat *bat )
 const gchar *
 ofo_bat_get_rib( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -387,7 +387,7 @@ ofo_bat_get_rib( const ofoBat *bat )
 const gchar *
 ofo_bat_get_currency( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -404,7 +404,7 @@ ofo_bat_get_currency( const ofoBat *bat )
 ofxAmount
 ofo_bat_get_solde_begin( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -421,7 +421,7 @@ ofo_bat_get_solde_begin( const ofoBat *bat )
 gboolean
 ofo_bat_get_solde_begin_set( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -438,7 +438,7 @@ ofo_bat_get_solde_begin_set( const ofoBat *bat )
 ofxAmount
 ofo_bat_get_solde_end( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -455,7 +455,7 @@ ofo_bat_get_solde_end( const ofoBat *bat )
 gboolean
 ofo_bat_get_solde_end_set( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -472,7 +472,7 @@ ofo_bat_get_solde_end_set( const ofoBat *bat )
 const gchar *
 ofo_bat_get_notes( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -489,7 +489,7 @@ ofo_bat_get_notes( const ofoBat *bat )
 const gchar *
 ofo_bat_get_account( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -506,7 +506,7 @@ ofo_bat_get_account( const ofoBat *bat )
 const gchar *
 ofo_bat_get_upd_user( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -523,7 +523,7 @@ ofo_bat_get_upd_user( const ofoBat *bat )
 const GTimeVal *
 ofo_bat_get_upd_stamp( const ofoBat *bat )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), NULL );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -554,6 +554,8 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 	gchar *primary, *secondary;
 	GtkWidget *dialog;
 
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	exists = FALSE;
 
 	sbegin = my_date_to_str( begin, MY_DATE_SQL );
@@ -575,7 +577,7 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 		g_string_append_printf( query, "AND BAT_END IS NULL" );
 	}
 
-	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query->str, &count, TRUE );
+	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query->str, &count, TRUE );
 
 	if( count > 0 ){
 		exists = TRUE;
@@ -648,7 +650,7 @@ ofo_bat_get_lines_count( const ofoBat *bat, const ofoDossier *dossier )
 		query = g_strdup_printf(
 						"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld",
 						ofo_bat_get_id( bat ));
-		ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+		ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 		g_free( query );
 
 		return( count );
@@ -679,7 +681,7 @@ ofo_bat_get_used_count( const ofoBat *bat, const ofoDossier *dossier )
 				"	REC_IDS_TYPE='%s' AND REC_IDS_OTHER IN "
 				"		(SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld)",
 				CONCIL_TYPE_BAT, ofo_bat_get_id( bat ));
-		ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+		ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 		g_free( query );
 
 		return( count );
@@ -695,7 +697,7 @@ ofo_bat_get_used_count( const ofoBat *bat, const ofoDossier *dossier )
 static void
 bat_set_id( ofoBat *bat, ofxCounter id )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -709,7 +711,7 @@ bat_set_id( ofoBat *bat, ofxCounter id )
 void
 ofo_bat_set_uri( ofoBat *bat, const gchar *uri )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -724,7 +726,7 @@ ofo_bat_set_uri( ofoBat *bat, const gchar *uri )
 void
 ofo_bat_set_format( ofoBat *bat, const gchar *format )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -739,7 +741,7 @@ ofo_bat_set_format( ofoBat *bat, const gchar *format )
 void
 ofo_bat_set_begin( ofoBat *bat, const GDate *date )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -753,7 +755,7 @@ ofo_bat_set_begin( ofoBat *bat, const GDate *date )
 void
 ofo_bat_set_end( ofoBat *bat, const GDate *date )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -767,7 +769,7 @@ ofo_bat_set_end( ofoBat *bat, const GDate *date )
 void
 ofo_bat_set_rib( ofoBat *bat, const gchar *rib )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -782,7 +784,7 @@ ofo_bat_set_rib( ofoBat *bat, const gchar *rib )
 void
 ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -797,7 +799,7 @@ ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 void
 ofo_bat_set_solde_begin( ofoBat *bat, ofxAmount solde )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -811,7 +813,7 @@ ofo_bat_set_solde_begin( ofoBat *bat, ofxAmount solde )
 void
 ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -825,7 +827,7 @@ ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set )
 void
 ofo_bat_set_solde_end( ofoBat *bat, ofxAmount solde )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -839,7 +841,7 @@ ofo_bat_set_solde_end( ofoBat *bat, ofxAmount solde )
 void
 ofo_bat_set_solde_end_set( ofoBat *bat, gboolean set )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -853,7 +855,7 @@ ofo_bat_set_solde_end_set( ofoBat *bat, gboolean set )
 void
 ofo_bat_set_notes( ofoBat *bat, const gchar *notes )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -868,7 +870,7 @@ ofo_bat_set_notes( ofoBat *bat, const gchar *notes )
 void
 ofo_bat_set_account( ofoBat *bat, const gchar *account )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -883,7 +885,7 @@ ofo_bat_set_account( ofoBat *bat, const gchar *account )
 static void
 bat_set_upd_user( ofoBat *bat, const gchar *upd_user )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -898,7 +900,7 @@ bat_set_upd_user( ofoBat *bat, const gchar *upd_user )
 static void
 bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 {
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
@@ -928,7 +930,7 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 
 		return( bat_do_insert(
 					bat,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier )));
 	}
 
@@ -936,13 +938,13 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 }
 
 static gboolean
-bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
+bat_do_insert( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 {
-	return( bat_insert_main( bat, dbms, user ));
+	return( bat_insert_main( bat, cnx, user ));
 }
 
 static gboolean
-bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
+bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *suri, *str;
@@ -1033,7 +1035,7 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		bat_set_upd_user( bat, user );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
@@ -1063,7 +1065,7 @@ ofo_bat_update( ofoBat *bat, ofoDossier *dossier )
 
 		if( bat_do_update(
 					bat,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFA_IDATASET_UPDATE( dossier, BAT, bat, NULL );
@@ -1079,7 +1081,7 @@ ofo_bat_update( ofoBat *bat, ofoDossier *dossier )
  * only notes may be updated
  */
 static gboolean
-bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
+bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *notes;
@@ -1112,7 +1114,7 @@ bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
 			"	WHERE BAT_ID=%ld", user, stamp_str, ofo_bat_get_id( bat ));
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		bat_set_upd_user( bat, user );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
@@ -1142,9 +1144,9 @@ ofo_bat_delete( ofoBat *bat, ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat, ( void * ) dossier );
 
-		if( bat_do_delete_main( bat, ofo_dossier_get_dbms( dossier ))){
+		if( bat_do_delete_main( bat, ofo_dossier_get_connect( dossier ))){
 
-			bat_do_delete_lines( bat, ofo_dossier_get_dbms( dossier ));
+			bat_do_delete_lines( bat, ofo_dossier_get_connect( dossier ));
 
 			OFA_IDATASET_REMOVE( dossier, BAT, bat );
 
@@ -1156,7 +1158,7 @@ ofo_bat_delete( ofoBat *bat, ofoDossier *dossier )
 }
 
 static gboolean
-bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms )
+bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -1166,7 +1168,7 @@ bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
@@ -1174,7 +1176,7 @@ bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms )
 }
 
 static gboolean
-bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms )
+bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *cnx )
 {
 	gchar *query;
 	gboolean ok;
@@ -1184,7 +1186,7 @@ bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 

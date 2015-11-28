@@ -34,8 +34,8 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
@@ -190,11 +190,11 @@ static gint         remediate_status( ofoDossier *dossier, gboolean remediate, c
 static void         on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order );
-static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
-static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *currency );
-static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
-static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model );
-static gint         entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
+static gint         entry_count_for_account( const ofaIDBConnect *cnx, const gchar *account );
+static gint         entry_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency );
+static gint         entry_count_for_ledger( const ofaIDBConnect *cnx, const gchar *ledger );
+static gint         entry_count_for_ope_template( const ofaIDBConnect *cnx, const gchar *model );
+static gint         entry_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo );
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, ofoDossier *dossier );
 static gboolean     entry_get_import_settled( const ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
@@ -205,7 +205,7 @@ static void         entry_set_settlement_user( ofoEntry *entry, const gchar *use
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
 static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofoDossier *dossier );
-static gboolean     entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
+static gboolean     entry_do_insert( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
@@ -213,9 +213,9 @@ static void         error_acc_number( void );
 static void         error_account( const gchar *number );
 static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
-static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
-static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
-static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
+static gboolean     entry_do_update( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaIDBConnect *cnx, ofxCounter number );
+static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
@@ -439,7 +439,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -457,7 +457,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -475,7 +475,7 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -493,7 +493,7 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -737,7 +737,7 @@ on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntrySta
 						new_status,
 						ofo_entry_get_number( entry ));
 
-	if( ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE )){
+	if( ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE )){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
 	}
@@ -912,7 +912,7 @@ ofo_entry_get_dataset_for_print_balance( ofoDossier *dossier,
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
 
-	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			sbal = g_new0( ofsAccountBalance, 1 );
 			icol = ( GSList * ) irow->data;
@@ -927,7 +927,7 @@ ofo_entry_get_dataset_for_print_balance( ofoDossier *dossier,
 					thisfn, sbal->account, sbal->debit, sbal->credit );
 			dataset = g_list_prepend( dataset, sbal );
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 	g_string_free( query, TRUE );
 
@@ -1195,7 +1195,7 @@ entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order 
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					query->str,
 					OFO_TYPE_ENTRY );
 
@@ -1227,13 +1227,13 @@ ofo_entry_use_account( const ofoDossier *dossier, const gchar *account )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_account( ofo_dossier_get_dbms( dossier ), account ) > 0 );
+	return( entry_count_for_account( ofo_dossier_get_connect( dossier ), account ) > 0 );
 }
 
 static gint
-entry_count_for_account( const ofaDbms *dbms, const gchar *account )
+entry_count_for_account( const ofaIDBConnect *cnx, const gchar *account )
 {
-	return( entry_count_for( dbms, "ENT_ACCOUNT", account ));
+	return( entry_count_for( cnx, "ENT_ACCOUNT", account ));
 }
 
 /**
@@ -1246,13 +1246,13 @@ ofo_entry_use_currency( const ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
+	return( entry_count_for_currency( ofo_dossier_get_connect( dossier ), currency ) > 0 );
 }
 
 static gint
-entry_count_for_currency( const ofaDbms *dbms, const gchar *currency )
+entry_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency )
 {
-	return( entry_count_for( dbms, "ENT_CURRENCY", currency ));
+	return( entry_count_for( cnx, "ENT_CURRENCY", currency ));
 }
 
 /**
@@ -1265,13 +1265,13 @@ ofo_entry_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_ledger( ofo_dossier_get_dbms( dossier ), ledger ) > 0 );
+	return( entry_count_for_ledger( ofo_dossier_get_connect( dossier ), ledger ) > 0 );
 }
 
 static gint
-entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
+entry_count_for_ledger( const ofaIDBConnect *cnx, const gchar *ledger )
 {
-	return( entry_count_for( dbms, "ENT_LEDGER", ledger ));
+	return( entry_count_for( cnx, "ENT_LEDGER", ledger ));
 }
 
 /**
@@ -1285,17 +1285,17 @@ ofo_entry_use_ope_template( const ofoDossier *dossier, const gchar *model )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_ope_template( ofo_dossier_get_dbms( dossier ), model ) > 0 );
+	return( entry_count_for_ope_template( ofo_dossier_get_connect( dossier ), model ) > 0 );
 }
 
 static gint
-entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model )
+entry_count_for_ope_template( const ofaIDBConnect *cnx, const gchar *model )
 {
-	return( entry_count_for( dbms, "ENT_OPE_TEMPLATE", model ));
+	return( entry_count_for( cnx, "ENT_OPE_TEMPLATE", model ));
 }
 
 static gint
-entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
+entry_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -1303,7 +1303,7 @@ entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE %s='%s'", field, mnemo );
 
-	ofa_dbms_query_int( dbms, query, &count, TRUE );
+	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
 
 	g_free( query );
 
@@ -1430,7 +1430,7 @@ ofo_entry_get_abr_status( const ofoEntry *entry )
 	ofaEntryStatus status;
 	gint i;
 
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
@@ -1497,6 +1497,8 @@ ofo_entry_get_exe_changed_count( ofoDossier *dossier,
 									const GDate *new_begin, const GDate *new_end )
 {
 	gint count_begin, count_end;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
 	count_begin = check_for_changed_begin_exe_dates( dossier, prev_begin, new_begin, FALSE );
 	count_end = check_for_changed_end_exe_dates( dossier, prev_end, new_end, FALSE );
@@ -1565,14 +1567,14 @@ ofo_entry_get_max_val_deffect( ofoDossier *dossier, const gchar *account, GDate 
 			"	ENT_ACCOUNT='%s' AND ENT_STATUS=%d",
 				account, ENT_STATUS_VALIDATED );
 
-	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query, &result, TRUE )){
 		if( result ){
 			icol = ( GSList * ) result->data;
 			if( icol && icol->data ){
 				my_date_set_from_sql( date, ( const gchar * ) icol->data );
 			}
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 	g_free( query );
 
@@ -1615,14 +1617,14 @@ ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDat
 		g_free( sdate );
 	}
 
-	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query->str, &result, TRUE )){
 		if( result ){
 			icol = ( GSList * ) result->data;
 			if( icol && icol->data ){
 				my_date_set_from_sql( date, ( const gchar * ) icol->data );
 			}
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 	}
 	g_string_free( query, TRUE );
 
@@ -1664,14 +1666,14 @@ ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDat
 
 		g_free( sdate );
 
-		if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+		if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query->str, &result, TRUE )){
 			if( result ){
 				icol = ( GSList * ) result->data;
 				if( icol && icol->data ){
 					my_date_set_from_sql( date, ( const gchar * ) icol->data );
 				}
 			}
-			ofa_dbms_free_results( result );
+			ofa_idbconnect_free_results( result );
 		}
 		g_string_free( query, TRUE );
 	}
@@ -1694,8 +1696,8 @@ ofo_entry_get_currencies( const ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( ofa_dbms_query_ex(
-			ofo_dossier_get_dbms( dossier ),
+	if( ofa_idbconnect_query_ex(
+			ofo_dossier_get_connect( dossier ),
 			"SELECT DISTINCT(ENT_CURRENCY) FROM OFA_T_ENTRIES ORDER BY ENT_CURRENCY ASC",
 			&result, TRUE )){
 
@@ -1706,7 +1708,7 @@ ofo_entry_get_currencies( const ofoDossier *dossier )
 				list = g_slist_append( list, g_strdup( icol->data ));
 			}
 		}
-		ofa_dbms_free_results( result );
+		ofa_idbconnect_free_results( result );
 		return( list );
 	}
 
@@ -1957,6 +1959,7 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofoDossier *dossier
 	gchar *sdeffect, *sdmin;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	is_valid = FALSE;
 
@@ -2076,6 +2079,8 @@ ofo_entry_new_with_data( ofoDossier *dossier,
 {
 	ofoEntry *entry;
 
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
 	if( !ofo_entry_is_valid( dossier, deffect, dope, label, account, currency, ledger, model, debit, credit )){
 		return( NULL );
 	}
@@ -2123,7 +2128,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 		entry_compute_status( entry, FALSE, dossier );
 
 		if( entry_do_insert( entry,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
@@ -2138,7 +2143,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 }
 
 static gboolean
-entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
+entry_do_insert( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -2149,7 +2154,7 @@ entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	const gchar *model;
 
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( OFA_IS_DBMS( dbms ), FALSE );
+	g_return_val_if_fail( OFA_IS_IDBCONNECT( cnx ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
@@ -2201,7 +2206,7 @@ entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 				user,
 				stamp_str );
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 
 		entry_set_upd_user( entry, user );
 		entry_set_upd_stamp( entry, &stamp );
@@ -2328,10 +2333,13 @@ ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
 {
 	gboolean ok;
 
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	ok = FALSE;
 
 	if( entry_do_update( entry,
-				ofo_dossier_get_dbms( dossier ),
+				ofo_dossier_get_connect( dossier ),
 				ofo_dossier_get_user( dossier ))){
 
 		g_signal_emit_by_name(
@@ -2345,7 +2353,7 @@ ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 static gboolean
-entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
+entry_do_update( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user )
 {
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre;
@@ -2355,7 +2363,7 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	const gchar *model, *cstr;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
+	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
@@ -2399,7 +2407,7 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 			"	WHERE ENT_NUMBER=%ld",
 			sdeb, scre, user, stamp_str, ofo_entry_get_number( entry ));
 
-	if( ofa_dbms_query( dbms, query->str, TRUE )){
+	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		entry_set_upd_user( entry, user );
 		entry_set_upd_stamp( entry, &stamp );
 		ok = TRUE;
@@ -2438,7 +2446,7 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCoun
 		if( do_update_settlement(
 						entry,
 						ofo_dossier_get_user( dossier ),
-						ofo_dossier_get_dbms( dossier ),
+						ofo_dossier_get_connect( dossier ),
 						number )){
 
 			g_signal_emit_by_name(
@@ -2453,7 +2461,7 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCoun
 }
 
 static gboolean
-do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number )
+do_update_settlement( ofoEntry *entry, const gchar *user, const ofaIDBConnect *cnx, ofxCounter number )
 {
 	GString *query;
 	gchar *stamp_str;
@@ -2483,7 +2491,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 	}
 
 	g_string_append_printf( query, "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
-	ok = ofa_dbms_query( dbms, query->str, TRUE );
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -2555,6 +2563,8 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 	ofoEntry *entry;
 	GList *dataset, *it;
 
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
 	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
 					"OFA_T_ENTRIES WHERE ENT_LEDGER='%s' AND ENT_STATUS=%d AND ENT_DEFFECT<='%s'",
@@ -2563,7 +2573,7 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					query,
 					OFO_TYPE_ENTRY );
 
@@ -2597,7 +2607,7 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 
 		if( do_delete_entry(
 					entry,
-					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_connect( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			g_signal_emit_by_name( G_OBJECT( dossier ),
@@ -2614,7 +2624,7 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 static gboolean
-do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
+do_delete_entry( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
@@ -2624,7 +2634,7 @@ do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 				"	ENT_STATUS=%d WHERE ENT_NUMBER=%ld",
 						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
 
-	ok = ofa_dbms_query( dbms, query, TRUE );
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
 
 	g_free( query );
 
