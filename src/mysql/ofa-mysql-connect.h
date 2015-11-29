@@ -64,13 +64,23 @@ typedef struct {
 }
 	ofaMySQLConnectClass;
 
-GType            ofa_mysql_connect_get_type( void ) G_GNUC_CONST;
+GType            ofa_mysql_connect_get_type           ( void ) G_GNUC_CONST;
 
-ofaMySQLConnect *ofa_mysql_connect_new     ( const ofaMySQLMeta *meta,
-													const ofaMySQLPeriod *period,
-													const gchar *account,
-													const gchar *password,
-													gchar **msg );
+ofaMySQLConnect *ofa_mysql_connect_new_for_meta_period( const ofaMySQLMeta *meta,
+															const ofaMySQLPeriod *period,
+															const gchar *account,
+															const gchar *password,
+															gchar **msg );
+
+ofaMySQLConnect *ofa_mysql_connect_new_for_server     ( const gchar *host,
+															const gchar *socket,
+															guint port,
+															const gchar *account,
+															const gchar *password,
+															gchar **msg );
+
+gchar           *ofa_mysql_connect_get_new_database   ( ofaMySQLConnect *connect,
+															const gchar *prev_database );
 
 G_END_DECLS
 

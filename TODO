@@ -516,7 +516,11 @@
                 (exe_dates_changed) sent on main window so that it may
                 automatically update window title
 
- 910
+ 910 2015-11-26 have an interface to let the DB provider define what it
+                expects for root credentials (eg: only account, only
+                password, both, other parms, ...)
+
+ 911
 
 -----------------------------------------------------------------------
  DONE

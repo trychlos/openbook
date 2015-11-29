@@ -1090,6 +1090,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofaIFileMeta *meta;
 	ofaIFilePeriod *period;
 	gboolean ok;
+	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
 	GtkApplication *application;
 	ofaFileDir *dir;
@@ -1099,23 +1100,22 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	priv = self->priv;
 
-	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
-	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
-
 	ofo_dossier_set_status( priv->dossier, DOS_STATUS_CLOSED );
 	ofo_dossier_update( priv->dossier );
 	ofa_main_window_update_title( priv->main_window );
 
+	meta = ofa_idbconnect_get_meta( priv->connect );
 	period = ofa_idbconnect_get_period( priv->connect );
-	/*
-	if( !ofa_idbms_archive(
-				priv->dbms, priv->dname, priv->p2_account, priv->p2_password,
-				priv->cur_account, begin_next, end_next )){
-				*/
+	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
+	end_old = ofo_dossier_get_exe_end( priv->dossier );
+	ofa_ifile_meta_update_period( meta, period, FALSE, begin_old, end_old );
+	g_object_unref( period );
+	g_object_unref( meta );
+
+	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
 	ok = ofa_idbconnect_archive_and_new(
 				priv->connect, priv->p2_account, priv->p2_password, begin_next, end_next );
-
-	g_object_unref( period );
 
 	if( !ok ){
 		my_utils_dialog_warning( _( "Unable to archive the dossier" ));

@@ -57,7 +57,8 @@ G_BEGIN_DECLS
  * ofaIFileMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @update_period: [should]: update a period in the settings.
+ * @new_period: [should]: defines a new period.
+ * @update_period: [should]: updates a period in the settings.
  *
  * This defines the interface that an #ofaIFileMeta should/must
  * implement.
@@ -79,7 +80,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint ( *get_interface_version )( const ofaIFileMeta *instance );
+	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
 
 	/**
 	 * update_period:
@@ -94,11 +95,11 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	void  ( *update_period )        ( ofaIFileMeta *instance,
-											ofaIFilePeriod *period,
-											gboolean current,
-											const GDate *begin,
-											const GDate *end );
+	void             ( *update_period )        ( ofaIFileMeta *instance,
+													ofaIFilePeriod *period,
+													gboolean current,
+													const GDate *begin,
+													const GDate *end );
 }
 	ofaIFileMetaInterface;
 
@@ -141,13 +142,16 @@ GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *m
 void            ofa_ifile_meta_set_periods               ( ofaIFileMeta *meta,
 																	GList *periods );
 
-ofaIFilePeriod *ofa_ifile_meta_get_current_period        ( const ofaIFileMeta *meta );
+void            ofa_ifile_meta_add_period                ( ofaIFileMeta *meta,
+																	ofaIFilePeriod *period );
 
 void            ofa_ifile_meta_update_period             ( ofaIFileMeta *meta,
 																	ofaIFilePeriod *period,
 																	gboolean current,
 																	const GDate *begin,
 																	const GDate *end );
+
+ofaIFilePeriod *ofa_ifile_meta_get_current_period        ( const ofaIFileMeta *meta );
 
 ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	ofaIFilePeriod *period,

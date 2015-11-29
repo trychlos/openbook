@@ -47,8 +47,8 @@ struct _ofaMySQLPeriodPrivate {
 
 static void            ifile_period_iface_init( ofaIFilePeriodInterface *iface );
 static guint           ifile_period_get_interface_version( const ofaIFilePeriod *instance );
-static ofaMySQLPeriod *read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key );
-static void            write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
+static ofaMySQLPeriod *read_from_settings( mySettings *settings, const gchar *group, const gchar *key );
+static void            write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_PERIOD, ifile_period_iface_init ));
@@ -135,8 +135,7 @@ ifile_period_get_interface_version( const ofaIFilePeriod *instance )
 }
 
 /**
- * ofa_mysql_period_new:
- * @instance: the #ofaIDBProvider which manages the dossier.
+ * ofa_mysql_period_new_from_settings:
  * @settings: the dossier settings file provided by the application.
  * @group: the settings group name.
  * @key: the key to be examined.
@@ -149,14 +148,14 @@ ifile_period_get_interface_version( const ofaIFilePeriod *instance )
  * by the caller.
  */
 ofaMySQLPeriod *
-ofa_mysql_period_new( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
+ofa_mysql_period_new_from_settings( mySettings *settings, const gchar *group, const gchar *key )
 {
 	ofaMySQLPeriod *period;
 
 	period = NULL;
 
 	if( g_str_has_prefix( key, MYSQL_DATABASE_KEY_PREFIX )){
-		period = read_period_from_settings( instance, settings, group, key );
+		period = read_from_settings( settings, group, key );
 	}
 
 	return( period );
@@ -168,7 +167,7 @@ ofa_mysql_period_new( const ofaIDBProvider *instance, mySettings *settings, cons
  * string = current / begin / end
  */
 static ofaMySQLPeriod *
-read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings, const gchar *group, const gchar *key )
+read_from_settings( mySettings *settings, const gchar *group, const gchar *key )
 {
 	ofaMySQLPeriod *period;
 	ofaMySQLPeriodPrivate *priv;
@@ -202,6 +201,53 @@ read_period_from_settings( const ofaIDBProvider *instance, mySettings *settings,
 			OFA_IFILE_PERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 
 	my_settings_free_string_list( strlist );
+
+	return( period );
+}
+
+/**
+ * ofa_mysql_period_new_to_settings:
+ * @settings: the #mySettings instance which holds the dossier settings
+ *  file.
+ * @group: the group name for this dossier.
+ * @current: whether the financial period is current.
+ * @begin: [allow-none]: the beginning date.
+ * @end: [allow-none]: the ending date.
+ * @database: the database name.
+ *
+ * Defines a new financial period in the dossier settings
+ *
+ * Returns: a reference to a new #ofaMySQLPeriod object, which
+ * implements the #ofaIFilePeriod interface.
+ */
+ofaMySQLPeriod *
+ofa_mysql_period_new_to_settings( mySettings *settings, const gchar *group,
+									gboolean current, const GDate *begin, const GDate *end, const gchar *database )
+{
+	ofaMySQLPeriod *period;
+	gchar *key, *sbegin, *send, *content;
+
+	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_return_val_if_fail( my_strlen( database ), NULL );
+
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, database );
+	sbegin = my_date_to_str( begin, MY_DATE_YYMD );
+	send = my_date_to_str( end, MY_DATE_YYMD );
+	content = g_strdup_printf( "%s;%s;%s;", current ? "True":"False", sbegin, send );
+
+	my_settings_set_string( settings, group, key, content );
+
+	g_free( content );
+	g_free( send );
+	g_free( sbegin );
+	g_free( key );
+
+	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
+	period->priv->dbname = g_strdup( database );
+	ofa_ifile_period_set_current( OFA_IFILE_PERIOD( period ), current );
+	ofa_ifile_period_set_begin_date( OFA_IFILE_PERIOD( period ), begin );
+	ofa_ifile_period_set_end_date( OFA_IFILE_PERIOD( period ), end );
 
 	return( period );
 }
@@ -260,12 +306,12 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 		ofa_ifile_period_set_end_date( OFA_IFILE_PERIOD( period ), end );
 
 		/* next update the settings */
-		write_period_in_settings( period, settings, group );
+		write_to_settings( period, settings, group );
 	}
 }
 
 static void
-write_period_in_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
+write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
 {
 	ofaMySQLPeriodPrivate *priv;
 	gchar *key, *content, *begin, *end;

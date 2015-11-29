@@ -40,6 +40,7 @@ typedef struct {
 	ofaIFileMeta   *meta;
 	ofaIFilePeriod *period;
 	gchar          *account;
+	gchar          *password;
 }
 	sIDBConnect;
 
@@ -51,6 +52,7 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType        register_type( void );
 static void         interface_base_init( ofaIDBConnectInterface *klass );
 static void         interface_base_finalize( ofaIDBConnectInterface *klass );
+static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
@@ -186,8 +188,7 @@ ofa_idbconnect_get_meta( const ofaIDBConnect *connect )
  *
  * The interface takes a reference on the @meta object, to make
  * sure it stays available. This reference will be automatically
- * released on @connect finalization. It is so important to not call
- * this method more than once.
+ * released on @connect finalization.
  */
 void
 ofa_idbconnect_set_meta( ofaIDBConnect *connect, const ofaIFileMeta *meta )
@@ -226,8 +227,7 @@ ofa_idbconnect_get_period( const ofaIDBConnect *connect )
  *
  * The interface takes a reference on the @period object, to make
  * sure it stays available. This reference will be automatically
- * released on @connect finalization. It is so important to not call
- * this method more than once.
+ * released on @connect finalization.
  */
 void
 ofa_idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period )
@@ -277,6 +277,41 @@ ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 }
 
 /**
+ * ofa_idbconnect_get_password:
+ * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: the password used to open the connection, as a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_idbconnect_get_password( const ofaIDBConnect *connect )
+{
+	sIDBConnect *data;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	data = get_idbconnect_data( connect );
+	return( g_strdup( data->password ));
+}
+
+/**
+ * ofa_idbconnect_set_password:
+ * @connect: this #ofaIDBConnect instance.
+ * @password: the password which holds the connection.
+ */
+void
+ofa_idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
+{
+	sIDBConnect *data;
+
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	data = get_idbconnect_data( connect );
+	g_free( data->password );
+	data->password = g_strdup( password );
+}
+
+/**
  * ofa_idbconnect_query:
  * @connect: this #ofaIDBConnect instance.
  * @query: the query to be executed.
@@ -297,15 +332,32 @@ ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( query ), FALSE );
 
+	ok = idbconnect_query( connect, query, display_error );
+	if( ok ){
+		audit_query( connect, query );
+	}
+
+	return( ok );
+}
+
+/*
+ * execute a query without audit
+ */
+static gboolean
+idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_idbconnect_query";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) connect, query, display_error ? "True":"False" );
+
 	ok = FALSE;
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->query ){
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->query( connect, query );
 		if( !ok && display_error ){
 			error_query( connect, query );
-		}
-		if( ok ){
-			audit_query( connect, query );
 		}
 
 	} else if( display_error ){
@@ -407,7 +459,7 @@ audit_query( const ofaIDBConnect *connect, const gchar *query )
 	quoted = quote_query( query );
 	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
 
-	ofa_idbconnect_query( connect, audit, FALSE );
+	idbconnect_query( connect, audit, FALSE );
 
 	g_free( quoted );
 	g_free( audit );
@@ -448,12 +500,8 @@ error_query( const ofaIDBConnect *connect, const gchar *query )
 				GTK_BUTTONS_OK,
 				"%s", query );
 
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error ){
-		str = OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error( connect );
-	} else {
-		str = g_strdup(
-				_( "The IDBConnect instance does not implement the get_last_error() method." ));
-	}
+	str = ofa_idbconnect_get_last_error( connect );
+
 	/* query_ex returns NULL if the result is empty: this is not an error */
 	if( my_strlen( str )){
 		gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dlg ), "%s", str );
@@ -465,8 +513,30 @@ error_query( const ofaIDBConnect *connect, const gchar *query )
 }
 
 /**
- * ofa_idbconnect_archive_and_new:
+ * ofa_idbconnect_get_last_error:
  * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: The last found error, as a newly allocated string which
+ * should be g_free() by the caller.
+ */
+gchar *
+ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
+{
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error ){
+		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error( connect ));
+	}
+
+	g_warning( _( "The IDBConnect instance does not implement the get_last_error() method." ));
+
+	return( NULL );
+}
+
+/**
+ * ofa_idbconnect_archive_and_new:
+ * @connect: this #ofaIDBConnect instance which handles an active user
+ *  connection on the closed exercice.
  * @root_account: the DBMS root account.
  * @root_password: the DBMS root password.
  * @begin_next: the beginning date of the new exercice.
@@ -475,7 +545,8 @@ error_query( const ofaIDBConnect *connect, const gchar *query )
  * Duplicate the storage space (the database) of the period
  * to a new one, and records the new properties as a new financial
  * period in the dossier settings.
- * Initialize user account with required permissions.
+ * Initialize curren user account with required permissions for the
+ * new database.
  *
  * Returns: %TRUE if successful.
  */

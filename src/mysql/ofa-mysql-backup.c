@@ -50,7 +50,10 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
+#include "ofa-mysql-connect.h"
 #include "ofa-mysql-idbms.h"
+#include "ofa-mysql-meta.h"
+#include "ofa-mysql-period.h"
 
 #define BUFSIZE 4096
 
@@ -70,7 +73,8 @@ static const gchar *st_window_name = "MySQLBackupWindow";
 
 static void        create_fake_database( const ofaIDbms *instance, mysqlInfos *infos );
 static gboolean    do_backup_restore( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
-static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *new_dbname );
+static gchar      *build_cmdline_infos( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *new_dbname );
+static gchar      *build_cmdline_ex( const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname );
 static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
 static GIOChannel *set_up_io_channel( gint fd, GIOFunc func, backupInfos *infos );
@@ -81,6 +85,7 @@ static gboolean    stderr_done( GIOChannel *ioc );
 static void        display_output( const gchar *str, backupInfos *infos );
 static void        exit_backup_cb( GPid child_pid, gint status, backupInfos *infos );
 static void        exit_restore_cb( GPid child_pid, gint status, backupInfos *infos );
+static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname );
 
 /**
  * ofa_mysql_get_def_backup_cmd:
@@ -191,7 +196,7 @@ create_fake_database( const ofaIDbms *instance, mysqlInfos *infos )
 	static const gchar *thisfn = "mfa_mysql_backup_create_fake_database";
 	gchar *cmdline, *stdout, *stderr;
 
-	cmdline = build_cmdline( infos, "/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", NULL, NULL );
+	cmdline = build_cmdline_infos( infos, "/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", NULL, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 	stdout = NULL;
 	stderr = NULL;
@@ -204,41 +209,73 @@ create_fake_database( const ofaIDbms *instance, mysqlInfos *infos )
 }
 
 /**
- * ofa_mysql_archive:
+ * ofa_mysql_archive_and_new:
+ * @connect: an active #ofaIDBConnect connection on the closed exercice.
+ *  The dossier settings has been updated accordingly.
+ * @root_account: administrator root account.
+ * @root_password: administrator root password.
+ * @begin_next: the beginning date of the next exercice.
+ * @end_next: the ending date of the next exercice.
  *
- * In the settings, the current exercice points to the database which
- * contains the newly closed exercice. Its status has been set as
- * 'Closed'.
- * Duplicate the corresponding database to a new one, updating the
- * settings accordingly.
+ * Duplicate the corresponding database to a new one, creating the
+ * corresponding line accordingly in the dossier settings.
  */
 gboolean
-ofa_mysql_archive( const ofaIDbms *instance,
-						const gchar *dname,
+ofa_mysql_archive_and_new( const ofaIDBConnect *connect,
 						const gchar *root_account, const gchar *root_password,
-						const gchar *user_account,
 						const GDate *begin_next, const GDate *end_next )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_archive";
-	mysqlInfos *infos;
+	static const gchar *thisfn = "ofa_mysql_backup_archive_and_new";
+	ofaMySQLConnect *new_cnx;
+	ofaIFileMeta *meta;
+	const gchar *host, *socket, *prev_dbname;
+	guint port;
+	ofaIFilePeriod *period;
+	gchar *new_db, *prev_account;
 	gboolean ok;
-	gchar *prev_dbname, *new_dbname, *stdout, *stderr;
-	gchar *cmdline, *cmd;
+	gchar *cmdline, *cmd, *stdout, *stderr;
 	gint status;
 
-	infos = ofa_mysql_get_connect_newdb_infos( dname, root_account, root_password, &prev_dbname );
-	if( !my_strlen( infos->dbname )){
+	/* meta informations on the current dossier */
+	meta = ofa_idbconnect_get_meta( connect );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+
+	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
+	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
+	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
+
+	new_cnx = ofa_mysql_connect_new_for_server(
+					host, socket, port, root_account, root_password, NULL );
+
+	if( !new_cnx ){
+		g_warning( "%s: unable to get a root connection on the DB server", thisfn );
+		g_object_unref( meta );
 		return( FALSE );
 	}
 
-	new_dbname = infos->dbname;
-	infos->dbname = prev_dbname;
+	/* get previous database from current connection on closed exercice */
+	period = ofa_idbconnect_get_period( connect );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
-	cmdline = build_cmdline( infos,
+	prev_dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
+
+	new_db = ofa_mysql_connect_get_new_database( new_cnx, prev_dbname );
+
+	g_object_unref( period );
+
+	if( !my_strlen( new_db )){
+		g_warning( "%s: unable to get a new database name", thisfn );
+		g_object_unref( meta );
+		g_object_unref( new_cnx );
+		return( FALSE );
+	}
+
+	cmdline = build_cmdline_ex(
+					host, socket, port, root_account, root_password, prev_dbname,
 					"mysql %O -u%U -p%P -e 'drop database if exists %N'; "
 					"mysql %O -u%U -p%P -e 'create database %N'; "
 					"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N",
-					NULL, new_dbname );
+					NULL, new_db );
 
 	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
 	g_debug( "%s: cmd=%s", thisfn, cmd );
@@ -263,16 +300,16 @@ ofa_mysql_archive( const ofaIDbms *instance,
 	g_free( cmdline );
 	g_free( cmd );
 
-	prev_dbname = infos->dbname;
-	infos->dbname = new_dbname;
-
 	if( ok ){
-		ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
-		ofa_mysql_duplicate_grants( instance, infos, user_account, prev_dbname );
+		ofa_mysql_meta_add_period( OFA_MYSQL_META( meta ), TRUE, begin_next, end_next, new_db );
+		//ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
+		prev_account = ofa_idbconnect_get_account( connect );
+		do_duplicate_grants( OFA_IDBCONNECT( new_cnx ), host, prev_account, prev_dbname, new_db );
+		g_free( prev_account );
 	}
 
-	g_free( prev_dbname );
-	ofa_mysql_free_connect_infos( infos );
+	g_free( new_db );
+	g_object_unref( new_cnx );
 
 	return( ok );
 }
@@ -289,7 +326,7 @@ do_backup_restore( const mysqlInfos *sql_infos,
 	gboolean ok;
 	guint source_id;
 
-	cmdline = build_cmdline( sql_infos, def_cmdline, fname, NULL );
+	cmdline = build_cmdline_infos( sql_infos, def_cmdline, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
 	infos = g_new0( backupInfos, 1 );
@@ -346,9 +383,9 @@ do_backup_restore( const mysqlInfos *sql_infos,
  * %U: account
  */
 static gchar *
-build_cmdline( const mysqlInfos *infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
+build_cmdline_infos( const mysqlInfos *infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline";
+	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline_infos";
 	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
@@ -410,6 +447,89 @@ build_cmdline( const mysqlInfos *infos, const gchar *def_cmdline, const gchar *f
 
 	regex = g_regex_new( "%U", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, infos->account, 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	return( cmdline );
+}
+
+/*
+ * %B: current database name
+ * %F: filename
+ * %N: new database name
+ * %O: connection options (host, port, socket)
+ * %P: password
+ * %U: account
+ */
+static gchar *
+build_cmdline_ex( const gchar *host, const gchar *socket, guint port,
+					const gchar *account, const gchar *password,
+					const gchar *dbname,
+					const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
+{
+	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline_ex";
+	gchar *sysfname, *cmdline;
+	GString *options;
+	GRegex *regex;
+	gchar *newcmd;
+	gchar *quoted;
+
+	cmdline = g_strdup( def_cmdline );
+	g_debug( "%s: def_cmdline=%s", thisfn, cmdline );
+
+	regex = g_regex_new( "%B", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, dbname, 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	if( my_strlen( fname )){
+		sysfname = my_utils_filename_from_utf8( fname );
+		quoted = g_shell_quote( sysfname );
+		regex = g_regex_new( "%F", 0, 0, NULL );
+		newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
+		g_regex_unref( regex );
+		g_free( quoted );
+		g_free( sysfname );
+		g_free( cmdline );
+		cmdline = newcmd;
+	}
+
+	if( my_strlen( new_dbname )){
+		regex = g_regex_new( "%N", 0, 0, NULL );
+		newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, new_dbname, 0, NULL );
+		g_regex_unref( regex );
+		g_free( cmdline );
+		cmdline = newcmd;
+	}
+
+	options = g_string_new( "" );
+	if( my_strlen( host )){
+		g_string_append_printf( options, "--host=%s ", host );
+	}
+	if( port > 0 ){
+		g_string_append_printf( options, "--port=%u ", port );
+	}
+	if( my_strlen( socket )){
+		g_string_append_printf( options, "--socket=%s ", socket );
+	}
+
+	regex = g_regex_new( "%O", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, options->str, 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+	g_string_free( options, TRUE );
+
+	regex = g_regex_new( "%P", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, password, 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	regex = g_regex_new( "%U", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, account, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
@@ -795,4 +915,60 @@ exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 	}
 
 	g_free( msg );
+}
+
+/*
+ * infos structure must have been already filled up with DBMS root
+ * credentials and target database
+ */
+static gboolean
+do_duplicate_grants( ofaIDBConnect *connect, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname )
+{
+	static const gchar *thisfn = "ofa_mysql_backup_do_duplicate_grants";
+	gchar *hostname, *query, *str;
+	GSList *result, *irow, *icol;
+	GRegex *regex;
+	const gchar *cstr;
+	gboolean ok;
+
+	hostname = g_strdup( host );
+	if( !my_strlen( hostname )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
+
+	query = g_strdup_printf( "SHOW GRANTS FOR '%s'@'%s'", user_account, hostname );
+	ok = ofa_idbconnect_query_ex( connect, query, &result, FALSE );
+	g_free( query );
+	if( !ok ){
+		g_warning( "%s: %s", thisfn, ofa_idbconnect_get_last_error( connect ));
+		goto free_stmt;
+	}
+
+	str = g_strdup_printf( " `(%s)`\\.\\* ", prev_dbname );
+	regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
+
+	str = g_strdup_printf( " `%s`.* ", new_dbname );
+	g_debug( "%s: str=%s", thisfn, str );
+
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = ( GSList * ) irow->data;
+		cstr = ( const gchar * ) icol->data;
+		g_debug( "%s: cstr=%s", thisfn, cstr );
+		if( g_regex_match( regex, cstr, 0, NULL )){
+			query = g_regex_replace_literal( regex, cstr, -1, 0, str, 0, NULL );
+			g_debug( "%s: query=%s", thisfn, query );
+			ofa_idbconnect_query( connect, query, FALSE );
+			g_free( query );
+		}
+	}
+
+	g_free( str );
+	g_regex_unref( regex );
+
+free_stmt:
+	g_free( hostname );
+
+	return( ok );
 }

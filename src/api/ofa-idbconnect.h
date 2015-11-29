@@ -179,6 +179,11 @@ gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *
 void            ofa_idbconnect_set_account               ( ofaIDBConnect *connect,
 																const gchar *account );
 
+gchar          *ofa_idbconnect_get_password              ( const ofaIDBConnect *connect );
+
+void            ofa_idbconnect_set_password              ( ofaIDBConnect *connect,
+																const gchar *password );
+
 gboolean        ofa_idbconnect_query                     ( const ofaIDBConnect *connect,
 															const gchar *query,
 															gboolean display_error );
@@ -196,6 +201,8 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 #define         ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
 																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
 																g_slist_free( L )
+
+gchar          *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *connect );
 
 gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
 															const gchar *root_account,

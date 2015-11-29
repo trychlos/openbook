@@ -42,16 +42,16 @@ struct _ofaMySQLMetaPrivate {
 	 */
 	gchar   *host;
 	gchar   *socket;
-	gint     port;
+	guint    port;
 };
 
 #define MYSQL_HOST_KEY                  "mysql-host"
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
-static void   ifile_meta_iface_init( ofaIFileMetaInterface *iface );
-static guint  ifile_meta_get_interface_version( const ofaIFileMeta *instance );
-static void   ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
+static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
+static void            ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -171,6 +171,7 @@ ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, m
 {
 	ofaMySQLMeta *meta;
 	ofaMySQLMetaPrivate *priv;
+	gint port;
 
 	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
 	priv = meta->priv;
@@ -178,10 +179,8 @@ ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, m
 	/* get server connection infos */
 	priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );
 	priv->socket = my_settings_get_string( settings, group, MYSQL_SOCKET_KEY );
-	priv->port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
-	if( priv->port == -1 ){
-		priv->port = 0;
-	}
+	port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
+	priv->port = ( port >= 0 ? port : 0 );
 
 	return( meta );
 }
@@ -243,7 +242,7 @@ ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
  * Returns: the listening port of the dataserver, or zero for the
  * default value.
  */
-gint
+guint
 ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
 {
 	ofaMySQLMetaPrivate *priv;
@@ -257,4 +256,34 @@ ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
 	}
 
 	return( 0 );
+}
+
+/**
+ * ofa_mysql_meta_add_period:
+ * @meta: this #ofaMySQLMeta instance.
+ * @current: whether the financial period (exercice) is current.
+ * @begin: [allow-none]: the beginning date.
+ * @end: [allow-none]: the ending date.
+ * @database: the database name.
+ *
+ * Defines a new financial period with the provided datas.
+ */
+void
+ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
+							gboolean current, const GDate *begin, const GDate *end, const gchar *database )
+{
+	ofaMySQLPeriod *period;
+	mySettings *settings;
+	gchar *group;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	settings = ofa_ifile_meta_get_settings( OFA_IFILE_META( meta ));
+	group = ofa_ifile_meta_get_group_name( OFA_IFILE_META( meta ));
+
+	period = ofa_mysql_period_new_to_settings( settings, group, current, begin, end, database );
+	ofa_ifile_meta_add_period( OFA_IFILE_META( meta ), OFA_IFILE_PERIOD( period ));
+	g_object_unref( period );
+
+	g_free( group );
 }

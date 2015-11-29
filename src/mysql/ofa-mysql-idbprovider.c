@@ -115,7 +115,7 @@ get_meta_periods( const ofaIDBProvider *instance, mySettings *settings, const gc
 
 	for( itk=keys ; itk ; itk=itk->next ){
 		cstr = ( const gchar * ) itk->data;
-		period = ofa_mysql_period_new( instance, settings, group, cstr );
+		period = ofa_mysql_period_new_from_settings( settings, group, cstr );
 		if( period ){
 			outlist = g_list_prepend( outlist, period );
 		}
@@ -150,7 +150,7 @@ idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta,
 		return( NULL );
 	}
 
-	connect = ofa_mysql_connect_new(
+	connect = ofa_mysql_connect_new_for_meta_period(
 					OFA_MYSQL_META( meta ), OFA_MYSQL_PERIOD( period ), account, password, msg );
 
 	return( OFA_IDBCONNECT( connect ));

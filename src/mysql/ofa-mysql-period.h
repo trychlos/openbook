@@ -62,16 +62,22 @@ typedef struct {
 }
 	ofaMySQLPeriodClass;
 
-GType           ofa_mysql_period_get_type    ( void ) G_GNUC_CONST;
+GType           ofa_mysql_period_get_type         ( void ) G_GNUC_CONST;
 
-ofaMySQLPeriod *ofa_mysql_period_new         ( const ofaIDBProvider *provider,
-														mySettings *settings,
+ofaMySQLPeriod *ofa_mysql_period_new_from_settings( mySettings *settings,
 														const gchar *group,
 														const gchar *key );
 
-const gchar    *ofa_mysql_period_get_database( const ofaMySQLPeriod *period );
+ofaMySQLPeriod *ofa_mysql_period_new_to_settings  ( mySettings *settings,
+														const gchar *group,
+														gboolean current,
+														const GDate *begin,
+														const GDate *end,
+														const gchar *database );
 
-void            ofa_mysql_period_update      ( ofaMySQLPeriod *period,
+const gchar    *ofa_mysql_period_get_database     ( const ofaMySQLPeriod *period );
+
+void            ofa_mysql_period_update           ( ofaMySQLPeriod *period,
 														mySettings *settings,
 														const gchar *group,
 														gboolean current,

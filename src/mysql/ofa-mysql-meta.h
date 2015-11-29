@@ -75,7 +75,13 @@ const gchar  *ofa_mysql_meta_get_host  ( const ofaMySQLMeta *meta );
 
 const gchar  *ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta );
 
-gint          ofa_mysql_meta_get_port  ( const ofaMySQLMeta *meta );
+guint         ofa_mysql_meta_get_port  ( const ofaMySQLMeta *meta );
+
+void          ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
+												gboolean current,
+												const GDate *begin,
+												const GDate *end,
+												const gchar *database );
 
 G_END_DECLS
 

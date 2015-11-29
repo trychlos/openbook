@@ -201,8 +201,12 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
  * valid, or %NULL.
 
  * When the connection is successfully opened, the interface keeps a
- * reference on @meta and @period objects, and user account (user
- * password is not kept for security reasons).
+ * reference on @meta and @period objects, and user account and
+ * password.
+ *
+ * Though keeping the user password may be seen as a weakness of the
+ * interface, this is nonetheless requireed in order to be able to
+ * open multiple connections with these same credentials.
  *
  * The implementation is expected to take care of gracefully closing
  * the DB connection when the object is released.
@@ -221,6 +225,7 @@ ofa_idbprovider_connect_dossier( const ofaIDBProvider *instance,
 			ofa_idbconnect_set_meta( connect, meta );
 			ofa_idbconnect_set_period( connect, period );
 			ofa_idbconnect_set_account( connect, account );
+			ofa_idbconnect_set_password( connect, password );
 		}
 		return( connect );
 	}

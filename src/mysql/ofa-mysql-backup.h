@@ -30,6 +30,7 @@
  * @short_description: #ofaMysql class definition.
  */
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbms.h"
 
 G_BEGIN_DECLS
@@ -49,13 +50,11 @@ gboolean     ofa_mysql_restore            ( const ofaIDbms *instance,
 														const gchar *account,
 														const gchar *password );
 
-gboolean     ofa_mysql_archive            ( const ofaIDbms *instance,
-														const gchar *dname,
-														const gchar *account,
-														const gchar *password,
-														const gchar *user_account,
-														const GDate *begin_next,
-														const GDate *end_next );
+gboolean     ofa_mysql_archive_and_new    ( const ofaIDBConnect *connect,
+												const gchar *root_account,
+												const gchar *root_password,
+												const GDate *begin_next,
+												const GDate *end_next );
 
 G_END_DECLS
 

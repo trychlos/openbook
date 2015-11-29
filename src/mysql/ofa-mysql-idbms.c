@@ -105,7 +105,7 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->grant_user = idbms_grant_user;
 	iface->backup = ofa_mysql_backup;
 	iface->restore = ofa_mysql_restore;
-	iface->archive = ofa_mysql_archive;
+	//iface->archive = ofa_mysql_archive;
 #if 0
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
