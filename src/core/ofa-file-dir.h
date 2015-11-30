@@ -30,12 +30,13 @@
  * @short_description: #ofaFileDir class definition.
  * @include: openbook/ofa-file-dir.h
  *
- * This class manages the dossiers directory.
+ * This class manages the dossiers directory as a list of #ofaIFileMeta
+ * instances.
+ *
  * It is defined to be implemented as a singleton by any program of the
  * Openbook software suite. It takes care of maintaining itself up-to-
- * date.
- *
- * The instance sends a 'changed' signal when the directory changes.
+ * date, and sends a 'changed' signal when the directory has changed
+ * and has been reloaded.
  *
  * This is an Openbook software suite decision to have the dossiers
  * directory stored in a single dedicated ini file, said dossiers
