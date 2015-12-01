@@ -170,7 +170,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window,
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p, meta=%p, period=%p, account=%s, password=%s",
-			thisfn, ( void * ) main_window, ( void * ) meta, ( void * ) period, account, password );
+			thisfn, ( void * ) main_window, ( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
