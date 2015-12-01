@@ -370,6 +370,39 @@ ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
 	}
 }
 
+/**
+ * ofa_ifile_period_dump:
+ * @period: this #ofaIFilePeriod instance.
+ *
+ * Dump the object.
+ */
+void
+ofa_ifile_period_dump( const ofaIFilePeriod *period )
+{
+	static const gchar *thisfn = "ofa_ifile_period_dump";
+	sIFilePeriod *data;
+	gchar *begin, *end;
+
+	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+
+	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->dump ){
+		OFA_IFILE_PERIOD_GET_INTERFACE( period )->dump( period );
+	}
+
+	data = get_ifile_period_data( period );
+	begin = my_date_to_str( &data->begin, MY_DATE_SQL );
+	end = my_date_to_str( &data->end, MY_DATE_SQL );
+
+	g_debug( "%s: period=%p (%s)",
+			thisfn, ( void * ) period, G_OBJECT_TYPE_NAME( period ));
+	g_debug( "%s:   begin=%s", thisfn, begin );
+	g_debug( "%s:   end=%s", thisfn, end );
+	g_debug( "%s:   current=%s", thisfn, data->current ? "True":"False" );
+
+	g_free( begin );
+	g_free( end );
+}
+
 static sIFilePeriod *
 get_ifile_period_data( const ofaIFilePeriod *period )
 {

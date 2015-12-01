@@ -50,6 +50,7 @@ typedef struct _ofaIFilePeriod                     ofaIFilePeriod;
  * ofaIFilePeriodInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @dump: [should]: dump the object.
  *
  * This defines the interface that an #ofaIFilePeriod should/must
  * implement.
@@ -72,6 +73,14 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint    ( *get_interface_version )( const ofaIFilePeriod *instance );
+
+	/**
+	 * dump:
+	 * @instance: the #ofaIFilePeriod instance.
+	 *
+	 * Dump the object.
+	 */
+	void     ( *dump )                 ( const ofaIFilePeriod *instance );
 }
 	ofaIFilePeriodInterface;
 
@@ -103,6 +112,7 @@ gchar       *ofa_ifile_period_get_label                 ( const ofaIFilePeriod *
 gint         ofa_ifile_period_compare                   ( const ofaIFilePeriod *a,
 																const ofaIFilePeriod *b );
 
+void         ofa_ifile_period_dump                      ( const ofaIFilePeriod *period );
 
 G_END_DECLS
 
