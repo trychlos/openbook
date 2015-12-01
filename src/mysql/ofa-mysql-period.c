@@ -47,6 +47,7 @@ struct _ofaMySQLPeriodPrivate {
 
 static void            ifile_period_iface_init( ofaIFilePeriodInterface *iface );
 static guint           ifile_period_get_interface_version( const ofaIFilePeriod *instance );
+static void            ifile_period_dump( const ofaIFilePeriod *instance );
 static ofaMySQLPeriod *read_from_settings( mySettings *settings, const gchar *group, const gchar *key );
 static void            write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
 
@@ -126,12 +127,24 @@ ifile_period_iface_init( ofaIFilePeriodInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_period_get_interface_version;
+	iface->dump = ifile_period_dump;
 }
 
 static guint
 ifile_period_get_interface_version( const ofaIFilePeriod *instance )
 {
 	return( 1 );
+}
+
+static void
+ifile_period_dump( const ofaIFilePeriod *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_period_dump";
+	ofaMySQLPeriodPrivate *priv;
+
+	priv = OFA_MYSQL_PERIOD( instance )->priv;
+	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
+	g_debug( "%s:   dbname=%s", thisfn, priv->dbname );
 }
 
 /**
