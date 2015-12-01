@@ -29,7 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
+#include "api/ofa-idbconnect.h"
 
 #include "core/ofa-dbms-root-bin.h"
 
@@ -48,6 +48,7 @@ struct _ofaDBMSRootBinPrivate {
 	/* runtime data
 	 */
 	gchar        *dname;
+	ofaIFileMeta *meta;
 	gchar        *account;
 	gchar        *password;
 };
@@ -106,6 +107,7 @@ dbms_root_bin_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
+		g_clear_object( &priv->meta );
 	}
 
 	/* chain up to the parent class */
@@ -326,6 +328,35 @@ ofa_dbms_root_bin_set_dossier( ofaDBMSRootBin *bin, const gchar *dname )
 	}
 }
 
+/**
+ * ofa_dbms_root_bin_set_meta:
+ * @bin: this #ofaDBMSRootBin instance.
+ * @meta: the #ofaIFileMeta object which holds meta dossier datas.
+ *
+ * When set, this let the composite widget validate the account and the
+ * password against the actual DBMS which manages this dossier.
+ * Else, we only check if account and password are set.
+ *
+ * The composite widget takes a reference on the provided @meta object.
+ * This reference will be released on widget destroy.
+ */
+void
+ofa_dbms_root_bin_set_meta( ofaDBMSRootBin *bin, ofaIFileMeta *meta )
+{
+	ofaDBMSRootBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		g_clear_object( &priv->meta );
+		priv->meta = g_object_ref( meta );
+	}
+}
+
 static void
 on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self )
 {
@@ -413,7 +444,8 @@ static gboolean
 is_valid_composite( const ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
-	ofaDbms *dbms;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
 	gboolean ok;
 
 	priv = bin->priv;
@@ -423,12 +455,16 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 		ok = TRUE;
 
 		/* this only works if the dossier is already registered */
-		if( my_strlen( priv->dname )){
-			dbms = ofa_dbms_new();
-			ok = ofa_dbms_connect(
-							dbms, priv->dname, NULL, priv->account, priv->password, FALSE );
-			g_object_unref( dbms );
-
+		if( priv->meta ){
+			ok = FALSE;
+			provider = ofa_ifile_meta_get_provider_instance( priv->meta );
+			if( provider ){
+				connect = ofa_idbprovider_connect_server(
+									provider, priv->meta, priv->account, priv->password, NULL );
+				ok = ( connect && OFA_IS_IDBCONNECT( connect ));
+				g_clear_object( &connect );
+			}
+			g_clear_object( &provider );
 			ofa_dbms_root_bin_set_valid( bin, ok );
 		}
 	}

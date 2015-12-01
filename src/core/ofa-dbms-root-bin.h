@@ -30,7 +30,8 @@
  * @short_description: #ofaDBMSRootBin class definition.
  * @include: core/ofa-dbms-root-bin.h
  *
- * Let the user enter DBMS administrator account and password.
+ * Let the user enter DBMS administrator/root/superuser account and
+ * password.
  *
  * The widget is considered valid here if account and password are both
  * set, and - if the dossier is set - valid to connect to an unnamed
@@ -44,6 +45,8 @@
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-ifile-meta.h"
 
 G_BEGIN_DECLS
 
@@ -76,22 +79,25 @@ GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
 ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
 
 GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( const ofaDBMSRootBin *bin,
-																guint column );
+														guint column );
 
 void            ofa_dbms_root_bin_grab_focus     ( const ofaDBMSRootBin *bin );
 
 void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
-																const gchar *dname );
+														const gchar *dname );
+
+void            ofa_dbms_root_bin_set_meta       ( ofaDBMSRootBin *bin,
+														ofaIFileMeta *meta );
 
 gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
-																gchar **error_message );
+														gchar **error_message );
 
 void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
-																gboolean valid );
+														gboolean valid );
 
 void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
-																const gchar *account,
-																const gchar *password );
+														const gchar *account,
+														const gchar *password );
 
 G_END_DECLS
 
