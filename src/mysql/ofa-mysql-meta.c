@@ -52,6 +52,7 @@ struct _ofaMySQLMetaPrivate {
 static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
 static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
 static void            ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            ifile_meta_dump( const ofaIFileMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
@@ -131,6 +132,7 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 
 	iface->get_interface_version = ifile_meta_get_interface_version;
 	iface->update_period = ifile_meta_update_period;
+	iface->dump = ifile_meta_dump;
 }
 
 static guint
@@ -154,6 +156,19 @@ ifile_meta_update_period( ofaIFileMeta *instance,
 	ofa_mysql_period_update( OFA_MYSQL_PERIOD( period ), settings, group, current, begin, end );
 
 	g_free( group );
+}
+
+static void
+ifile_meta_dump( const ofaIFileMeta *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_meta_dump";
+	ofaMySQLMetaPrivate *priv;
+
+	priv = OFA_MYSQL_META( instance )->priv;
+	g_debug( "%s: meta=%p", thisfn, ( void * ) instance );
+	g_debug( "%s:   host=%s", thisfn, priv->host );
+	g_debug( "%s:   socket=%s", thisfn, priv->socket );
+	g_debug( "%s:   port=%u", thisfn, priv->port );
 }
 
 /**
