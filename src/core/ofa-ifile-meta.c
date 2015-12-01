@@ -522,6 +522,52 @@ ofa_ifile_meta_get_connection( ofaIFileMeta *meta,
 	return( connect );
 }
 
+/**
+ * ofa_ifile_meta_dump:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Dumps data.
+ */
+void
+ofa_ifile_meta_dump( const ofaIFileMeta *meta )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_dump";
+	sIFileMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	data = get_ifile_meta_data( meta );
+
+	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
+	g_debug( "%s:   prov_instance=%p", thisfn, ( void * ) data->prov_instance );
+	g_debug( "%s:   prov_name=%s", thisfn, data->prov_name );
+	g_debug( "%s:   dossier_name=%s", thisfn, data->dossier_name );
+	g_debug( "%s:   settings=%p", thisfn, ( void * ) data->settings );
+	g_debug( "%s:   group_name=%s", thisfn, data->group_name );
+	g_debug( "%s:   periods=%p (length=%u)", thisfn, ( void * ) data->periods, g_list_length( data->periods ));
+}
+
+/**
+ * ofa_ifile_meta_dump_rec:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Recursively dumps data.
+ */
+void
+ofa_ifile_meta_dump_rec( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+	GList *it;
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+	ofa_ifile_meta_dump( meta );
+	data = get_ifile_meta_data( meta );
+	for( it=data->periods ; it ; it=it->next ){
+		ofa_ifile_period_dump( OFA_IFILE_PERIOD( it->data ));
+	}
+}
+
 static sIFileMeta *
 get_ifile_meta_data( const ofaIFileMeta *meta )
 {

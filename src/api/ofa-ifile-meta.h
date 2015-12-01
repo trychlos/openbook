@@ -57,8 +57,8 @@ G_BEGIN_DECLS
  * ofaIFileMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @new_period: [should]: defines a new period.
  * @update_period: [should]: updates a period in the settings.
+ * @dump: [should]: dump data.
  *
  * This defines the interface that an #ofaIFileMeta should/must
  * implement.
@@ -92,14 +92,20 @@ typedef struct {
 	 *
 	 * Update the dossier settings for this @period with the specified
 	 * datas.
-	 *
-	 * Defaults to 1.
 	 */
 	void             ( *update_period )        ( ofaIFileMeta *instance,
 													ofaIFilePeriod *period,
 													gboolean current,
 													const GDate *begin,
 													const GDate *end );
+
+	/**
+	 * dump:
+	 * @instance: the #ofaIFileMeta instance.
+	 *
+	 * Dumps the @instance.
+	 */
+	void             ( *dump )                 ( const ofaIFileMeta *instance );
 }
 	ofaIFileMetaInterface;
 
@@ -158,6 +164,10 @@ ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
 																	const gchar *account,
 																	const gchar *password,
 																	gchar **msg );
+
+void            ofa_ifile_meta_dump                      ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_dump_rec                 ( const ofaIFileMeta *meta );
 
 G_END_DECLS
 
