@@ -244,7 +244,7 @@ load_dossiers( ofaFileDir *dir )
 	const gchar *cstr;
 	gchar *dos_name, *prov_name;
 	ofaIDBProvider *idbprovider;
-	ofaIFileMeta *dossier;
+	ofaIFileMeta *meta;
 
 	priv = dir->priv;
 	outlist = NULL;
@@ -253,6 +253,7 @@ load_dossiers( ofaFileDir *dir )
 
 	for( it=inlist ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
+		g_debug( "%s: group=%s", thisfn, cstr );
 		if( g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
 			dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
 			if( !my_strlen( dos_name )){
@@ -272,8 +273,9 @@ load_dossiers( ofaFileDir *dir )
 				g_free( prov_name );
 				continue;
 			}
-			dossier = ofa_idbprovider_get_dossier_meta( idbprovider, dos_name, priv->settings, cstr );
-			outlist = g_list_prepend( outlist, dossier );
+			meta = ofa_idbprovider_get_dossier_meta( idbprovider, dos_name, priv->settings, cstr );
+			ofa_ifile_meta_dump_rec( meta );
+			outlist = g_list_prepend( outlist, meta );
 			g_free( prov_name );
 			g_free( dos_name );
 		}
