@@ -70,9 +70,8 @@ struct _ofaExerciceCloseAssistantPrivate {
 	 */
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
+	ofaIFileMeta         *meta;
 	gchar                *dos_name;
-	const gchar          *cur_account;
-	const gchar          *cur_password;
 
 	/* p1 - closing parms
 	 */
@@ -217,11 +216,17 @@ exercice_close_assistant_finalize( GObject *instance )
 static void
 exercice_close_assistant_dispose( GObject *instance )
 {
+	ofaExerciceCloseAssistantPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_EXERCICE_CLOSE_ASSISTANT( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_EXERCICE_CLOSE_ASSISTANT( instance )->priv;
+
+		g_clear_object( &priv->connect );
+		g_clear_object( &priv->meta );
 	}
 
 	/* chain up to the parent class */
@@ -291,7 +296,6 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
-	ofaIFileMeta *meta;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -300,9 +304,8 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->connect = ofo_dossier_get_connect( priv->dossier );
-	meta = ofa_idbconnect_get_meta( priv->connect );
-	priv->dos_name = ofa_ifile_meta_get_dossier_name( meta );
-	g_object_unref( meta );
+	priv->meta = ofa_idbconnect_get_meta( priv->connect );
+	priv->dos_name = ofa_ifile_meta_get_dossier_name( priv->meta );
 }
 
 static void
@@ -519,7 +522,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_dbms_credentials = ofa_dbms_root_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbms_credentials ));
-	ofa_dbms_root_bin_set_dossier( priv->p2_dbms_credentials, priv->dos_name );
+	ofa_dbms_root_bin_set_meta( priv->p2_dbms_credentials, priv->meta );
 
 	g_signal_connect(
 			priv->p2_dbms_credentials, "ofa-changed", G_CALLBACK( p2_on_dbms_root_changed ), self );
@@ -1087,14 +1090,13 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
 	const ofaIDBConnect *cnx;
-	ofaIFileMeta *meta;
 	ofaIFilePeriod *period;
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
 	GtkApplication *application;
 	ofaFileDir *dir;
-	gchar *msg;
+	gchar *msg, *str, *cur_account, *cur_password;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1104,13 +1106,11 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_update( priv->dossier );
 	ofa_main_window_update_title( priv->main_window );
 
-	meta = ofa_idbconnect_get_meta( priv->connect );
 	period = ofa_idbconnect_get_period( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
-	ofa_ifile_meta_update_period( meta, period, FALSE, begin_old, end_old );
+	ofa_ifile_meta_update_period( priv->meta, period, FALSE, begin_old, end_old );
 	g_object_unref( period );
-	g_object_unref( meta );
 
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
@@ -1130,21 +1130,25 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
 		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
 
-		meta = ofa_file_dir_get_meta( dir, priv->dos_name );
-		g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
-
-		period = ofa_ifile_meta_get_current_period( meta );
+		period = ofa_ifile_meta_get_current_period( priv->meta );
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+		ofa_ifile_period_dump( period );
+
+		cur_account = ofa_idbconnect_get_account( priv->connect );
+		cur_password = ofa_idbconnect_get_password( priv->connect );
 
 		cnx = ofa_ifile_meta_get_connection(
-						meta, period, priv->cur_account, priv->cur_password, &msg);
+					priv->meta, period, cur_account, cur_password, &msg);
 
-		g_object_unref( meta );
+		g_free( cur_password );
+		g_free( cur_account );
 		g_object_unref( period );
 
 		if( !cnx ){
-			my_utils_dialog_warning( msg );
+			str = g_strdup_printf( _( "Unable to open a connection on the new exercice: %s" ), msg );
+			my_utils_dialog_warning( str );
 			g_free( msg );
+			g_free( str );
 			my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 			my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
 			ok = FALSE;
