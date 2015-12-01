@@ -341,16 +341,13 @@ ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean
 }
 
 /*
- * execute a query without audit
+ * execute a query
+ * may display an error message
  */
 static gboolean
 idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
 {
-	static const gchar *thisfn = "ofa_idbconnect_query";
 	gboolean ok;
-
-	g_debug( "%s: connect=%p, query='%s', display_error=%s",
-			thisfn, ( void * ) connect, query, display_error ? "True":"False" );
 
 	ok = FALSE;
 
