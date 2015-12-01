@@ -143,6 +143,27 @@ typedef struct {
 														const gchar *account,
 														const gchar *password,
 														gchar **msg );
+
+	/**
+	 * connect_server:
+	 * @instance: the #ofaIDBProvider provider.
+	 * @meta: the #ofaIFileMeta instance which manages the dossier.
+	 * @account: the user account.
+	 * @password: the user password.
+	 * @msg: an error message placeholder.
+	 *
+	 * Return value: an object which implements the #ofaIDBConnect
+	 * interface, and handles the connection to the DBMS server which
+	 * holds the @meta dossier, with root (superuser) credentials,
+	 * or %NULL if unable to open a valid connection.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBConnect * ( *connect_server )       ( const ofaIDBProvider *instance,
+														ofaIFileMeta *meta,
+														const gchar *account,
+														const gchar *password,
+														gchar **msg );
 }
 	ofaIDBProviderInterface;
 
@@ -163,6 +184,14 @@ ofaIDBConnect  *ofa_idbprovider_connect_dossier           ( const ofaIDBProvider
 																		const gchar *account,
 																		const gchar *password,
 																		gchar **msg );
+
+ofaIDBConnect  *ofa_idbprovider_connect_server            ( const ofaIDBProvider *instance,
+																		ofaIFileMeta *meta,
+																		const gchar *account,
+																		const gchar *password,
+																		gchar **msg );
+
+const gchar    *ofa_idbprovider_get_name                  ( const ofaIDBProvider *instance );
 
 ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
 

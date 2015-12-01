@@ -41,7 +41,6 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *get_provider_by_name( GList *modules, const gchar *name );
-static const gchar    *get_provider_name( const ofaIDBProvider *instance );
 
 /**
  * ofa_idbprovider_get_type:
@@ -179,6 +178,7 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta ){
 		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta( instance, dossier_name, settings, group );
 		ofa_ifile_meta_set_provider_instance( meta, instance );
+		ofa_ifile_meta_set_provider_name( meta, g_strdup( ofa_idbprovider_get_name( instance )));
 		ofa_ifile_meta_set_dossier_name( meta, dossier_name );
 		ofa_ifile_meta_set_settings( meta, settings );
 		ofa_ifile_meta_set_group_name( meta, group );
@@ -237,6 +237,75 @@ ofa_idbprovider_connect_dossier( const ofaIDBProvider *instance,
 }
 
 /**
+ * ofa_idbprovider_connect_server:
+ * @instance: this #ofaIDBProvider instance.
+ * @meta: the #ofaIFileMeta instance which manages the dossier.
+ * @account: the user account.
+ * @password: the user password.
+ * @msg: a placeholder for error message.
+ *
+ * This (tries to) opens a server-level connection to the DBMS which
+ * manages the @meta dossier, with root (superuser) credentials.
+ *
+ * Returns: a handle to the opened connection if user credentials are
+ * valid, or %NULL.
+ *
+ * When the connection is successfully opened, the interface keeps a
+ * reference on @meta object, and user account and password.
+ *
+ * Though keeping the user password may be seen as a weakness of the
+ * interface, this is nonetheless requireed in order to be able to
+ * open multiple connections with these same credentials.
+ *
+ * The implementation is expected to take care of gracefully closing
+ * the DB connection when the object is released.
+ */
+ofaIDBConnect *
+ofa_idbprovider_connect_server( const ofaIDBProvider *instance,
+					ofaIFileMeta *meta, const gchar *account, const gchar *password, gchar **msg )
+{
+	ofaIDBConnect *connect;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_server ){
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_server( instance, meta, account, password, msg );
+		if( connect ){
+			ofa_idbconnect_set_meta( connect, meta );
+			ofa_idbconnect_set_account( connect, account );
+			ofa_idbconnect_set_password( connect, password );
+		}
+		return( connect );
+	}
+
+	if( msg ){
+		*msg = g_strdup( _( "The IDBProvider does not provide 'connect_server' interface" ));
+	}
+	return( NULL );
+}
+
+/**
+ * ofa_idbprovider_get_name:
+ * @instance: this #ofaIDBProvider instance.
+ *
+ * Returns: the name of this @instance.
+ *
+ * The returned string is owned by the #ofaIDBProvider instance, and
+ * should not be released by the caller.
+ */
+const gchar *
+ofa_idbprovider_get_name( const ofaIDBProvider *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbprovider_get_instance_by_name:
  * @provider_name: the name of the provider as published in the
  *  settings.
@@ -268,7 +337,7 @@ get_provider_by_name( GList *modules, const gchar *name )
 	instance = NULL;
 
 	for( im=modules ; im ; im=im->next ){
-		provider_name = get_provider_name( OFA_IDBPROVIDER( im->data ));
+		provider_name = ofa_idbprovider_get_name( OFA_IDBPROVIDER( im->data ));
 		if( !g_utf8_collate( provider_name, name )){
 			instance = g_object_ref( OFA_IDBPROVIDER( im->data ));
 			break;
@@ -276,14 +345,4 @@ get_provider_by_name( GList *modules, const gchar *name )
 	}
 
 	return( instance );
-}
-
-static const gchar *
-get_provider_name( const ofaIDBProvider *instance )
-{
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
-	}
-
-	return( NULL );
 }
