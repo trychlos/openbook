@@ -217,7 +217,7 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_acc
 /**
  * ofa_mysql_connect_new_for_meta_period:
  * @meta: the #ofaMySQLMeta object which manages the dossier.
- * @period: the #ofaMySQLPeriod object which handles the exercice.
+ * @period: [allow-none]: the #ofaMySQLPeriod object which handles the exercice.
  * @account: the user account.
  * @password: the user password.
  * @msg: an error message placeholder.
@@ -238,7 +238,7 @@ ofa_mysql_connect_new_for_meta_period( const ofaMySQLMeta *meta, const ofaMySQLP
 	MYSQL *mysql;
 
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
-	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), NULL );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), NULL );
 
 	connect = NULL;
 
@@ -246,7 +246,7 @@ ofa_mysql_connect_new_for_meta_period( const ofaMySQLMeta *meta, const ofaMySQLP
 					ofa_mysql_meta_get_host( meta ),
 					ofa_mysql_meta_get_socket( meta ),
 					ofa_mysql_meta_get_port( meta ),
-					ofa_mysql_period_get_database( period ),
+					period ? ofa_mysql_period_get_database( period ) : NULL,
 					account,
 					password,
 					msg );
