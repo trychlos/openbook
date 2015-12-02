@@ -87,6 +87,7 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p2_furi;
 	ofaDossierTreeview     *p2_dossier_treeview;
 	GtkWidget              *p2_new_dossier_btn;
+	ofaIFileMeta           *p2_meta;
 	gchar                  *p2_dossier;
 	gchar                  *p2_database;
 	ofaIDbms               *p2_idbms;
@@ -273,6 +274,7 @@ restore_assistant_dispose( GObject *instance )
 		priv = OFA_RESTORE_ASSISTANT( instance )->priv;
 
 		/* unref object members here */
+		g_clear_object( &priv->p2_meta );
 		g_clear_object( &priv->p2_idbms );
 		g_clear_object( &priv->p3_hgroup );
 	}
@@ -533,12 +535,24 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 static void
 p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
+	ofaRestoreAssistantPrivate *priv;
+
+	priv = assistant->priv;
+	g_clear_object( &priv->p2_meta );
+	priv->p2_meta = g_object_ref( meta );
+
 	p2_check_for_complete( assistant );
 }
 
 static void
 p2_on_dossier_activated( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
+	ofaRestoreAssistantPrivate *priv;
+
+	priv = assistant->priv;
+	g_clear_object( &priv->p2_meta );
+	priv->p2_meta = g_object_ref( meta );
+
 	if( p2_check_for_complete( assistant )){
 		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( assistant )));
 	}
@@ -582,10 +596,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	g_free( priv->p2_dossier );
-	priv->p2_dossier =
-			ofa_dossier_treeview_get_selected( priv->p2_dossier_treeview, DOSSIER_COL_DOSNAME );
-	ok = my_strlen( priv->p2_dossier ) > 0;
+	ok = ( priv->p2_meta && OFA_IS_IFILE_META( priv->p2_meta ));
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 

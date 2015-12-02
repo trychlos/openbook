@@ -146,6 +146,7 @@ ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
 	return( 1 );
 }
 
+#if 0
 /**
  * ofa_idbprovider_get_dossier_meta:
  * @instance: this #ofaIDBProvider instance.
@@ -183,6 +184,57 @@ ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *d
 		ofa_ifile_meta_set_settings( meta, settings );
 		ofa_ifile_meta_set_group_name( meta, group );
 		return( meta );
+	}
+
+	return( NULL );
+}
+#endif
+
+/**
+ * ofa_idbprovider_load_meta:
+ * @instance: this #ofaIDBProvider instance.
+ * @meta: a pointer to a ofaIFileMeta object; the object may be null or
+ *  a reference to an existing #ofaIFileMeta.
+ * @dossier_name: the name of the dossier.
+ * @settings: the #mySettings instance in which the application has
+ *  chosen to store its dossiers meta datas
+ * @group: the group name identifying the desired dossier.
+ *
+ * Returns: either the same #ofaIFileMeta @meta object if not null,
+ *  or a new one which should be g_object_unref() by the caller.
+ *
+ * The interface keeps a reference on @settings object and a copy of
+ * @group string, so that these same informations will be available
+ * later. It takes care of releasing the reference / freeing the copy
+ * on #ofaIFileMeta finalization.
+ *
+ * As a consequence, the #ofaIDBProvider instance does not need to
+ * store itself a copy of these informations.
+ */
+ofaIFileMeta *
+ofa_idbprovider_load_meta( const ofaIDBProvider *instance, ofaIFileMeta **meta,
+									const gchar *dossier_name, mySettings *settings, const gchar *group )
+{
+	gboolean existed;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( meta && ( !*meta || OFA_IS_IFILE_META( *meta )), NULL );
+	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
+	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
+
+	existed = ( *meta != NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->load_meta ){
+		*meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->load_meta( instance, meta, dossier_name, settings, group );
+		if( !existed ){
+			ofa_ifile_meta_set_provider_instance( *meta, instance );
+			ofa_ifile_meta_set_provider_name( *meta, g_strdup( ofa_idbprovider_get_name( instance )));
+			ofa_ifile_meta_set_dossier_name( *meta, dossier_name );
+			ofa_ifile_meta_set_settings( *meta, settings );
+			ofa_ifile_meta_set_group_name( *meta, group );
+		}
+		return( *meta );
 	}
 
 	return( NULL );

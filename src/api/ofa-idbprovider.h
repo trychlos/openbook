@@ -56,7 +56,7 @@ G_BEGIN_DECLS
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
- * @get_dossier_meta: [should]: returns the dossier meta datas.
+ * @load_meta: [should]: returns the dossier meta datas.
  * @get_dossier_periods: [should]: returns the defined periods of the dossier.
  * @connect_dossier: [should]: connect to the specified dossier.
  *
@@ -105,19 +105,22 @@ typedef struct {
 	const gchar *   ( *get_provider_name )    ( const ofaIDBProvider *instance );
 
 	/**
-	 * get_dossier_meta:
+	 * load_meta:
 	 * @instance: the #ofaIDBProvider provider.
+	 * @meta: a pointer to a ofaIFileMeta object; the object may be
+	 *  null or a reference to an existing #ofaIFileMeta.
 	 * @dssier_name: the name of the dossier.
 	 * @settings: the #mySettings instance.
 	 * @group: the group name in the settings.
 	 *
-	 * Return value: an #ofaIFileMeta object which holds dossier name
-	 * and other external properties. The returned reference should be
-	 * g_object_unref() by the caller.
+	 * Return value: either the same #ofaIFileMeta @meta object if not
+	 * null, or a new one which should be g_object_unref() by the
+	 * caller.
 	 *
 	 * Since: version 1
 	 */
-	ofaIFileMeta *  ( *get_dossier_meta )     ( const ofaIDBProvider *instance,
+	ofaIFileMeta *  ( *load_meta )            ( const ofaIDBProvider *instance,
+														ofaIFileMeta **meta,
 														const gchar *dossier_name,
 														mySettings *settings,
 														const gchar *group );
@@ -173,7 +176,8 @@ guint           ofa_idbprovider_get_interface_last_version( void );
 
 guint           ofa_idbprovider_get_interface_version     ( const ofaIDBProvider *instance );
 
-ofaIFileMeta   *ofa_idbprovider_get_dossier_meta          ( const ofaIDBProvider *instance,
+ofaIFileMeta   *ofa_idbprovider_load_meta                 ( const ofaIDBProvider *instance,
+																		ofaIFileMeta **meta,
 																		const gchar *dossier_name,
 																		mySettings *settings,
 																		const gchar *group );

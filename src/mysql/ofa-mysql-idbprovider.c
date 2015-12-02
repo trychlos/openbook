@@ -41,12 +41,13 @@
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
-static guint          idbprovider_get_interface_version( const ofaIDBProvider *instance );
-static ofaIFileMeta  *idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group );
-static GList         *get_meta_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group );
-static ofaIDBConnect *idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg );
-static ofaIDBConnect *idbprovider_connect_server( const ofaIDBProvider *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password, gchar **msg );
-static void           set_message( gchar **dest, const gchar *message );
+static guint           idbprovider_get_interface_version( const ofaIDBProvider *instance );
+static ofaIFileMeta   *idbprovider_load_meta( const ofaIDBProvider *instance, ofaIFileMeta **meta, const gchar *dossier_name, mySettings *settings, const gchar *group );
+static GList          *meta_load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group );
+static ofaMySQLPeriod *meta_find_period( ofaMySQLPeriod *period, GList *list );
+static ofaIDBConnect  *idbprovider_connect_dossier( const ofaIDBProvider *instance, ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg );
+static ofaIDBConnect  *idbprovider_connect_server( const ofaIDBProvider *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password, gchar **msg );
+static void            set_message( gchar **dest, const gchar *message );
 
 /*
  * #ofaIDBProvider interface setup
@@ -60,7 +61,7 @@ ofa_mysql_idbprovider_iface_init( ofaIDBProviderInterface *iface )
 
 	iface->get_interface_version = idbprovider_get_interface_version;
 	iface->get_provider_name = ofa_mysql_idbprovider_get_provider_name;
-	iface->get_dossier_meta = idbprovider_get_dossier_meta;
+	iface->load_meta = idbprovider_load_meta;
 	iface->connect_dossier = idbprovider_connect_dossier;
 	iface->connect_server = idbprovider_connect_server;
 }
@@ -84,48 +85,79 @@ ofa_mysql_idbprovider_get_provider_name( const ofaIDBProvider *instance )
 }
 
 /*
- * instanciates a new ofaMySQLMeta object which holds dossier meta datas
+ * instanciates or reuses a new ofaMySQLMeta object which holds dossier
+ * meta datas
  */
 static ofaIFileMeta *
-idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
+idbprovider_load_meta( const ofaIDBProvider *instance, ofaIFileMeta **meta,
+							const gchar *dossier_name, mySettings *settings, const gchar *group )
 {
-	ofaMySQLMeta *meta;
 	GList *periods;
 
-	meta = ofa_mysql_meta_new( instance, dossier_name, settings, group );
+	if( !*meta ){
+		*meta = ( ofaIFileMeta * ) ofa_mysql_meta_new( instance, dossier_name, settings, group );
+	}
 
-	periods = get_meta_periods( instance, settings, group );
-	ofa_ifile_meta_set_periods( OFA_IFILE_META( meta ), periods );
+	periods = meta_load_periods( *meta, settings, group );
+	ofa_ifile_meta_set_periods( *meta, periods );
 	ofa_ifile_meta_free_periods( periods );
 
-	return( OFA_IFILE_META( meta ));
+	return( *meta );
 }
 
 /*
- * list the defined periods
+ * returns the list the defined periods, making its best to reuse
+ *  existing references
  */
 static GList *
-get_meta_periods( const ofaIDBProvider *instance, mySettings *settings, const gchar *group )
+meta_load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
 {
-	GList *outlist;
+	GList *outlist, *prev_list;
 	GList *keys, *itk;
 	const gchar *cstr;
-	ofaMySQLPeriod *period;
+	ofaMySQLPeriod *new_period, *exist_period, *period;
 
 	keys = my_settings_get_keys( settings, group );
+	prev_list = ofa_ifile_meta_get_periods( meta );
 	outlist = NULL;
 
 	for( itk=keys ; itk ; itk=itk->next ){
 		cstr = ( const gchar * ) itk->data;
-		period = ofa_mysql_period_new_from_settings( settings, group, cstr );
-		if( period ){
+		/* define a new period with the settings */
+		new_period = ofa_mysql_period_new_from_settings( settings, group, cstr );
+		if( new_period ){
+			/* search for this period in the previous list */
+			exist_period = meta_find_period( new_period, prev_list );
+			if( exist_period ){
+				period = exist_period;
+				g_object_unref( new_period );
+			} else {
+				period = new_period;
+			}
 			outlist = g_list_prepend( outlist, period );
 		}
 	}
 
+	ofa_ifile_meta_free_periods( prev_list );
 	my_settings_free_keys( keys );
 
 	return( g_list_reverse( outlist ));
+}
+
+static ofaMySQLPeriod *
+meta_find_period( ofaMySQLPeriod *period, GList *list )
+{
+	GList *it;
+	ofaMySQLPeriod *current;
+
+	for( it=list ; it ; it=it->next ){
+		current = ( ofaMySQLPeriod * ) it->data;
+		if( ofa_ifile_period_compare( OFA_IFILE_PERIOD( current ), OFA_IFILE_PERIOD( period )) == 0 ){
+			return( g_object_ref( current ));
+		}
+	}
+
+	return( NULL );
 }
 
 static ofaIDBConnect *

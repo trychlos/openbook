@@ -64,20 +64,23 @@ typedef struct {
 }
 	ofaMySQLMetaClass;
 
-GType         ofa_mysql_meta_get_type  ( void ) G_GNUC_CONST;
+GType         ofa_mysql_meta_get_type    ( void ) G_GNUC_CONST;
 
-ofaMySQLMeta *ofa_mysql_meta_new       ( const ofaIDBProvider *provider,
+ofaMySQLMeta *ofa_mysql_meta_new         ( const ofaIDBProvider *provider,
 												const gchar *dossier_name,
 												mySettings *settings,
 												const gchar *group );
 
-const gchar  *ofa_mysql_meta_get_host  ( const ofaMySQLMeta *meta );
+void          ofa_mysql_meta_load_periods( ofaMySQLMeta *meta,
+												GList *keys );
 
-const gchar  *ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta );
+const gchar  *ofa_mysql_meta_get_host    ( const ofaMySQLMeta *meta );
 
-guint         ofa_mysql_meta_get_port  ( const ofaMySQLMeta *meta );
+const gchar  *ofa_mysql_meta_get_socket  ( const ofaMySQLMeta *meta );
 
-void          ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
+guint         ofa_mysql_meta_get_port    ( const ofaMySQLMeta *meta );
+
+void          ofa_mysql_meta_add_period  ( ofaMySQLMeta *meta,
 												gboolean current,
 												const GDate *begin,
 												const GDate *end,

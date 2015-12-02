@@ -47,6 +47,7 @@ struct _ofaMySQLPeriodPrivate {
 
 static void            ifile_period_iface_init( ofaIFilePeriodInterface *iface );
 static guint           ifile_period_get_interface_version( const ofaIFilePeriod *instance );
+static gint            ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b );
 static void            ifile_period_dump( const ofaIFilePeriod *instance );
 static ofaMySQLPeriod *read_from_settings( mySettings *settings, const gchar *group, const gchar *key );
 static void            write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
@@ -127,6 +128,7 @@ ifile_period_iface_init( ofaIFilePeriodInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_period_get_interface_version;
+	iface->compare = ifile_period_compare;
 	iface->dump = ifile_period_dump;
 }
 
@@ -134,6 +136,20 @@ static guint
 ifile_period_get_interface_version( const ofaIFilePeriod *instance )
 {
 	return( 1 );
+}
+
+static gint
+ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
+{
+	ofaMySQLPeriodPrivate *a_priv, *b_priv;
+	gint cmp;
+
+	a_priv = OFA_MYSQL_PERIOD( a )->priv;
+	b_priv = OFA_MYSQL_PERIOD( b )->priv;
+
+	cmp = g_utf8_collate( a_priv->dbname, b_priv->dbname );
+
+	return( cmp );
 }
 
 static void

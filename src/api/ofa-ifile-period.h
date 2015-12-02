@@ -50,6 +50,7 @@ typedef struct _ofaIFilePeriod                     ofaIFilePeriod;
  * ofaIFilePeriodInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @compare: [should]: compare two objects.
  * @dump: [should]: dump the object.
  *
  * This defines the interface that an #ofaIFilePeriod should/must
@@ -73,6 +74,17 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint    ( *get_interface_version )( const ofaIFilePeriod *instance );
+
+	/**
+	 * compare:
+	 * @a: the #ofaIFilePeriod instance.
+	 * @b: another #ofaIFilePeriod instance.
+	 *
+	 * Returns: 0 if @a and @b have the same content, -1 if @a < @b,
+	 *  +1 if @a > @b.
+	 */
+	gint     ( *compare )              ( const ofaIFilePeriod *a,
+												const ofaIFilePeriod *b );
 
 	/**
 	 * dump:

@@ -516,11 +516,22 @@
                 (exe_dates_changed) sent on main window so that it may
                 automatically update window title
 
- 910 2015-11-26 have an interface to let the DB provider define what it
-                expects for root credentials (eg: only account, only
-                password, both, other parms, ...)
+ 910 2015-11-30 let the user configure the main title as a preference
 
- 911
+ 911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
+
+ 912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
+                or update it to be able to get a meta and/or a period
+
+
+ 913 2015-12- 2 myDialog/myWindow: distinguish the main window (resp.
+                the application) which is needed to get access to 
+                global vars, from the parent window which may not be
+                the main window
+
+ 914 2015-12- 2 add filename to ofaFileDir::changed signal args
+
+ 915
 
 -----------------------------------------------------------------------
  DONE

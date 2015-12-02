@@ -59,9 +59,10 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void   setup_settings( ofaFileDir *dir );
-static void   on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
-static GList *load_dossiers( ofaFileDir *dir );
+static void          setup_settings( ofaFileDir *dir );
+static void          on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
+static GList        *load_dossiers( ofaFileDir *dir, GList *previous_list );
+static ofaIFileMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
 
 G_DEFINE_TYPE( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT )
 
@@ -224,17 +225,21 @@ static void
 on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir )
 {
 	ofaFileDirPrivate *priv;
+	GList *prev_list;
 
 	priv = dir->priv;
-
-	ofa_file_dir_free_dossiers( priv->list );
-	priv->list = load_dossiers( dir );
+	prev_list = priv->list;
+	priv->list = load_dossiers( dir, prev_list );
+	ofa_file_dir_free_dossiers( prev_list );
 
 	g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ));
 }
 
+/*
+ * @prev_list: the list before reloading the dossiers
+ */
 static GList *
-load_dossiers( ofaFileDir *dir )
+load_dossiers( ofaFileDir *dir, GList *prev_list )
 {
 	static const gchar *thisfn = "ofa_file_dir_load_dossiers";
 	ofaFileDirPrivate *priv;
@@ -254,12 +259,19 @@ load_dossiers( ofaFileDir *dir )
 	for( it=inlist ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
 		g_debug( "%s: group=%s", thisfn, cstr );
-		if( g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
-			dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
-			if( !my_strlen( dos_name )){
-				g_warning( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
-				continue;
-			}
+		if( !g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
+			continue;
+		}
+		dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
+		if( !my_strlen( dos_name )){
+			g_warning( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
+			continue;
+		}
+		meta = file_dir_get_meta( dos_name, prev_list );
+		if( meta ){
+			prov_name = ofa_ifile_meta_get_provider_name( meta );
+			idbprovider = ofa_ifile_meta_get_provider_instance( meta );
+		} else {
 			prov_name = my_settings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
 				g_warning( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
@@ -267,18 +279,21 @@ load_dossiers( ofaFileDir *dir )
 				continue;
 			}
 			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
-			if( !idbprovider ){
-				g_warning( "%s: unable to find an instance for %s DBMS provider name, skipping", thisfn, prov_name );
-				g_free( dos_name );
-				g_free( prov_name );
-				continue;
-			}
-			meta = ofa_idbprovider_get_dossier_meta( idbprovider, dos_name, priv->settings, cstr );
-			ofa_ifile_meta_dump_rec( meta );
-			outlist = g_list_prepend( outlist, meta );
-			g_free( prov_name );
-			g_free( dos_name );
 		}
+		if( !idbprovider ){
+			g_warning( "%s: unable to find an instance for %s DBMS provider name, skipping", thisfn, prov_name );
+			g_free( dos_name );
+			g_free( prov_name );
+			continue;
+		}
+		/* meta may be null or a reference to the previous meta
+		 * but is nonetheless expected to be set on return */
+		ofa_idbprovider_load_meta( idbprovider, &meta, dos_name, priv->settings, cstr );
+		ofa_ifile_meta_dump_rec( meta );
+		outlist = g_list_prepend( outlist, meta );
+		g_free( prov_name );
+		g_free( dos_name );
+		g_object_unref( idbprovider );
 	}
 
 	my_settings_free_groups( inlist );
@@ -317,31 +332,40 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
  * the meta datas for the specified @dossier_name, or %NULL if not
  * found.
  *
- * the returned reference should be g_object_unref() by the caller.
+ * The returned reference should be g_object_unref() by the caller.
  */
 ofaIFileMeta *
 ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
 {
 	ofaFileDirPrivate *priv;
-	GList *it;
-	ofaIFileMeta *meta;
-	gchar *meta_dos_name;
-	gint cmp;
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
 
 	priv = dir->priv;
 
 	if( !priv->dispose_has_run ){
-		for( it=priv->list ; it ; it=it->next ){
-			meta = ( ofaIFileMeta * ) it->data;
-			g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-			meta_dos_name = ofa_ifile_meta_get_dossier_name( meta );
-			cmp = g_utf8_collate( meta_dos_name, dossier_name );
-			g_free( meta_dos_name );
-			if( cmp == 0 ){
-				return( g_object_ref( meta ));
-			}
+		return( file_dir_get_meta( dossier_name, priv->list ));
+	}
+
+	return( NULL );
+}
+
+static ofaIFileMeta *
+file_dir_get_meta( const gchar *dossier_name, GList *list )
+{
+	GList *it;
+	ofaIFileMeta *meta;
+	gchar *meta_dos_name;
+	gint cmp;
+
+	for( it=list ; it ; it=it->next ){
+		meta = ( ofaIFileMeta * ) it->data;
+		g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+		meta_dos_name = ofa_ifile_meta_get_dossier_name( meta );
+		cmp = g_utf8_collate( meta_dos_name, dossier_name );
+		g_free( meta_dos_name );
+		if( cmp == 0 ){
+			return( g_object_ref( meta ));
 		}
 	}
 

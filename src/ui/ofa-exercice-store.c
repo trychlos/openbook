@@ -148,28 +148,18 @@ ofa_exercice_store_new( void )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExerciceStore *store )
 {
-	gchar *abegin, *bbegin;
-	GDate ad, bd;
+	ofaIFilePeriod *a_period, *b_period;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, EXERCICE_COL_BEGIN, &abegin, -1 );
-	gtk_tree_model_get( tmodel, b, EXERCICE_COL_BEGIN, &bbegin, -1 );
+	gtk_tree_model_get( tmodel, a, EXERCICE_COL_PERIOD, &a_period, -1 );
+	g_object_unref( a_period );
+	gtk_tree_model_get( tmodel, b, EXERCICE_COL_PERIOD, &b_period, -1 );
+	g_object_unref( b_period );
 
-	my_date_set_from_str( &ad, abegin, ofa_prefs_date_display());
-	my_date_set_from_str( &bd, bbegin, ofa_prefs_date_display());
-
-	if( my_date_is_valid( &ad )){
-		if( my_date_is_valid( &bd )){
-			cmp = my_date_compare( &ad, &bd );
-		} else {
-			cmp = -1;
-		}
-	} else {
-		cmp = 1;
-	}
-
-	g_free( abegin );
-	g_free( bbegin );
+	cmp = my_date_compare_ex(
+				ofa_ifile_period_get_begin_date( a_period ),
+				ofa_ifile_period_get_begin_date( b_period ),
+				TRUE );
 
 	return( -cmp );
 }

@@ -137,7 +137,7 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
 
 /**
  * ofa_dossier_new_mini_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
  * @dname: the name of the dossier.
  * @account: the DBMS root credentials.
  * @password: the corresponding password.

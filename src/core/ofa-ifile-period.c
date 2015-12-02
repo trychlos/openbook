@@ -355,6 +355,11 @@ ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
 			if( cmp == 0 ){
 				cmp = my_date_compare_ex( a_end, b_end, FALSE );
 			}
+			if( cmp == 0 ){
+				if( OFA_IFILE_PERIOD_GET_INTERFACE( a )->compare ){
+					cmp = OFA_IFILE_PERIOD_GET_INTERFACE( a )->compare( a, b );
+				}
+			}
 			return( cmp );
 		}
 		/* if a is set, and b is not set, then a > b */
