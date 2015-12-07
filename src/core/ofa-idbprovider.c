@@ -358,6 +358,35 @@ ofa_idbprovider_get_name( const ofaIDBProvider *instance )
 }
 
 /**
+ * ofa_idbprovider_get_editor:
+ * @instance: this #ofaIDBProvider instance.
+ * @editable: whether the informations in the container have to be
+ *  editable.
+ *
+ * Returns: a composite widget as a GTK container which holds the
+ * informations needed to identify the DBMS server which manages a
+ * dossier.
+ * Depending of @editable flag, the DB provider must expect these
+ * informations to be edited, or may propose a display-only user
+ * interface.
+ *
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
+ */
+ofaIDBEditor *
+ofa_idbprovider_get_editor( const ofaIDBProvider *instance, gboolean editable )
+{
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_editor ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_editor( instance, editable ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbprovider_get_instance_by_name:
  * @provider_name: the name of the provider as published in the
  *  settings.

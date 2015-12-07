@@ -34,14 +34,15 @@
  * The ofaIDB<...> interfaces serie let the user choose and manage
  * different DBMS backends.
  *
- * This #ofaIDBProvider is dedicated to meta data management.
+ * This #ofaIDBProvider is dedicated to instance management.
  *
- * This is an Openbook software suite choice to store most of these
- * meta data in a dossier settings file.
+ * This is an Openbook software suite choice to store most of the
+ * meta data a dossier may require in a dedicated settings file.
  */
 
 #include "my-settings.h"
 #include "ofa-idbconnect.h"
+#include "ofa-idbeditor.h"
 #include "ofa-ifile-meta-def.h"
 #include "ofa-ifile-period.h"
 
@@ -57,8 +58,9 @@ G_BEGIN_DECLS
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
  * @load_meta: [should]: returns the dossier meta datas.
- * @get_dossier_periods: [should]: returns the defined periods of the dossier.
  * @connect_dossier: [should]: connect to the specified dossier.
+ * @connect_server: [should]: connect to the specified DB server.
+ * @get_editor: [should]: returns a composite widget.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -167,6 +169,21 @@ typedef struct {
 														const gchar *account,
 														const gchar *password,
 														gchar **msg );
+
+	/**
+	 * get_editor:
+	 * @instance: the #ofaIDBProvider provider.
+	 * @editable: whether the returned widget should handle informations
+	 *  for edit or only display.
+	 *
+	 * Return value: a #GtkWidget which implements the #ofaIDBEditor
+	 * interface, and handles the informations needed to qualify a
+	 * DB server and the storage space required for a dossier.
+	 *
+	 * Since: version 1
+	 */
+	GtkWidget *     ( *get_editor )           ( const ofaIDBProvider *instance,
+														gboolean editable );
 }
 	ofaIDBProviderInterface;
 
@@ -194,6 +211,9 @@ ofaIDBConnect  *ofa_idbprovider_connect_server            ( const ofaIDBProvider
 																		const gchar *account,
 																		const gchar *password,
 																		gchar **msg );
+
+ofaIDBEditor   *ofa_idbprovider_get_editor                ( const ofaIDBProvider *instance,
+																	gboolean editable );
 
 const gchar    *ofa_idbprovider_get_name                  ( const ofaIDBProvider *instance );
 
