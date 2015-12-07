@@ -31,8 +31,9 @@
  * @short_description: The DMBS Connection Interface
  * @include: openbook/ofa-idbconnect.h
  *
- * The ofaIDB interfaces serie let the user choose and manage different
- * DBMS backends.
+ * The ofaIDB<...> interfaces serie let the user choose and manage
+ * different DBMS backends.
+ *
  * This #ofaIDBConnect is the interface a connection object instanciated
  * by a DBMS backend should implement for the needs of the application.
  */
