@@ -40,11 +40,9 @@
  * meta data a dossier may require in a dedicated settings file.
  */
 
-#include "my-settings.h"
 #include "ofa-idbconnect.h"
 #include "ofa-idbeditor.h"
 #include "ofa-ifile-meta-def.h"
-#include "ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
@@ -57,10 +55,9 @@ G_BEGIN_DECLS
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
- * @load_meta: [should]: returns the dossier meta datas.
- * @connect_dossier: [should]: connect to the specified dossier.
- * @connect_server: [should]: connect to the specified DB server.
- * @get_editor: [should]: returns a composite widget.
+ * @new_meta: [should]: returns a new ofaIFileMeta object.
+ * @new_connect: [should]: returns a new ofaIDBConnect object.
+ * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -80,7 +77,7 @@ typedef struct {
 	 * the application considers that the plugin only implements
 	 * the version 1 of the ofaIDBProvider interface.
 	 *
-	 * Return value: if implemented, this method must return the version
+	 * Returns: if implemented, this method must return the version
 	 * number of this interface the provider is supporting.
 	 *
 	 * Defaults to 1.
@@ -97,7 +94,7 @@ typedef struct {
 	 * not localized. It is recorded in the user configuration file as
 	 * an access key to the dossier external properties.
 	 *
-	 * Return value: the name of this DBMS provider.
+	 * Returns: the name of this DBMS provider.
 	 *
 	 * The returned value is owned by the DBMS provider, and should not
 	 * be released by the caller.
@@ -107,83 +104,35 @@ typedef struct {
 	const gchar *   ( *get_provider_name )    ( const ofaIDBProvider *instance );
 
 	/**
-	 * load_meta:
-	 * @instance: the #ofaIDBProvider provider.
-	 * @meta: a pointer to a ofaIFileMeta object; the object may be
-	 *  null or a reference to an existing #ofaIFileMeta.
-	 * @dssier_name: the name of the dossier.
-	 * @settings: the #mySettings instance.
-	 * @group: the group name in the settings.
+	 * new_meta:
 	 *
-	 * Return value: either the same #ofaIFileMeta @meta object if not
-	 * null, or a new one which should be g_object_unref() by the
-	 * caller.
+	 * Returns: a newly defined #ofaIFileMeta object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIFileMeta *  ( *load_meta )            ( const ofaIDBProvider *instance,
-														ofaIFileMeta **meta,
-														const gchar *dossier_name,
-														mySettings *settings,
-														const gchar *group );
+	ofaIFileMeta *  ( *new_meta )             ( void );
 
 	/**
-	 * connect_dossier:
-	 * @instance: the #ofaIDBProvider provider.
-	 * @meta: the #ofaIFileMeta instance which manages the dossier.
-	 * @period: the #ofaIFilePeriod which identifies the exercice.
-	 * @account: the user account.
-	 * @password: the user password.
-	 * @msg: an error message placeholder.
+	 * new_connect:
 	 *
-	 * Return value: an object which implements the #ofaIDBConnect
-	 * interface, and handles the dossier connection to its database,
-	 * or %NULL if unable to open a valid connection.
+	 * Returns: a newly defined #ofaIDBConnect object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect * ( *connect_dossier )      ( const ofaIDBProvider *instance,
-														ofaIFileMeta *meta,
-														ofaIFilePeriod *period,
-														const gchar *account,
-														const gchar *password,
-														gchar **msg );
+	ofaIDBConnect * ( *new_connect )          ( void );
 
 	/**
-	 * connect_server:
-	 * @instance: the #ofaIDBProvider provider.
-	 * @meta: the #ofaIFileMeta instance which manages the dossier.
-	 * @account: the user account.
-	 * @password: the user password.
-	 * @msg: an error message placeholder.
-	 *
-	 * Return value: an object which implements the #ofaIDBConnect
-	 * interface, and handles the connection to the DBMS server which
-	 * holds the @meta dossier, with root (superuser) credentials,
-	 * or %NULL if unable to open a valid connection.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBConnect * ( *connect_server )       ( const ofaIDBProvider *instance,
-														ofaIFileMeta *meta,
-														const gchar *account,
-														const gchar *password,
-														gchar **msg );
-
-	/**
-	 * get_editor:
-	 * @instance: the #ofaIDBProvider provider.
+	 * new_editor:
 	 * @editable: whether the returned widget should handle informations
 	 *  for edit or only display.
 	 *
-	 * Return value: a #GtkWidget which implements the #ofaIDBEditor
+	 * Returns: a #GtkWidget which implements the #ofaIDBEditor
 	 * interface, and handles the informations needed to qualify a
 	 * DB server and the storage space required for a dossier.
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget *     ( *get_editor )           ( const ofaIDBProvider *instance,
-														gboolean editable );
+	ofaIDBEditor *  ( *new_editor )           ( gboolean editable );
 }
 	ofaIDBProviderInterface;
 
@@ -193,31 +142,21 @@ guint           ofa_idbprovider_get_interface_last_version( void );
 
 guint           ofa_idbprovider_get_interface_version     ( const ofaIDBProvider *instance );
 
-ofaIFileMeta   *ofa_idbprovider_load_meta                 ( const ofaIDBProvider *instance,
-																		ofaIFileMeta **meta,
-																		const gchar *dossier_name,
-																		mySettings *settings,
-																		const gchar *group );
+ofaIFileMeta   *ofa_idbprovider_new_meta                  ( const ofaIDBProvider *instance );
 
-ofaIDBConnect  *ofa_idbprovider_connect_dossier           ( const ofaIDBProvider *instance,
-																		ofaIFileMeta *meta,
-																		ofaIFilePeriod *period,
-																		const gchar *account,
-																		const gchar *password,
-																		gchar **msg );
+ofaIDBConnect  *ofa_idbprovider_new_connect               ( const ofaIDBProvider *instance );
 
-ofaIDBConnect  *ofa_idbprovider_connect_server            ( const ofaIDBProvider *instance,
-																		ofaIFileMeta *meta,
-																		const gchar *account,
-																		const gchar *password,
-																		gchar **msg );
-
-ofaIDBEditor   *ofa_idbprovider_get_editor                ( const ofaIDBProvider *instance,
+ofaIDBEditor   *ofa_idbprovider_new_editor                ( const ofaIDBProvider *instance,
 																	gboolean editable );
 
 const gchar    *ofa_idbprovider_get_name                  ( const ofaIDBProvider *instance );
 
 ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
+
+GList          *ofa_idbprovider_get_list                  ( void );
+
+#define         ofa_idbprovider_free_list( L )            g_debug( "ofa_idbprovider_free_list: list=%p, count=%d", ( void * )( L ), g_list_length( L )); \
+																	g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
 G_END_DECLS
 

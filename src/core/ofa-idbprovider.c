@@ -41,6 +41,7 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *get_provider_by_name( GList *modules, const gchar *name );
+static GList          *get_providers_list( GList *modules );
 
 /**
  * ofa_idbprovider_get_type:
@@ -137,202 +138,113 @@ ofa_idbprovider_get_interface_last_version( void )
 guint
 ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
 {
+	static const gchar *thisfn = "ofa_idbprovider_get_interface_version";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), 0 );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_interface_version ){
 		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
+	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
 	return( 1 );
 }
 
-#if 0
 /**
- * ofa_idbprovider_get_dossier_meta:
+ * ofa_idbprovider_new_meta:
  * @instance: this #ofaIDBProvider instance.
- * @dossier_name: the name of the dossier.
- * @settings: the #mySettings instance in which the application has
- *  chosen to store its dossiers meta datas
- * @group: the group name identifying the desired dossier.
  *
- * Returns: an #ofaIFileMeta object which should be g_object_unref() by
- * the caller.
- *
- * The interface keeps a reference on @settings object and a copy of
- * @group string, so that these same informations will be available
- * later. It takes care of releasing the reference / freeing the copy
- * on #ofaIFileMeta finalization.
- *
- * As a consequence, the #ofaIDBProvider instance does not need to
- * store itself a copy of these informations.
+ * Returns: a newly allocated #ofaIFileMeta object, which should be
+ * g_object_unref() by the caller.
  */
 ofaIFileMeta *
-ofa_idbprovider_get_dossier_meta( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
+ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
 {
+	static const gchar *thisfn = "ofa_idbprovider_new_meta";
 	ofaIFileMeta *meta;
 
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta ){
-		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_dossier_meta( instance, dossier_name, settings, group );
-		ofa_ifile_meta_set_provider_instance( meta, instance );
-		ofa_ifile_meta_set_provider_name( meta, g_strdup( ofa_idbprovider_get_name( instance )));
-		ofa_ifile_meta_set_dossier_name( meta, dossier_name );
-		ofa_ifile_meta_set_settings( meta, settings );
-		ofa_ifile_meta_set_group_name( meta, group );
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta ){
+		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta();
+		ofa_ifile_meta_set_provider( meta, instance );
 		return( meta );
 	}
 
-	return( NULL );
-}
-#endif
-
-/**
- * ofa_idbprovider_load_meta:
- * @instance: this #ofaIDBProvider instance.
- * @meta: a pointer to a ofaIFileMeta object; the object may be null or
- *  a reference to an existing #ofaIFileMeta.
- * @dossier_name: the name of the dossier.
- * @settings: the #mySettings instance in which the application has
- *  chosen to store its dossiers meta datas
- * @group: the group name identifying the desired dossier.
- *
- * Returns: either the same #ofaIFileMeta @meta object if not null,
- *  or a new one which should be g_object_unref() by the caller.
- *
- * The interface keeps a reference on @settings object and a copy of
- * @group string, so that these same informations will be available
- * later. It takes care of releasing the reference / freeing the copy
- * on #ofaIFileMeta finalization.
- *
- * As a consequence, the #ofaIDBProvider instance does not need to
- * store itself a copy of these informations.
- */
-ofaIFileMeta *
-ofa_idbprovider_load_meta( const ofaIDBProvider *instance, ofaIFileMeta **meta,
-									const gchar *dossier_name, mySettings *settings, const gchar *group )
-{
-	gboolean existed;
-
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-	g_return_val_if_fail( meta && ( !*meta || OFA_IS_IFILE_META( *meta )), NULL );
-	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-
-	existed = ( *meta != NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->load_meta ){
-		*meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->load_meta( instance, meta, dossier_name, settings, group );
-		if( !existed ){
-			ofa_ifile_meta_set_provider_instance( *meta, instance );
-			ofa_ifile_meta_set_provider_name( *meta, g_strdup( ofa_idbprovider_get_name( instance )));
-			ofa_ifile_meta_set_dossier_name( *meta, dossier_name );
-			ofa_ifile_meta_set_settings( *meta, settings );
-			ofa_ifile_meta_set_group_name( *meta, group );
-		}
-		return( *meta );
-	}
-
+	g_info( "%s: ofaIDBProvider instance %p does not provide 'new_meta()' method",
+			thisfn, ( void * ) instance );
 	return( NULL );
 }
 
 /**
- * ofa_idbprovider_connect_dossier:
+ * ofa_idbprovider_new_connect:
  * @instance: this #ofaIDBProvider instance.
- * @meta: the #ofaIFileMeta instance which manages the dossier.
- * @period: the #ofaIFilePeriod which specifies the exercice.
- * @account: the user account.
- * @password: the user password.
- * @msg: a placeholder for error message.
  *
- * Returns: a handle to the opened connection if user credentials are
- * valid, or %NULL.
-
- * When the connection is successfully opened, the interface keeps a
- * reference on @meta and @period objects, and user account and
- * password.
- *
- * Though keeping the user password may be seen as a weakness of the
- * interface, this is nonetheless requireed in order to be able to
- * open multiple connections with these same credentials.
- *
- * The implementation is expected to take care of gracefully closing
- * the DB connection when the object is released.
+ * Returns: a newly allocated #ofaIDBConnect object, which should be
+ * g_object_unref() by the caller.
  */
 ofaIDBConnect *
-ofa_idbprovider_connect_dossier( const ofaIDBProvider *instance,
-		ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg )
+ofa_idbprovider_new_connect( const ofaIDBProvider *instance )
 {
+	static const gchar *thisfn = "ofa_idbprovider_new_connect";
 	ofaIDBConnect *connect;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_dossier ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_dossier( instance, meta, period, account, password, msg );
-		if( connect ){
-			ofa_idbconnect_set_meta( connect, meta );
-			ofa_idbconnect_set_period( connect, period );
-			ofa_idbconnect_set_account( connect, account );
-			ofa_idbconnect_set_password( connect, password );
-		}
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect ){
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect();
+		ofa_idbconnect_set_provider( connect, instance );
 		return( connect );
 	}
 
-	if( msg ){
-		*msg = g_strdup( _( "The IDBProvider does not provide 'connect_dossier' interface" ));
-	}
+	g_info( "%s: ofaIDBProvider instance %p does not provide 'new_connect()' method",
+			thisfn, ( void * ) instance );
 	return( NULL );
 }
 
 /**
- * ofa_idbprovider_connect_server:
+ * ofa_idbprovider_new_editor:
  * @instance: this #ofaIDBProvider instance.
- * @meta: the #ofaIFileMeta instance which manages the dossier.
- * @account: the user account.
- * @password: the user password.
- * @msg: a placeholder for error message.
+ * @editable: whether the informations in the container have to be
+ *  editable.
  *
- * This (tries to) opens a server-level connection to the DBMS which
- * manages the @meta dossier, with root (superuser) credentials.
+ * Returns: a composite GTK container widget intended to hold the
+ * informations needed to fully identify the DBMS server which manages
+ * a dossier and a financial period.
+ * Depending of @editable flag, the DB provider must expect these
+ * informations to be edited, or may propose a display-only user
+ * interface.
  *
- * Returns: a handle to the opened connection if user credentials are
- * valid, or %NULL.
- *
- * When the connection is successfully opened, the interface keeps a
- * reference on @meta object, and user account and password.
- *
- * Though keeping the user password may be seen as a weakness of the
- * interface, this is nonetheless requireed in order to be able to
- * open multiple connections with these same credentials.
- *
- * The implementation is expected to take care of gracefully closing
- * the DB connection when the object is released.
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
  */
-ofaIDBConnect *
-ofa_idbprovider_connect_server( const ofaIDBProvider *instance,
-					ofaIFileMeta *meta, const gchar *account, const gchar *password, gchar **msg )
+ofaIDBEditor *
+ofa_idbprovider_new_editor( const ofaIDBProvider *instance, gboolean editable )
 {
-	ofaIDBConnect *connect;
+	static const gchar *thisfn = "ofa_idbprovider_new_editor";
+	ofaIDBEditor *editor;
+
+	g_debug( "%s: instance=%p, editable=%s",
+			thisfn,( void * ) instance, editable ? "True":"False" );
 
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_server ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->connect_server( instance, meta, account, password, msg );
-		if( connect ){
-			ofa_idbconnect_set_meta( connect, meta );
-			ofa_idbconnect_set_account( connect, account );
-			ofa_idbconnect_set_password( connect, password );
-		}
-		return( connect );
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor ){
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor( editable );
+		ofa_idbeditor_set_provider( editor, instance );
+		return( editor );
 	}
 
-	if( msg ){
-		*msg = g_strdup( _( "The IDBProvider does not provide 'connect_server' interface" ));
-	}
+	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_editor()' method",
+			thisfn, ( void * ) instance );
 	return( NULL );
 }
 
@@ -348,41 +260,16 @@ ofa_idbprovider_connect_server( const ofaIDBProvider *instance,
 const gchar *
 ofa_idbprovider_get_name( const ofaIDBProvider *instance )
 {
+	static const gchar *thisfn = "ofa_idbprovider_get_name";
+
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
 		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
 	}
 
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_get_editor:
- * @instance: this #ofaIDBProvider instance.
- * @editable: whether the informations in the container have to be
- *  editable.
- *
- * Returns: a composite widget as a GTK container which holds the
- * informations needed to identify the DBMS server which manages a
- * dossier.
- * Depending of @editable flag, the DB provider must expect these
- * informations to be edited, or may propose a display-only user
- * interface.
- *
- * The returned container will be added to a GtkWindow and must be
- * destroyable with this same window. In other words, the DBMS provider
- * should not keep any reference on this container.
- */
-ofaIDBEditor *
-ofa_idbprovider_get_editor( const ofaIDBProvider *instance, gboolean editable )
-{
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_editor ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_editor( instance, editable ));
-	}
-
+	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_provider_name()' method",
+			thisfn, ( void * ) instance );
 	return( NULL );
 }
 
@@ -398,8 +285,11 @@ ofa_idbprovider_get_editor( const ofaIDBProvider *instance, gboolean editable )
 ofaIDBProvider *
 ofa_idbprovider_get_instance_by_name( const gchar *provider_name )
 {
+	static const gchar *thisfn = "ofa_idbprovider_get_instance_by_name";
 	GList *modules;
 	ofaIDBProvider *module;
+
+	g_debug( "%s: provider_name=%s", thisfn, provider_name );
 
 	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBPROVIDER );
 	module = get_provider_by_name( modules, provider_name );
@@ -426,4 +316,43 @@ get_provider_by_name( GList *modules, const gchar *name )
 	}
 
 	return( instance );
+}
+
+/**
+ * ofa_idbprovider_get_list:
+ *
+ * Returns: the #GList of #ofaIDBProvider names, as a newly allocated
+ *  list of newly allocated strings. The returned list should be
+ *  #ofa_idbprovider_free_list() by the caller.
+ */
+GList *
+ofa_idbprovider_get_list( void )
+{
+	static const gchar *thisfn = "ofa_idbprovider_get_list";
+	GList *modules, *names;
+
+	g_debug( "%s:", thisfn );
+
+	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBPROVIDER );
+	names = get_providers_list( modules );
+	ofa_plugin_free_extensions( modules );
+
+	return( names );
+}
+
+static GList *
+get_providers_list( GList *modules )
+{
+	GList *im;
+	GList *names;
+	const gchar *provider_name;
+
+	names = NULL;
+
+	for( im=modules ; im ; im=im->next ){
+		provider_name = ofa_idbprovider_get_name( OFA_IDBPROVIDER( im->data ));
+		names = g_list_prepend( names, g_strdup( provider_name ));
+	}
+
+	return( names );
 }
