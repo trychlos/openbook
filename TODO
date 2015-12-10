@@ -530,7 +530,11 @@
 
  919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
 
- 920
+ 920 2015-12-10 review RestoreAssistant
+
+ 921 2015-12-10 remove ofa_settings_remove_dossier()
+
+ 922
 
 -----------------------------------------------------------------------
  DONE
