@@ -291,10 +291,14 @@ insert_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeri
 static void
 set_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter )
 {
-	gchar *dosname, *provname, *begin, *end, *status;
+	gchar *dosname, *begin, *end, *status;
+	const gchar *provname;
+	ofaIDBProvider *provider;
 
 	dosname = ofa_ifile_meta_get_dossier_name( meta );
-	provname = ofa_ifile_meta_get_provider_name( meta );
+	provider = ofa_ifile_meta_get_provider( meta );
+	provname = ofa_idbprovider_get_name( provider );
+	g_object_unref( provider );
 
 	begin = my_date_to_str( ofa_ifile_period_get_begin_date( period ), ofa_prefs_date_display());
 	end = my_date_to_str( ofa_ifile_period_get_end_date( period ), ofa_prefs_date_display());
@@ -315,7 +319,6 @@ set_row( ofaDossierStore *store, const ofaIFileMeta *meta, const ofaIFilePeriod 
 	g_free( begin );
 	g_free( end );
 	g_free( dosname );
-	g_free( provname );
 	g_free( status );
 }
 
