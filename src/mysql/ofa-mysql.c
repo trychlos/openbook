@@ -29,7 +29,6 @@
 #include <string.h>
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-idbms.h"
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-ipreferences.h"
 
@@ -70,12 +69,6 @@ ofa_mysql_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
-	static const GInterfaceInfo idbms_iface_info = {
-		( GInterfaceInitFunc ) ofa_mysql_idbms_iface_init,
-		NULL,
-		NULL
-	};
-
 	static const GInterfaceInfo idbprovider_iface_info = {
 		( GInterfaceInitFunc ) ofa_mysql_idbprovider_iface_init,
 		NULL,
@@ -92,11 +85,11 @@ ofa_mysql_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaMysql", &info, 0 );
 
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMS, &idbms_iface_info );
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
 
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
-
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IPREFERENCES, &ipreferences_iface_info );
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IPREFERENCES, &ipreferences_iface_info );
 }
 
 static void
