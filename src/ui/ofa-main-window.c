@@ -701,6 +701,9 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *main_window )
  *  the actual content of the dossier database.
  *
  * Open the dossier in the user interface.
+ *
+ * The opened dossier takes a reference on the @connect object, so that
+ * the caller may then release its own ref.
  */
 void
 ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation )
