@@ -198,7 +198,8 @@ v_init_dialog( myDialog *dialog )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_bin = ofa_dossier_new_bin_new();
+	priv->new_bin = ofa_dossier_new_bin_new(
+							OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( dialog ))));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	my_utils_size_group_add_size_group(
@@ -248,7 +249,7 @@ is_validable( ofaDossierNewMini *self )
 	gchar *str;
 
 	priv = self->priv;
-	ok = ofa_dossier_new_bin_is_valid( priv->new_bin, &str );
+	ok = ofa_dossier_new_bin_get_valid( priv->new_bin, &str );
 	set_message( self, str );
 
 	return( ok );

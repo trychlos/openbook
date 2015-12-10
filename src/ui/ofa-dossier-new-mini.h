@@ -39,7 +39,7 @@
  * The dialog returns with a newly defined dossier in user settings if
  * %TRUE.
  *
- * #ofaDossierNewMini dialog is built by combining the
+ * #ofaDossierNewMini dialog makes use of
  * #ofaDossierNewBin piece of dialog, which itself encapsulates both
  * the #ofaIDbmsConnectEnter and the #ofaRootCredentialsBin pieces of
  * dialog.
