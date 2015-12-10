@@ -140,9 +140,9 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
 /**
  * ofa_dossier_new_mini_run:
  * @main_window: the main window of the application.
- * @dname: the name of the dossier.
- * @account: the DBMS root credentials.
- * @password: the corresponding password.
+ * @dname: [out]: the name of the newly defined dossier.
+ * @account: [out]: the DBMS root credentials.
+ * @password: [out]: the corresponding password.
  *
  * Returns: %TRUE if a new dossier has been defined in the settings.
  */
@@ -155,7 +155,9 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, gchar **dname, gchar **acc
 	gboolean dossier_defined;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	g_return_val_if_fail(( account && password ) || ( !account && !password ), FALSE );
+	g_return_val_if_fail( dname, FALSE );
+	g_return_val_if_fail( account, FALSE );
+	g_return_val_if_fail( password, FALSE );
 
 	g_debug( "%s: main_window=%p, account=%p, password=%p",
 			thisfn, ( void * ) main_window, ( void * ) account, ( void * ) password );
@@ -171,13 +173,9 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, gchar **dname, gchar **acc
 	priv = self->priv;
 	dossier_defined = priv->dossier_defined;
 	if( dossier_defined ){
-		if( dname ){
-			*dname = g_strdup( priv->dname );
-		}
-		if( account ){
-			*account = g_strdup( priv->account );
-			*password = g_strdup( priv->password );
-		}
+		*dname = g_strdup( priv->dname );
+		*account = g_strdup( priv->account );
+		*password = g_strdup( priv->password );
 	}
 
 	g_object_unref( self );
