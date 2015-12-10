@@ -35,14 +35,14 @@
 
 G_BEGIN_DECLS
 
-const gchar *ofa_mysql_cmdline_backup_get_default_command ( const ofaIDbms *instance );
+const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
 gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaIDbms *instance,
 																void *handle,
 																const gchar *fname,
 																gboolean verbose );
 
-const gchar *ofa_mysql_cmdline_restore_get_default_command( const ofaIDbms *instance );
+const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 
 gboolean     ofa_mysql_cmdline_restore_run                ( const ofaIDbms *instance,
 																const gchar *dname,

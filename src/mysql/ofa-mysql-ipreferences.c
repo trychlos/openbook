@@ -26,8 +26,16 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
+
+#include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-ipreferences.h"
 #include "ofa-mysql-prefs-bin.h"
+
+#define PREFS_GROUP                     "MySQL"
+#define PREFS_BACKUP_CMDLINE            "BackupCommand"
+#define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
 static guint ipreferences_get_interface_version( const ofaIPreferences *instance );
 
@@ -48,4 +56,73 @@ static guint
 ipreferences_get_interface_version( const ofaIPreferences *instance )
 {
 	return( 1 );
+}
+
+/**
+ * ofa_mysql_ipreferences_get_backup_command:
+ *
+ * Returns: the backup command from the user settings, as a newly
+ * allocated string which should be g_free() by the caller.
+ *
+ * If unset in the user settings, the method returns the default
+ * backup command.
+ */
+gchar *
+ofa_mysql_ipreferences_get_backup_command ( void )
+{
+	gchar *cmdline;
+
+	cmdline = ofa_settings_get_string_ex(
+					SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
+	if( !my_strlen( cmdline )){
+		cmdline = g_strdup( ofa_mysql_cmdline_backup_get_default_command());
+	}
+
+	return( cmdline );
+}
+
+/**
+ * ofa_mysql_ipreferences_set_backup_command:
+ * @command: the backup command to be set.
+ *
+ * Records the backup command @command in the user settings.
+ */
+void
+ofa_mysql_ipreferences_set_backup_command ( const gchar *command )
+{
+	ofa_settings_set_string_ex(
+			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE, command );
+}
+
+/**
+ * ofa_mysql_ipreferences_get_restore_command:
+ *
+ * Returns: the restore command from the user settings, as a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_mysql_ipreferences_get_restore_command( void )
+{
+	gchar *cmdline;
+
+	cmdline = ofa_settings_get_string_ex(
+					SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
+	if( !my_strlen( cmdline )){
+		cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command());
+	}
+
+	return( cmdline );
+}
+
+/**
+ * ofa_mysql_ipreferences_set_restore_command:
+ * @command: the restore command to be set.
+ *
+ * Records the restore command @command in the user settings.
+ */
+void
+ofa_mysql_ipreferences_set_restore_command( const gchar *command )
+{
+	ofa_settings_set_string_ex(
+			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE, command );
 }

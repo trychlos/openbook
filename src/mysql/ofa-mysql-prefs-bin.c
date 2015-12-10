@@ -31,11 +31,10 @@
 #include <string.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-cmdline.h"
-#include "ofa-mysql-idbms.h"
+#include "ofa-mysql-idbprovider.h"
+#include "ofa-mysql-ipreferences.h"
 #include "ofa-mysql-prefs-bin.h"
 
 /* private instance data
@@ -180,7 +179,7 @@ ofa_mysql_prefs_bin_new( const ofaIPreferences *instance, gchar **label )
 	setup_bin( bin );
 
 	if( label ){
-		*label = g_strdup( ofa_mysql_idbms_get_provider_name( OFA_IDBMS( instance )));
+		*label = g_strdup( ofa_mysql_idbprovider_get_provider_name());
 	}
 
 	return( GTK_WIDGET( bin ));
@@ -214,12 +213,8 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
-	if( my_strlen( cmdline )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
-	} else {
-		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_cmdline_backup_get_default_command( OFA_IDBMS( priv->instance )));
-	}
+	cmdline = ofa_mysql_ipreferences_get_backup_command();
+	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-entry" );
@@ -228,12 +223,8 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
-	if( my_strlen( cmdline )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
-	} else {
-		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_cmdline_restore_get_default_command( OFA_IDBMS( priv->instance )));
-	}
+	cmdline = ofa_mysql_ipreferences_get_restore_command();
+	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
 	gtk_widget_destroy( toplevel );
@@ -320,14 +311,10 @@ ofa_mysql_prefs_bin_apply( const ofaIPreferences *instance, GtkWidget *bin )
 
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		ofa_settings_set_string_ex(
-				SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE,
-				gtk_entry_get_text( GTK_ENTRY( entry )));
+		ofa_mysql_ipreferences_set_backup_command( gtk_entry_get_text( GTK_ENTRY( entry )));
 
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		ofa_settings_set_string_ex(
-				SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE,
-				gtk_entry_get_text( GTK_ENTRY( entry )));
+		ofa_mysql_ipreferences_set_restore_command( gtk_entry_get_text( GTK_ENTRY( entry )));
 	}
 }

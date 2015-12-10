@@ -36,7 +36,15 @@
 
 G_BEGIN_DECLS
 
-void  ofa_mysql_ipreferences_iface_init( ofaIPreferencesInterface *iface );
+void   ofa_mysql_ipreferences_iface_init         ( ofaIPreferencesInterface *iface );
+
+gchar *ofa_mysql_ipreferences_get_backup_command ( void );
+
+void   ofa_mysql_ipreferences_set_backup_command ( const gchar *command );
+
+gchar *ofa_mysql_ipreferences_get_restore_command( void );
+
+void   ofa_mysql_ipreferences_set_restore_command( const gchar *command );
 
 G_END_DECLS
 

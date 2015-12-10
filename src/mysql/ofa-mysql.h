@@ -102,10 +102,6 @@ typedef struct {
 }
 	mysqlInfos;
 
-#define PREFS_GROUP                     "MySQL"
-#define PREFS_BACKUP_CMDLINE            "BackupCommand"
-#define PREFS_RESTORE_CMDLINE           "RestoreCommand"
-
 GType         ofa_mysql_get_type         ( void );
 
 void          ofa_mysql_register_type    ( GTypeModule *module );

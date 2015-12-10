@@ -46,12 +46,12 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
-#include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-idbms.h"
+#include "ofa-mysql-ipreferences.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
@@ -89,9 +89,11 @@ static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, c
 
 /**
  * ofa_mysql_cmdline_backup_get_default_command:
+ *
+ * Returns: the default command for backuping a database.
  */
 const gchar *
-ofa_mysql_cmdline_backup_get_default_command( const ofaIDbms *instance )
+ofa_mysql_cmdline_backup_get_default_command( void )
 {
 	return( "mysqldump --verbose %O -u%U -p%P %B | gzip -c > %F" );
 }
@@ -113,10 +115,7 @@ ofa_mysql_cmdline_backup_run( const ofaIDbms *instance, void *handle, const gcha
 
 	infos = ( mysqlInfos * ) handle;
 
-	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
-	if( !my_strlen( cmdline )){
-		cmdline = g_strdup( ofa_mysql_cmdline_backup_get_default_command( instance ));
-	}
+	cmdline = ofa_mysql_ipreferences_get_backup_command();
 
 	ofa_mysql_query( instance, infos, "FLUSH TABLES WITH READ LOCK" );
 
@@ -137,11 +136,15 @@ ofa_mysql_cmdline_backup_run( const ofaIDbms *instance, void *handle, const gcha
 
 /**
  * ofa_mysql_cmdline_restore_get_default_command:
+ *
+ * Returns: the default command for restoring a database.
  */
 const gchar *
-ofa_mysql_cmdline_restore_get_default_command( const ofaIDbms *instance )
+ofa_mysql_cmdline_restore_get_default_command( void )
 {
-	return( "mysql %O -u%U -p%P -e 'drop database if exists %B'; mysql %O -u%U -p%P -e 'create database %B'; gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
+	return( "mysql %O -u%U -p%P -e 'drop database if exists %B'; "
+			"mysql %O -u%U -p%P -e 'create database %B'; "
+			"gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
 }
 
 /**
@@ -165,10 +168,7 @@ ofa_mysql_cmdline_restore_run( const ofaIDbms *instance,
 	create_fake_database( instance, infos );
 	fname = g_filename_from_uri( furi, NULL, NULL );
 
-	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
-	if( !my_strlen( cmdline )){
-		cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command( instance ));
-	}
+	cmdline = ofa_mysql_ipreferences_get_restore_command();
 
 	ok = do_backup_restore(
 				( const mysqlInfos * ) infos,

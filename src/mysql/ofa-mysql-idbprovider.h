@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 
 void         ofa_mysql_idbprovider_iface_init       ( ofaIDBProviderInterface *iface );
 
-const gchar *ofa_mysql_idbprovider_get_provider_name( const ofaIDBProvider *instance );
+const gchar *ofa_mysql_idbprovider_get_provider_name( void );
 
 G_END_DECLS
 

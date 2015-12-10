@@ -45,6 +45,7 @@
 #include "ofa-mysql-period.h"
 
 static guint          idbprovider_get_interface_version( const ofaIDBProvider *instance );
+static const gchar   *idbprovider_get_provider_name( const ofaIDBProvider *instance );
 static ofaIDBMeta    *idbprovider_new_meta( void );
 static ofaIDBConnect *idbprovider_new_connect( void );
 static ofaIDBEditor  *idbprovider_new_editor( gboolean editable );
@@ -60,7 +61,7 @@ ofa_mysql_idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbprovider_get_interface_version;
-	iface->get_provider_name = ofa_mysql_idbprovider_get_provider_name;
+	iface->get_provider_name = idbprovider_get_provider_name;
 	iface->new_meta = idbprovider_new_meta;
 	iface->new_connect = idbprovider_new_connect;
 	iface->new_editor = idbprovider_new_editor;
@@ -78,8 +79,19 @@ idbprovider_get_interface_version( const ofaIDBProvider *instance )
 /*
  * the provider name identifier
  */
+static const gchar *
+idbprovider_get_provider_name( const ofaIDBProvider *instance )
+{
+	return( ofa_mysql_idbprovider_get_provider_name());
+}
+
+/**
+ * ofa_mysql_idbprovider_get_provider_name:
+ *
+ * Returns: the provider name identifier.
+ */
 const gchar *
-ofa_mysql_idbprovider_get_provider_name( const ofaIDBProvider *instance )
+ofa_mysql_idbprovider_get_provider_name( void )
 {
 	return( "MySQL" );
 }
