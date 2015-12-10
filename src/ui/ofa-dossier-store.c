@@ -65,7 +65,7 @@ static ofaDossierStore *st_store                = NULL;
 static guint            st_signals[ N_SIGNALS ] = { 0 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
-static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store );
+static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaDossierStore *store );
 static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
 static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
@@ -239,7 +239,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 }
 
 static void
-on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store )
+on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaDossierStore *store )
 {
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
 	load_dataset( store, dir );

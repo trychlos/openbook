@@ -137,7 +137,7 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     maintainer_test_function( void );
 
 static void     setup_actions_monitor( ofaApplication *application );
-static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application );
+static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -763,16 +763,16 @@ setup_actions_monitor( ofaApplication *application )
 	g_signal_connect(
 			priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
 	on_file_dir_changed(
-			priv->file_dir, ofa_file_dir_get_dossiers_count( priv->file_dir ), application );
+			priv->file_dir, ofa_file_dir_get_dossiers_count( priv->file_dir ), NULL, application );
 }
 
 static void
-on_file_dir_changed( ofaFileDir *dir, guint count, ofaApplication *application )
+on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_on_filed_dir_changed";
 
-	g_debug( "%s: dir=%p, count=%u, application=%p",
-			thisfn, ( void * ) dir, count, ( void * ) application );
+	g_debug( "%s: dir=%p, count=%u, filename=%s, application=%p",
+			thisfn, ( void * ) dir, count, filename, ( void * ) application );
 
 	enable_action_open( application, count > 0 );
 }

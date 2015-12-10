@@ -529,8 +529,6 @@
                 global vars, from the parent window which may not be
                 the main window
 
- 914 2015-12- 2 add filename to ofaFileDir::changed signal args
-
  915 2015-12- 4 a class object (say e.g. ofoClass) should implement
                 the ofaIExportable/ofaIImportable interfaces - but the
                 exporter/importer plugins should rather implement a
@@ -4290,6 +4288,9 @@
                 + set also status
                 (cf. ofoDossier:do_open)
      2015-11-26 done
+
+ 914 2015-12- 2 add filename to ofaFileDir::changed signal args
+     2015-12-10 done
 
  916 2015-12- 4 rename ofaIFileMeta to ofaIDBMeta
      2015-12-10 done

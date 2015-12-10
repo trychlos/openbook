@@ -141,6 +141,7 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierDir *dir,
 	 * 						guint        count,
+	 * 						const gchar *filename,
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -152,8 +153,8 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_UINT );
+				2,
+				G_TYPE_UINT, G_TYPE_STRING );
 }
 
 /**
@@ -230,13 +231,15 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 {
 	ofaFileDirPrivate *priv;
 	GList *prev_list;
+	gchar *fname;
 
 	priv = dir->priv;
 	prev_list = priv->list;
 	priv->list = load_dossiers( dir, prev_list );
 	ofa_file_dir_free_dossiers( prev_list );
-
-	g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ));
+	fname = my_settings_get_filename( priv->settings );
+	g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
+	g_free( fname );
 }
 
 /*
