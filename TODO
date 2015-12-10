@@ -4291,7 +4291,7 @@
                 (cf. ofoDossier:do_open)
      2015-11-26 done
 
- 916 2015-12- 4 rename ofaIFileMeta to ofaIDBFile
+ 916 2015-12- 4 rename ofaIFileMeta to ofaIDBMeta
      2015-12-10 done
 
  917 2015-12- 4 rename ofaIFilePeriod to ofaIDBPeriod

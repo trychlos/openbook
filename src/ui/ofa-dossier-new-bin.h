@@ -92,8 +92,7 @@ gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNew
 
 ofaIDBMeta       *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_get_dname            ( const ofaDossierNewBin *bin,
-																	gchar **dname );
+gchar            *ofa_dossier_new_bin_get_dossier_name     ( const ofaDossierNewBin *bin );
 
 ofaDBMSRootBin   *ofa_dossier_new_bin_get_dbms_root_bin    ( const ofaDossierNewBin *bin );
 

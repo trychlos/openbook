@@ -609,24 +609,27 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 }
 
 /**
- * ofa_dossier_new_bin_get_dname:
+ * ofa_dossier_new_bin_get_dossier_name:
+ * @bin: this #ofaDossierNewBin instance.
  *
- * Return the dossier name
+ * Returns: the dossier name as a newly allocated string which should
+ * be g_free() by the caller.
  */
-void
-ofa_dossier_new_bin_get_dname( const ofaDossierNewBin *bin, gchar **dname )
+gchar *
+ofa_dossier_new_bin_get_dossier_name( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-	g_return_if_fail( dname );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
 	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		*dname = g_strdup( priv->dossier_name );
+		return( g_strdup( priv->dossier_name ));
 	}
+
+	g_return_val_if_reached( NULL );
 }
 
 /**

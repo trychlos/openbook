@@ -267,7 +267,7 @@ v_quit_on_ok( myDialog *dialog )
 
 	if( ofa_dossier_new_bin_apply( priv->new_bin )){
 		priv->dossier_defined = TRUE;
-		ofa_dossier_new_bin_get_dname( priv->new_bin, &priv->dname );
+		priv->dname = ofa_dossier_new_bin_get_dossier_name( priv->new_bin );
 		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
 		ofa_dbms_root_bin_get_credentials( root_bin, &priv->account, &priv->password );
 	}
