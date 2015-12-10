@@ -31,24 +31,22 @@
  */
 
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbms.h"
+#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbperiod.h"
 
 G_BEGIN_DECLS
 
 const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
-gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaIDbms *instance,
-																void *handle,
-																const gchar *fname,
+gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaIDBConnect *connect,
+																const gchar *filename,
 																gboolean verbose );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 
-gboolean     ofa_mysql_cmdline_restore_run                ( const ofaIDbms *instance,
-																const gchar *dname,
-																const gchar *furi,
-																const gchar *account,
-																const gchar *password );
+gboolean     ofa_mysql_cmdline_restore_run                ( const ofaIDBConnect *connect,
+																ofaIDBPeriod *period,
+																const gchar *uri );
 
 gboolean     ofa_mysql_cmdline_archive_and_new            ( const ofaIDBConnect *connect,
 																const gchar *root_account,

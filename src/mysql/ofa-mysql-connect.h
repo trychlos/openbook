@@ -81,6 +81,9 @@ ofaMySQLConnect *ofa_mysql_connect_new_for_server     ( const gchar *host,
 															const gchar *password,
 															gchar **msg );
 
+gboolean         ofa_mysql_connect_query              ( const ofaMySQLConnect *connect,
+															const gchar *query );
+
 gchar           *ofa_mysql_connect_get_new_database   ( ofaMySQLConnect *connect,
 															const gchar *prev_database );
 

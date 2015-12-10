@@ -315,6 +315,30 @@ idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
 	return( ok );
 }
 
+/**
+ * ofa_mysql_connect_query:
+ * @connect: this #ofaIDBConnect object.
+ * @query: the query to be executed.
+ *
+ * Returns: %TRUE, if the query has been successfully executed, %FALSE
+ * else.
+ */
+gboolean
+ofa_mysql_connect_query( const ofaMySQLConnect *connect, const gchar *query )
+{
+	ofaMySQLConnectPrivate *priv;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	priv = connect->priv;
+
+	if( !priv->dispose_has_run ){
+		return( idbconnect_query( OFA_IDBCONNECT( connect ), query ));
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
 /*
  * a select query (returns a result, not audited)
  */

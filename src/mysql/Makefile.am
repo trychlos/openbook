@@ -52,8 +52,6 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-enter.h						\
 	ofa-mysql-meta.c								\
 	ofa-mysql-meta.h								\
-	ofa-mysql-idbms.c								\
-	ofa-mysql-idbms.h								\
 	ofa-mysql-idbprovider.c							\
 	ofa-mysql-idbprovider.h							\
 	ofa-mysql-ipreferences.c						\
