@@ -29,7 +29,7 @@
  * SECTION: ofa_mysql
  * @short_description: #ofaMysql class definition.
  *
- * Manage the MySQL database server.
+ * The main class which manages the MySQL database server.
  *
  * The class is instanciated once when loading the module.
  * It implements the #ofaIDBProvider and #ofaIPreferences interfaces.
