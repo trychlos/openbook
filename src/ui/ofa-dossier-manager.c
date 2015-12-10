@@ -73,7 +73,7 @@ static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
 static void      open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
-static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
+//static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -263,16 +263,15 @@ static void
 on_open_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
-	gchar *dname, *dbname;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DOSNAME );
-	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
-#if 0
-	open_dossier( self, dname, dbname );
-#endif
-	g_free( dname );
-	g_free( dbname );
+	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
+		open_dossier( self, meta, period );
+	}
+	g_clear_object( &meta );
+	g_clear_object( &period );
 }
 
 static void
@@ -312,24 +311,28 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
-	ofaDossierStore *store;
-	gchar *dname, *dbname;
+	//ofaDossierStore *store;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	priv = self->priv;
-	dname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DOSNAME );
-	dbname = ofa_dossier_treeview_get_selected( priv->tview, DOSSIER_COL_DBNAME );
-
+	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
+#if 0
 	if( confirm_delete( self, dname, dbname )){
 		ofa_settings_remove_exercice( dname, dbname );
 		store = ofa_dossier_treeview_get_store( priv->tview );
 		ofa_dossier_store_remove_exercice( store, dname, dbname );
 	}
+#endif
+	}
 
-	g_free( dname );
+	g_clear_object( &meta );
+	g_clear_object( &period );
 }
 
+#if 0
 static gboolean
 confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
 {
@@ -349,3 +352,4 @@ confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname
 
 	return( ok );
 }
+#endif

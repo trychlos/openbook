@@ -38,6 +38,9 @@
  * database names.
  */
 
+#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbperiod.h"
+
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -81,23 +84,24 @@ GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
 ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
 
 void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
-																ofaDossierDispColumn *columns );
+															ofaDossierDispColumn *columns );
 
 void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
-																gboolean visible );
+															gboolean visible );
 
 void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
-																ofaDossierShow show );
+															ofaDossierShow show );
 
 GtkWidget          *ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view );
 
 ofaDossierStore    *ofa_dossier_treeview_get_store   ( const ofaDossierTreeview *view );
 
-gchar              *ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,
-																gint column_id );
+gboolean            ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,
+															ofaIDBMeta **meta,
+															ofaIDBPeriod **period );
 
 void                ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view,
-																const gchar *dname );
+															const gchar *dname );
 
 G_END_DECLS
 

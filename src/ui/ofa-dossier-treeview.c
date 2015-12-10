@@ -29,7 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-treeview.h"
@@ -505,36 +505,62 @@ ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )
 
 /**
  * ofa_dossier_treeview_get_selected:
- * @view:
- * @column_id:
+ * @view: this #ofaDossierTreeview instance.
+ * @meta: [allow-none][out]: a new reference on the currently selected
+ *  #ofaIDBMeta row, which should be g_object_unref() by the caller
+ *  when non %NULL.
+ * @period: [allow-none][out]: a new reference on the currently selected
+ *  #ofaIDBPeriod row, which should be g_object_unref() by the caller
+ *  when non %NULL.
  *
- * Return: the content of the specified @column_id for the currently
- * selected dossier, as a newly allocated string which should be g_free()
- * by the caller, or %NULL.
+ * Returns: %TRUE if a selection exists, %FALSE else.
  */
-gchar *
-ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, gint column_id )
+gboolean
+ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, ofaIDBMeta **meta, ofaIDBPeriod **period )
 {
 	ofaDossierTreeviewPrivate *priv;
-	gchar *content;
+	gboolean ok;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
+	ofaIDBMeta *row_meta;
+	ofaIDBPeriod *row_period;
 
-	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
+	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), FALSE );
 
 	priv = view->priv;
-	content = NULL;
 
 	if( !priv->dispose_has_run ){
 
+		ok = FALSE;
+		if( meta ){
+			*meta = NULL;
+		}
+		if( period ){
+			*period = NULL;
+		}
 		select = gtk_tree_view_get_selection( priv->tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, column_id, &content, -1 );
+			ok = TRUE;
+			gtk_tree_model_get( tmodel, &iter,
+					DOSSIER_COL_META,   &row_meta,
+					DOSSIER_COL_PERIOD, &row_period,
+					-1 );
+			if( meta ){
+				*meta = row_meta;
+			} else {
+				g_object_unref( row_meta );
+			}
+			if( period ){
+				*period = row_period;
+			} else {
+				g_object_unref( row_period );
+			}
 		}
+		return( ok );
 	}
 
-	return( content );
+	g_return_val_if_reached( FALSE );
 }
 
 /**

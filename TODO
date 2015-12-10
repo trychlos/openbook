@@ -505,8 +505,6 @@
                 enough to just change a settings to force the dossier
                 to be updatable
 
- 905 2015-11-26 remove account from ofaMySQLConnect
-
  907 2015-11-26 define a myISettings interface to be used in the plugins
                 (instead of directly the mySettings object)
 
@@ -520,10 +518,6 @@
 
  911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
 
- 912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
-                or update it to be able to get a meta and/or a period
-
-
  913 2015-12- 2 myDialog/myWindow: distinguish the main window (resp.
                 the application) which is needed to get access to 
                 global vars, from the parent window which may not be
@@ -534,7 +528,7 @@
                 exporter/importer plugins should rather implement a
                 ofaIEXporter/ofaIImporter interface 
 
- 919 2015-12-10
+ 919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
 
  920
 
@@ -4283,11 +4277,18 @@
  902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
      2015-11-26 done
 
+ 905 2015-11-26 remove account from ofaMySQLConnect
+     2015-12-10 done (somewhere in the past)
+
  906 2015-11-26 when opening a dossier, check that begin/end dates
                 are consistent with settings - else remediate
                 + set also status
                 (cf. ofoDossier:do_open)
      2015-11-26 done
+
+ 912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
+                or update it to be able to get a meta and/or a period
+     2015-12- 1 updated to return meta+period
 
  914 2015-12- 2 add filename to ofaFileDir::changed signal args
      2015-12-10 done
