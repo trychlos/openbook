@@ -32,12 +32,17 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-idbeditor.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-ifile-meta.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-admin-credentials-bin.h"
+#include "core/ofa-dbms-root-bin.h"
+#include "core/ofa-file-dir.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-main-window.h"
@@ -56,8 +61,7 @@ struct _ofaDossierNewPrivate {
 
 	/* runtime data
 	 */
-	gchar                  *dname;
-	gchar                  *database;
+	gchar                  *dossier_name;
 	gchar                  *root_account;
 	gchar                  *root_password;
 	gchar                  *adm_account;
@@ -65,6 +69,8 @@ struct _ofaDossierNewPrivate {
 	gboolean                b_open;
 	gboolean                b_properties;
 
+	/* settings
+	 */
 	gchar                  *prov_name;
 
 	/* result
@@ -78,7 +84,7 @@ static const gchar *st_ui_id            = "DossierNewDlg";
 G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *widget, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void      on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void      on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
@@ -103,8 +109,7 @@ dossier_new_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_DOSSIER_NEW( instance )->priv;
 
-	g_free( priv->dname );
-	g_free( priv->database );
+	g_free( priv->dossier_name );
 	g_free( priv->root_account );
 	g_free( priv->root_password );
 	g_free( priv->adm_account );
@@ -196,8 +201,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	if( dossier_created ){
 		if( open_dossier ){
 			sdo = g_new0( ofsDossierOpen, 1 );
-			sdo->dname = g_strdup( priv->dname );
-			sdo->dbname = g_strdup( priv->database );
+			sdo->dname = g_strdup( priv->dossier_name );
 			sdo->account = g_strdup( priv->adm_account );
 			sdo->password = g_strdup( priv->adm_password );
 		}
@@ -247,7 +251,8 @@ v_init_dialog( myDialog *dialog )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_bin = ofa_dossier_new_bin_new();
+	priv->new_bin = ofa_dossier_new_bin_new(
+							OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( dialog ))));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	/* define the size group */
 	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
@@ -293,14 +298,14 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self )
+on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *widget, const gchar *account, const gchar *password, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
 	priv = self->priv;
 
-	g_free( priv->dname );
-	priv->dname = g_strdup( dname );
+	g_free( priv->dossier_name );
+	priv->dossier_name = g_strdup( dname );
 
 	g_free( priv->root_account );
 	priv->root_account = g_strdup( account );
@@ -369,7 +374,7 @@ check_for_enable_dlg( ofaDossierNew *self )
 	priv = self->priv;
 	message = NULL;
 
-	enabled = ofa_dossier_new_bin_is_valid( priv->new_bin, &message ) &&
+	enabled = ofa_dossier_new_bin_get_valid( priv->new_bin, &message ) &&
 		ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message );
 
 	set_message( self, message );
@@ -380,20 +385,26 @@ check_for_enable_dlg( ofaDossierNew *self )
 	}
 }
 
+/*
+ * this function will return FALSE in all cases
+ * only the ofaFileDir::changed signal handler will terminate the dialog
+ */
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
+	static const gchar *thisfn = "ofa_dossier_new_v_quit_on_ok";
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
-	ofaIDbms *prov_instance;
+	ofaIFileMeta *meta;
+	ofaIFilePeriod *period;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
+	ofaDBMSRootBin *root_bin;
+	gchar *account, *password;
+	ofaIDBEditor *editor;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
-	prov_instance = NULL;
-
-	/* get the database name */
-	g_free( priv->database );
-	ofa_dossier_new_bin_get_database( priv->new_bin, &priv->database );
-	g_return_val_if_fail( my_strlen( priv->database ), FALSE );
+	ok = FALSE;
 
 	/* ask for user confirmation */
 	if( !create_confirmed( OFA_DOSSIER_NEW( dialog ))){
@@ -401,31 +412,34 @@ v_quit_on_ok( myDialog *dialog )
 	}
 
 	/* define the new dossier in user settings */
-	ok = ofa_dossier_new_bin_apply( priv->new_bin );
+	meta = ofa_dossier_new_bin_apply( priv->new_bin );
 
-	if( ok ){
-		/* get the provider name (from user settings) */
-		g_free( priv->prov_name );
-		priv->prov_name = ofa_settings_get_dossier_provider( priv->dname );
-		g_return_val_if_fail( my_strlen( priv->prov_name ), FALSE );
+	if( meta ){
+		provider = ofa_ifile_meta_get_provider( meta );
+		period = ofa_ifile_meta_get_current_period( meta );
+		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
+		ofa_dbms_root_bin_get_credentials( root_bin, &account, &password );
+		connect = ofa_idbprovider_new_connect( provider );
+		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 
-		/* and a new ref on the DBMS provider module */
-		prov_instance = ofa_idbms_get_provider_by_name( priv->prov_name );
-		g_return_val_if_fail( prov_instance && OFA_IS_IDBMS( prov_instance ), FALSE );
+		if( !ofa_idbconnect_open_with_editor( connect, account, password, editor, TRUE )){
+			g_warning( "%s: unable to open the connection with meta informations", thisfn );
 
-		/* create the database itself */
-		ok = ofa_idbms_new_dossier(
-				prov_instance, priv->dname,  priv->root_account, priv->root_password );
+		} else if( !ofa_idbconnect_create_dossier( connect, meta, priv->adm_account, priv->adm_password )){
+			g_warning( "%s: unable to create the dossier", thisfn );
+
+		} else {
+			ok = TRUE;
+		}
+
+		g_free( account );
+		g_free( password );
+		g_clear_object( &period );
+		g_clear_object( &meta );
+		g_clear_object( &connect );
+		g_clear_object( &provider );
 	}
 
-	if( ok ){
-		/* last, grant administrative credentials */
-		ok = ofa_idbms_set_admin_credentials(
-				prov_instance, priv->dname, priv->root_account, priv->root_password,
-				priv->adm_account, priv->adm_password );
-	}
-
-	g_clear_object( &prov_instance );
 	priv->dossier_created = ok;
 	update_settings( OFA_DOSSIER_NEW( dialog ));
 
@@ -435,16 +449,13 @@ v_quit_on_ok( myDialog *dialog )
 static gboolean
 create_confirmed( const ofaDossierNew *self )
 {
-	ofaDossierNewPrivate *priv;
 	gboolean ok;
 	gchar *str;
 
-	priv = self->priv;
-
 	str = g_strdup_printf(
-				_( "The create operation will drop and fully reset the '%s' target database.\n"
+				_( "The create operation will drop and fully reset the target database.\n"
 					"This may not be what you actually want !\n"
-					"Are you sure you want to create into this database ?" ), priv->database );
+					"Are you sure you want to create into this database ?" ));
 
 	ok = my_utils_dialog_question( str, _( "C_reate" ));
 
