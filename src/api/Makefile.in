@@ -385,6 +385,7 @@ api_include_HEADERS = \
 	ofa-idataset.h										\
 	ofa-idbms.h											\
 	ofa-idbconnect.h									\
+	ofa-idbeditor.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexportable.h									\
