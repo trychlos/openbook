@@ -38,6 +38,7 @@
  * by a DBMS backend should implement for the needs of the application.
  */
 
+#include "ofa-idbeditor.h"
 #include "ofa-idbprovider-def.h"
 #include "ofa-ifile-meta-def.h"
 #include "ofa-ifile-period.h"
@@ -54,11 +55,14 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
 /**
  * ofaIDBConnectInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @open_with_editor: [should]: open a connection with ofaIDBEditor informations.
+ * @open_with_meta: [should]: open a connection with ofaIFileMeta informations.
  * @query: [should]: executes an insert/update/delete query.
  * @query_ex: [should]: executes a select query.
- * @query_int: [should]: returns an integer from a select query.
  * @get_last_error: [should]: returns the last error.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
+ * @create_dossier: [should]: creates a new dossier.
+ * @grant_user: [should]: grant permissions on a dossier to a user.
  *
  * This defines the interface that an #ofaIDBConnect should implement.
  */
@@ -69,7 +73,7 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBConnect instance.
+	 * @instance: an #ofaIDBConnect instance.
 	 *
 	 * The application calls this method each time it needs to know
 	 * which version of this interface the plugin implements.
@@ -78,7 +82,7 @@ typedef struct {
 	 * the application considers that the plugin only implements
 	 * the version 1 of the ofaIDBConnect interface.
 	 *
-	 * Return value: if implemented, this method must return the version
+	 * Returns: if implemented, this method must return the version
 	 * number of this interface the provider is supporting.
 	 *
 	 * Defaults to 1.
@@ -86,14 +90,55 @@ typedef struct {
 	guint    ( *get_interface_version )( const ofaIDBConnect *instance );
 
 	/**
+	 * open_with_editor:
+	 * @instance: this #ofaIDBConnect connection.
+	 * @account: the user account.
+	 * @password: [allow-none]: the user password.
+	 * @editor: a #ofaIDBEditor object which handles connection
+	 *  informations.
+	 * @server_only: whether to use full connection informations.
+	 *
+	 * Returns: %TRUE if the connection has been successfully
+	 * established, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *open_with_editor )     ( ofaIDBConnect *instance,
+											const gchar *account,
+											const gchar *password,
+											const ofaIDBEditor *editor,
+											gboolean server_only );
+
+	/**
+	 * open_with_meta:
+	 * @instance: this #ofaIDBConnect connection.
+	 * @account: the user account.
+	 * @password: [allow-none]: the user password.
+	 * @meta: the #ofaIFileMeta which identifies the dossier.
+	 * @period: [allow-none]: the #ofaIFilePeriod which identifies the
+	 *  exercice, or %NULL to establish a connection to the server
+	 *  which holds the @meta dossier.
+	 *
+	 * Returns: %TRUE if the connection has been successfully
+	 * established, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *open_with_meta )       ( ofaIDBConnect *instance,
+											const gchar *account,
+											const gchar *password,
+											const ofaIFileMeta *meta,
+											const ofaIFilePeriod *period );
+
+	/**
 	 * query:
-	 * @instance: the #ofaIDBConnect instance.
+	 * @instance: the #ofaIDBConnect user connection.
 	 * @query: the SQL query to be executed.
 	 *
 	 * Execute a modification query (INSERT, UPDATE, DELETE, DROP,
 	 * TRUNCATE) on the DBMS.
 	 *
-	 * Return value: %TRUE if the statement successfully executed,
+	 * Returns: %TRUE if the statement successfully executed,
 	 * %FALSE else.
 	 *
 	 * Since: version 1
@@ -103,7 +148,7 @@ typedef struct {
 
 	/**
 	 * query_ex:
-	 * @instance: the #ofaIDBConnect instance.
+	 * @instance: the #ofaIDBConnect user connection.
 	 * @query: the SQL query to be executed.
 	 * @result: a GSList * which will hold the result set;
 	 *  each item of the returned GSList is itself a GSList of rows,
@@ -111,7 +156,7 @@ typedef struct {
 	 *
 	 * Execute a SELECT query on the DBMS.
 	 *
-	 * Return value: %TRUE if the statement successfully executed,
+	 * Returns: %TRUE if the statement successfully executed,
 	 * %FALSE else.
 	 *
 	 * Since: version 1
@@ -122,7 +167,7 @@ typedef struct {
 
 	/**
 	 * get_last_error:
-	 * @instance: the #ofaIDBConnect instance.
+	 * @instance: the #ofaIDBConnect user connection.
 	 *
 	 * Returns: the last error message as a newly allocated string
 	 * which should be g_free() by the caller.
@@ -133,7 +178,7 @@ typedef struct {
 
 	/**
 	 * archive_and_new:
-	 * @instance: the #ofaIDBConnect connection.
+	 * @instance: the #ofaIDBConnect user connection.
 	 * @root_account: the root account of the DBMS server.
 	 * @root_password: the corresponding password.
 	 * @begin_next: the beginning date of the next exercice.
@@ -147,7 +192,7 @@ typedef struct {
 	 * keeping the current database for the new exercice, provided that
 	 * dossier settings be updated accordingly.
 	 *
-	 * Return value: %TRUE if OK.
+	 * Returns: %TRUE if successful, %FALSE else.
 	 *
 	 * Since: version 1
 	 */
@@ -156,6 +201,48 @@ typedef struct {
 											const gchar *root_password,
 											const GDate *begin_next,
 											const GDate *end_next );
+
+	/**
+	 * create_dossier:
+	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
+	 * @meta: the #ofaIFileMeta object which describes the new dossier.
+	 *
+	 * Create and initialize a new minimal dossier database.
+	 * It is expected that the DBMS provider drops its database and
+	 * recreates it without any user confirmation.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
+											ofaIFileMeta *meta );
+
+	/**
+	 * grant_user:
+	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
+	 * @meta: the #ofaIFileMeta dossier.
+	 * @user_account: the account to be granted.
+	 * @user_password: the corresponding password.
+	 *
+	 * Grant the user for access to the dossier.
+	 *
+	 * The #ofaIDBConnect interface code takes care of defining the
+	 * account as an administrator of the current exercice for the
+	 * dossier.
+	 *
+	 * The DBMS provider should take advantage of this method to define
+	 * and grant the account at the DBMS level.
+	 *
+	 * Returns: %TRUE if the account has been successfully defined,
+	 * %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
+											ofaIFileMeta *meta,
+											const gchar *user_account,
+											const gchar *user_password );
 }
 	ofaIDBConnectInterface;
 
@@ -165,25 +252,30 @@ guint           ofa_idbconnect_get_interface_last_version( void );
 
 guint           ofa_idbconnect_get_interface_version     ( const ofaIDBConnect *connect );
 
-ofaIFileMeta   *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
+ofaIDBProvider *ofa_idbconnect_get_provider              ( const ofaIDBConnect *connect );
 
-void            ofa_idbconnect_set_meta                  ( ofaIDBConnect *connect,
-																const ofaIFileMeta *meta );
+void            ofa_idbconnect_set_provider              ( ofaIDBConnect *connect,
+																const ofaIDBProvider *provider );
 
-ofaIFilePeriod *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
+gboolean        ofa_idbconnect_open_with_editor          ( ofaIDBConnect *connect,
+																const gchar *account,
+																const gchar *password,
+																const ofaIDBEditor *editor,
+																gboolean server_only );
 
-void            ofa_idbconnect_set_period                ( ofaIDBConnect *connect,
+gboolean        ofa_idbconnect_open_with_meta            ( ofaIDBConnect *connect,
+																const gchar *account,
+																const gchar *password,
+																const ofaIFileMeta *meta,
 																const ofaIFilePeriod *period );
 
 gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *connect );
 
-void            ofa_idbconnect_set_account               ( ofaIDBConnect *connect,
-																const gchar *account );
-
 gchar          *ofa_idbconnect_get_password              ( const ofaIDBConnect *connect );
 
-void            ofa_idbconnect_set_password              ( ofaIDBConnect *connect,
-																const gchar *password );
+ofaIFileMeta   *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
+
+ofaIFilePeriod *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
 
 gboolean        ofa_idbconnect_query                     ( const ofaIDBConnect *connect,
 															const gchar *query,
@@ -210,6 +302,11 @@ gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *
 															const gchar *root_password,
 															const GDate *begin_next,
 															const GDate *end_next );
+
+gboolean        ofa_idbconnect_create_dossier            ( const ofaIDBConnect *connect,
+															ofaIFileMeta *meta,
+															const gchar *adm_account,
+															const gchar *adm_password );
 
 G_END_DECLS
 

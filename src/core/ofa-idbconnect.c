@@ -31,16 +31,19 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-ifile-meta.h"
 
 /* some data attached to each IDBConnect instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIFileMeta   *meta;
-	ofaIFilePeriod *period;
+	ofaIDBProvider *provider;
 	gchar          *account;
 	gchar          *password;
+	ofaIFileMeta   *meta;
+	ofaIFilePeriod *period;
 }
 	sIDBConnect;
 
@@ -52,12 +55,16 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType        register_type( void );
 static void         interface_base_init( ofaIDBConnectInterface *klass );
 static void         interface_base_finalize( ofaIDBConnectInterface *klass );
+static void         idbconnect_set_account( ofaIDBConnect *connect, const gchar *account );
+static void         idbconnect_set_password( ofaIDBConnect *connect, const gchar *password );
+static void         idbconnect_set_meta( ofaIDBConnect *connect, const ofaIFileMeta *meta );
+static void         idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period );
 static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
 static sIDBConnect *get_idbconnect_data( const ofaIDBConnect *connect );
-static void         on_dbconnect_finalized( sIDBConnect *data, GObject *finalized_dbconnect );
+static void         on_connect_finalized( sIDBConnect *data, GObject *finalized_dbconnect );
 
 /**
  * ofa_idbconnect_get_type:
@@ -154,91 +161,146 @@ ofa_idbconnect_get_interface_last_version( void )
 guint
 ofa_idbconnect_get_interface_version( const ofaIDBConnect *instance )
 {
+	static const gchar *thisfn = "ofa_idbconnect_get_interface_version";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	g_return_val_if_fail( instance && OFA_IS_IDBCONNECT( instance ), 0 );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( instance )->get_interface_version ){
 		return( OFA_IDBCONNECT_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
 	return( 1 );
 }
 
 /**
- * ofa_idbconnect_get_meta:
+ * ofa_idbconnect_get_provider:
  * @connect: this #ofaIDBConnect instance.
  *
- * Returns: a new reference to the target #ofaIFileMeta dossier, which
- * should be g_object_unref() by the caller.
+ * Returns: a new reference to the #ofaIDBProvider which manages the
+ * connection, which should be g_object_unref() by the caller.
  */
-ofaIFileMeta *
-ofa_idbconnect_get_meta( const ofaIDBConnect *connect )
+ofaIDBProvider *
+ofa_idbconnect_get_provider( const ofaIDBConnect *connect )
 {
 	sIDBConnect *data;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->meta ));
+	return( g_object_ref( data->provider ));
 }
 
 /**
- * ofa_idbconnect_set_meta:
+ * ofa_idbconnect_set_provider:
  * @connect: this #ofaIDBConnect instance.
- * @meta: the #ofaIFileMeta object which manages the dossier.
+ * @provider: the #ofaIDBProvider object which manages the connection.
  *
- * The interface takes a reference on the @meta object, to make
+ * The interface takes a reference on the @provider object, to make
  * sure it stays available. This reference will be automatically
  * released on @connect finalization.
  */
 void
-ofa_idbconnect_set_meta( ofaIDBConnect *connect, const ofaIFileMeta *meta )
+ofa_idbconnect_set_provider( ofaIDBConnect *connect, const ofaIDBProvider *provider )
 {
 	sIDBConnect *data;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
 	data = get_idbconnect_data( connect );
-	g_clear_object( &data->meta );
-	data->meta = g_object_ref(( gpointer ) meta );
+	g_clear_object( &data->provider );
+	data->provider = g_object_ref(( gpointer ) provider );
 }
 
 /**
- * ofa_idbconnect_get_period:
+ * ofa_idbconnect_open_with_editor:
  * @connect: this #ofaIDBConnect instance.
+ * @account: the user account.
+ * @password: [allow-none]: the user password.
+ * @editor: a #ofaIDBEditor object which handles connection informations.
+ * @server_only: whether only server-level informations must be used to
+ *  open the connection, or all informations provided by @editor.
  *
- * Returns: a new reference to the target #ofaIFilePeriod dossier, which
- * should be g_object_unref() by the caller.
+ * Establish a connection to the DBMS.
+ *
+ * Returns: %TRUE if the connection has been successfully established,
+ * %FALSE else.
  */
-ofaIFilePeriod *
-ofa_idbconnect_get_period( const ofaIDBConnect *connect )
+gboolean
+ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only )
 {
-	sIDBConnect *data;
+	static const gchar *thisfn = "ofa_idbconnect_open_with_editor";
+	gboolean ok;
 
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+	g_debug( "%s: connect=%p, account=%s, password=%s, editor=%p, server_only=%s",
+			thisfn, ( void * ) connect,
+			account, password ? "******":password,
+			( void * ) editor, server_only ? "True":"False" );
 
-	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->period ));
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_IDBEDITOR( editor ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor( connect, account, password, editor, server_only );
+		if( ok ){
+			idbconnect_set_account( connect, account );
+			idbconnect_set_password( connect, password );
+		}
+		return( ok );
+	}
+
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'open_with_editor()' method",
+			thisfn, ( void * ) connect );
+	return( FALSE );
 }
 
 /**
- * ofa_idbconnect_set_period:
+ * ofa_idbconnect_open_with_meta:
  * @connect: this #ofaIDBConnect instance.
- * @period: the #ofaIFilePeriod object which manages the exercice.
+ * @account: the user account.
+ * @password: [allow-none]: the user password.
+ * @meta: the #ofaIFileMeta which identifies the dossier.
+ * @period: [allow-none]: the #ofaIFilePeriod which identifies the
+ *  exercice, or %NULL to establish a connection at server-level
+ *  to the host of @meta.
  *
- * The interface takes a reference on the @period object, to make
- * sure it stays available. This reference will be automatically
- * released on @connect finalization.
+ * Establish a connection to the specified dossier and exercice.
+ *
+ * Returns: %TRUE if the connection has been successfully established,
+ * %FALSE else.
  */
-void
-ofa_idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period )
+gboolean
+ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
 {
-	sIDBConnect *data;
+	static const gchar *thisfn = "ofa_idbconnect_open_with_meta";
+	gboolean ok;
 
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+	g_debug( "%s: connect=%p, account=%s, password=%s, meta=%p, period=%p",
+			thisfn, ( void * ) connect,
+			account, password ? "******":password,
+			( void * ) meta, ( void * ) period );
 
-	data = get_idbconnect_data( connect );
-	g_clear_object( &data->period );
-	data->period = g_object_ref(( gpointer ) period );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IFILE_PERIOD( period ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta( connect, account, password, meta, period );
+		if( ok ){
+			idbconnect_set_account( connect, account );
+			idbconnect_set_password( connect, password );
+			idbconnect_set_meta( connect, meta );
+			idbconnect_set_period( connect, period );
+		}
+		return( ok );
+	}
+
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'open_with_meta()' method",
+			thisfn, ( void * ) connect );
+	return( FALSE );
 }
 
 /**
@@ -259,13 +321,13 @@ ofa_idbconnect_get_account( const ofaIDBConnect *connect )
 	return( g_strdup( data->account ));
 }
 
-/**
+/*
  * ofa_idbconnect_set_account:
  * @connect: this #ofaIDBConnect instance.
  * @account: the account which holds the connection.
  */
-void
-ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
+static void
+idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 {
 	sIDBConnect *data;
 
@@ -294,13 +356,13 @@ ofa_idbconnect_get_password( const ofaIDBConnect *connect )
 	return( g_strdup( data->password ));
 }
 
-/**
+/*
  * ofa_idbconnect_set_password:
  * @connect: this #ofaIDBConnect instance.
  * @password: the password which holds the connection.
  */
-void
-ofa_idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
+static void
+idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
 {
 	sIDBConnect *data;
 
@@ -309,6 +371,84 @@ ofa_idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
 	data = get_idbconnect_data( connect );
 	g_free( data->password );
 	data->password = g_strdup( password );
+}
+
+/**
+ * ofa_idbconnect_get_meta:
+ * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: a new reference to the target #ofaIFileMeta dossier, which
+ * should be g_object_unref() by the caller.
+ */
+ofaIFileMeta *
+ofa_idbconnect_get_meta( const ofaIDBConnect *connect )
+{
+	sIDBConnect *data;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	data = get_idbconnect_data( connect );
+	return( g_object_ref( data->meta ));
+}
+
+/*
+ * ofa_idbconnect_set_meta:
+ * @connect: this #ofaIDBConnect instance.
+ * @meta: the #ofaIFileMeta object which manages the dossier.
+ *
+ * The interface takes a reference on the @meta object, to make
+ * sure it stays available. This reference will be automatically
+ * released on @connect finalization.
+ */
+static void
+idbconnect_set_meta( ofaIDBConnect *connect, const ofaIFileMeta *meta )
+{
+	sIDBConnect *data;
+
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	data = get_idbconnect_data( connect );
+	g_clear_object( &data->meta );
+	data->meta = g_object_ref(( gpointer ) meta );
+}
+
+/**
+ * ofa_idbconnect_get_period:
+ * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: a new reference to the target #ofaIFilePeriod dossier, which
+ * should be g_object_unref() by the caller.
+ */
+ofaIFilePeriod *
+ofa_idbconnect_get_period( const ofaIDBConnect *connect )
+{
+	sIDBConnect *data;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	data = get_idbconnect_data( connect );
+	return( g_object_ref( data->period ));
+}
+
+/*
+ * ofa_idbconnect_set_period:
+ * @connect: this #ofaIDBConnect instance.
+ * @period: the #ofaIFilePeriod object which manages the exercice.
+ *
+ * The interface takes a reference on the @period object, to make
+ * sure it stays available. This reference will be automatically
+ * released on @connect finalization.
+ */
+static void
+idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period )
+{
+	sIDBConnect *data;
+
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	data = get_idbconnect_data( connect );
+	g_clear_object( &data->period );
+	data->period = g_object_ref(( gpointer ) period );
 }
 
 /**
@@ -359,7 +499,7 @@ idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean dis
 
 	} else if( display_error ){
 		my_utils_dialog_warning(
-				_( "The IDBConnect instance does not implement the query() method." ));
+				_( "ofaIDBConnect instance does not provide 'query()' method" ));
 	}
 
 	return( ok );
@@ -405,7 +545,7 @@ ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSLis
 
 	} else if( display_error ){
 		my_utils_dialog_warning(
-				_( "The IDBConnect instance does not implement the query_ex() method." ));
+				_( "ofaIDBConnect instance does not provide 'query_ex()' method" ));
 	}
 
 	return( ok );
@@ -519,14 +659,16 @@ error_query( const ofaIDBConnect *connect, const gchar *query )
 gchar *
 ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
 {
+	static const gchar *thisfn = "ofa_idbconnect_get_last_error";
+
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error ){
 		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error( connect ));
 	}
 
-	g_warning( _( "The IDBConnect instance does not implement the get_last_error() method." ));
-
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'get_last_error()' method",
+			thisfn, ( void * ) connect );
 	return( NULL );
 }
 
@@ -552,13 +694,132 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
 		const gchar *root_account, const gchar *root_password,
 		const GDate *begin_next, const GDate *end_next )
 {
+	static const gchar *thisfn = "ofa_idbconnect_archive_and_new";
+
+	g_debug( "%s: connect=%p, root_account=%s, root_password=%s, begin_next=%p, end_next=%p",
+			thisfn, ( void * ) connect, root_account, root_password ? "******":root_password,
+			( void * ) begin_next, ( void * ) end_next );
+
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new ){
 		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new( connect, root_account, root_password, begin_next, end_next ));
 	}
 
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'archive_and_new()' method",
+			thisfn, ( void * ) connect );
 	return( FALSE );
+}
+
+/**
+ * ofa_idbconnect_create_dossier:
+ * @connect: an #ofaIDBConnect object which handles a superuser
+ *  connection on the DBMS server which will hold the dossier.
+ * @meta: the #ofaIFileMeta which describes the dossier settings.
+ * @adm_account: the Openbook administrative user account.
+ * @adm_password: the Openbook administrative user password.
+ *
+ * Creates the minimal storage space required to handle the dossier in
+ * the DBMS provider.
+ * Defines the administrative user, and grants permissions.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
+		ofaIFileMeta *meta, const gchar *adm_account, const gchar *adm_password )
+{
+	static const gchar *thisfn = "ofa_idbconnect_create_dossier";
+	sIDBConnect *data;
+	gboolean ok;
+	GString *query;
+	ofaIDBProvider *prov_instance;
+	ofaIFilePeriod *period;
+	ofaIDBConnect *db_connection;
+
+	g_debug( "%s: connect=%p, meta=%p, adm_account=%s, adm_password=%s",
+			thisfn, ( void * ) connect, ( void * ) meta,
+			adm_account, adm_password ? "******":adm_password );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+
+	ok = FALSE;
+	db_connection = NULL;
+	period = NULL;
+	prov_instance = NULL;
+	data = get_idbconnect_data( connect );
+	query = g_string_new( "" );
+
+	/* create the minimal database and grant the user */
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
+		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect, meta )){
+			if( OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user ){
+				ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, meta, adm_account, adm_password );
+			} else {
+				g_info( "%s: ofaIDBConnect instance %p does not provide 'grant_user()' method",
+						thisfn, ( void * ) connect );
+				return( FALSE );
+			}
+		} else {
+			g_warning( "%s: unable to create the dossier", thisfn );
+			return( FALSE );
+		}
+	} else {
+		g_info( "%s: ofaIDBConnect instance %p does not provide 'create_dossier()' method",
+				thisfn, ( void * ) connect );
+		return( FALSE );
+	}
+
+	/* define the dossier administrative account
+	 * requires another superuser connection, on the period at this time */
+	if( ok ){
+		ofa_ifile_meta_dump_rec( meta );
+		period = ofa_ifile_meta_get_current_period( meta );
+		prov_instance = ofa_ifile_meta_get_provider( meta );
+		db_connection = ofa_idbprovider_new_connect( prov_instance );
+		ok = ofa_idbconnect_open_with_meta(
+					db_connection, data->account, data->password, meta, period );
+	}
+	if( ok ){
+		/* initialize the newly created database */
+		g_string_printf( query,
+				"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
+				"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
+				"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query timestamp',"
+				"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') "
+				"CHARACTER SET utf8" );
+		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+	}
+	if( ok ){
+		g_string_printf( query,
+				"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
+					"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
+					"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') "
+				"CHARACTER SET utf8" );
+		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+	}
+	/* be sure the user has 'admin' role
+	 * Insert works if row did not exist yet while Update works
+	 * if row did exist */
+	if( ok ){
+		g_string_printf( query,
+					"INSERT IGNORE INTO OFA_T_ROLES "
+					"	(ROL_USER,ROL_IS_ADMIN) VALUES ('%s',1)", adm_account );
+		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+	}
+	if( ok ){
+		g_string_printf( query,
+					"UPDATE OFA_T_ROLES SET ROL_IS_ADMIN=1 WHERE ROL_USER='%s'", adm_account );
+		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+	}
+	g_string_free( query, TRUE );
+
+	g_clear_object( &db_connection );
+	g_clear_object( &prov_instance );
+	g_clear_object( &period );
+
+	return( ok );
 }
 
 static sIDBConnect *
@@ -571,20 +832,21 @@ get_idbconnect_data( const ofaIDBConnect *connect )
 	if( !data ){
 		data = g_new0( sIDBConnect, 1 );
 		g_object_set_data( G_OBJECT( connect ), IDBCONNECT_DATA, data );
-		g_object_weak_ref( G_OBJECT( connect ), ( GWeakNotify ) on_dbconnect_finalized, data );
+		g_object_weak_ref( G_OBJECT( connect ), ( GWeakNotify ) on_connect_finalized, data );
 	}
 
 	return( data );
 }
 
 static void
-on_dbconnect_finalized( sIDBConnect *data, GObject *finalized_connect )
+on_connect_finalized( sIDBConnect *data, GObject *finalized_connect )
 {
-	static const gchar *thisfn = "ofa_idbconnect_on_dbconnect_finalized";
+	static const gchar *thisfn = "ofa_idbconnect_on_connect_finalized";
 
 	g_debug( "%s: data=%p, finalized_connect=%p",
 			thisfn, ( void * ) data, ( void * ) finalized_connect );
 
+	g_clear_object( &data->provider );
 	g_clear_object( &data->meta );
 	g_clear_object( &data->period );
 	g_free( data->account );
