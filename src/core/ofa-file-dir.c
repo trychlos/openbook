@@ -207,14 +207,18 @@ ofa_file_dir_get_dossiers( ofaFileDir *dir )
 	ofaFileDirPrivate *priv;
 	GList *list;
 
+	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
+
 	priv = dir->priv;
-	list = NULL;
 
 	if( !priv->dispose_has_run ){
+
 		list = g_list_copy_deep( priv->list, ( GCopyFunc ) g_object_ref, NULL );
+
+		return( list );
 	}
 
-	return( list );
+	g_return_val_if_reached( NULL );
 }
 
 /*
@@ -269,8 +273,8 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 		}
 		meta = file_dir_get_meta( dos_name, prev_list );
 		if( meta ){
-			prov_name = ofa_ifile_meta_get_provider_name( meta );
-			idbprovider = ofa_ifile_meta_get_provider_instance( meta );
+			g_debug( "%s: dossier_name=%s already exists with meta=%p, reusing it",
+					thisfn, dos_name, ( void * ) meta );
 		} else {
 			prov_name = my_settings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
@@ -278,22 +282,17 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 				g_free( dos_name );
 				continue;
 			}
+			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
 			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
-		}
-		if( !idbprovider ){
-			g_warning( "%s: unable to find an instance for %s DBMS provider name, skipping", thisfn, prov_name );
-			g_free( dos_name );
+			meta = ofa_idbprovider_new_meta( idbprovider );
+			ofa_ifile_meta_set_dossier_name( meta, dos_name );
+			g_object_unref( idbprovider );
 			g_free( prov_name );
-			continue;
 		}
-		/* meta may be null or a reference to the previous meta
-		 * but is nonetheless expected to be set on return */
-		ofa_idbprovider_load_meta( idbprovider, &meta, dos_name, priv->settings, cstr );
+		ofa_ifile_meta_set_from_settings( meta, priv->settings, cstr );
 		ofa_ifile_meta_dump_rec( meta );
 		outlist = g_list_prepend( outlist, meta );
-		g_free( prov_name );
 		g_free( dos_name );
-		g_object_unref( idbprovider );
 	}
 
 	my_settings_free_groups( inlist );
@@ -313,14 +312,18 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 	ofaFileDirPrivate *priv;
 	guint count;
 
+	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), 0 );
+
 	priv = dir->priv;
-	count = 0;
 
 	if( !priv->dispose_has_run ){
+
 		count = g_list_length( priv->list );
+
+		return( count );
 	}
 
-	return( count );
+	g_return_val_if_reached( 0 );
 }
 
 /**
@@ -338,16 +341,20 @@ ofaIFileMeta *
 ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
 {
 	ofaFileDirPrivate *priv;
+	ofaIFileMeta *meta;
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
 
 	priv = dir->priv;
 
 	if( !priv->dispose_has_run ){
-		return( file_dir_get_meta( dossier_name, priv->list ));
+
+		meta = file_dir_get_meta( dossier_name, priv->list );
+
+		return( meta );
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
 }
 
 static ofaIFileMeta *
@@ -370,4 +377,49 @@ file_dir_get_meta( const gchar *dossier_name, GList *list )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_file_dir_set_meta_from_editor:
+ * @dir: this #ofaFileDir instance.
+ * @meta: the #ofaIFileMeta to be set.
+ * @editor: a #ofaIDBEditor instance which holds connection informations.
+ *
+ * Setup the @meta instance, writing informations to settings file.
+ */
+void
+ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIFileMeta *meta, const ofaIDBEditor *editor )
+{
+	static const gchar *thisfn = "ofa_file_dir_set_meta_from_editor";
+	ofaFileDirPrivate *priv;
+	gchar *group, *dossier_name;
+	ofaIDBProvider *prov_instance;
+	const gchar *prov_name;
+
+	g_debug( "%s: dir=%p, meta=%p, editor=%p",
+			thisfn, ( void * ) dir, ( void * ) meta, ( void * ) editor );
+
+	g_return_if_fail( dir && OFA_IS_FILE_DIR( dir ));
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
+
+	priv = dir->priv;
+
+	if( !priv->dispose_has_run ){
+
+		dossier_name = ofa_ifile_meta_get_dossier_name( meta );
+		group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
+		prov_instance = ofa_idbeditor_get_provider( editor );
+		prov_name = ofa_idbprovider_get_name( prov_instance );
+		my_settings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
+
+		ofa_ifile_meta_set_from_editor( meta, editor, priv->settings, group );
+
+		g_object_unref( prov_instance );
+		g_free( group );
+		g_free( dossier_name );
+		return;
+	}
+
+	g_return_if_reached();
 }

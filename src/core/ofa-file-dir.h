@@ -45,6 +45,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-idbeditor.h"
 #include "api/ofa-ifile-meta-def.h"
 
 G_BEGIN_DECLS
@@ -73,19 +74,23 @@ typedef struct {
 }
 	ofaFileDirClass;
 
-GType         ofa_file_dir_get_type           ( void ) G_GNUC_CONST;
+GType         ofa_file_dir_get_type            ( void ) G_GNUC_CONST;
 
-ofaFileDir   *ofa_file_dir_new                ( void );
+ofaFileDir   *ofa_file_dir_new                 ( void );
 
-GList        *ofa_file_dir_get_dossiers       ( ofaFileDir *dir );
+GList        *ofa_file_dir_get_dossiers        ( ofaFileDir *dir );
 
-#define       ofa_file_dir_free_dossiers(L)   g_list_free_full(( L ), \
+#define       ofa_file_dir_free_dossiers(L)    g_list_free_full(( L ), \
 													( GDestroyNotify ) g_object_unref )
 
-guint         ofa_file_dir_get_dossiers_count ( const ofaFileDir *dir );
+guint         ofa_file_dir_get_dossiers_count  ( const ofaFileDir *dir );
 
-ofaIFileMeta *ofa_file_dir_get_meta           ( const ofaFileDir *dir,
+ofaIFileMeta *ofa_file_dir_get_meta            ( const ofaFileDir *dir,
 													const gchar *dossier_name );
+
+void          ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir,
+													ofaIFileMeta *meta,
+													const ofaIDBEditor *editor );
 
 G_END_DECLS
 
