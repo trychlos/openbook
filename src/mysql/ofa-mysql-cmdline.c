@@ -242,8 +242,9 @@ create_fake_database( const ofaIDBConnect *connect, const ofaIDBPeriod *period )
 
 /**
  * ofa_mysql_cmdline_archive_and_new:
- * @connect: an active #ofaIDBConnect connection on the closed exercice.
- *  The dossier settings has been updated accordingly.
+ * @connect: an active #ofaIDBConnect user connection on the closed
+ *  exercice (and the dossier settings have already been updated
+ *  accordingly).
  * @root_account: administrator root account.
  * @root_password: administrator root password.
  * @begin_next: the beginning date of the next exercice.
@@ -258,7 +259,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 						const GDate *begin_next, const GDate *end_next )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
-	ofaMySQLConnect *new_cnx;
+	ofaMySQLConnect *server_cnx;
 	ofaIDBMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
@@ -272,14 +273,10 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 	meta = ofa_idbconnect_get_meta( connect );
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 
-	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
-	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
-	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
-
-	new_cnx = ofa_mysql_connect_new_for_server(
-					host, socket, port, root_account, root_password, NULL );
-
-	if( !new_cnx ){
+	/* open a superuser new connection at DBMS server level */
+	server_cnx = ofa_mysql_connect_new();
+	if( !ofa_mysql_connect_open_with_meta(
+				server_cnx, root_account, root_password, OFA_MYSQL_META( meta ), NULL )){
 		g_warning( "%s: unable to get a root connection on the DB server", thisfn );
 		g_object_unref( meta );
 		return( FALSE );
@@ -290,17 +287,20 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
 	prev_dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
-
-	new_db = ofa_mysql_connect_get_new_database( new_cnx, prev_dbname );
+	new_db = ofa_mysql_connect_get_new_database( server_cnx, prev_dbname );
 
 	g_object_unref( period );
 
 	if( !my_strlen( new_db )){
 		g_warning( "%s: unable to get a new database name", thisfn );
 		g_object_unref( meta );
-		g_object_unref( new_cnx );
+		g_object_unref( server_cnx );
 		return( FALSE );
 	}
+
+	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
+	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
+	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
 
 	cmdline = build_cmdline_ex(
 					host, socket, port, root_account, root_password, prev_dbname,
@@ -336,12 +336,12 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 		ofa_mysql_meta_add_period( OFA_MYSQL_META( meta ), TRUE, begin_next, end_next, new_db );
 		//ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
 		prev_account = ofa_idbconnect_get_account( connect );
-		do_duplicate_grants( OFA_IDBCONNECT( new_cnx ), host, prev_account, prev_dbname, new_db );
+		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
 		g_free( prev_account );
 	}
 
 	g_free( new_db );
-	g_object_unref( new_cnx );
+	g_object_unref( server_cnx );
 
 	return( ok );
 }

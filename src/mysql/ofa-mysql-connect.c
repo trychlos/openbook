@@ -64,7 +64,6 @@ static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
 static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta );
 static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password );
-static MYSQL   *connect_to( const gchar *host, const gchar *socket, guint port, const gchar *dbname, const gchar *account, const gchar *password, gchar **msg );
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
 
@@ -164,6 +163,21 @@ idbconnect_get_interface_version( const ofaIDBConnect *instance )
 	return( 1 );
 }
 
+/**
+ * ofa_mysql_connect_new:
+ *
+ * Returns: a newly allocated #ofaMySQLConnect object.
+ */
+ofaMySQLConnect *
+ofa_mysql_connect_new( void )
+{
+	ofaMySQLConnect *connect;
+
+	connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
+
+	return( connect );
+}
+
 /*
  * tries to establish the connection with informations provided by
  * the @editor
@@ -197,8 +211,9 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
 }
 
 /*
- * tries to establish the connection to the @period exercice of @meta
- * dossier
+ * Tries to establish the connection to the @period exercice of @meta
+ * dossier.
+ * If @period is %NULL, then the connection is opened at server-level.
  */
 static gboolean
 idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
@@ -224,6 +239,43 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 		ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
 
 		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/**
+ * ofa_mysql_connect_open_with_meta:
+ * @connect: this #ofaMySQLConnect instance.
+ * @account: the user account.
+ * @password: the user password.
+ * @meta: the #ofaMySQLMeta object which holds the dossier meta datas.
+ * @period: [allow-none]: the #ofaMySQLPeriod object which holds the
+ *  exercice. If %NULL, the connection is opened at server-level.
+ *
+ * Tries to establish the connection to the @period exercice of @meta
+ * dossier.
+ *
+ * Returns: %TRUE if the connection has been successfully established,
+ * %FALSE else.
+ */
+gboolean
+ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
+									const gchar *account, const gchar *password,
+									const ofaMySQLMeta *meta, const ofaMySQLPeriod *period )
+{
+	ofaMySQLConnectPrivate *priv;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
+
+	priv = connect->priv;
+
+	if( !priv->dispose_has_run ){
+		return( idbconnect_open_with_meta(
+						OFA_IDBCONNECT( connect ), account, password,
+						OFA_IDBMETA( meta ), period ? OFA_IDBPERIOD( period ) : NULL ));
 	}
 
 	g_return_val_if_reached( FALSE );
@@ -527,145 +579,6 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gc
 	}
 
 	g_return_val_if_reached( FALSE );
-}
-
-/**
- * ofa_mysql_connect_new:
- *
- * Returns: a newly instanciated #ofaMySQLConnect object, which should
- * be g_object_unref() by the caller.
- *
- * At the time of this instanciation, no DBMS connection is actually
- * opened. Once opened, the connection will be gracefully closed on
- * g_object_unref().
- */
-ofaMySQLConnect *
-ofa_mysql_connect_new( void )
-{
-	ofaMySQLConnect *connect;
-
-	connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
-
-	return( connect );
-}
-
-/**
- * ofa_mysql_connect_new_for_meta_period:
- * @meta: the #ofaMySQLMeta object which manages the dossier.
- * @period: [allow-none]: the #ofaMySQLPeriod object which handles the exercice.
- * @account: the user account.
- * @password: the user password.
- * @msg: an error message placeholder.
- *
- * Returns: a reference to a new #ofaMySQLConnect object, or %NULL if
- * we are unable to establish a valid connection.
- *
- * The connection will be gracefully closed on g_object_unref().
- *
- * @meta, @period, @account arguments are expected to be stored as
- * interface data by #ofaIDBProvider interface code.
- */
-ofaMySQLConnect *
-ofa_mysql_connect_new_for_meta_period( const ofaMySQLMeta *meta, const ofaMySQLPeriod *period,
-											const gchar *account, const gchar *password, gchar **msg )
-{
-	ofaMySQLConnect *connect;
-	MYSQL *mysql;
-
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
-	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), NULL );
-
-	connect = NULL;
-
-	mysql = connect_to(
-					ofa_mysql_meta_get_host( meta ),
-					ofa_mysql_meta_get_socket( meta ),
-					ofa_mysql_meta_get_port( meta ),
-					period ? ofa_mysql_period_get_database( period ) : NULL,
-					account,
-					password,
-					msg );
-	if( mysql ){
-		connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
-		connect->priv->mysql = mysql;
-	}
-
-	return( connect );
-}
-
-/**
- * ofa_mysql_connect_new_for_server:
- * @host: [allow-none]: the hostname which hosts the DB server.
- * @socket: [allow-none]: the listening socket path of the DB server.
- * @port: the listening port of the DB server
- * @account: the superuser account.
- * @password: the superuser password.
- * @msg: an error message placeholder.
- *
- * Returns: a reference to a new #ofaMySQLConnect object, or %NULL if
- * we are unable to establish a valid connection.
- *
- * The connection will be gracefully closed on g_object_unref().
- */
-ofaMySQLConnect *
-ofa_mysql_connect_new_for_server( const gchar *host, const gchar *socket, guint port,
-									const gchar *account, const gchar *password, gchar **msg )
-{
-	ofaMySQLConnect *connect;
-	MYSQL *mysql;
-
-	connect = NULL;
-	mysql = connect_to( host, socket, port, NULL, account, password, msg );
-	if( mysql ){
-		connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
-		connect->priv->mysql = mysql;
-	}
-
-	return( connect );
-}
-
-/*
- * host: may be %NULL, defaults to localhost
- * socket: may be %NULL (defaults to ?)
- * port, may be zero, defaults to 3306
- * dbname: may be %NULL, defaults to none (db server connection)
- * account: may be %NULL, defaults to none
- * password: may be %NULL, defaults to empty
- * msg: may be %NULL, default to no returned message if an error occurs
- */
-static MYSQL *
-connect_to( const gchar *host, const gchar *socket, guint port, const gchar *dbname,
-				const gchar *account, const gchar *password, gchar **msg )
-{
-	static const gchar *thisfn = "ofa_mysql_connect_connect_to";
-	MYSQL *mysql;
-
-	mysql = g_new0( MYSQL, 1 );
-	mysql_init( mysql );
-	mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
-	if( msg ){
-		*msg = NULL;
-	}
-
-	if( !mysql_real_connect(
-			mysql, host, account, password, dbname, port, socket, CLIENT_MULTI_RESULTS )){
-
-		if( msg ){
-			*msg = g_strdup( mysql_error( mysql ));
-		}
-		/*
-		g_debug( "%s: error: host=%s, socket=%s, port=%d, database=%s, account=%s, password=%s",
-				thisfn, ofa_mysql_meta_get_host( meta ), ofa_mysql_meta_get_socket( meta ),
-				ofa_mysql_meta_get_port( meta ), dbname, account, password );
-				*/
-
-		g_free( mysql );
-		return( NULL );
-	}
-
-	g_debug( "%s: connection OK: database=%s, account=%s", thisfn, dbname, account );
-
-	return( mysql );
 }
 
 /**
