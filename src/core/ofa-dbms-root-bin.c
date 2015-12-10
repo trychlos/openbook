@@ -457,11 +457,11 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 		/* this only works if the dossier is already registered */
 		if( priv->meta ){
 			ok = FALSE;
-			provider = ofa_ifile_meta_get_provider_instance( priv->meta );
+			provider = ofa_ifile_meta_get_provider( priv->meta );
 			if( provider ){
-				connect = ofa_idbprovider_connect_server(
-									provider, priv->meta, priv->account, priv->password, NULL );
-				ok = ( connect && OFA_IS_IDBCONNECT( connect ));
+				connect = ofa_idbprovider_new_connect( provider );
+				ok = ofa_idbconnect_open_with_meta(
+							connect, priv->account, priv->password, priv->meta, NULL );
 				g_clear_object( &connect );
 			}
 			g_clear_object( &provider );
@@ -492,6 +492,27 @@ ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
 
 		gtk_label_set_text(
 				GTK_LABEL( priv->msg_label ), valid ? _( "DB server connection is OK" ) : "" );
+	}
+}
+
+/**
+ * ofa_dbms_root_bin_get_credentials:
+ *
+ * Set the credentials.
+ */
+void
+ofa_dbms_root_bin_get_credentials( const ofaDBMSRootBin *bin, gchar **account, gchar **password )
+{
+	ofaDBMSRootBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		*account = g_strdup( priv->account );
+		*password = g_strdup( priv->password );
 	}
 }
 

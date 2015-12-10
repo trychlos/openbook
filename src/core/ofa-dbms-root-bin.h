@@ -95,6 +95,10 @@ gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
 void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
 														gboolean valid );
 
+void            ofa_dbms_root_bin_get_credentials( const ofaDBMSRootBin *bin,
+														gchar **account,
+														gchar **password );
+
 void            ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin,
 														const gchar *account,
 														const gchar *password );
