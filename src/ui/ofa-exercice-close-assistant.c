@@ -1089,14 +1089,15 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
-	const ofaIDBConnect *cnx;
+	ofaIDBConnect *cnx;
 	ofaIFilePeriod *period;
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
 	GtkApplication *application;
 	ofaFileDir *dir;
-	gchar *msg, *str, *cur_account, *cur_password;
+	gchar *str, *cur_account, *cur_password;
+	ofaIDBProvider *provider;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1134,24 +1135,24 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
 		ofa_ifile_period_dump( period );
 
+		provider = ofa_ifile_meta_get_provider( priv->meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 
-		cnx = ofa_ifile_meta_get_connection(
-					priv->meta, period, cur_account, cur_password, &msg);
+		cnx = ofa_idbprovider_new_connect( provider );
+		ok = ofa_idbconnect_open_with_meta( cnx, cur_account, cur_password, priv->meta, period );
 
 		g_free( cur_password );
 		g_free( cur_account );
+		g_object_unref( provider );
 		g_object_unref( period );
 
-		if( !cnx ){
-			str = g_strdup_printf( _( "Unable to open a connection on the new exercice: %s" ), msg );
+		if( !ok ){
+			str = g_strdup( _( "Unable to open a connection on the new exercice" ));
 			my_utils_dialog_warning( str );
-			g_free( msg );
 			g_free( str );
 			my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 			my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
-			ok = FALSE;
 
 		} else {
 			ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
@@ -1169,6 +1170,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofa_main_window_update_title( priv->main_window );
 			}
 		}
+
+		g_object_unref( cnx );
 	}
 
 	return( ok );
