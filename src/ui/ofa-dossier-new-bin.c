@@ -674,24 +674,3 @@ ofa_dossier_new_bin_get_editor( const ofaDossierNewBin *bin )
 
 	g_return_val_if_reached( NULL );
 }
-
-/**
- * ofa_dossier_new_bin_get_credentials:
- *
- * Return the content of DBMS root credentials
- */
-void
-ofa_dossier_new_bin_get_credentials( const ofaDossierNewBin *bin, gchar **account, gchar **password )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		*account = g_strdup( priv->account );
-		*password = g_strdup( priv->password );
-	}
-}

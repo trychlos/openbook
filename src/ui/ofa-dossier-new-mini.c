@@ -36,6 +36,8 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-dbms-root-bin.h"
+
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-main-window.h"
@@ -259,13 +261,15 @@ static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierNewMiniPrivate *priv;
+	ofaDBMSRootBin *root_bin;
 
 	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
 
 	if( ofa_dossier_new_bin_apply( priv->new_bin )){
 		priv->dossier_defined = TRUE;
 		ofa_dossier_new_bin_get_dname( priv->new_bin, &priv->dname );
-		ofa_dossier_new_bin_get_credentials( priv->new_bin, &priv->account, &priv->password );
+		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
+		ofa_dbms_root_bin_get_credentials( root_bin, &priv->account, &priv->password );
 	}
 
 	return( TRUE );

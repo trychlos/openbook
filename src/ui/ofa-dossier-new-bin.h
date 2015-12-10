@@ -99,10 +99,6 @@ ofaDBMSRootBin   *ofa_dossier_new_bin_get_dbms_root_bin    ( const ofaDossierNew
 
 ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( const ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_get_credentials      ( const ofaDossierNewBin *bin,
-																	gchar **account,
-																	gchar **password );
-
 G_END_DECLS
 
 #endif /* __OFA_DOSSIER_NEW_BIN_H__ */
