@@ -47,12 +47,10 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-dbms-root-bin.h"
-#include "core/ofa-file-dir.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
-#include "ui/ofa-application.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"
@@ -1094,8 +1092,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
-	GtkApplication *application;
-	ofaFileDir *dir;
 	gchar *str, *cur_account, *cur_password;
 	ofaIDBProvider *provider;
 
@@ -1125,12 +1121,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	} else {
 		/* open the new exercice */
-		application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-		g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), FALSE );
-
-		dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
-		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
-
 		period = ofa_idbmeta_get_current_period( priv->meta );
 		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 		ofa_idbperiod_dump( period );
