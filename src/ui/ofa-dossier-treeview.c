@@ -29,7 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-treeview.h"
@@ -140,12 +140,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments are the selected ofaIDBMeta and ofaIFilePeriod objects.
+	 * Arguments are the selected ofaIDBMeta and ofaIDBPeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
 	 * 						ofaIDBMeta       *meta,
-	 * 						ofaIFilePeriod   *period,
+	 * 						ofaIDBPeriod     *period,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -166,12 +166,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments are the selected ofaIDBMeta and ofaIFilePeriod objects.
+	 * Arguments are the selected ofaIDBMeta and ofaIDBPeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
 	 * 						ofaIDBMeta       *meta,
-	 * 						ofaIFilePeriod   *period,
+	 * 						ofaIDBPeriod     *period,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -401,7 +401,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	priv = tview->priv;
 	visible = TRUE;
@@ -412,7 +412,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 				visible = TRUE;
 				break;
 			case DOSSIER_SHOW_CURRENT:
-				visible = ofa_ifile_period_get_current( period );
+				visible = ofa_idbperiod_get_current( period );
 				break;
 		}
 		g_object_unref( period );
@@ -442,7 +442,7 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 	GtkTreeIter iter;
 	GtkTreeModel *model;
 	ofaIDBMeta *meta;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
 		gtk_tree_model_get( model, &iter,

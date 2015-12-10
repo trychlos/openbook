@@ -68,7 +68,7 @@ typedef struct {
  * @EXERCICE_COL_BEGIN:  begin of exercice
  * @EXERCICE_COL_END:    end of exercice
  * @EXERCICE_COL_LABEL:  localized exercice description string
- * @EXERCICE_COL_PERIOD: ofaIFilePeriod object
+ * @EXERCICE_COL_PERIOD: ofaIDBPeriod object
  *
  * The identifiers of the columns stored in the subjacent #GtkListStore.
  */

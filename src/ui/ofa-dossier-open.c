@@ -48,7 +48,7 @@ struct _ofaDossierOpenPrivate {
 	/* data
 	 */
 	ofaIDBMeta         *meta;			/* the selected dossier */
-	ofaIFilePeriod     *period;			/* the selected exercice */
+	ofaIDBPeriod       *period;			/* the selected exercice */
 	gchar              *account;		/* user credentials */
 	gchar              *password;
 	ofaIDBConnect      *connect;		/* the DB connection */
@@ -67,8 +67,8 @@ static const gchar *st_ui_id            = "DossierOpenDlg";
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self );
-static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierOpen *self );
+static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
@@ -161,7 +161,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  */
 void
 ofa_dossier_open_run( ofaMainWindow *main_window,
-		ofaIDBMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password )
+		ofaIDBMeta *meta, ofaIDBPeriod *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
@@ -289,7 +289,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 
@@ -304,7 +304,7 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod 
 }
 
 static void
-on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self )
+on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 

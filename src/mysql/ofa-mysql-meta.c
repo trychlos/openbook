@@ -56,7 +56,7 @@ static void            idbmeta_set_from_settings( ofaIDBMeta *instance, mySettin
 static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, mySettings *settings, const gchar *group );
 static GList          *load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group );
 static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
-static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end );
 static void            idbmeta_dump( const ofaIDBMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
@@ -221,7 +221,7 @@ find_period( ofaMySQLPeriod *period, GList *list )
 
 	for( it=list ; it ; it=it->next ){
 		current = ( ofaMySQLPeriod * ) it->data;
-		if( ofa_ifile_period_compare( OFA_IFILE_PERIOD( current ), OFA_IFILE_PERIOD( period )) == 0 ){
+		if( ofa_idbperiod_compare( OFA_IDBPERIOD( current ), OFA_IDBPERIOD( period )) == 0 ){
 			return( g_object_ref( current ));
 		}
 	}
@@ -270,7 +270,7 @@ idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySetting
 
 static void
 idbmeta_update_period( ofaIDBMeta *instance,
-		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
+		ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	mySettings *settings;
 	gchar *group;
@@ -414,7 +414,7 @@ ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
 	group = ofa_idbmeta_get_group_name( OFA_IDBMETA( meta ));
 
 	period = ofa_mysql_period_new_to_settings( settings, group, current, begin, end, database );
-	ofa_idbmeta_add_period( OFA_IDBMETA( meta ), OFA_IFILE_PERIOD( period ));
+	ofa_idbmeta_add_period( OFA_IDBMETA( meta ), OFA_IDBPERIOD( period ));
 	g_object_unref( period );
 
 	g_free( group );

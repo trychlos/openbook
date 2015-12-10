@@ -96,9 +96,9 @@ libofa_core_la_SOURCES = \
 	ofa-idbconnect.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\
+	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
-	ofa-ifile-period.c									\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-ipreferences.c									\

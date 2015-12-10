@@ -33,7 +33,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -67,11 +67,11 @@ G_DEFINE_TYPE( ofaDossierManager, ofa_dossier_manager, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
-static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self );
-static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self );
+static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
+static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
-static void      open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIFilePeriod *period );
+static void      open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
 static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
@@ -221,7 +221,7 @@ setup_treeview( ofaDossierManager *self )
 }
 
 static void
-on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self )
+on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok;
@@ -234,7 +234,7 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *p
 }
 
 static void
-on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierManager *self )
+on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	if( meta && period ){
 		open_dossier( self, meta, period );
@@ -276,7 +276,7 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 }
 
 static void
-open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIFilePeriod *period )
+open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 {
 #if 0
 	ofaDossierManagerPrivate *priv;

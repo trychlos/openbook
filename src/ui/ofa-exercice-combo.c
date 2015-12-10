@@ -122,11 +122,11 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
-	 * Arguments is the ofaIFilePeriod object.
+	 * Arguments is the ofaIDBPeriod object.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaExerciceCombo *combo,
-	 * 						ofaIFilePeriod *period,
+	 * 						ofaIDBPeriod   *period,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -181,7 +181,7 @@ on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
 		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
@@ -247,19 +247,19 @@ ofa_exercice_combo_get_selected( ofaExerciceCombo *self )
 /**
  * ofa_exercice_combo_set_selected:
  * @combo: this #ofaExerciceCombo box.
- * @period: the #ofaIFilePeriod object to be selected.
+ * @period: the #ofaIDBPeriod object to be selected.
  *
  * Select the first row where the specified @column holds the specified
  * @value (there should be only one row).
  */
 void
-ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIFilePeriod *period )
+ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_exercice_combo_set_selected";
 	ofaExerciceComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofaIFilePeriod *row_period;
+	ofaIDBPeriod *row_period;
 	gint cmp;
 
 	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
@@ -274,7 +274,7 @@ ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIFilePeriod *period
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 			while( TRUE ){
 				gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
-				cmp = ofa_ifile_period_compare( period, row_period );
+				cmp = ofa_idbperiod_compare( period, row_period );
 				g_object_unref( row_period );
 
 				if( cmp == 0 ){

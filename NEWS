@@ -40,13 +40,13 @@
    - ofaIDBConnect: new DBMS connection management interface.
    - ofaIDBEditor: new DBMS properties management interface.
    - ofaIDBMeta: new dossier meta properties management interface.
+   - ofaIDBPeriod: new exercice management interface.
    - ofaIDBProvider: new DBMS directory management interface.
    - ofaMySQLConnect: new class which implements ofaIDBConnect interface.
    - ofaMySQLEditorEnter: new class which implements ofaIDBEditor interface.
    - ofaMySQLEditorDisplay: new class which implements ofaIDBEditor interface.
    - ofaMySQLPeriod: new class which implements ofaIFilePeriod interface.
    - ofaMySQLMeta: new class which implements ofaIFileMeta interface.
-   - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
    - myFileMonitor: new class.
    - mySettings: new class.

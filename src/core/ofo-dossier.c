@@ -595,7 +595,7 @@ check_db_vs_settings( ofoDossier *dossier )
 	gboolean db_current, settings_current;
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	ofaIDBMeta *meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
@@ -607,9 +607,9 @@ check_db_vs_settings( ofoDossier *dossier )
 	/* data from settings */
 	cnx = ofo_dossier_get_connect( dossier );
 	period = ofa_idbconnect_get_period( cnx );
-	settings_current = ofa_ifile_period_get_current( period );
-	settings_begin = ofa_ifile_period_get_begin_date( period );
-	settings_end = ofa_ifile_period_get_end_date( period );
+	settings_current = ofa_idbperiod_get_current( period );
+	settings_begin = ofa_idbperiod_get_begin_date( period );
+	settings_end = ofa_idbperiod_get_end_date( period );
 
 	/* update settings if not equal */
 	if( db_current != settings_current ||
@@ -713,7 +713,7 @@ on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const 
 {
 	const ofaIDBConnect *cnx;
 	ofaIDBMeta *meta;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	cnx = ofo_dossier_get_connect( dossier );
 	meta = ofa_idbconnect_get_meta( cnx );

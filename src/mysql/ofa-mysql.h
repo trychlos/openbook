@@ -36,7 +36,7 @@
  *
  * The companion classes #ofaMySQLMeta, #ofaMySQLPeriod,
  * #ofaMySQLConnect respectively implement the #ofaIDBMeta,
- * #ofaIFilePeriod and #ofaIDBConnect interfaces.
+ * #ofaIDBPeriod and #ofaIDBConnect interfaces.
  *
  * As the Openbook software suite has chosen to store its meta datas
  * in a dossier settings file, server and database(s) keys are stored

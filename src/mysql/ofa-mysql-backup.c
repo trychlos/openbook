@@ -230,7 +230,7 @@ ofa_mysql_archive_and_new( const ofaIDBConnect *connect,
 	ofaIDBMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	gchar *new_db, *prev_account;
 	gboolean ok;
 	gchar *cmdline, *cmd, *stdout, *stderr;

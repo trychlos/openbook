@@ -29,10 +29,10 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 
-/* some data attached to each IFilePeriod instance
+/* some data attached to each IDBPeriod instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
  */
@@ -41,26 +41,26 @@ typedef struct {
 	GDate    end;
 	gboolean current;
 }
-	sIFilePeriod;
+	sIDBPeriod;
 
-#define IFILE_PERIOD_LAST_VERSION       1
-#define IFILE_PERIOD_DATA               "ifile-period-data"
+#define IDBPERIOD_LAST_VERSION          1
+#define IDBPERIOD_DATA                  "idbperiod-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType         register_type( void );
-static void          interface_base_init( ofaIFilePeriodInterface *klass );
-static void          interface_base_finalize( ofaIFilePeriodInterface *klass );
-static sIFilePeriod *get_ifile_period_data( const ofaIFilePeriod *period );
-static void          on_period_finalized( sIFilePeriod *data, GObject *finalized_period );
+static GType       register_type( void );
+static void        interface_base_init( ofaIDBPeriodInterface *klass );
+static void        interface_base_finalize( ofaIDBPeriodInterface *klass );
+static sIDBPeriod *get_idbperiod_data( const ofaIDBPeriod *period );
+static void        on_period_finalized( sIDBPeriod *data, GObject *finalized_period );
 
 /**
- * ofa_ifile_period_get_type:
+ * ofa_idbperiod_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_ifile_period_get_type( void )
+ofa_idbperiod_get_type( void )
 {
 	static GType type = 0;
 
@@ -72,18 +72,18 @@ ofa_ifile_period_get_type( void )
 }
 
 /*
- * ofa_ifile_period_register_type:
+ * ofa_idbperiod_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_ifile_period_register_type";
+	static const gchar *thisfn = "ofa_idbperiod_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIFilePeriodInterface ),
+		sizeof( ofaIDBPeriodInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -96,7 +96,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIFilePeriod", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDBPeriod", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -104,9 +104,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIFilePeriodInterface *klass )
+interface_base_init( ofaIDBPeriodInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_period_interface_base_init";
+	static const gchar *thisfn = "ofa_idbperiod_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
@@ -118,9 +118,9 @@ interface_base_init( ofaIFilePeriodInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIFilePeriodInterface *klass )
+interface_base_finalize( ofaIDBPeriodInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_period_interface_base_finalize";
+	static const gchar *thisfn = "ofa_idbperiod_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -130,145 +130,145 @@ interface_base_finalize( ofaIFilePeriodInterface *klass )
 }
 
 /**
- * ofa_ifile_period_get_interface_last_version:
+ * ofa_idbperiod_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_ifile_period_get_interface_last_version( void )
+ofa_idbperiod_get_interface_last_version( void )
 {
-	return( IFILE_PERIOD_LAST_VERSION );
+	return( IDBPERIOD_LAST_VERSION );
 }
 
 /**
- * ofa_ifile_period_get_interface_version:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_interface_version:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_ifile_period_get_interface_version( const ofaIFilePeriod *period )
+ofa_idbperiod_get_interface_version( const ofaIDBPeriod *period )
 {
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), 0 );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), 0 );
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_interface_version ){
-		return( OFA_IFILE_PERIOD_GET_INTERFACE( period )->get_interface_version( period ));
+	if( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version ){
+		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version( period ));
 	}
 
 	return( 1 );
 }
 
 /**
- * ofa_ifile_period_get_begin_date:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_begin_date:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: the beginning date of the @period.
  */
 const GDate *
-ofa_ifile_period_get_begin_date( const ofaIFilePeriod *period )
+ofa_idbperiod_get_begin_date( const ofaIDBPeriod *period )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	return(( const GDate * ) &data->begin );
 }
 
 /**
- * ofa_ifile_period_set_begin_date:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_set_begin_date:
+ * @period: this #ofaIDBPeriod instance.
  * @date: the beginning date to be set.
  *
  * Set the beginning date of the @period.
  */
 void
-ofa_ifile_period_set_begin_date( ofaIFilePeriod *period, const GDate *date )
+ofa_idbperiod_set_begin_date( ofaIDBPeriod *period, const GDate *date )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	my_date_set_from_date( &data->begin, date );
 }
 
 /**
- * ofa_ifile_period_get_end_date:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_end_date:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: the ending date of the @period.
  */
 const GDate *
-ofa_ifile_period_get_end_date( const ofaIFilePeriod *period )
+ofa_idbperiod_get_end_date( const ofaIDBPeriod *period )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	return(( const GDate * ) &data->end );
 }
 
 /**
- * ofa_ifile_period_set_end_date:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_set_end_date:
+ * @period: this #ofaIDBPeriod instance.
  * @date: the endning date to be set.
  *
  * Set the ending date of the @period.
  */
 void
-ofa_ifile_period_set_end_date( ofaIFilePeriod *period, const GDate *date )
+ofa_idbperiod_set_end_date( ofaIDBPeriod *period, const GDate *date )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	my_date_set_from_date( &data->end, date );
 }
 
 /**
- * ofa_ifile_period_get_current:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_current:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: %TRUE if the financial period is current, i.e. may be
  * modified, %FALSE else.
  */
 gboolean
-ofa_ifile_period_get_current( const ofaIFilePeriod *period )
+ofa_idbperiod_get_current( const ofaIDBPeriod *period )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	return( data->current );
 }
 
 /**
- * ofa_ifile_period_set_current:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_set_current:
+ * @period: this #ofaIDBPeriod instance.
  * @current: whether this @period is current.
  *
  * Set the @current flag.
  */
 void
-ofa_ifile_period_set_current( ofaIFilePeriod *period, gboolean current )
+ofa_idbperiod_set_current( ofaIDBPeriod *period, gboolean current )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	data->current = current;
 }
 
 /**
- * ofa_ifile_period_get_status:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_status:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: the localized status string, as a newly allocated string
  * which should be g_free() by the caller.
@@ -278,16 +278,16 @@ ofa_ifile_period_set_current( ofaIFilePeriod *period, gboolean current )
  * - 'Archived' for any closed period.
  */
 gchar *
-ofa_ifile_period_get_status( const ofaIFilePeriod *period )
+ofa_idbperiod_get_status( const ofaIDBPeriod *period )
 {
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
 
-	return( g_strdup( ofa_ifile_period_get_current( period ) ? _( "Current") : _( "Archived" )));
+	return( g_strdup( ofa_idbperiod_get_current( period ) ? _( "Current") : _( "Archived" )));
 }
 
 /**
- * ofa_ifile_period_get_label:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_get_label:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Returns: a localized string which describes and qualifies the @period,
  *  as a newly allocated string which should be g_free() by the caller.
@@ -297,26 +297,26 @@ ofa_ifile_period_get_status( const ofaIFilePeriod *period )
  * - 'Archived exercice from 01/01/2012 to 31/12/2012'.
  */
 gchar *
-ofa_ifile_period_get_label( const ofaIFilePeriod *period )
+ofa_idbperiod_get_label( const ofaIDBPeriod *period )
 {
 	GString *svalue;
 	gchar *sdate;
 	const GDate *begin, *end;
 
-	g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
 
-	svalue = g_string_new( ofa_ifile_period_get_current( period )
+	svalue = g_string_new( ofa_idbperiod_get_current( period )
 					? _( "Current exercice" )
 					: _( "Archived exercice" ));
 
-	begin = ofa_ifile_period_get_begin_date( period );
+	begin = ofa_idbperiod_get_begin_date( period );
 	if( my_date_is_valid( begin )){
 		sdate = my_date_to_str( begin, ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
-	end = ofa_ifile_period_get_end_date( period );
+	end = ofa_idbperiod_get_end_date( period );
 	if( my_date_is_valid( end )){
 		sdate = my_date_to_str( end, ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
@@ -327,16 +327,16 @@ ofa_ifile_period_get_label( const ofaIFilePeriod *period )
 }
 
 /**
- * ofa_ifile_period_compare:
- * @a: a #ofaIFilePeriod instance.
- * @b: another #ofaIFilePeriod instance.
+ * ofa_idbperiod_compare:
+ * @a: a #ofaIDBPeriod instance.
+ * @b: another #ofaIDBPeriod instance.
  *
  * Compare the two periods by their dates.
  *
  * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
  */
 gint
-ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
+ofa_idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 {
 	gint cmp;
 	const GDate *a_begin, *a_end, *b_begin, *b_end;
@@ -344,20 +344,20 @@ ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
 	cmp = 0;
 
 	if( a ){
-		a_begin = ofa_ifile_period_get_begin_date( a );
-		a_end = ofa_ifile_period_get_end_date( a );
+		a_begin = ofa_idbperiod_get_begin_date( a );
+		a_end = ofa_idbperiod_get_end_date( a );
 
 		if( b ){
-			b_begin = ofa_ifile_period_get_begin_date( b );
-			b_end = ofa_ifile_period_get_end_date( b );
+			b_begin = ofa_idbperiod_get_begin_date( b );
+			b_end = ofa_idbperiod_get_end_date( b );
 
 			cmp = my_date_compare_ex( a_begin, b_begin, TRUE );
 			if( cmp == 0 ){
 				cmp = my_date_compare_ex( a_end, b_end, FALSE );
 			}
 			if( cmp == 0 ){
-				if( OFA_IFILE_PERIOD_GET_INTERFACE( a )->compare ){
-					cmp = OFA_IFILE_PERIOD_GET_INTERFACE( a )->compare( a, b );
+				if( OFA_IDBPERIOD_GET_INTERFACE( a )->compare ){
+					cmp = OFA_IDBPERIOD_GET_INTERFACE( a )->compare( a, b );
 				}
 			}
 			return( cmp );
@@ -376,25 +376,25 @@ ofa_ifile_period_compare( const ofaIFilePeriod *a, const ofaIFilePeriod *b )
 }
 
 /**
- * ofa_ifile_period_dump:
- * @period: this #ofaIFilePeriod instance.
+ * ofa_idbperiod_dump:
+ * @period: this #ofaIDBPeriod instance.
  *
  * Dump the object.
  */
 void
-ofa_ifile_period_dump( const ofaIFilePeriod *period )
+ofa_idbperiod_dump( const ofaIDBPeriod *period )
 {
-	static const gchar *thisfn = "ofa_ifile_period_dump";
-	sIFilePeriod *data;
+	static const gchar *thisfn = "ofa_idbperiod_dump";
+	sIDBPeriod *data;
 	gchar *begin, *end;
 
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	if( OFA_IFILE_PERIOD_GET_INTERFACE( period )->dump ){
-		OFA_IFILE_PERIOD_GET_INTERFACE( period )->dump( period );
+	if( OFA_IDBPERIOD_GET_INTERFACE( period )->dump ){
+		OFA_IDBPERIOD_GET_INTERFACE( period )->dump( period );
 	}
 
-	data = get_ifile_period_data( period );
+	data = get_idbperiod_data( period );
 	begin = my_date_to_str( &data->begin, MY_DATE_SQL );
 	end = my_date_to_str( &data->end, MY_DATE_SQL );
 
@@ -408,16 +408,16 @@ ofa_ifile_period_dump( const ofaIFilePeriod *period )
 	g_free( end );
 }
 
-static sIFilePeriod *
-get_ifile_period_data( const ofaIFilePeriod *period )
+static sIDBPeriod *
+get_idbperiod_data( const ofaIDBPeriod *period )
 {
-	sIFilePeriod *data;
+	sIDBPeriod *data;
 
-	data = ( sIFilePeriod * ) g_object_get_data( G_OBJECT( period ), IFILE_PERIOD_DATA );
+	data = ( sIDBPeriod * ) g_object_get_data( G_OBJECT( period ), IDBPERIOD_DATA );
 
 	if( !data ){
-		data = g_new0( sIFilePeriod, 1 );
-		g_object_set_data( G_OBJECT( period ), IFILE_PERIOD_DATA, data );
+		data = g_new0( sIDBPeriod, 1 );
+		g_object_set_data( G_OBJECT( period ), IDBPERIOD_DATA, data );
 		g_object_weak_ref( G_OBJECT( period ), ( GWeakNotify ) on_period_finalized, data );
 	}
 
@@ -425,9 +425,9 @@ get_ifile_period_data( const ofaIFilePeriod *period )
 }
 
 static void
-on_period_finalized( sIFilePeriod *data, GObject *finalized_period )
+on_period_finalized( sIDBPeriod *data, GObject *finalized_period )
 {
-	static const gchar *thisfn = "ofa_ifile_period_on_period_finalized";
+	static const gchar *thisfn = "ofa_idbperiod_on_period_finalized";
 
 	g_debug( "%s: data=%p, finalized_period=%p", thisfn, ( void * ) data, ( void * ) finalized_period );
 

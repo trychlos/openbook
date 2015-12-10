@@ -355,7 +355,7 @@ ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySet
  * @meta: this #ofaIDBMeta instance.
  *
  * Returns: a list of defined financial periods (exercices) for this
- * file (dossier), as a #GList of #ofaIFilePeriod object, which should
+ * file (dossier), as a #GList of #ofaIDBPeriod object, which should
  * be #ofa_idbmeta_free_periods() by the caller.
  */
 GList *
@@ -392,18 +392,18 @@ ofa_idbmeta_set_periods( ofaIDBMeta *meta, GList *periods )
 /**
  * ofa_idbmeta_add_period:
  * @meta: this #ofaIDBMeta instance.
- * @period: the new #ofaIFilePeriod to be added.
+ * @period: the new #ofaIDBPeriod to be added.
  *
  * Takes a reference on the provided @period, and adds it to the list
  * of defined financial periods.
  */
 void
-ofa_idbmeta_add_period( ofaIDBMeta *meta, ofaIFilePeriod *period )
+ofa_idbmeta_add_period( ofaIDBMeta *meta, ofaIDBPeriod *period )
 {
 	sIDBMeta *data;
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
 	data = get_idbmeta_data( meta );
 	data->periods = g_list_prepend( data->periods, g_object_ref( period ));
@@ -412,7 +412,7 @@ ofa_idbmeta_add_period( ofaIDBMeta *meta, ofaIFilePeriod *period )
 /**
  * ofa_idbmeta_update_period:
  * @meta: this #ofaIDBMeta instance.
- * @period: the #ofaIFilePeriod to be updated.
+ * @period: the #ofaIDBPeriod to be updated.
  * @current: whether the financial period (exercice) is current.
  * @begin: [allow-none]: the beginning date.
  * @end: [allow-none]: the ending date.
@@ -421,7 +421,7 @@ ofa_idbmeta_add_period( ofaIDBMeta *meta, ofaIFilePeriod *period )
  */
 void
 ofa_idbmeta_update_period( ofaIDBMeta *meta,
-		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
+		ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofa_idbmeta_update_period";
 
@@ -430,7 +430,7 @@ ofa_idbmeta_update_period( ofaIDBMeta *meta,
 			current ? "True":"False", ( void * ) begin, ( void * ) end );
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
-	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
 	if( OFA_IDBMETA_GET_INTERFACE( meta )->update_period ){
 		OFA_IDBMETA_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
@@ -445,24 +445,24 @@ ofa_idbmeta_update_period( ofaIDBMeta *meta,
  * ofa_idbmeta_get_current_period:
  * @meta: this #ofaIDBMeta instance.
  *
- * Returns: a new reference of the #ofaIFilePeriod which identifies the
+ * Returns: a new reference of the #ofaIDBPeriod which identifies the
  * current financial period. This reference should be g_object_unref()
  * by the caller.
  */
-ofaIFilePeriod *
+ofaIDBPeriod *
 ofa_idbmeta_get_current_period( const ofaIDBMeta *meta )
 {
 	sIDBMeta *data;
 	GList *it;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
 	data = get_idbmeta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
-		period = ( ofaIFilePeriod * ) it->data;
-		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
-		if( ofa_ifile_period_get_current( period )){
+		period = ( ofaIDBPeriod * ) it->data;
+		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+		if( ofa_idbperiod_get_current( period )){
 			return( g_object_ref( period ));
 		}
 	}
@@ -511,7 +511,7 @@ ofa_idbmeta_dump_rec( const ofaIDBMeta *meta )
 	ofa_idbmeta_dump( meta );
 	data = get_idbmeta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
-		ofa_ifile_period_dump( OFA_IFILE_PERIOD( it->data ));
+		ofa_idbperiod_dump( OFA_IDBPERIOD( it->data ));
 	}
 }
 

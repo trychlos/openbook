@@ -48,7 +48,7 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta-def.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 
 G_BEGIN_DECLS
 
@@ -118,7 +118,7 @@ typedef struct {
 	/**
 	 * update_period:
 	 * @instance: the #ofaIDBMeta instance.
-	 * @period: the #ofaIFilePeriod to be updated.
+	 * @period: the #ofaIDBPeriod to be updated.
 	 * @current: whether the financial period (exercice) is current.
 	 * @begin: [allow-none]: the beginning date.
 	 * @end: [allow-none]: the ending date.
@@ -127,7 +127,7 @@ typedef struct {
 	 * datas.
 	 */
 	void             ( *update_period )        ( ofaIDBMeta *instance,
-													ofaIFilePeriod *period,
+													ofaIDBPeriod *period,
 													gboolean current,
 													const GDate *begin,
 													const GDate *end );
@@ -180,15 +180,15 @@ void            ofa_idbmeta_set_periods               ( ofaIDBMeta *meta,
 																GList *periods );
 
 void            ofa_idbmeta_add_period                ( ofaIDBMeta *meta,
-																ofaIFilePeriod *period );
+																ofaIDBPeriod *period );
 
 void            ofa_idbmeta_update_period             ( ofaIDBMeta *meta,
-																ofaIFilePeriod *period,
+																ofaIDBPeriod *period,
 																gboolean current,
 																const GDate *begin,
 																const GDate *end );
 
-ofaIFilePeriod *ofa_idbmeta_get_current_period        ( const ofaIDBMeta *meta );
+ofaIDBPeriod   *ofa_idbmeta_get_current_period        ( const ofaIDBMeta *meta );
 
 void            ofa_idbmeta_dump                      ( const ofaIDBMeta *meta );
 

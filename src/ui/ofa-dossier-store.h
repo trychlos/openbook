@@ -90,7 +90,7 @@ typedef struct {
  * @DOSSIER_COL_STATUS:   localized status of the exercice
  * @DOSSIER_COL_CODE:   status code (from api/ofo-dossier.h) of the exercice
  * @DOSSIER_COL_META:     ofaIDBMeta object
- * @DOSSIER_COL_PERIOD:   ofaIFilePeriod object
+ * @DOSSIER_COL_PERIOD:   ofaIDBPeriod object
  *
  * The columns stored in the subjacent #GtkListStore.
  */

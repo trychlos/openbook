@@ -174,8 +174,8 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	ofa-dossier-misc.lo ofa-file-dir.lo ofa-file-format.lo \
 	ofa-file-format-bin.lo ofa-iabout.lo ofa-icollector.lo \
 	ofa-iconcil.lo ofa-idataset.lo ofa-idbms.lo ofa-idbconnect.lo \
-	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbprovider.lo \
-	ofa-iexportable.lo ofa-ifile-period.lo ofa-iimporter.lo \
+	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbperiod.lo \
+	ofa-idbprovider.lo ofa-iexportable.lo ofa-iimporter.lo \
 	ofa-iimportable.lo ofa-ipreferences.lo ofa-plugin.lo \
 	ofa-preferences.lo ofa-settings.lo ofa-settings-monitor.lo \
 	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
@@ -494,9 +494,9 @@ libofa_core_la_SOURCES = \
 	ofa-idbconnect.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\
+	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
-	ofa-ifile-period.c									\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-ipreferences.c									\
@@ -669,9 +669,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbeditor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmeta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbms.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ifile-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ipreferences.Plo@am__quote@

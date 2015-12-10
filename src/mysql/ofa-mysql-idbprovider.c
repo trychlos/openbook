@@ -34,7 +34,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-connect.h"

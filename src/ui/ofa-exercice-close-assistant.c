@@ -35,7 +35,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -1090,7 +1090,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
 	ofaIDBConnect *cnx;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
@@ -1132,8 +1132,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
 
 		period = ofa_idbmeta_get_current_period( priv->meta );
-		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
-		ofa_ifile_period_dump( period );
+		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
+		ofa_idbperiod_dump( period );
 
 		provider = ofa_idbmeta_get_provider( priv->meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );

@@ -41,7 +41,7 @@
 #include "ofa-idbeditor.h"
 #include "ofa-idbprovider-def.h"
 #include "ofa-idbmeta-def.h"
-#include "ofa-ifile-period.h"
+#include "ofa-idbperiod.h"
 
 G_BEGIN_DECLS
 
@@ -115,7 +115,7 @@ typedef struct {
 	 * @account: the user account.
 	 * @password: [allow-none]: the user password.
 	 * @meta: the #ofaIDBMeta which identifies the dossier.
-	 * @period: [allow-none]: the #ofaIFilePeriod which identifies the
+	 * @period: [allow-none]: the #ofaIDBPeriod which identifies the
 	 *  exercice, or %NULL to establish a connection to the server
 	 *  which holds the @meta dossier.
 	 *
@@ -128,7 +128,7 @@ typedef struct {
 											const gchar *account,
 											const gchar *password,
 											const ofaIDBMeta *meta,
-											const ofaIFilePeriod *period );
+											const ofaIDBPeriod *period );
 
 	/**
 	 * query:
@@ -267,7 +267,7 @@ gboolean        ofa_idbconnect_open_with_meta            ( ofaIDBConnect *connec
 																const gchar *account,
 																const gchar *password,
 																const ofaIDBMeta *meta,
-																const ofaIFilePeriod *period );
+																const ofaIDBPeriod *period );
 
 gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *connect );
 
@@ -275,16 +275,16 @@ gchar          *ofa_idbconnect_get_password              ( const ofaIDBConnect *
 
 ofaIDBMeta     *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
 
-ofaIFilePeriod *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
+ofaIDBPeriod   *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
 
 gboolean        ofa_idbconnect_query                     ( const ofaIDBConnect *connect,
-															const gchar *query,
-															gboolean display_error );
+																const gchar *query,
+																gboolean display_error );
 
 gboolean        ofa_idbconnect_query_ex                  ( const ofaIDBConnect *connect,
-															const gchar *query,
-															GSList **result,
-															gboolean display_error );
+																const gchar *query,
+																GSList **result,
+																gboolean display_error );
 
 gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *connect,
 																const gchar *query,
@@ -298,15 +298,15 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 gchar          *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *connect );
 
 gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
-															const gchar *root_account,
-															const gchar *root_password,
-															const GDate *begin_next,
-															const GDate *end_next );
+																const gchar *root_account,
+																const gchar *root_password,
+																const GDate *begin_next,
+																const GDate *end_next );
 
 gboolean        ofa_idbconnect_create_dossier            ( const ofaIDBConnect *connect,
-															ofaIDBMeta *meta,
-															const gchar *adm_account,
-															const gchar *adm_password );
+																ofaIDBMeta *meta,
+																const gchar *adm_account,
+																const gchar *adm_password );
 
 G_END_DECLS
 

@@ -31,7 +31,7 @@
  * @include: mysql/ofa-mysql-period.h
  *
  * A class to manage financial periods defined for a dossier.
- * In particular, it implements #ofaIFilePeriod interface.
+ * In particular, it implements #ofaIDBPeriod interface.
  */
 
 #include "api/my-settings.h"

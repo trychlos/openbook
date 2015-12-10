@@ -396,7 +396,7 @@ v_quit_on_ok( myDialog *dialog )
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
 	ofaIDBMeta *meta;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	ofaDBMSRootBin *root_bin;

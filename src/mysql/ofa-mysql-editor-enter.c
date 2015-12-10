@@ -35,7 +35,7 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-connect.h"
@@ -45,23 +45,23 @@
 /* private instance data
  */
 struct _ofaMySQLEditorEnterPrivate {
-	gboolean        dispose_has_run;
+	gboolean      dispose_has_run;
 
 	/* setup
 	 */
-	ofaIDBMeta     *meta;
-	ofaIFilePeriod *period;
+	ofaIDBMeta   *meta;
+	ofaIDBPeriod *period;
 
 	/* runtime data
 	 */
-	gchar          *host;
-	gchar          *socket;
-	guint           port;
-	gchar          *database;
+	gchar        *host;
+	gchar        *socket;
+	guint         port;
+	gchar        *database;
 
 	/* UI
 	 */
-	GtkSizeGroup   *group0;
+	GtkSizeGroup *group0;
 };
 
 static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-editor-enter.ui";

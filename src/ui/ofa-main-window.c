@@ -894,7 +894,7 @@ set_window_title( const ofaMainWindow *window )
 	ofaMainWindowPrivate *priv;
 	const ofaIDBConnect *cnx;
 	ofaIDBMeta *meta;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	gchar *title, *dos_name, *label;
 
 	priv = window->priv;
@@ -904,7 +904,7 @@ set_window_title( const ofaMainWindow *window )
 		meta = ofa_idbconnect_get_meta( cnx );
 		period = ofa_idbconnect_get_period( cnx );
 		dos_name = ofa_idbmeta_get_dossier_name( meta );
-		label = ofa_ifile_period_get_label( period );
+		label = ofa_idbperiod_get_label( period );
 
 		title = g_strdup_printf( "%s (%s) %s - %s",
 				dos_name,

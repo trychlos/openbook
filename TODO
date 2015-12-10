@@ -536,8 +536,6 @@
                 exporter/importer plugins should rather implement a
                 ofaIEXporter/ofaIImporter interface 
 
- 917 2015-12- 4 rename ofaIFilePeriod to ofaIDBPeriod
-
  918 2015-12- 9 remove ofa_dossier_new_bin_get_credentials
 
  919 2015-12-10
@@ -4296,6 +4294,9 @@
      2015-11-26 done
 
  916 2015-12- 4 rename ofaIFileMeta to ofaIDBFile
+     2015-12-10 done
+
+ 917 2015-12- 4 rename ofaIFilePeriod to ofaIDBPeriod
      2015-12-10 done
 
 -----------------------------------------------------------------------

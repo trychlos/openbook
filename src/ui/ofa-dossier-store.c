@@ -30,7 +30,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
@@ -51,7 +51,7 @@ static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* localized status */
 		G_TYPE_STRING,					/* code status */
 		G_TYPE_OBJECT,					/* ofaIDBMeta */
-		G_TYPE_OBJECT					/* ofaIFilePeriod */
+		G_TYPE_OBJECT					/* ofaIDBPeriod */
 };
 
 /* signals defined here
@@ -67,8 +67,8 @@ static guint            st_signals[ N_SIGNALS ] = { 0 };
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
 static void     on_file_dir_changed( ofaFileDir *dir, guint count, ofaDossierStore *store );
 static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
-static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod *period );
-static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter );
+static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
+static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
 static gboolean get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
@@ -254,7 +254,7 @@ load_dataset( ofaDossierStore *store, ofaFileDir *dir )
 	GList *dossier_list, *itd;
 	ofaIDBMeta *meta;
 	GList *period_list, *itp;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 
 	dossier_list = ofa_file_dir_get_dossiers( dir );
 
@@ -264,8 +264,8 @@ load_dataset( ofaDossierStore *store, ofaFileDir *dir )
 
 		period_list = ofa_idbmeta_get_periods( meta );
 		for( itp=period_list ; itp ; itp=itp->next ){
-			period = ( ofaIFilePeriod * ) itp->data;
-			g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
+			period = ( ofaIDBPeriod * ) itp->data;
+			g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
 			insert_row( store, meta, period );
 		}
@@ -276,7 +276,7 @@ load_dataset( ofaDossierStore *store, ofaFileDir *dir )
 }
 
 static void
-insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod *period )
+insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_store_insert_row";
 	GtkTreeIter iter;
@@ -289,7 +289,7 @@ insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod
 }
 
 static void
-set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod *period, GtkTreeIter *iter )
+set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
 {
 	gchar *dosname, *begin, *end, *status;
 	const gchar *provname;
@@ -300,9 +300,9 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIFilePeriod *p
 	provname = ofa_idbprovider_get_name( provider );
 	g_object_unref( provider );
 
-	begin = my_date_to_str( ofa_ifile_period_get_begin_date( period ), ofa_prefs_date_display());
-	end = my_date_to_str( ofa_ifile_period_get_end_date( period ), ofa_prefs_date_display());
-	status = ofa_ifile_period_get_status( period );
+	begin = my_date_to_str( ofa_idbperiod_get_begin_date( period ), ofa_prefs_date_display());
+	end = my_date_to_str( ofa_idbperiod_get_end_date( period ), ofa_prefs_date_display());
+	status = ofa_idbperiod_get_status( period );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),

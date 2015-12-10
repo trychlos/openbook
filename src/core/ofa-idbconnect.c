@@ -43,7 +43,7 @@ typedef struct {
 	gchar          *account;
 	gchar          *password;
 	ofaIDBMeta     *meta;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod   *period;
 }
 	sIDBConnect;
 
@@ -58,7 +58,7 @@ static void         interface_base_finalize( ofaIDBConnectInterface *klass );
 static void         idbconnect_set_account( ofaIDBConnect *connect, const gchar *account );
 static void         idbconnect_set_password( ofaIDBConnect *connect, const gchar *password );
 static void         idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBMeta *meta );
-static void         idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period );
+static void         idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBPeriod *period );
 static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
@@ -263,7 +263,7 @@ ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, c
  * @account: the user account.
  * @password: [allow-none]: the user password.
  * @meta: the #ofaIDBMeta which identifies the dossier.
- * @period: [allow-none]: the #ofaIFilePeriod which identifies the
+ * @period: [allow-none]: the #ofaIDBPeriod which identifies the
  *  exercice, or %NULL to establish a connection at server-level
  *  to the host of @meta.
  *
@@ -273,7 +273,7 @@ ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, c
  * %FALSE else.
  */
 gboolean
-ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIFilePeriod *period )
+ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_idbconnect_open_with_meta";
 	gboolean ok;
@@ -285,7 +285,7 @@ ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, con
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_IFILE_PERIOD( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta ){
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta( connect, account, password, meta, period );
@@ -416,10 +416,10 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBMeta *meta )
  * ofa_idbconnect_get_period:
  * @connect: this #ofaIDBConnect instance.
  *
- * Returns: a new reference to the target #ofaIFilePeriod dossier, which
+ * Returns: a new reference to the target #ofaIDBPeriod dossier, which
  * should be g_object_unref() by the caller.
  */
-ofaIFilePeriod *
+ofaIDBPeriod *
 ofa_idbconnect_get_period( const ofaIDBConnect *connect )
 {
 	sIDBConnect *data;
@@ -433,14 +433,14 @@ ofa_idbconnect_get_period( const ofaIDBConnect *connect )
 /*
  * ofa_idbconnect_set_period:
  * @connect: this #ofaIDBConnect instance.
- * @period: the #ofaIFilePeriod object which manages the exercice.
+ * @period: the #ofaIDBPeriod object which manages the exercice.
  *
  * The interface takes a reference on the @period object, to make
  * sure it stays available. This reference will be automatically
  * released on @connect finalization.
  */
 static void
-idbconnect_set_period( ofaIDBConnect *connect, const ofaIFilePeriod *period )
+idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBPeriod *period )
 {
 	sIDBConnect *data;
 
@@ -734,7 +734,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	gboolean ok;
 	GString *query;
 	ofaIDBProvider *prov_instance;
-	ofaIFilePeriod *period;
+	ofaIDBPeriod *period;
 	ofaIDBConnect *db_connection;
 
 	g_debug( "%s: connect=%p, meta=%p, adm_account=%s, adm_password=%s",

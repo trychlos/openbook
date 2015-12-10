@@ -40,7 +40,7 @@
 
 #include "api/my-dialog.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ifile-period.h"
+#include "api/ofa-idbperiod.h"
 
 #include "ui/ofa-main-window-def.h"
 
@@ -74,7 +74,7 @@ GType  ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 
 void   ofa_dossier_open_run     ( ofaMainWindow *main_widow,
 											ofaIDBMeta *meta,
-											ofaIFilePeriod *period,
+											ofaIDBPeriod *period,
 											const gchar *account,
 											const gchar *password );
 
