@@ -37,7 +37,6 @@
  */
 typedef struct {
 	ofaIDBProvider *prov_instance;
-	gchar          *prov_name;
 	gchar          *dossier_name;
 	mySettings     *settings;
 	gchar          *group_name;
@@ -153,61 +152,30 @@ ofa_ifile_meta_get_interface_last_version( void )
 guint
 ofa_ifile_meta_get_interface_version( const ofaIFileMeta *meta )
 {
+	static const gchar *thisfn = "ofa_ifile_meta_get_interface_version";
+
+	g_debug( "%s: meta=%p", thisfn, ( void * ) meta );
+
 	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), 0 );
 
 	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version ){
 		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version( meta ));
 	}
 
+	g_info( "%s: ofaIFileMeta instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) meta );
 	return( 1 );
 }
 
 /**
- * ofa_ifile_meta_get_provider_name:
- * @meta: this #ofaIFileMeta instance.
- *
- * Returns: the provider name as a newly allocated
- * string which should be g_free() by the caller.
- */
-gchar *
-ofa_ifile_meta_get_provider_name( const ofaIFileMeta *meta )
-{
-	sIFileMeta *data;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	data = get_ifile_meta_data( meta );
-	return( g_strdup( data->prov_name ));
-}
-
-/**
- * ofa_ifile_meta_set_provider_name:
- * @meta: this #ofaIFileMeta instance.
- * @provider_name: the name of the DB provider.
- *
- * Stores the name of the prov as an interface data.
- */
-void
-ofa_ifile_meta_set_provider_name( ofaIFileMeta *meta, const gchar *provider_name )
-{
-	sIFileMeta *data;
-
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
-
-	data = get_ifile_meta_data( meta );
-	g_free( data->prov_name );
-	data->prov_name = g_strdup( provider_name );
-}
-
-/**
- * ofa_ifile_meta_get_provider_instance:
+ * ofa_ifile_meta_get_provider:
  * @meta: this #ofaIFileMeta instance.
  *
  * Returns: a new reference to the provider instance which should be
  * g_object_unref() by the caller.
  */
 ofaIDBProvider *
-ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *meta )
+ofa_ifile_meta_get_provider( const ofaIFileMeta *meta )
 {
 	sIFileMeta *data;
 
@@ -218,17 +186,16 @@ ofa_ifile_meta_get_provider_instance( const ofaIFileMeta *meta )
 }
 
 /**
- * ofa_ifile_meta_set_provider_instance:
+ * ofa_ifile_meta_set_provider:
  * @meta: this #ofaIFileMeta instance.
  * @instance: the #ofaIDBProvider which manages the dossier.
  *
  * The interface takes a reference on the @instance object, to make
  * sure it stays available. This reference will be automatically
- * released on @meta finalization. It is so important to not call
- * this method more than once.
+ * released on @meta finalization.
  */
 void
-ofa_ifile_meta_set_provider_instance( ofaIFileMeta *meta, const ofaIDBProvider *instance )
+ofa_ifile_meta_set_provider( ofaIFileMeta *meta, const ofaIDBProvider *instance )
 {
 	sIFileMeta *data;
 
@@ -237,86 +204,6 @@ ofa_ifile_meta_set_provider_instance( ofaIFileMeta *meta, const ofaIDBProvider *
 	data = get_ifile_meta_data( meta );
 	g_clear_object( &data->prov_instance );
 	data->prov_instance = g_object_ref(( gpointer ) instance );
-}
-
-/**
- * ofa_ifile_meta_get_settings:
- * @meta: this #ofaIFileMeta instance.
- *
- * Returns: the #mySettings object.
- *
- * The returned reference is owned by the interface, and should
- * not be freed by the caller.
- */
-mySettings *
-ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
-{
-	sIFileMeta *data;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	data = get_ifile_meta_data( meta );
-
-	return( data->settings );
-}
-
-/**
- * ofa_ifile_meta_set_settings:
- * @meta: this #ofaIFileMeta instance.
- * @settings: the #mySettings which holds the dossier settings.
- *
- * The interface takes a reference on the @settings object, to make
- * sure it stays available. This reference will be automatically
- * released on @meta finalization. It is so important to not call
- * this method more than once.
- */
-void
-ofa_ifile_meta_set_settings( ofaIFileMeta *meta, mySettings *settings )
-{
-	sIFileMeta *data;
-
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
-
-	data = get_ifile_meta_data( meta );
-	g_clear_object( &data->settings );
-	data->settings = g_object_ref( settings );
-}
-
-/**
- * ofa_ifile_meta_get_group_name:
- * @meta: this #ofaIFileMeta instance.
- *
- * Returns: the name of the group which holds all dossier informations
- * in the settings file, as a newly allocated string which should be
- * g_free() by the caller.
- */
- gchar *
-ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
-{
-	sIFileMeta *data;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	data = get_ifile_meta_data( meta );
-
-	return( g_strdup( data->group_name ));
-}
-
-/**
- * ofa_ifile_meta_set_group_name:
- * @meta: this #ofaIFileMeta instance.
- * @group_name: the group name for the dossier.
- */
-void
-ofa_ifile_meta_set_group_name( ofaIFileMeta *meta, const gchar *group_name )
-{
-	sIFileMeta *data;
-
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
-
-	data = get_ifile_meta_data( meta );
-	g_free( data->group_name );
-	data->group_name = g_strdup( group_name );
 }
 
 /**
@@ -354,6 +241,113 @@ ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
 	data = get_ifile_meta_data( meta );
 	g_free( data->dossier_name );
 	data->dossier_name = g_strdup( dossier_name );
+}
+
+/**
+ * ofa_ifile_meta_get_settings:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: the #mySettings object.
+ *
+ * The returned reference is owned by the interface, and should
+ * not be freed by the caller.
+ */
+mySettings *
+ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	data = get_ifile_meta_data( meta );
+
+	return( data->settings );
+}
+
+/**
+ * ofa_ifile_meta_get_group_name:
+ * @meta: this #ofaIFileMeta instance.
+ *
+ * Returns: the name of the group which holds all dossier informations
+ * in the settings file, as a newly allocated string which should be
+ * g_free() by the caller.
+ */
+gchar *
+ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
+{
+	sIFileMeta *data;
+
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+
+	data = get_ifile_meta_data( meta );
+
+	return( g_strdup( data->group_name ));
+}
+
+/**
+ * ofa_ifile_meta_set_from_settings:
+ * @meta: this #ofaIFileMeta instance.
+ * @settings: the #mySettings which manages the dossier settings file.
+ * @group_name: the group name for the dossier.
+ */
+void
+ofa_ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gchar *group_name )
+ {
+ 	static const gchar *thisfn = "ofa_ifile_meta_set_from_settings";
+ 	sIFileMeta *data;
+
+ 	g_debug( "%s: meta=%p, settings=%p, group_name=%s",
+ 			thisfn, ( void * ) meta, ( void * ) settings, group_name );
+
+ 	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+
+ 	data = get_ifile_meta_data( meta );
+ 	g_clear_object( &data->settings );
+ 	data->settings = g_object_ref( settings );
+ 	g_free( data->group_name );
+ 	data->group_name = g_strdup( group_name );
+
+ 	if( OFA_IFILE_META_GET_INTERFACE( meta )->set_from_settings ){
+ 		OFA_IFILE_META_GET_INTERFACE( meta )->set_from_settings( meta, settings, group_name );
+ 		return;
+ 	}
+
+ 	g_info( "%s: ofaIFileMeta instance %p does not provide 'set_from_settings()' method",
+ 			thisfn, ( void * ) meta );
+ }
+
+/**
+ * ofa_ifile_meta_set_from_editor:
+ * @meta: this #ofaIFileMeta instance.
+ * @editor: the #ofaIDBEditor which handles the connection information.
+ * @settings: the #mySettings which manages the dossier settings file.
+ * @group_name: the group name for the dossier.
+ */
+void
+ofa_ifile_meta_set_from_editor( ofaIFileMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group_name )
+{
+	static const gchar *thisfn = "ofa_ifile_meta_set_from_editor";
+	sIFileMeta *data;
+
+	g_debug( "%s: meta=%p, editor=%p, settings=%p, group_name=%s",
+			thisfn, ( void * ) meta, ( void * ) editor, ( void * ) settings, group_name );
+
+	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
+
+	data = get_ifile_meta_data( meta );
+	g_clear_object( &data->settings );
+	data->settings = g_object_ref( settings );
+	g_free( data->group_name );
+	data->group_name = g_strdup( group_name );
+
+	if( OFA_IFILE_META_GET_INTERFACE( meta )->set_from_editor ){
+		OFA_IFILE_META_GET_INTERFACE( meta )->set_from_editor( meta, editor, settings, group_name );
+		return;
+	}
+
+	g_info( "%s: ofaIFileMeta instance %p does not provide 'set_from_editor()' method",
+			thisfn, ( void * ) meta );
 }
 
 /**
@@ -429,11 +423,22 @@ void
 ofa_ifile_meta_update_period( ofaIFileMeta *meta,
 		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
+	static const gchar *thisfn = "ofa_ifile_meta_update_period";
+
+	g_debug( "%s: meta=%p, period=%p, current=%s, begin=%p, end=%p",
+			thisfn, ( void * ) meta, ( void * ) period,
+			current ? "True":"False", ( void * ) begin, ( void * ) end );
+
 	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
 
 	if( OFA_IFILE_META_GET_INTERFACE( meta )->update_period ){
 		OFA_IFILE_META_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
+		return;
 	}
+
+	g_info( "%s: ofaIFileMeta instance %p does not provide 'update_period()' method",
+			thisfn, ( void * ) meta );
 }
 
 /**
@@ -466,63 +471,6 @@ ofa_ifile_meta_get_current_period( const ofaIFileMeta *meta )
 }
 
 /**
- * ofa_ifile_meta_get_connection:
- * @meta: this #ofaIFileMeta instance.
- * @period: the #ofaIFilePeriod considered exercice.
- * @account: the user account.
- * @password: the user password.
- * @msg: [allow-none]: the error message if any.
- *
- * Open a connection on the specified dossier for the specified
- * exercice.
- *
- * Returns: an object allocated by the DBMS provider which handles all
- * the connection informations, and implements the #ofaIDBConnect
- * interface.
- *
- * The DBMS provider is responsible to gracefully close the connection
- * when the caller g_object_unref() this object.
- *
- * The interface takes care of having one of these two states:
- * - the returned value is non %NULL and implements the #ofaIDBConnect
- *   interface; the error message pointer is %NULL
- * - the returned value is %NULL; an error message is set. This error
- *   message should be g_free() by the caller.
- */
-ofaIDBConnect *
-ofa_ifile_meta_get_connection( ofaIFileMeta *meta,
-		ofaIFilePeriod *period, const gchar *account, const gchar *password, gchar **msg )
-{
-	static const gchar *thisfn = "ofa_ifile_meta_get_connection";
-	ofaIDBProvider *provider;
-	ofaIDBConnect *connect;
-
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-
-	if( msg ){
-		*msg = NULL;
-	}
-
-	provider = ofa_ifile_meta_get_provider_instance( meta );
-	if( !provider ){
-		if( msg ){
-			*msg = g_strdup( _( "Unable to get a DB provider instance" ));
-		}
-		g_warning( "%s: %s", thisfn, *msg );
-		return( NULL );
-	}
-
-	connect = ofa_idbprovider_connect_dossier( provider, meta, period, account, password, msg );
-	if( !connect ){
-		if( msg && !my_strlen( *msg )){
-			*msg = g_strdup( _( "Unable to get a DB connection" ));
-		}
-	}
-
-	return( connect );
-}
-
-/**
  * ofa_ifile_meta_dump:
  * @meta: this #ofaIFileMeta instance.
  *
@@ -540,7 +488,6 @@ ofa_ifile_meta_dump( const ofaIFileMeta *meta )
 
 	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
 	g_debug( "%s:   prov_instance=%p", thisfn, ( void * ) data->prov_instance );
-	g_debug( "%s:   prov_name=%s", thisfn, data->prov_name );
 	g_debug( "%s:   dossier_name=%s", thisfn, data->dossier_name );
 	g_debug( "%s:   settings=%p", thisfn, ( void * ) data->settings );
 	g_debug( "%s:   group_name=%s", thisfn, data->group_name );
@@ -592,7 +539,6 @@ on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
 	g_clear_object( &data->prov_instance );
-	g_free( data->prov_name );
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );

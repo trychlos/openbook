@@ -41,7 +41,8 @@
  * the #ofaFileDir singleton.
  */
 
-#include "api/ofa-idbconnect.h"
+#include "api/my-settings.h"
+#include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-ifile-meta-def.h"
 #include "api/ofa-ifile-period.h"
@@ -57,6 +58,8 @@ G_BEGIN_DECLS
  * ofaIFileMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @set_from_settings: [should]: set datas from settings.
+ * @set_from_editor: [should]: set datas from ofaIDBEditor.
  * @update_period: [should]: updates a period in the settings.
  * @dump: [should]: dump data.
  *
@@ -81,6 +84,33 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
+
+	/**
+	 * set_from_settings:
+	 * @instance: the #ofaIFileMeta instance.
+	 * @settings: the #mySettings instance.
+	 * @group: the group name in the settings.
+	 *
+	 * Set the @instance object with informations read from @settings.
+	 * Reset the defined financial periods accordingly.
+	 */
+	void             ( *set_from_settings )    ( ofaIFileMeta *instance,
+													mySettings *settings,
+													const gchar *group );
+
+	/**
+	 * set_from_editor:
+	 * @instance: the #ofaIFileMeta instance.
+	 * @editor: the #ofaIDBEditor which handles the connection informations.
+	 * @settings: the #mySettings instance.
+	 * @group: the group name in the settings.
+	 *
+	 * Writes the connection informations to @settings file.
+	 */
+	void             ( *set_from_editor )      ( ofaIFileMeta *instance,
+													const ofaIDBEditor *editor,
+													mySettings *settings,
+													const gchar *group );
 
 	/**
 	 * update_period:
@@ -115,59 +145,51 @@ guint           ofa_ifile_meta_get_interface_last_version( void );
 
 guint           ofa_ifile_meta_get_interface_version     ( const ofaIFileMeta *meta );
 
-gchar          *ofa_ifile_meta_get_provider_name         ( const ofaIFileMeta *meta );
+ofaIDBProvider *ofa_ifile_meta_get_provider              ( const ofaIFileMeta *meta );
 
-void            ofa_ifile_meta_set_provider_name         ( ofaIFileMeta *meta,
-																	const gchar *provider_name );
-
-ofaIDBProvider *ofa_ifile_meta_get_provider_instance     ( const ofaIFileMeta *meta );
-
-void            ofa_ifile_meta_set_provider_instance     ( ofaIFileMeta *meta,
-																	const ofaIDBProvider *instance );
-
-mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *meta );
-
-void            ofa_ifile_meta_set_settings              ( ofaIFileMeta *meta,
-																	mySettings *settings );
-
-gchar          *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
-
-void            ofa_ifile_meta_set_group_name            ( ofaIFileMeta *meta,
-																	const gchar *group_name );
+void            ofa_ifile_meta_set_provider              ( ofaIFileMeta *meta,
+																const ofaIDBProvider *instance );
 
 gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *meta );
 
 void            ofa_ifile_meta_set_dossier_name          ( ofaIFileMeta *meta,
-																	const gchar *dossier_name );
+																const gchar *dossier_name );
+
+mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *meta );
+
+gchar          *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
+
+void            ofa_ifile_meta_set_from_settings         ( ofaIFileMeta *meta,
+																mySettings *settings,
+																const gchar *group_name );
+
+void            ofa_ifile_meta_set_from_editor           ( ofaIFileMeta *meta,
+																const ofaIDBEditor *editor,
+																mySettings *settings,
+																const gchar *group_name );
 
 GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *meta );
 
 #define         ofa_ifile_meta_free_periods(L)           g_list_free_full(( L ), \
-																	( GDestroyNotify ) g_object_unref )
+																( GDestroyNotify ) g_object_unref )
 
 void            ofa_ifile_meta_set_periods               ( ofaIFileMeta *meta,
-																	GList *periods );
+																GList *periods );
 
 void            ofa_ifile_meta_add_period                ( ofaIFileMeta *meta,
-																	ofaIFilePeriod *period );
+																ofaIFilePeriod *period );
 
 void            ofa_ifile_meta_update_period             ( ofaIFileMeta *meta,
-																	ofaIFilePeriod *period,
-																	gboolean current,
-																	const GDate *begin,
-																	const GDate *end );
+																ofaIFilePeriod *period,
+																gboolean current,
+																const GDate *begin,
+																const GDate *end );
 
 ofaIFilePeriod *ofa_ifile_meta_get_current_period        ( const ofaIFileMeta *meta );
 
-ofaIDBConnect  *ofa_ifile_meta_get_connection            ( ofaIFileMeta *meta,
-																	ofaIFilePeriod *period,
-																	const gchar *account,
-																	const gchar *password,
-																	gchar **msg );
-
 void            ofa_ifile_meta_dump                      ( const ofaIFileMeta *meta );
 
-void            ofa_ifile_meta_dump_rec                 ( const ofaIFileMeta *meta );
+void            ofa_ifile_meta_dump_rec                  ( const ofaIFileMeta *meta );
 
 G_END_DECLS
 
