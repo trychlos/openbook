@@ -176,20 +176,18 @@ am__DEPENDENCIES_1 =
 @HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-backup.c ofa-mysql-backup.h ofa-mysql-connect.c \
-	ofa-mysql-connect.h ofa-mysql-connect-display-bin.c \
-	ofa-mysql-connect-display-bin.h ofa-mysql-connect-enter-bin.c \
-	ofa-mysql-connect-enter-bin.h ofa-mysql-meta.c \
-	ofa-mysql-meta.h ofa-mysql-idbms.c ofa-mysql-idbms.h \
-	ofa-mysql-idbprovider.c ofa-mysql-idbprovider.h \
-	ofa-mysql-ipreferences.c ofa-mysql-ipreferences.h \
-	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
-	ofa-mysql-prefs-bin.h ofa-module.c
+	ofa-mysql-connect.h ofa-mysql-editor-display.c \
+	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
+	ofa-mysql-editor-enter.h ofa-mysql-meta.c ofa-mysql-meta.h \
+	ofa-mysql-idbms.c ofa-mysql-idbms.h ofa-mysql-idbprovider.c \
+	ofa-mysql-idbprovider.h ofa-mysql-ipreferences.c \
+	ofa-mysql-ipreferences.h ofa-mysql-period.c ofa-mysql-period.h \
+	ofa-mysql-prefs-bin.c ofa-mysql-prefs-bin.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.lo ofa-mysql-connect.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-meta.lo ofa-mysql-idbms.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbms.lo ofa-mysql-idbprovider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.lo ofa-mysql-period.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo ofa-module.lo
 libofa_mysql_la_OBJECTS = $(am_libofa_mysql_la_OBJECTS)
@@ -452,10 +450,10 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-backup.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.c					\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.h					\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.c					\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.h					\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.c						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.h						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.c						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.c								\
@@ -482,8 +480,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@ui_files = \
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-display-bin.ui				\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect-enter-bin.ui					\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.ui						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
@@ -583,9 +581,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-backup.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-display-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect-enter-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ipreferences.Plo@am__quote@

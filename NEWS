@@ -40,6 +40,8 @@
    - ofaIDBConnect: new DBMS connection management interface.
    - ofaIDBProvider: new DBMS directory management interface.
    - ofaMySQLConnect: new class which implements ofaIDBConnect interface.
+   - ofaMySQLEditorEnter: new class which implements ofaIDBEditor interface.
+   - ofaMySQLEditorDisplay: new class which implements ofaIDBEditor interface.
    - ofaMySQLPeriod: new class which implements ofaIFilePeriod interface.
    - ofaMySQLMeta: new class which implements ofaIFileMeta interface.
    - ofaIFilePeriod: new exercice management interface.
