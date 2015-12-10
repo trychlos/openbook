@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_dossier_new_bin
  * @short_description: #ofaDossierNewBin class definition.
- * @include: core/ofa-dossier-new-bin.h
+ * @include: ui/ofa-dossier-new-bin.h
  *
  * Let the user define a new dossier, selecting the DBMS provider and
  * its connection properties, registering it in the settings.
@@ -41,6 +41,12 @@
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-idbeditor.h"
+
+#include "core/ofa-dbms-root-bin.h"
+
+#include "ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -68,30 +74,31 @@ typedef struct {
 }
 	ofaDossierNewBinClass;
 
-GType             ofa_dossier_new_bin_get_type            ( void ) G_GNUC_CONST;
+GType             ofa_dossier_new_bin_get_type             ( void ) G_GNUC_CONST;
 
-ofaDossierNewBin *ofa_dossier_new_bin_new                 ( void );
+ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaMainWindow *main_window );
 
-GtkSizeGroup     *ofa_dossier_new_bin_get_size_group      ( const ofaDossierNewBin *bin,
+GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( const ofaDossierNewBin *bin,
 																	guint column );
 
-void              ofa_dossier_new_bin_set_default_provider( ofaDossierNewBin *bin );
+void              ofa_dossier_new_bin_set_default_provider ( ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_set_provider        ( ofaDossierNewBin *bin,
+void              ofa_dossier_new_bin_set_provider         ( ofaDossierNewBin *bin,
 																	const gchar *provider );
 
-gboolean          ofa_dossier_new_bin_is_valid            ( const ofaDossierNewBin *bin,
+gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNewBin *bin,
 																	gchar **error_message );
 
-gboolean          ofa_dossier_new_bin_apply               ( const ofaDossierNewBin *bin );
+ofaIFileMeta     *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_get_dname           ( const ofaDossierNewBin *bin,
+void              ofa_dossier_new_bin_get_dname            ( const ofaDossierNewBin *bin,
 																	gchar **dname );
 
-void              ofa_dossier_new_bin_get_database        ( const ofaDossierNewBin *bin,
-																	gchar **database );
+ofaDBMSRootBin   *ofa_dossier_new_bin_get_dbms_root_bin    ( const ofaDossierNewBin *bin );
 
-void              ofa_dossier_new_bin_get_credentials     ( const ofaDossierNewBin *bin,
+ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( const ofaDossierNewBin *bin );
+
+void              ofa_dossier_new_bin_get_credentials      ( const ofaDossierNewBin *bin,
 																	gchar **account,
 																	gchar **password );
 

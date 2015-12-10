@@ -29,13 +29,14 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-idbms.h"
-#include "api/ofa-settings.h"
+#include "api/ofa-idbprovider.h"
 
-#include "core/ofa-dbms-root-bin.h"
+#include "core/ofa-file-dir.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-store.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
@@ -47,17 +48,19 @@ struct _ofaDossierNewBinPrivate {
 	GtkSizeGroup   *group0;
 	GtkWidget      *dbms_combo;
 	GtkWidget      *connect_infos_parent;
-	GtkWidget      *connect_infos;
+	ofaIDBEditor   *connect_infos;
 	ofaDBMSRootBin *dbms_credentials;
 	GtkWidget      *msg_label;
 
+	/* initialization
+	 */
+	ofaMainWindow  *main_window;
+	ofaFileDir     *dir;
+
 	/* runtime data
 	 */
-	gchar          *dname;
-	gchar          *prov_name;
+	gchar          *dossier_name;
 	gulong          prov_handler;
-	ofaIDbms       *prov_module;
-	void           *infos;				/* connection informations */
 	gchar          *account;
 	gchar          *password;
 };
@@ -84,9 +87,9 @@ G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
 static void     setup_bin( ofaDossierNewBin *bin );
 static void     setup_dbms_provider( ofaDossierNewBin *bin );
-static void     on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin );
+static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
-static void     on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *self );
+static void     on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self );
 static void     on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self );
 static void     changed_composite( ofaDossierNewBin *bin );
 
@@ -104,8 +107,7 @@ dossier_new_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
 
-	g_free( priv->dname );
-	g_free( priv->prov_name );
+	g_free( priv->dossier_name );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -161,19 +163,20 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaDossierNewBinPrivate ));
 
 	/**
-	 * ofaDossierNewBin::changed:
+	 * ofaDossierNewBin::ofa-changed:
 	 *
 	 * This signal is sent on the #ofaDossierNewBin when any of the
 	 * underlying information is changed. This includes the dossier
 	 * name, the DBMS provider, the connection informations and the
 	 * DBMS root credentials
 	 *
-	 * Arguments is dossier name.
+	 * Arguments are dossier name, connection informations, superuser
+	 * account and password.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierNewBin *bin,
 	 * 						const gchar    *dname,
-	 * 						void           *infos,
+	 * 						ofaIDBEditor   *widget,
 	 * 						const gchar    *account,
 	 * 						const gchar    *password,
 	 * 						gpointer        user_data );
@@ -193,13 +196,19 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 
 /**
  * ofa_dossier_new_bin_new:
+ * @main_window: the #ofaMainWindow main window.
+ *
+ * Returns: a newly defined composite widget which aggregates dossier
+ * name, DBMS provider, connection informations and root credentials.
  */
 ofaDossierNewBin *
-ofa_dossier_new_bin_new( void )
+ofa_dossier_new_bin_new( ofaMainWindow *main_window )
 {
 	ofaDossierNewBin *bin;
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
+
+	bin->priv->main_window = main_window;
 
 	setup_bin( bin );
 
@@ -218,6 +227,7 @@ setup_bin( ofaDossierNewBin *bin )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *entry, *parent, *label;
+	GtkApplication *application;
 
 	priv = bin->priv;
 	builder = gtk_builder_new_from_file( st_bin_xml );
@@ -235,7 +245,7 @@ setup_bin( ofaDossierNewBin *bin )
 	/* dossier name */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), bin );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dossier_name_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
@@ -254,6 +264,14 @@ setup_bin( ofaDossierNewBin *bin )
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
+
+	/* setup file directory */
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
+
+	priv->dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
+	g_return_if_fail( priv->dir && OFA_IS_FILE_DIR( priv->dir ));
+
 }
 
 static void
@@ -264,7 +282,7 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
-	GSList *prov_list, *ip;
+	GList *prov_list, *ip;
 
 	priv = bin->priv;
 
@@ -284,7 +302,7 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DBMS_COL_PROVIDER );
 
-	prov_list = ofa_idbms_get_providers_list();
+	prov_list = ofa_idbprovider_get_list();
 
 	for( ip=prov_list ; ip ; ip=ip->next ){
 		gtk_list_store_insert_with_values(
@@ -295,7 +313,7 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 				-1 );
 	}
 
-	ofa_idbms_free_providers_list( prov_list );
+	ofa_idbprovider_free_list( prov_list );
 
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), bin );
 
@@ -359,14 +377,14 @@ ofa_dossier_new_bin_set_provider( ofaDossierNewBin *bin, const gchar *provider )
 }
 
 static void
-on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin )
+on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 
 	priv = bin->priv;
 
-	g_free( priv->dname );
-	priv->dname = g_strdup( gtk_entry_get_text( GTK_ENTRY( editable )));
+	g_free( priv->dossier_name );
+	priv->dossier_name = g_strdup( gtk_entry_get_text( GTK_ENTRY( editable )));
 
 	changed_composite( bin );
 }
@@ -379,7 +397,8 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
 	GtkWidget *child, *label;
-	gchar *str;
+	gchar *str, *prov_name;
+	ofaIDBProvider *prov_instance;
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
 
@@ -390,49 +409,47 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 
 		/* do we had a previous selection ? */
 		if( priv->prov_handler ){
-			g_free( priv->prov_name );
-			g_signal_handler_disconnect( priv->prov_module, priv->prov_handler );
-			g_clear_object( &priv->prov_module );
+			g_return_if_fail( priv->connect_infos && OFA_IS_IDBEDITOR( priv->connect_infos ));
 			/* last, remove the widget */
 			child = gtk_bin_get_child( GTK_BIN( priv->connect_infos_parent ));
 			if( child ){
+				g_signal_handler_disconnect( child, priv->prov_handler );
 				gtk_container_remove( GTK_CONTAINER( priv->connect_infos_parent ), child );
 				priv->connect_infos = NULL;
 			}
 		}
 
-		priv->prov_name = NULL;
 		priv->prov_handler = 0;
-		priv->infos = NULL;
 
 		/* setup current provider */
 		if( gtk_combo_box_get_active_iter( combo, &iter )){
 			tmodel = gtk_combo_box_get_model( combo );
 			gtk_tree_model_get( tmodel, &iter,
-					DBMS_COL_PROVIDER, &priv->prov_name,
+					DBMS_COL_PROVIDER, &prov_name,
 					-1 );
 
-			priv->prov_module = ofa_idbms_get_provider_by_name( priv->prov_name );
+			prov_instance = ofa_idbprovider_get_instance_by_name( prov_name );
 
-			if( priv->prov_module ){
+			if( prov_instance ){
 				/* let the DBMS initialize its own part */
-				priv->prov_handler =
-						g_signal_connect( priv->prov_module,
-								"dbms-changed" , G_CALLBACK( on_connect_infos_changed ), self );
-				priv->connect_infos = ofa_idbms_connect_enter_new( priv->prov_module );
-				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), priv->connect_infos );
+				priv->connect_infos = ofa_idbprovider_new_editor( prov_instance, TRUE );
+				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), GTK_WIDGET( priv->connect_infos ));
 				my_utils_size_group_add_size_group(
-						priv->group0,
-						ofa_idbms_connect_enter_get_size_group(
-								priv->prov_module, priv->connect_infos, 0 ));
+						priv->group0, ofa_idbeditor_get_size_group( priv->connect_infos, 0 ));
+				priv->prov_handler =
+						g_signal_connect( priv->connect_infos,
+								"ofa-changed" , G_CALLBACK( on_connect_infos_changed ), self );
 
 			} else {
-				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->prov_name );
+				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), prov_name );
 				label = gtk_label_new( str );
 				g_free( str );
 				gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
 				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), label );
 			}
+
+			g_clear_object( &prov_instance );
+			g_free( prov_name );
 		}
 
 		changed_composite( self );
@@ -440,21 +457,15 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 }
 
 /*
- * a callback on the "changed" signal sent by the ofaIDbms module
- * the 'infos' data is a handler on connection informations
+ * a callback on the "changed" signal sent by the ofaIDBEditor object
  *
  * the connection itself is validated from these connection informations
  * and the DBMS root credentials
  */
 static void
-on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *self )
+on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self )
 {
-	ofaDossierNewBinPrivate *priv;
-
 	g_debug( "ofa_dossier_new_bin_on_connect_infos_changed" );
-
-	priv = self->priv;
-	priv->infos = infos;
 
 	changed_composite( self );
 }
@@ -482,11 +493,11 @@ changed_composite( ofaDossierNewBin *bin )
 
 	priv = bin->priv;
 
-	g_signal_emit_by_name( bin, "ofa-changed", priv->dname, priv->infos, priv->account, priv->password );
+	g_signal_emit_by_name( bin, "ofa-changed", priv->dossier_name, priv->connect_infos, priv->account, priv->password );
 }
 
 /**
- * ofa_dossier_new_bin_is_valid:
+ * ofa_dossier_new_bin_get_valid:
  * @bin: this #ofaDossierNewBin instance.
  * @error_message: [allow-none]: the error message to be displayed.
  *
@@ -495,11 +506,14 @@ changed_composite( ofaDossierNewBin *bin )
  * - the connection informations and the DBMS root credentials are valid
  */
 gboolean
-ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message )
+ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_message )
 {
 	ofaDossierNewBinPrivate *priv;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
 	gboolean ok, root_ok;
 	gchar *str;
+	ofaIFileMeta *meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
@@ -510,23 +524,39 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message
 	if( !priv->dispose_has_run ){
 
 		/* check for dossier name */
-		if( !my_strlen( priv->dname )){
+		if( !my_strlen( priv->dossier_name )){
 			str = g_strdup( _( "Dossier name is not set" ));
 
-		} else if( ofa_settings_has_dossier( priv->dname )){
-			str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dname );
-
-		/* check for connection informations */
 		} else {
-			ok = ofa_idbms_connect_enter_is_valid( priv->prov_module, priv->connect_infos, &str );
+			meta = ofa_file_dir_get_meta( priv->dir, priv->dossier_name );
+			if( meta ){
+				str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dossier_name );
+				g_clear_object( &meta );
+
+			} else {
+				ok = TRUE;
+			}
 		}
 
-		/* check for DBMS root credentials in all cases s that the DBMS
+		/* check for connection informations */
+		if( ok ){
+			ok = ofa_idbeditor_get_valid( priv->connect_infos, &str );
+		}
+
+		/* check for DBMS root credentials in all cases so that the DBMS
 		 * status message is erased when credentials are no longer valid
-		 * (and even another error message is displayed)
+		 * (and even if another error message is displayed)
 		 * ofa_dbms_root_credential_bin_is_valid() can only be called
 		 * when the dossier has already been registered */
-		root_ok = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
+		root_ok = FALSE;
+		if( my_strlen( priv->account )){
+			provider = ofa_idbeditor_get_provider( priv->connect_infos );
+			connect = ofa_idbprovider_new_connect( provider );
+			root_ok = ofa_idbconnect_open_with_editor(
+							connect, priv->account, priv->password, priv->connect_infos, TRUE );
+			g_clear_object( &connect );
+			g_clear_object( &provider );
+		}
 		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, root_ok );
 		if( ok && !root_ok ){
 			g_free( str );
@@ -549,25 +579,32 @@ ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin, gchar **error_message
  *
  * Define the dossier in user settings, updating the ofaDossierStore
  * simultaneously.
+ *
+ * Returns: a newly created #ofaIFileMeta object.
  */
-gboolean
+ofaIFileMeta *
 ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
-	gboolean ok;
+	ofaIDBProvider *provider;
+	ofaIFileMeta *meta;
 
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
 	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		ok = ofa_idbms_connect_enter_apply( priv->prov_module, priv->dname, priv->infos );
+		provider = ofa_idbeditor_get_provider( priv->connect_infos );
+		meta = ofa_idbprovider_new_meta( provider );
+		ofa_ifile_meta_set_dossier_name( meta, priv->dossier_name );
+		ofa_file_dir_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
+		g_object_unref( provider );
 
-		return( ok );
+		return( meta );
 	}
 
-	return( FALSE );
+	return( NULL );
 }
 
 /**
@@ -587,29 +624,54 @@ ofa_dossier_new_bin_get_dname( const ofaDossierNewBin *bin, gchar **dname )
 
 	if( !priv->dispose_has_run ){
 
-		*dname = g_strdup( priv->dname );
+		*dname = g_strdup( priv->dossier_name );
 	}
 }
 
 /**
- * ofa_dossier_new_bin_get_database:
+ * ofa_dossier_new_bin_get_dbms_root_bin:
+ * @bin: this #ofaDossierNewBin instance.
  *
- * Return the database name
+ * Returns: the #ofaDBMSRootBin composite widget.
  */
-void
-ofa_dossier_new_bin_get_database( const ofaDossierNewBin *bin, gchar **database )
+ofaDBMSRootBin *
+ofa_dossier_new_bin_get_dbms_root_bin( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-	g_return_if_fail( database );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
 	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		*database = ofa_idbms_connect_enter_get_database( priv->prov_module, priv->connect_infos );
+		return( priv->dbms_credentials );
 	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofa_dossier_new_bin_get_editor:
+ * @bin: this #ofaDossierNewBin instance.
+ *
+ * Returns: the #ofaIDBEditor widget.
+ */
+ofaIDBEditor *
+ofa_dossier_new_bin_get_editor( const ofaDossierNewBin *bin )
+{
+	ofaDossierNewBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
+
+	priv = bin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->connect_infos );
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
 /**
