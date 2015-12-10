@@ -409,7 +409,9 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBMeta *meta )
 
 	data = get_idbconnect_data( connect );
 	g_clear_object( &data->meta );
-	data->meta = g_object_ref(( gpointer ) meta );
+	if( meta ){
+		data->meta = g_object_ref(( gpointer ) meta );
+	}
 }
 
 /**
@@ -448,7 +450,9 @@ idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBPeriod *period )
 
 	data = get_idbconnect_data( connect );
 	g_clear_object( &data->period );
-	data->period = g_object_ref(( gpointer ) period );
+	if( period ){
+		data->period = g_object_ref(( gpointer ) period );
+	}
 }
 
 /**
