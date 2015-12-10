@@ -39,6 +39,10 @@
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-idbms.h"
 
+#define SETTINGS_HOST                   "MySQLHost"
+#define SETTINGS_PORT                   "MySQLPort"
+#define SETTINGS_SOCKET                 "MySQLSocket"
+
 /*
  * this structure is attached to the GtkContainer parent of the grid
  * (i.e. the container from the DossierNewDlg dialog box)
