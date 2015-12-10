@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_BACKUP_H__
-#define __OFA_MYSQL_BACKUP_H__
+#ifndef __OFA_MYSQL_CMDLINE_H__
+#define __OFA_MYSQL_CMDLINE_H__
 
 /**
  * SECTION: ofa_mysql
@@ -35,27 +35,27 @@
 
 G_BEGIN_DECLS
 
-const gchar *ofa_mysql_get_def_backup_cmd ( const ofaIDbms *instance );
+const gchar *ofa_mysql_cmdline_backup_get_default_command ( const ofaIDbms *instance );
 
-gboolean     ofa_mysql_backup             ( const ofaIDbms *instance,
-														void *handle,
-														const gchar *fname,
-														gboolean verbose );
+gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaIDbms *instance,
+																void *handle,
+																const gchar *fname,
+																gboolean verbose );
 
-const gchar *ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance );
+const gchar *ofa_mysql_cmdline_restore_get_default_command( const ofaIDbms *instance );
 
-gboolean     ofa_mysql_restore            ( const ofaIDbms *instance,
-														const gchar *dname,
-														const gchar *furi,
-														const gchar *account,
-														const gchar *password );
+gboolean     ofa_mysql_cmdline_restore_run                ( const ofaIDbms *instance,
+																const gchar *dname,
+																const gchar *furi,
+																const gchar *account,
+																const gchar *password );
 
-gboolean     ofa_mysql_archive_and_new    ( const ofaIDBConnect *connect,
-												const gchar *root_account,
-												const gchar *root_password,
-												const GDate *begin_next,
-												const GDate *end_next );
+gboolean     ofa_mysql_cmdline_archive_and_new            ( const ofaIDBConnect *connect,
+																const gchar *root_account,
+																const gchar *root_password,
+																const GDate *begin_next,
+																const GDate *end_next );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_BACKUP_H__ */
+#endif /* __OFA_MYSQL_CMDLINE_H__ */

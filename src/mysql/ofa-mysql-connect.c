@@ -35,7 +35,7 @@
 #include "api/ofa-idbperiod.h"
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-backup.h"
+#include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-editor-enter.h"
 
@@ -367,7 +367,7 @@ idbconnect_get_last_error( const ofaIDBConnect *instance )
 static gboolean
 idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next )
 {
-	return( ofa_mysql_archive_and_new( instance, root_account, root_password, begin_next, end_next ));
+	return( ofa_mysql_cmdline_archive_and_new( instance, root_account, root_password, begin_next, end_next ));
 }
 
 /*

@@ -175,7 +175,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
-	ofa-mysql-backup.c ofa-mysql-backup.h ofa-mysql-connect.c \
+	ofa-mysql-cmdline.c ofa-mysql-cmdline.h ofa-mysql-connect.c \
 	ofa-mysql-connect.h ofa-mysql-editor-display.c \
 	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
 	ofa-mysql-editor-enter.h ofa-mysql-meta.c ofa-mysql-meta.h \
@@ -184,7 +184,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-ipreferences.h ofa-mysql-period.c ofa-mysql-period.h \
 	ofa-mysql-prefs-bin.c ofa-mysql-prefs-bin.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-backup.lo ofa-mysql-connect.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbms.lo ofa-mysql-idbprovider.lo \
@@ -446,8 +446,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
 @HAVE_MYSQL_TRUE@	ofa-mysql.c										\
 @HAVE_MYSQL_TRUE@	ofa-mysql.h										\
-@HAVE_MYSQL_TRUE@	ofa-mysql-backup.c								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-backup.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.c						\
@@ -580,7 +580,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-backup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-cmdline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@

@@ -36,7 +36,7 @@
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-backup.h"
+#include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-idbms.h"
 
 /*
@@ -101,8 +101,8 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	//iface->connect_enter_apply = ofa_mysql_connect_enter_bin_apply;
 	iface->new_dossier = idbms_new_dossier;
 	iface->grant_user = idbms_grant_user;
-	iface->backup = ofa_mysql_backup;
-	iface->restore = ofa_mysql_restore;
+	iface->backup = ofa_mysql_cmdline_backup_run;
+	iface->restore = ofa_mysql_cmdline_restore_run;
 	//iface->archive = ofa_mysql_archive;
 #if 0
 	iface->get_dossier_host = idbms_get_dossier_host;

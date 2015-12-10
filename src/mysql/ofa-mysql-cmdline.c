@@ -49,7 +49,7 @@
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-backup.h"
+#include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-idbms.h"
 #include "ofa-mysql-meta.h"
@@ -88,16 +88,16 @@ static void        exit_restore_cb( GPid child_pid, gint status, backupInfos *in
 static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname );
 
 /**
- * ofa_mysql_get_def_backup_cmd:
+ * ofa_mysql_cmdline_backup_get_default_command:
  */
 const gchar *
-ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
+ofa_mysql_cmdline_backup_get_default_command( const ofaIDbms *instance )
 {
 	return( "mysqldump --verbose %O -u%U -p%P %B | gzip -c > %F" );
 }
 
 /**
- * ofa_mysql_backup:
+ * ofa_mysql_cmdline_backup_run:
  *
  * Backup the currently connected database.
  *
@@ -105,7 +105,7 @@ ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
  * so that we will be able to reload the data to any database name.
  */
 gboolean
-ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gboolean verbose )
+ofa_mysql_cmdline_backup_run( const ofaIDbms *instance, void *handle, const gchar *fname, gboolean verbose )
 {
 	mysqlInfos *infos;
 	gchar *cmdline;
@@ -115,7 +115,7 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( !my_strlen( cmdline )){
-		cmdline = g_strdup( ofa_mysql_get_def_backup_cmd( instance ));
+		cmdline = g_strdup( ofa_mysql_cmdline_backup_get_default_command( instance ));
 	}
 
 	ofa_mysql_query( instance, infos, "FLUSH TABLES WITH READ LOCK" );
@@ -136,21 +136,21 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 }
 
 /**
- * ofa_mysql_get_def_restore_cmd:
+ * ofa_mysql_cmdline_restore_get_default_command:
  */
 const gchar *
-ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
+ofa_mysql_cmdline_restore_get_default_command( const ofaIDbms *instance )
 {
 	return( "mysql %O -u%U -p%P -e 'drop database if exists %B'; mysql %O -u%U -p%P -e 'create database %B'; gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
 }
 
 /**
- * ofa_mysql_restore:
+ * ofa_mysql_cmdline_restore_run:
  *
  * Restore a backup file on a named dossier.
  */
 gboolean
-ofa_mysql_restore( const ofaIDbms *instance,
+ofa_mysql_cmdline_restore_run( const ofaIDbms *instance,
 						const gchar *dname, const gchar *furi,
 						const gchar *root_account, const gchar *root_password )
 {
@@ -167,7 +167,7 @@ ofa_mysql_restore( const ofaIDbms *instance,
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( !my_strlen( cmdline )){
-		cmdline = g_strdup( ofa_mysql_get_def_restore_cmd( instance ));
+		cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command( instance ));
 	}
 
 	ok = do_backup_restore(
@@ -209,7 +209,7 @@ create_fake_database( const ofaIDbms *instance, mysqlInfos *infos )
 }
 
 /**
- * ofa_mysql_archive_and_new:
+ * ofa_mysql_cmdline_archive_and_new:
  * @connect: an active #ofaIDBConnect connection on the closed exercice.
  *  The dossier settings has been updated accordingly.
  * @root_account: administrator root account.
@@ -221,11 +221,11 @@ create_fake_database( const ofaIDbms *instance, mysqlInfos *infos )
  * corresponding line accordingly in the dossier settings.
  */
 gboolean
-ofa_mysql_archive_and_new( const ofaIDBConnect *connect,
+ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 						const gchar *root_account, const gchar *root_password,
 						const GDate *begin_next, const GDate *end_next )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_archive_and_new";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_archive_and_new";
 	ofaMySQLConnect *new_cnx;
 	ofaIDBMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
@@ -385,7 +385,7 @@ do_backup_restore( const mysqlInfos *sql_infos,
 static gchar *
 build_cmdline_infos( const mysqlInfos *infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline_infos";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_build_cmdline_infos";
 	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
@@ -468,7 +468,7 @@ build_cmdline_ex( const gchar *host, const gchar *socket, guint port,
 					const gchar *dbname,
 					const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline_ex";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_build_cmdline_ex";
 	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
@@ -577,7 +577,7 @@ create_window( backupInfos *infos, const gchar *window_title )
 static GPid
 exec_command( const gchar *cmdline, backupInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_exec_command";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_exec_command";
 	gboolean ok;
 	gchar *cmd;
 	gint argc;
@@ -746,7 +746,7 @@ stderr_done( GIOChannel *ioc )
 static void
 display_output( const gchar *str, backupInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_display_output";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_display_output";
 	GtkTextBuffer *textbuf;
 	GtkTextIter enditer;
 	const gchar *charset;
@@ -793,7 +793,7 @@ display_output( const gchar *str, backupInfos *infos )
 static void
 exit_backup_cb( GPid child_pid, gint status, backupInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_exit_backup_cb";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_exit_backup_cb";
 	GtkWidget *dlg;
 	gchar *msg;
 
@@ -854,7 +854,7 @@ exit_backup_cb( GPid child_pid, gint status, backupInfos *infos )
 static void
 exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_exit_restore_cb";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_exit_restore_cb";
 	GtkWidget *dlg;
 	gchar *msg;
 
@@ -924,7 +924,7 @@ exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 static gboolean
 do_duplicate_grants( ofaIDBConnect *connect, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_do_duplicate_grants";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_run_do_duplicate_grants";
 	gchar *hostname, *query, *str;
 	GSList *result, *irow, *icol;
 	GRegex *regex;

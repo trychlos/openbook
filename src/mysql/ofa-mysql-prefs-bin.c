@@ -34,7 +34,7 @@
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
-#include "ofa-mysql-backup.h"
+#include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-idbms.h"
 #include "ofa-mysql-prefs-bin.h"
 
@@ -218,7 +218,7 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
-		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_backup_cmd( OFA_IDBMS( priv->instance )));
+		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_cmdline_backup_get_default_command( OFA_IDBMS( priv->instance )));
 	}
 	g_free( cmdline );
 
@@ -232,7 +232,7 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	if( my_strlen( cmdline )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
-		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_restore_cmd( OFA_IDBMS( priv->instance )));
+		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_cmdline_restore_get_default_command( OFA_IDBMS( priv->instance )));
 	}
 	g_free( cmdline );
 
