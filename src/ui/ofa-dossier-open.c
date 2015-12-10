@@ -417,19 +417,26 @@ static gboolean
 is_connection_valid( ofaDossierOpen *self, gchar **msg )
 {
 	ofaDossierOpenPrivate *priv;
+	ofaIDBProvider *provider;
 	gboolean valid;
 
 	priv = self->priv;
 	g_clear_object( &priv->connect );
 	valid = FALSE;
 
-	priv->connect = ofa_ifile_meta_get_connection(
-							priv->meta, priv->period, priv->account, priv->password, msg );
-	if( priv->connect ){
-		valid = TRUE;
+	provider = ofa_ifile_meta_get_provider( priv->meta );
+	priv->connect = ofa_idbprovider_new_connect( provider );
+	valid = ofa_idbconnect_open_with_meta(
+					priv->connect, priv->account, priv->password, priv->meta, priv->period );
+	g_object_unref( provider );
 
-	} else if( msg ){
-		*msg = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
+	if( msg ){
+		if( valid ){
+			g_free( *msg );
+			*msg = NULL;
+		} else {
+			*msg = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
+		}
 	}
 
 	return( valid );
