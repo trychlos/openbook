@@ -22,16 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IFILE_META_H__
-#define __OPENBOOK_API_OFA_IFILE_META_H__
+#ifndef __OPENBOOK_API_OFA_IDBMETA_H__
+#define __OPENBOOK_API_OFA_IDBMETA_H__
 
 /**
- * SECTION: ifile_meta
- * @title: ofaIFileMeta
+ * SECTION: idbmeta
+ * @title: ofaIDBMeta
  * @short_description: An interface to manage dossiers meta properties.
- * @include: openbook/ofa-ifile-meta.h
+ * @include: openbook/ofa-idbmeta.h
  *
- * The #ofaIFileMeta interface manages the identification of the dossiers,
+ * The ofaIDB<...> interfaces serie let the user choose and manage
+ * different DBMS backends.
+ *
+ * The #ofaIDBMeta interface manages the identification of the dossiers,
  * and other external properties. This interface is expected to be
  * implemented by objects instanciated by DBMS plugins.
  *
@@ -44,18 +47,18 @@
 #include "api/my-settings.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta-def.h"
+#include "api/ofa-idbmeta-def.h"
 #include "api/ofa-ifile-period.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IFILE_META                      ( ofa_ifile_meta_get_type())
-#define OFA_IFILE_META( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IFILE_META, ofaIFileMeta ))
-#define OFA_IS_IFILE_META( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IFILE_META ))
-#define OFA_IFILE_META_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IFILE_META, ofaIFileMetaInterface ))
+#define OFA_TYPE_IDBMETA                      ( ofa_idbmeta_get_type())
+#define OFA_IDBMETA( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IDBMETA, ofaIDBMeta ))
+#define OFA_IS_IDBMETA( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBMETA ))
+#define OFA_IDBMETA_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBMETA, ofaIDBMetaInterface ))
 
 /**
- * ofaIFileMetaInterface:
+ * ofaIDBMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
  * @set_from_settings: [should]: set datas from settings.
@@ -63,7 +66,7 @@ G_BEGIN_DECLS
  * @update_period: [should]: updates a period in the settings.
  * @dump: [should]: dump data.
  *
- * This defines the interface that an #ofaIFileMeta should/must
+ * This defines the interface that an #ofaIDBMeta should/must
  * implement.
  */
 typedef struct {
@@ -73,7 +76,7 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIFileMeta instance.
+	 * @instance: the #ofaIDBMeta instance.
 	 *
 	 * The interface calls this method each time it need to know which
 	 * version is implemented by the instance.
@@ -83,38 +86,38 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint            ( *get_interface_version )( const ofaIFileMeta *instance );
+	guint            ( *get_interface_version )( const ofaIDBMeta *instance );
 
 	/**
 	 * set_from_settings:
-	 * @instance: the #ofaIFileMeta instance.
+	 * @instance: the #ofaIDBMeta instance.
 	 * @settings: the #mySettings instance.
 	 * @group: the group name in the settings.
 	 *
 	 * Set the @instance object with informations read from @settings.
 	 * Reset the defined financial periods accordingly.
 	 */
-	void             ( *set_from_settings )    ( ofaIFileMeta *instance,
+	void             ( *set_from_settings )    ( ofaIDBMeta *instance,
 													mySettings *settings,
 													const gchar *group );
 
 	/**
 	 * set_from_editor:
-	 * @instance: the #ofaIFileMeta instance.
+	 * @instance: the #ofaIDBMeta instance.
 	 * @editor: the #ofaIDBEditor which handles the connection informations.
 	 * @settings: the #mySettings instance.
 	 * @group: the group name in the settings.
 	 *
 	 * Writes the connection informations to @settings file.
 	 */
-	void             ( *set_from_editor )      ( ofaIFileMeta *instance,
+	void             ( *set_from_editor )      ( ofaIDBMeta *instance,
 													const ofaIDBEditor *editor,
 													mySettings *settings,
 													const gchar *group );
 
 	/**
 	 * update_period:
-	 * @instance: the #ofaIFileMeta instance.
+	 * @instance: the #ofaIDBMeta instance.
 	 * @period: the #ofaIFilePeriod to be updated.
 	 * @current: whether the financial period (exercice) is current.
 	 * @begin: [allow-none]: the beginning date.
@@ -123,7 +126,7 @@ typedef struct {
 	 * Update the dossier settings for this @period with the specified
 	 * datas.
 	 */
-	void             ( *update_period )        ( ofaIFileMeta *instance,
+	void             ( *update_period )        ( ofaIDBMeta *instance,
 													ofaIFilePeriod *period,
 													gboolean current,
 													const GDate *begin,
@@ -131,66 +134,66 @@ typedef struct {
 
 	/**
 	 * dump:
-	 * @instance: the #ofaIFileMeta instance.
+	 * @instance: the #ofaIDBMeta instance.
 	 *
 	 * Dumps the @instance.
 	 */
-	void             ( *dump )                 ( const ofaIFileMeta *instance );
+	void             ( *dump )                 ( const ofaIDBMeta *instance );
 }
-	ofaIFileMetaInterface;
+	ofaIDBMetaInterface;
 
-GType           ofa_ifile_meta_get_type                  ( void );
+GType           ofa_idbmeta_get_type                  ( void );
 
-guint           ofa_ifile_meta_get_interface_last_version( void );
+guint           ofa_idbmeta_get_interface_last_version( void );
 
-guint           ofa_ifile_meta_get_interface_version     ( const ofaIFileMeta *meta );
+guint           ofa_idbmeta_get_interface_version     ( const ofaIDBMeta *meta );
 
-ofaIDBProvider *ofa_ifile_meta_get_provider              ( const ofaIFileMeta *meta );
+ofaIDBProvider *ofa_idbmeta_get_provider              ( const ofaIDBMeta *meta );
 
-void            ofa_ifile_meta_set_provider              ( ofaIFileMeta *meta,
+void            ofa_idbmeta_set_provider              ( ofaIDBMeta *meta,
 																const ofaIDBProvider *instance );
 
-gchar          *ofa_ifile_meta_get_dossier_name          ( const ofaIFileMeta *meta );
+gchar          *ofa_idbmeta_get_dossier_name          ( const ofaIDBMeta *meta );
 
-void            ofa_ifile_meta_set_dossier_name          ( ofaIFileMeta *meta,
+void            ofa_idbmeta_set_dossier_name          ( ofaIDBMeta *meta,
 																const gchar *dossier_name );
 
-mySettings     *ofa_ifile_meta_get_settings              ( const ofaIFileMeta *meta );
+mySettings     *ofa_idbmeta_get_settings              ( const ofaIDBMeta *meta );
 
-gchar          *ofa_ifile_meta_get_group_name            ( const ofaIFileMeta *meta );
+gchar          *ofa_idbmeta_get_group_name            ( const ofaIDBMeta *meta );
 
-void            ofa_ifile_meta_set_from_settings         ( ofaIFileMeta *meta,
+void            ofa_idbmeta_set_from_settings         ( ofaIDBMeta *meta,
 																mySettings *settings,
 																const gchar *group_name );
 
-void            ofa_ifile_meta_set_from_editor           ( ofaIFileMeta *meta,
+void            ofa_idbmeta_set_from_editor           ( ofaIDBMeta *meta,
 																const ofaIDBEditor *editor,
 																mySettings *settings,
 																const gchar *group_name );
 
-GList          *ofa_ifile_meta_get_periods               ( const ofaIFileMeta *meta );
+GList          *ofa_idbmeta_get_periods               ( const ofaIDBMeta *meta );
 
-#define         ofa_ifile_meta_free_periods(L)           g_list_free_full(( L ), \
+#define         ofa_idbmeta_free_periods(L)           g_list_free_full(( L ), \
 																( GDestroyNotify ) g_object_unref )
 
-void            ofa_ifile_meta_set_periods               ( ofaIFileMeta *meta,
+void            ofa_idbmeta_set_periods               ( ofaIDBMeta *meta,
 																GList *periods );
 
-void            ofa_ifile_meta_add_period                ( ofaIFileMeta *meta,
+void            ofa_idbmeta_add_period                ( ofaIDBMeta *meta,
 																ofaIFilePeriod *period );
 
-void            ofa_ifile_meta_update_period             ( ofaIFileMeta *meta,
+void            ofa_idbmeta_update_period             ( ofaIDBMeta *meta,
 																ofaIFilePeriod *period,
 																gboolean current,
 																const GDate *begin,
 																const GDate *end );
 
-ofaIFilePeriod *ofa_ifile_meta_get_current_period        ( const ofaIFileMeta *meta );
+ofaIFilePeriod *ofa_idbmeta_get_current_period        ( const ofaIDBMeta *meta );
 
-void            ofa_ifile_meta_dump                      ( const ofaIFileMeta *meta );
+void            ofa_idbmeta_dump                      ( const ofaIDBMeta *meta );
 
-void            ofa_ifile_meta_dump_rec                  ( const ofaIFileMeta *meta );
+void            ofa_idbmeta_dump_rec                  ( const ofaIDBMeta *meta );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IFILE_META_H__ */
+#endif /* __OPENBOOK_API_OFA_IDBMETA_H__ */

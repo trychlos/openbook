@@ -29,9 +29,9 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 
-/* some data attached to each IFileMeta instance
+/* some data attached to each IDBMeta instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
  */
@@ -42,26 +42,26 @@ typedef struct {
 	gchar          *group_name;
 	GList          *periods;
 }
-	sIFileMeta;
+	sIDBMeta;
 
-#define IFILE_META_LAST_VERSION         1
-#define IFILE_META_DATA                 "ifile-meta-data"
+#define IDBMETA_LAST_VERSION         1
+#define IDBMETA_DATA                 "idbmeta-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType       register_type( void );
-static void        interface_base_init( ofaIFileMetaInterface *klass );
-static void        interface_base_finalize( ofaIFileMetaInterface *klass );
-static sIFileMeta *get_ifile_meta_data( const ofaIFileMeta *meta );
-static void        on_meta_finalized( sIFileMeta *data, GObject *finalized_meta );
+static void        interface_base_init( ofaIDBMetaInterface *klass );
+static void        interface_base_finalize( ofaIDBMetaInterface *klass );
+static sIDBMeta *get_idbmeta_data( const ofaIDBMeta *meta );
+static void        on_meta_finalized( sIDBMeta *data, GObject *finalized_meta );
 
 /**
- * ofa_ifile_meta_get_type:
+ * ofa_idbmeta_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_ifile_meta_get_type( void )
+ofa_idbmeta_get_type( void )
 {
 	static GType type = 0;
 
@@ -73,18 +73,18 @@ ofa_ifile_meta_get_type( void )
 }
 
 /*
- * ofa_ifile_meta_register_type:
+ * ofa_idbmeta_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_register_type";
+	static const gchar *thisfn = "ofa_idbmeta_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIFileMetaInterface ),
+		sizeof( ofaIDBMetaInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -97,7 +97,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIFileMeta", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDBMeta", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -105,9 +105,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIFileMetaInterface *klass )
+interface_base_init( ofaIDBMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_interface_base_init";
+	static const gchar *thisfn = "ofa_idbmeta_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
@@ -119,9 +119,9 @@ interface_base_init( ofaIFileMetaInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIFileMetaInterface *klass )
+interface_base_finalize( ofaIDBMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_interface_base_finalize";
+	static const gchar *thisfn = "ofa_idbmeta_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -131,63 +131,63 @@ interface_base_finalize( ofaIFileMetaInterface *klass )
 }
 
 /**
- * ofa_ifile_meta_get_interface_last_version:
+ * ofa_idbmeta_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_ifile_meta_get_interface_last_version( void )
+ofa_idbmeta_get_interface_last_version( void )
 {
-	return( IFILE_META_LAST_VERSION );
+	return( IDBMETA_LAST_VERSION );
 }
 
 /**
- * ofa_ifile_meta_get_interface_version:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_interface_version:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_ifile_meta_get_interface_version( const ofaIFileMeta *meta )
+ofa_idbmeta_get_interface_version( const ofaIDBMeta *meta )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_get_interface_version";
+	static const gchar *thisfn = "ofa_idbmeta_get_interface_version";
 
 	g_debug( "%s: meta=%p", thisfn, ( void * ) meta );
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), 0 );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), 0 );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version ){
-		return( OFA_IFILE_META_GET_INTERFACE( meta )->get_interface_version( meta ));
+	if( OFA_IDBMETA_GET_INTERFACE( meta )->get_interface_version ){
+		return( OFA_IDBMETA_GET_INTERFACE( meta )->get_interface_version( meta ));
 	}
 
-	g_info( "%s: ofaIFileMeta instance %p does not provide 'get_interface_version()' method",
+	g_info( "%s: ofaIDBMeta instance %p does not provide 'get_interface_version()' method",
 			thisfn, ( void * ) meta );
 	return( 1 );
 }
 
 /**
- * ofa_ifile_meta_get_provider:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_provider:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: a new reference to the provider instance which should be
  * g_object_unref() by the caller.
  */
 ofaIDBProvider *
-ofa_ifile_meta_get_provider( const ofaIFileMeta *meta )
+ofa_idbmeta_get_provider( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	return( g_object_ref( data->prov_instance ));
 }
 
 /**
- * ofa_ifile_meta_set_provider:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_set_provider:
+ * @meta: this #ofaIDBMeta instance.
  * @instance: the #ofaIDBProvider which manages the dossier.
  *
  * The interface takes a reference on the @instance object, to make
@@ -195,57 +195,57 @@ ofa_ifile_meta_get_provider( const ofaIFileMeta *meta )
  * released on @meta finalization.
  */
 void
-ofa_ifile_meta_set_provider( ofaIFileMeta *meta, const ofaIDBProvider *instance )
+ofa_idbmeta_set_provider( ofaIDBMeta *meta, const ofaIDBProvider *instance )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	g_clear_object( &data->prov_instance );
 	data->prov_instance = g_object_ref(( gpointer ) instance );
 }
 
 /**
- * ofa_ifile_meta_get_dossier_name:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_dossier_name:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: the identifier name of the dossier as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_ifile_meta_get_dossier_name( const ofaIFileMeta *meta )
+ofa_idbmeta_get_dossier_name( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	return( g_strdup( data->dossier_name ));
 }
 
 /**
- * ofa_ifile_meta_set_dossier_name:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_set_dossier_name:
+ * @meta: this #ofaIDBMeta instance.
  * @dossier_name: the name of the dossier.
  *
  * Stores the name of the dossier as an interface data.
  */
 void
-ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
+ofa_idbmeta_set_dossier_name( ofaIDBMeta *meta, const gchar *dossier_name )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	g_free( data->dossier_name );
 	data->dossier_name = g_strdup( dossier_name );
 }
 
 /**
- * ofa_ifile_meta_get_settings:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_settings:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: the #mySettings object.
  *
@@ -253,165 +253,165 @@ ofa_ifile_meta_set_dossier_name( ofaIFileMeta *meta, const gchar *dossier_name )
  * not be freed by the caller.
  */
 mySettings *
-ofa_ifile_meta_get_settings( const ofaIFileMeta *meta )
+ofa_idbmeta_get_settings( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 
 	return( data->settings );
 }
 
 /**
- * ofa_ifile_meta_get_group_name:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_group_name:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: the name of the group which holds all dossier informations
  * in the settings file, as a newly allocated string which should be
  * g_free() by the caller.
  */
 gchar *
-ofa_ifile_meta_get_group_name( const ofaIFileMeta *meta )
+ofa_idbmeta_get_group_name( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 
 	return( g_strdup( data->group_name ));
 }
 
 /**
- * ofa_ifile_meta_set_from_settings:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_set_from_settings:
+ * @meta: this #ofaIDBMeta instance.
  * @settings: the #mySettings which manages the dossier settings file.
  * @group_name: the group name for the dossier.
  */
 void
-ofa_ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gchar *group_name )
+ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *group_name )
  {
- 	static const gchar *thisfn = "ofa_ifile_meta_set_from_settings";
- 	sIFileMeta *data;
+ 	static const gchar *thisfn = "ofa_idbmeta_set_from_settings";
+ 	sIDBMeta *data;
 
  	g_debug( "%s: meta=%p, settings=%p, group_name=%s",
  			thisfn, ( void * ) meta, ( void * ) settings, group_name );
 
- 	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+ 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
- 	data = get_ifile_meta_data( meta );
+ 	data = get_idbmeta_data( meta );
  	g_clear_object( &data->settings );
  	data->settings = g_object_ref( settings );
  	g_free( data->group_name );
  	data->group_name = g_strdup( group_name );
 
- 	if( OFA_IFILE_META_GET_INTERFACE( meta )->set_from_settings ){
- 		OFA_IFILE_META_GET_INTERFACE( meta )->set_from_settings( meta, settings, group_name );
+ 	if( OFA_IDBMETA_GET_INTERFACE( meta )->set_from_settings ){
+ 		OFA_IDBMETA_GET_INTERFACE( meta )->set_from_settings( meta, settings, group_name );
  		return;
  	}
 
- 	g_info( "%s: ofaIFileMeta instance %p does not provide 'set_from_settings()' method",
+ 	g_info( "%s: ofaIDBMeta instance %p does not provide 'set_from_settings()' method",
  			thisfn, ( void * ) meta );
  }
 
 /**
- * ofa_ifile_meta_set_from_editor:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_set_from_editor:
+ * @meta: this #ofaIDBMeta instance.
  * @editor: the #ofaIDBEditor which handles the connection information.
  * @settings: the #mySettings which manages the dossier settings file.
  * @group_name: the group name for the dossier.
  */
 void
-ofa_ifile_meta_set_from_editor( ofaIFileMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group_name )
+ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group_name )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_set_from_editor";
-	sIFileMeta *data;
+	static const gchar *thisfn = "ofa_idbmeta_set_from_editor";
+	sIDBMeta *data;
 
 	g_debug( "%s: meta=%p, editor=%p, settings=%p, group_name=%s",
 			thisfn, ( void * ) meta, ( void * ) editor, ( void * ) settings, group_name );
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	g_clear_object( &data->settings );
 	data->settings = g_object_ref( settings );
 	g_free( data->group_name );
 	data->group_name = g_strdup( group_name );
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->set_from_editor ){
-		OFA_IFILE_META_GET_INTERFACE( meta )->set_from_editor( meta, editor, settings, group_name );
+	if( OFA_IDBMETA_GET_INTERFACE( meta )->set_from_editor ){
+		OFA_IDBMETA_GET_INTERFACE( meta )->set_from_editor( meta, editor, settings, group_name );
 		return;
 	}
 
-	g_info( "%s: ofaIFileMeta instance %p does not provide 'set_from_editor()' method",
+	g_info( "%s: ofaIDBMeta instance %p does not provide 'set_from_editor()' method",
 			thisfn, ( void * ) meta );
 }
 
 /**
- * ofa_ifile_meta_get_periods:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_periods:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: a list of defined financial periods (exercices) for this
  * file (dossier), as a #GList of #ofaIFilePeriod object, which should
- * be #ofa_ifile_meta_free_periods() by the caller.
+ * be #ofa_idbmeta_free_periods() by the caller.
  */
 GList *
-ofa_ifile_meta_get_periods( const ofaIFileMeta *meta )
+ofa_idbmeta_get_periods( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	return( g_list_copy_deep( data->periods, ( GCopyFunc ) g_object_ref, NULL ));
 }
 
 /**
- * ofa_ifile_meta_set_periods:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_set_periods:
+ * @meta: this #ofaIDBMeta instance.
  * @list: the list of the periods for the dossier.
  *
  * Stores the list of the defined financial periods (exercices) of the
  * dossier, as a deep copy of the provided @list.
  */
 void
-ofa_ifile_meta_set_periods( ofaIFileMeta *meta, GList *periods )
+ofa_idbmeta_set_periods( ofaIDBMeta *meta, GList *periods )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	data = get_ifile_meta_data( meta );
-	ofa_ifile_meta_free_periods( data->periods );
+	data = get_idbmeta_data( meta );
+	ofa_idbmeta_free_periods( data->periods );
 	data->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
 }
 
 /**
- * ofa_ifile_meta_add_period:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_add_period:
+ * @meta: this #ofaIDBMeta instance.
  * @period: the new #ofaIFilePeriod to be added.
  *
  * Takes a reference on the provided @period, and adds it to the list
  * of defined financial periods.
  */
 void
-ofa_ifile_meta_add_period( ofaIFileMeta *meta, ofaIFilePeriod *period )
+ofa_idbmeta_add_period( ofaIDBMeta *meta, ofaIFilePeriod *period )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	data->periods = g_list_prepend( data->periods, g_object_ref( period ));
 }
 
 /**
- * ofa_ifile_meta_update_period:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_update_period:
+ * @meta: this #ofaIDBMeta instance.
  * @period: the #ofaIFilePeriod to be updated.
  * @current: whether the financial period (exercice) is current.
  * @begin: [allow-none]: the beginning date.
@@ -420,45 +420,45 @@ ofa_ifile_meta_add_period( ofaIFileMeta *meta, ofaIFilePeriod *period )
  * Update the dossier settings for this @period with the specified datas.
  */
 void
-ofa_ifile_meta_update_period( ofaIFileMeta *meta,
+ofa_idbmeta_update_period( ofaIDBMeta *meta,
 		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_update_period";
+	static const gchar *thisfn = "ofa_idbmeta_update_period";
 
 	g_debug( "%s: meta=%p, period=%p, current=%s, begin=%p, end=%p",
 			thisfn, ( void * ) meta, ( void * ) period,
 			current ? "True":"False", ( void * ) begin, ( void * ) end );
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( period && OFA_IS_IFILE_PERIOD( period ));
 
-	if( OFA_IFILE_META_GET_INTERFACE( meta )->update_period ){
-		OFA_IFILE_META_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
+	if( OFA_IDBMETA_GET_INTERFACE( meta )->update_period ){
+		OFA_IDBMETA_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
 		return;
 	}
 
-	g_info( "%s: ofaIFileMeta instance %p does not provide 'update_period()' method",
+	g_info( "%s: ofaIDBMeta instance %p does not provide 'update_period()' method",
 			thisfn, ( void * ) meta );
 }
 
 /**
- * ofa_ifile_meta_get_current_period:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_get_current_period:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Returns: a new reference of the #ofaIFilePeriod which identifies the
  * current financial period. This reference should be g_object_unref()
  * by the caller.
  */
 ofaIFilePeriod *
-ofa_ifile_meta_get_current_period( const ofaIFileMeta *meta )
+ofa_idbmeta_get_current_period( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 	GList *it;
 	ofaIFilePeriod *period;
 
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
 		period = ( ofaIFilePeriod * ) it->data;
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), NULL );
@@ -471,20 +471,20 @@ ofa_ifile_meta_get_current_period( const ofaIFileMeta *meta )
 }
 
 /**
- * ofa_ifile_meta_dump:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_dump:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Dumps data.
  */
 void
-ofa_ifile_meta_dump( const ofaIFileMeta *meta )
+ofa_idbmeta_dump( const ofaIDBMeta *meta )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_dump";
-	sIFileMeta *data;
+	static const gchar *thisfn = "ofa_idbmeta_dump";
+	sIDBMeta *data;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	data = get_ifile_meta_data( meta );
+	data = get_idbmeta_data( meta );
 
 	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
 	g_debug( "%s:   prov_instance=%p", thisfn, ( void * ) data->prov_instance );
@@ -495,36 +495,36 @@ ofa_ifile_meta_dump( const ofaIFileMeta *meta )
 }
 
 /**
- * ofa_ifile_meta_dump_rec:
- * @meta: this #ofaIFileMeta instance.
+ * ofa_idbmeta_dump_rec:
+ * @meta: this #ofaIDBMeta instance.
  *
  * Recursively dumps data.
  */
 void
-ofa_ifile_meta_dump_rec( const ofaIFileMeta *meta )
+ofa_idbmeta_dump_rec( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 	GList *it;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	ofa_ifile_meta_dump( meta );
-	data = get_ifile_meta_data( meta );
+	ofa_idbmeta_dump( meta );
+	data = get_idbmeta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
 		ofa_ifile_period_dump( OFA_IFILE_PERIOD( it->data ));
 	}
 }
 
-static sIFileMeta *
-get_ifile_meta_data( const ofaIFileMeta *meta )
+static sIDBMeta *
+get_idbmeta_data( const ofaIDBMeta *meta )
 {
-	sIFileMeta *data;
+	sIDBMeta *data;
 
-	data = ( sIFileMeta * ) g_object_get_data( G_OBJECT( meta ), IFILE_META_DATA );
+	data = ( sIDBMeta * ) g_object_get_data( G_OBJECT( meta ), IDBMETA_DATA );
 
 	if( !data ){
-		data = g_new0( sIFileMeta, 1 );
-		g_object_set_data( G_OBJECT( meta ), IFILE_META_DATA, data );
+		data = g_new0( sIDBMeta, 1 );
+		g_object_set_data( G_OBJECT( meta ), IDBMETA_DATA, data );
 		g_object_weak_ref( G_OBJECT( meta ), ( GWeakNotify ) on_meta_finalized, data );
 	}
 
@@ -532,9 +532,9 @@ get_ifile_meta_data( const ofaIFileMeta *meta )
 }
 
 static void
-on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
+on_meta_finalized( sIDBMeta *data, GObject *finalized_meta )
 {
-	static const gchar *thisfn = "ofa_ifile_meta_on_meta_finalized";
+	static const gchar *thisfn = "ofa_idbmeta_on_meta_finalized";
 
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
@@ -542,6 +542,6 @@ on_meta_finalized( sIFileMeta *data, GObject *finalized_meta )
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );
-	ofa_ifile_meta_free_periods( data->periods );
+	ofa_idbmeta_free_periods( data->periods );
 	g_free( data );
 }

@@ -50,7 +50,7 @@ static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-editor-di
 
 static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
 static guint         idbeditor_get_interface_version( const ofaIDBEditor *instance );
-static void          idbeditor_set_meta( ofaIDBEditor *instance, const ofaIFileMeta *meta, const ofaIFilePeriod *period );
+static void          idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMeta *meta, const ofaIFilePeriod *period );
 static GtkSizeGroup *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
 static void          setup_bin( ofaMySQLEditorDisplay *bin );
 
@@ -141,7 +141,7 @@ idbeditor_get_interface_version( const ofaIDBEditor *instance )
 }
 
 static void
-idbeditor_set_meta( ofaIDBEditor *instance, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
+idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMeta *meta, const ofaIFilePeriod *period )
 {
 	GtkWidget *label;
 	gchar *text;

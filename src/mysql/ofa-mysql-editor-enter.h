@@ -42,7 +42,7 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta-def.h"
+#include "api/ofa-idbmeta-def.h"
 #include "api/ofa-ifile-period.h"
 
 G_BEGIN_DECLS

@@ -31,7 +31,7 @@
  * @include: mysql/ofa-mysql-meta.h
  *
  * A class to manage dossier identification and other external
- * properties. In particular, it implements #ofaIFileMeta interface.
+ * properties. In particular, it implements #ofaIDBMeta interface.
  */
 
 #include "api/my-settings.h"

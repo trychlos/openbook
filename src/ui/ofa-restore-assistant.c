@@ -32,7 +32,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbms.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ifile-period.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
@@ -87,7 +87,7 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p2_furi;
 	ofaDossierTreeview     *p2_dossier_treeview;
 	GtkWidget              *p2_new_dossier_btn;
-	ofaIFileMeta           *p2_meta;
+	ofaIDBMeta             *p2_meta;
 	gchar                  *p2_dossier;
 	gchar                  *p2_database;
 	ofaIDbms               *p2_idbms;
@@ -172,8 +172,8 @@ static gboolean p1_check_for_complete( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
-static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant );
 static void     p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
@@ -533,7 +533,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
+p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
 
@@ -545,7 +545,7 @@ p2_on_dossier_changed( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePer
 }
 
 static void
-p2_on_dossier_activated( ofaDossierTreeview *view, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
+p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
 
@@ -596,7 +596,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	ok = ( priv->p2_meta && OFA_IS_IFILE_META( priv->p2_meta ));
+	ok = ( priv->p2_meta && OFA_IS_IDBMETA( priv->p2_meta ));
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 

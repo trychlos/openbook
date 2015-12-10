@@ -227,7 +227,7 @@ ofa_mysql_archive_and_new( const ofaIDBConnect *connect,
 {
 	static const gchar *thisfn = "ofa_mysql_backup_archive_and_new";
 	ofaMySQLConnect *new_cnx;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
 	ofaIFilePeriod *period;

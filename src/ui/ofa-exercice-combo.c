@@ -196,10 +196,10 @@ on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 /**
  * ofa_exercice_combo_set_dossier:
  * @combo: this #ofaExerciceCombo instance.
- * @meta: the #ofaIFileMeta which handles the dossier.
+ * @meta: the #ofaIDBMeta which handles the dossier.
  */
 void
-ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIFileMeta *meta )
+ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIDBMeta *meta )
 {
 	ofaExerciceComboPrivate *priv;
 

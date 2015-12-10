@@ -34,7 +34,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql.h"
@@ -49,7 +49,7 @@ struct _ofaMySQLEditorEnterPrivate {
 
 	/* setup
 	 */
-	ofaIFileMeta   *meta;
+	ofaIDBMeta     *meta;
 	ofaIFilePeriod *period;
 
 	/* runtime data

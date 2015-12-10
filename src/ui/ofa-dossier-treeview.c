@@ -140,11 +140,11 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments are the selected ofaIFileMeta and ofaIFilePeriod objects.
+	 * Arguments are the selected ofaIDBMeta and ofaIFilePeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
-	 * 						ofaIFileMeta     *meta,
+	 * 						ofaIDBMeta       *meta,
 	 * 						ofaIFilePeriod   *period,
 	 * 						gpointer          user_data );
 	 */
@@ -166,11 +166,11 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments are the selected ofaIFileMeta and ofaIFilePeriod objects.
+	 * Arguments are the selected ofaIDBMeta and ofaIFilePeriod objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
-	 * 						ofaIFileMeta     *meta,
+	 * 						ofaIDBMeta       *meta,
 	 * 						ofaIFilePeriod   *period,
 	 * 						gpointer          user_data );
 	 */
@@ -441,7 +441,7 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 {
 	GtkTreeIter iter;
 	GtkTreeModel *model;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	ofaIFilePeriod *period;
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){

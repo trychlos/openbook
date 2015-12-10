@@ -48,7 +48,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbprovider-def.h"
-#include "api/ofa-ifile-meta-def.h"
+#include "api/ofa-idbmeta-def.h"
 #include "api/ofa-ifile-period.h"
 
 G_BEGIN_DECLS
@@ -95,7 +95,7 @@ typedef struct {
 	/**
 	 * set_meta:
 	 * @instance: the #ofaIDBEditor instance.
-	 * @meta: the #ofaIFileMeta object which holds dossier meta
+	 * @meta: the #ofaIDBMeta object which holds dossier meta
 	 *  informations.
 	 * @period: the #ofaIFilePeriod object which holds exercice
 	 *  informations.
@@ -105,7 +105,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void            ( *set_meta )             ( ofaIDBEditor *instance,
-													const ofaIFileMeta *meta,
+													const ofaIDBMeta *meta,
 													const ofaIFilePeriod *period );
 
 	/**
@@ -149,7 +149,7 @@ void            ofa_idbeditor_set_provider              ( ofaIDBEditor *instance
 															const ofaIDBProvider *provider );
 
 void            ofa_idbeditor_set_meta                  ( ofaIDBEditor *instance,
-															const ofaIFileMeta *meta,
+															const ofaIDBMeta *meta,
 															const ofaIFilePeriod *period );
 
 GtkSizeGroup   *ofa_idbeditor_get_size_group            ( const ofaIDBEditor *instance,

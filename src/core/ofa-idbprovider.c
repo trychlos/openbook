@@ -30,7 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-plugin.h"
 
 #define IDBPROVIDER_LAST_VERSION        1
@@ -157,14 +157,14 @@ ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
  * ofa_idbprovider_new_meta:
  * @instance: this #ofaIDBProvider instance.
  *
- * Returns: a newly allocated #ofaIFileMeta object, which should be
+ * Returns: a newly allocated #ofaIDBMeta object, which should be
  * g_object_unref() by the caller.
  */
-ofaIFileMeta *
+ofaIDBMeta *
 ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_meta";
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -172,7 +172,7 @@ ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta ){
 		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta();
-		ofa_ifile_meta_set_provider( meta, instance );
+		ofa_idbmeta_set_provider( meta, instance );
 		return( meta );
 	}
 

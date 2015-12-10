@@ -42,7 +42,7 @@
 
 #include "ofa-idbconnect.h"
 #include "ofa-idbeditor.h"
-#include "ofa-ifile-meta-def.h"
+#include "ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 
@@ -55,7 +55,7 @@ G_BEGIN_DECLS
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
- * @new_meta: [should]: returns a new ofaIFileMeta object.
+ * @new_meta: [should]: returns a new ofaIDBMeta object.
  * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
@@ -106,11 +106,11 @@ typedef struct {
 	/**
 	 * new_meta:
 	 *
-	 * Returns: a newly defined #ofaIFileMeta object.
+	 * Returns: a newly defined #ofaIDBMeta object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIFileMeta *  ( *new_meta )             ( void );
+	ofaIDBMeta *    ( *new_meta )             ( void );
 
 	/**
 	 * new_connect:
@@ -142,7 +142,7 @@ guint           ofa_idbprovider_get_interface_last_version( void );
 
 guint           ofa_idbprovider_get_interface_version     ( const ofaIDBProvider *instance );
 
-ofaIFileMeta   *ofa_idbprovider_new_meta                  ( const ofaIDBProvider *instance );
+ofaIDBMeta     *ofa_idbprovider_new_meta                  ( const ofaIDBProvider *instance );
 
 ofaIDBConnect  *ofa_idbprovider_new_connect               ( const ofaIDBProvider *instance );
 

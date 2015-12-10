@@ -34,7 +34,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idataset.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -596,7 +596,7 @@ check_db_vs_settings( ofoDossier *dossier )
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
 	ofaIFilePeriod *period;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	/* data from db */
@@ -632,7 +632,7 @@ check_db_vs_settings( ofoDossier *dossier )
 		g_free( ssetend );
 
 		meta = ofa_idbconnect_get_meta( cnx );
-		ofa_ifile_meta_update_period( meta, period, db_current, db_begin, db_end );
+		ofa_idbmeta_update_period( meta, period, db_current, db_begin, db_end );
 		g_object_unref( meta );
 	}
 
@@ -712,14 +712,14 @@ static void
 on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
 	const ofaIDBConnect *cnx;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	ofaIFilePeriod *period;
 
 	cnx = ofo_dossier_get_connect( dossier );
 	meta = ofa_idbconnect_get_meta( cnx );
 	period = ofa_idbconnect_get_period( cnx );
 
-	ofa_ifile_meta_update_period( meta, period,
+	ofa_idbmeta_update_period( meta, period,
 			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 
 	g_object_unref( period );

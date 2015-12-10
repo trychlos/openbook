@@ -31,7 +31,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql.h"
@@ -56,14 +56,14 @@ struct _ofaMySQLConnectPrivate {
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint    idbconnect_get_interface_version( const ofaIDBConnect *instance );
 static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only );
-static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIFileMeta *meta, const ofaIFilePeriod *period );
+static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIFilePeriod *period );
 static gboolean connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
 static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
-static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta );
-static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password );
+static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta );
+static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password );
 static MYSQL   *connect_to( const gchar *host, const gchar *socket, guint port, const gchar *dbname, const gchar *account, const gchar *password, gchar **msg );
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
@@ -201,7 +201,7 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
  * dossier
  */
 static gboolean
-idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
+idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIFilePeriod *period )
 {
 	ofaMySQLConnectPrivate *priv;
 	gboolean ok;
@@ -374,7 +374,7 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_acc
  * @instance: a superuser connection on the DBMS server
  */
 static gboolean
-idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta )
+idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
 	ofaMySQLConnectPrivate *priv;
@@ -385,13 +385,13 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta )
 	gchar *msg;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
 
 	priv = OFA_MYSQL_CONNECT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
-		period = ofa_ifile_meta_get_current_period( meta );
+		period = ofa_idbmeta_get_current_period( meta );
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
 
 		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
@@ -421,7 +421,7 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta )
  * @instance: a superuser connection on the dossier
  */
 static gboolean
-idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password )
+idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
 	ofaMySQLConnectPrivate *priv;
@@ -432,7 +432,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const 
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
 	g_return_val_if_fail( my_strlen( account ), FALSE );
 
 	priv = OFA_MYSQL_CONNECT( instance )->priv;
@@ -457,7 +457,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const 
 		idbconnect_query( instance, query->str );
 		ok = TRUE;
 
-		period = ofa_ifile_meta_get_current_period( meta );
+		period = ofa_idbmeta_get_current_period( meta );
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
 		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
 

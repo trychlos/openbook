@@ -31,11 +31,11 @@ api_include_HEADERS = \
 	ofa-idbms.h											\
 	ofa-idbconnect.h									\
 	ofa-idbeditor.h										\
+	ofa-idbmeta.h										\
+	ofa-idbmeta-def.h									\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexportable.h									\
-	ofa-ifile-meta.h									\
-	ofa-ifile-meta-def.h								\
 	ofa-ifile-period.h									\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\

@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 
 #include "core/ofa-file-dir.h"
@@ -513,7 +514,7 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 	ofaIDBConnect *connect;
 	gboolean ok, root_ok;
 	gchar *str;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
@@ -580,14 +581,14 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
  * Define the dossier in user settings, updating the ofaDossierStore
  * simultaneously.
  *
- * Returns: a newly created #ofaIFileMeta object.
+ * Returns: a newly created #ofaIDBMeta object.
  */
-ofaIFileMeta *
+ofaIDBMeta *
 ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 	ofaIDBProvider *provider;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
@@ -597,7 +598,7 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 
 		provider = ofa_idbeditor_get_provider( priv->connect_infos );
 		meta = ofa_idbprovider_new_meta( provider );
-		ofa_ifile_meta_set_dossier_name( meta, priv->dossier_name );
+		ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
 		ofa_file_dir_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
 		g_object_unref( provider );
 

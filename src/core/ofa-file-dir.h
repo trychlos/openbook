@@ -30,7 +30,7 @@
  * @short_description: #ofaFileDir class definition.
  * @include: openbook/ofa-file-dir.h
  *
- * This class manages the dossiers directory as a list of #ofaIFileMeta
+ * This class manages the dossiers directory as a list of #ofaIDBMeta
  * instances.
  *
  * It is defined to be implemented as a singleton by any program of the
@@ -46,7 +46,7 @@
 #include <glib-object.h>
 
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-ifile-meta-def.h"
+#include "api/ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 
@@ -85,11 +85,11 @@ GList        *ofa_file_dir_get_dossiers        ( ofaFileDir *dir );
 
 guint         ofa_file_dir_get_dossiers_count  ( const ofaFileDir *dir );
 
-ofaIFileMeta *ofa_file_dir_get_meta            ( const ofaFileDir *dir,
+ofaIDBMeta   *ofa_file_dir_get_meta            ( const ofaFileDir *dir,
 													const gchar *dossier_name );
 
 void          ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir,
-													ofaIFileMeta *meta,
+													ofaIDBMeta *meta,
 													const ofaIDBEditor *editor );
 
 G_END_DECLS

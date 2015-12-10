@@ -40,7 +40,7 @@
 
 #include "ofa-idbeditor.h"
 #include "ofa-idbprovider-def.h"
-#include "ofa-ifile-meta-def.h"
+#include "ofa-idbmeta-def.h"
 #include "ofa-ifile-period.h"
 
 G_BEGIN_DECLS
@@ -56,7 +56,7 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
  * ofaIDBConnectInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @open_with_editor: [should]: open a connection with ofaIDBEditor informations.
- * @open_with_meta: [should]: open a connection with ofaIFileMeta informations.
+ * @open_with_meta: [should]: open a connection with ofaIDBMeta informations.
  * @query: [should]: executes an insert/update/delete query.
  * @query_ex: [should]: executes a select query.
  * @get_last_error: [should]: returns the last error.
@@ -114,7 +114,7 @@ typedef struct {
 	 * @instance: this #ofaIDBConnect connection.
 	 * @account: the user account.
 	 * @password: [allow-none]: the user password.
-	 * @meta: the #ofaIFileMeta which identifies the dossier.
+	 * @meta: the #ofaIDBMeta which identifies the dossier.
 	 * @period: [allow-none]: the #ofaIFilePeriod which identifies the
 	 *  exercice, or %NULL to establish a connection to the server
 	 *  which holds the @meta dossier.
@@ -127,7 +127,7 @@ typedef struct {
 	gboolean ( *open_with_meta )       ( ofaIDBConnect *instance,
 											const gchar *account,
 											const gchar *password,
-											const ofaIFileMeta *meta,
+											const ofaIDBMeta *meta,
 											const ofaIFilePeriod *period );
 
 	/**
@@ -205,7 +205,7 @@ typedef struct {
 	/**
 	 * create_dossier:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
-	 * @meta: the #ofaIFileMeta object which describes the new dossier.
+	 * @meta: the #ofaIDBMeta object which describes the new dossier.
 	 *
 	 * Create and initialize a new minimal dossier database.
 	 * It is expected that the DBMS provider drops its database and
@@ -216,12 +216,12 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
-											ofaIFileMeta *meta );
+											ofaIDBMeta *meta );
 
 	/**
 	 * grant_user:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
-	 * @meta: the #ofaIFileMeta dossier.
+	 * @meta: the #ofaIDBMeta dossier.
 	 * @user_account: the account to be granted.
 	 * @user_password: the corresponding password.
 	 *
@@ -240,7 +240,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
-											ofaIFileMeta *meta,
+											ofaIDBMeta *meta,
 											const gchar *user_account,
 											const gchar *user_password );
 }
@@ -266,14 +266,14 @@ gboolean        ofa_idbconnect_open_with_editor          ( ofaIDBConnect *connec
 gboolean        ofa_idbconnect_open_with_meta            ( ofaIDBConnect *connect,
 																const gchar *account,
 																const gchar *password,
-																const ofaIFileMeta *meta,
+																const ofaIDBMeta *meta,
 																const ofaIFilePeriod *period );
 
 gchar          *ofa_idbconnect_get_account               ( const ofaIDBConnect *connect );
 
 gchar          *ofa_idbconnect_get_password              ( const ofaIDBConnect *connect );
 
-ofaIFileMeta   *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
+ofaIDBMeta     *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
 
 ofaIFilePeriod *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
 
@@ -304,7 +304,7 @@ gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *
 															const GDate *end_next );
 
 gboolean        ofa_idbconnect_create_dossier            ( const ofaIDBConnect *connect,
-															ofaIFileMeta *meta,
+															ofaIDBMeta *meta,
 															const gchar *adm_account,
 															const gchar *adm_password );
 

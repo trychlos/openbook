@@ -34,7 +34,7 @@
  * exercices available on a dossier.
  */
 
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 
 G_BEGIN_DECLS
 
@@ -104,7 +104,7 @@ GType             ofa_exercice_store_get_type    ( void ) G_GNUC_CONST;
 ofaExerciceStore *ofa_exercice_store_new         ( void );
 
 void              ofa_exercice_store_set_dossier ( ofaExerciceStore *combo,
-															ofaIFileMeta *meta );
+															ofaIDBMeta *meta );
 
 G_END_DECLS
 

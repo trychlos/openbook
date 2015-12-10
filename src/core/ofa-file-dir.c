@@ -30,7 +30,7 @@
 #include "api/my-settings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 
 #include "ofa-file-dir.h"
 
@@ -59,10 +59,10 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void          setup_settings( ofaFileDir *dir );
-static void          on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
-static GList        *load_dossiers( ofaFileDir *dir, GList *previous_list );
-static ofaIFileMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
+static void        setup_settings( ofaFileDir *dir );
+static void        on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
+static GList      *load_dossiers( ofaFileDir *dir, GList *previous_list );
+static ofaIDBMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
 
 G_DEFINE_TYPE( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT )
 
@@ -195,7 +195,7 @@ setup_settings( ofaFileDir *dir )
  * @dir: this #ofaFileDir instance.
  *
  * Returns: a list of defined dossiers as a #GList of GObject -derived
- * objects which implement the #ofaIFileMeta interface.
+ * objects which implement the #ofaIDBMeta interface.
  *
  * The returned list should be
  *  #g_list_free_full( <list>, ( GDestroyNotify ) g_object_unref ) by
@@ -253,7 +253,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 	const gchar *cstr;
 	gchar *dos_name, *prov_name;
 	ofaIDBProvider *idbprovider;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 
 	priv = dir->priv;
 	outlist = NULL;
@@ -285,12 +285,12 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
 			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
 			meta = ofa_idbprovider_new_meta( idbprovider );
-			ofa_ifile_meta_set_dossier_name( meta, dos_name );
+			ofa_idbmeta_set_dossier_name( meta, dos_name );
 			g_object_unref( idbprovider );
 			g_free( prov_name );
 		}
-		ofa_ifile_meta_set_from_settings( meta, priv->settings, cstr );
-		ofa_ifile_meta_dump_rec( meta );
+		ofa_idbmeta_set_from_settings( meta, priv->settings, cstr );
+		ofa_idbmeta_dump_rec( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
 	}
@@ -331,17 +331,17 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
  * @dir: this #ofaFileDir instance.
  * @dossier_name: the named of the searched dossier.
  *
- * Returns: a new reference to the #ofaIFileMeta instance which holds
+ * Returns: a new reference to the #ofaIDBMeta instance which holds
  * the meta datas for the specified @dossier_name, or %NULL if not
  * found.
  *
  * The returned reference should be g_object_unref() by the caller.
  */
-ofaIFileMeta *
+ofaIDBMeta *
 ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
 {
 	ofaFileDirPrivate *priv;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
 
@@ -357,18 +357,18 @@ ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
 	g_return_val_if_reached( NULL );
 }
 
-static ofaIFileMeta *
+static ofaIDBMeta *
 file_dir_get_meta( const gchar *dossier_name, GList *list )
 {
 	GList *it;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	gchar *meta_dos_name;
 	gint cmp;
 
 	for( it=list ; it ; it=it->next ){
-		meta = ( ofaIFileMeta * ) it->data;
-		g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), NULL );
-		meta_dos_name = ofa_ifile_meta_get_dossier_name( meta );
+		meta = ( ofaIDBMeta * ) it->data;
+		g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
+		meta_dos_name = ofa_idbmeta_get_dossier_name( meta );
 		cmp = g_utf8_collate( meta_dos_name, dossier_name );
 		g_free( meta_dos_name );
 		if( cmp == 0 ){
@@ -382,13 +382,13 @@ file_dir_get_meta( const gchar *dossier_name, GList *list )
 /**
  * ofa_file_dir_set_meta_from_editor:
  * @dir: this #ofaFileDir instance.
- * @meta: the #ofaIFileMeta to be set.
+ * @meta: the #ofaIDBMeta to be set.
  * @editor: a #ofaIDBEditor instance which holds connection informations.
  *
  * Setup the @meta instance, writing informations to settings file.
  */
 void
-ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIFileMeta *meta, const ofaIDBEditor *editor )
+ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIDBMeta *meta, const ofaIDBEditor *editor )
 {
 	static const gchar *thisfn = "ofa_file_dir_set_meta_from_editor";
 	ofaFileDirPrivate *priv;
@@ -400,20 +400,20 @@ ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIFileMeta *meta, co
 			thisfn, ( void * ) dir, ( void * ) meta, ( void * ) editor );
 
 	g_return_if_fail( dir && OFA_IS_FILE_DIR( dir ));
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 
 	priv = dir->priv;
 
 	if( !priv->dispose_has_run ){
 
-		dossier_name = ofa_ifile_meta_get_dossier_name( meta );
+		dossier_name = ofa_idbmeta_get_dossier_name( meta );
 		group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
 		prov_instance = ofa_idbeditor_get_provider( editor );
 		prov_name = ofa_idbprovider_get_name( prov_instance );
 		my_settings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
 
-		ofa_ifile_meta_set_from_editor( meta, editor, priv->settings, group );
+		ofa_idbmeta_set_from_editor( meta, editor, priv->settings, group );
 
 		g_object_unref( prov_instance );
 		g_free( group );

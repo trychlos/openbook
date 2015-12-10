@@ -33,7 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql.h"
@@ -44,10 +44,10 @@
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
-static guint           idbprovider_get_interface_version( const ofaIDBProvider *instance );
-static ofaIFileMeta   *idbprovider_new_meta( void );
-static ofaIDBConnect  *idbprovider_new_connect( void );
-static ofaIDBEditor   *idbprovider_new_editor( gboolean editable );
+static guint          idbprovider_get_interface_version( const ofaIDBProvider *instance );
+static ofaIDBMeta    *idbprovider_new_meta( void );
+static ofaIDBConnect *idbprovider_new_connect( void );
+static ofaIDBEditor  *idbprovider_new_editor( gboolean editable );
 
 /*
  * #ofaIDBProvider interface setup
@@ -85,16 +85,16 @@ ofa_mysql_idbprovider_get_provider_name( const ofaIDBProvider *instance )
 }
 
 /*
- * instanciates a new ofaIFileMeta object
+ * instanciates a new ofaIDBMeta object
  */
-static ofaIFileMeta *
+static ofaIDBMeta *
 idbprovider_new_meta( void )
 {
 	ofaMySQLMeta *meta;
 
 	meta = ofa_mysql_meta_new();
 
-	return( OFA_IFILE_META( meta ));
+	return( OFA_IDBMETA( meta ));
 }
 
 /*

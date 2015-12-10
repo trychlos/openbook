@@ -43,6 +43,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbeditor.h"
+#include "api/ofa-idbmeta-def.h"
 
 #include "core/ofa-dbms-root-bin.h"
 
@@ -89,7 +90,7 @@ void              ofa_dossier_new_bin_set_provider         ( ofaDossierNewBin *b
 gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNewBin *bin,
 																	gchar **error_message );
 
-ofaIFileMeta     *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
+ofaIDBMeta       *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
 
 void              ofa_dossier_new_bin_get_dname            ( const ofaDossierNewBin *bin,
 																	gchar **dname );

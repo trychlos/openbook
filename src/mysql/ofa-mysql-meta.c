@@ -27,7 +27,7 @@
 #endif
 
 #include "api/my-utils.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 
 #include "ofa-mysql-editor-enter.h"
 #include "ofa-mysql-idbprovider.h"
@@ -50,17 +50,17 @@ struct _ofaMySQLMetaPrivate {
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
-static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
-static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
-static void            ifile_meta_set_from_settings( ofaIFileMeta *instance, mySettings *settings, const gchar *group );
-static void            ifile_meta_set_from_editor( ofaIFileMeta *instance, const ofaIDBEditor *editor, mySettings *settings, const gchar *group );
-static GList          *load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group );
+static void            idbmeta_iface_init( ofaIDBMetaInterface *iface );
+static guint           idbmeta_get_interface_version( const ofaIDBMeta *instance );
+static void            idbmeta_set_from_settings( ofaIDBMeta *instance, mySettings *settings, const gchar *group );
+static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, mySettings *settings, const gchar *group );
+static GList          *load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group );
 static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
-static void            ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
-static void            ifile_meta_dump( const ofaIFileMeta *instance );
+static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            idbmeta_dump( const ofaIDBMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IFILE_META, ifile_meta_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMETA, idbmeta_iface_init ));
 
 static void
 mysql_meta_finalize( GObject *instance )
@@ -126,30 +126,30 @@ ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
 }
 
 /*
- * ofaIFileMeta interface management
+ * ofaIDBMeta interface management
  */
 static void
-ifile_meta_iface_init( ofaIFileMetaInterface *iface )
+idbmeta_iface_init( ofaIDBMetaInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_ifile_meta_iface_init";
+	static const gchar *thisfn = "ofa_mysql_meta_idbmeta_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = ifile_meta_get_interface_version;
-	iface->set_from_settings = ifile_meta_set_from_settings;
-	iface->set_from_editor = ifile_meta_set_from_editor;
-	iface->update_period = ifile_meta_update_period;
-	iface->dump = ifile_meta_dump;
+	iface->get_interface_version = idbmeta_get_interface_version;
+	iface->set_from_settings = idbmeta_set_from_settings;
+	iface->set_from_editor = idbmeta_set_from_editor;
+	iface->update_period = idbmeta_update_period;
+	iface->dump = idbmeta_dump;
 }
 
 static guint
-ifile_meta_get_interface_version( const ofaIFileMeta *instance )
+idbmeta_get_interface_version( const ofaIDBMeta *instance )
 {
 	return( 1 );
 }
 
 static void
-ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
+idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
 	gint port;
@@ -169,8 +169,8 @@ ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gc
 
 		/* reload defined periods */
 		periods = load_periods( meta, settings, group );
-		ofa_ifile_meta_set_periods( meta, periods );
-		ofa_ifile_meta_free_periods( periods );
+		ofa_idbmeta_set_periods( meta, periods );
+		ofa_idbmeta_free_periods( periods );
 	}
 }
 
@@ -179,7 +179,7 @@ ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gc
  *  existing references
  */
 static GList *
-load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
+load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group )
 {
 	GList *outlist, *prev_list;
 	GList *keys, *itk;
@@ -187,7 +187,7 @@ load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
 	ofaMySQLPeriod *new_period, *exist_period, *period;
 
 	keys = my_settings_get_keys( settings, group );
-	prev_list = ofa_ifile_meta_get_periods( meta );
+	prev_list = ofa_idbmeta_get_periods( meta );
 	outlist = NULL;
 
 	for( itk=keys ; itk ; itk=itk->next ){
@@ -207,7 +207,7 @@ load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
 		}
 	}
 
-	ofa_ifile_meta_free_periods( prev_list );
+	ofa_idbmeta_free_periods( prev_list );
 	my_settings_free_keys( keys );
 
 	return( g_list_reverse( outlist ));
@@ -230,7 +230,7 @@ find_period( ofaMySQLPeriod *period, GList *list )
 }
 
 static void
-ifile_meta_set_from_editor( ofaIFileMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group )
+idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
 	const gchar *host, *socket, *database;
@@ -263,13 +263,13 @@ ifile_meta_set_from_editor( ofaIFileMeta *meta, const ofaIDBEditor *editor, mySe
 		database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
 		period = ofa_mysql_period_new_to_settings( settings, group, TRUE, NULL, NULL, database );
 		periods = g_list_append( NULL, period );
-		ofa_ifile_meta_set_periods( meta, periods );
-		ofa_ifile_meta_free_periods( periods );
+		ofa_idbmeta_set_periods( meta, periods );
+		ofa_idbmeta_free_periods( periods );
 	}
 }
 
 static void
-ifile_meta_update_period( ofaIFileMeta *instance,
+idbmeta_update_period( ofaIDBMeta *instance,
 		ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	mySettings *settings;
@@ -278,15 +278,15 @@ ifile_meta_update_period( ofaIFileMeta *instance,
 	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
 
-	settings = ofa_ifile_meta_get_settings( instance );
-	group = ofa_ifile_meta_get_group_name( instance );
+	settings = ofa_idbmeta_get_settings( instance );
+	group = ofa_idbmeta_get_group_name( instance );
 	ofa_mysql_period_update( OFA_MYSQL_PERIOD( period ), settings, group, current, begin, end );
 
 	g_free( group );
 }
 
 static void
-ifile_meta_dump( const ofaIFileMeta *instance )
+idbmeta_dump( const ofaIDBMeta *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_meta_dump";
 	ofaMySQLMetaPrivate *priv;
@@ -408,13 +408,13 @@ ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
 	mySettings *settings;
 	gchar *group;
 
-	g_return_if_fail( meta && OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	settings = ofa_ifile_meta_get_settings( OFA_IFILE_META( meta ));
-	group = ofa_ifile_meta_get_group_name( OFA_IFILE_META( meta ));
+	settings = ofa_idbmeta_get_settings( OFA_IDBMETA( meta ));
+	group = ofa_idbmeta_get_group_name( OFA_IDBMETA( meta ));
 
 	period = ofa_mysql_period_new_to_settings( settings, group, current, begin, end, database );
-	ofa_ifile_meta_add_period( OFA_IFILE_META( meta ), OFA_IFILE_PERIOD( period ));
+	ofa_idbmeta_add_period( OFA_IDBMETA( meta ), OFA_IFILE_PERIOD( period ));
 	g_object_unref( period );
 
 	g_free( group );

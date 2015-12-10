@@ -46,7 +46,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 
@@ -87,7 +87,7 @@ void            ofa_dbms_root_bin_set_dossier    ( ofaDBMSRootBin *bin,
 														const gchar *dname );
 
 void            ofa_dbms_root_bin_set_meta       ( ofaDBMSRootBin *bin,
-														ofaIFileMeta *meta );
+														ofaIDBMeta *meta );
 
 gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
 														gchar **error_message );

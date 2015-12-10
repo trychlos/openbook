@@ -47,7 +47,7 @@ struct _ofaDossierOpenPrivate {
 
 	/* data
 	 */
-	ofaIFileMeta       *meta;			/* the selected dossier */
+	ofaIDBMeta         *meta;			/* the selected dossier */
 	ofaIFilePeriod     *period;			/* the selected exercice */
 	gchar              *account;		/* user credentials */
 	gchar              *password;
@@ -67,7 +67,7 @@ static const gchar *st_ui_id            = "DossierOpenDlg";
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self );
 static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIFilePeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
@@ -161,7 +161,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  */
 void
 ofa_dossier_open_run( ofaMainWindow *main_window,
-		ofaIFileMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password )
+		ofaIDBMeta *meta, ofaIFilePeriod *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
@@ -289,7 +289,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, ofaIFileMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIFilePeriod *period, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 
@@ -424,7 +424,7 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 	g_clear_object( &priv->connect );
 	valid = FALSE;
 
-	provider = ofa_ifile_meta_get_provider( priv->meta );
+	provider = ofa_idbmeta_get_provider( priv->meta );
 	priv->connect = ofa_idbprovider_new_connect( provider );
 	valid = ofa_idbconnect_open_with_meta(
 					priv->connect, priv->account, priv->password, priv->meta, priv->period );

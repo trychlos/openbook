@@ -31,7 +31,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 
 /* some data attached to each IDBEditor instance
  * we store here the data provided by the application
@@ -235,7 +235,7 @@ ofa_idbeditor_set_provider( ofaIDBEditor *instance, const ofaIDBProvider *provid
 /**
  * ofa_idbeditor_set_meta:
  * @instance: this #ofaIDBEditor instance.
- * @meta: [allow-none]: the #ofaIFileMeta object which holds dossier informations.
+ * @meta: [allow-none]: the #ofaIDBMeta object which holds dossier informations.
  * @period: [allow-none]: the #ofaIFilePeriod object which holds exercice informations.
  *
  * Initialize the widget with provided datas.
@@ -244,7 +244,7 @@ ofa_idbeditor_set_provider( ofaIDBEditor *instance, const ofaIDBProvider *provid
  * This condition is checked.
  */
 void
-ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
+ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMeta *meta, const ofaIFilePeriod *period )
 {
 	static const gchar *thisfn = "ofa_idbeditor_set_meta";
 
@@ -252,7 +252,7 @@ ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIFileMeta *meta, const 
 			thisfn, ( void * ) instance, ( void * ) meta, ( void * ) period );
 
 	g_return_if_fail( instance && OFA_IS_IDBEDITOR( instance ));
-	g_return_if_fail( !meta || OFA_IS_IFILE_META( meta ));
+	g_return_if_fail( !meta || OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( !period || OFA_IS_IFILE_PERIOD( period ));
 	g_return_if_fail( period && !meta );
 

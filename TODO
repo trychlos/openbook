@@ -531,7 +531,18 @@
 
  914 2015-12- 2 add filename to ofaFileDir::changed signal args
 
- 915
+ 915 2015-12- 4 a class object (say e.g. ofoClass) should implement
+                the ofaIExportable/ofaIImportable interfaces - but the
+                exporter/importer plugins should rather implement a
+                ofaIEXporter/ofaIImporter interface 
+
+ 917 2015-12- 4 rename ofaIFilePeriod to ofaIDBPeriod
+
+ 918 2015-12- 9 remove ofa_dossier_new_bin_get_credentials
+
+ 919 2015-12-10
+
+ 920
 
 -----------------------------------------------------------------------
  DONE
@@ -4283,6 +4294,9 @@
                 + set also status
                 (cf. ofoDossier:do_open)
      2015-11-26 done
+
+ 916 2015-12- 4 rename ofaIFileMeta to ofaIDBFile
+     2015-12-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

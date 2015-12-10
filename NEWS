@@ -39,6 +39,7 @@
    - ofa_main_window_open_dossier(): new method.
    - ofaIDBConnect: new DBMS connection management interface.
    - ofaIDBEditor: new DBMS properties management interface.
+   - ofaIDBMeta: new dossier meta properties management interface.
    - ofaIDBProvider: new DBMS directory management interface.
    - ofaMySQLConnect: new class which implements ofaIDBConnect interface.
    - ofaMySQLEditorEnter: new class which implements ofaIDBEditor interface.
@@ -47,7 +48,6 @@
    - ofaMySQLMeta: new class which implements ofaIFileMeta interface.
    - ofaIFilePeriod: new exercice management interface.
    - ofaFileDir: new class for dossiers collection management.
-   - ofaIFileMeta: new dossier meta properties management interface.
    - myFileMonitor: new class.
    - mySettings: new class.
    - ofa-entry-columns.{c,h}: removed obsolete files.

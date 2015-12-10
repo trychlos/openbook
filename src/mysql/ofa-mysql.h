@@ -35,7 +35,7 @@
  * It implements the #ofaIDBProvider and #ofaIPreferences interfaces.
  *
  * The companion classes #ofaMySQLMeta, #ofaMySQLPeriod,
- * #ofaMySQLConnect respectively implement the #ofaIFileMeta,
+ * #ofaMySQLConnect respectively implement the #ofaIDBMeta,
  * #ofaIFilePeriod and #ofaIDBConnect interfaces.
  *
  * As the Openbook software suite has chosen to store its meta datas

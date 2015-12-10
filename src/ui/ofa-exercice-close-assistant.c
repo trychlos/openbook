@@ -34,7 +34,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ifile-period.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -70,7 +70,7 @@ struct _ofaExerciceCloseAssistantPrivate {
 	 */
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
-	ofaIFileMeta         *meta;
+	ofaIDBMeta           *meta;
 	gchar                *dos_name;
 
 	/* p1 - closing parms
@@ -305,7 +305,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->connect = ofo_dossier_get_connect( priv->dossier );
 	priv->meta = ofa_idbconnect_get_meta( priv->connect );
-	priv->dos_name = ofa_ifile_meta_get_dossier_name( priv->meta );
+	priv->dos_name = ofa_idbmeta_get_dossier_name( priv->meta );
 }
 
 static void
@@ -1110,7 +1110,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	period = ofa_idbconnect_get_period( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
-	ofa_ifile_meta_update_period( priv->meta, period, FALSE, begin_old, end_old );
+	ofa_idbmeta_update_period( priv->meta, period, FALSE, begin_old, end_old );
 	g_object_unref( period );
 
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
@@ -1131,11 +1131,11 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
 		g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), FALSE );
 
-		period = ofa_ifile_meta_get_current_period( priv->meta );
+		period = ofa_idbmeta_get_current_period( priv->meta );
 		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
 		ofa_ifile_period_dump( period );
 
-		provider = ofa_ifile_meta_get_provider( priv->meta );
+		provider = ofa_idbmeta_get_provider( priv->meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 

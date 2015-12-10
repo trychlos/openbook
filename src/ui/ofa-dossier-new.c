@@ -34,7 +34,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbms.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -395,7 +395,7 @@ v_quit_on_ok( myDialog *dialog )
 	static const gchar *thisfn = "ofa_dossier_new_v_quit_on_ok";
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	ofaIFilePeriod *period;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
@@ -415,8 +415,8 @@ v_quit_on_ok( myDialog *dialog )
 	meta = ofa_dossier_new_bin_apply( priv->new_bin );
 
 	if( meta ){
-		provider = ofa_ifile_meta_get_provider( meta );
-		period = ofa_ifile_meta_get_current_period( meta );
+		provider = ofa_idbmeta_get_provider( meta );
+		period = ofa_idbmeta_get_current_period( meta );
 		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
 		ofa_dbms_root_bin_get_credentials( root_bin, &account, &password );
 		connect = ofa_idbprovider_new_connect( provider );

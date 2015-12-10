@@ -33,7 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
-#include "api/ofa-ifile-meta.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -893,7 +893,7 @@ set_window_title( const ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	const ofaIDBConnect *cnx;
-	ofaIFileMeta *meta;
+	ofaIDBMeta *meta;
 	ofaIFilePeriod *period;
 	gchar *title, *dos_name, *label;
 
@@ -903,7 +903,7 @@ set_window_title( const ofaMainWindow *window )
 		cnx = ofo_dossier_get_connect( priv->dossier );
 		meta = ofa_idbconnect_get_meta( cnx );
 		period = ofa_idbconnect_get_period( cnx );
-		dos_name = ofa_ifile_meta_get_dossier_name( meta );
+		dos_name = ofa_idbmeta_get_dossier_name( meta );
 		label = ofa_ifile_period_get_label( period );
 
 		title = g_strdup_printf( "%s (%s) %s - %s",
