@@ -66,10 +66,7 @@ typedef struct {
 
 GType         ofa_mysql_meta_get_type    ( void ) G_GNUC_CONST;
 
-ofaMySQLMeta *ofa_mysql_meta_new         ( const ofaIDBProvider *provider,
-												const gchar *dossier_name,
-												mySettings *settings,
-												const gchar *group );
+ofaMySQLMeta *ofa_mysql_meta_new         ( void );
 
 void          ofa_mysql_meta_load_periods( ofaMySQLMeta *meta,
 												GList *keys );

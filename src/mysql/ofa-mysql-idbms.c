@@ -38,8 +38,6 @@
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
 #include "ofa-mysql-idbms.h"
-#include "ofa-mysql-connect-display-bin.h"
-#include "ofa-mysql-connect-enter-bin.h"
 
 /*
  * this structure is attached to the GtkContainer parent of the grid
@@ -94,13 +92,13 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->last_error = idbms_last_error;
-	iface->connect_display_new = ofa_mysql_connect_display_bin_new;
-	iface->connect_display_get_size_group = ofa_mysql_connect_display_bin_get_size_group;
-	iface->connect_enter_new = ofa_mysql_connect_enter_bin_new;
-	iface->connect_enter_get_size_group = ofa_mysql_connect_enter_bin_get_size_group;
-	iface->connect_enter_is_valid = ofa_mysql_connect_enter_bin_is_valid;
-	iface->connect_enter_get_database = ofa_mysql_connect_enter_bin_get_database;
-	iface->connect_enter_apply = ofa_mysql_connect_enter_bin_apply;
+	//iface->connect_display_new = ofa_mysql_connect_display_bin_new;
+	//iface->connect_display_get_size_group = ofa_mysql_connect_display_bin_get_size_group;
+	//iface->connect_enter_new = ofa_mysql_connect_enter_bin_new;
+	//iface->connect_enter_get_size_group = ofa_mysql_connect_enter_bin_get_size_group;
+	//iface->connect_enter_is_valid = ofa_mysql_connect_enter_bin_is_valid;
+	//iface->connect_enter_get_database = ofa_mysql_connect_enter_bin_get_database;
+	//iface->connect_enter_apply = ofa_mysql_connect_enter_bin_apply;
 	iface->new_dossier = idbms_new_dossier;
 	iface->grant_user = idbms_grant_user;
 	iface->backup = ofa_mysql_backup;

@@ -300,10 +300,11 @@ ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
 	priv = period->priv;
 
 	if( !priv->dispose_has_run ){
+
 		return(( const gchar * ) priv->dbname );
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
 }
 
 /**

@@ -34,6 +34,8 @@
  * In particular, it implements #ofaIFilePeriod interface.
  */
 
+#include "api/my-settings.h"
+
 #include "ofa-mysql-idbprovider.h"
 
 G_BEGIN_DECLS

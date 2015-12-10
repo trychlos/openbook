@@ -29,6 +29,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-ifile-meta.h"
 
+#include "ofa-mysql-editor-enter.h"
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
@@ -51,6 +52,10 @@ struct _ofaMySQLMetaPrivate {
 
 static void            ifile_meta_iface_init( ofaIFileMetaInterface *iface );
 static guint           ifile_meta_get_interface_version( const ofaIFileMeta *instance );
+static void            ifile_meta_set_from_settings( ofaIFileMeta *instance, mySettings *settings, const gchar *group );
+static void            ifile_meta_set_from_editor( ofaIFileMeta *instance, const ofaIDBEditor *editor, mySettings *settings, const gchar *group );
+static GList          *load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group );
+static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
 static void            ifile_meta_update_period( ofaIFileMeta *instance, ofaIFilePeriod *period, gboolean current, const GDate *begin, const GDate *end );
 static void            ifile_meta_dump( const ofaIFileMeta *instance );
 
@@ -131,6 +136,8 @@ ifile_meta_iface_init( ofaIFileMetaInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = ifile_meta_get_interface_version;
+	iface->set_from_settings = ifile_meta_set_from_settings;
+	iface->set_from_editor = ifile_meta_set_from_editor;
 	iface->update_period = ifile_meta_update_period;
 	iface->dump = ifile_meta_dump;
 }
@@ -139,6 +146,126 @@ static guint
 ifile_meta_get_interface_version( const ofaIFileMeta *instance )
 {
 	return( 1 );
+}
+
+static void
+ifile_meta_set_from_settings( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
+{
+	ofaMySQLMetaPrivate *priv;
+	gint port;
+	GList *periods;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
+
+	priv = OFA_MYSQL_META( meta )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		/* read connection informations from settings */
+		priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );
+		priv->socket = my_settings_get_string( settings, group, MYSQL_SOCKET_KEY );
+		port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
+		priv->port = ( port >= 0 ? port : 0 );
+
+		/* reload defined periods */
+		periods = load_periods( meta, settings, group );
+		ofa_ifile_meta_set_periods( meta, periods );
+		ofa_ifile_meta_free_periods( periods );
+	}
+}
+
+/*
+ * returns the list the defined periods, making its best to reuse
+ *  existing references
+ */
+static GList *
+load_periods( ofaIFileMeta *meta, mySettings *settings, const gchar *group )
+{
+	GList *outlist, *prev_list;
+	GList *keys, *itk;
+	const gchar *cstr;
+	ofaMySQLPeriod *new_period, *exist_period, *period;
+
+	keys = my_settings_get_keys( settings, group );
+	prev_list = ofa_ifile_meta_get_periods( meta );
+	outlist = NULL;
+
+	for( itk=keys ; itk ; itk=itk->next ){
+		cstr = ( const gchar * ) itk->data;
+		/* define a new period with the settings */
+		new_period = ofa_mysql_period_new_from_settings( settings, group, cstr );
+		if( new_period ){
+			/* search for this period in the previous list */
+			exist_period = find_period( new_period, prev_list );
+			if( exist_period ){
+				period = exist_period;
+				g_object_unref( new_period );
+			} else {
+				period = new_period;
+			}
+			outlist = g_list_prepend( outlist, period );
+		}
+	}
+
+	ofa_ifile_meta_free_periods( prev_list );
+	my_settings_free_keys( keys );
+
+	return( g_list_reverse( outlist ));
+}
+
+static ofaMySQLPeriod *
+find_period( ofaMySQLPeriod *period, GList *list )
+{
+	GList *it;
+	ofaMySQLPeriod *current;
+
+	for( it=list ; it ; it=it->next ){
+		current = ( ofaMySQLPeriod * ) it->data;
+		if( ofa_ifile_period_compare( OFA_IFILE_PERIOD( current ), OFA_IFILE_PERIOD( period )) == 0 ){
+			return( g_object_ref( current ));
+		}
+	}
+
+	return( NULL );
+}
+
+static void
+ifile_meta_set_from_editor( ofaIFileMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group )
+{
+	ofaMySQLMetaPrivate *priv;
+	const gchar *host, *socket, *database;
+	guint port;
+	ofaMySQLPeriod *period;
+	GList *periods;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
+	g_return_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ));
+
+	priv = OFA_MYSQL_META( meta )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		/* write connection informations to settings */
+		host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
+		if( my_strlen( host )){
+			my_settings_set_string( settings, group, MYSQL_HOST_KEY, host );
+		}
+		socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
+		if( my_strlen( socket )){
+			my_settings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
+		}
+		port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
+		if( port > 0 ){
+			my_settings_set_uint( settings, group, MYSQL_PORT_KEY, port );
+		}
+
+		/* initialize a new current period */
+		database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
+		period = ofa_mysql_period_new_to_settings( settings, group, TRUE, NULL, NULL, database );
+		periods = g_list_append( NULL, period );
+		ofa_ifile_meta_set_periods( meta, periods );
+		ofa_ifile_meta_free_periods( periods );
+	}
 }
 
 static void
@@ -173,29 +300,16 @@ ifile_meta_dump( const ofaIFileMeta *instance )
 
 /**
  * ofa_mysql_meta_new:
- * @instance: the #ofaIDBProvider which manages this dossier.
- * @dossier_name: the name of the dossier.
- * @settings: the dossier settings file provided by the application.
- * @group: the settings group name.
  *
- * Returns: a new reference to a #ofaMySQLMeta instance, which should
+ * Returns: a newly allocated #ofaMySQLMeta object, which should
  * be #g_object_unref() by the caller.
  */
 ofaMySQLMeta *
-ofa_mysql_meta_new( const ofaIDBProvider *instance, const gchar *dossier_name, mySettings *settings, const gchar *group )
+ofa_mysql_meta_new( void )
 {
 	ofaMySQLMeta *meta;
-	ofaMySQLMetaPrivate *priv;
-	gint port;
 
 	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
-	priv = meta->priv;
-
-	/* get server connection infos */
-	priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );
-	priv->socket = my_settings_get_string( settings, group, MYSQL_SOCKET_KEY );
-	port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
-	priv->port = ( port >= 0 ? port : 0 );
 
 	return( meta );
 }
@@ -219,10 +333,11 @@ ofa_mysql_meta_get_host( const ofaMySQLMeta *meta )
 	priv = meta->priv;
 
 	if( !priv->dispose_has_run ){
+
 		return(( const gchar * ) priv->host );
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
 }
 
 /**
@@ -244,10 +359,11 @@ ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
 	priv = meta->priv;
 
 	if( !priv->dispose_has_run ){
+
 		return(( const gchar * ) priv->socket );
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
 }
 
 /**
@@ -267,10 +383,11 @@ ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
 	priv = meta->priv;
 
 	if( !priv->dispose_has_run ){
+
 		return( priv->port );
 	}
 
-	return( 0 );
+	g_return_val_if_reached( 0 );
 }
 
 /**

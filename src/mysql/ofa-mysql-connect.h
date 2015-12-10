@@ -66,6 +66,8 @@ typedef struct {
 
 GType            ofa_mysql_connect_get_type           ( void ) G_GNUC_CONST;
 
+ofaMySQLConnect *ofa_mysql_connect_new                ( void );
+
 ofaMySQLConnect *ofa_mysql_connect_new_for_meta_period( const ofaMySQLMeta *meta,
 															const ofaMySQLPeriod *period,
 															const gchar *account,

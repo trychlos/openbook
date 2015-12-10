@@ -26,14 +26,18 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-ifile-meta.h"
+#include "api/ofa-ifile-period.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
 #include "ofa-mysql-connect.h"
+#include "ofa-mysql-editor-enter.h"
 
 /* priv instance data
  */
@@ -43,14 +47,23 @@ struct _ofaMySQLConnectPrivate {
 	/* connection data
 	 */
 	MYSQL   *mysql;
+	gchar   *host;
+	gchar   *socket;
+	guint    port;
+	gchar   *database;
 };
 
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint    idbconnect_get_interface_version( const ofaIDBConnect *instance );
+static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only );
+static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIFileMeta *meta, const ofaIFilePeriod *period );
+static gboolean connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
 static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
+static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta );
+static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password );
 static MYSQL   *connect_to( const gchar *host, const gchar *socket, guint port, const gchar *dbname, const gchar *account, const gchar *password, gchar **msg );
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
@@ -73,6 +86,9 @@ mysql_connect_finalize( GObject *instance )
 
 	/* free data members here */
 	g_free( priv->mysql );
+	g_free( priv->host );
+	g_free( priv->socket );
+	g_free( priv->database );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_connect_parent_class )->finalize( instance );
@@ -132,16 +148,156 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbconnect_get_interface_version;
+	iface->open_with_editor = idbconnect_open_with_editor;
+	iface->open_with_meta = idbconnect_open_with_meta;
 	iface->query = idbconnect_query;
 	iface->query_ex = idbconnect_query_ex;
 	iface->get_last_error = idbconnect_get_last_error;
 	iface->archive_and_new = idbconnect_archive_and_new;
+	iface->create_dossier = idbconnect_create_dossier;
+	iface->grant_user = idbconnect_grant_user;
 }
 
 static guint
 idbconnect_get_interface_version( const ofaIDBConnect *instance )
 {
 	return( 1 );
+}
+
+/*
+ * tries to establish the connection with informations provided by
+ * the @editor
+ */
+static gboolean
+idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only )
+{
+	ofaMySQLConnectPrivate *priv;
+	gboolean ok;
+	const gchar *host, *socket, *database;
+	guint port;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), FALSE );
+
+	priv = OFA_MYSQL_CONNECT( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
+		socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
+		port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
+		database = server_only ? NULL : ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
+
+		ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
+
+		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/*
+ * tries to establish the connection to the @period exercice of @meta
+ * dossier
+ */
+static gboolean
+idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIFileMeta *meta, const ofaIFilePeriod *period )
+{
+	ofaMySQLConnectPrivate *priv;
+	gboolean ok;
+	const gchar *host, *socket, *database;
+	guint port;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
+
+	priv = OFA_MYSQL_CONNECT( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
+		socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
+		port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
+		database = period ? ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period )) : NULL;
+
+		ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
+
+		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/*
+ * ofa_mysql_connect_open:
+ * @connect: this #ofaMySQLConnect object.
+ * @account: the user account.
+ * @password: [allow-none]: the user password.
+ * @host: [allow-none]: the DBMS host.
+ * @socket: [allow-none]: the DBMS listening socket.
+ * @port: [allow-none]: the DBMS listening port.
+ * @database: [allow-none]: the database to be connected to.
+ * @msg: [allow-none]: a placeholder for an error message.
+ *
+ * Establish (open) the connection to the named @database, or to the
+ * DBMS server itself if @database is %NULL.
+ *
+ * Returns: %TRUE if the connection has been successfully opened.
+ */
+static gboolean
+connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password,
+							const gchar *host, const gchar *socket, guint port, const gchar *database,
+							gchar **msg )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_open";
+	ofaMySQLConnectPrivate *priv;
+	MYSQL *mysql;
+	gboolean ok;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	priv = connect->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( priv->mysql ){
+			if( msg ){
+				*msg = g_strdup_printf( _( "%s: connect=%p is already opened" ), thisfn, ( void * ) connect );
+			}
+			/* though the connection is supposed actually opened,
+			 *  we signal the error */
+			return( FALSE );
+		}
+
+		ok = FALSE;
+		mysql = g_new0( MYSQL, 1 );
+		mysql_init( mysql );
+		mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
+
+		if( msg ){
+			*msg = NULL;
+		}
+
+		if( mysql_real_connect( mysql, host, account, password, database, port, socket, CLIENT_MULTI_RESULTS )){
+			ok = TRUE;
+			priv->mysql = mysql;
+			priv->host = g_strdup( host );
+			priv->socket = g_strdup( socket );
+			priv->database = g_strdup( database );
+			g_debug( "%s: connection OK: database=%s, account=%s", thisfn, database, account );
+
+		} else {
+			if( msg ){
+				*msg = g_strdup( mysql_error( mysql ));
+			}
+			g_free( mysql );
+		}
+
+		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /*
@@ -212,6 +368,161 @@ static gboolean
 idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next )
 {
 	return( ofa_mysql_archive_and_new( instance, root_account, root_password, begin_next, end_next ));
+}
+
+/*
+ * @instance: a superuser connection on the DBMS server
+ */
+static gboolean
+idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIFileMeta *meta )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
+	ofaMySQLConnectPrivate *priv;
+	GString *query;
+	ofaIFilePeriod *period;
+	const gchar *database;
+	gboolean ok;
+	gchar *msg;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+
+	priv = OFA_MYSQL_CONNECT( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		period = ofa_ifile_meta_get_current_period( meta );
+		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+
+		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
+		query = g_string_new( "" );
+		ok = FALSE;
+
+		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
+		g_debug( "%s: %s", thisfn, query->str );
+		if( idbconnect_query( instance, query->str )){
+			g_string_printf( query, "CREATE DATABASE %s", database );
+			g_debug( "%s: %s", thisfn, query->str );
+			ok = idbconnect_query( instance, query->str );
+			if( !ok ){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
+		}
+		g_object_unref( period );
+		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/*
+ * @instance: a superuser connection on the dossier
+ */
+static gboolean
+idbconnect_grant_user( const ofaIDBConnect *instance, ofaIFileMeta *meta, const gchar *account, const gchar *password )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
+	ofaMySQLConnectPrivate *priv;
+	GString *query;
+	gchar *hostname, *msg;
+	ofaIFilePeriod *period;
+	const gchar *database;
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IFILE_META( meta ), FALSE );
+	g_return_val_if_fail( my_strlen( account ), FALSE );
+
+	priv = OFA_MYSQL_CONNECT( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		query = g_string_new( "" );
+
+		hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));
+		if( !my_strlen( hostname )){
+			g_free( hostname );
+			hostname = g_strdup( "localhost" );
+		}
+
+		/* doesn't trap error on create user as the user may already exist */
+		g_string_printf( query,
+				"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
+					account,
+					hostname,
+					password );
+		g_debug( "%s: %s", thisfn, query->str );
+		idbconnect_query( instance, query->str );
+		ok = TRUE;
+
+		period = ofa_ifile_meta_get_current_period( meta );
+		g_return_val_if_fail( period && OFA_IS_IFILE_PERIOD( period ), FALSE );
+		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
+
+		g_string_printf( query,
+				"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
+					database,
+					account,
+					hostname );
+		g_debug( "%s: %s", thisfn, query->str );
+		if( !idbconnect_query( instance, query->str )){
+			msg = idbconnect_get_last_error( instance );
+			g_warning( "%s: %s", thisfn, msg );
+			g_free( msg );
+			ok = FALSE;
+		}
+		if( ok ){
+			g_string_printf( query,
+					"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
+						account,
+						hostname );
+			g_debug( "%s: %s", thisfn, query->str );
+			if( !idbconnect_query( instance, query->str )){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+				ok = FALSE;
+			}
+		}
+		if( ok ){
+			g_string_printf( query,
+					"FLUSH PRIVILEGES" );
+			g_debug( "%s: %s", thisfn, query->str );
+			if( !idbconnect_query( instance, query->str )){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+				ok = FALSE;
+			}
+		}
+		g_object_unref( period );
+		g_string_free( query, TRUE );
+		return( ok );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/**
+ * ofa_mysql_connect_new:
+ *
+ * Returns: a newly instanciated #ofaMySQLConnect object, which should
+ * be g_object_unref() by the caller.
+ *
+ * At the time of this instanciation, no DBMS connection is actually
+ * opened. Once opened, the connection will be gracefully closed on
+ * g_object_unref().
+ */
+ofaMySQLConnect *
+ofa_mysql_connect_new( void )
+{
+	ofaMySQLConnect *connect;
+
+	connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
+
+	return( connect );
 }
 
 /**
