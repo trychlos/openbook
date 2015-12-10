@@ -239,7 +239,7 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "credentials-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), priv->infos );
-	ofa_dbms_root_bin_set_dossier( priv->credentials, priv->dname );
+	//ofa_dbms_root_bin_set_dossier( priv->credentials, priv->dname );
 	my_utils_size_group_add_size_group(
 			group, ofa_dbms_root_bin_get_size_group( priv->credentials, 0 ));
 	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), dialog );
@@ -249,7 +249,6 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "prefs-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs ));
-	ofa_dbms_root_bin_set_dossier( priv->credentials, priv->dname );
 
 	/* other widgets */
 	priv->err_msg = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "px-errmsg" );
