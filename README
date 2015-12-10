@@ -5,12 +5,29 @@
  
    Open Freelance Accounting
 
+ Running
+ =======
+ 
+   Runtime environment variables
+
 -----------------------------------------------------------------------
+ Summary
+ =======
+
  Open Freelance Accounting
- =========================
 
  Open Freelance Accounting is a double-entry accounting application
  which first targets french freelance workers. 
+
+-----------------------------------------------------------------------
+ Running
+ =======
+
+ Runtime environment variables
+
+ OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf
+ G_MESSAGES_DEBUG=OFA
+ G_DEBUG=fatal_warnings
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
