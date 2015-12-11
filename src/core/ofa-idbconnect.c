@@ -677,6 +677,41 @@ ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
 }
 
 /**
+ * ofa_idbconnect_restore:
+ * @connect: a #ofaIDBConnect instance which handles a superuser
+ *  connection on the DBMS at server-level. It is expected this
+ *  @connect object holds a valid #ofaIDBMeta object which describes
+ *  the target dossier.
+ * @period: [allow-none]: a #ofaIDBPeriod object which describes the
+ *  target exercice; if %NULL, the file is restored on the current
+ *  exercice.
+ * @uri: the source file to be restored.
+ *
+ * Restore the file on the specified period.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_restore( const ofaIDBConnect *connect, const ofaIDBPeriod *period, const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_idbconnect_restore";
+
+	g_debug( "%s: connect=%p, period=%p, uri=%s",
+			thisfn, ( void * ) connect, ( void * ) period, uri );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
+		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, period, uri ));
+	}
+
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'restore()' method",
+			thisfn, ( void * ) connect );
+	return( FALSE );
+}
+
+/**
  * ofa_idbconnect_archive_and_new:
  * @connect: this #ofaIDBConnect instance which handles an active user
  *  connection on the closed exercice.

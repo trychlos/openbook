@@ -177,6 +177,22 @@ typedef struct {
 	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
 
 	/**
+	 * restore:
+	 * @instance: a #ofaIDBConnect superuser connection at server-level.
+	 * @period: the target period.
+	 * @uri: the file to be restored.
+	 *
+	 * Restore the specified @uri file to the target @period.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *restore )              ( const ofaIDBConnect *instance,
+											const ofaIDBPeriod *period,
+											const gchar *uri );
+
+	/**
 	 * archive_and_new:
 	 * @instance: the #ofaIDBConnect user connection.
 	 * @root_account: the root account of the DBMS server.
@@ -296,6 +312,10 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 																g_slist_free( L )
 
 gchar          *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *connect );
+
+gboolean        ofa_idbconnect_restore                   ( const ofaIDBConnect *connect,
+																const ofaIDBPeriod *period,
+																const gchar *uri );
 
 gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
 																const gchar *root_account,
