@@ -70,8 +70,8 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLExecutionWindow";
 
-static void        create_fake_database( const ofaIDBConnect *connect, const ofaIDBPeriod *period );
-static gboolean    do_execute( const ofaIDBConnect *connect, const ofaIDBPeriod *period, const gchar *template, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static void        create_fake_database( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period );
+static gboolean    do_execute( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *template, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
 static gchar      *build_cmdline_ex( const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *template, const gchar *fname, const gchar *new_dbname );
 static void        create_window( sExecuteInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, sExecuteInfos *infos );
@@ -112,7 +112,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_run( const ofaIDBConnect *connect, const gchar *filename, gboolean verbose )
+ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *filename, gboolean verbose )
 {
 	gchar *template;
 	gboolean ok;
@@ -121,7 +121,7 @@ ofa_mysql_cmdline_backup_run( const ofaIDBConnect *connect, const gchar *filenam
 	g_return_val_if_fail( my_strlen( filename ), FALSE );
 
 	template = ofa_mysql_ipreferences_get_backup_command();
-	ofa_mysql_connect_query( OFA_MYSQL_CONNECT( connect ), "FLUSH TABLES WITH READ LOCK" );
+	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
 
 	ok = do_execute(
 				connect,
@@ -134,7 +134,7 @@ ofa_mysql_cmdline_backup_run( const ofaIDBConnect *connect, const gchar *filenam
 
 	g_free( template );
 
-	ofa_mysql_connect_query( OFA_MYSQL_CONNECT( connect ), "UNLOCK TABLES" );
+	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
 
 	return( ok );
 }
@@ -158,7 +158,8 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  *  connection on the DBMS server. This object is expected to hold root
  *  account and password, and a non-%NULL meta which identifies the
  *  target dossier.
- * @period: the #ofaIDBPeriod object which qualifies the target exercice.
+ * @period: [allow-none]: the #ofaIDBPeriod object which qualifies the
+ *  target exercice; if %NULL, targets the current one.
  * @uri: the URI of the file to be restored.
  *
  * Restores a backup file on an identifier dossier and exercice.
@@ -167,7 +168,8 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * else.
  */
 gboolean
-ofa_mysql_cmdline_restore_run( const ofaIDBConnect *connect, ofaIDBPeriod *period, const gchar *uri )
+ofa_mysql_cmdline_restore_run( const ofaMySQLConnect *connect,
+									const ofaMySQLPeriod *period, const gchar *uri )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
 	gboolean ok;
@@ -177,7 +179,7 @@ ofa_mysql_cmdline_restore_run( const ofaIDBConnect *connect, ofaIDBPeriod *perio
 			thisfn, ( void * ) connect, ( void * ) period, uri );
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	create_fake_database( connect, period );
@@ -204,7 +206,7 @@ ofa_mysql_cmdline_restore_run( const ofaIDBConnect *connect, ofaIDBPeriod *perio
  * database - so create it first
  */
 static void
-create_fake_database( const ofaIDBConnect *connect, const ofaIDBPeriod *period )
+create_fake_database( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_create_fake_database";
 	ofaIDBMeta *meta;
@@ -213,14 +215,14 @@ create_fake_database( const ofaIDBConnect *connect, const ofaIDBPeriod *period )
 	gchar *account, *password;
 	gchar *cmdline, *stdout, *stderr;
 
-	meta = ofa_idbconnect_get_meta( connect );
+	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
 	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
 	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
 	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
 	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
 	dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
-	account = ofa_idbconnect_get_account( connect );
-	password = ofa_idbconnect_get_password( connect );
+	account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
+	password = ofa_idbconnect_get_password( OFA_IDBCONNECT( connect ));
 
 	cmdline = build_cmdline_ex(
 					host, socket, port, account, password, dbname,
@@ -254,7 +256,7 @@ create_fake_database( const ofaIDBConnect *connect, const ofaIDBPeriod *period )
  * corresponding line accordingly in the dossier settings.
  */
 gboolean
-ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
+ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
 						const gchar *root_account, const gchar *root_password,
 						const GDate *begin_next, const GDate *end_next )
 {
@@ -270,7 +272,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 	gint status;
 
 	/* meta informations on the current dossier */
-	meta = ofa_idbconnect_get_meta( connect );
+	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 
 	/* open a superuser new connection at DBMS server level */
@@ -283,7 +285,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 	}
 
 	/* get previous database from current connection on closed exercice */
-	period = ofa_idbconnect_get_period( connect );
+	period = ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
 	prev_dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
@@ -335,7 +337,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 	if( ok ){
 		ofa_mysql_meta_add_period( OFA_MYSQL_META( meta ), TRUE, begin_next, end_next, new_db );
 		//ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
-		prev_account = ofa_idbconnect_get_account( connect );
+		prev_account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
 		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
 		g_free( prev_account );
 	}
@@ -347,7 +349,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaIDBConnect *connect,
 }
 
 static gboolean
-do_execute( const ofaIDBConnect *connect, const ofaIDBPeriod *period,
+do_execute( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
 				const gchar *template, const gchar *fname,
 				const gchar *window_title, GChildWatchFunc pfn,
 				gboolean verbose )
@@ -363,15 +365,19 @@ do_execute( const ofaIDBConnect *connect, const ofaIDBPeriod *period,
 	gboolean ok;
 	guint source_id;
 
-	meta = ofa_idbconnect_get_meta( connect );
+	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+
 	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
 	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
 	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
-	connect_period = period ? NULL : ofa_idbconnect_get_period( connect );
-	database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ? period : connect_period ));
-	account = ofa_idbconnect_get_account( connect );
-	password = ofa_idbconnect_get_password( connect );
+
+	connect_period = period ? NULL : ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
+
+	database = ofa_mysql_period_get_database( period ? period : OFA_MYSQL_PERIOD( connect_period ));
+
+	account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
+	password = ofa_idbconnect_get_password( OFA_IDBCONNECT( connect ));
 
 	cmdline = build_cmdline_ex(
 					host, socket, port, account, password, database, template, fname, NULL );

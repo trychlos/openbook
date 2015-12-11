@@ -61,6 +61,7 @@ static gboolean connect_open( ofaMySQLConnect *connect, const gchar *account, co
 static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
+static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
 static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta );
 static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password );
@@ -152,6 +153,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->query = idbconnect_query;
 	iface->query_ex = idbconnect_query_ex;
 	iface->get_last_error = idbconnect_get_last_error;
+	iface->restore = idbconnect_restore;
 	iface->archive_and_new = idbconnect_archive_and_new;
 	iface->create_dossier = idbconnect_create_dossier;
 	iface->grant_user = idbconnect_grant_user;
@@ -441,9 +443,18 @@ idbconnect_get_last_error( const ofaIDBConnect *instance )
 }
 
 static gboolean
+idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *uri )
+{
+	return( ofa_mysql_cmdline_restore_run(
+					OFA_MYSQL_CONNECT( instance ), OFA_MYSQL_PERIOD( period ), uri ));
+}
+
+
+static gboolean
 idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next )
 {
-	return( ofa_mysql_cmdline_archive_and_new( instance, root_account, root_password, begin_next, end_next ));
+	return( ofa_mysql_cmdline_archive_and_new(
+					OFA_MYSQL_CONNECT( instance ), root_account, root_password, begin_next, end_next ));
 }
 
 /*

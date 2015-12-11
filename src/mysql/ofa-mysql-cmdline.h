@@ -30,25 +30,24 @@
  * @short_description: #ofaMysql class definition.
  */
 
-#include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "ofa-mysql-connect.h"
+#include "ofa-mysql-period.h"
 
 G_BEGIN_DECLS
 
 const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
-gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaIDBConnect *connect,
+gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaMySQLConnect *connect,
 																const gchar *filename,
 																gboolean verbose );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 
-gboolean     ofa_mysql_cmdline_restore_run                ( const ofaIDBConnect *connect,
-																ofaIDBPeriod *period,
+gboolean     ofa_mysql_cmdline_restore_run                ( const ofaMySQLConnect *connect,
+																const ofaMySQLPeriod *period,
 																const gchar *uri );
 
-gboolean     ofa_mysql_cmdline_archive_and_new            ( const ofaIDBConnect *connect,
+gboolean     ofa_mysql_cmdline_archive_and_new            ( const ofaMySQLConnect *connect,
 																const gchar *root_account,
 																const gchar *root_password,
 																const GDate *begin_next,
