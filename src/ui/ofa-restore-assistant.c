@@ -31,6 +31,7 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
@@ -85,11 +86,10 @@ struct _ofaRestoreAssistantPrivate {
 	/* p2: select the dossier target
 	 */
 	GtkWidget              *p2_furi;
-	ofaDossierTreeview     *p2_dossier_name_treeview;
+	ofaDossierTreeview     *p2_dossier_treeview;
 	GtkWidget              *p2_new_dossier_btn;
 	ofaIDBMeta             *p2_meta;
 	ofaIDBPeriod           *p2_period;
-	gchar                  *p2_dossier_name;
 	gboolean                p2_is_new_dossier;
 
 	/* p3: DBMS root account
@@ -101,6 +101,7 @@ struct _ofaRestoreAssistantPrivate {
 	gchar                  *p3_account;
 	gchar                  *p3_password;
 	GtkWidget              *p3_message;
+	ofaIDBConnect          *p3_connect;
 
 	/* p4: dossier administrative credentials
 	 */
@@ -177,15 +178,15 @@ static void     p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assis
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void     p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void     p3_check_for_complete( ofaRestoreAssistant *self );
 static void     p3_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void     p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
-static void     p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_check_for_complete( ofaRestoreAssistant *self );
 static void     p4_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -195,7 +196,6 @@ static void     p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget 
 static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
-static gboolean p6_do_credentials( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
 static void     get_settings( ofaRestoreAssistant *self );
 static void     update_settings( ofaRestoreAssistant *self );
@@ -250,7 +250,6 @@ restore_assistant_finalize( GObject *instance )
 
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
-	g_free( priv->p2_dossier_name );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
 	g_free( priv->p4_account );
@@ -275,6 +274,7 @@ restore_assistant_dispose( GObject *instance )
 		g_clear_object( &priv->p2_meta );
 		g_clear_object( &priv->p2_period );
 		g_clear_object( &priv->p3_hgroup );
+		g_clear_object( &priv->p3_connect );
 	}
 
 	/* chain up to the parent class */
@@ -493,15 +493,15 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
 	my_utils_widget_set_style( priv->p2_furi, "labelinfo" );
 
-	priv->p2_dossier_name_treeview = ofa_dossier_treeview_new();
+	priv->p2_dossier_treeview = ofa_dossier_treeview_new();
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_name_treeview ));
-	ofa_dossier_treeview_set_columns( priv->p2_dossier_name_treeview, st_columns );
-	ofa_dossier_treeview_set_show( priv->p2_dossier_name_treeview, DOSSIER_SHOW_CURRENT );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_treeview ));
+	ofa_dossier_treeview_set_columns( priv->p2_dossier_treeview, st_columns );
+	ofa_dossier_treeview_set_show( priv->p2_dossier_treeview, DOSSIER_SHOW_CURRENT );
 
-	g_signal_connect( priv->p2_dossier_name_treeview, "changed", G_CALLBACK( p2_on_dossier_changed ), self );
-	g_signal_connect( priv->p2_dossier_name_treeview, "activated", G_CALLBACK( p2_on_dossier_activated ), self );
+	g_signal_connect( priv->p2_dossier_treeview, "changed", G_CALLBACK( p2_on_dossier_changed ), self );
+	g_signal_connect( priv->p2_dossier_treeview, "activated", G_CALLBACK( p2_on_dossier_activated ), self );
 
 	priv->p2_new_dossier_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-dossier" );
 
@@ -527,7 +527,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	p2_check_for_complete( self );
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_name_treeview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_treeview ));
 }
 
 static void
@@ -575,9 +575,6 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 	if( ofa_dossier_new_mini_run(
 			OFA_MAIN_WINDOW( main_window ), &dname, &account, &password )){
 
-		g_free( priv->p2_dossier_name );
-		priv->p2_dossier_name = dname;
-
 		g_free( priv->p3_account );
 		priv->p3_account = account;
 
@@ -585,8 +582,8 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 		priv->p3_password = password;
 
 		priv->p2_is_new_dossier = TRUE;
-		ofa_dossier_treeview_set_selected( priv->p2_dossier_name_treeview, dname );
-		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_name_treeview ));
+		ofa_dossier_treeview_set_selected( priv->p2_dossier_treeview, dname );
+		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_treeview ));
 	}
 }
 
@@ -661,22 +658,6 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
-{
-	ofaRestoreAssistantPrivate *priv;
-
-	priv = self->priv;
-
-	g_free( priv->p3_account );
-	priv->p3_account = g_strdup( account );
-
-	g_free( priv->p3_password );
-	priv->p3_password = g_strdup( password );
-
-	p3_check_for_complete( self );
-}
-
-static void
 p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_display";
@@ -685,6 +666,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	GList *children;
 	ofaIDBProvider *provider;
 	ofaIDBEditor *editor;
+	gchar *dossier_name;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -692,11 +674,14 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = self->priv;
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
-	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), priv->p2_dossier_name );
 
-	/* the connection informations must be set here
-	 * because it needs an ofaIDbms handle and it is not stable enough
-	 * when in do_init() phase */
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
+	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), dossier_name );
+	g_free( dossier_name );
+
+	/* as the dossier may have changed since the initialization,
+	 * the ofaIDBEditor used to display connection informations
+	 * must be set here */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	children = gtk_container_get_children( GTK_CONTAINER( parent ));
@@ -718,12 +703,30 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_size_group_add_size_group(
 			priv->p3_hgroup, ofa_idbeditor_get_size_group( editor, 0 ));
 
+	/* setup the dbms root credentials */
 	ofa_dbms_root_bin_set_meta( priv->p3_dbms_credentials, priv->p2_meta );
 
 	if( priv->p3_account && priv->p3_password ){
 		ofa_dbms_root_bin_set_credentials(
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
+
+	gtk_widget_show_all( page );
+	p3_check_for_complete( self );
+}
+
+static void
+p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->p3_account );
+	priv->p3_account = g_strdup( account );
+
+	g_free( priv->p3_password );
+	priv->p3_password = g_strdup( password );
 
 	p3_check_for_complete( self );
 }
@@ -759,13 +762,31 @@ p3_set_message( ofaRestoreAssistant *self, const gchar *message )
 	}
 }
 
+/*
+ * open a new superuser connection at DMBS server-level on page change
+ * this could be done as soon as we get the root credentials, but this
+ * transition seems more stable (less often run)
+ */
 static void
 p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_forward";
+	ofaRestoreAssistantPrivate *priv;
+	ofaIDBProvider *provider;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = self->priv;
+
+	g_clear_object( &priv->p3_connect );
+	provider = ofa_idbmeta_get_provider( priv->p2_meta );
+	priv->p3_connect = ofa_idbprovider_new_connect( provider );
+	if( !ofa_idbconnect_open_with_meta(
+			priv->p3_connect, priv->p3_account, priv->p3_password, priv->p2_meta, NULL )){
+		g_clear_object( &priv->p3_connect );
+		g_warning( "%s: unable to open a new '%s' connection on DBMS", thisfn, priv->p3_account );
+	}
 }
 
 /*
@@ -832,6 +853,35 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_object_unref( hgroup );
 }
 
+/*
+ * ask the user to confirm the operation
+ */
+static void
+p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_p4_do_display";
+	ofaRestoreAssistantPrivate *priv;
+	gchar *dossier_name;
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = self->priv;
+
+	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
+
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
+	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), dossier_name );
+	g_free( dossier_name );
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
+	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
+
+	p4_check_for_complete( self );
+
+	/*ofa_admin_credentials_bin_grab_focus( priv->p4_admin_credentials );*/
+}
+
 static void
 p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
 {
@@ -856,31 +906,6 @@ p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self )
 	priv = self->priv;
 
 	priv->p4_open = gtk_toggle_button_get_active( button );
-}
-
-/*
- * ask the user to confirm the operation
- */
-static void
-p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_restore_assistant_p4_do_display";
-	ofaRestoreAssistantPrivate *priv;
-
-	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
-			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	priv = self->priv;
-
-	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
-	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), priv->p2_dossier_name );
-
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
-	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
-
-	p4_check_for_complete( self );
-
-	/*ofa_admin_credentials_bin_grab_focus( priv->p4_admin_credentials );*/
 }
 
 static void
@@ -980,6 +1005,7 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p5_do_display";
 	ofaRestoreAssistantPrivate *priv;
+	gchar *dossier_name;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -987,14 +1013,17 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
-	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), priv->p2_dossier_name );
+	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_password ), "******" );
 	gtk_label_set_text( GTK_LABEL( priv->p5_open ), priv->p4_open ? _( "True" ): _( "False" ));
+
+	g_free( dossier_name );
 }
 
 /*
@@ -1029,6 +1058,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
+	gchar *dossier_name;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1041,10 +1071,11 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	priv = self->priv;
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
-			ofa_settings_remove_dossier( priv->p2_dossier_name );
+			ofa_settings_remove_dossier( dossier_name );
 		}
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label1 ),
@@ -1059,6 +1090,8 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
+
+	g_free( dossier_name );
 }
 
 static gboolean
@@ -1083,70 +1116,41 @@ p6_restore_confirmed( const ofaRestoreAssistant *self )
 	return( ok );
 }
 
+/*
+ * restore the dossier
+ * simultaneously installing administrative credentials
+ */
 static gboolean
 p6_do_restore( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
-	gchar *str;
+	gchar *dossier_name, *str;
+	const gchar *style;
 
 	priv = self->priv;
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	/* restore the backup */
-	//ok = ofa_idbms_restore(
-	//		priv->p2_idbms, priv->p2_dossier_name, priv->p1_furi, priv->p3_account, priv->p3_password );
-	ok = FALSE;
+	ok = ofa_idbconnect_restore(
+				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password );
 
 	if( ok ){
+		style = "labelnormal";
 		str = g_strdup_printf(
 				_( "The '%s' backup file has been successfully restored "
-					"into the '%s' dossier." ), priv->p1_furi, priv->p2_dossier_name );
+					"into the '%s' dossier." ), priv->p1_furi, dossier_name );
 	} else {
+		style = "labelerror";
 		str = g_strdup_printf(
 				_( "Unable to restore the '%s' backup file.\n"
 					"Please fix the errors and retry." ), priv->p1_furi );
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->p6_label1 ), str );
-	g_free( str );
+	my_utils_widget_set_style( priv->p6_label1, style );
 
-	/* create administrative credentials */
-	if( ok ){
-		g_idle_add(( GSourceFunc ) p6_do_credentials, self );
-	}
-
-	return( G_SOURCE_REMOVE );
-}
-
-/*
- * create the dossier administrative credentials
- */
-static gboolean
-p6_do_credentials( ofaRestoreAssistant *self )
-{
-	ofaRestoreAssistantPrivate *priv;
-	gboolean ok;
-	gchar *str;
-
-	priv = self->priv;
-
-	/*
-	ok = ofa_idbms_set_admin_credentials(
-				priv->p2_idbms, priv->p2_dossier_name,
-				priv->p3_account, priv->p3_password,
-				priv->p4_account, priv->p4_password );
-				*/
-	ok = FALSE;
-
-	if( ok ){
-		str = g_strdup(
-				_( "The dossier administrative credentials have been set." ));
-	} else {
-		str = g_strdup(
-				_( "Unable to set the dossier administrative credentials." ));
-	}
-
-	gtk_label_set_text( GTK_LABEL( priv->p6_label2 ), str );
+	g_free( dossier_name );
 	g_free( str );
 
 	/* open the dossier */
@@ -1174,7 +1178,7 @@ p6_do_open( ofaRestoreAssistant *self )
 
 	if( priv->p4_open ){
 		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->dname = g_strdup( priv->p2_dossier_name );
+		//sdo->dname = g_strdup( priv->p2_dossier_name );
 		//sdo->dbname = g_strdup( priv->p2_database );
 		sdo->account = g_strdup( priv->p4_account );
 		sdo->password = g_strdup( priv->p4_password );
