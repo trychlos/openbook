@@ -45,6 +45,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-idbmeta.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
@@ -60,7 +61,7 @@ typedef struct {
 	GtkWidget  *window;
 	GtkWidget  *textview;
 	GtkWidget  *close_btn;
-	gboolean    backup_ok;
+	gboolean    command_ok;
 	gulong      out_line;
 	gulong      err_line;
 	gboolean    verbose;
@@ -70,19 +71,20 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLExecutionWindow";
 
-static void        create_fake_database( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period );
-static gboolean    do_execute( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *template, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
-static gchar      *build_cmdline_ex( const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *template, const gchar *fname, const gchar *new_dbname );
-static void        create_window( sExecuteInfos *infos, const gchar *window_title );
-static GPid        exec_command( const gchar *cmdline, sExecuteInfos *infos );
-static GIOChannel *set_up_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos );
-static gboolean    stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
-static gboolean    stdout_done( GIOChannel *ioc );
-static gboolean    stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
-static gboolean    stderr_done( GIOChannel *ioc );
-static void        display_output( const gchar *str, sExecuteInfos *infos );
-static void        exit_backup_cb( GPid child_pid, gint status, sExecuteInfos *infos );
-static void        exit_restore_cb( GPid child_pid, gint status, sExecuteInfos *infos );
+static gchar      *cmdline_build_from_connect( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *filename, const gchar *database );
+static gchar      *cmdline_build_from_args( const gchar *template, const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *fname, const gchar *new_dbname );
+static gboolean    do_execute_sync( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *fname, const gchar *newdb );
+static gboolean    do_execute_async( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static void        async_create_window( sExecuteInfos *infos, const gchar *window_title );
+static GPid        async_exec_command( const gchar *cmdline, sExecuteInfos *infos );
+static GIOChannel *async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos );
+static gboolean    async_stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
+static gboolean    async_stdout_done( GIOChannel *ioc );
+static gboolean    async_stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
+static gboolean    async_stderr_done( GIOChannel *ioc );
+static void        async_display_output( const gchar *str, sExecuteInfos *infos );
+static void        backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
+static void        restore_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
 static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname );
 
 /**
@@ -123,13 +125,13 @@ ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *filen
 	template = ofa_mysql_ipreferences_get_backup_command();
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
 
-	ok = do_execute(
+	ok = do_execute_async(
+				template,
 				connect,
 				NULL,
-				template,
 				filename,
 				_( "Openbook backup" ),
-				( GChildWatchFunc ) exit_backup_cb,
+				( GChildWatchFunc ) backup_exit_cb,
 				verbose );
 
 	g_free( template );
@@ -158,8 +160,8 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  *  connection on the DBMS server. This object is expected to hold root
  *  account and password, and a non-%NULL meta which identifies the
  *  target dossier.
- * @period: [allow-none]: the #ofaIDBPeriod object which qualifies the
- *  target exercice; if %NULL, targets the current one.
+ * @period: the #ofaIDBPeriod object which qualifies the target
+ *  exercice.
  * @uri: the URI of the file to be restored.
  *
  * Restores a backup file on an identifier dossier and exercice.
@@ -179,67 +181,30 @@ ofa_mysql_cmdline_restore_run( const ofaMySQLConnect *connect,
 			thisfn, ( void * ) connect, ( void * ) period, uri );
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
-	create_fake_database( connect, period );
+	/* It happens that MySQL has some issues with dropping an non-existant
+	 * database - so create it first */
+	do_execute_sync(
+			"/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", connect, period, NULL, NULL );
+
 	fname = g_filename_from_uri( uri, NULL, NULL );
 	template = ofa_mysql_ipreferences_get_restore_command();
 
-	ok = do_execute(
+	ok = do_execute_async(
+				template,
 				connect,
 				period,
-				template,
 				fname,
 				_( "Openbook restore" ),
-				( GChildWatchFunc ) exit_restore_cb,
+				( GChildWatchFunc ) restore_exit_cb,
 				TRUE );
 
 	g_free( template );
 	g_free( fname );
 
 	return( ok );
-}
-
-/*
- * It happens that MySQL has some issues with dropping an non-existant
- * database - so create it first
- */
-static void
-create_fake_database( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period )
-{
-	static const gchar *thisfn = "ofa_mysql_cmdline_create_fake_database";
-	ofaIDBMeta *meta;
-	const gchar *host, *socket, *dbname;
-	guint port;
-	gchar *account, *password;
-	gchar *cmdline, *stdout, *stderr;
-
-	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
-	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
-	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
-	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
-	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
-	dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
-	account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
-	password = ofa_idbconnect_get_password( OFA_IDBCONNECT( connect ));
-
-	cmdline = build_cmdline_ex(
-					host, socket, port, account, password, dbname,
-					"/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", NULL, NULL );
-	g_debug( "%s: cmdline=%s", thisfn, cmdline );
-
-	stdout = NULL;
-	stderr = NULL;
-
-	g_spawn_command_line_sync( cmdline, &stdout, &stderr, NULL, NULL );
-
-	g_free( cmdline );
-	g_free( stdout );
-	g_free( stderr );
-	g_free( password );
-	g_free( account );
-	g_object_unref( meta );
 }
 
 /**
@@ -304,11 +269,11 @@ ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
 	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
 	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
 
-	cmdline = build_cmdline_ex(
-					host, socket, port, root_account, root_password, prev_dbname,
+	cmdline = cmdline_build_from_args(
 					"mysql %O -u%U -p%P -e 'drop database if exists %N'; "
 					"mysql %O -u%U -p%P -e 'create database %N'; "
 					"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N",
+					host, socket, port, root_account, root_password, prev_dbname,
 					NULL, new_db );
 
 	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
@@ -348,116 +313,64 @@ ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
 	return( ok );
 }
 
-static gboolean
-do_execute( const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
-				const gchar *template, const gchar *fname,
-				const gchar *window_title, GChildWatchFunc pfn,
-				gboolean verbose )
+/*
+ * see mysql.h for a list of placeholders
+ */
+static gchar *
+cmdline_build_from_connect( const gchar *template,
+								const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+								const gchar *filename, const gchar *database )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute";
+	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_connect";
+	gchar *cmdline, *account, *password;
 	ofaIDBMeta *meta;
-	ofaIDBPeriod *connect_period;
-	const gchar *host, *socket, *database;
+	const gchar *host, *socket, *connect_database;
 	guint port;
-	sExecuteInfos *infos;
-	gchar *account, *password, *cmdline;
-	GPid child_pid;
-	gboolean ok;
-	guint source_id;
+
+	g_debug( "%s: connect=%p, period=%p, template=%s, filename=%s, database=%s",
+					thisfn, ( void * ) connect, ( void * ) period, template, filename, database );
 
 	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
 
 	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
 	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
 	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
 
-	connect_period = period ? NULL : ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
-
-	database = ofa_mysql_period_get_database( period ? period : OFA_MYSQL_PERIOD( connect_period ));
+	connect_database = ofa_mysql_period_get_database( period );
 
 	account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
 	password = ofa_idbconnect_get_password( OFA_IDBCONNECT( connect ));
 
-	cmdline = build_cmdline_ex(
-					host, socket, port, account, password, database, template, fname, NULL );
-	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+	cmdline = cmdline_build_from_args( template,
+					host, socket, port, account, password, connect_database, filename, database );
 
-	infos = g_new0( sExecuteInfos, 1 );
-	infos->backup_ok = FALSE;
-	infos->out_line = 0;
-	infos->err_line = 0;
-	infos->verbose = verbose;
-
-	if( infos->verbose ){
-		create_window( infos, window_title );
-		g_debug( "%s: window=%p, textview=%p",
-				thisfn, ( void * ) infos->window, ( void * ) infos->textview );
-	} else {
-		infos->loop = g_main_loop_new( NULL, FALSE );
-	}
-
-	child_pid = exec_command( cmdline, infos );
-	g_debug("%s: child_pid=%lu", thisfn, ( gulong ) child_pid );
-
-	if( child_pid != ( GPid ) 0 ){
-		/* Watch the child, so we get the exit status */
-		source_id = g_child_watch_add( child_pid, pfn, infos );
-		g_debug( "%s: returning from g_child_watch_add, source_id=%u", thisfn, source_id );
-
-		if( infos->verbose ){
-			g_debug( "%s: running the display dialog", thisfn );
-			gtk_dialog_run( GTK_DIALOG( infos->window ));
-			my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
-
-		} else {
-			g_main_loop_run( infos->loop );
-			g_main_loop_unref( infos->loop );
-		}
-	}
-
-	if( infos->verbose ){
-		g_debug( "%s: destroying the display dialog", thisfn );
-		gtk_widget_destroy( infos->window );
-	}
-
-	ok = infos->backup_ok;
-
-	g_free( infos );
-	g_free( cmdline );
 	g_free( password );
 	g_free( account );
-	g_clear_object( &connect_period );
-	g_clear_object( &meta );
+	g_object_unref( meta );
 
-	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
-	return( ok );
+	return( cmdline );
 }
 
-/*
- * %B: current database name
- * %F: filename
- * %N: new database name
- * %O: connection options (host, port, socket)
- * %P: password
- * %U: account
- */
 static gchar *
-build_cmdline_ex( const gchar *host, const gchar *socket, guint port,
-					const gchar *account, const gchar *password,
-					const gchar *dbname,
-					const gchar *template,
-					const gchar *fname, const gchar *new_dbname )
+cmdline_build_from_args( const gchar *template,
+							const gchar *host, const gchar *socket, guint port,
+							const gchar *account, const gchar *password,
+							const gchar *dbname, const gchar *fname, const gchar *new_dbname )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_build_cmdline_ex";
+	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_args";
 	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
 	gchar *newcmd;
 	gchar *quoted;
 
+	g_debug( "%s: host=%s, socket=%s, port=%u, "
+				"account=%s, password=%s, dbname=%s, template=%s, fname=%s, new_dbname=%s",
+					thisfn, host, socket, port,
+					account, password ? "******":password, dbname, template, fname, new_dbname );
+
 	cmdline = g_strdup( template );
-	g_debug( "%s: template=%s", thisfn, cmdline );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, dbname, 0, NULL );
@@ -518,11 +431,102 @@ build_cmdline_ex( const gchar *host, const gchar *socket, guint port,
 	return( cmdline );
 }
 
+static gboolean
+do_execute_sync( const gchar *template,
+					const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+					const gchar *fname, const gchar *newdb )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_sync";
+	gchar *cmdline, *stdout, *stderr;
+	gboolean ok;
+
+	cmdline = cmdline_build_from_connect( template, connect, period, fname, newdb );
+	/* this may display the root password on debug output */
+	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+
+	stdout = NULL;
+	stderr = NULL;
+	ok = FALSE;
+
+	if( my_strlen( cmdline )){
+		ok = g_spawn_command_line_sync( cmdline, &stdout, &stderr, NULL, NULL );
+	}
+
+	g_free( stdout );
+	g_free( stderr );
+	g_free( cmdline );
+
+	return( ok );
+}
+
+static gboolean
+do_execute_async( const gchar *template,
+					const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+					const gchar *fname, const gchar *window_title, GChildWatchFunc pfn,
+					gboolean verbose )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_async";
+	sExecuteInfos *infos;
+	gchar *cmdline;
+	GPid child_pid;
+	gboolean ok;
+	guint source_id;
+
+	cmdline = cmdline_build_from_connect( template, connect, period, fname, NULL );
+	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+
+	infos = g_new0( sExecuteInfos, 1 );
+	infos->command_ok = FALSE;
+	infos->out_line = 0;
+	infos->err_line = 0;
+	infos->verbose = verbose;
+
+	if( infos->verbose ){
+		async_create_window( infos, window_title );
+		g_debug( "%s: window=%p, textview=%p",
+				thisfn, ( void * ) infos->window, ( void * ) infos->textview );
+	} else {
+		infos->loop = g_main_loop_new( NULL, FALSE );
+	}
+
+	child_pid = async_exec_command( cmdline, infos );
+	g_debug("%s: child_pid=%lu", thisfn, ( gulong ) child_pid );
+
+	if( child_pid != ( GPid ) 0 ){
+		/* Watch the child, so we get the exit status */
+		source_id = g_child_watch_add( child_pid, pfn, infos );
+		g_debug( "%s: returning from g_child_watch_add, source_id=%u", thisfn, source_id );
+
+		if( infos->verbose ){
+			g_debug( "%s: running the display dialog", thisfn );
+			gtk_dialog_run( GTK_DIALOG( infos->window ));
+			my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
+
+		} else {
+			g_main_loop_run( infos->loop );
+			g_main_loop_unref( infos->loop );
+		}
+	}
+
+	if( infos->verbose ){
+		g_debug( "%s: destroying the display dialog", thisfn );
+		gtk_widget_destroy( infos->window );
+	}
+
+	ok = infos->command_ok;
+
+	g_free( infos );
+	g_free( cmdline );
+
+	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
+	return( ok );
+}
+
 /*
  * the dialog is only created when running verbosely
  */
 static void
-create_window( sExecuteInfos *infos, const gchar *window_title )
+async_create_window( sExecuteInfos *infos, const gchar *window_title )
 {
 	GtkWidget *content, *grid, *scrolled;
 
@@ -556,9 +560,9 @@ create_window( sExecuteInfos *infos, const gchar *window_title )
 }
 
 static GPid
-exec_command( const gchar *cmdline, sExecuteInfos *infos )
+async_exec_command( const gchar *cmdline, sExecuteInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_exec_command";
+	static const gchar *thisfn = "ofa_mysql_cmdline_async_exec_command";
 	gboolean ok;
 	gchar *cmd;
 	gint argc;
@@ -601,8 +605,8 @@ exec_command( const gchar *cmdline, sExecuteInfos *infos )
 
 	if( ok ){
 		/* Now use GIOChannels to monitor stdout and stderr */
-		set_up_io_channel( stdout_fd, ( GIOFunc ) stdout_fn, infos );
-		set_up_io_channel( stderr_fd, ( GIOFunc ) stderr_fn, infos );
+		async_setup_io_channel( stdout_fd, ( GIOFunc ) async_stdout_fn, infos );
+		async_setup_io_channel( stderr_fd, ( GIOFunc ) async_stderr_fn, infos );
 	}
 
 	return( ok ? child_pid : ( GPid ) 0 );
@@ -613,7 +617,7 @@ exec_command( const gchar *cmdline, sExecuteInfos *infos )
  *   happens on a pipe
  */
 static GIOChannel *
-set_up_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos )
+async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos )
 {
 	GIOChannel *ioc;
 
@@ -646,7 +650,7 @@ set_up_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos )
  *   or when the pipe is closed (ie. the program terminated)
  */
 static gboolean
-stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
+async_stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 {
 	GIOStatus ret;
 	gchar buf[BUFSIZE];
@@ -660,16 +664,16 @@ stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 			memset( buf, 0x00, BUFSIZE );
 			ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
 			if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
-				return( stdout_done( ioc ));	/* = return FALSE */
+				return( async_stdout_done( ioc ));	/* = return FALSE */
 			}
 			str = g_strdup_printf( "[stdout %lu] %s\n", ++infos->out_line, buf );
-			display_output( str, infos );
+			async_display_output( str, infos );
 			g_free( str );
 		}
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
-		return( stdout_done( ioc ));		/* = return FALSE */
+		return( async_stdout_done( ioc ));		/* = return FALSE */
 	}
 
 	return( TRUE );
@@ -680,13 +684,13 @@ stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
  *  Always returns FALSE (to make it nicer to use in the callback)
  */
 static gboolean
-stdout_done( GIOChannel *ioc )
+async_stdout_done( GIOChannel *ioc )
 {
 	return( FALSE );
 }
 
 static gboolean
-stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
+async_stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 {
 	GIOStatus ret;
 	gchar buf[BUFSIZE];
@@ -700,23 +704,23 @@ stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 			memset( buf, 0x00, BUFSIZE );
 			ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
 			if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
-				return( stderr_done( ioc )); /* = return FALSE */
+				return( async_stderr_done( ioc )); /* = return FALSE */
 			}
 			str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
-			display_output( str, infos );
+			async_display_output( str, infos );
 			g_free( str );
 		}
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
-		return( stderr_done( ioc )); /* = return FALSE */
+		return( async_stderr_done( ioc )); /* = return FALSE */
 	}
 
 	return( TRUE );
 }
 
 static gboolean
-stderr_done( GIOChannel *ioc )
+async_stderr_done( GIOChannel *ioc )
 {
 	return( FALSE );
 }
@@ -725,9 +729,9 @@ stderr_done( GIOChannel *ioc )
  * this is only called when running verbosely
  */
 static void
-display_output( const gchar *str, sExecuteInfos *infos )
+async_display_output( const gchar *str, sExecuteInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_display_output";
+	static const gchar *thisfn = "ofa_mysql_cmdline_async_display_output";
 	GtkTextBuffer *textbuf;
 	GtkTextIter enditer;
 	const gchar *charset;
@@ -772,9 +776,9 @@ display_output( const gchar *str, sExecuteInfos *infos )
 }
 
 static void
-exit_backup_cb( GPid child_pid, gint status, sExecuteInfos *infos )
+backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_exit_backup_cb";
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_exit_cb";
 	GtkWidget *dlg;
 	gchar *msg;
 
@@ -787,8 +791,8 @@ exit_backup_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 
 		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
 			msg = g_strdup( _( "Backup has successfully run" ));
-			infos->backup_ok = TRUE;
-			g_debug( "%s: setting backup_ok to TRUE", thisfn );
+			infos->command_ok = TRUE;
+			g_debug( "%s: setting command_ok to TRUE", thisfn );
 
 		} else {
 			msg = g_strdup_printf(
@@ -806,7 +810,7 @@ exit_backup_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 
 	if( infos->verbose ){
 		if( !my_strlen( msg )){
-			if( infos->backup_ok ){
+			if( infos->command_ok ){
 				msg = g_strdup( _( "Dossier successfully backuped" ));
 			} else {
 				msg = g_strdup( _( "An error occured while backuping the dossier" ));
@@ -833,9 +837,9 @@ exit_backup_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 }
 
 static void
-exit_restore_cb( GPid child_pid, gint status, sExecuteInfos *infos )
+restore_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_cmdline_exit_restore_cb";
+	static const gchar *thisfn = "ofa_mysql_cmdline_restore_exit_cb";
 	GtkWidget *dlg;
 	gchar *msg;
 
@@ -848,7 +852,7 @@ exit_restore_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 
 		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
 			msg = g_strdup( _( "Restore has successfully run" ));
-			infos->backup_ok = TRUE;
+			infos->command_ok = TRUE;
 			g_debug( "%s: setting restore_ok to TRUE", thisfn );
 
 		} else {
@@ -867,7 +871,7 @@ exit_restore_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 
 	if( infos->verbose ){
 		if( !my_strlen( msg )){
-			if( infos->backup_ok ){
+			if( infos->command_ok ){
 				msg = g_strdup(
 						_( "Dossier successfully restored" ));
 			} else {

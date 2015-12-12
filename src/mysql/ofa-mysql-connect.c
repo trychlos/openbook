@@ -63,8 +63,8 @@ static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar 
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
-static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta );
-static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password );
+static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta );
+static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *account, const gchar *password );
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
 
@@ -461,7 +461,7 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_acc
  * @instance: a superuser connection on the DBMS server
  */
 static gboolean
-idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta )
+idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
 	ofaMySQLConnectPrivate *priv;
@@ -505,21 +505,22 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, ofaIDBMeta *meta )
 }
 
 /*
- * @instance: a superuser connection on the dossier
+ * @instance: a superuser connection on the DBMS at server-level
+ * @period: the target financial period
  */
 static gboolean
-idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gchar *account, const gchar *password )
+idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
 	ofaMySQLConnectPrivate *priv;
 	GString *query;
+	ofaIDBMeta *meta;
 	gchar *hostname, *msg;
-	ofaIDBPeriod *period;
 	const gchar *database;
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 	g_return_val_if_fail( my_strlen( account ), FALSE );
 
 	priv = OFA_MYSQL_CONNECT( instance )->priv;
@@ -528,11 +529,16 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gc
 
 		query = g_string_new( "" );
 
+		meta = ofa_idbconnect_get_meta( instance );
+		g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+
 		hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));
 		if( !my_strlen( hostname )){
 			g_free( hostname );
 			hostname = g_strdup( "localhost" );
 		}
+
+		g_object_unref( meta );
 
 		/* doesn't trap error on create user as the user may already exist */
 		g_string_printf( query,
@@ -544,8 +550,6 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gc
 		idbconnect_query( instance, query->str );
 		ok = TRUE;
 
-		period = ofa_idbmeta_get_current_period( meta );
-		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
 
 		g_string_printf( query,
@@ -584,7 +588,6 @@ idbconnect_grant_user( const ofaIDBConnect *instance, ofaIDBMeta *meta, const gc
 				ok = FALSE;
 			}
 		}
-		g_object_unref( period );
 		g_string_free( query, TRUE );
 		return( ok );
 	}

@@ -35,12 +35,22 @@
  * It implements the #ofaIDBProvider and #ofaIPreferences interfaces.
  *
  * The companion classes #ofaMySQLMeta, #ofaMySQLPeriod,
- * #ofaMySQLConnect respectively implement the #ofaIDBMeta,
- * #ofaIDBPeriod and #ofaIDBConnect interfaces.
+ * #ofaMySQLConnect, #ofaMySQLEditorEnter or #ofaMySQLEditorDisplay
+ * respectively implement the #ofaIDBMeta, #ofaIDBPeriod, #ofaIDBConnect
+ * and #ofaIDBEditor interfaces.
  *
  * As the Openbook software suite has chosen to store its meta datas
  * in a dossier settings file, server and database(s) keys are stored
  * in #ofaMySQLMeta (server keys) and #ofaMySQLPeriod (database key).
+ *
+ * The MySQL plugin let the user configure the command-line utilities
+ * with following placeholders:
+ * - %B: current database name
+ * - %F: filename
+ * - %N: new database name
+ * - %O: connection options (host, port, socket)
+ * - %P: password
+ * - %U: account
  */
 
 #include <glib-object.h>
