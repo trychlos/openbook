@@ -398,12 +398,13 @@ v_quit_on_ok( myDialog *dialog )
 	ofaDossierOpen *self;
 	gchar *msg;
 
+	msg = NULL;
 	self = OFA_DOSSIER_OPEN( dialog );
 
 	g_return_val_if_fail( are_data_set( self, NULL ), FALSE );
 
 	if( is_connection_valid( self, &msg )){
-		do_open_dossier( OFA_DOSSIER_OPEN( dialog ));
+		do_open_dossier( self );
 		return( TRUE );
 	}
 
