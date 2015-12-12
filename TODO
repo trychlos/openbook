@@ -531,10 +531,17 @@
  919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
 
  920 2015-12-10 review RestoreAssistant
+                + let restore on a selected exercice
 
  921 2015-12-10 remove ofa_settings_remove_dossier()
 
- 922
+ 922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
+
+ 923 2015-12-11 myAssistant is not transient vs the main window
+
+ 924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
+
+ 925
 
 -----------------------------------------------------------------------
  DONE

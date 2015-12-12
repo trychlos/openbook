@@ -565,24 +565,32 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	gchar *dname, *account, *password;
+	gchar *dossier_name;
+	GtkWindow *toplevel;
 
 	priv = assistant->priv;
+
+	g_clear_object( &priv->p2_meta );
+	g_free( priv->p3_account );
+	priv->p3_account = NULL;
+	g_free( priv->p3_password );
+	priv->p3_password = NULL;
 
 	main_window = my_window_get_main_window( MY_WINDOW( assistant ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
+	toplevel = my_window_get_toplevel( MY_WINDOW( assistant ));
+
 	if( ofa_dossier_new_mini_run(
-			OFA_MAIN_WINDOW( main_window ), &dname, &account, &password )){
-
-		g_free( priv->p3_account );
-		priv->p3_account = account;
-
-		g_free( priv->p3_password );
-		priv->p3_password = password;
+				OFA_MAIN_WINDOW( main_window ),
+				toplevel, &priv->p2_meta, &priv->p3_account, &priv->p3_password )){
 
 		priv->p2_is_new_dossier = TRUE;
-		ofa_dossier_treeview_set_selected( priv->p2_dossier_treeview, dname );
+
+		dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
+		ofa_dossier_treeview_set_selected( priv->p2_dossier_treeview, dossier_name );
+		g_free( dossier_name );
+
 		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_treeview ));
 	}
 }

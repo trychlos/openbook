@@ -51,6 +51,7 @@
  */
 
 #include "api/my-dialog.h"
+#include "api/ofa-idbmeta-def.h"
 
 #include "ui/ofa-main-window-def.h"
 
@@ -82,7 +83,11 @@ typedef struct {
 
 GType    ofa_dossier_new_mini_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_dossier_new_mini_run     ( ofaMainWindow *main_window, gchar **dname, gchar **account, gchar **password );
+gboolean ofa_dossier_new_mini_run     ( ofaMainWindow *main_window,
+												GtkWindow *parent,
+												ofaIDBMeta **meta,
+												gchar **account,
+												gchar **password );
 
 G_END_DECLS
 
