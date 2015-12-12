@@ -178,8 +178,10 @@ typedef struct {
 
 	/**
 	 * restore:
-	 * @instance: a #ofaIDBConnect superuser connection at server-level.
-	 * @period: the target period.
+	 * @instance: a #ofaIDBConnect superuser connection on the DBMS
+	 *  at server-level. The embedded #ofaIDBMeta object describes
+	 *  the target dossier.
+	 * @period: the target financial period.
 	 * @uri: the file to be restored.
 	 *
 	 * Restore the specified @uri file to the target @period.
@@ -232,16 +234,18 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
-											ofaIDBMeta *meta );
+											const ofaIDBMeta *meta );
 
 	/**
 	 * grant_user:
-	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
-	 * @meta: the #ofaIDBMeta dossier.
+	 * @instance: an #ofaIDBConnect superuser connection on the DBMS at
+	 * 	server-level. The #ofaIDBMeta embedded object is expected to
+	 * 	define the target dossier.
+	 * @period: the target financial period.
 	 * @user_account: the account to be granted.
 	 * @user_password: the corresponding password.
 	 *
-	 * Grant the user for access to the dossier.
+	 * Grant the user for access to the dossier/exercice.
 	 *
 	 * The #ofaIDBConnect interface code takes care of defining the
 	 * account as an administrator of the current exercice for the
@@ -256,7 +260,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
-											ofaIDBMeta *meta,
+											const ofaIDBPeriod *period,
 											const gchar *user_account,
 											const gchar *user_password );
 }
@@ -315,7 +319,9 @@ gchar          *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *
 
 gboolean        ofa_idbconnect_restore                   ( const ofaIDBConnect *connect,
 																const ofaIDBPeriod *period,
-																const gchar *uri );
+																const gchar *uri,
+																const gchar *adm_account,
+																const gchar *adm_password );
 
 gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
 																const gchar *root_account,
@@ -324,7 +330,7 @@ gboolean        ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *
 																const GDate *end_next );
 
 gboolean        ofa_idbconnect_create_dossier            ( const ofaIDBConnect *connect,
-																ofaIDBMeta *meta,
+																const ofaIDBMeta *meta,
 																const gchar *adm_account,
 																const gchar *adm_password );
 
