@@ -423,7 +423,7 @@ v_quit_on_ok( myDialog *dialog )
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 
 		if( !ofa_idbconnect_open_with_editor( connect, account, password, editor, TRUE )){
-			g_warning( "%s: unable to open the connection with meta informations", thisfn );
+			g_warning( "%s: unable to open the connection with editor informations", thisfn );
 
 		} else if( !ofa_idbconnect_create_dossier( connect, meta, priv->adm_account, priv->adm_password )){
 			g_warning( "%s: unable to create the dossier", thisfn );
