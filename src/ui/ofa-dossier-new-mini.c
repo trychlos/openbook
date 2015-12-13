@@ -172,6 +172,7 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent,
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI,
 							MY_PROP_MAIN_WINDOW, main_window,
+							MY_PROP_PARENT,      parent,
 							MY_PROP_WINDOW_XML,  st_ui_xml,
 							MY_PROP_WINDOW_NAME, st_ui_id,
 							NULL );
