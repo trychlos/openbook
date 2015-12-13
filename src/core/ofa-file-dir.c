@@ -44,6 +44,7 @@ struct _ofaFileDirPrivate {
 	mySettings    *settings;
 	myFileMonitor *monitor;
 	GList         *list;
+	gboolean       ignore_next;
 };
 
 #define FILE_DIR_SIGNAL_CHANGED         "changed"
@@ -234,12 +235,20 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 	gchar *fname;
 
 	priv = dir->priv;
-	prev_list = priv->list;
-	priv->list = load_dossiers( dir, prev_list );
-	ofa_file_dir_free_dossiers( prev_list );
-	fname = my_settings_get_filename( priv->settings );
-	g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
-	g_free( fname );
+
+	/* we ignore next update signal emitted by the monitor when we update
+	 * the settings ourself (so that the store may be synchronized) */
+	if( priv->ignore_next ){
+		priv->ignore_next = FALSE;
+
+	} else {
+		prev_list = priv->list;
+		priv->list = load_dossiers( dir, prev_list );
+		ofa_file_dir_free_dossiers( prev_list );
+		fname = my_settings_get_filename( priv->settings );
+		g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
+		g_free( fname );
+	}
 }
 
 /*
@@ -391,7 +400,7 @@ file_dir_get_meta( const gchar *dossier_name, GList *list )
  * Setup the @meta instance, writing informations to settings file.
  */
 void
-ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIDBMeta *meta, const ofaIDBEditor *editor )
+ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaIDBEditor *editor )
 {
 	static const gchar *thisfn = "ofa_file_dir_set_meta_from_editor";
 	ofaFileDirPrivate *priv;
@@ -421,6 +430,9 @@ ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir, ofaIDBMeta *meta, cons
 		g_object_unref( prov_instance );
 		g_free( group );
 		g_free( dossier_name );
+
+		on_settings_changed( priv->monitor, NULL, dir );
+		priv->ignore_next = TRUE;
 		return;
 	}
 

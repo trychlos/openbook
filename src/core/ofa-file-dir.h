@@ -88,7 +88,7 @@ guint         ofa_file_dir_get_dossiers_count  ( const ofaFileDir *dir );
 ofaIDBMeta   *ofa_file_dir_get_meta            ( const ofaFileDir *dir,
 													const gchar *dossier_name );
 
-void          ofa_file_dir_set_meta_from_editor( const ofaFileDir *dir,
+void          ofa_file_dir_set_meta_from_editor( ofaFileDir *dir,
 													ofaIDBMeta *meta,
 													const ofaIDBEditor *editor );
 
