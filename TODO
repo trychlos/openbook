@@ -491,11 +491,6 @@
 
  899 2015-11-25 remove ofsDossierOpen structure & associated signal
 
- 903 2015-11-26 ofa_main_window_get_dossier_credentials(): should be
-                obsoleted in favor of ofa_idbconnect method - this
-                should allow of removing user credentials from main
-                window
-
  904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
                 boolean (Y/N in the database, true/false in the code)
                 + should we store this in the db
@@ -4273,6 +4268,12 @@
 
  902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
      2015-11-26 done
+
+ 903 2015-11-26 ofa_main_window_get_dossier_credentials(): should be
+                obsoleted in favor of ofa_idbconnect method - this
+                should allow of removing user credentials from main
+                window
+     2015-12-13 done
 
  905 2015-11-26 remove account from ofaMySQLConnect
      2015-12-10 done (somewhere in the past)
