@@ -273,7 +273,7 @@ v_init_dialog( myDialog *dialog )
 		focus = GTK_WIDGET( priv->exercice_combo );
 
 		if( priv->init_period ){
-			ofa_idbperiod_dump( priv->init_period );
+			//ofa_idbperiod_dump( priv->init_period );
 			ofa_exercice_combo_set_selected( priv->exercice_combo, priv->init_period );
 			focus = NULL;
 		}

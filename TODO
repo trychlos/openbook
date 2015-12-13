@@ -481,8 +481,6 @@
 
  896 2015-11-24 remove database name from exercice store
 
- 897 2015-11-24 remove database name from command-line application
-
  898 2015-11-24 DossierManager: review
                 - on_open_clicked(),
                 - open_dossier()
@@ -514,9 +512,6 @@
 
  920 2015-12-10 review RestoreAssistant
                 + let restore on a selected exercice
-
- 923 2015-12-11 myAssistant is not transient vs the main window
-     2015-12-13 or is it ?
 
  925 2015-12-13 remove obsolete ofaDossierLogin class ?
 
@@ -4261,6 +4256,9 @@
                 so DOSSIER_SHOW_ARCHIVED is useless
      2015-11-26 done
 
+ 897 2015-11-24 remove database name from command-line application
+     2015-12-13 done
+
  899 2015-11-25 remove ofsDossierOpen structure & associated signal
      2015-12-13 done
 
@@ -4322,6 +4320,10 @@
 
  922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
      2015-12-12 done
+
+ 923 2015-12-11 myAssistant is not transient vs the main window
+     2015-12-13 or is it ?
+     2015-12-13 it is.
 
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
      2015-12-13 done

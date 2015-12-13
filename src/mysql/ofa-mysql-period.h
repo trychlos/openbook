@@ -84,7 +84,11 @@ void            ofa_mysql_period_update           ( ofaMySQLPeriod *period,
 														const gchar *group,
 														gboolean current,
 														const GDate *begin,
-														const GDate *end);
+														const GDate *end );
+
+void            ofa_mysql_period_remove           ( ofaMySQLPeriod *period,
+														mySettings *settings,
+														const gchar *group );
 
 G_END_DECLS
 

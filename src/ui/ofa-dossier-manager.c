@@ -73,7 +73,7 @@ static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
 static void      do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
-//static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
+static gboolean  confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -267,9 +267,15 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 	ofaIDBPeriod *period;
 
 	priv = self->priv;
+	meta = NULL;
+	period = NULL;
+
 	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
-		ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL );
+		//ofa_idbmeta_dump( meta );
+		//ofa_idbperiod_dump( period );
+		do_open( self, meta, period );
 	}
+
 	g_clear_object( &meta );
 	g_clear_object( &period );
 }
@@ -280,7 +286,11 @@ do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 	ofaDossierManagerPrivate *priv;
 
 	priv = self->priv;
-	ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL );
+	if( ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL )){
+		gtk_dialog_response(
+				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
+				GTK_RESPONSE_CLOSE );
+	}
 }
 
 static void
@@ -288,45 +298,42 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
-	//ofaDossierStore *store;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	priv = self->priv;
-	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
-#if 0
-	if( confirm_delete( self, dname, dbname )){
-		ofa_settings_remove_exercice( dname, dbname );
-		store = ofa_dossier_treeview_get_store( priv->tview );
-		ofa_dossier_store_remove_exercice( store, dname, dbname );
-	}
-#endif
+	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period ) &&
+		confirm_delete( self, meta, period )){
+
+		ofa_idbmeta_remove_period( meta, period );
 	}
 
 	g_clear_object( &meta );
 	g_clear_object( &period );
 }
 
-#if 0
 static gboolean
-confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname )
+confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	gboolean ok;
-	gchar *str;
+	gchar *period_name, *dossier_name, *str;
 
+	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	period_name = ofa_idbperiod_get_name( period );
 	str = g_strdup_printf(
-			_( "You are about to remove the '%s' database from the '%s' dossier.\n"
+			_( "You are about to remove the '%s' period from the '%s' dossier.\n"
 				"This operation will remove the referenced exercice from the settings, "
 				"while letting the database itself unchanged.\n"
 				"Are your sure ?" ),
-					dbname, dname );
+					period_name, dossier_name );
 
 	ok = my_utils_dialog_question( str, _( "_Delete" ));
 
 	g_free( str );
+	g_free( period_name );
+	g_free( dossier_name );
 
 	return( ok );
 }
-#endif

@@ -57,6 +57,7 @@ static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaI
 static GList          *load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group );
 static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
 static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period );
 static void            idbmeta_dump( const ofaIDBMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
@@ -139,6 +140,7 @@ idbmeta_iface_init( ofaIDBMetaInterface *iface )
 	iface->set_from_settings = idbmeta_set_from_settings;
 	iface->set_from_editor = idbmeta_set_from_editor;
 	iface->update_period = idbmeta_update_period;
+	iface->remove_period = idbmeta_remove_period;
 	iface->dump = idbmeta_dump;
 }
 
@@ -281,6 +283,22 @@ idbmeta_update_period( ofaIDBMeta *instance,
 	settings = ofa_idbmeta_get_settings( instance );
 	group = ofa_idbmeta_get_group_name( instance );
 	ofa_mysql_period_update( OFA_MYSQL_PERIOD( period ), settings, group, current, begin, end );
+
+	g_free( group );
+}
+
+static void
+idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period )
+{
+	mySettings *settings;
+	gchar *group;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
+	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
+
+	settings = ofa_idbmeta_get_settings( instance );
+	group = ofa_idbmeta_get_group_name( instance );
+	ofa_mysql_period_remove( OFA_MYSQL_PERIOD( period ), settings, group );
 
 	g_free( group );
 }

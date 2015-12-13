@@ -351,6 +351,26 @@ ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySet
 }
 
 /**
+ * ofa_idbmeta_remove_meta:
+ * @meta: this #ofaIDBMeta instance.
+ *
+ * Remove @meta from the dossier settings file.
+ *
+ * The #ofaIDBMeta object itself will be finalized by the #ofaFileDir
+ * directory which auto-updates.
+ */
+void
+ofa_idbmeta_remove_meta( ofaIDBMeta *meta )
+{
+	sIDBMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+
+	data = get_idbmeta_data( meta );
+	my_settings_remove_group( data->settings, data->group_name );
+}
+
+/**
  * ofa_idbmeta_get_periods:
  * @meta: this #ofaIDBMeta instance.
  *
@@ -439,6 +459,34 @@ ofa_idbmeta_update_period( ofaIDBMeta *meta,
 
 	g_info( "%s: ofaIDBMeta instance %p does not provide 'update_period()' method",
 			thisfn, ( void * ) meta );
+}
+
+/**
+ * ofa_idbmeta_remove_period:
+ * @meta: this #ofaIDBMeta instance.
+ * @period: the new #ofaIDBPeriod to be removed.
+ *
+ * Remove @period from the list of financial periods of @meta.
+ * Also remove @meta from the settings when removing the last period.
+ */
+void
+ofa_idbmeta_remove_period( ofaIDBMeta *meta, ofaIDBPeriod *period )
+{
+	sIDBMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+
+	data = get_idbmeta_data( meta );
+	if( g_list_length( data->periods ) == 1 ){
+		ofa_idbmeta_remove_meta( meta );
+
+	} else {
+		data->periods = g_list_remove( data->periods, period );
+		if( OFA_IDBMETA_GET_INTERFACE( meta )->remove_period ){
+			OFA_IDBMETA_GET_INTERFACE( meta )->remove_period( meta, period );
+		}
+	}
 }
 
 /**

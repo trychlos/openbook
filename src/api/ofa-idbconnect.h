@@ -60,6 +60,8 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
  * @query: [should]: executes an insert/update/delete query.
  * @query_ex: [should]: executes a select query.
  * @get_last_error: [should]: returns the last error.
+ * @backup: [should]: backups the currently opened dossier.
+ * @restore: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
  * @create_dossier: [should]: creates a new dossier.
  * @grant_user: [should]: grant permissions on a dossier to a user.

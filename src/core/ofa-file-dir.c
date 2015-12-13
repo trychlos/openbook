@@ -438,39 +438,3 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 
 	g_return_if_reached();
 }
-
-/**
- * ofa_file_dir_remove_meta:
- * @dir: this #ofaFileDir instance.
- * @meta: the #ofaIDBMeta to be removed.
- *
- * Remove the @meta dossier from settings file.
- */
-void
-ofa_file_dir_remove_meta( const ofaFileDir *dir, const ofaIDBMeta *meta )
-{
-	static const gchar *thisfn = "ofa_file_dir_remove_meta";
-	ofaFileDirPrivate *priv;
-	gchar *group, *dossier_name;
-
-	g_debug( "%s: dir=%p, meta=%p", thisfn, ( void * ) dir, ( void * ) meta );
-
-	g_return_if_fail( dir && OFA_IS_FILE_DIR( dir ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
-
-	priv = dir->priv;
-
-	if( !priv->dispose_has_run ){
-
-		dossier_name = ofa_idbmeta_get_dossier_name( meta );
-		group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
-
-		my_settings_remove_group( priv->settings, group );
-
-		g_free( group );
-		g_free( dossier_name );
-		return;
-	}
-
-	g_return_if_reached();
-}

@@ -64,6 +64,7 @@ G_BEGIN_DECLS
  * @set_from_settings: [should]: set datas from settings.
  * @set_from_editor: [should]: set datas from ofaIDBEditor.
  * @update_period: [should]: updates a period in the settings.
+ * @remove_period: [should]: removes a period from the settings.
  * @dump: [should]: dump data.
  *
  * This defines the interface that an #ofaIDBMeta should/must
@@ -85,6 +86,8 @@ typedef struct {
 	 *  is supporting.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1
 	 */
 	guint            ( *get_interface_version )( const ofaIDBMeta *instance );
 
@@ -96,6 +99,8 @@ typedef struct {
 	 *
 	 * Set the @instance object with informations read from @settings.
 	 * Reset the defined financial periods accordingly.
+	 *
+	 * Since: version 1
 	 */
 	void             ( *set_from_settings )    ( ofaIDBMeta *instance,
 													mySettings *settings,
@@ -109,6 +114,8 @@ typedef struct {
 	 * @group: the group name in the settings.
 	 *
 	 * Writes the connection informations to @settings file.
+	 *
+	 * Since: version 1
 	 */
 	void             ( *set_from_editor )      ( ofaIDBMeta *instance,
 													const ofaIDBEditor *editor,
@@ -125,6 +132,8 @@ typedef struct {
 	 *
 	 * Update the dossier settings for this @period with the specified
 	 * datas.
+	 *
+	 * Since: version 1
 	 */
 	void             ( *update_period )        ( ofaIDBMeta *instance,
 													ofaIDBPeriod *period,
@@ -133,10 +142,26 @@ typedef struct {
 													const GDate *end );
 
 	/**
+	 * remove_period:
+	 * @instance: the #ofaIDBMeta instance.
+	 * @period: the #ofaIDBPeriod to be removed.
+	 *
+	 * Removes the @period from the dossier settings file.
+	 * The interface makes sure this method is only called when
+	 * @period is not the last financial period of the @instance.
+	 *
+	 * Since: version 1
+	 */
+	void             ( *remove_period )        ( ofaIDBMeta *instance,
+													ofaIDBPeriod *period );
+
+	/**
 	 * dump:
 	 * @instance: the #ofaIDBMeta instance.
 	 *
 	 * Dumps the @instance.
+	 *
+	 * Since: version 1
 	 */
 	void             ( *dump )                 ( const ofaIDBMeta *instance );
 }
@@ -171,6 +196,8 @@ void            ofa_idbmeta_set_from_editor           ( ofaIDBMeta *meta,
 																mySettings *settings,
 																const gchar *group_name );
 
+void            ofa_idbmeta_remove_meta               ( ofaIDBMeta *meta );
+
 GList          *ofa_idbmeta_get_periods               ( const ofaIDBMeta *meta );
 
 #define         ofa_idbmeta_free_periods(L)           g_list_free_full(( L ), \
@@ -187,6 +214,9 @@ void            ofa_idbmeta_update_period             ( ofaIDBMeta *meta,
 																gboolean current,
 																const GDate *begin,
 																const GDate *end );
+
+void            ofa_idbmeta_remove_period             ( ofaIDBMeta *meta,
+																ofaIDBPeriod *period );
 
 ofaIDBPeriod   *ofa_idbmeta_get_current_period        ( const ofaIDBMeta *meta );
 

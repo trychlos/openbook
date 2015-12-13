@@ -73,6 +73,8 @@ typedef struct {
 	 *  is supporting.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1
 	 */
 	guint    ( *get_interface_version )( const ofaIDBPeriod *instance );
 
@@ -87,6 +89,8 @@ typedef struct {
 	 * application may expect that this name be more or less
 	 * representative of the period, or its implementation. It is only
 	 * used for display, never to identify it.
+	 *
+	 * Since: version 1
 	 */
 	gchar *  ( *get_name )             ( const ofaIDBPeriod *instance );
 
@@ -97,6 +101,8 @@ typedef struct {
 	 *
 	 * Returns: 0 if @a and @b have the same content, -1 if @a < @b,
 	 *  +1 if @a > @b.
+	 *
+	 * Since: version 1
 	 */
 	gint     ( *compare )              ( const ofaIDBPeriod *a,
 												const ofaIDBPeriod *b );
@@ -105,6 +111,8 @@ typedef struct {
 	 * @instance: the #ofaIDBPeriod instance.
 	 *
 	 * Dump the object.
+	 *
+	 * Since: version 1
 	 */
 	void     ( *dump )                 ( const ofaIDBPeriod *instance );
 }

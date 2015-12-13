@@ -357,6 +357,30 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 	}
 }
 
+/**
+ * ofa_mysql_period_remove:
+ * @period: this #ofaMySQLPeriod object.
+ * @settings: the #mySettings object.
+ * @group: the group name in the settings.
+ *
+ * Removes the @period from dossier settings.
+ */
+void
+ofa_mysql_period_remove( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
+{
+	ofaMySQLPeriodPrivate *priv;
+	gchar *key;
+
+	priv = period->priv;
+
+	if( !priv->dispose_has_run ){
+
+		key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->dbname );
+		my_settings_remove_key( settings, group, key );
+		g_free( key );
+	}
+}
+
 static void
 write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
 {

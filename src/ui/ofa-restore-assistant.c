@@ -1075,8 +1075,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
-	ofaFileDir *dir;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
@@ -1093,9 +1091,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
-			application = gtk_window_get_application( GTK_WINDOW( main_window ));
-			dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
-			ofa_file_dir_remove_meta( dir, priv->p2_meta );
+			ofa_idbmeta_remove_meta( priv->p2_meta );
 		}
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label1 ),

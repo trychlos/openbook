@@ -81,6 +81,8 @@ typedef struct {
 	 * number of this interface the provider is supporting.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1
 	 */
 	guint           ( *get_interface_version )( const ofaIDBProvider *instance );
 
