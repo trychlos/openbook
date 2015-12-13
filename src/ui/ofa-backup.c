@@ -32,6 +32,9 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbperiod.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -41,11 +44,20 @@
 /* private instance data
  */
 struct _ofaBackupPrivate {
-	gboolean       dispose_has_run;
+	gboolean             dispose_has_run;
 
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
-	GtkWidget     *dialog;
+	/* initialization
+	 */
+	ofaMainWindow       *main_window;
+
+	/* UI
+	 */
+	GtkWidget           *dialog;
+
+	/* runtime
+	 */
+	ofoDossier          *dossier;		/* the currently opened dossier */
+	const ofaIDBConnect *connect;		/* its user connection */
 };
 
 static const gchar *st_dialog_name   = "BackupDlg";
@@ -126,7 +138,7 @@ ofa_backup_class_init( ofaBackupClass *klass )
  * ofa_backup_run:
  * @main: the main window of the application.
  *
- * Update the properties of an dossier
+ * Backup a dossier.
  */
 void
 ofa_backup_run( ofaMainWindow *main_window )
@@ -142,7 +154,6 @@ ofa_backup_run( ofaMainWindow *main_window )
 	self = g_object_new( OFA_TYPE_BACKUP, NULL );
 	priv = self->priv;
 	priv->main_window = main_window;
-	priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	init_dialog( self );
 
@@ -161,6 +172,9 @@ init_dialog( ofaBackup *self )
 	gchar *last_folder, *def_name;
 
 	priv = self->priv;
+
+	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->connect = ofo_dossier_get_connect( priv->dossier );
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),
@@ -189,16 +203,22 @@ init_dialog( ofaBackup *self )
 static gchar *
 get_default_name( ofaBackup *self )
 {
+	ofaBackupPrivate *priv;
+	ofaIDBPeriod *period;
 	GRegex *regex;
-	gchar *dbname, *fname, *sdate, *result;
+	gchar *name, *fname, *sdate, *result;
 	GDate date;
 
-	/* get database name without spaces */
+	/* get name without spaces */
+	priv = self->priv;
+	period = ofa_idbconnect_get_period( priv->connect );
+	name = ofa_idbperiod_get_name( period );
+
 	regex = g_regex_new( " ", 0, 0, NULL );
-	/*dbname = ofo_dossier_get_dbname( self->priv->dossier );*/
-	dbname = g_strdup( ofo_dossier_get_name( self->priv->dossier ));
-	fname = g_regex_replace_literal( regex, dbname, -1, 0, "", 0, NULL );
-	g_free( dbname );
+	fname = g_regex_replace_literal( regex, name, -1, 0, "", 0, NULL );
+
+	g_free( name );
+	g_object_unref( period );
 
 	my_date_set_now( &date );
 	sdate = my_date_to_str( &date, MY_DATE_YYMD );
@@ -214,8 +234,7 @@ static gboolean
 do_backup( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *folder;
-	gchar *fname;
+	gchar *fname, *folder, *uri;
 	gboolean ok;
 
 	priv = self->priv;
@@ -224,15 +243,18 @@ do_backup( ofaBackup *self )
 	 * by entering into the folder */
 	/*folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));*/
 
-	fname = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->dialog ));
-
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->dialog ));
+	fname = g_filename_from_uri( uri, NULL, NULL );
 	folder = g_path_get_dirname( fname );
+
 	ofa_settings_dossier_set_string(
 				ofo_dossier_get_name( priv->dossier ), st_backup_folder, folder );
-	g_free( folder );
 
-	ok = ofo_dossier_backup( priv->dossier, fname, TRUE );
+	ok = ofa_idbconnect_backup( priv->connect, uri );
+
+	g_free( folder );
 	g_free( fname );
+	g_free( uri );
 
 	return( ok );
 }
