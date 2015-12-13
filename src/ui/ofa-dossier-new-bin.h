@@ -90,8 +90,6 @@ gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNew
 
 ofaIDBMeta       *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
 
-gchar            *ofa_dossier_new_bin_get_dossier_name     ( const ofaDossierNewBin *bin );
-
 ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( const ofaDossierNewBin *bin );
 
 G_END_DECLS

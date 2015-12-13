@@ -532,8 +532,6 @@
 
  923 2015-12-11 myAssistant is not transient vs the main window
 
- 924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
-
  925
 
 -----------------------------------------------------------------------
@@ -4315,6 +4313,9 @@
 
  922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
      2015-12-12 done
+
+ 924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
+     2015-12-13 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
