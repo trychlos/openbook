@@ -40,6 +40,7 @@ struct _myWindowPrivate {
 	gchar                *window_name;
 	gboolean              manage_size_position;
 	GtkApplicationWindow *main_window;
+	GtkWindow            *parent;
 
 	/* this may be either a GtkDialog or a GtkAssistant
 	 */
@@ -50,6 +51,7 @@ struct _myWindowPrivate {
  */
 enum {
 	PROP_MAIN_WINDOW_ID = 1,
+	PROP_PARENT_ID,
 	PROP_WINDOW_XML_ID,
 	PROP_WINDOW_NAME_ID,
 	PROP_SIZE_POSITION_ID
@@ -142,12 +144,20 @@ window_constructed( GObject *instance )
 		}
 	}
 
-	if( priv->toplevel && priv->main_window ){
-		gtk_window_set_transient_for( priv->toplevel, GTK_WINDOW( priv->main_window ));
+	if( priv->toplevel ){
+		if( !priv->parent && priv->main_window ){
+			priv->parent = GTK_WINDOW( priv->main_window );
+		}
+		if( priv->parent ){
+			gtk_window_set_transient_for( priv->toplevel, priv->parent );
+		}
 
 	} else {
-		g_warning( "%s: main_window=%p, toplevel=%p",
-				thisfn, ( void * ) priv->main_window, ( void * ) priv->toplevel );
+		g_warning( "%s: main_window=%p, parent=%p, toplevel=%p",
+				thisfn,
+				( void * ) priv->main_window,
+				( void * ) priv->parent,
+				( void * ) priv->toplevel );
 	}
 }
 
@@ -165,6 +175,10 @@ window_get_property( GObject *object, guint property_id, GValue *value, GParamSp
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
 				g_value_set_pointer( value, self->priv->main_window );
+				break;
+
+			case PROP_PARENT_ID:
+				g_value_set_pointer( value, self->priv->parent );
 				break;
 
 			case PROP_WINDOW_XML_ID:
@@ -200,6 +214,10 @@ window_set_property( GObject *object, guint property_id, const GValue *value, GP
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
 				self->priv->main_window = g_value_get_pointer( value );
+				break;
+
+			case PROP_PARENT_ID:
+				self->priv->parent = g_value_get_pointer( value );
 				break;
 
 			case PROP_WINDOW_XML_ID:
@@ -263,6 +281,15 @@ my_window_class_init( myWindowClass *klass )
 					MY_PROP_MAIN_WINDOW,
 					"Main window",
 					"The main #GtkApplicationWindow window of the application",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_PARENT_ID,
+			g_param_spec_pointer(
+					MY_PROP_PARENT,
+					"Parent window",
+					"The parent window",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property(

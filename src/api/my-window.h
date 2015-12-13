@@ -76,11 +76,13 @@ typedef struct {
  * Properties defined by the myWindow class.
  *
  * @MY_PROP_MAIN_WINDOW:      main window of the application
+ * @MY_PROP_PARENT:           the parent window (defaults to main window)
  * @MY_PROP_WINDOW_XML:       path to the xml file which contains the UI description
  * @MY_PROP_WINDOW_NAME:      window toplevel name
  * @MY_PROP_SIZE_POSITION:    whether to manage size and position
  */
 #define MY_PROP_MAIN_WINDOW             "my-window-prop-main-window"
+#define MY_PROP_PARENT                  "my-window-prop-parent"
 #define MY_PROP_WINDOW_XML              "my-window-prop-xml"
 #define MY_PROP_WINDOW_NAME             "my-window-prop-name"
 #define MY_PROP_SIZE_POSITION           "my-window-prop-size-position"
