@@ -5,8 +5,8 @@ src/core/ofa-dossier-delete-prefs-bin.ui
 src/core/ofa-file-format-bin.ui
 src/core/ofa-preferences.ui
 src/core/ofa-ddl-update.ui
-src/mysql/ofa-mysql-connect-display-bin.ui
-src/mysql/ofa-mysql-connect-enter-bin.ui
+src/mysql/ofa-mysql-editor-display.ui
+src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
 src/ui/ofa-account-book-bin.ui
 src/ui/ofa-account-filter-vv-bin.ui
