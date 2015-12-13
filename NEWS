@@ -30,6 +30,13 @@
 
  Other changes:
 
+   The major change of this version is the replacement of a global
+   ofaIDbms interface, with a lighter ofaIDBProvider one, and the
+   definition of an ecosystem of companion interfaces (ofaIDBConnect,
+   ofaIDBEditor, ofaIDBMeta and ofaIDBPeriod).
+
+   As a consequence, ofaIDbms interface and ofaDbms class are obsoleted.
+
    - ofa_application_get_file_dir(): new method.
    - ofa_dossier_misc_get_current_dbname(): removed function.
    - ofa_dossier_misc_get_dossiers(): removed function (todo #893).
