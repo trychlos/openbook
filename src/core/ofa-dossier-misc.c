@@ -28,12 +28,8 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dossier-misc.h"
-#include "api/ofa-file-format.h"
-#include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 static GSList *get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings );

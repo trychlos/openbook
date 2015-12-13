@@ -29,13 +29,10 @@
  * SECTION: ofa_dossier_Misc
  * @short_description: Dossier miscellaneous functions
  * @include: openbook/ofa-dossier-misc.h
- *
- * Delete a dossier.
  */
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofo-base-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS

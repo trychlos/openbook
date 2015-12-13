@@ -32,7 +32,6 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
