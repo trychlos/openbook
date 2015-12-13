@@ -177,6 +177,20 @@ typedef struct {
 	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
 
 	/**
+	 * backup:
+	 * @instance: a #ofaIDBConnect user connection on the period.
+	 * @uri: the target file.
+	 *
+	 * Backup the currently opened period to the @uri file.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *backup )               ( const ofaIDBConnect *instance,
+											const gchar *uri );
+
+	/**
 	 * restore:
 	 * @instance: a #ofaIDBConnect superuser connection on the DBMS
 	 *  at server-level. The embedded #ofaIDBMeta object describes
@@ -316,6 +330,9 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 																g_slist_free( L )
 
 gchar          *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *connect );
+
+gboolean        ofa_idbconnect_backup                    ( const ofaIDBConnect *connect,
+																const gchar *uri );
 
 gboolean        ofa_idbconnect_restore                   ( const ofaIDBConnect *connect,
 																const ofaIDBPeriod *period,

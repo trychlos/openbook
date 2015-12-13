@@ -678,6 +678,37 @@ ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
 }
 
 /**
+ * ofa_idbconnect_backup:
+ * @connect: a #ofaIDBConnect instance which handles a user
+ *  connection on the dossier/exercice to be backuped.
+ * @uri: the target file.
+ *
+ * Backup the current period to the @uri file.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, uri=%s", thisfn, ( void * ) connect, uri );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->backup ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup( connect, uri );
+		return( ok );
+	}
+
+	g_info( "%s: ofaIDBConnect instance %p does not provide 'backup()' method",
+			thisfn, ( void * ) connect );
+	return( FALSE );
+}
+
+/**
  * ofa_idbconnect_restore:
  * @connect: a #ofaIDBConnect instance which handles a superuser
  *  connection on the DBMS at server-level. It is expected this
