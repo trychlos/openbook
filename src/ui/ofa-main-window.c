@@ -76,12 +76,6 @@
 struct _ofaMainWindowPrivate {
 	gboolean       dispose_has_run;
 
-	/* dossier credentials at opening time
-	 */
-	gchar         *dos_account;
-	gchar         *dos_password;
-	gchar         *dos_dbname;
-
 	/* internals
 	 */
 	gchar         *orig_title;
@@ -353,9 +347,6 @@ main_window_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_MAIN_WINDOW( instance )->priv;
 
-	g_free( priv->dos_account );
-	g_free( priv->dos_password );
-	g_free( priv->dos_dbname );
 	g_free( priv->orig_title );
 
 	/* chain up to the parent class */
@@ -686,7 +677,7 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
  * %FALSE else.
  */
 gboolean
-ofa_main_window_is_willing_to_quit( ofaMainWindow *main_window )
+ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 {
 	return( my_utils_dialog_question(
 			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
@@ -908,7 +899,7 @@ set_window_title( const ofaMainWindow *window )
 
 		title = g_strdup_printf( "%s (%s) %s - %s",
 				dos_name,
-				priv->dos_dbname,
+				"",//priv->dos_dbname,
 				label,
 				priv->orig_title );
 
@@ -1274,17 +1265,10 @@ do_close_dossier( ofaMainWindow *self )
 	priv = self->priv;
 
 	g_clear_object( &priv->dossier );
-	g_free( priv->dos_account );
-	priv->dos_account = NULL;
-	g_free( priv->dos_password );
-	priv->dos_password = NULL;
-
 	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 	priv->pane = NULL;
-
 	appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( self )));
 	set_menubar( self, ofa_application_get_menu_model( appli ));
-
 	set_window_title( self );
 }
 
@@ -1594,25 +1578,6 @@ ofa_main_window_get_dossier( const ofaMainWindow *window )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_main_window_get_dossier_credentials:
- */
-void
-ofa_main_window_get_dossier_credentials( const ofaMainWindow *window, const gchar **account, const gchar **password )
-{
-	ofaMainWindowPrivate *priv;
-
-	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
-
-	priv = window->priv;
-
-	if( !priv->dispose_has_run ){
-
-		*account = priv->dos_account;
-		*password = priv->dos_password;
-	}
 }
 
 /**
