@@ -50,7 +50,6 @@
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
-#include "ofa-mysql-idbms.h"
 #include "ofa-mysql-ipreferences.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"

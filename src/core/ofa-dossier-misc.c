@@ -30,7 +30,6 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-preferences.h"

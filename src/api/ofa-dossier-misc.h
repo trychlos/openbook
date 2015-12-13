@@ -33,7 +33,6 @@
  * Delete a dossier.
  */
 
-#include "api/ofa-dbms.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base-def.h"
