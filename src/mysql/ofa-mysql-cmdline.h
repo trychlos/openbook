@@ -38,8 +38,7 @@ G_BEGIN_DECLS
 const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
 gboolean     ofa_mysql_cmdline_backup_run                 ( const ofaMySQLConnect *connect,
-																const gchar *filename,
-																gboolean verbose );
+																const gchar *uri );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 

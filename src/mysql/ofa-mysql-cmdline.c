@@ -102,8 +102,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * ofa_mysql_cmdline_backup_run:
  * @connect: a #ofaIDBConnect object which handles a user connection
  *  on the dossier/exercice to be backuped.
- * @filename: the destination filename.
- * @verbose: whether to run verbosely.
+ * @uri: the URI of the destination file.
  *
  * Backup the currently connected database.
  *
@@ -114,26 +113,28 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *filename, gboolean verbose )
+ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *uri )
 {
-	gchar *template;
+	gchar *template, *fname;
 	gboolean ok;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( my_strlen( filename ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	template = ofa_mysql_ipreferences_get_backup_command();
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
+	fname = g_filename_from_uri( uri, NULL, NULL );
 
 	ok = do_execute_async(
 				template,
 				connect,
 				NULL,
-				filename,
+				fname,
 				_( "Openbook backup" ),
 				( GChildWatchFunc ) backup_exit_cb,
-				verbose );
+				TRUE );
 
+	g_free( fname );
 	g_free( template );
 
 	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
