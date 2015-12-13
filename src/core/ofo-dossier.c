@@ -56,9 +56,8 @@ struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	gchar         *dname;				/* the name of the dossier in settings */
-	gchar         *userid;
 	ofaIDBConnect *cnx;
+	gchar         *userid;
 
 	/* row id 1
 	 */
@@ -232,7 +231,6 @@ dossier_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFO_DOSSIER( instance )->priv;
 
-	g_free( priv->dname );
 	g_free( priv->userid );
 	g_free( priv->currency );
 	g_free( priv->label );
@@ -559,9 +557,12 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 static gboolean
 do_open( ofoDossier *dossier, gboolean remediation )
 {
+	ofoDossierPrivate *priv;
 	gboolean ok;
 
 	ok = FALSE;
+	priv = dossier->priv;
+	priv->userid = ofa_idbconnect_get_account( priv->cnx );
 
 	if( ofa_ddl_update_run( dossier )){
 		connect_objects_handlers( dossier );
@@ -739,7 +740,6 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -762,7 +762,6 @@ ofo_dossier_get_connect( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -958,7 +957,6 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -977,7 +975,6 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -996,7 +993,6 @@ ofo_dossier_get_exe_length( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( -1 );
-	return( -1 );
 }
 
 /**
@@ -1015,7 +1011,6 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1034,7 +1029,6 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1053,7 +1047,6 @@ ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1073,7 +1066,6 @@ ofo_dossier_get_label( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1092,7 +1084,6 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1111,7 +1102,6 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1130,7 +1120,6 @@ ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1150,7 +1139,6 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1170,7 +1158,6 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1242,7 +1229,6 @@ ofo_dossier_get_last_bat( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1261,7 +1247,6 @@ ofo_dossier_get_last_batline( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1280,7 +1265,6 @@ ofo_dossier_get_last_entry( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1299,7 +1283,6 @@ ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1318,7 +1301,6 @@ ofo_dossier_get_last_concil( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1343,7 +1325,6 @@ ofo_dossier_get_next_bat( ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1368,7 +1349,6 @@ ofo_dossier_get_next_batline( ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1395,7 +1375,6 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1420,7 +1399,6 @@ ofo_dossier_get_next_settlement( ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1445,7 +1423,6 @@ ofo_dossier_get_next_concil( ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /*
@@ -1486,7 +1463,6 @@ ofo_dossier_get_last_closing_date( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1509,7 +1485,6 @@ ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( 0 );
-	return( 0 );
 }
 
 /**
@@ -1564,7 +1539,6 @@ ofo_dossier_get_min_deffect( GDate *date, const ofoDossier *dossier, ofoLedger *
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1601,7 +1575,6 @@ ofo_dossier_get_currencies( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( NULL );
-	return( NULL );
 }
 
 /**
@@ -1729,7 +1702,6 @@ ofo_dossier_is_current( const ofoDossier *dossier )
 	}
 
 	g_return_val_if_reached( FALSE );
-	return( FALSE );
 }
 
 /**
