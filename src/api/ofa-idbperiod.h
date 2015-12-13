@@ -50,6 +50,7 @@ typedef struct _ofaIDBPeriod                    ofaIDBPeriod;
  * ofaIDBPeriodInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @get_name: [should]: returns a name.
  * @compare: [should]: compare two objects.
  * @dump: [should]: dump the object.
  *
@@ -76,6 +77,20 @@ typedef struct {
 	guint    ( *get_interface_version )( const ofaIDBPeriod *instance );
 
 	/**
+	 * get_name:
+	 * @instance: the #ofaIDBPeriod instance.
+	 *
+	 * Returns: a name which may better qualify the period, as a newly
+	 * allocated string which should be g_free() by the caller.
+	 *
+	 * The exact nature of the returned name is left to the plugin. The
+	 * application may expect that this name be more or less
+	 * representative of the period, or its implementation. It is only
+	 * used for display, never to identify it.
+	 */
+	gchar *  ( *get_name )             ( const ofaIDBPeriod *instance );
+
+	/**
 	 * compare:
 	 * @a: the #ofaIDBPeriod instance.
 	 * @b: another #ofaIDBPeriod instance.
@@ -85,7 +100,6 @@ typedef struct {
 	 */
 	gint     ( *compare )              ( const ofaIDBPeriod *a,
 												const ofaIDBPeriod *b );
-
 	/**
 	 * dump:
 	 * @instance: the #ofaIDBPeriod instance.
@@ -120,6 +134,8 @@ void         ofa_idbperiod_set_current               ( ofaIDBPeriod *period,
 gchar       *ofa_idbperiod_get_status                ( const ofaIDBPeriod *period );
 
 gchar       *ofa_idbperiod_get_label                 ( const ofaIDBPeriod *period );
+
+gchar       *ofa_idbperiod_get_name                  ( const ofaIDBPeriod *period );
 
 gint         ofa_idbperiod_compare                   ( const ofaIDBPeriod *a,
 																const ofaIDBPeriod *b );

@@ -151,12 +151,16 @@ ofa_idbperiod_get_interface_last_version( void )
 guint
 ofa_idbperiod_get_interface_version( const ofaIDBPeriod *period )
 {
+	static const gchar *thisfn = "ofa_idbperiod_get_interface_version";
+
 	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), 0 );
 
 	if( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version ){
 		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version( period ));
 	}
 
+	g_info( "%s: ofaIDBPeriod instance %p does not provide 'get_interface_version() method",
+			thisfn, ( void * ) period );
 	return( 1 );
 }
 
@@ -324,6 +328,29 @@ ofa_idbperiod_get_label( const ofaIDBPeriod *period )
 	}
 
 	return( g_string_free( svalue, FALSE ));
+}
+
+/**
+ * ofa_idbperiod_get_name:
+ * @period: this #ofaIDBPeriod instance.
+ *
+ * Returns: a plugin-specific which qualifies the @period,
+ *  as a newly allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_idbperiod_get_name( const ofaIDBPeriod *period )
+{
+	static const gchar *thisfn = "ofa_idbperiod_get_name";
+
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+
+	if( OFA_IDBPERIOD_GET_INTERFACE( period )->get_name ){
+		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_name( period ));
+	}
+
+	g_info( "%s: ofaIDBPeriod instance %p does not provide 'get_name() method",
+			thisfn, ( void * ) period );
+	return( NULL );
 }
 
 /**
