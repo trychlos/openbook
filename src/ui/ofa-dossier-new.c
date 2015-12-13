@@ -54,6 +54,7 @@ struct _ofaDossierNewPrivate {
 	/* UI
 	 */
 	ofaDossierNewBin       *new_bin;
+	ofaDBMSRootBin         *root_credentials;
 	ofaAdminCredentialsBin *admin_credentials;
 	GtkWidget              *properties_toggle;
 	GtkWidget              *ok_btn;
@@ -84,13 +85,15 @@ static const gchar *st_ui_id            = "DossierNewDlg";
 G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *widget, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNew *self );
+static void      on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void      on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void      on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      get_settings( ofaDossierNew *self );
 static void      update_settings( ofaDossierNew *self );
 static void      check_for_enable_dlg( ofaDossierNew *self );
+static gboolean  root_credentials_get_valid( ofaDossierNew *self, gchar **message );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  create_confirmed( const ofaDossierNew *self );
 static void      set_message( ofaDossierNew *self, const gchar *message );
@@ -248,25 +251,37 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
+	/* define the size groups */
+	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->new_bin = ofa_dossier_new_bin_new(
 							OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( dialog ))));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
-	/* define the size group */
-	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	my_utils_size_group_add_size_group(
 			group0, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
 	g_object_unref( group0 );
 
 	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
+	/* dbms root credentials */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "root-credentials" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->root_credentials = ofa_dbms_root_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_credentials ));
+	my_utils_size_group_add_size_group(
+			group0, ofa_dbms_root_bin_get_size_group( priv->root_credentials, 0 ));
+
+	g_signal_connect( priv->root_credentials, "ofa-changed", G_CALLBACK( on_root_credentials_changed ), dialog );
+
+	/* admin credentials */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "admin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->admin_credentials = ofa_admin_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_credentials ));
-	group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	my_utils_size_group_add_size_group(
 			group1, ofa_admin_credentials_bin_get_size_group( priv->admin_credentials, 0 ));
 	g_object_unref( group1 );
@@ -298,7 +313,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *widget, const gchar *account, const gchar *password, ofaDossierNew *self )
+on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
@@ -306,6 +321,17 @@ on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *wid
 
 	g_free( priv->dossier_name );
 	priv->dossier_name = g_strdup( dname );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+
+	priv = self->priv;
+	g_debug( "on_root_credentials_changed: account=%s, password=%s", account, password );
 
 	g_free( priv->root_account );
 	priv->root_account = g_strdup( account );
@@ -375,7 +401,8 @@ check_for_enable_dlg( ofaDossierNew *self )
 	message = NULL;
 
 	enabled = ofa_dossier_new_bin_get_valid( priv->new_bin, &message ) &&
-		ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message );
+					root_credentials_get_valid( self, &message ) &&
+					ofa_admin_credentials_bin_is_valid( priv->admin_credentials, &message );
 
 	set_message( self, message );
 	g_free( message );
@@ -383,6 +410,46 @@ check_for_enable_dlg( ofaDossierNew *self )
 	if( priv->ok_btn ){
 		gtk_widget_set_sensitive( priv->ok_btn, enabled );
 	}
+}
+
+/*
+ * test if root credentials are valid by opening a connection
+ * with editor informations (because ofa_dbms_root_bin_get_valid()
+ * can only be called on dossiers which are already defined in the
+ * settings)
+ */
+static gboolean
+root_credentials_get_valid( ofaDossierNew *self, gchar **message )
+{
+	ofaDossierNewPrivate *priv;
+	gboolean ok;
+	ofaIDBEditor *editor;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
+
+	priv = self->priv;
+	g_debug( "root_credentials_get_valid" );
+
+	/* check for DBMS root credentials in all cases so that the DBMS
+	 * status message is erased when credentials are no longer valid
+	 * (and even if another error message is displayed) */
+	ok = FALSE;
+	if( my_strlen( priv->root_account )){
+		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
+		provider = ofa_idbeditor_get_provider( editor );
+		connect = ofa_idbprovider_new_connect( provider );
+		ok = ofa_idbconnect_open_with_editor(
+							connect, priv->root_account, priv->root_password, editor, TRUE );
+		g_clear_object( &connect );
+		g_clear_object( &provider );
+	}
+	ofa_dbms_root_bin_set_valid( priv->root_credentials, ok );
+	if( !ok ){
+		g_free( *message );
+		*message = g_strdup( _( "DBMS root credentials are not valid" ));
+	}
+
+	return( ok );
 }
 
 /*
@@ -399,7 +466,6 @@ v_quit_on_ok( myDialog *dialog )
 	ofaIDBPeriod *period;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
-	ofaDBMSRootBin *root_bin;
 	gchar *account, *password;
 	ofaIDBEditor *editor;
 
@@ -417,8 +483,7 @@ v_quit_on_ok( myDialog *dialog )
 	if( meta ){
 		provider = ofa_idbmeta_get_provider( meta );
 		period = ofa_idbmeta_get_current_period( meta );
-		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
-		ofa_dbms_root_bin_get_credentials( root_bin, &account, &password );
+		ofa_dbms_root_bin_get_credentials( priv->root_credentials, &account, &password );
 		connect = ofa_idbprovider_new_connect( provider );
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 

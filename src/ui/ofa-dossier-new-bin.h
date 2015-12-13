@@ -45,8 +45,6 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta-def.h"
 
-#include "core/ofa-dbms-root-bin.h"
-
 #include "ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -93,8 +91,6 @@ gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNew
 ofaIDBMeta       *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
 
 gchar            *ofa_dossier_new_bin_get_dossier_name     ( const ofaDossierNewBin *bin );
-
-ofaDBMSRootBin   *ofa_dossier_new_bin_get_dbms_root_bin    ( const ofaDossierNewBin *bin );
 
 ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( const ofaDossierNewBin *bin );
 

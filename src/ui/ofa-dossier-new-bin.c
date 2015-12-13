@@ -50,7 +50,6 @@ struct _ofaDossierNewBinPrivate {
 	GtkWidget      *dbms_combo;
 	GtkWidget      *connect_infos_parent;
 	ofaIDBEditor   *connect_infos;
-	ofaDBMSRootBin *dbms_credentials;
 	GtkWidget      *msg_label;
 
 	/* initialization
@@ -62,8 +61,6 @@ struct _ofaDossierNewBinPrivate {
 	 */
 	gchar          *dossier_name;
 	gulong          prov_handler;
-	gchar          *account;
-	gchar          *password;
 };
 
 /* columns in DBMS provider combo box
@@ -91,7 +88,6 @@ static void     setup_dbms_provider( ofaDossierNewBin *bin );
 static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
 static void     on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self );
-static void     on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self );
 static void     changed_composite( ofaDossierNewBin *bin );
 
 static void
@@ -109,8 +105,6 @@ dossier_new_bin_finalize( GObject *instance )
 	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
 
 	g_free( priv->dossier_name );
-	g_free( priv->account );
-	g_free( priv->password );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_new_bin_parent_class )->finalize( instance );
@@ -171,15 +165,12 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 	 * name, the DBMS provider, the connection informations and the
 	 * DBMS root credentials
 	 *
-	 * Arguments are dossier name, connection informations, superuser
-	 * account and password.
+	 * Arguments are dossier name and connection informations.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierNewBin *bin,
 	 * 						const gchar    *dname,
-	 * 						ofaIDBEditor   *widget,
-	 * 						const gchar    *account,
-	 * 						const gchar    *password,
+	 * 						ofaIDBEditor   *editor,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -191,8 +182,8 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				4,
-				G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING );
+				2,
+				G_TYPE_STRING, G_TYPE_POINTER );
 }
 
 /**
@@ -227,7 +218,7 @@ setup_bin( ofaDossierNewBin *bin )
 	ofaDossierNewBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry, *parent, *label;
+	GtkWidget *toplevel, *entry, *label;
 	GtkApplication *application;
 
 	priv = bin->priv;
@@ -252,16 +243,6 @@ setup_bin( ofaDossierNewBin *bin )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	setup_dbms_provider( bin );
-
-	/* administrative credentials */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dbms-credentials" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dbms_credentials = ofa_dbms_root_bin_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dbms_credentials ));
-	my_utils_size_group_add_size_group(
-			priv->group0, ofa_dbms_root_bin_get_size_group( priv->dbms_credentials, 0 ));
-	g_signal_connect(
-			priv->dbms_credentials, "ofa-changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -472,29 +453,13 @@ on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self )
 }
 
 static void
-on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	priv = self->priv;
-
-	g_free( priv->account );
-	priv->account = g_strdup( account );
-
-	g_free( priv->password );
-	priv->password = g_strdup( password );
-
-	changed_composite( self );
-}
-
-static void
 changed_composite( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 
 	priv = bin->priv;
 
-	g_signal_emit_by_name( bin, "ofa-changed", priv->dossier_name, priv->connect_infos, priv->account, priv->password );
+	g_signal_emit_by_name( bin, "ofa-changed", priv->dossier_name, priv->connect_infos );
 }
 
 /**
@@ -504,15 +469,13 @@ changed_composite( ofaDossierNewBin *bin )
  *
  * The bin of dialog is valid if :
  * - the dossier name is set and doesn't exist yet
- * - the connection informations and the DBMS root credentials are valid
+ * - the connection informations are valid
  */
 gboolean
 ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_message )
 {
 	ofaDossierNewBinPrivate *priv;
-	ofaIDBProvider *provider;
-	ofaIDBConnect *connect;
-	gboolean ok, root_ok;
+	gboolean ok;
 	gchar *str;
 	ofaIDBMeta *meta;
 
@@ -543,27 +506,6 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 		if( ok ){
 			ok = ofa_idbeditor_get_valid( priv->connect_infos, &str );
 		}
-
-		/* check for DBMS root credentials in all cases so that the DBMS
-		 * status message is erased when credentials are no longer valid
-		 * (and even if another error message is displayed)
-		 * ofa_dbms_root_credential_bin_is_valid() can only be called
-		 * when the dossier has already been registered */
-		root_ok = FALSE;
-		if( my_strlen( priv->account )){
-			provider = ofa_idbeditor_get_provider( priv->connect_infos );
-			connect = ofa_idbprovider_new_connect( provider );
-			root_ok = ofa_idbconnect_open_with_editor(
-							connect, priv->account, priv->password, priv->connect_infos, TRUE );
-			g_clear_object( &connect );
-			g_clear_object( &provider );
-		}
-		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, root_ok );
-		if( ok && !root_ok ){
-			g_free( str );
-			str = g_strdup( _( "DBMS root credentials are not valid" ));
-		}
-		ok &= root_ok;
 	}
 
 	if( error_message ){
@@ -627,29 +569,6 @@ ofa_dossier_new_bin_get_dossier_name( const ofaDossierNewBin *bin )
 	if( !priv->dispose_has_run ){
 
 		return( g_strdup( priv->dossier_name ));
-	}
-
-	g_return_val_if_reached( NULL );
-}
-
-/**
- * ofa_dossier_new_bin_get_dbms_root_bin:
- * @bin: this #ofaDossierNewBin instance.
- *
- * Returns: the #ofaDBMSRootBin composite widget.
- */
-ofaDBMSRootBin *
-ofa_dossier_new_bin_get_dbms_root_bin( const ofaDossierNewBin *bin )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		return( priv->dbms_credentials );
 	}
 
 	g_return_val_if_reached( NULL );

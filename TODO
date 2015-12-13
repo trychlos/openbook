@@ -518,11 +518,6 @@
 
  911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
 
- 913 2015-12- 2 myDialog/myWindow: distinguish the main window (resp.
-                the application) which is needed to get access to 
-                global vars, from the parent window which may not be
-                the main window
-
  915 2015-12- 4 a class object (say e.g. ofoClass) should implement
                 the ofaIExportable/ofaIImportable interfaces - but the
                 exporter/importer plugins should rather implement a
@@ -4298,6 +4293,12 @@
  912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
                 or update it to be able to get a meta and/or a period
      2015-12- 1 updated to return meta+period
+
+ 913 2015-12- 2 myDialog/myWindow: distinguish the main window (resp.
+                the application) which is needed to get access to 
+                global vars, from the parent window which may not be
+                the main window
+     2015-12-13 done
 
  914 2015-12- 2 add filename to ofaFileDir::changed signal args
      2015-12-10 done

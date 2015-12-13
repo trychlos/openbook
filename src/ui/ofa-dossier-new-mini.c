@@ -62,7 +62,7 @@ static const gchar *st_ui_id            = "DossierNewMiniDialog";
 G_DEFINE_TYPE( ofaDossierNewMini, ofa_dossier_new_mini, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self );
+static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNewMini *self );
 static void      check_for_enable_dlg( ofaDossierNewMini *self );
 static gboolean  is_validable( ofaDossierNewMini *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -215,11 +215,11 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self )
+on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNewMini *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_on_new_bin_changed";
 
-	g_debug( "%s: bin=%p, infos=%p", thisfn, ( void * ) bin, ( void * ) infos );
+	g_debug( "%s: bin=%p, editor=%p", thisfn, ( void * ) bin, ( void * ) editor );
 
 	check_for_enable_dlg( self );
 }
