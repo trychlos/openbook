@@ -190,6 +190,10 @@ void            ofa_idbmeta_update_period             ( ofaIDBMeta *meta,
 
 ofaIDBPeriod   *ofa_idbmeta_get_current_period        ( const ofaIDBMeta *meta );
 
+ofaIDBPeriod   *ofa_idbmeta_get_period                ( const ofaIDBMeta *meta,
+																const GDate *begin,
+																const GDate *end );
+
 void            ofa_idbmeta_dump                      ( const ofaIDBMeta *meta );
 
 void            ofa_idbmeta_dump_rec                  ( const ofaIDBMeta *meta );

@@ -1156,7 +1156,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofo_dossier_update( priv->dossier );
 
 				/* re-emit the opened signal after changes */
-				g_signal_emit_by_name( priv->main_window, "ofa-opened-dossier", priv->dossier );
+				g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPENED, priv->dossier );
 				ofa_main_window_update_title( priv->main_window );
 			}
 		}

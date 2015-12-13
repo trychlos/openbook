@@ -41,6 +41,7 @@
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-dossier-treeview.h"
@@ -70,7 +71,7 @@ static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, 
 static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
-static void      open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
+static void      do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
 //static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname, const gchar *dbname );
 
@@ -236,7 +237,7 @@ static void
 on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	if( meta && period ){
-		open_dossier( self, meta, period );
+		do_open( self, meta, period );
 	}
 }
 
@@ -267,42 +268,19 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 
 	priv = self->priv;
 	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
-		open_dossier( self, meta, period );
+		ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL );
 	}
 	g_clear_object( &meta );
 	g_clear_object( &period );
 }
 
 static void
-open_dossier( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
+do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 {
-#if 0
 	ofaDossierManagerPrivate *priv;
-	ofsDossierOpen *sdo;
-	gchar *account, *password;
 
 	priv = self->priv;
-
-	account = NULL;
-	password = NULL;
-	ofa_dossier_login_run( priv->main_window, dname, dbname, &account, &password );
-
-	if( my_strlen( account ) && my_strlen( password )){
-		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->dname = g_strdup( dname );
-		sdo->dbname = g_strdup( dbname );
-		sdo->account = account;		/* will be free in the signal cleanup handler */
-		sdo->password = password;
-		g_signal_emit_by_name(
-				priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
-		gtk_dialog_response(
-				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-				GTK_RESPONSE_CANCEL );
-	} else {
-		g_free( account );
-		g_free( password );
-	}
-#endif
+	ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL );
 }
 
 static void

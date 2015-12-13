@@ -46,6 +46,7 @@
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
+#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-restore-assistant.h"
@@ -92,6 +93,7 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p2_new_dossier_btn;
 	ofaIDBMeta             *p2_meta;
 	ofaIDBPeriod           *p2_period;
+	gchar                  *p2_dbname;
 	gboolean                p2_is_new_dossier;
 
 	/* p3: DBMS root account
@@ -252,6 +254,7 @@ restore_assistant_finalize( GObject *instance )
 
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
+	g_free( priv->p2_dbname );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
 	g_free( priv->p4_account );
@@ -605,6 +608,11 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 	ok = ( priv->p2_meta && OFA_IS_IDBMETA( priv->p2_meta ) &&
 			priv->p2_period && OFA_IS_IDBPERIOD( priv->p2_period ));
 
+	if( ok ){
+		g_free( priv->p2_dbname );
+		priv->p2_dbname = ofa_idbperiod_get_name( priv->p2_period );
+	}
+
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
 
 	return( ok );
@@ -881,6 +889,8 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), dossier_name );
 	g_free( dossier_name );
 
+	gtk_label_set_text( GTK_LABEL( priv->p4_database ), priv->p2_dbname );
+
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
 	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
 
@@ -1024,6 +1034,7 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), dossier_name );
+	gtk_label_set_text( GTK_LABEL( priv->p5_database ), priv->p2_dbname );
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
@@ -1176,7 +1187,6 @@ p6_do_open( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	ofsDossierOpen *sdo;
 
 	priv = self->priv;
 
@@ -1184,12 +1194,9 @@ p6_do_open( ofaRestoreAssistant *self )
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
 
 	if( priv->p4_open ){
-		sdo = g_new0( ofsDossierOpen, 1 );
-		//sdo->dname = g_strdup( priv->p2_dossier_name );
-		//sdo->dbname = g_strdup( priv->p2_database );
-		sdo->account = g_strdup( priv->p4_account );
-		sdo->password = g_strdup( priv->p4_password );
-		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
+		ofa_dossier_open_run(
+				OFA_MAIN_WINDOW( main_window ),
+				priv->p2_meta, priv->p2_period, priv->p4_account, priv->p4_password );
 	}
 
 	return( G_SOURCE_REMOVE );

@@ -61,10 +61,6 @@ struct _ofaApplicationPrivate {
 	gchar           *description;
 	gchar           *icon_name;
 
-	/* command-line args
-	 */
-	ofsDossierOpen     *sdo;
-
 	/* internals
 	 */
 	int              argc;
@@ -107,15 +103,18 @@ static const gchar       *st_icon_name          = N_( "openbook" );
 static       gboolean     st_version_opt        = FALSE;
 
 static       gchar       *st_dossier_name_opt   = NULL;
-static       gchar       *st_dossier_dbname_opt = NULL;
+static       gchar       *st_dossier_begin_opt  = NULL;
+static       gchar       *st_dossier_end_opt    = NULL;
 static       gchar       *st_dossier_user_opt   = NULL;
 static       gchar       *st_dossier_passwd_opt = NULL;
 
 static       GOptionEntry st_option_entries[]   = {
 	{ "dossier",  'd', 0, G_OPTION_ARG_STRING, &st_dossier_name_opt,
 			N_( "open the specified dossier []" ), NULL },
-	{ "database", 'b', 0, G_OPTION_ARG_STRING, &st_dossier_dbname_opt,
-			N_( "open the specified database []" ), NULL },
+	{ "begin",    'b', 0, G_OPTION_ARG_STRING, &st_dossier_begin_opt,
+			N_( "beginning date (yyyymmdd) of the exercice to open []" ), NULL },
+	{ "end",      'e', 0, G_OPTION_ARG_STRING, &st_dossier_end_opt,
+			N_( "ending date (yyyymmdd) of the exercice to open []" ), NULL },
 	{ "user",     'u', 0, G_OPTION_ARG_STRING, &st_dossier_user_opt,
 			N_( "username to be used on opening the dossier []" ), NULL },
 	{ "password", 'p', 0, G_OPTION_ARG_STRING, &st_dossier_passwd_opt,
@@ -297,7 +296,6 @@ ofa_application_init( ofaApplication *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_APPLICATION, ofaApplicationPrivate );
 	self->priv->dispose_has_run = FALSE;
-	self->priv->sdo = NULL;
 }
 
 static void
@@ -534,13 +532,12 @@ static gboolean
 manage_options( ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_manage_options";
-	ofaApplicationPrivate *priv;
 	gboolean ret;
+	GDate date;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	ret = TRUE;
-	priv = application->priv;
 
 	/* display the program version ?
 	 * if yes, then stops here
@@ -549,12 +546,45 @@ manage_options( ofaApplication *application )
 		on_version( application );
 		ret = FALSE;
 
+	/* for opening a dossier, minimal data is dossier name
+	 * begin/end dates must be valid if specified */
 	} else if( st_dossier_name_opt ){
-		priv->sdo = g_new0( ofsDossierOpen, 1 );
-		priv->sdo->dname = g_strdup( st_dossier_name_opt );
-		priv->sdo->dbname = g_strdup( st_dossier_dbname_opt );
-		priv->sdo->account = g_strdup( st_dossier_user_opt );
-		priv->sdo->password = g_strdup( st_dossier_passwd_opt );
+		if( st_dossier_begin_opt ){
+			my_date_set_from_str( &date, st_dossier_begin_opt, MY_DATE_YYMD );
+			if( !my_date_is_valid( &date )){
+				g_warning( "%s: invalid date: %s", thisfn, st_dossier_begin_opt );
+				ret = FALSE;
+			}
+		}
+		if( st_dossier_end_opt ){
+			my_date_set_from_str( &date, st_dossier_end_opt, MY_DATE_YYMD );
+			if( !my_date_is_valid( &date )){
+				g_warning( "%s: invalid date: %s", thisfn, st_dossier_end_opt );
+				ret = FALSE;
+			}
+		}
+	} else {
+		/* if dossier name is not specified */
+		if( st_dossier_begin_opt ){
+			g_warning( "%s: invalid begin date (%s) while dossier name is not specified",
+					thisfn, st_dossier_begin_opt );
+			ret = FALSE;
+		}
+		if( st_dossier_end_opt ){
+			g_warning( "%s: invalid end date (%s) while dossier name is not specified",
+					thisfn, st_dossier_end_opt );
+			ret = FALSE;
+		}
+		if( st_dossier_user_opt ){
+			g_warning( "%s: invalid account (%s) while dossier name is not specified",
+					thisfn, st_dossier_user_opt );
+			ret = FALSE;
+		}
+		if( st_dossier_passwd_opt ){
+			g_warning( "%s: invalid password (%s) while dossier name is not specified",
+					thisfn, st_dossier_begin_opt );
+			ret = FALSE;
+		}
 	}
 
 	return( ret );
@@ -669,6 +699,10 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
+	GDate dbegin, dend;
+	gchar *str;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -684,12 +718,38 @@ application_activate( GApplication *application )
 		maintainer_test_function();
 	}
 
-	/* if present, command-line options have been dealt with before
-	 * g_application_run() has been called, i.e. before even startup
-	 * has been triggered */
-	if( priv->sdo ){
-		g_signal_emit_by_name(
-				priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, priv->sdo );
+	/* if a dossier is to be opened due to options specified in the
+	 * command-line */
+	if( st_dossier_name_opt ){
+		meta = ofa_file_dir_get_meta( priv->file_dir, st_dossier_name_opt );
+		period = NULL;
+		if( meta ){
+			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
+				period = ofa_idbmeta_get_current_period( meta );
+			} else {
+				my_date_set_from_str( &dbegin, st_dossier_begin_opt, MY_DATE_YYMD );
+				my_date_set_from_str( &dend, st_dossier_end_opt, MY_DATE_YYMD );
+				period = ofa_idbmeta_get_period( meta, &dbegin, &dend );
+				if( !period ){
+					str = g_strdup_printf(
+							_( "Unable to find a financial period with specified dates (begin=%s, end=%s)" ),
+							st_dossier_begin_opt, st_dossier_end_opt );
+					my_utils_dialog_warning( str );
+					g_free( str );
+				}
+			}
+		} else {
+			str = g_strdup_printf( _( "Unable to find the '%s' dossier"), st_dossier_name_opt );
+			my_utils_dialog_warning( str );
+			g_free( str );
+		}
+		if( meta && period ){
+			ofa_dossier_open_run(
+					priv->main_window,
+					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
+		}
+		g_clear_object( &period );
+		g_clear_object( &meta );
 	}
 }
 

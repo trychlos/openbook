@@ -64,38 +64,32 @@ typedef struct {
 
 /**
  * OFA_SIGNAL_DOSSIER_OPEN:
- * Signal to be sent to the main window in order to ask for the opening
- * of a dossier. See also the #ofsDossierOpen struct below.
+ * Action signal to be sent to the main window in order to ask for the
+ * opening of a dossier.
+ * Args:
+ * - a #ofaIDBConnect opened connection on the dossier
+ * - whether to remediate the settings.
  */
-#define OFA_SIGNAL_DOSSIER_OPEN         "ofa-signal-dossier-open"
-
-/**
- * ofsDossierOpen:
- * @dname: the name of the dossier, as in the settings.
- * @bname: the name of the database.
- * @account: an account authorized to the dossier.
- * @password: the password of the account.
- *
- * This structure must be allocated by the emitter, and attached to the
- * above signal. It will be freed in the signal cleanup handler so the
- * emitter doesn't have to take care of that.
- */
-typedef struct {
-	gchar *dname;
-	gchar *dbname;
-	gchar *account;
-	gchar *password;
-}
-	ofsDossierOpen;
+#define OFA_SIGNAL_DOSSIER_OPEN         "ofa-dossier-open"
 
 /**
  * OFA_SIGNAL_DOSSIER_PROPERTIES:
- *  Signal to be sent to the main window in order to update the
+ *  Action signal to be sent to the main window in order to update the
  *  properties of the currently opened dossier.
- *  use case: DossierNew: update the properties right after having
+ *  Args: none.
+ *  Use case: DossierNew: display the properties right after having
  *  opened the new dossier.
  */
-#define OFA_SIGNAL_DOSSIER_PROPERTIES   "ofa-signal-dossier-properties"
+#define OFA_SIGNAL_DOSSIER_PROPERTIES   "ofa-dossier-properties"
+
+/**
+ * OFA_SIGNAL_DOSSIER_OPENED:
+ *  Information signal sent on the main window when a dossier has been.
+ *  opened.
+ *  Args:
+ *  - the #ofoDossier.
+ */
+#define OFA_SIGNAL_DOSSIER_OPENED       "ofa-dossier-opened"
 
 GType ofa_main_window_get_type( void ) G_GNUC_CONST;
 

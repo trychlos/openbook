@@ -205,6 +205,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *container, *button, *focus, *label;
 	ofaUserCredentialsBin *user_credentials;
 	GtkSizeGroup *group;
+	gchar *dossier_name;
 	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DOSNAME,
 			0 };
@@ -251,17 +252,17 @@ v_init_dialog( myDialog *dialog )
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
 	gtk_size_group_add_widget( group, label );
 
-#if 0
-	if( priv->dname ){
-		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
+	if( priv->meta ){
+		dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
+		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
+		g_free( dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
-		if( priv->open_db ){
-			//ofa_exercice_combo_set_selected( priv->exercice_combo, EXERCICE_COL_DBNAME, priv->open_db );
+		if( priv->period ){
+			ofa_exercice_combo_set_selected( priv->exercice_combo, priv->period );
 			focus = NULL;
 		}
 	}
-#endif
 
 	/* setup account and password */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-user-parent" );
@@ -271,6 +272,8 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), dialog );
 	my_utils_size_group_add_size_group(
 			group, ofa_user_credentials_bin_get_size_group( user_credentials, 0 ));
+	ofa_user_credentials_bin_set_account( user_credentials, priv->account );
+	ofa_user_credentials_bin_set_password( user_credentials, priv->password );
 
 	/* focus defauls to be set on the dossier treeview
 	 * if the dossier is already set, then set the focus on the exercice combo

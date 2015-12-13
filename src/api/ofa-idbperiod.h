@@ -140,6 +140,10 @@ gchar       *ofa_idbperiod_get_name                  ( const ofaIDBPeriod *perio
 gint         ofa_idbperiod_compare                   ( const ofaIDBPeriod *a,
 																const ofaIDBPeriod *b );
 
+gboolean     ofa_idbperiod_is_suitable               ( const ofaIDBPeriod *period,
+																const GDate *begin,
+																const GDate *end );
+
 void         ofa_idbperiod_dump                      ( const ofaIDBPeriod *period );
 
 G_END_DECLS

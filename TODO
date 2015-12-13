@@ -469,8 +469,6 @@
 
  889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
 
- 890 2015-11-23 remove ofa_idbms_get_provider_by_name()
-
  891 2015-11-23 remove ofaDossierStore() from ofaApplication
 
  892 2015-11-24 remove from ofaDossierStore:
@@ -488,8 +486,6 @@
  898 2015-11-24 DossierManager: review
                 - on_open_clicked(),
                 - open_dossier()
-
- 899 2015-11-25 remove ofsDossierOpen structure & associated signal
 
  904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
                 boolean (Y/N in the database, true/false in the code)
@@ -522,7 +518,9 @@
  923 2015-12-11 myAssistant is not transient vs the main window
      2015-12-13 or is it ?
 
- 925
+ 925 2015-12-13 remove obsolete ofaDossierLogin class ?
+
+ 926
 
 -----------------------------------------------------------------------
  DONE
@@ -4252,6 +4250,9 @@
  887 2015-11-10 Reconciliation: implement ofaIColumns interface
      2015-11-12 done
 
+ 890 2015-11-23 remove ofa_idbms_get_provider_by_name()
+     2015-12-13 done
+
  893 2015-11-24 remove ofa_dossier_misc_get_dossiers
      2015-11-26 done
 
@@ -4259,6 +4260,9 @@
                 a) only dossiers, or b) all exercices
                 so DOSSIER_SHOW_ARCHIVED is useless
      2015-11-26 done
+
+ 899 2015-11-25 remove ofsDossierOpen structure & associated signal
+     2015-12-13 done
 
  900 2015-11-25 set provider instance/dossier name in IFileMeta data
      2015-11-25 done

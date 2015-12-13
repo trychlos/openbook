@@ -471,6 +471,39 @@ ofa_idbmeta_get_current_period( const ofaIDBMeta *meta )
 }
 
 /**
+ * ofa_idbmeta_get_period:
+ * @meta: this #ofaIDBMeta instance.
+ * @begin: [allow-none]: the beginning date.
+ * @end: [allow-none]: the ending date.
+ *
+ * Returns: a #ofaIDBPeriod which corresponds to the specified @begin
+ * and @end dates.
+ */
+ofaIDBPeriod *
+ofa_idbmeta_get_period( const ofaIDBMeta *meta, const GDate *begin, const GDate *end )
+{
+	static const gchar *thisfn = "ofa_idbmeta_get_period";
+	sIDBMeta *data;
+	GList *it;
+	ofaIDBPeriod *period;
+
+	g_debug( "%s: meta=%p, begin=%p, end=%p",
+			thisfn, ( void * ) meta, ( void * ) begin, ( void * ) end );
+
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
+
+	data = get_idbmeta_data( meta );
+	for( it=data->periods ; it ; it=it->next ){
+		period = ( ofaIDBPeriod * ) it->data;
+		if( ofa_idbperiod_is_suitable( period, begin, end )){
+			return( period );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbmeta_dump:
  * @meta: this #ofaIDBMeta instance.
  *

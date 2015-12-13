@@ -76,6 +76,7 @@ struct _ofaDossierNewPrivate {
 	/* result
 	 */
 	gboolean                dossier_created;
+	ofaIDBMeta             *meta;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new.ui";
@@ -125,11 +126,16 @@ dossier_new_finalize( GObject *instance )
 static void
 dossier_new_dispose( GObject *instance )
 {
+	ofaDossierNewPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_DOSSIER_NEW( instance )->priv;
+
+		g_clear_object( &priv->meta );
 	}
 
 	/* chain up to the parent class */
@@ -179,8 +185,10 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created, open_dossier, open_properties;
-	ofsDossierOpen *sdo;
 	gboolean dossier_opened;
+	ofaIDBProvider *provider;
+	ofaIDBPeriod *period;
+	ofaIDBConnect *connect;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
@@ -202,10 +210,17 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	if( dossier_created ){
 		if( open_dossier ){
-			sdo = g_new0( ofsDossierOpen, 1 );
-			sdo->dname = g_strdup( priv->dossier_name );
-			sdo->account = g_strdup( priv->adm_account );
-			sdo->password = g_strdup( priv->adm_password );
+			provider = ofa_idbmeta_get_provider( priv->meta );
+			period = ofa_idbmeta_get_current_period( priv->meta );
+			connect = ofa_idbprovider_new_connect( provider );
+			if( !ofa_idbconnect_open_with_meta(
+					connect, priv->adm_account, priv->adm_password, priv->meta, period )){
+				g_warning( "%s: unable to connect to newly created dossier", thisfn );
+				g_clear_object( &connect );
+				open_dossier = FALSE;
+			}
+			g_clear_object( &period );
+			g_clear_object( &provider );
 		}
 	}
 
@@ -213,7 +228,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	if( dossier_created ){
 		if( open_dossier ){
-			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_OPEN, sdo );
+			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_OPEN, connect, TRUE );
 			if( open_properties ){
 				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_PROPERTIES );
 			}
@@ -461,7 +476,6 @@ v_quit_on_ok( myDialog *dialog )
 	static const gchar *thisfn = "ofa_dossier_new_v_quit_on_ok";
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
-	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
@@ -477,20 +491,24 @@ v_quit_on_ok( myDialog *dialog )
 	}
 
 	/* define the new dossier in user settings */
-	meta = ofa_dossier_new_bin_apply( priv->new_bin );
+	priv->meta = ofa_dossier_new_bin_apply( priv->new_bin );
 
-	if( meta ){
-		provider = ofa_idbmeta_get_provider( meta );
-		period = ofa_idbmeta_get_current_period( meta );
+	if( priv->meta ){
+		provider = ofa_idbmeta_get_provider( priv->meta );
+		period = ofa_idbmeta_get_current_period( priv->meta );
 		ofa_dbms_root_bin_get_credentials( priv->root_credentials, &account, &password );
 		connect = ofa_idbprovider_new_connect( provider );
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 
-		if( !ofa_idbconnect_open_with_editor( connect, account, password, editor, TRUE )){
+		if( !ofa_idbconnect_open_with_editor(
+							connect, account, password, editor, TRUE )){
 			g_warning( "%s: unable to open the connection with editor informations", thisfn );
+			g_clear_object( &priv->meta );
 
-		} else if( !ofa_idbconnect_create_dossier( connect, meta, priv->adm_account, priv->adm_password )){
+		} else if( !ofa_idbconnect_create_dossier(
+							connect, priv->meta, priv->adm_account, priv->adm_password )){
 			g_warning( "%s: unable to create the dossier", thisfn );
+			g_clear_object( &priv->meta );
 
 		} else {
 			ok = TRUE;
@@ -499,7 +517,6 @@ v_quit_on_ok( myDialog *dialog )
 		g_free( account );
 		g_free( password );
 		g_clear_object( &period );
-		g_clear_object( &meta );
 		g_clear_object( &connect );
 		g_clear_object( &provider );
 	}

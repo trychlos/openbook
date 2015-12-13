@@ -307,7 +307,7 @@ static void             do_open_dossier( ofaMainWindow *main_window, ofaIDBConne
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             set_window_title( const ofaMainWindow *window );
-static void             on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gpointer user_data );
+static void             on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gboolean remediate, gpointer user_data );
 static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             warning_archived_dossier( const ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
@@ -316,14 +316,13 @@ static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void             on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void             on_dossier_opened( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
 static void             enable_action_settlement( ofaMainWindow *window, gboolean enable );
 static void             enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
 static void             enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
 static void             enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
 static void             enable_action_import( ofaMainWindow *window, gboolean enable );
-static void             on_dossier_properties_cleanup_handler( ofaMainWindow *window );
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
@@ -473,6 +472,8 @@ main_window_constructed( GObject *instance )
 		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_OPEN, G_CALLBACK( on_dossier_open ), NULL );
 		g_signal_connect( instance,
+				OFA_SIGNAL_DOSSIER_OPENED, G_CALLBACK( on_dossier_opened ), NULL );
+		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
 
 		/* set the default icon for all windows of the application */
@@ -514,18 +515,20 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaMainWindowPrivate ));
 
 	/**
-	 * ofaMainWindow::ofa-signal-dossier-open:
+	 * ofaMainWindow::ofa-dossier-open:
 	 *
 	 * This signal is to be sent to the main window in order a dossier
 	 * be opened in the user interface.
 	 *
-	 * Argument is the #ofaIDBConnect object which handles the
-	 * (already opened et validated) connection.
+	 * Arguments are the #ofaIDBConnect object which handles the
+	 * (already opened et validated) connection, and whether to
+	 * remediate the settings.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaMainWindow   *window,
 	 * 						ofaIDBConnect *connect,
-	 * 						gpointer        user_data );
+	 * 						gboolean       remediate,
+	 * 						gpointer       user_data );
 	 */
 	st_signals[ DOSSIER_OPEN ] = g_signal_new_class_handler(
 				OFA_SIGNAL_DOSSIER_OPEN,
@@ -536,24 +539,24 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
+				2,
+				G_TYPE_POINTER, G_TYPE_BOOLEAN );
 
 	/**
-	 * ofaMainWindow::ofa-signal-dossier-properties:
+	 * ofaMainWindow::ofa-dossier-properties:
 	 *
 	 * This signal is to be sent to the main window for updating the
 	 * dossier properties (as an alternative to the menu item).
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaMainWindow *window,
-	 * 						gpointer user_data );
+	 * 						gpointer     user_data );
 	 */
 	st_signals[ DOSSIER_PROPERTIES ] = g_signal_new_class_handler(
 				OFA_SIGNAL_DOSSIER_PROPERTIES,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_dossier_properties_cleanup_handler ),
+				NULL,
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
 				NULL,
@@ -561,7 +564,7 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				0 );
 
 	/**
-	 * ofaMainWindow::ofa-opened-dossier:
+	 * ofaMainWindow::ofa-dossier-opened:
 	 *
 	 * This signal is sent on the main window when a dossier has been
 	 * opened.
@@ -572,7 +575,7 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ OPENED_DOSSIER ] = g_signal_new_class_handler(
-				"ofa-opened-dossier",
+				OFA_SIGNAL_DOSSIER_OPENED,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -633,8 +636,6 @@ ofa_main_window_new( const ofaApplication *application )
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
 
-	g_signal_connect( window, "ofa-opened-dossier", G_CALLBACK( on_opened_dossier ), NULL );
-
 	return( window );
 }
 
@@ -688,7 +689,7 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
  * @main_window: this #ofaMainWindow instance.
  * @connect: the #ofaIDBConnect object which handles the opened
  *  connection.
- * @remediation: whether remediate the dossier settings regarding
+ * @remediate: whether remediate the dossier settings regarding
  *  the actual content of the dossier database.
  *
  * Open the dossier in the user interface.
@@ -697,7 +698,7 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
  * the caller may then release its own ref.
  */
 void
-ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation )
+ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediate )
 {
 	static const gchar *thisfn = "ofa_main_window_open_dossier";
 	ofaMainWindowPrivate *priv;
@@ -716,7 +717,7 @@ ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect
 			do_close_dossier( main_window );
 		}
 
-		do_open_dossier( main_window, connect, remediation );
+		do_open_dossier( main_window, connect, remediate );
 	}
 }
 
@@ -760,10 +761,10 @@ do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean re
 
 		/* display dossier properties */
 		if( ofa_prefs_dossier_open_properties()){
-			g_signal_emit_by_name(( gpointer ) main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
+			g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
 		}
 
-		g_signal_emit_by_name( main_window, "ofa-opened-dossier", priv->dossier );
+		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPENED, priv->dossier );
 	}
 }
 
@@ -919,12 +920,15 @@ set_window_title( const ofaMainWindow *window )
 }
 
 static void
-on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gpointer user_data )
+on_dossier_open( ofaMainWindow *window, ofaIDBConnect *connect, gboolean remediate, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
 
-	g_debug( "%s: window=%p, connect=%p, user_data=%p",
-			thisfn, ( void * ) window, ( void * ) connect, ( void * ) user_data );
+	g_debug( "%s: window=%p, connect=%p, remediate=%s, user_data=%p",
+			thisfn, ( void * ) window,
+			( void * ) connect, remediate ? "True":"False", ( void * ) user_data );
+
+	ofa_main_window_open_dossier( window, connect, remediate );
 }
 
 /*
@@ -1108,7 +1112,7 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
  * signal sent after the dossier has been successfully opened
  */
 static void
-on_opened_dossier( ofaMainWindow *window, ofoDossier *dossier, void *empty )
+on_dossier_opened( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 {
 	gboolean is_current;
 
@@ -1193,14 +1197,6 @@ on_dossier_properties( ofaMainWindow *window, gpointer user_data )
 	if( window->priv->dossier ){
 		ofa_dossier_properties_run( window, window->priv->dossier );
 	}
-}
-
-static void
-on_dossier_properties_cleanup_handler( ofaMainWindow *window )
-{
-	static const gchar *thisfn = "ofa_main_window_on_dossier_properties_cleanup_handler";
-
-	g_debug( "%s: window=%p", thisfn, ( void * ) window );
 }
 
 static void

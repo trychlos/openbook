@@ -393,7 +393,7 @@ Press Continue.</property>
                   <object class="GtkLabel" id="p4-label412">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Target database :</property>
+                    <property name="label" translatable="yes">Target period name :</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>
@@ -716,7 +716,7 @@ Press Continue.</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
-            <property name="label" translatable="yes">Database :</property>
+            <property name="label" translatable="yes">Period name :</property>
             <property name="xalign">1</property>
           </object>
           <packing>

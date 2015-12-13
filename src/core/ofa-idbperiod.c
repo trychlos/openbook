@@ -403,6 +403,30 @@ ofa_idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 }
 
 /**
+ * ofa_idbperiod_is_suitable:
+ * @period: a #ofaIDBPeriod instance.
+ * @begin: [allow-none]: the beginning date of a period.
+ * @end: [allow-none]: the ending date of a period.
+ *
+ * Returns: %TRUE if @period is compatible with @begin and @end.
+ */
+gboolean
+ofa_idbperiod_is_suitable( const ofaIDBPeriod *period, const GDate *begin, const GDate *end )
+{
+	sIDBPeriod *data;
+	gboolean begin_ok, end_ok;
+
+	begin_ok = FALSE;
+	end_ok = FALSE;
+	data = get_idbperiod_data( period );
+
+	begin_ok = begin ? my_date_compare_ex( begin, &data->begin, TRUE ) : TRUE;
+	end_ok = end ? my_date_compare_ex( end, &data->end, FALSE ) : TRUE;
+
+	return( begin_ok && end_ok );
+}
+
+/**
  * ofa_idbperiod_dump:
  * @period: this #ofaIDBPeriod instance.
  *
