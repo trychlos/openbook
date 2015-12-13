@@ -337,27 +337,6 @@ ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
 	g_return_val_if_reached( NULL );
 }
 
-/**
- * ofa_dossier_new_bin_set_provider:
- *
- * This must be called after having attached the widget to its parent.
- */
-void
-ofa_dossier_new_bin_set_provider( ofaDossierNewBin *bin, const gchar *provider )
-{
-	ofaDossierNewBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
-	g_return_if_fail( my_strlen( provider ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->dbms_combo ), provider );
-	}
-}
-
 static void
 on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin )
 {

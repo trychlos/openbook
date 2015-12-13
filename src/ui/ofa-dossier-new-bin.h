@@ -80,11 +80,6 @@ ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaMainWindow *main
 GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( const ofaDossierNewBin *bin,
 																	guint column );
 
-void              ofa_dossier_new_bin_set_default_provider ( ofaDossierNewBin *bin );
-
-void              ofa_dossier_new_bin_set_provider         ( ofaDossierNewBin *bin,
-																	const gchar *provider );
-
 gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNewBin *bin,
 																	gchar **error_message );
 
