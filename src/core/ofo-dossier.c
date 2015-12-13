@@ -2746,32 +2746,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
- * ofo_dossier_backup:
- *
- * Backup the database behind the dossier
- */
-gboolean
-ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname, gboolean verbose )
-{
-	//ofoDossierPrivate *priv;
-	gboolean ok;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( my_strlen( fname ), FALSE );
-
-	ok = FALSE;
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		//priv = dossier->priv;
-
-		ok = FALSE; //ofa_dbms_backup( priv->dbms, fname, verbose );
-	}
-
-	return( ok );
-}
-
 /*
  * ofaIDataset interface management
  */
