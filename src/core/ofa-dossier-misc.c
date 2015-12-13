@@ -41,56 +41,6 @@ static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
 /**
- * ofa_dossier_misc_set_new_exercice:
- * @dname:
- * @dbname:
- * @begin:
- * @end:
- *
- * Move the current exercice as an archived one
- * Define a new current exercice with the provided dates
- */
-void
-ofa_dossier_misc_set_new_exercice( const gchar *dname, const gchar *dbname, const GDate *begin, const GDate *end )
-{
-	GList *slist, *it;
-	const gchar *sdb, *sbegin, *send;
-	gchar *key, *content, *sbegin_next, *send_next;
-
-	/* move current exercice to archived */
-	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DBMS_DATABASE );
-
-	sdb = sbegin = send = NULL;
-	it = slist;
-	sdb = ( const gchar * ) it->data;
-	it = it ? it->next : NULL;
-	sbegin = it ? ( const gchar * ) it->data : NULL;
-	it = it ? it->next : NULL;
-	send = it ? ( const gchar * ) it->data : NULL;
-	g_return_if_fail( sdb && sbegin && send );
-
-	key = g_strdup_printf( "%s_%s", SETTINGS_DBMS_DATABASE, send );
-	content = g_strdup_printf( "%s;%s;", sdb, sbegin );
-
-	ofa_settings_dossier_set_string( dname, key, content );
-
-	ofa_settings_free_string_list( slist );
-	g_free( key );
-	g_free( content );
-
-	/* define new current exercice */
-	sbegin_next = my_date_to_str( begin, MY_DATE_YYMD );
-	send_next = my_date_to_str( end, MY_DATE_YYMD );
-	content = g_strdup_printf( "%s;%s;%s;", dbname, sbegin_next, send_next );
-
-	ofa_settings_dossier_set_string( dname, SETTINGS_DBMS_DATABASE, content );
-
-	g_free( content );
-	g_free( sbegin_next );
-	g_free( send_next );
-}
-
-/**
  * ofa_dossier_misc_import_csv:
  * @dossier:
  * @object:

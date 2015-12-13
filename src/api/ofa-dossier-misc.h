@@ -40,11 +40,6 @@
 
 G_BEGIN_DECLS
 
-void      ofa_dossier_misc_set_new_exercice  ( const gchar *dname,
-													const gchar *dbname,
-													const GDate *begin_next,
-													const GDate *end_next );
-
 guint     ofa_dossier_misc_import_csv        ( ofoDossier *dossier,
 													ofaIImportable *object,
 													const gchar *uri,

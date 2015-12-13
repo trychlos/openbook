@@ -469,22 +469,6 @@
 
  889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
 
- 891 2015-11-23 remove ofaDossierStore() from ofaApplication
-
- 892 2015-11-24 remove from ofaDossierStore:
-                - DOSSIER_COL_DBNAME
-                - DOSSIER_COL_CODE
-                - DOSSIER_DISP_DBNAME
-                - DOSSIER_DISP_CODE
-
- 894 2015-11-24 remove database name + dossier code from dossier store
-
- 896 2015-11-24 remove database name from exercice store
-
- 898 2015-11-24 DossierManager: review
-                - on_open_clicked(),
-                - open_dossier()
-
  904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
                 boolean (Y/N in the database, true/false in the code)
                 + should we store this in the db
@@ -4248,15 +4232,38 @@
  890 2015-11-23 remove ofa_idbms_get_provider_by_name()
      2015-12-13 done
 
+ 891 2015-11-23 remove ofaDossierStore() from ofaApplication
+     2015-12-13 kept as this is needed to be sure the store is ready
+                (and maintains itself up to date) when the main window
+                is created
+
+ 892 2015-11-24 remove from ofaDossierStore:
+                - DOSSIER_COL_DBNAME
+                - DOSSIER_COL_CODE
+                - DOSSIER_DISP_DBNAME
+                - DOSSIER_DISP_CODE
+     2015-12-13 done
+
  893 2015-11-24 remove ofa_dossier_misc_get_dossiers
      2015-11-26 done
+
+ 894 2015-11-24 remove database name + dossier code from dossier store
+     2015-12-13 duplicate of #892
 
  895 2015-11-24 DossierTreeview: the filter is just for displaying
                 a) only dossiers, or b) all exercices
                 so DOSSIER_SHOW_ARCHIVED is useless
      2015-11-26 done
 
+ 896 2015-11-24 remove database name from exercice store
+     2015-12-13 done
+
  897 2015-11-24 remove database name from command-line application
+     2015-12-13 done
+
+ 898 2015-11-24 DossierManager: review
+                - on_open_clicked(),
+                - open_dossier()
      2015-12-13 done
 
  899 2015-11-25 remove ofsDossierOpen structure & associated signal

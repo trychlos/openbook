@@ -45,11 +45,10 @@ struct _ofaDossierStorePrivate {
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* dossier name */
 		G_TYPE_STRING, 					/* DBMS provider name */
-		G_TYPE_STRING,					/* dbname */
+		G_TYPE_STRING,					/* period name */
 		G_TYPE_STRING, 					/* end date (user display) */
 		G_TYPE_STRING, 					/* begin date (user display) */
 		G_TYPE_STRING, 					/* localized status */
-		G_TYPE_STRING,					/* code status */
 		G_TYPE_OBJECT,					/* ofaIDBMeta */
 		G_TYPE_OBJECT					/* ofaIDBPeriod */
 };
@@ -69,7 +68,6 @@ static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *
 static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
 static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
-static gboolean get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
 
@@ -291,7 +289,7 @@ insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *
 static void
 set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
 {
-	gchar *dosname, *begin, *end, *status;
+	gchar *dosname, *begin, *end, *status, *pername;
 	const gchar *provname;
 	ofaIDBProvider *provider;
 
@@ -303,12 +301,14 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *per
 	begin = my_date_to_str( ofa_idbperiod_get_begin_date( period ), ofa_prefs_date_display());
 	end = my_date_to_str( ofa_idbperiod_get_end_date( period ), ofa_prefs_date_display());
 	status = ofa_idbperiod_get_status( period );
+	pername = ofa_idbperiod_get_name( period );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
 			DOSSIER_COL_DOSNAME,  dosname,
 			DOSSIER_COL_PROVNAME, provname,
+			DOSSIER_COL_PERNAME,  pername,
 			DOSSIER_COL_BEGIN,    begin,
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
@@ -316,61 +316,9 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *per
 			DOSSIER_COL_PERIOD,   period,
 			-1 );
 
+	g_free( pername );
 	g_free( begin );
 	g_free( end );
 	g_free( dosname );
 	g_free( status );
-}
-
-/**
- * ofa_dossier_store_remove_exercice:
- * @store:
- * @dname:
- * @dbname:
- *
- * Remove the row which corresponds to the given specs.
- */
-void
-ofa_dossier_store_remove_exercice( ofaDossierStore *store, const gchar *dname, const gchar *dbname )
-{
-	ofaDossierStorePrivate *priv;
-	GtkTreeIter iter;
-
-	g_return_if_fail( store && OFA_IS_DOSSIER_STORE( store ));
-
-	priv = store->priv;
-
-	if( !priv->dispose_has_run ){
-
-		if( get_iter_from_dbname( store, dname, dbname, &iter )){
-			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
-		}
-	}
-}
-
-static gboolean
-get_iter_from_dbname( ofaDossierStore *store, const gchar *dname, const gchar *dbname, GtkTreeIter *iter )
-{
-	gchar *row_dname, *row_dbname;
-	gboolean found;
-
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
-		while( TRUE ){
-			gtk_tree_model_get(
-					GTK_TREE_MODEL( store ), iter,
-					DOSSIER_COL_DOSNAME, &row_dname, DOSSIER_COL_DBNAME, &row_dbname, -1 );
-			found = g_utf8_collate( row_dname, dname ) == 0 &&
-					g_utf8_collate( row_dbname, dbname ) == 0;
-			g_free( row_dname );
-			g_free( row_dbname );
-			if( found ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
-				break;
-			}
-		}
-	}
-
-	return( FALSE );
 }

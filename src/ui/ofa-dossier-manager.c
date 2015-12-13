@@ -198,8 +198,12 @@ setup_treeview( ofaDossierManager *self )
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DOSNAME, DOSSIER_DISP_BEGIN, DOSSIER_DISP_END,
-			DOSSIER_DISP_STATUS, DOSSIER_DISP_DBNAME, DOSSIER_DISP_PROVNAME,
+			DOSSIER_DISP_DOSNAME,
+			DOSSIER_DISP_BEGIN,
+			DOSSIER_DISP_END,
+			DOSSIER_DISP_STATUS,
+			DOSSIER_DISP_PERNAME,
+			DOSSIER_DISP_PROVNAME,
 			0 };
 
 	priv = self->priv;

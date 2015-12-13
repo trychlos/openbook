@@ -347,17 +347,10 @@ create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 
-		if( columns[i] == DOSSIER_DISP_DBNAME ){
+		if( columns[i] == DOSSIER_DISP_PERNAME ){
 			cell = gtk_cell_renderer_text_new();
 			column = gtk_tree_view_column_new_with_attributes(
-							_( "DB name" ), cell, "text", DOSSIER_COL_DBNAME, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_CODE ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "St." ), cell, "text", DOSSIER_COL_CODE, NULL );
+							_( "Period name" ), cell, "text", DOSSIER_COL_PERNAME, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 	}

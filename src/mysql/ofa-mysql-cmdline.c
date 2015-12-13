@@ -301,7 +301,6 @@ ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
 
 	if( ok ){
 		ofa_mysql_meta_add_period( OFA_MYSQL_META( meta ), TRUE, begin_next, end_next, new_db );
-		//ofa_dossier_misc_set_new_exercice( dname, infos->dbname, begin_next, end_next );
 		prev_account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
 		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
 		g_free( prev_account );

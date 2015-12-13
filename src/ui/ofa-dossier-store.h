@@ -97,11 +97,10 @@ typedef struct {
 typedef enum {
 	DOSSIER_COL_DOSNAME = 0,
 	DOSSIER_COL_PROVNAME,
-	DOSSIER_COL_DBNAME,
+	DOSSIER_COL_PERNAME,
 	DOSSIER_COL_END,
 	DOSSIER_COL_BEGIN,
 	DOSSIER_COL_STATUS,					/* the displayable status */
-	DOSSIER_COL_CODE,					/* the status as a single-char code */
 	DOSSIER_COL_META,
 	DOSSIER_COL_PERIOD,
 	DOSSIER_N_COLUMNS
@@ -112,32 +111,26 @@ typedef enum {
  * ofaDossierDispColumn:
  * @DOSSIER_DISP_DOSNAME:  dossier name
  * @DOSSIER_DISP_PROVNAME: dbms provider name
- * @DOSSIER_DISP_DBNAME: database name
+ * @DOSSIER_DISP_PERNAME:  period name
  * @DOSSIER_DISP_END:      end of exercice
  * @DOSSIER_DISP_BEGIN:    begin of exercice
  * @DOSSIER_DISP_STATUS:   localized status of the exercice
- * @DOSSIER_DISP_CODE:   status code (from api/ofo-dossier.h) of the exercice
  *
  * The columns displayed in the views.
  */
 typedef enum {
 	DOSSIER_DISP_DOSNAME = 1,
 	DOSSIER_DISP_PROVNAME,
-	DOSSIER_DISP_DBNAME,
+	DOSSIER_DISP_PERNAME,
 	DOSSIER_DISP_END,
 	DOSSIER_DISP_BEGIN,
-	DOSSIER_DISP_STATUS,
-	DOSSIER_DISP_CODE
+	DOSSIER_DISP_STATUS
 }
 	ofaDossierDispColumn;
 
 GType            ofa_dossier_store_get_type       ( void );
 
 ofaDossierStore *ofa_dossier_store_new            ( ofaFileDir *dir );
-
-void             ofa_dossier_store_remove_exercice( ofaDossierStore *store,
-														const gchar *dname,
-														const gchar *dbname );
 
 G_END_DECLS
 
