@@ -42,7 +42,9 @@
 #include "core/my-progress-bar.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
+#include "core/ofa-file-dir.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
@@ -1062,8 +1064,9 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
+	GtkApplication *application;
+	ofaFileDir *dir;
 	ofoDossier *dossier;
-	gchar *dossier_name;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1076,11 +1079,12 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	priv = self->priv;
-	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
-			ofa_settings_remove_dossier( dossier_name );
+			application = gtk_window_get_application( GTK_WINDOW( main_window ));
+			dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
+			ofa_file_dir_remove_meta( dir, priv->p2_meta );
 		}
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label1 ),
@@ -1095,8 +1099,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
-
-	g_free( dossier_name );
 }
 
 static gboolean

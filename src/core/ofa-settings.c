@@ -901,8 +901,8 @@ ofa_settings_dossier_get_keys( const gchar *dname )
 /**
  * ofa_settings_remove_dossier:
  */
-void
-ofa_settings_remove_dossier( const gchar *dname )
+static void
+settings_remove_dossier( const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_settings_remove_dossier";
 	gchar *group;
@@ -966,7 +966,7 @@ ofa_settings_remove_exercice( const gchar *dname, const gchar *dbname )
 	/* at the end, if the searched key was found, and was the only
 	 * database key, then remove the all dossier group */
 	if( found && count == 1 ){
-		ofa_settings_remove_dossier( dname );
+		settings_remove_dossier( dname );
 	}
 }
 

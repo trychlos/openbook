@@ -528,8 +528,6 @@
  920 2015-12-10 review RestoreAssistant
                 + let restore on a selected exercice
 
- 921 2015-12-10 remove ofa_settings_remove_dossier()
-
  923 2015-12-11 myAssistant is not transient vs the main window
 
  925
@@ -4310,6 +4308,9 @@
  918 2015-12- 9 remove ofa_dossier_new_bin_get_credentials
      2015-12-10 replaced with ofa_dossier_bin_get_dbms_root_bin()
                 + ofa_dbms_root_bin_get_credentials()
+
+ 921 2015-12-10 remove ofa_settings_remove_dossier()
+     2015-12-13 done
 
  922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
      2015-12-12 done

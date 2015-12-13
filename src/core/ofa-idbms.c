@@ -793,7 +793,7 @@ ofa_idbms_delete_dossier( const ofaIDbms *instance,
 																	label, account, password,
 																	drop_db, drop_accounts );
 
-		ofa_settings_remove_dossier( label );
+		//ofa_settings_remove_dossier( label );
 	}
 
 	return( ok );
