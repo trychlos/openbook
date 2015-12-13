@@ -34,6 +34,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
@@ -545,8 +546,9 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v20";
 	ofaDDLUpdatePrivate *priv;
-	gchar *query;
+	gchar *query, *dossier_name;
 	gboolean ok;
+	ofaIDBMeta *meta;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
@@ -707,16 +709,20 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	}
 
-	/* n° 7 */
+	/* n° 7
+	 * dossier name is set as a default value for the label */
+	meta = ofa_idbconnect_get_meta( priv->cnx );
+	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
-			ofo_dossier_get_name( priv->dossier ),
-			DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLOSLD" );
+			dossier_name, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLOSLD" );
 	ok = exec_query( self, query );
 	g_free( query );
+	g_free( dossier_name );
+	g_object_unref( meta );
 	if( !ok ){
 		return( FALSE );
 	}

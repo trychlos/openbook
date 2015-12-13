@@ -29,6 +29,8 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -49,7 +51,7 @@ struct _ofaOpeTemplateBookBinPrivate {
 	const ofaMainWindow *main_window;
 	ofoDossier          *dossier;
 	GList               *dos_handlers;
-	gchar               *dname;			/* to be used after dossier finalization */
+	gchar               *dossier_name;	/* to be used after dossier finalization */
 
 	ofaOpeTemplateStore *ope_store;
 	GList               *ope_handlers;
@@ -137,7 +139,7 @@ ope_templates_book_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_OPE_TEMPLATE_BOOK_BIN( instance )->priv;
 
-	g_free( priv->dname );
+	g_free( priv->dossier_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ope_template_book_bin_parent_class )->finalize( instance );
@@ -338,18 +340,23 @@ setup_main_window( ofaOpeTemplateBookBin *bin )
 	ofaOpeTemplateBookBinPrivate *priv;
 	gulong handler;
 	GList *strlist, *it;
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *meta;
 
 	priv = bin->priv;
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->ope_store = ofa_ope_template_store_new( priv->dossier );
+	connect = ofo_dossier_get_connect( priv->dossier );
+	meta = ofa_idbconnect_get_meta( connect );
+	priv->dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	g_object_unref( meta );
 
 	/* create one page per ledger
 	 * if strlist is set, then create one page per ledger
 	 * other needed pages will be created on fly
 	 * nb: if the ledger no more exists, no page is created */
-	priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
-	strlist = ofa_settings_dossier_get_string_list( priv->dname, st_ledger_order );
+	strlist = ofa_settings_dossier_get_string_list( priv->dossier_name, st_ledger_order );
 	for( it=strlist ; it ; it=it->next ){
 		book_get_page_by_ledger( bin, ( const gchar * ) it->data, TRUE );
 	}
@@ -1311,7 +1318,7 @@ write_settings( ofaOpeTemplateBookBin *bin )
 		}
 	}
 
-	ofa_settings_dossier_set_string_list( priv->dname, st_ledger_order, strlist );
+	ofa_settings_dossier_set_string_list( priv->dossier_name, st_ledger_order, strlist );
 
 	g_list_free( strlist );
 }

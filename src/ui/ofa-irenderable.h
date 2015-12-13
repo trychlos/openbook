@@ -185,9 +185,10 @@ typedef struct {
 	 * @instance: the #ofaIRenderable instance.
 	 *
 	 * Returns: the name of the dossier required as part of the default
-	 * implementation of #draw_page_header() virtual.
+	 * implementation of #draw_page_header() virtual, as a newly
+	 * allocated string which should be g_free() by the caller.
 	 */
-	const gchar *      ( *get_dossier_name )        ( const ofaIRenderable *instance );
+	gchar *            ( *get_dossier_name )        ( const ofaIRenderable *instance );
 
 	/**
 	 * get_page_header_title:

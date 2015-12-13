@@ -60,7 +60,6 @@ ofoDossier          *ofo_dossier_new                       ( ofaIDBConnect *cnx,
 
 gboolean             ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
 
-const gchar         *ofo_dossier_get_name                  ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_user                  ( const ofoDossier *dossier );
 const ofaIDBConnect *ofo_dossier_get_connect               ( const ofoDossier *dossier );
 

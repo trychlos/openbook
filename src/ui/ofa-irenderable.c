@@ -467,7 +467,7 @@ irenderable_draw_page_header( ofaIRenderable *instance, gint page_num )
 static void
 draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 {
-	const gchar *dossier_name;
+	gchar *dossier_name;
 	gdouble y, height;
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_name ){
@@ -480,6 +480,7 @@ draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable 
 
 		y += height;
 		sdata->last_y = y;
+		g_free( dossier_name );
 	}
 }
 

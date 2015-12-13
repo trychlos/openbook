@@ -508,8 +508,6 @@
  907 2015-11-26 define a myISettings interface to be used in the plugins
                 (instead of directly the mySettings object)
 
- 908 2015-11-26 remove ofo_dossier_get_name()
-
  909 2015-11-26 SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same signal
                 (exe_dates_changed) sent on main window so that it may
                 automatically update window title
@@ -4284,6 +4282,9 @@
                 + set also status
                 (cf. ofoDossier:do_open)
      2015-11-26 done
+
+ 908 2015-11-26 remove ofo_dossier_get_name()
+     2015-12-13 done
 
  911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
      2015-12-13 done

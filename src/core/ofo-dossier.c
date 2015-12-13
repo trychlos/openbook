@@ -724,27 +724,6 @@ on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const 
 }
 
 /**
- * ofo_dossier_get_name:
- *
- * Returns: the name (short label) of the dossier as it appears in the
- * selection dialogs. The name is not stored in the DBMS, but at an
- * external level by the program.
- */
-const gchar *
-ofo_dossier_get_name( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const gchar * ) dossier->priv->dname );
-	}
-
-	g_return_val_if_reached( NULL );
-	return( NULL );
-}
-
-/**
  * ofo_dossier_get_user:
  *
  * Returns: the currently connected user identifier.

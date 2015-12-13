@@ -58,6 +58,7 @@ struct _ofaBackupPrivate {
 	 */
 	ofoDossier          *dossier;		/* the currently opened dossier */
 	const ofaIDBConnect *connect;		/* its user connection */
+	gchar               *dossier_name;
 };
 
 static const gchar *st_dialog_name   = "BackupDlg";
@@ -73,6 +74,7 @@ static void
 backup_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_backup_finalize";
+	ofaBackupPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -80,6 +82,9 @@ backup_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BACKUP( instance ));
 
 	/* free data members here */
+	priv = OFA_BACKUP( instance )->priv;
+
+	g_free( priv->dossier_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_backup_parent_class )->finalize( instance );
@@ -170,11 +175,15 @@ init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
 	gchar *last_folder, *def_name;
+	ofaIDBMeta *meta;
 
 	priv = self->priv;
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->connect = ofo_dossier_get_connect( priv->dossier );
+	meta = ofa_idbconnect_get_meta( priv->connect );
+	priv->dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	g_object_unref( meta );
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),
@@ -192,8 +201,7 @@ init_dialog( ofaBackup *self )
 	gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->dialog ), def_name );
 	g_free( def_name );
 
-	last_folder = ofa_settings_dossier_get_string(
-						ofo_dossier_get_name( priv->dossier ), st_backup_folder );
+	last_folder = ofa_settings_dossier_get_string( priv->dossier_name, st_backup_folder );
 	if( my_strlen( last_folder )){
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
 	}
@@ -247,8 +255,7 @@ do_backup( ofaBackup *self )
 	fname = g_filename_from_uri( uri, NULL, NULL );
 	folder = g_path_get_dirname( fname );
 
-	ofa_settings_dossier_set_string(
-				ofo_dossier_get_name( priv->dossier ), st_backup_folder, folder );
+	ofa_settings_dossier_set_string( priv->dossier_name, st_backup_folder, folder );
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );
 

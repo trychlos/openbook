@@ -31,6 +31,8 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -154,7 +156,7 @@ static void               irenderable_reset_runtime( ofaIRenderable *instance );
 static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
 static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
 static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
-static const gchar       *irenderable_get_dossier_name( const ofaIRenderable *instance );
+static gchar             *irenderable_get_dossier_name( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
@@ -514,14 +516,21 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	priv->body_label_max_size = ( priv->body_template_ltab - st_column_hspacing - priv->body_label_ltab )*PANGO_SCALE;
 }
 
-static const gchar *
+static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *meta;
+	gchar *dossier_name;
 
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	connect = ofo_dossier_get_connect( priv->dossier );
+	meta = ofa_idbconnect_get_meta( connect );
+	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	g_object_unref( meta );
 
-	return( ofo_dossier_get_name( priv->dossier ));
+	return( dossier_name );
 }
 
 static gchar *
