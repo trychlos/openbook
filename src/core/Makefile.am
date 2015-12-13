@@ -75,7 +75,6 @@ libofa_core_la_SOURCES = \
 	ofa-concil-collection.h								\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
-	ofa-dbms.c											\
 	ofa-ddl-update.c									\
 	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
@@ -92,7 +91,6 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
-	ofa-idbms.c											\
 	ofa-idbconnect.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\

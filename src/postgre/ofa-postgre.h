@@ -28,14 +28,12 @@
 /**
  * SECTION: ofa_postgre
  * @short_description: #ofaPostgre class definition.
- * @include: of2-importer.h
+ * @include: ofa-postgre.h
  *
- * Import reference tables in CSV format.
+ * PostgreSQL plugin.
  */
 
 #include <glib-object.h>
-
-#include "api/ofa-idbms.h"
 
 G_BEGIN_DECLS
 
@@ -63,11 +61,9 @@ typedef struct {
 }
 	ofaPostgreClass;
 
-GType        ofa_postgre_get_type         ( void );
+GType ofa_postgre_get_type     ( void );
 
-void         ofa_postgre_register_type    ( GTypeModule *module );
-
-const gchar *ofa_postgre_get_provider_name( const ofaIDbms *sgbd );
+void  ofa_postgre_register_type( GTypeModule *module );
 
 G_END_DECLS
 

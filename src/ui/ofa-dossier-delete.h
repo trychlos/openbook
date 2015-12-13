@@ -39,6 +39,8 @@
  */
 
 #include "api/my-dialog.h"
+#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbperiod.h"
 
 #include "ui/ofa-main-window-def.h"
 
@@ -71,8 +73,8 @@ typedef struct {
 GType    ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dossier_delete_run     ( ofaMainWindow *parent,
-											const gchar *dname,
-											const gchar *dbname );
+											const ofaIDBMeta *meta,
+											const ofaIDBPeriod *period );
 
 G_END_DECLS
 

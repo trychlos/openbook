@@ -29,7 +29,6 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 
 #include "core/ofa-dossier-delete-prefs-bin.h"

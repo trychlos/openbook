@@ -28,7 +28,6 @@ api_include_HEADERS = \
 	ofa-file-format.h									\
 	ofa-iabout.h										\
 	ofa-idataset.h										\
-	ofa-idbms.h											\
 	ofa-idbconnect.h									\
 	ofa-idbeditor.h										\
 	ofa-idbmeta.h										\
@@ -51,8 +50,6 @@ api_include_HEADERS = \
 	my-window.h											\
 	my-window-prot.h									\
 	ofa-box.h											\
-	ofa-dbms.h											\
-	ofa-dbms-def.h										\
 	ofa-dossier-misc.h									\
 	ofa-plugin.h										\
 	ofa-preferences.h									\

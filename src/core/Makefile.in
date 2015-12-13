@@ -169,11 +169,11 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-field-combo.lo my-file-monitor.lo my-progress-bar.lo \
 	my-settings.lo my-timeout.lo my-utils.lo my-window.lo \
 	ofa-admin-credentials-bin.lo ofa-box.lo ofa-collection.lo \
-	ofa-concil-collection.lo ofa-dbms-root-bin.lo ofa-dbms.lo \
+	ofa-concil-collection.lo ofa-dbms-root-bin.lo \
 	ofa-ddl-update.lo ofa-dossier-delete-prefs-bin.lo \
 	ofa-dossier-misc.lo ofa-file-dir.lo ofa-file-format.lo \
 	ofa-file-format-bin.lo ofa-iabout.lo ofa-icollector.lo \
-	ofa-iconcil.lo ofa-idataset.lo ofa-idbms.lo ofa-idbconnect.lo \
+	ofa-iconcil.lo ofa-idataset.lo ofa-idbconnect.lo \
 	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbperiod.lo \
 	ofa-idbprovider.lo ofa-iexportable.lo ofa-iimporter.lo \
 	ofa-iimportable.lo ofa-ipreferences.lo ofa-plugin.lo \
@@ -473,7 +473,6 @@ libofa_core_la_SOURCES = \
 	ofa-concil-collection.h								\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
-	ofa-dbms.c											\
 	ofa-ddl-update.c									\
 	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
@@ -490,7 +489,6 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
-	ofa-idbms.c											\
 	ofa-idbconnect.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\
@@ -654,7 +652,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-concil-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ddl-update.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-misc.Plo@am__quote@
@@ -668,7 +665,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbconnect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbeditor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmeta.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@

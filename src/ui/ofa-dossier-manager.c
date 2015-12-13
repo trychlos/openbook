@@ -31,7 +31,6 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-idbms.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-dossier-misc.h"

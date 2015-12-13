@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-idbms.h"
-
 #include "ofa-postgre.h"
 
 /* private instance data
@@ -36,16 +34,13 @@ struct _ofaPostgrePrivate {
 	gboolean  dispose_has_run;
 };
 
-static GType         st_module_type = 0;
-static GObjectClass *st_parent_class = NULL;
+static GType         st_module_type     = 0;
+static GObjectClass *st_parent_class    = NULL;
 
-static void         class_init( ofaPostgreClass *klass );
-static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_dispose( GObject *object );
-static void         instance_finalize( GObject *object );
-
-static void         idbms_iface_init( ofaIDbmsInterface *iface );
-static guint        idbms_get_interface_version( const ofaIDbms *sgbd );
+static void class_init( ofaPostgreClass *klass );
+static void instance_init( GTypeInstance *instance, gpointer klass );
+static void instance_dispose( GObject *object );
+static void instance_finalize( GObject *object );
 
 GType
 ofa_postgre_get_type( void )
@@ -70,17 +65,9 @@ ofa_postgre_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
-	static const GInterfaceInfo idbms_iface_info = {
-		( GInterfaceInitFunc ) idbms_iface_init,
-		NULL,
-		NULL
-	};
-
 	g_debug( "%s", thisfn );
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaPostgre", &info, 0 );
-
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMS, &idbms_iface_info );
 }
 
 static void
@@ -151,30 +138,4 @@ instance_finalize( GObject *object )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
-}
-
-static void
-idbms_iface_init( ofaIDbmsInterface *iface )
-{
-	static const gchar *thisfn = "ofa_postgre_idbms_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idbms_get_interface_version;
-	iface->get_provider_name = ofa_postgre_get_provider_name;
-}
-
-static guint
-idbms_get_interface_version( const ofaIDbms *sgbd )
-{
-	return( 1 );
-}
-
-/**
- * ofa_postgre_get_provider_name:
- */
-const gchar *
-ofa_postgre_get_provider_name( const ofaIDbms *sgbd )
-{
-	return( "PostgreSQL" );
 }

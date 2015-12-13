@@ -56,9 +56,6 @@
 #include <glib-object.h>
 #include <mysql/mysql.h>
 
-#include "api/ofa-idbms.h"
-#include "api/ofa-ipreferences.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL                ( ofa_mysql_get_type())
@@ -112,9 +109,9 @@ typedef struct {
 }
 	mysqlInfos;
 
-GType         ofa_mysql_get_type         ( void );
+GType ofa_mysql_get_type     ( void );
 
-void          ofa_mysql_register_type    ( GTypeModule *module );
+void  ofa_mysql_register_type( GTypeModule *module );
 
 G_END_DECLS
 

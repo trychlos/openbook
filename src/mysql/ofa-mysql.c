@@ -41,10 +41,10 @@ struct _ofaMysqlPrivate {
 static GType         st_module_type     = 0;
 static GObjectClass *st_parent_class    = NULL;
 
-static void         class_init( ofaMysqlClass *klass );
-static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_dispose( GObject *object );
-static void         instance_finalize( GObject *object );
+static void class_init( ofaMysqlClass *klass );
+static void instance_init( GTypeInstance *instance, gpointer klass );
+static void instance_dispose( GObject *object );
+static void instance_finalize( GObject *object );
 
 GType
 ofa_mysql_get_type( void )

@@ -30,7 +30,9 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-idbms.h"
+#include "api/ofa-idbeditor.h"
+#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbprovider.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -47,13 +49,12 @@ struct _ofaDossierDeletePrivate {
 	/* initialization
 	 */
 	ofaMainWindow            *main_window;
-	gchar                    *dname;
-	gchar                    *dbname;
+	ofaIDBMeta               *meta;
+	ofaIDBPeriod             *period;
 
 	/* UI
 	 */
-	ofaIDbms                 *idbms;
-	GtkWidget                *infos;
+	ofaIDBEditor             *infos;
 	ofaDBMSRootBin           *credentials;
 	ofaDossierDeletePrefsBin *prefs;
 	GtkWidget                *err_msg;
@@ -61,6 +62,7 @@ struct _ofaDossierDeletePrivate {
 
 	/* runtime data
 	 */
+	ofaIDBProvider           *provider;
 	gboolean                  deleted;
 	gchar                    *root_account;
 	gchar                    *root_password;
@@ -91,8 +93,6 @@ dossier_delete_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_DOSSIER_DELETE( instance )->priv;
 
-	g_free( priv->dname );
-	g_free( priv->dbname );
 	g_free( priv->root_account );
 	g_free( priv->root_password );
 
@@ -112,7 +112,9 @@ dossier_delete_dispose( GObject *instance )
 		priv = OFA_DOSSIER_DELETE( instance )->priv;
 
 		/* unref object members here */
-		g_clear_object( &priv->idbms );
+		g_clear_object( &priv->meta );
+		g_clear_object( &priv->period );
+		g_clear_object( &priv->provider );
 	}
 
 	/* chain up to the parent class */
@@ -151,8 +153,8 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
 /**
  * ofa_dossier_delete_run:
  * @main_window: the main window of the application.
- * @dname: the name of the dossier
- * @dbname: the name of the database to be deleted.
+ * @meta:
+ * @period:
  *
  * Run the selection dialog to delete a dossier.
  *
@@ -160,7 +162,7 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
  * has been cancelled by the user or an error has occured.
  */
 gboolean
-ofa_dossier_delete_run( ofaMainWindow *main_window, const gchar *dname, const gchar *dbname )
+ofa_dossier_delete_run( ofaMainWindow *main_window, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_run";
 	ofaDossierDelete *self;
@@ -168,8 +170,11 @@ ofa_dossier_delete_run( ofaMainWindow *main_window, const gchar *dname, const gc
 	gboolean deleted;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 
-	g_debug( "%s: main_window=%p, dname=%s, dbname=%s", thisfn, main_window, dname, dbname );
+	g_debug( "%s: main_window=%p, meta=%p, period=%p",
+				thisfn, main_window, ( void * ) meta, ( void * ) period );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_DELETE,
@@ -181,9 +186,9 @@ ofa_dossier_delete_run( ofaMainWindow *main_window, const gchar *dname, const gc
 	priv = self->priv;
 
 	priv->main_window = main_window;
-	priv->dname = g_strdup( dname );
-	priv->dbname = g_strdup( dbname );
 	priv->deleted = FALSE;
+	priv->meta = g_object_ref(( gpointer ) meta );
+	priv->period = g_object_ref(( gpointer ) period );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -205,41 +210,45 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *label, *parent;
 	gchar *msg;
 	GtkSizeGroup *group;
+	gchar *dossier_name;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
 	priv = OFA_DOSSIER_DELETE( dialog )->priv;
+
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* informational message */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
 	msg = g_strdup_printf( _(
 			"You are about to delete the '%s' dossier.\n"
 			"Please provide below the connection informations "
 			"for the DBserver administrative account." ),
-				priv->dname );
+				dossier_name );
 	gtk_label_set_text( GTK_LABEL( label ), msg );
 	g_free( msg );
+	g_free( dossier_name );
 
 	/* connection infos */
-	priv->idbms = ofa_idbms_get_provider_from_dossier( priv->dname );
-	g_return_if_fail( priv->idbms && OFA_IS_IDBMS( priv->idbms ));
-	priv->infos = ofa_idbms_connect_display_new( priv->idbms, priv->dname );
+	priv->provider = ofa_idbmeta_get_provider( priv->meta );
+	g_return_if_fail( priv->provider && OFA_IS_IDBPROVIDER( priv->provider ));
+	priv->infos = ofa_idbprovider_new_editor( priv->provider, FALSE );
 	g_return_if_fail( priv->infos && GTK_IS_WIDGET( priv->infos ));
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "infos-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), priv->infos );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->infos ));
 	my_utils_size_group_add_size_group(
-			group, ofa_idbms_connect_display_get_size_group( priv->idbms, priv->infos, 0 ));
+			group, ofa_idbeditor_get_size_group( priv->infos, 0 ));
 
 	/* root credentials */
 	priv->credentials = ofa_dbms_root_bin_new();
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "credentials-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), priv->infos );
-	//ofa_dbms_root_bin_set_dossier( priv->credentials, priv->dname );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->credentials ));
+	ofa_dbms_root_bin_set_meta( priv->credentials, priv->meta );
 	my_utils_size_group_add_size_group(
 			group, ofa_dbms_root_bin_get_size_group( priv->credentials, 0 ));
 	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), dialog );
@@ -309,6 +318,7 @@ v_quit_on_ok( myDialog *dialog )
 static gboolean
 do_delete_dossier( ofaDossierDelete *self )
 {
+#if 0
 	static const gchar *thisfn = "ofa_dossier_delete_do_delete_dossier";
 	ofaDossierDeletePrivate *priv;
 	gint db_mode;
@@ -319,13 +329,12 @@ do_delete_dossier( ofaDossierDelete *self )
 	db_mode = ofa_dossier_delete_prefs_bin_get_db_mode( priv->prefs );
 	g_debug( "%s: db_mode=%u", thisfn, db_mode );
 	drop_db = ( db_mode == DBMODE_REINIT );
-
 	drop_accounts = ofa_dossier_delete_prefs_bin_get_account_mode( priv->prefs );
 
 	ofa_idbms_delete_dossier(
 			priv->idbms,
 			priv->dname, priv->root_account, priv->root_password,
 			drop_db, drop_accounts, FALSE );
-
+#endif
 	return( TRUE );
 }

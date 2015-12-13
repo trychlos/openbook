@@ -31,7 +31,6 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-dbms.h"
 #include "api/ofa-dossier-misc.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-idbmeta.h"
@@ -58,7 +57,6 @@ struct _ofoDossierPrivate {
 	/* internals
 	 */
 	gchar         *dname;				/* the name of the dossier in settings */
-	ofaDbms       *dbms;
 	gchar         *userid;
 	ofaIDBConnect *cnx;
 
@@ -267,7 +265,6 @@ dossier_dispose( GObject *instance )
 
 		free_cur_details( priv->cur_details );
 		free_datasets( priv->datasets );
-		g_clear_object( &priv->dbms );
 		g_clear_object( &priv->cnx );
 
 		ofa_icollector_dispose( OFA_ICOLLECTOR( instance ));
@@ -760,25 +757,6 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->userid );
-	}
-
-	g_return_val_if_reached( NULL );
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_dbms:
- *
- * Returns: the current DBMS handler.
- */
-const ofaDbms *
-ofo_dossier_get_dbms( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const ofaDbms * ) dossier->priv->dbms );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -2776,7 +2754,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 gboolean
 ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname, gboolean verbose )
 {
-	ofoDossierPrivate *priv;
+	//ofoDossierPrivate *priv;
 	gboolean ok;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -2786,9 +2764,9 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname, gboolean verb
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		priv = dossier->priv;
+		//priv = dossier->priv;
 
-		ok = ofa_dbms_backup( priv->dbms, fname, verbose );
+		ok = FALSE; //ofa_dbms_backup( priv->dbms, fname, verbose );
 	}
 
 	return( ok );
