@@ -92,6 +92,9 @@ void          ofa_file_dir_set_meta_from_editor( ofaFileDir *dir,
 													ofaIDBMeta *meta,
 													const ofaIDBEditor *editor );
 
+void          ofa_file_dir_remove_meta         ( const ofaFileDir *dir,
+													const ofaIDBMeta *meta );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_FILE_DIR_H__ */
