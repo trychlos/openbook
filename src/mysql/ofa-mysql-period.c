@@ -47,6 +47,7 @@ struct _ofaMySQLPeriodPrivate {
 
 static void            idbperiod_iface_init( ofaIDBPeriodInterface *iface );
 static guint           idbperiod_get_interface_version( const ofaIDBPeriod *instance );
+static gchar          *idbperiod_get_name( const ofaIDBPeriod *instance );
 static gint            idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b );
 static void            idbperiod_dump( const ofaIDBPeriod *instance );
 static ofaMySQLPeriod *read_from_settings( mySettings *settings, const gchar *group, const gchar *key );
@@ -128,6 +129,7 @@ idbperiod_iface_init( ofaIDBPeriodInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbperiod_get_interface_version;
+	iface->get_name = idbperiod_get_name;
 	iface->compare = idbperiod_compare;
 	iface->dump = idbperiod_dump;
 }
@@ -136,6 +138,21 @@ static guint
 idbperiod_get_interface_version( const ofaIDBPeriod *instance )
 {
 	return( 1 );
+}
+
+static gchar *
+idbperiod_get_name( const ofaIDBPeriod *instance )
+{
+	ofaMySQLPeriodPrivate *priv;
+
+	priv = OFA_MYSQL_PERIOD( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->dbname );
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
 static gint
