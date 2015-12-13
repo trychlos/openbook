@@ -516,8 +516,6 @@
 
  910 2015-11-30 let the user configure the main title as a preference
 
- 911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
-
  915 2015-12- 4 a class object (say e.g. ofoClass) should implement
                 the ofaIExportable/ofaIImportable interfaces - but the
                 exporter/importer plugins should rather implement a
@@ -529,6 +527,7 @@
                 + let restore on a selected exercice
 
  923 2015-12-11 myAssistant is not transient vs the main window
+     2015-12-13 or is it ?
 
  925
 
@@ -4285,6 +4284,9 @@
                 + set also status
                 (cf. ofoDossier:do_open)
      2015-11-26 done
+
+ 911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
+     2015-12-13 done
 
  912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
                 or update it to be able to get a meta and/or a period

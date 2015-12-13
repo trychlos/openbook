@@ -48,7 +48,6 @@ struct _ofaDBMSRootBinPrivate {
 
 	/* runtime data
 	 */
-	gchar        *dname;
 	ofaIDBMeta   *meta;
 	gchar        *account;
 	gchar        *password;
@@ -87,7 +86,6 @@ dbms_root_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_DBMS_ROOT_BIN( instance )->priv;
 
-	g_free( priv->dname );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -128,7 +126,6 @@ ofa_dbms_root_bin_init( ofaDBMSRootBin *self )
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
 							self, OFA_TYPE_DBMS_ROOT_BIN, ofaDBMSRootBinPrivate );
 
-	self->priv->dname = NULL;
 	self->priv->account = NULL;
 	self->priv->password = NULL;
 }
@@ -300,32 +297,6 @@ ofa_dbms_root_bin_grab_focus( const ofaDBMSRootBin *bin )
 		} else {
 			gtk_widget_grab_focus( priv->account_entry );
 		}
-	}
-}
-
-/**
- * ofa_dbms_root_bin_set_dossier:
- * @bin: this #ofaDBMSRootBin instance.
- * @dname: the name of the dossier.
- *
- * When set, this let the composite widget validate the account and the
- * password against the actual DBMS which manages this dossier.
- * Else, we only check if account and password are set.
- */
-void
-ofa_dbms_root_bin_set_dossier( ofaDBMSRootBin *bin, const gchar *dname )
-{
-	ofaDBMSRootBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
-	g_return_if_fail( my_strlen( dname ));
-
-	priv = bin->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_free( priv->dname );
-		priv->dname = g_strdup( dname );
 	}
 }
 
