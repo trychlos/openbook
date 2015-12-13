@@ -53,10 +53,7 @@ struct _ofaDossierNewMiniPrivate {
 
 	/* result
 	 */
-	gboolean          dossier_defined;
 	ofaIDBMeta       *meta;
-	gchar            *account;
-	gchar            *password;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new-mini.ui";
@@ -75,7 +72,6 @@ static void
 dossier_new_mini_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_finalize";
-	ofaDossierNewMiniPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -83,10 +79,6 @@ dossier_new_mini_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_MINI( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_NEW_MINI( instance )->priv;
-
-	g_free( priv->account );
-	g_free( priv->password );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_new_mini_parent_class )->finalize( instance );
@@ -146,14 +138,11 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
  * @parent: [allow-none]: the window parent; defaults to the @main_window.
  * @meta: [out]: an #ofaIDBMeta object which defines the newly created
  *  dossier.
- * @account: [out]: the DBMS superuser account.
- * @password: [out]: the corresponding password.
  *
  * Returns: %TRUE if a new dossier has been defined in the settings.
  */
 gboolean
-ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent,
-							ofaIDBMeta **meta, gchar **account, gchar **password )
+ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent, ofaIDBMeta **meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_run";
 	ofaDossierNewMini *self;
@@ -163,12 +152,9 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent,
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 	g_return_val_if_fail( meta, FALSE );
-	g_return_val_if_fail( account, FALSE );
-	g_return_val_if_fail( password, FALSE );
 
-	g_debug( "%s: main_window=%p, parent=%p, meta=%p, account=%p, password=%p",
-			thisfn, ( void * ) main_window, ( void * ) parent,
-			( void * ) meta, ( void * ) account, ( void * ) password );
+	g_debug( "%s: main_window=%p, parent=%p, meta=%p",
+			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) meta );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI,
 							MY_PROP_MAIN_WINDOW, main_window,
@@ -180,11 +166,11 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent,
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	priv = self->priv;
-	dossier_defined = priv->dossier_defined;
-	if( dossier_defined ){
+	dossier_defined = FALSE;
+
+	if( priv->meta ){
+		dossier_defined = TRUE;
 		*meta = g_object_ref( priv->meta );
-		*account = g_strdup( priv->account );
-		*password = g_strdup( priv->password );
 	}
 
 	g_object_unref( self );
@@ -268,15 +254,9 @@ static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierNewMiniPrivate *priv;
-	ofaDBMSRootBin *root_bin;
 
 	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
 	priv->meta = ofa_dossier_new_bin_apply( priv->new_bin );
-	if( priv->meta ){
-		priv->dossier_defined = TRUE;
-		root_bin = ofa_dossier_new_bin_get_dbms_root_bin( priv->new_bin );
-		ofa_dbms_root_bin_get_credentials( root_bin, &priv->account, &priv->password );
-	}
 
 	return( TRUE );
 }

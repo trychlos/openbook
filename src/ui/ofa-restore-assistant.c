@@ -567,23 +567,20 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 	GtkApplicationWindow *main_window;
 	gchar *dossier_name;
 	GtkWindow *toplevel;
+	ofaIDBMeta *meta;
 
 	priv = assistant->priv;
-
-	g_clear_object( &priv->p2_meta );
-	g_free( priv->p3_account );
-	priv->p3_account = NULL;
-	g_free( priv->p3_password );
-	priv->p3_password = NULL;
+	meta = NULL;
 
 	main_window = my_window_get_main_window( MY_WINDOW( assistant ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( assistant ));
 
-	if( ofa_dossier_new_mini_run(
-				OFA_MAIN_WINDOW( main_window ),
-				toplevel, &priv->p2_meta, &priv->p3_account, &priv->p3_password )){
+	if( ofa_dossier_new_mini_run( OFA_MAIN_WINDOW( main_window ), toplevel, &meta )){
+
+		g_clear_object( &priv->p2_meta );
+		priv->p2_meta = meta;
 
 		priv->p2_is_new_dossier = TRUE;
 
@@ -711,10 +708,10 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_size_group_add_size_group(
 			priv->p3_hgroup, ofa_idbeditor_get_size_group( editor, 0 ));
 
-	/* setup the dbms root credentials */
 	ofa_dbms_root_bin_set_meta( priv->p3_dbms_credentials, priv->p2_meta );
 
-	if( priv->p3_account && priv->p3_password ){
+	/* setup the dbms root credentials */
+	if( priv->p3_account ){
 		ofa_dbms_root_bin_set_credentials(
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}

@@ -34,15 +34,13 @@
  * Use case: when restoring a backup...
  *
  * #ofaDossierNewMini dialog only implements the dossier definition in
- * user settings: the name of the dossier, the connection informations
- * and the DBMS root credentials.
+ * user settings: the name of the dossier and the connection informations.
  * The dialog returns with a newly defined dossier in user settings if
  * %TRUE.
  *
  * #ofaDossierNewMini dialog makes use of
- * #ofaDossierNewBin piece of dialog, which itself encapsulates both
- * the #ofaIDbmsConnectEnter and the #ofaRootCredentialsBin pieces of
- * dialog.
+ * #ofaDossierNewBin piece of dialog, which itself encapsulates
+ * the #ofaIDBEditor piece of dialog.
  *
  * Development rules:
  * - type:       dialog
@@ -85,9 +83,7 @@ GType    ofa_dossier_new_mini_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dossier_new_mini_run     ( ofaMainWindow *main_window,
 												GtkWindow *parent,
-												ofaIDBMeta **meta,
-												gchar **account,
-												gchar **password );
+												ofaIDBMeta **meta );
 
 G_END_DECLS
 

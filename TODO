@@ -535,8 +535,6 @@
 
  921 2015-12-10 remove ofa_settings_remove_dossier()
 
- 922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
-
  923 2015-12-11 myAssistant is not transient vs the main window
 
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
@@ -4313,6 +4311,9 @@
  918 2015-12- 9 remove ofa_dossier_new_bin_get_credentials
      2015-12-10 replaced with ofa_dossier_bin_get_dbms_root_bin()
                 + ofa_dbms_root_bin_get_credentials()
+
+ 922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
+     2015-12-12 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
