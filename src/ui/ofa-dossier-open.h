@@ -70,9 +70,9 @@ typedef struct {
 }
 	ofaDossierOpenClass;
 
-GType  ofa_dossier_open_get_type( void ) G_GNUC_CONST;
+GType    ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 
-void   ofa_dossier_open_run     ( ofaMainWindow *main_widow,
+gboolean ofa_dossier_open_run     ( ofaMainWindow *main_widow,
 											ofaIDBMeta *meta,
 											ofaIDBPeriod *period,
 											const gchar *account,

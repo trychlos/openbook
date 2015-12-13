@@ -44,6 +44,11 @@
  */
 struct _ofaDossierOpenPrivate {
 
+	/* initialization
+	 */
+	ofaIDBMeta         *init_meta;
+	ofaIDBPeriod       *init_period;
+
 	/* data
 	 */
 	ofaIDBMeta         *meta;			/* the selected dossier */
@@ -51,6 +56,7 @@ struct _ofaDossierOpenPrivate {
 	gchar              *account;		/* user credentials */
 	gchar              *password;
 	ofaIDBConnect      *connect;		/* the DB connection */
+	gboolean            opened;
 
 	/* UI
 	 */
@@ -73,7 +79,7 @@ static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  is_connection_valid( ofaDossierOpen *self, gchar **msg );
-static void      do_open_dossier( ofaDossierOpen *self );
+static gboolean  do_open_dossier( ofaDossierOpen *self );
 static void      set_message( ofaDossierOpen *self, const gchar *msg );
 
 static void
@@ -109,6 +115,8 @@ dossier_open_dispose( GObject *instance )
 		priv = OFA_DOSSIER_OPEN( instance )->priv;
 
 		/* unref object members here */
+		g_clear_object( &priv->init_meta );
+		g_clear_object( &priv->init_period );
 		g_clear_object( &priv->meta );
 		g_clear_object( &priv->period );
 		g_clear_object( &priv->connect );
@@ -157,16 +165,19 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  *
  * Open the specified dossier, requiring the missing informations
  * if needed.
+ *
+ * Returns: %TRUE if the dossier has been opened, %FALSE else.
  */
-void
+gboolean
 ofa_dossier_open_run( ofaMainWindow *main_window,
 		ofaIDBMeta *meta, ofaIDBPeriod *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
+	gboolean opened;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
 	g_debug( "%s: main_window=%p, meta=%p, period=%p, account=%s, password=%s",
 			thisfn, ( void * ) main_window, ( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
@@ -180,21 +191,24 @@ ofa_dossier_open_run( ofaMainWindow *main_window,
 
 	priv = self->priv;
 	if( meta ){
-		priv->meta = g_object_ref( meta );
+		priv->init_meta = g_object_ref( meta );
 		if( period ){
-			priv->period = g_object_ref( period );
+			priv->init_period = g_object_ref( period );
 		}
 	}
 	priv->account = g_strdup( account );
 	priv->password = g_strdup( password );
 
 	if( are_data_set( self, NULL ) && is_connection_valid( self, NULL )){
-		do_open_dossier( self );
+		opened = do_open_dossier( self );
 	} else {
 		my_dialog_run_dialog( MY_DIALOG( self ));
+		opened = priv->opened;
 	}
 
 	g_object_unref( self );
+
+	return( opened );
 }
 
 static void
@@ -252,14 +266,15 @@ v_init_dialog( myDialog *dialog )
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
 	gtk_size_group_add_widget( group, label );
 
-	if( priv->meta ){
-		dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
+	if( priv->init_meta ){
+		dossier_name = ofa_idbmeta_get_dossier_name( priv->init_meta );
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 		g_free( dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
-		if( priv->period ){
-			ofa_exercice_combo_set_selected( priv->exercice_combo, priv->period );
+		if( priv->init_period ){
+			ofa_idbperiod_dump( priv->init_period );
+			ofa_exercice_combo_set_selected( priv->exercice_combo, priv->init_period );
 			focus = NULL;
 		}
 	}
@@ -272,8 +287,12 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), dialog );
 	my_utils_size_group_add_size_group(
 			group, ofa_user_credentials_bin_get_size_group( user_credentials, 0 ));
-	ofa_user_credentials_bin_set_account( user_credentials, priv->account );
-	ofa_user_credentials_bin_set_password( user_credentials, priv->password );
+	if( priv->account ){
+		ofa_user_credentials_bin_set_account( user_credentials, priv->account );
+	}
+	if( priv->password ){
+		ofa_user_credentials_bin_set_password( user_credentials, priv->password );
+	}
 
 	/* focus defauls to be set on the dossier treeview
 	 * if the dossier is already set, then set the focus on the exercice combo
@@ -398,16 +417,18 @@ static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierOpen *self;
+	ofaDossierOpenPrivate *priv;
 	gchar *msg;
 
 	msg = NULL;
 	self = OFA_DOSSIER_OPEN( dialog );
+	priv = self->priv;
 
 	g_return_val_if_fail( are_data_set( self, NULL ), FALSE );
 
 	if( is_connection_valid( self, &msg )){
-		do_open_dossier( self );
-		return( TRUE );
+		priv->opened = do_open_dossier( self );
+		return( priv->opened );
 	}
 
 	my_utils_dialog_warning( msg );
@@ -448,7 +469,7 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 /*
  * is called when the user click on the 'Open' button
  */
-static void
+static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
@@ -459,6 +480,8 @@ do_open_dossier( ofaDossierOpen *self )
 			OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( self ))),
 			priv->connect,
 			TRUE );
+
+	return( TRUE );
 }
 
 static void
