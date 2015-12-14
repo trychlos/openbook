@@ -37,6 +37,7 @@
 
    As a consequence, ofaIDbms interface and ofaDbms class are obsoleted.
 
+   - myISettings: new interface.
    - Upgrade DBMS to v27:
      - boolean values are set as Y/N.
      - DOS_STATUS is renamed as DOS_CURRENT (todo #904).

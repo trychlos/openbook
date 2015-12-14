@@ -446,8 +446,6 @@
                 - RestoreAssistant: dossier treeview after created a new dossier
                 - administrative credentials
 
- 867 2015-10- 8 ofaDossierNewBin: priv->infos is never released
-
  869 2015-10-30 GuidedInput: after having clicked on Validate, disable
                 fields while recording the entries
 
@@ -485,7 +483,20 @@
 
  926 2015-12-14 password is lost when opening a dossier after restore ?
 
- 927
+ 927 2015-12-14 close the restore assistant before opening the dossier
+
+ 928 2015-12-14 have a preference option to force the restore to utf8
+                (alter the database after restore)
+                SELECT schema_name,default_character_set_name FROM information_schema.SCHEMATA;
+                ALTER DATABASE ofat_1 CHARACTER SET='utf8';
+
+ 929 2015-12-14 add ofa- prefix to LastBackupFolder key
+
+ 930 2015-12-14 add ofa- prefix to OpeTemplateBookOrder key
+
+ 931 2015-12-14 remove ofa_settings_dossier_xxx methods
+
+ 932
 
 -----------------------------------------------------------------------
  DONE
@@ -4143,6 +4154,10 @@
  866 2015-10- 7 progress bars in db model remediation touch the border
                 (see print screen)
      2015-10- 7 fixed
+
+ 867 2015-10- 8 ofaDossierNewBin: priv->infos is never released
+     2015-12-14 globally fixed with new ofaIDBProvider interface and
+                companion classes
 
  868 2015-10-30 GuidedInput: review account/entry label/debit/credit
                 resp. fields width
