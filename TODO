@@ -410,13 +410,6 @@
  814 2015- 4-17 Dossier: have list of classes allowed to be reconciliated
                  + classes allowed to be settled
 
- 817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
-     2015- 4-27 see. also todo #819
-
- 819 2015- 4-26 next dbms version:
-                - rename RAT_VAL_BEG as RAT_VAL_BEGIN
-                - move SIREN to SIRET (todo #817)
-
  821 2015- 4-27 check that concenating strings doesn't override the limit
                 (as the MySQL truncation may make the string invalid utf-8)
                 and take care to truncate to a valid utf-8
@@ -468,16 +461,6 @@
  888 2015-11-23 review ofaSettings class to use mySettings
 
  889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
-
- 904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
-                boolean (Y/N in the database, true/false in the code)
-                + should we store this in the db
-                  (as this is already recorded in the settings) ??
-                => yes, it must be stored, because an archived (closed)
-                dossier is expected to be read-only - so that it is not
-                enough to just change a settings to force the dossier
-                to be updatable
-     2015-12-13 go to v27
 
  907 2015-11-26 define a myISettings interface to be used in the plugins
                 (instead of directly the mySettings object)
@@ -3869,6 +3852,15 @@
                 book of entries by account (ofaAccountsBookRender)
      2015- 4-18 done - git #501b573
 
+ 817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
+     2015- 4-27 see. also todo #819
+     2015-12-14 done with DB model v27
+
+ 819 2015- 4-26 next dbms version:
+                - rename RAT_VAL_BEG as RAT_VAL_BEGIN
+                - move SIREN to SIRET (todo #817)
+     2015-12-14 done with DB model v27
+
  820 2015- 4-26 have a special-development dossier.conf to not mix
                 development dossiers with production dossiers
      2015- 4-26 done - git #aadaccc
@@ -4286,6 +4278,17 @@
                 should allow of removing user credentials from main
                 window
      2015-12-13 done
+
+ 904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
+                boolean (Y/N in the database, true/false in the code)
+                + should we store this in the db
+                  (as this is already recorded in the settings) ??
+                => yes, it must be stored, because an archived (closed)
+                dossier is expected to be read-only - so that it is not
+                enough to just change a settings to force the dossier
+                to be updatable
+     2015-12-13 go to v27
+     2015-12-14 done with DB model v27
 
  905 2015-11-26 remove account from ofaMySQLConnect
      2015-12-10 done (somewhere in the past)
