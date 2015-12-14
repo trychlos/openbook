@@ -346,6 +346,12 @@ my_utils_boolean_from_str( const gchar *str )
 		if( !g_ascii_strcasecmp( str, "False" )){
 			return( FALSE );
 		}
+		if( !g_ascii_strcasecmp( str, "Y" )){
+			return( TRUE );
+		}
+		if( !g_ascii_strcasecmp( str, "N" )){
+			return( FALSE );
+		}
 		if( !g_ascii_strcasecmp( str, "Yes" )){
 			return( TRUE );
 		}
