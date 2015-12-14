@@ -329,7 +329,12 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 		ok = FALSE;
 		mysql = g_new0( MYSQL, 1 );
 		mysql_init( mysql );
-		mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
+
+		/* whether the database charset be utf8 or latin1, the display
+		 * is ok if the latin1 option is specified, or if the option is
+		 * not specified at all; display is not ok with utf8 option */
+		//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
+		//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "latin1" );
 
 		if( msg ){
 			*msg = NULL;
