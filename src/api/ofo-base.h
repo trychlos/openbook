@@ -53,8 +53,8 @@ G_BEGIN_DECLS
  * #ofoBase object.
  */
 #define ofo_base_getter(C,V,T,R,I)			\
-		g_return_val_if_fail( OFO_IS_ ## C(V),(R)); \
-		if( OFO_BASE(V)->prot->dispose_has_run) return(R); \
+		g_return_val_if_fail((V) && OFO_IS_ ## C(V),(R)); \
+		if( OFO_BASE(V)->prot->dispose_has_run) g_return_val_if_reached(R); \
 		return(ofa_box_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
 
 /**
