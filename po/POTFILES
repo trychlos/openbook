@@ -4,46 +4,55 @@
 	../src/core/ofa-dossier-delete-prefs-bin.ui \
 	../src/core/ofa-file-format-bin.ui \
 	../src/core/ofa-preferences.ui \
-	../src/mysql/ofa-mysql-connect-display-bin.ui \
-	../src/mysql/ofa-mysql-connect-enter-bin.ui \
-	../src/mysql/ofa-mysql-prefs.piece.ui \
+	../src/core/ofa-ddl-update.ui \
+	../src/mysql/ofa-mysql-editor-display.ui \
+	../src/mysql/ofa-mysql-editor-enter.ui \
+	../src/mysql/ofa-mysql-prefs-bin.ui \
+	../src/ui/ofa-account-book-bin.ui \
+	../src/ui/ofa-account-filter-vv-bin.ui \
 	../src/ui/ofa-account-properties.ui \
 	../src/ui/ofa-account-select.ui \
 	../src/ui/ofa-account-selector-bin.ui \
-	../src/ui/ofa-accounts-book-bin.ui \
-	../src/ui/ofa-accounts-filter-vv-bin.ui \
 	../src/ui/ofa-app-menubar.ui \
 	../src/ui/ofa-balance-bin.ui \
+	../src/ui/ofa-bat-properties.ui \
 	../src/ui/ofa-bat-properties-bin.ui \
 	../src/ui/ofa-bat-select.ui \
+	../src/ui/ofa-check-balances.ui \
 	../src/ui/ofa-check-balances-bin.ui \
+	../src/ui/ofa-check-integrity.ui \
 	../src/ui/ofa-check-integrity-bin.ui \
 	../src/ui/ofa-class-properties.ui \
 	../src/ui/ofa-closing-parms-bin.ui \
 	../src/ui/ofa-currency-properties.ui \
-	../src/ui/ofa-dates-filter-hv-bin.ui \
+	../src/ui/ofa-date-filter-hv-bin.ui \
 	../src/ui/ofa-dos-menubar.ui \
 	../src/ui/ofa-dossier-delete.ui \
 	../src/ui/ofa-dossier-display-notes.ui \
 	../src/ui/ofa-dossier-login.ui \
-	../src/ui/ofa-dossier-new-bin.ui \
+	../src/ui/ofa-dossier-manager.ui \
 	../src/ui/ofa-dossier-new.ui \
+	../src/ui/ofa-dossier-new-bin.ui \
+	../src/ui/ofa-dossier-new-mini.ui \
 	../src/ui/ofa-dossier-open.ui \
 	../src/ui/ofa-dossier-properties.ui \
+	../src/ui/ofa-entry-page.ui \
 	../src/ui/ofa-exercice-close-assistant.ui \
 	../src/ui/ofa-export-assistant.ui \
+	../src/ui/ofa-guided-input.ui \
 	../src/ui/ofa-guided-input-bin.ui \
 	../src/ui/ofa-import-assistant.ui \
+	../src/ui/ofa-ledger-book-bin.ui \
 	../src/ui/ofa-ledger-close.ui \
 	../src/ui/ofa-ledger-properties.ui \
-	../src/ui/ofa-ledgers-book-bin.ui \
 	../src/ui/ofa-ope-template-help.ui \
 	../src/ui/ofa-ope-template-properties.ui \
+	../src/ui/ofa-ope-template-select.ui \
+	../src/ui/ofa-plugin-manager.ui \
 	../src/ui/ofa-rate-properties.ui \
 	../src/ui/ofa-reconcil-bin.ui \
 	../src/ui/ofa-reconcil-page.ui \
-	../src/ui/ofa-balance-bin.ui \
 	../src/ui/ofa-render-page.ui \
 	../src/ui/ofa-restore-assistant.ui \
 	../src/ui/ofa-settlement.ui \
-	../src/ui/ofa-view-entries.ui
+	../src/ui/ofa-user-credentials-bin.ui
