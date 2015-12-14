@@ -149,7 +149,7 @@ idbperiod_get_name( const ofaIDBPeriod *instance )
 
 	if( !priv->dispose_has_run ){
 
-		return( priv->dbname );
+		return( g_strdup( priv->dbname ));
 	}
 
 	g_return_val_if_reached( NULL );
