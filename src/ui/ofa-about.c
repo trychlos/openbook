@@ -122,6 +122,7 @@ ofa_about_run( const ofaMainWindow *main_window )
 	ofaAbout *about;
 	GdkPixbuf *pixbuf;
 	GtkWidget *button;
+	gchar *version;
 
 	application = gtk_window_get_application( GTK_WINDOW( main_window ));
 	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
@@ -131,6 +132,8 @@ ofa_about_run( const ofaMainWindow *main_window )
 		NULL
 	};
 
+	version = g_strdup_printf( _( "version %s" ), PACKAGE_VERSION );
+
 	about = g_object_new(
 			OFA_TYPE_ABOUT,
 			"authors", authors,
@@ -139,7 +142,7 @@ ofa_about_run( const ofaMainWindow *main_window )
 							"to several european countries." ),
 			"copyright", ofa_application_get_copyright( OFA_APPLICATION( application )),
 			"license-type", GTK_LICENSE_GPL_3_0,
-			"version", PACKAGE_VERSION,
+			"version", version,
 			"website", "http://trychlos.github.io/openbook/",
 			NULL );
 
@@ -156,6 +159,8 @@ ofa_about_run( const ofaMainWindow *main_window )
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_close_clicked ), about );
 
 	gtk_dialog_run( GTK_DIALOG( about ));
+
+	g_free( version );
 }
 
 static void
