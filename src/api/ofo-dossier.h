@@ -48,9 +48,6 @@
 
 G_BEGIN_DECLS
 
-#define DOS_STATUS_OPENED               "O"
-#define DOS_STATUS_CLOSED               "A"
-
 /* the identifier of the dossier row
  */
 #define THIS_DOS_ID                     1
@@ -83,11 +80,11 @@ const gchar         *ofo_dossier_get_import_ledger         ( const ofoDossier *d
 const gchar         *ofo_dossier_get_label                 ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_siret                 ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal      *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_status                ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_status_str            ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
@@ -131,11 +128,11 @@ void                 ofo_dossier_set_import_ledger         ( ofoDossier *dossier
 void                 ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void                 ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void                 ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
+void                 ofo_dossier_set_siret                 ( ofoDossier *dossier, const gchar *siret );
 void                 ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
 void                 ofo_dossier_set_last_closing_date     ( ofoDossier *dossier, const GDate *last_closing );
 void                 ofo_dossier_set_prev_exe_last_entry   ( ofoDossier *dossier );
-
-void                 ofo_dossier_set_status                ( ofoDossier *dossier, const gchar *status );
+void                 ofo_dossier_set_current               ( ofoDossier *dossier, gboolean current );
 
 void                 ofo_dossier_reset_currencies          ( ofoDossier *dossier );
 void                 ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *currency, const gchar *account );

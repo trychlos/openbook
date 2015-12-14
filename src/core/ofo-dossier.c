@@ -70,6 +70,7 @@ struct _ofoDossierPrivate {
 	gchar         *label;				/* raison sociale */
 	gchar         *notes;				/* notes */
 	gchar         *siren;
+	gchar         *siret;
 	gchar         *sld_ope;
 	gchar         *upd_user;
 	GTimeVal       upd_stamp;
@@ -78,7 +79,8 @@ struct _ofoDossierPrivate {
 	ofxCounter     last_entry;
 	ofxCounter     last_settlement;
 	ofxCounter     last_concil;
-	gchar         *status;
+	//gchar         *status;
+	gboolean       current;
 	GDate          last_closing;
 	ofxCounter     prev_exe_last_entry;
 
@@ -240,7 +242,6 @@ dossier_finalize( GObject *instance )
 	g_free( priv->siren );
 	g_free( priv->upd_user );
 	g_free( priv->exe_notes );
-	g_free( priv->status );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
@@ -597,7 +598,7 @@ check_db_vs_settings( ofoDossier *dossier )
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	/* data from db */
-	db_current = ( g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED ) == 0 );
+	db_current = ofo_dossier_is_current( dossier );
 	db_begin = ofo_dossier_get_exe_begin( dossier );
 	db_end = ofo_dossier_get_exe_end( dossier );
 
@@ -1104,6 +1105,24 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_siret:
+ *
+ * Returns: the siret of the dossier.
+ */
+const gchar *
+ofo_dossier_get_siret( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->siret );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
  * ofo_dossier_get_sld_ope:
  *
  * Returns: the sld ope of the dossier.
@@ -1162,54 +1181,20 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 /**
  * ofo_dossier_get_status:
  *
- * Returns: the status of the dossier, as a single const gchar, which
- * is suitable to be compared with the global constants
- * #DOS_STATUS_OPENED and #DOS_STATUS_CLOSED.
- */
-const gchar *
-ofo_dossier_get_status( const ofoDossier *dossier )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		priv = dossier->priv;
-		return( priv->status );
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_status_str:
- *
  * Returns: the status of the dossier as a const string suitable for
  * display.
  */
 const gchar *
-ofo_dossier_get_status_str( const ofoDossier *dossier )
+ofo_dossier_get_status( const ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_dossier_get_status_str";
-	ofoDossierPrivate *priv;
-
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		priv = dossier->priv;
-
-		if( !g_utf8_collate( priv->status, DOS_STATUS_OPENED )){
-			return( _( "Opened" ));
-		}
-		if( !g_utf8_collate( priv->status, DOS_STATUS_CLOSED )){
-			return( _( "Archived" ));
-		}
-		g_warning( "%s: unknown status: %s", thisfn, priv->status );
+		return( dossier->priv->current ? _( "Opened" ) : _( "Archived" ));
 	}
 
-	return( NULL );
+	g_return_val_if_reached( NULL );
 }
 
 /**
@@ -1697,7 +1682,7 @@ ofo_dossier_is_current( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( g_utf8_collate( dossier->priv->status, DOS_STATUS_OPENED ) == 0 );
+		return( dossier->priv->current );
 	}
 
 	g_return_val_if_reached( FALSE );
@@ -1896,6 +1881,21 @@ ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 }
 
 /**
+ * ofo_dossier_set_siret:
+ */
+void
+ofo_dossier_set_siret( ofoDossier *dossier, const gchar *siret )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->siret );
+		dossier->priv->siret = g_strdup( siret );
+	}
+}
+
+/**
  * ofo_dossier_set_sld_ope:
  *
  * Not mandatory until closing the exercice.
@@ -1999,32 +1999,21 @@ dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter )
 }
 
 /**
- * ofo_dossier_set_status:
- * @dossier:
- * @status:
+ * ofo_dossier_set_current:
+ * @dossier: this #ofoDossier instance.
+ * @current: %TRUE if this @dossier period is opened, %FALSE if it is
+ *  archived.
+ *
+ * Set the status of the financial period.
  */
 void
-ofo_dossier_set_status( ofoDossier *dossier, const gchar *status )
+ofo_dossier_set_current( ofoDossier *dossier, gboolean current )
 {
-	static const gchar *thisfn = "ofo_ofo_dossier_set_status";
-	ofoDossierPrivate *priv;
-
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		priv = dossier->priv;
-		g_free( priv->status );
-		priv->status = NULL;
-
-		if( !g_utf8_collate( status, DOS_STATUS_OPENED ) ||
-			!g_utf8_collate( status, DOS_STATUS_CLOSED )){
-
-			priv->status = g_strdup( status );
-
-		} else {
-			g_warning( "%s: unknown status: %s", thisfn, status );
-		}
+		dossier->priv->current = current;
 	}
 }
 
@@ -2198,10 +2187,10 @@ dossier_read_properties( ofoDossier *dossier )
 			"SELECT DOS_DEF_CURRENCY,"
 			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
 			"	DOS_FORW_OPE,DOS_IMPORT_LEDGER,"
-			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
+			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,DOS_SIRET,"
 			"	DOS_SLD_OPE,DOS_UPD_USER,DOS_UPD_STAMP,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
-			"	DOS_LAST_CONCIL,DOS_STATUS,DOS_LAST_CLOSING,DOS_PREVEXE_ENTRY "
+			"	DOS_LAST_CONCIL,DOS_CURRENT,DOS_LAST_CLOSING,DOS_PREVEXE_ENTRY "
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -2259,6 +2248,11 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		cstr = icol->data;
 		if( my_strlen( cstr )){
+			ofo_dossier_set_siret( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( my_strlen( cstr )){
 			ofo_dossier_set_sld_ope( dossier, cstr );
 		}
 		icol = icol->next;
@@ -2298,9 +2292,7 @@ dossier_read_properties( ofoDossier *dossier )
 		}
 		icol = icol->next;
 		cstr = icol->data;
-		if( my_strlen( cstr )){
-			ofo_dossier_set_status( dossier, cstr );
-		}
+		ofo_dossier_set_current( dossier, my_strlen( cstr ) && !g_utf8_collate( cstr, "Y" ));
 		icol = icol->next;
 		cstr = icol->data;
 		if( my_strlen( cstr )){
@@ -2378,7 +2370,7 @@ do_update_properties( ofoDossier *dossier )
 	GString *query;
 	gchar *label, *notes, *stamp_str, *sdate;
 	GTimeVal stamp;
-	gboolean ok;
+	gboolean ok, current;
 	const gchar *cstr, *userid;
 	const GDate *date;
 	ofxCounter number;
@@ -2461,6 +2453,13 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_SIREN=NULL," );
 	}
 
+	cstr = ofo_dossier_get_siret( dossier );
+	if( my_strlen( cstr )){
+		g_string_append_printf( query, "DOS_SIRET='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SIRET=NULL," );
+	}
+
 	cstr = ofo_dossier_get_sld_ope( dossier );
 	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
@@ -2484,8 +2483,8 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_PREVEXE_ENTRY=NULL," );
 	}
 
-	cstr = ofo_dossier_get_status( dossier );
-	g_string_append_printf( query, "DOS_STATUS='%s',", cstr );
+	current = ofo_dossier_is_current( dossier );
+	g_string_append_printf( query, "DOS_CURRENT='%s',", current ? "Y":"N" );
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -2617,7 +2616,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 {
 	GSList *lines;
 	gchar *str, *stamp;
-	const gchar *currency, *muser, *siren;
+	const gchar *currency, *muser, *siren, *siret;
 	const gchar *fope;
 	const gchar *bope;
 	gchar *sbegin, *send, *notes, *exenotes, *label;
@@ -2635,11 +2634,11 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	if( with_headers ){
 		str = g_strdup_printf( "DefCurrency;ExeBegin;ExeEnd;ExeLength;ExeNotes;"
 				"ForwardOpe;"
-				"Label;Notes;Siren;"
+				"Label;Notes;Siren;Siret;"
 				"SldOpe;"
 				"MajUser;MajStamp;"
 				"LastBat;LastBatLine;LastEntry;LastSettlement;"
-				"Status" );
+				"Current" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -2658,9 +2657,10 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );
 	siren = ofo_dossier_get_siren( dossier );
+	siret = ofo_dossier_get_siret( dossier );
 	bope = ofo_dossier_get_sld_ope( dossier );
 
-	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%ld;%ld;%ld;%ld;%s",
+	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%ld;%ld;%ld;%ld;%s",
 			currency ? currency : "",
 			sbegin,
 			send,
@@ -2670,6 +2670,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			label ? label : "",
 			notes ? notes : "",
 			siren ? siren : "",
+			siret ? siret : "",
 			bope ? bope : "",
 			muser ? muser : "",
 			muser ? stamp : "",
@@ -2677,7 +2678,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			ofo_dossier_get_last_batline( dossier ),
 			ofo_dossier_get_last_entry( dossier ),
 			ofo_dossier_get_last_settlement( dossier ),
-			ofo_dossier_get_status( dossier ));
+			ofo_dossier_is_current( dossier ) ? "Y":"N" );
 
 	g_free( sbegin );
 	g_free( send );

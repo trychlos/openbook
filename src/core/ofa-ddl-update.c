@@ -109,6 +109,8 @@ static gboolean dbmodel_v25( ofaDDLUpdate *dialog, gint version );
 static gulong   count_v25( ofaDDLUpdate *dialog );
 static gboolean dbmodel_v26( ofaDDLUpdate *dialog, gint version );
 static gulong   count_v26( ofaDDLUpdate *dialog );
+static gboolean dbmodel_v27( ofaDDLUpdate *dialog, gint version );
+static gulong   count_v27( ofaDDLUpdate *dialog );
 
 /* the functions which update the DB model
  */
@@ -127,6 +129,7 @@ static sMigration st_migrates[] = {
 		{ 24, dbmodel_v24, count_v24 },
 		{ 25, dbmodel_v25, count_v25 },
 		{ 26, dbmodel_v26, count_v26 },
+		{ 27, dbmodel_v27, count_v27 },
 		{ 0 }
 };
 
@@ -555,6 +558,8 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	priv = self->priv;
 
 	/* n° 1 */
+	/* ACC_TYPE is renamed to ACC_ROOT in v27 */
+	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -684,6 +689,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 6 */
+	/* DOS_STATUS is renamed to DOS_CURRENT in v27 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -718,7 +724,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
-			dossier_name, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED, "CLORAN", "CLOSLD" );
+			dossier_name, DOS_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
 	ok = exec_query( self, query );
 	g_free( query );
 	g_free( dossier_name );
@@ -795,6 +801,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 12 */
+	/* locked indicators are remediated in v27 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -811,6 +818,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 13 */
+	/* locked indicators are remediated in v27 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL           COMMENT 'Operation template menmonic',"
@@ -859,6 +867,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 15 */
+	/* RAT_VAL_BEG is renamed as RAT_VAL_BEGIN in v27 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
 			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key while keeping NULL values',"
@@ -966,6 +975,7 @@ count_v22( ofaDDLUpdate *self )
 /*
  * ofa_ddl_update_dbmodel_v23:
  * closed accounts
+ * remediated in v27
  */
 static gboolean
 dbmodel_v23( ofaDDLUpdate *self, gint version )
@@ -1272,6 +1282,233 @@ static gulong
 count_v26( ofaDDLUpdate *self )
 {
 	return( 3 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v27:
+ *
+ * - DOSSIER_STATUS -> DOSSIER_CURRENT Y/N
+ * - ACC_TYPE -> ACC_ROOT
+ * - OTE_xxx_LOCKED: CHAR(1)
+ */
+static gboolean
+dbmodel_v27( ofaDDLUpdate *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v27";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN DOS_SIRET VARCHAR(13) COMMENT 'SIRET',"
+			"	CHANGE COLUMN DOS_STATUS "
+			"		       DOS_CURRENT CHAR(1) DEFAULT 'Y' COMMENT 'Dossier is current'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_DOSSIER "
+			"	SET DOS_CURRENT='Y' WHERE DOS_CURRENT='O'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_DOSSIER "
+			"	SET DOS_CURRENT='N' WHERE DOS_CURRENT!='Y' OR DOS_CURRENT IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	CHANGE COLUMN ACC_TYPE "
+			"              ACC_ROOT        CHAR(1) DEFAULT 'N' COMMENT 'Root account',"
+			"	CHANGE COLUMN ACC_FORWARD "
+			"              ACC_FORWARDABLE CHAR(1) DEFAULT 'N' COMMENT 'Whether the account supports carried forwards'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_ROOT='Y' WHERE ACC_ROOT='R'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_ROOT='N' WHERE ACC_ROOT!='Y' OR ACC_ROOT IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_SETTLEABLE='Y' WHERE ACC_SETTLEABLE='S'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_SETTLEABLE='N' WHERE ACC_SETTLEABLE!='Y' OR ACC_SETTLEABLE IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_RECONCILIABLE='Y' WHERE ACC_RECONCILIABLE='R'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_RECONCILIABLE='N' WHERE ACC_RECONCILIABLE!='Y' OR ACC_RECONCILIABLE IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_FORWARDABLE='Y' WHERE ACC_FORWARDABLE='F'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_FORWARDABLE='N' WHERE ACC_FORWARDABLE!='Y' OR ACC_FORWARDABLE IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_CLOSED='Y' WHERE ACC_CLOSED='C'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_CLOSED='N' WHERE ACC_CLOSED!='Y' OR ACC_CLOSED IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	CHANGE COLUMN OTE_LED_LOCKED OTE_LED_LOCKED2 INTEGER,"
+			"	CHANGE COLUMN OTE_REF_LOCKED OTE_REF_LOCKED2 INTEGER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	ADD COLUMN OTE_LED_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Ledger is locked',"
+			"	ADD COLUMN OTE_REF_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Operation reference is locked'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES "
+			"	SET OTE_LED_LOCKED='Y' WHERE OTE_LED_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES "
+			"	SET OTE_LED_LOCKED='N' WHERE OTE_LED_LOCKED2=0 OR OTE_LED_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES "
+			"	SET OTE_REF_LOCKED='Y' WHERE OTE_REF_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES "
+			"	SET OTE_REF_LOCKED='N' WHERE OTE_REF_LOCKED2=0 OR OTE_REF_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
+			"	CHANGE COLUMN OTE_DET_ACCOUNT_LOCKED OTE_DET_ACCOUNT_LOCKED2 INTEGER,"
+			"	CHANGE COLUMN OTE_DET_LABEL_LOCKED OTE_DET_LABEL_LOCKED2 INTEGER,"
+			"	CHANGE COLUMN OTE_DET_DEBIT_LOCKED OTE_DET_DEBIT_LOCKED2 INTEGER,"
+			"	CHANGE COLUMN OTE_DET_CREDIT_LOCKED OTE_DET_CREDIT_LOCKED2 INTEGER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
+			"	ADD COLUMN OTE_DET_ACCOUNT_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Account number is locked',"
+			"	ADD COLUMN OTE_DET_LABEL_LOCKED   CHAR(1) DEFAULT 'N' COMMENT 'Entry label is locked',"
+			"	ADD COLUMN OTE_DET_DEBIT_LOCKED   CHAR(1) DEFAULT 'N' COMMENT 'Debit amount is locked',"
+			"	ADD COLUMN OTE_DET_CREDIT_LOCKED  CHAR(1) DEFAULT 'N' COMMENT 'Credit amount is locked'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_ACCOUNT_LOCKED='Y' WHERE OTE_DET_ACCOUNT_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_ACCOUNT_LOCKED='N' WHERE OTE_DET_ACCOUNT_LOCKED2=0 OR OTE_DET_ACCOUNT_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_LABEL_LOCKED='Y' WHERE OTE_DET_LABEL_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_LABEL_LOCKED='N' WHERE OTE_DET_LABEL_LOCKED2=0 OR OTE_DET_LABEL_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_DEBIT_LOCKED='Y' WHERE OTE_DET_DEBIT_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_DEBIT_LOCKED='N' WHERE OTE_DET_DEBIT_LOCKED2=0 OR OTE_DET_DEBIT_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_CREDIT_LOCKED='Y' WHERE OTE_DET_CREDIT_LOCKED2!=0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET "
+			"	SET OTE_DET_CREDIT_LOCKED='N' WHERE OTE_DET_CREDIT_LOCKED2=0 OR OTE_DET_CREDIT_LOCKED2 IS NULL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_RATES_VAL "
+			"	CHANGE COLUMN RAT_VAL_BEG "
+			"              RAT_VAL_BEGIN DATE DEFAULT NULL COMMENT 'Validity begin date'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v27( ofaDDLUpdate *self )
+{
+	return( 31 );
 }
 
 static gboolean

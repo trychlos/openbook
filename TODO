@@ -477,6 +477,7 @@
                 dossier is expected to be read-only - so that it is not
                 enough to just change a settings to force the dossier
                 to be updatable
+     2015-12-13 go to v27
 
  907 2015-11-26 define a myISettings interface to be used in the plugins
                 (instead of directly the mySettings object)
@@ -499,7 +500,9 @@
 
  925 2015-12-13 remove obsolete ofaDossierLogin class ?
 
- 926
+ 926 2015-12-14 password is lost when opening a dossier after restore ?
+
+ 927
 
 -----------------------------------------------------------------------
  DONE

@@ -236,8 +236,9 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 
 	priv = dir->priv;
 
-	/* we ignore next update signal emitted by the monitor when we update
-	 * the settings ourself (so that the store may be synchronized) */
+	/* we ignore next update signal emitted by the monitor when we
+	 * update the settings ourselves (so that the store may be
+	 * synchronized without having to wait for the timeout) */
 	if( priv->ignore_next ){
 		priv->ignore_next = FALSE;
 

@@ -105,7 +105,7 @@ static const ofsBoxDef st_validities_defs[] = {
 				TRUE,
 				FALSE },
 		{ RAT_VAL_BEGIN,
-				"RAT_VAL_BEG",
+				"RAT_VAL_BEGIN",
 				"RatValidityBegin",
 				OFA_TYPE_DATE,
 				TRUE,
@@ -917,7 +917,7 @@ rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaIDBConn
 
 	g_string_append_printf( query,
 			"	(RAT_MNEMO,RAT_VAL_ROW,"
-			"	RAT_VAL_BEG,RAT_VAL_END,RAT_VAL_RATE) "
+			"	RAT_VAL_BEGIN,RAT_VAL_END,RAT_VAL_RATE) "
 			"	VALUES ('%s',%d,",
 					ofo_rate_get_mnemo( rate ),
 					count );

@@ -288,6 +288,13 @@ ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, con
 	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
 
+	if( 1 ){
+		ofa_idbmeta_dump( meta );
+		if( period ){
+			ofa_idbperiod_dump( period );
+		}
+	}
+
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta ){
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta( connect, account, password, meta, period );
 		if( ok ){

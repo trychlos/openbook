@@ -350,7 +350,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	/* status */
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), ofo_dossier_get_status_str( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), ofo_dossier_get_status( priv->dossier ));
 
 	/* exercice length */
 	entry = my_utils_container_get_child_by_name( container, "p1-exe-length-entry" );

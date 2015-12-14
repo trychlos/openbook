@@ -1111,21 +1111,23 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 static gboolean
 p6_restore_confirmed( const ofaRestoreAssistant *self )
 {
-	//ofaRestoreAssistantPrivate *priv;
+	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
-	gchar *str;
+	gchar *name, *str;
 
-	//priv = self->priv;
+	priv = self->priv;
+	name = ofa_idbperiod_get_name( priv->p2_period );
 
 	str = g_strdup_printf(
 				_( "The restore operation will drop, fully reset and repopulate "
 					"the '%s' database.\n"
 					"This may not be what you actually want !\n"
-					"Are you sure you want to restore into this database ?" ), "<database>" );
+					"Are you sure you want to restore into this database ?" ), name );
 
 	ok = my_utils_dialog_question( str, _( "_Restore" ));
 
 	g_free( str );
+	g_free( name );
 
 	return( ok );
 }

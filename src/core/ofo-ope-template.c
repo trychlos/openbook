@@ -90,7 +90,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_LED_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_REF ),
@@ -98,7 +98,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_REF_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_NOTES ),
@@ -134,7 +134,7 @@ static const ofsBoxDef st_details_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_ACCOUNT_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_LABEL ),
@@ -142,7 +142,7 @@ static const ofsBoxDef st_details_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_LABEL_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_DEBIT ),
@@ -150,7 +150,7 @@ static const ofsBoxDef st_details_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_DEBIT_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_CREDIT ),
@@ -158,7 +158,7 @@ static const ofsBoxDef st_details_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( OTE_DET_CREDIT_LOCKED ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ 0 }
@@ -741,7 +741,17 @@ ofo_ope_template_get_ledger( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_get_ledger_locked( const ofoOpeTemplate *model )
 {
-	ofo_base_getter( OPE_TEMPLATE, model, int, 0, OTE_LED_LOCKED );
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_LED_LOCKED );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -759,7 +769,17 @@ ofo_ope_template_get_ref( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_get_ref_locked( const ofoOpeTemplate *model )
 {
-	ofo_base_getter( OPE_TEMPLATE, model, int, 0, OTE_REF_LOCKED );
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_REF_LOCKED );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -864,7 +884,7 @@ ofo_ope_template_set_ledger( ofoOpeTemplate *model, const gchar *ledger )
 void
 ofo_ope_template_set_ledger_locked( ofoOpeTemplate *model, gboolean ledger_locked )
 {
-	ofo_base_setter( OPE_TEMPLATE, model, int, OTE_LED_LOCKED, ledger_locked ? 1 : 0 );
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_LED_LOCKED, ledger_locked ? "Y":"N" );
 }
 
 /**
@@ -882,7 +902,7 @@ ofo_ope_template_set_ref( ofoOpeTemplate *model, const gchar *ref )
 void
 ofo_ope_template_set_ref_locked( ofoOpeTemplate *model, gboolean ref_locked )
 {
-	ofo_base_setter( OPE_TEMPLATE, model, int, OTE_REF_LOCKED, ref_locked ? 1 : 0 );
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_REF_LOCKED, ref_locked ? "Y":"N" );
 }
 
 /**
@@ -930,13 +950,13 @@ ofo_ope_template_add_detail( ofoOpeTemplate *model, const gchar *comment,
 		ofa_box_set_int( fields, OTE_DET_ROW, 1+ofo_ope_template_get_detail_count( model ));
 		ofa_box_set_string( fields, OTE_DET_COMMENT, comment );
 		ofa_box_set_string( fields, OTE_DET_ACCOUNT, account );
-		ofa_box_set_int( fields, OTE_DET_ACCOUNT_LOCKED, account_locked ? 1 : 0 );
+		ofa_box_set_string( fields, OTE_DET_ACCOUNT_LOCKED, account_locked ? "Y":"N" );
 		ofa_box_set_string( fields, OTE_DET_LABEL, label );
-		ofa_box_set_int( fields, OTE_DET_LABEL_LOCKED, label_locked ? 1 : 0 );
+		ofa_box_set_string( fields, OTE_DET_LABEL_LOCKED, label_locked ? "Y":"N" );
 		ofa_box_set_string( fields, OTE_DET_DEBIT, debit );
-		ofa_box_set_int( fields, OTE_DET_DEBIT_LOCKED, debit_locked ? 1 : 0 );
+		ofa_box_set_string( fields, OTE_DET_DEBIT_LOCKED, debit_locked ? "Y":"N" );
 		ofa_box_set_string( fields, OTE_DET_CREDIT, credit );
-		ofa_box_set_int( fields, OTE_DET_CREDIT_LOCKED, credit_locked ? 1 : 0 );
+		ofa_box_set_string( fields, OTE_DET_CREDIT_LOCKED, credit_locked ? "Y":"N" );
 
 		model->priv->details = g_list_append( model->priv->details, fields );
 	}
@@ -1026,6 +1046,7 @@ gboolean
 ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
+	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
@@ -1034,7 +1055,8 @@ ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint id
 
 		nth = g_list_nth( model->priv->details, idx );
 		if( nth ){
-			return( ofa_box_get_int( nth->data, OTE_DET_ACCOUNT_LOCKED ));
+			cstr = ofa_box_get_string( nth->data, OTE_DET_ACCOUNT_LOCKED );
+			return( !my_collate( cstr, "Y" ));
 		}
 	}
 
@@ -1072,6 +1094,7 @@ gboolean
 ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
+	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
@@ -1080,7 +1103,8 @@ ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx 
 
 		nth = g_list_nth( model->priv->details, idx );
 		if( nth ){
-			return( ofa_box_get_int( nth->data, OTE_DET_LABEL_LOCKED ));
+			cstr = ofa_box_get_string( nth->data, OTE_DET_LABEL_LOCKED );
+			return( !my_collate( cstr, "Y" ));
 		}
 	}
 
@@ -1118,6 +1142,7 @@ gboolean
 ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
+	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
@@ -1126,7 +1151,8 @@ ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx 
 
 		nth = g_list_nth( model->priv->details, idx );
 		if( nth ){
-			return( ofa_box_get_int( nth->data, OTE_DET_DEBIT_LOCKED ));
+			cstr = ofa_box_get_string( nth->data, OTE_DET_DEBIT_LOCKED );
+			return( !my_collate( cstr, "Y" ));
 		}
 	}
 
@@ -1164,6 +1190,7 @@ gboolean
 ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx )
 {
 	GList *nth;
+	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
@@ -1172,7 +1199,8 @@ ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx
 
 		nth = g_list_nth( model->priv->details, idx );
 		if( nth ){
-			return( ofa_box_get_int( nth->data, OTE_DET_CREDIT_LOCKED ));
+			cstr = ofa_box_get_string( nth->data, OTE_DET_CREDIT_LOCKED );
+			return( !my_collate( cstr, "Y" ));
 		}
 	}
 
@@ -1239,11 +1267,11 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar 
 	g_string_append_printf( query,
 			"	(OTE_MNEMO,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,"
 			"	OTE_REF,OTE_REF_LOCKED,OTE_NOTES,"
-			"	OTE_UPD_USER, OTE_UPD_STAMP) VALUES ('%s','%s','%s',%d,",
+			"	OTE_UPD_USER, OTE_UPD_STAMP) VALUES ('%s','%s','%s','%s',",
 			ofo_ope_template_get_mnemo( model ),
 			label,
 			ofo_ope_template_get_ledger( model ),
-			ofo_ope_template_get_ledger_locked( model ) ? 1:0 );
+			ofo_ope_template_get_ledger_locked( model ) ? "Y":"N" );
 
 	if( my_strlen( ref )){
 		g_string_append_printf( query, "'%s',", ref );
@@ -1251,7 +1279,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar 
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "%d,", ofo_ope_template_get_ref_locked( model ) ? 1:0 );
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -1349,7 +1377,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang
 	}
 	g_free( account );
 
-	g_string_append_printf( query, "%d,", ofa_box_get_int( details, OTE_DET_ACCOUNT_LOCKED ) ? 1 : 0 );
+	g_string_append_printf( query, "'%s',", ofa_box_get_string( details, OTE_DET_ACCOUNT_LOCKED ));
 
 	label = my_utils_quote( ofa_box_get_string( details, OTE_DET_LABEL ));
 	if( my_strlen( label )){
@@ -1359,7 +1387,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang
 	}
 	g_free( label );
 
-	g_string_append_printf( query, "%d,", ofa_box_get_int( details, OTE_DET_LABEL_LOCKED ) ? 1:0 );
+	g_string_append_printf( query, "'%s',", ofa_box_get_string( details, OTE_DET_LABEL_LOCKED ));
 
 	cstr = ofa_box_get_string( details, OTE_DET_DEBIT );
 	if( my_strlen( cstr )){
@@ -1368,7 +1396,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "%d,", ofa_box_get_int( details, OTE_DET_DEBIT_LOCKED ) ? 1:0 );
+	g_string_append_printf( query, "'%s',", ofa_box_get_string( details, OTE_DET_DEBIT_LOCKED ));
 
 	cstr = ofa_box_get_string( details, OTE_DET_CREDIT );
 	if( my_strlen( cstr )){
@@ -1377,7 +1405,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *cnx, gint rang
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "%d", ofa_box_get_int( details, OTE_DET_CREDIT_LOCKED ) ? 1:0 );
+	g_string_append_printf( query, "'%s'", ofa_box_get_string( details, OTE_DET_CREDIT_LOCKED ));
 
 	query = g_string_append( query, ")" );
 
@@ -1455,7 +1483,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar 
 
 	g_string_append_printf( query, "OTE_LABEL='%s',", label );
 	g_string_append_printf( query, "OTE_LED_MNEMO='%s',", ofo_ope_template_get_ledger( model ));
-	g_string_append_printf( query, "OTE_LED_LOCKED=%d,", ofo_ope_template_get_ledger_locked( model ) ? 1:0 );
+	g_string_append_printf( query, "OTE_LED_LOCKED='%s',", ofo_ope_template_get_ledger_locked( model ) ? "Y":"N" );
 
 	if( my_strlen( ref )){
 		g_string_append_printf( query, "OTE_REF='%s',", ref );
@@ -1463,7 +1491,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *cnx, const gchar 
 		query = g_string_append( query, "OTE_REF=NULL," );
 	}
 
-	g_string_append_printf( query, "OTE_REF_LOCKED=%d,", ofo_ope_template_get_ref_locked( model ) ? 1:0 );
+	g_string_append_printf( query, "OTE_REF_LOCKED='%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "OTE_NOTES='%s',", notes );

@@ -85,7 +85,7 @@ struct _ofaAccountPropertiesPrivate {
 	gchar               *currency;
 	gint                 cur_digits;
 	const gchar         *cur_symbol;
-	gchar               *type;
+	gboolean             root;
 	gchar               *upd_user;
 	GTimeVal             upd_stamp;
 };
@@ -109,7 +109,7 @@ static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
 static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
-static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
+static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root );
 static void      check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean  is_dialog_validable( ofaAccountProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -131,7 +131,6 @@ account_properties_finalize( GObject *instance )
 	g_free( priv->number );
 	g_free( priv->label );
 	g_free( priv->currency );
-	g_free( priv->type );
 	g_free( priv->upd_user );
 
 	/* chain up to the parent class */
@@ -266,7 +265,7 @@ v_init_dialog( myDialog *dialog )
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 	priv->number = g_strdup( acc_number );
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
-	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
+	priv->root = ofo_account_is_root( priv->account );
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
 	init_ui( self, GTK_CONTAINER( toplevel ));
@@ -288,18 +287,10 @@ v_init_dialog( myDialog *dialog )
 			GTK_TOGGLE_BUTTON( priv->closed_btn ), ofo_account_is_closed( priv->account ));
 
 	/* type of account */
-	if( my_strlen( priv->type )){
-		if( ofo_account_is_root( priv->account )){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->root_btn ), TRUE );
-			on_root_toggled( GTK_RADIO_BUTTON( priv->root_btn ), self );
-		} else if( !g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL )){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->detail_btn ), TRUE );
-			on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), self );
-		} else {
-			g_warning( "%s: account has type %s", thisfn, priv->type );
-		}
+	if( priv->root ){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->root_btn ), TRUE );
+		on_root_toggled( GTK_RADIO_BUTTON( priv->root_btn ), self );
 	} else {
-		g_debug( "%s: set detail account as a default", thisfn );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->detail_btn ), TRUE );
 		on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), self );
 	}
@@ -312,7 +303,7 @@ v_init_dialog( myDialog *dialog )
 			GTK_TOGGLE_BUTTON( priv->reconciliable_btn ), ofo_account_is_reconciliable( priv->account ));
 
 	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->forward_btn ), ofo_account_is_forward( priv->account ));
+			GTK_TOGGLE_BUTTON( priv->forward_btn ), ofo_account_is_forwardable( priv->account ));
 
 	/* account currency
 	 * set read-only if has entries */
@@ -557,18 +548,18 @@ static void
 on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
 	/*g_debug( "on_root_toggled" );*/
-	on_type_toggled( btn, self, ACCOUNT_TYPE_ROOT );
+	on_type_toggled( btn, self, TRUE );
 }
 
 static void
 on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
 	/*g_debug( "on_detail_toggled" );*/
-	on_type_toggled( btn, self, ACCOUNT_TYPE_DETAIL );
+	on_type_toggled( btn, self, FALSE );
 }
 
 static void
-on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type )
+on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root )
 {
 	static const gchar *thisfn = "ofa_account_properties_on_type_toggled";
 	ofaAccountPropertiesPrivate *priv;
@@ -576,9 +567,8 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *t
 	priv = self->priv;
 
 	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
-		g_debug( "%s: setting account type to %s", thisfn, type );
-		g_free( priv->type );
-		priv->type = g_strdup( type );
+		g_debug( "%s: setting root account to %s", thisfn, root ? "Y":"N" );
+		priv->root = root;
 	}
 
 	check_for_enable_dlg( self );
@@ -588,7 +578,6 @@ static void
 check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	gboolean is_root;
 	gboolean ok_enabled;
 
 	priv = self->priv;
@@ -597,15 +586,13 @@ check_for_enable_dlg( ofaAccountProperties *self )
 		ok_enabled = TRUE;
 
 	} else {
-		is_root = ( priv->type && !g_utf8_collate( priv->type, ACCOUNT_TYPE_ROOT ));
-
 		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
 		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
 
-		gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
+		gtk_widget_set_sensitive( priv->p1_exe_frame, !priv->root );
 
-		gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_parent ), !is_root && !priv->has_entries );
+		gtk_widget_set_sensitive( priv->currency_etiq, !priv->root && !priv->has_entries );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_parent ), !priv->root && !priv->has_entries );
 
 		ok_enabled = is_dialog_validable( self );
 	}
@@ -622,7 +609,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	const gchar *prev;
 
 	priv = self->priv;
-	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->type );
+	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->root );
 
 	/* intrinsec validity is ok
 	 * the number may have been modified ; the new number is acceptable
@@ -664,12 +651,12 @@ do_update( ofaAccountProperties *self )
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
-	ofo_account_set_type_account( priv->account, priv->type );
+	ofo_account_set_root( priv->account, priv->root );
 	ofo_account_set_settleable(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->settleable_btn )));
 	ofo_account_set_reconciliable(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->reconciliable_btn )));
-	ofo_account_set_forward(
+	ofo_account_set_forwardable(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->forward_btn )));
 	ofo_account_set_closed(
 			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));

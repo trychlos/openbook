@@ -896,7 +896,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 			/* create forward operation
 			 * and generate corresponding entries */
-			is_ran = ofo_account_is_forward( account );
+			is_ran = ofo_account_is_forwardable( account );
 			if( is_ran ){
 				ope = ofs_ope_new( for_template );
 				my_date_set_from_date( &ope->deffect, begin_next );
@@ -1099,7 +1099,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	priv = self->priv;
 
-	ofo_dossier_set_status( priv->dossier, DOS_STATUS_CLOSED );
+	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
 	ofa_main_window_update_title( priv->main_window );
 
@@ -1150,7 +1150,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			priv->connect = ofo_dossier_get_connect( priv->dossier );
 
 			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-				ofo_dossier_set_status( priv->dossier, DOS_STATUS_OPENED );
+				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
 				ofo_dossier_update( priv->dossier );

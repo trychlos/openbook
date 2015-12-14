@@ -55,10 +55,10 @@ enum {
 	ACC_NUMBER = 1,
 	ACC_LABEL,
 	ACC_CURRENCY,
-	ACC_TYPE,
+	ACC_ROOT,
 	ACC_SETTLEABLE,
 	ACC_RECONCILIABLE,
-	ACC_FORWARD,
+	ACC_FORWARDABLE,
 	ACC_CLOSED,
 	ACC_NOTES,
 	ACC_UPD_USER,
@@ -93,7 +93,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_TYPE ),
+		{ OFA_BOX_CSV( ACC_ROOT ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -105,7 +105,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_FORWARD ),
+		{ OFA_BOX_CSV( ACC_FORWARDABLE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -163,6 +163,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 
 struct _ofoAccountPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
+	gboolean root;
 };
 
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
@@ -852,38 +853,6 @@ ofo_account_get_notes( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_type_account:
- * @account: the #ofoAccount account
- *
- * Returns: the type of the @account
- *
- * The type is identified by a letter which may be:
- * 'R': this is a root account, with or without children
- * 'D' (default): this is a detail account, on which entries may be
- *                written.
- */
-const gchar *
-ofo_account_get_type_account( const ofoAccount *account )
-{
-	static const gchar *thisfn = "ofo_account_get_type_account";
-	const gchar *str;
-
-	str = account_get_string_ex( account, ACC_TYPE );
-
-	if(  my_strlen( str )){
-		if( !g_utf8_collate( str, ACCOUNT_TYPE_ROOT ) || !g_utf8_collate( str, ACCOUNT_TYPE_DETAIL )){
-			return( str );
-		}
-
-		g_warning( "%s: invalid type account: %s", thisfn, str );
-		return( ACCOUNT_TYPE_DETAIL );
-	}
-
-	/* default is detail account */
-	return( ACCOUNT_TYPE_DETAIL );
-}
-
-/**
  * ofo_account_get_upd_user:
  * @account: the #ofoAccount account
  *
@@ -1033,29 +1002,25 @@ ofo_account_is_deletable( const ofoAccount *account, ofoDossier *dossier )
 
 /**
  * ofo_account_is_root:
- * @account: the #ofoAccount account
+ * @account: the #ofoAccount account.
  *
- * Default is 'detail' type.
+ * Returns: %TRUE if the @account is a root account, %FALSE if this is
+ * a detail account.
  */
 gboolean
 ofo_account_is_root( const ofoAccount *account )
 {
-	gboolean is_root;
-	const gchar *account_type;
+	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	is_root = FALSE;
-
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account_type = ofo_account_get_type_account( account );
-		if( !my_collate( account_type, "R" )){
-			is_root = TRUE;
-		}
+		cstr = account_get_string_ex( account, ACC_ROOT );
+		return( !my_collate( cstr, "Y" ));
 	}
 
-	return( is_root );
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -1071,13 +1036,17 @@ ofo_account_is_root( const ofoAccount *account )
 gboolean
 ofo_account_is_settleable( const ofoAccount *account )
 {
-	gboolean is_settleable;
-	const gchar *str;
+	const gchar *cstr;
 
-	str = account_get_string_ex( account, ACC_SETTLEABLE );
-	is_settleable = !my_collate( str, ACCOUNT_SETTLEABLE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	return( is_settleable );
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		cstr = account_get_string_ex( account, ACC_SETTLEABLE );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -1094,31 +1063,39 @@ ofo_account_is_settleable( const ofoAccount *account )
 gboolean
 ofo_account_is_reconciliable( const ofoAccount *account )
 {
-	gboolean is_reconciliable;
-	const gchar *str;
+	const gchar *cstr;
 
-	str = account_get_string_ex( account, ACC_RECONCILIABLE );
-	is_reconciliable = !my_collate( str, ACCOUNT_RECONCILIABLE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	return( is_reconciliable );
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
- * ofo_account_is_forward:
+ * ofo_account_is_forwardable:
  * @account: the #ofoAccount account
  *
  * Returns: %TRUE if the account supports carried forward entries.
  */
 gboolean
-ofo_account_is_forward( const ofoAccount *account )
+ofo_account_is_forwardable( const ofoAccount *account )
 {
-	gboolean is_forward;
-	const gchar *str;
+	const gchar *cstr;
 
-	str = account_get_string_ex( account, ACC_FORWARD );
-	is_forward = !my_collate( str, ACCOUNT_FORWARDABLE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	return( is_forward );
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		cstr = account_get_string_ex( account, ACC_FORWARDABLE );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -1130,13 +1107,17 @@ ofo_account_is_forward( const ofoAccount *account )
 gboolean
 ofo_account_is_closed( const ofoAccount *account )
 {
-	gboolean is_closed;
-	const gchar *str;
+	const gchar *cstr;
 
-	str = account_get_string_ex( account, ACC_CLOSED );
-	is_closed = !my_collate( str, ACCOUNT_CLOSED );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	return( is_closed );
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		cstr = account_get_string_ex( account, ACC_CLOSED );
+		return( !my_collate( cstr, "Y" ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 static const gchar *
@@ -1149,15 +1130,15 @@ account_get_string_ex( const ofoAccount *account, gint data_id )
  * ofo_account_is_valid_data:
  */
 gboolean
-ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, const gchar *type )
+ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, gboolean root )
 {
 	static const gchar *thisfn = "ofo_account_is_valid_data";
 	gunichar code;
 	gint value;
-	gboolean is_root;
 
 	if( 0 ){
-		g_debug( "%s: number=%s, label=%s, currency=%s, type=%s", thisfn, number, label, currency, type );
+		g_debug( "%s: number=%s, label=%s, currency=%s, root=%s",
+				thisfn, number, label, currency, root ? "True":"False" );
 	}
 
 	/* is account number valid ?
@@ -1178,11 +1159,8 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 		return( FALSE );
 	}
 
-	/* is root account ? */
-	is_root = ( !my_collate( type, ACCOUNT_TYPE_ROOT ));
-
 	/* currency must be set for detail account */
-	if( !is_root ){
+	if( !root ){
 		if( !my_strlen( currency )){
 			return( FALSE );
 		}
@@ -1560,23 +1538,15 @@ ofo_account_set_notes( ofoAccount *account, const gchar *notes )
 }
 
 /**
- * ofo_account_set_type_account:
+ * ofo_account_set_root:
  * @account: the #ofoAccount account
- * @type: either "R" for a root account or "D" for a detail account.
+ * @root: %TRUE if @account is a root account, %FALSE if this is a
+ *  detail account.
  */
 void
-ofo_account_set_type_account( ofoAccount *account, const gchar *type )
+ofo_account_set_root( ofoAccount *account, gboolean root )
 {
-	const gchar *validated;
-
-	validated = ACCOUNT_TYPE_DETAIL;
-	if( my_strlen( type ) &&
-			( !g_utf8_collate( type, ACCOUNT_TYPE_DETAIL ) || !g_utf8_collate( type, ACCOUNT_TYPE_ROOT ))){
-
-			validated = type;
-	}
-
-	account_set_string( ACC_TYPE, validated );
+	account_set_string( ACC_ROOT, root ? "Y":"N" );
 }
 
 /**
@@ -1587,7 +1557,7 @@ ofo_account_set_type_account( ofoAccount *account, const gchar *type )
 void
 ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
 {
-	account_set_string( ACC_SETTLEABLE, settleable ? ACCOUNT_SETTLEABLE : NULL );
+	account_set_string( ACC_SETTLEABLE, settleable ? "Y":"N" );
 }
 
 /**
@@ -1598,18 +1568,18 @@ ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
 void
 ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
 {
-	account_set_string( ACC_RECONCILIABLE, reconciliable ? ACCOUNT_RECONCILIABLE : NULL );
+	account_set_string( ACC_RECONCILIABLE, reconciliable ? "Y":"N" );
 }
 
 /**
- * ofo_account_set_forward:
+ * ofo_account_set_forwardable:
  * @account: the #ofoAccount account
- * @forward: %TRUE if the account supports carried forward entries
+ * @forwardable: %TRUE if the account supports carried forward entries
  */
 void
-ofo_account_set_forward( ofoAccount *account, gboolean forward )
+ofo_account_set_forwardable( ofoAccount *account, gboolean forwardable )
 {
-	account_set_string( ACC_FORWARD, forward ? ACCOUNT_FORWARDABLE : NULL );
+	account_set_string( ACC_FORWARDABLE, forwardable ? "Y":"N" );
 }
 
 /**
@@ -1620,7 +1590,7 @@ ofo_account_set_forward( ofoAccount *account, gboolean forward )
 void
 ofo_account_set_closed( ofoAccount *account, gboolean closed )
 {
-	account_set_string( ACC_CLOSED, closed ? ACCOUNT_CLOSED : NULL );
+	account_set_string( ACC_CLOSED, closed ? "Y":"N" );
 }
 
 /*
@@ -1781,7 +1751,7 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *u
 
 	g_string_append_printf( query,
 			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,"
-			"	ACC_TYPE,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARD,"
+			"	ACC_ROOT,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARDABLE,"
 			"	ACC_CLOSED,ACC_UPD_USER, ACC_UPD_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
@@ -1799,31 +1769,11 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *u
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s',", ofo_account_get_type_account( account ));
-
-	if( ofo_account_is_settleable( account )){
-		g_string_append_printf( query, "'%s',", ACCOUNT_SETTLEABLE );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	if( ofo_account_is_reconciliable( account )){
-		g_string_append_printf( query, "'%s',", ACCOUNT_RECONCILIABLE );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	if( ofo_account_is_forward( account )){
-		g_string_append_printf( query, "'%s',", ACCOUNT_FORWARDABLE );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	if( ofo_account_is_closed( account )){
-		g_string_append_printf( query, "'%s',", ACCOUNT_CLOSED );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
+	g_string_append_printf( query, "'%s',", ofo_account_is_root( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_is_settleable( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_is_reconciliable( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_is_forwardable( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_is_closed( account ) ? "Y":"N" );
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
@@ -1915,32 +1865,19 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *cnx, const gchar *u
 	}
 
 	g_string_append_printf( query,
-			"	ACC_TYPE='%s',",
-					ofo_account_get_type_account( account ));
+			"	ACC_ROOT='%s',", ofo_account_is_root( account ) ? "Y":"N" );
 
-	if( ofo_account_is_settleable( account )){
-		g_string_append_printf( query, "ACC_SETTLEABLE='%s',", ACCOUNT_SETTLEABLE );
-	} else {
-		query = g_string_append( query, "ACC_SETTLEABLE=NULL," );
-	}
+	g_string_append_printf( query,
+			"	ACC_SETTLEABLE='%s',", ofo_account_is_settleable( account ) ? "Y":"N" );
 
-	if( ofo_account_is_reconciliable( account )){
-		g_string_append_printf( query, "ACC_RECONCILIABLE='%s',", ACCOUNT_RECONCILIABLE );
-	} else {
-		query = g_string_append( query, "ACC_RECONCILIABLE=NULL," );
-	}
+	g_string_append_printf( query,
+			"	ACC_RECONCILIABLE='%s',", ofo_account_is_reconciliable( account ) ? "Y":"N" );
 
-	if( ofo_account_is_forward( account )){
-		g_string_append_printf( query, "ACC_FORWARD='%s',", ACCOUNT_FORWARDABLE );
-	} else {
-		query = g_string_append( query, "ACC_FORWARD=NULL," );
-	}
+	g_string_append_printf( query,
+			"	ACC_FORWARDABLE='%s',", ofo_account_is_forwardable( account ) ? "Y":"N" );
 
-	if( ofo_account_is_closed( account )){
-		g_string_append_printf( query, "ACC_CLOSED='%s',", ACCOUNT_CLOSED );
-	} else {
-		query = g_string_append( query, "ACC_CLOSED=NULL," );
-	}
+	g_string_append_printf( query,
+			"	ACC_CLOSED='%s',", ofo_account_is_closed( account ) ? "Y":"N" );
 
 	g_string_append_printf( query,
 			"	ACC_UPD_USER='%s',ACC_UPD_STAMP='%s'"
@@ -2332,11 +2269,16 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		ofo_account_set_currency( account, dev_code );
 		g_free( dev_code );
 
-		/* account type */
+		/* root account
+		 * previous to DB model v27, root/detail accounts were marked with R/D
+		 * starting with v27, root accounts are marked with Y/N */
 		str = ofa_iimportable_get_string( &itf );
 		if( !str ){
-			str = g_strdup( ACCOUNT_TYPE_DETAIL );
-		} else if( g_utf8_collate( str, ACCOUNT_TYPE_DETAIL ) && g_utf8_collate( str, ACCOUNT_TYPE_ROOT )){
+			str = g_strdup( "N" );
+		} else if( g_utf8_collate( str, ACCOUNT_TYPE_DETAIL ) &&
+					g_utf8_collate( str, ACCOUNT_TYPE_ROOT ) &&
+					g_utf8_collate( str, "Y" ) &&
+					g_utf8_collate( str, "N" )){
 			msg = g_strdup_printf( _( "invalid account type: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
@@ -2345,14 +2287,16 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			errors += 1;
 			continue;
 		}
-		ofo_account_set_type_account( account, str );
+		ofo_account_set_root( account,
+				!my_collate( str, ACCOUNT_TYPE_ROOT ) || !my_collate( str, "Y" ));
 		g_free( str );
 
 		/* settleable ? */
 		str = ofa_iimportable_get_string( &itf );
 		if( str ){
-			if( g_utf8_collate( str, ACCOUNT_SETTLEABLE )){
-				msg = g_strdup_printf( _( "invalid account settleable indicator: %s" ), str );
+			if( g_utf8_collate( str, ACCOUNT_SETTLEABLE ) &&
+					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
+				msg = g_strdup_printf( _( "invalid settleable account indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
@@ -2360,7 +2304,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				errors += 1;
 				continue;
 			} else {
-				ofo_account_set_settleable( account, TRUE );
+				ofo_account_set_settleable( account,
+						!my_collate( str, ACCOUNT_SETTLEABLE ) || !my_collate( str, "Y" ));
 			}
 		}
 		g_free( str );
@@ -2368,8 +2313,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* reconciliable ? */
 		str = ofa_iimportable_get_string( &itf );
 		if( str ){
-			if( g_utf8_collate( str, ACCOUNT_RECONCILIABLE )){
-				msg = g_strdup_printf( _( "invalid account reconciliable indicator: %s" ), str );
+			if( g_utf8_collate( str, ACCOUNT_RECONCILIABLE ) &&
+					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
+				msg = g_strdup_printf( _( "invalid reconciliable account indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
@@ -2377,7 +2323,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				errors += 1;
 				continue;
 			} else {
-				ofo_account_set_reconciliable( account, TRUE );
+				ofo_account_set_reconciliable( account,
+						!my_collate( str, ACCOUNT_RECONCILIABLE ) || !my_collate( str, "Y" ));
 			}
 		}
 		g_free( str );
@@ -2385,8 +2332,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* carried forwardable ? */
 		str = ofa_iimportable_get_string( &itf );
 		if( str ){
-			if( g_utf8_collate( str, ACCOUNT_FORWARDABLE )){
-				msg = g_strdup_printf( _( "invalid account forwardable indicator: %s" ), str );
+			if( g_utf8_collate( str, ACCOUNT_FORWARDABLE ) &&
+					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
+				msg = g_strdup_printf( _( "invalid forwardable account indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
@@ -2394,7 +2342,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				errors += 1;
 				continue;
 			} else {
-				ofo_account_set_forward( account, TRUE );
+				ofo_account_set_forwardable( account,
+						!my_collate( str, ACCOUNT_FORWARDABLE ) || !my_collate( str, "Y" ));
 			}
 		}
 		g_free( str );

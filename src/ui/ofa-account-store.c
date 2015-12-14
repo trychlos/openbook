@@ -58,14 +58,14 @@ typedef struct {
 	sChild;
 
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
-		G_TYPE_STRING, G_TYPE_STRING, 0,				/* type, notes, notes_png */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
+		G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
 		G_TYPE_STRING,									/* upd_user */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* rough_debit, rough_credit, open_debit */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* rough_debit, rough_credit, open_debit */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
+		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
 		G_TYPE_STRING,  								/* exe_solde */
 		G_TYPE_OBJECT									/* the #ofoAccount itself */
 };
@@ -345,7 +345,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 			iter,
 			ACCOUNT_COL_LABEL,         ofo_account_get_label( account ),
 			ACCOUNT_COL_CURRENCY,      currency_code,
-			ACCOUNT_COL_TYPE,          ofo_account_get_type_account( account ),
+			ACCOUNT_COL_ROOT,          ofo_account_is_root( account ),
 			ACCOUNT_COL_NOTES,         notes,
 			ACCOUNT_COL_NOTES_PNG,     notes_png,
 			ACCOUNT_COL_UPD_USER,      ofo_account_get_upd_user( account ),
@@ -360,7 +360,7 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 			ACCOUNT_COL_FUT_CREDIT,    sfcre,
 			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE : "",
 			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE : "",
-			ACCOUNT_COL_FORWARD,       ofo_account_is_forward( account ) ? ACCOUNT_FORWARDABLE : "",
+			ACCOUNT_COL_FORWARD,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE : "",
 			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED : "",
 			ACCOUNT_COL_EXE_DEBIT,     sedeb,
 			ACCOUNT_COL_EXE_CREDIT,    secre,
