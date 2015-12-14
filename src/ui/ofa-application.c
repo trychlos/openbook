@@ -472,6 +472,7 @@ init_i18n( ofaApplication *application )
 	bindtextdomain( GETTEXT_PACKAGE, GNOMELOCALEDIR );
 # ifdef HAVE_BIND_TEXTDOMAIN_CODESET
 	bind_textdomain_codeset( GETTEXT_PACKAGE, "UTF-8" );
+	g_debug( "%s: binding to utf-8", thisfn );
 # endif
 	textdomain( GETTEXT_PACKAGE );
 #endif
