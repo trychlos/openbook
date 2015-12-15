@@ -30,7 +30,6 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
-#include "api/my-settings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"

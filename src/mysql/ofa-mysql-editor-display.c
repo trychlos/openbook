@@ -27,7 +27,6 @@
 #endif
 
 #include "api/my-utils.h"
-#include "api/my-settings.h"
 #include "api/ofa-idbeditor.h"
 
 #include "ofa-mysql.h"

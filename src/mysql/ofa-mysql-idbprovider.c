@@ -29,7 +29,6 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
-#include "api/my-settings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
