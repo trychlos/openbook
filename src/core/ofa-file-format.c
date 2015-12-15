@@ -32,7 +32,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
-#include "api/ofa-settings.h"
+
+#include "ofa-settings.h"
 
 /* private instance data
  */

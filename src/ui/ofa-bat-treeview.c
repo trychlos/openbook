@@ -30,9 +30,10 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-main-window.h"

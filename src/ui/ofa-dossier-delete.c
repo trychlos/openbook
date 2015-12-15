@@ -33,11 +33,11 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-main-window.h"

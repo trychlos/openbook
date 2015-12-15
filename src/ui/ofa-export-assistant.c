@@ -34,7 +34,6 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -46,6 +45,7 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-main-window.h"

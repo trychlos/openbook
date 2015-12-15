@@ -31,7 +31,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-settings.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-bat-utils.h"

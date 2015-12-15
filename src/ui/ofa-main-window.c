@@ -34,10 +34,9 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "api/ofa-preferences.h"
+#include "core/ofa-settings.h"
 
 #include "ui/my-tab-label.h"
 #include "ui/ofa-account-book-render.h"

@@ -31,10 +31,11 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-guided-input.h"

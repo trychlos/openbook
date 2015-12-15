@@ -33,9 +33,10 @@
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"

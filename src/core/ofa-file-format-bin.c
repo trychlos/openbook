@@ -30,12 +30,12 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
 
-#include "core/my-date-combo.h"
-#include "core/my-decimal-combo.h"
-#include "core/my-field-combo.h"
-#include "core/ofa-file-format-bin.h"
+#include "my-date-combo.h"
+#include "my-decimal-combo.h"
+#include "my-field-combo.h"
+#include "ofa-file-format-bin.h"
+#include "ofa-settings.h"
 
 /* private instance data
  */

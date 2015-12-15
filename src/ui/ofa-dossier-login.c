@@ -30,7 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-settings.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-user-credentials-bin.h"

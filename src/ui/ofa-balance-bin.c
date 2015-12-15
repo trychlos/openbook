@@ -30,9 +30,10 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"

@@ -34,7 +34,6 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -43,6 +42,7 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idate-filter.h"

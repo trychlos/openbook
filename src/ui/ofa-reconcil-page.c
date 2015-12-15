@@ -36,7 +36,6 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -47,6 +46,7 @@
 #include "api/ofs-concil-id.h"
 
 #include "core/ofa-iconcil.h"
+#include "core/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"

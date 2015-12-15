@@ -28,8 +28,9 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-selector-bin.h"

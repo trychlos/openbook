@@ -34,9 +34,9 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
-#include "api/ofa-settings.h"
-
 #include "api/ofa-preferences.h"
+
+#include "ofa-settings.h"
 
 /* we have to deal with:
  * - from locale to prefs display (this is needed so that we do not

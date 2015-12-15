@@ -34,12 +34,12 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new.h"

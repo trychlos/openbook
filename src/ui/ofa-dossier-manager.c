@@ -33,8 +33,9 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-login.h"

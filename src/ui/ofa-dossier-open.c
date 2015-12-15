@@ -30,8 +30,9 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"

@@ -36,7 +36,6 @@
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
@@ -49,6 +48,7 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-main-window.h"

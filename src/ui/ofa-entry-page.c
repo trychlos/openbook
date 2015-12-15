@@ -33,7 +33,6 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
@@ -45,6 +44,7 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
+#include "core/ofa-settings.h"
 
 #include "ui/my-cell-renderer-amount.h"
 #include "ui/my-cell-renderer-date.h"

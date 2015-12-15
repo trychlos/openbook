@@ -27,7 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
+
+#include "core/ofa-settings.h"
 
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-ipreferences.h"

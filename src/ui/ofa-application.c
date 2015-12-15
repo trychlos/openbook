@@ -34,9 +34,9 @@
 #include "api/ofa-box.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 
 #include "core/ofa-file-dir.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"

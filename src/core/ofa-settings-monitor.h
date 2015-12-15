@@ -35,7 +35,7 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-settings.h"
+#include "ofa-settings.h"
 
 G_BEGIN_DECLS
 

@@ -33,7 +33,8 @@
 #include <string.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
+
+#include "ofa-settings.h"
 
 #define OFA_TYPE_SETTINGS                ( ofa_settings_get_type())
 #define OFA_SETTINGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTINGS, ofaSettings ))

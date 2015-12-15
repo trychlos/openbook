@@ -35,12 +35,12 @@
 #include "api/ofa-ipreferences.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-plugin.h"
-#include "api/ofa-settings.h"
 
-#include "core/my-date-combo.h"
-#include "core/my-decimal-combo.h"
-#include "core/ofa-dossier-delete-prefs-bin.h"
-#include "core/ofa-file-format-bin.h"
+#include "my-date-combo.h"
+#include "my-decimal-combo.h"
+#include "ofa-dossier-delete-prefs-bin.h"
+#include "ofa-file-format-bin.h"
+#include "ofa-settings.h"
 
 /* private instance data
  */

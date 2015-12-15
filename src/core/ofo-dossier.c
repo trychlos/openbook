@@ -35,7 +35,6 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -45,9 +44,10 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
-#include "core/ofa-ddl-update.h"
-#include "core/ofa-icollector.h"
-#include "core/ofo-marshal.h"
+#include "ofa-ddl-update.h"
+#include "ofa-icollector.h"
+#include "ofa-settings.h"
+#include "ofo-marshal.h"
 
 /* priv instance data
  */

@@ -32,12 +32,12 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
 #include "core/my-progress-bar.h"
+#include "core/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-ledger-close.h"

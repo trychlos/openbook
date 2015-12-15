@@ -35,8 +35,9 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-backup.h"
 #include "ui/ofa-main-window.h"

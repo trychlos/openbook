@@ -29,9 +29,9 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
 
-#include "core/ofa-dossier-delete-prefs-bin.h"
+#include "ofa-dossier-delete-prefs-bin.h"
+#include "ofa-settings.h"
 
 /* private instance data
  */

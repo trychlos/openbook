@@ -36,13 +36,13 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"

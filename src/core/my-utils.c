@@ -31,7 +31,8 @@
 #include <time.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-settings.h"
+
+#include "ofa-settings.h"
 
 typedef struct {
 	gchar        *name;

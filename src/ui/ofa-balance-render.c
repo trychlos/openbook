@@ -34,12 +34,13 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
+
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idate-filter.h"

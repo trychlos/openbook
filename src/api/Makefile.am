@@ -53,7 +53,6 @@ api_include_HEADERS = \
 	ofa-dossier-misc.h									\
 	ofa-plugin.h										\
 	ofa-preferences.h									\
-	ofa-settings.h										\
 	\
 	ofo-account.h										\
 	ofo-account-def.h									\
