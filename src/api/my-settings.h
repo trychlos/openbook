@@ -129,19 +129,6 @@ GList      *my_settings_get_groups      ( const mySettings *settings );
 #define     my_settings_free_groups( L )		g_list_free_full(( L ), \
 													( GDestroyNotify ) g_free )
 
-void        my_settings_remove_group    ( mySettings *settings,
-													const gchar *group );
-
-GList      *my_settings_get_keys        ( const mySettings *settings,
-													const gchar *group );
-
-#define     my_settings_free_keys( L )			g_list_free_full(( L ), \
-													( GDestroyNotify ) g_free )
-
-void        my_settings_remove_key      ( mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
 void        my_settings_reload          ( mySettings *settings );
 
 G_END_DECLS
