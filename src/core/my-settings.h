@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_MY_SETTINGS_H__
-#define __OPENBOOK_API_MY_SETTINGS_H__
+#ifndef __MY_SETTINGS_H__
+#define __MY_SETTINGS_H__
 
 /* @title: mySettings
  * @short_description: A standard settings class definition
@@ -133,4 +133,4 @@ void        my_settings_reload          ( mySettings *settings );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_MY_SETTINGS_H__ */
+#endif /* __MY_SETTINGS_H__ */

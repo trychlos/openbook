@@ -28,11 +28,11 @@
 
 #include "api/my-file-monitor.h"
 #include "api/my-isettings.h"
-#include "api/my-settings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
 
+#include "my-settings.h"
 #include "ofa-file-dir.h"
 
 /* private instance data

@@ -460,6 +460,7 @@ libofa_core_la_SOURCES = \
 	my-progress-bar.c									\
 	my-progress-bar.h									\
 	my-settings.c										\
+	my-settings.h										\
 	my-timeout.c										\
 	my-utils.c											\
 	my-window.c											\

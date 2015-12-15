@@ -33,8 +33,9 @@
 #include <string.h>
 
 #include "api/my-isettings.h"
-#include "api/my-settings.h"
 #include "api/my-utils.h"
+
+#include "core/my-settings.h"
 
 /* private instance data
  */
