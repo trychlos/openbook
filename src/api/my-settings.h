@@ -30,7 +30,9 @@
  * @include: openbook/my-settings.h
  *
  * The #mySettings class encapsulates the GKeyFile, providing some
- * (hopefully) useful shortcuts.
+ * (hopefully) useful shortcuts. It implements the myISettings
+ * interface, giving thus the application and external plugins the
+ * ways to access settings.
  */
 
 #include <glib-object.h>

@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-isettings.h"
 #include "api/my-settings.h"
 #include "api/my-utils.h"
 
@@ -43,13 +44,23 @@ struct _mySettingsPrivate {
 	GKeyFile     *keyfile;				/* GKeyFile object */
 };
 
+static void       isettings_iface_init( myISettingsInterface *iface );
+static guint      isettings_get_interface_version( const myISettings *instance );
+static GList     *isettings_get_keys( const myISettings *instance, const gchar *group );
+static void       isettings_remove_key( myISettings *instance, const gchar *group, const gchar *key );
+static GList     *isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key );
+static gchar     *isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value );
+static guint      isettings_get_uint( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_uint( myISettings *instance, const gchar *group, const gchar *key, guint value );
 static void       load_key_file( mySettings *settings, const gchar *filename );
 static gchar     *get_default_config_dir( void );
 static gchar     *get_conf_filename( const gchar *name, const gchar *envvar );
 static gchar    **str_to_array( const gchar *str );
 static gboolean   write_key_file( mySettings *settings );
 
-G_DEFINE_TYPE( mySettings, my_settings, G_TYPE_OBJECT )
+G_DEFINE_TYPE_EXTENDED( mySettings, my_settings, G_TYPE_OBJECT, 0, \
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ISETTINGS, isettings_iface_init ));
 
 static void
 settings_finalize( GObject *object )
@@ -118,6 +129,193 @@ my_settings_class_init( mySettingsClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = settings_finalize;
 
 	g_type_class_add_private( klass, sizeof( mySettingsPrivate ));
+}
+
+/*
+ * myISettings interface management
+ */
+static void
+isettings_iface_init( myISettingsInterface *iface )
+{
+	static const gchar *thisfn = "my_settings_isettings_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = isettings_get_interface_version;
+	iface->get_keys = isettings_get_keys;
+	iface->remove_key = isettings_remove_key;
+	iface->get_string_list = isettings_get_string_list;
+	iface->get_string = isettings_get_string;
+	iface->set_string = isettings_set_string;
+	iface->get_uint = isettings_get_uint;
+	iface->set_uint = isettings_set_uint;
+}
+
+static guint
+isettings_get_interface_version( const myISettings *instance )
+{
+	return( 1 );
+}
+
+static GList *
+isettings_get_keys( const myISettings *instance, const gchar *group )
+{
+	mySettingsPrivate *priv;
+	gchar **array, **iter;
+	GList *list;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		list = NULL;
+		array = g_key_file_get_keys( priv->keyfile, group, NULL, NULL );
+		if( array ){
+			iter = array;
+			while( *iter ){
+				list = g_list_prepend( list, g_strdup( *iter ));
+				iter++;
+			}
+			g_strfreev( array );
+		}
+		return( g_list_reverse( list ));
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static void
+isettings_remove_key( myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		g_key_file_remove_key( priv->keyfile, group, key, NULL );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+static GList *
+isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	GList *list;
+	gchar *str;
+	gchar **array, **iter;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		list = NULL;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		if( my_strlen( str )){
+			array = str_to_array( str );
+			if( array ){
+				iter = ( gchar ** ) array;
+				while( *iter ){
+					list = g_list_prepend( list, g_strdup( *iter ));
+					iter++;
+				}
+			}
+			g_strfreev( array );
+		}
+		g_free( str );
+		return( g_list_reverse( list ));
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static gchar *
+isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	gchar *str;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		str = NULL;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		return( str );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static void
+isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value )
+{
+	mySettingsPrivate *priv;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		g_key_file_set_string( priv->keyfile, group, key, value );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+static guint
+isettings_get_uint( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	guint value;
+	gchar *str;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), 0 );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, 0 );
+
+	if( !priv->dispose_has_run ){
+		value = 0;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		if( my_strlen( str )){
+			value = abs( atoi( str ));
+		}
+		g_free( str );
+		return( value );
+	}
+
+	g_return_val_if_reached( 0 );
+}
+
+static void
+isettings_set_uint( myISettings *instance, const gchar *group, const gchar *key, guint value )
+{
+	mySettingsPrivate *priv;
+	gchar *str;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		str = g_strdup_printf( "%u", value );
+		g_key_file_set_string( priv->keyfile, group, key, str );
+		g_free( str );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
 }
 
 /**
