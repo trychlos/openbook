@@ -38,22 +38,22 @@
 typedef struct {
 	ofaIDBProvider *prov_instance;
 	gchar          *dossier_name;
-	mySettings     *settings;
+	myISettings    *settings;
 	gchar          *group_name;
 	GList          *periods;
 }
 	sIDBMeta;
 
-#define IDBMETA_LAST_VERSION         1
-#define IDBMETA_DATA                 "idbmeta-data"
+#define IDBMETA_LAST_VERSION            1
+#define IDBMETA_DATA                    "idbmeta-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType       register_type( void );
-static void        interface_base_init( ofaIDBMetaInterface *klass );
-static void        interface_base_finalize( ofaIDBMetaInterface *klass );
+static GType     register_type( void );
+static void      interface_base_init( ofaIDBMetaInterface *klass );
+static void      interface_base_finalize( ofaIDBMetaInterface *klass );
 static sIDBMeta *get_idbmeta_data( const ofaIDBMeta *meta );
-static void        on_meta_finalized( sIDBMeta *data, GObject *finalized_meta );
+static void      on_meta_finalized( sIDBMeta *data, GObject *finalized_meta );
 
 /**
  * ofa_idbmeta_get_type:
@@ -247,12 +247,12 @@ ofa_idbmeta_set_dossier_name( ofaIDBMeta *meta, const gchar *dossier_name )
  * ofa_idbmeta_get_settings:
  * @meta: this #ofaIDBMeta instance.
  *
- * Returns: the #mySettings object.
+ * Returns: the #myISettings object.
  *
  * The returned reference is owned by the interface, and should
  * not be freed by the caller.
  */
-mySettings *
+myISettings *
 ofa_idbmeta_get_settings( const ofaIDBMeta *meta )
 {
 	sIDBMeta *data;
@@ -287,11 +287,11 @@ ofa_idbmeta_get_group_name( const ofaIDBMeta *meta )
 /**
  * ofa_idbmeta_set_from_settings:
  * @meta: this #ofaIDBMeta instance.
- * @settings: the #mySettings which manages the dossier settings file.
+ * @settings: the #myISettings which manages the dossier settings file.
  * @group_name: the group name for the dossier.
  */
 void
-ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *group_name )
+ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar *group_name )
  {
  	static const gchar *thisfn = "ofa_idbmeta_set_from_settings";
  	sIDBMeta *data;
@@ -300,6 +300,7 @@ ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gch
  			thisfn, ( void * ) meta, ( void * ) settings, group_name );
 
  	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+ 	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
  	data = get_idbmeta_data( meta );
  	g_clear_object( &data->settings );
@@ -320,11 +321,11 @@ ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gch
  * ofa_idbmeta_set_from_editor:
  * @meta: this #ofaIDBMeta instance.
  * @editor: the #ofaIDBEditor which handles the connection information.
- * @settings: the #mySettings which manages the dossier settings file.
+ * @settings: the #myISettings which manages the dossier settings file.
  * @group_name: the group name for the dossier.
  */
 void
-ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group_name )
+ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group_name )
 {
 	static const gchar *thisfn = "ofa_idbmeta_set_from_editor";
 	sIDBMeta *data;
@@ -334,6 +335,7 @@ ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySet
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
+	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
 	data = get_idbmeta_data( meta );
 	g_clear_object( &data->settings );
@@ -367,7 +369,7 @@ ofa_idbmeta_remove_meta( ofaIDBMeta *meta )
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
 	data = get_idbmeta_data( meta );
-	my_settings_remove_group( data->settings, data->group_name );
+	my_isettings_remove_group( data->settings, data->group_name );
 }
 
 /**

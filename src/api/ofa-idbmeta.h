@@ -44,7 +44,7 @@
  * the #ofaFileDir singleton.
  */
 
-#include "api/my-settings.h"
+#include "api/my-isettings.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta-def.h"
@@ -94,7 +94,7 @@ typedef struct {
 	/**
 	 * set_from_settings:
 	 * @instance: the #ofaIDBMeta instance.
-	 * @settings: the #mySettings instance.
+	 * @settings: a #myISettings instance.
 	 * @group: the group name in the settings.
 	 *
 	 * Set the @instance object with informations read from @settings.
@@ -103,14 +103,14 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void             ( *set_from_settings )    ( ofaIDBMeta *instance,
-													mySettings *settings,
+													myISettings *settings,
 													const gchar *group );
 
 	/**
 	 * set_from_editor:
 	 * @instance: the #ofaIDBMeta instance.
 	 * @editor: the #ofaIDBEditor which handles the connection informations.
-	 * @settings: the #mySettings instance.
+	 * @settings: a #myISettings instance.
 	 * @group: the group name in the settings.
 	 *
 	 * Writes the connection informations to @settings file.
@@ -119,7 +119,7 @@ typedef struct {
 	 */
 	void             ( *set_from_editor )      ( ofaIDBMeta *instance,
 													const ofaIDBEditor *editor,
-													mySettings *settings,
+													myISettings *settings,
 													const gchar *group );
 
 	/**
@@ -183,17 +183,17 @@ gchar          *ofa_idbmeta_get_dossier_name          ( const ofaIDBMeta *meta )
 void            ofa_idbmeta_set_dossier_name          ( ofaIDBMeta *meta,
 																const gchar *dossier_name );
 
-mySettings     *ofa_idbmeta_get_settings              ( const ofaIDBMeta *meta );
+myISettings     *ofa_idbmeta_get_settings              ( const ofaIDBMeta *meta );
 
 gchar          *ofa_idbmeta_get_group_name            ( const ofaIDBMeta *meta );
 
 void            ofa_idbmeta_set_from_settings         ( ofaIDBMeta *meta,
-																mySettings *settings,
+																myISettings *settings,
 																const gchar *group_name );
 
 void            ofa_idbmeta_set_from_editor           ( ofaIDBMeta *meta,
 																const ofaIDBEditor *editor,
-																mySettings *settings,
+																myISettings *settings,
 																const gchar *group_name );
 
 void            ofa_idbmeta_remove_meta               ( ofaIDBMeta *meta );

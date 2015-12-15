@@ -34,7 +34,7 @@
  * In particular, it implements #ofaIDBPeriod interface.
  */
 
-#include "api/my-settings.h"
+#include "api/my-isettings.h"
 
 #include "ofa-mysql-idbprovider.h"
 
@@ -66,11 +66,11 @@ typedef struct {
 
 GType           ofa_mysql_period_get_type         ( void ) G_GNUC_CONST;
 
-ofaMySQLPeriod *ofa_mysql_period_new_from_settings( mySettings *settings,
+ofaMySQLPeriod *ofa_mysql_period_new_from_settings( myISettings *settings,
 														const gchar *group,
 														const gchar *key );
 
-ofaMySQLPeriod *ofa_mysql_period_new_to_settings  ( mySettings *settings,
+ofaMySQLPeriod *ofa_mysql_period_new_to_settings  ( myISettings *settings,
 														const gchar *group,
 														gboolean current,
 														const GDate *begin,
@@ -80,14 +80,14 @@ ofaMySQLPeriod *ofa_mysql_period_new_to_settings  ( mySettings *settings,
 const gchar    *ofa_mysql_period_get_database     ( const ofaMySQLPeriod *period );
 
 void            ofa_mysql_period_update           ( ofaMySQLPeriod *period,
-														mySettings *settings,
+														myISettings *settings,
 														const gchar *group,
 														gboolean current,
 														const GDate *begin,
 														const GDate *end );
 
 void            ofa_mysql_period_remove           ( ofaMySQLPeriod *period,
-														mySettings *settings,
+														myISettings *settings,
 														const gchar *group );
 
 G_END_DECLS

@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/my-isettings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
 
@@ -52,9 +53,9 @@ struct _ofaMySQLMetaPrivate {
 
 static void            idbmeta_iface_init( ofaIDBMetaInterface *iface );
 static guint           idbmeta_get_interface_version( const ofaIDBMeta *instance );
-static void            idbmeta_set_from_settings( ofaIDBMeta *instance, mySettings *settings, const gchar *group );
-static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, mySettings *settings, const gchar *group );
-static GList          *load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group );
+static void            idbmeta_set_from_settings( ofaIDBMeta *instance, myISettings *settings, const gchar *group );
+static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, myISettings *settings, const gchar *group );
+static GList          *load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group );
 static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
 static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end );
 static void            idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period );
@@ -151,10 +152,9 @@ idbmeta_get_interface_version( const ofaIDBMeta *instance )
 }
 
 static void
-idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *group )
+idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
-	gint port;
 	GList *periods;
 
 	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
@@ -164,10 +164,9 @@ idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *
 	if( !priv->dispose_has_run ){
 
 		/* read connection informations from settings */
-		priv->host = my_settings_get_string( settings, group, MYSQL_HOST_KEY );
-		priv->socket = my_settings_get_string( settings, group, MYSQL_SOCKET_KEY );
-		port = my_settings_get_uint( settings, group, MYSQL_PORT_KEY );
-		priv->port = ( port >= 0 ? port : 0 );
+		priv->host = my_isettings_get_string( settings, group, MYSQL_HOST_KEY );
+		priv->socket = my_isettings_get_string( settings, group, MYSQL_SOCKET_KEY );
+		priv->port = my_isettings_get_uint( settings, group, MYSQL_PORT_KEY );
 
 		/* reload defined periods */
 		periods = load_periods( meta, settings, group );
@@ -181,14 +180,14 @@ idbmeta_set_from_settings( ofaIDBMeta *meta, mySettings *settings, const gchar *
  *  existing references
  */
 static GList *
-load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group )
+load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
 {
 	GList *outlist, *prev_list;
 	GList *keys, *itk;
 	const gchar *cstr;
 	ofaMySQLPeriod *new_period, *exist_period, *period;
 
-	keys = my_settings_get_keys( settings, group );
+	keys = my_isettings_get_keys( settings, group );
 	prev_list = ofa_idbmeta_get_periods( meta );
 	outlist = NULL;
 
@@ -210,7 +209,7 @@ load_periods( ofaIDBMeta *meta, mySettings *settings, const gchar *group )
 	}
 
 	ofa_idbmeta_free_periods( prev_list );
-	my_settings_free_keys( keys );
+	my_isettings_free_keys( settings, keys );
 
 	return( g_list_reverse( outlist ));
 }
@@ -232,7 +231,7 @@ find_period( ofaMySQLPeriod *period, GList *list )
 }
 
 static void
-idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySettings *settings, const gchar *group )
+idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
 	const gchar *host, *socket, *database;
@@ -250,15 +249,15 @@ idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, mySetting
 		/* write connection informations to settings */
 		host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
 		if( my_strlen( host )){
-			my_settings_set_string( settings, group, MYSQL_HOST_KEY, host );
+			my_isettings_set_string( settings, group, MYSQL_HOST_KEY, host );
 		}
 		socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
 		if( my_strlen( socket )){
-			my_settings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
+			my_isettings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
 		}
 		port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
 		if( port > 0 ){
-			my_settings_set_uint( settings, group, MYSQL_PORT_KEY, port );
+			my_isettings_set_uint( settings, group, MYSQL_PORT_KEY, port );
 		}
 
 		/* initialize a new current period */
@@ -274,7 +273,7 @@ static void
 idbmeta_update_period( ofaIDBMeta *instance,
 		ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
-	mySettings *settings;
+	myISettings *settings;
 	gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
@@ -290,7 +289,7 @@ idbmeta_update_period( ofaIDBMeta *instance,
 static void
 idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period )
 {
-	mySettings *settings;
+	myISettings *settings;
 	gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
@@ -423,7 +422,7 @@ ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
 							gboolean current, const GDate *begin, const GDate *end, const gchar *database )
 {
 	ofaMySQLPeriod *period;
-	mySettings *settings;
+	myISettings *settings;
 	gchar *group;
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));

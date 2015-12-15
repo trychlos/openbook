@@ -150,6 +150,32 @@ my_isettings_get_interface_version( const myISettings *instance )
 }
 
 /**
+ * my_isettings_remove_group:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ *
+ * Removes the @group from the settings file.
+ */
+void
+my_isettings_remove_group( myISettings *instance, const gchar *group )
+{
+	static const gchar *thisfn = "my_isettings_remove_group";
+
+	g_debug( "%s: instance=%p, group=%s", thisfn, ( void * ) instance, group );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( my_strlen( group ));
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->remove_group ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->remove_group( instance, group );
+		return;
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'remove_group()' method",
+			thisfn, ( void * ) instance );
+}
+
+/**
  * my_isettings_get_keys:
  * @instance: this #myISettings instance.
  * @group: the group name.

@@ -27,6 +27,7 @@
 #endif
 
 #include "api/my-file-monitor.h"
+#include "api/my-isettings.h"
 #include "api/my-settings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbprovider.h"
@@ -302,7 +303,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 			g_object_unref( idbprovider );
 			g_free( prov_name );
 		}
-		ofa_idbmeta_set_from_settings( meta, priv->settings, cstr );
+		ofa_idbmeta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
 		ofa_idbmeta_dump_rec( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
@@ -426,7 +427,7 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 		prov_name = ofa_idbprovider_get_name( prov_instance );
 		my_settings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
 
-		ofa_idbmeta_set_from_editor( meta, editor, priv->settings, group );
+		ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 
 		g_object_unref( prov_instance );
 		g_free( group );

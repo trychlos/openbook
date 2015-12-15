@@ -46,6 +46,7 @@ struct _mySettingsPrivate {
 
 static void       isettings_iface_init( myISettingsInterface *iface );
 static guint      isettings_get_interface_version( const myISettings *instance );
+static void       isettings_remove_group( myISettings *instance, const gchar *group );
 static GList     *isettings_get_keys( const myISettings *instance, const gchar *group );
 static void       isettings_remove_key( myISettings *instance, const gchar *group, const gchar *key );
 static GList     *isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key );
@@ -142,6 +143,7 @@ isettings_iface_init( myISettingsInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = isettings_get_interface_version;
+	iface->remove_group = isettings_remove_group;
 	iface->get_keys = isettings_get_keys;
 	iface->remove_key = isettings_remove_key;
 	iface->get_string_list = isettings_get_string_list;
@@ -155,6 +157,24 @@ static guint
 isettings_get_interface_version( const myISettings *instance )
 {
 	return( 1 );
+}
+
+static void
+isettings_remove_group( myISettings *instance, const gchar *group )
+{
+	mySettingsPrivate *priv;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		g_key_file_remove_group( priv->keyfile, group, NULL );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
 }
 
 static GList *

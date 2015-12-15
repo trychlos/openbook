@@ -34,8 +34,6 @@
  * properties. In particular, it implements #ofaIDBMeta interface.
  */
 
-#include "api/my-settings.h"
-
 #include "ofa-mysql-idbprovider.h"
 
 G_BEGIN_DECLS

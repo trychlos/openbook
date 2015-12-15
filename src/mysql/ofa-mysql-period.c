@@ -50,8 +50,8 @@ static guint           idbperiod_get_interface_version( const ofaIDBPeriod *inst
 static gchar          *idbperiod_get_name( const ofaIDBPeriod *instance );
 static gint            idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b );
 static void            idbperiod_dump( const ofaIDBPeriod *instance );
-static ofaMySQLPeriod *read_from_settings( mySettings *settings, const gchar *group, const gchar *key );
-static void            write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group );
+static ofaMySQLPeriod *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
+static void            write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPERIOD, idbperiod_iface_init ));
@@ -194,7 +194,7 @@ idbperiod_dump( const ofaIDBPeriod *instance )
  * by the caller.
  */
 ofaMySQLPeriod *
-ofa_mysql_period_new_from_settings( mySettings *settings, const gchar *group, const gchar *key )
+ofa_mysql_period_new_from_settings( myISettings *settings, const gchar *group, const gchar *key )
 {
 	ofaMySQLPeriod *period;
 
@@ -213,7 +213,7 @@ ofa_mysql_period_new_from_settings( mySettings *settings, const gchar *group, co
  * string = current / begin / end
  */
 static ofaMySQLPeriod *
-read_from_settings( mySettings *settings, const gchar *group, const gchar *key )
+read_from_settings( myISettings *settings, const gchar *group, const gchar *key )
 {
 	//static const gchar *thisfn = "ofa_mysql_period_read_from_settings";
 	ofaMySQLPeriod *period;
@@ -228,7 +228,7 @@ read_from_settings( mySettings *settings, const gchar *group, const gchar *key )
 	priv->database = g_strdup( key+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
 	//g_debug( "%s: key=%s, database=%s", thisfn, key, priv->database );
 
-	strlist = my_settings_get_string_list( settings, group, key );
+	strlist = my_isettings_get_string_list( settings, group, key );
 
 	/* first element: current as a True/False string */
 	it = strlist;
@@ -248,14 +248,14 @@ read_from_settings( mySettings *settings, const gchar *group, const gchar *key )
 	ofa_idbperiod_set_end_date(
 			OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 
-	my_settings_free_string_list( strlist );
+	my_isettings_free_string_list( settings, strlist );
 
 	return( period );
 }
 
 /**
  * ofa_mysql_period_new_to_settings:
- * @settings: the #mySettings instance which holds the dossier settings
+ * @settings: the #myISettings instance which holds the dossier settings
  *  file.
  * @group: the group name for this dossier.
  * @current: whether the financial period is current.
@@ -269,13 +269,13 @@ read_from_settings( mySettings *settings, const gchar *group, const gchar *key )
  * implements the #ofaIDBPeriod interface.
  */
 ofaMySQLPeriod *
-ofa_mysql_period_new_to_settings( mySettings *settings, const gchar *group,
+ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 									gboolean current, const GDate *begin, const GDate *end, const gchar *database )
 {
 	ofaMySQLPeriod *period;
 	gchar *key, *sbegin, *send, *content;
 
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
+	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
 	g_return_val_if_fail( my_strlen( group ), NULL );
 	g_return_val_if_fail( my_strlen( database ), NULL );
 
@@ -284,7 +284,7 @@ ofa_mysql_period_new_to_settings( mySettings *settings, const gchar *group,
 	send = my_date_to_str( end, MY_DATE_YYMD );
 	content = g_strdup_printf( "%s;%s;%s;", current ? "True":"False", sbegin, send );
 
-	my_settings_set_string( settings, group, key, content );
+	my_isettings_set_string( settings, group, key, content );
 
 	g_free( content );
 	g_free( send );
@@ -329,7 +329,7 @@ ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
 /**
  * ofa_mysql_period_update:
  * @period: this #ofaMySQLPeriod object.
- * @settings: the #mySettings object.
+ * @settings: the #myISettings object.
  * @group: the group name in the settings.
  * @current: whether the financial period is current.
  * @begin: [allow-none]: the beginning date.
@@ -339,7 +339,7 @@ ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
  */
 void
 ofa_mysql_period_update( ofaMySQLPeriod *period,
-		mySettings *settings, const gchar *group, gboolean current, const GDate *begin, const GDate *end )
+		myISettings *settings, const gchar *group, gboolean current, const GDate *begin, const GDate *end )
 {
 	ofaMySQLPeriodPrivate *priv;
 
@@ -362,13 +362,13 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 /**
  * ofa_mysql_period_remove:
  * @period: this #ofaMySQLPeriod object.
- * @settings: the #mySettings object.
+ * @settings: the #myISettings object.
  * @group: the group name in the settings.
  *
  * Removes the @period from dossier settings.
  */
 void
-ofa_mysql_period_remove( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
+ofa_mysql_period_remove( ofaMySQLPeriod *period, myISettings *settings, const gchar *group )
 {
 	ofaMySQLPeriodPrivate *priv;
 	gchar *key;
@@ -378,13 +378,13 @@ ofa_mysql_period_remove( ofaMySQLPeriod *period, mySettings *settings, const gch
 	if( !priv->dispose_has_run ){
 
 		key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
-		my_settings_remove_key( settings, group, key );
+		my_isettings_remove_key( settings, group, key );
 		g_free( key );
 	}
 }
 
 static void
-write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *group )
+write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group )
 {
 	ofaMySQLPeriodPrivate *priv;
 	gchar *key, *content, *begin, *end;
@@ -398,7 +398,7 @@ write_to_settings( ofaMySQLPeriod *period, mySettings *settings, const gchar *gr
 	content = g_strdup_printf( "%s;%s;%s;",
 					ofa_idbperiod_get_current( OFA_IDBPERIOD( period )) ? "True":"False",
 					begin, end );
-	my_settings_set_string( settings, group, key, content );
+	my_isettings_set_string( settings, group, key, content );
 
 	g_free( begin );
 	g_free( end );

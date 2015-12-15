@@ -52,6 +52,7 @@ typedef struct _ofaISettings                   myISettings;
  * myISettingsInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @remove_group: [should]: removes a group.
  * @get_keys: [should]: returns the list of keys.
  * @free_keys: [may]: frees a list of keys.
  * @remove_key: [should]: removes a key.
@@ -85,6 +86,18 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint    ( *get_interface_version )( const myISettings *instance );
+
+	/**
+	 * remove_group:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 *
+	 * Removes the @group from the settings file.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *remove_group )         ( myISettings *instance,
+												const gchar *group );
 
 	/**
 	 * get_keys:
@@ -223,6 +236,8 @@ guint   my_isettings_get_interface_version     ( const myISettings *instance );
 
 /* group management
  */
+void    my_isettings_remove_group              ( myISettings *settings,
+														const gchar *group );
 
 /* key management
  */
