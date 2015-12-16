@@ -180,7 +180,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
 	ofa-mysql-editor-enter.h ofa-mysql-meta.c ofa-mysql-meta.h \
 	ofa-mysql-idbprovider.c ofa-mysql-idbprovider.h \
-	ofa-mysql-ipreferences.c ofa-mysql-ipreferences.h \
+	ofa-mysql-iprefs-provider.c ofa-mysql-iprefs-provider.h \
 	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
 	ofa-mysql-prefs-bin.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
@@ -188,7 +188,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.lo ofa-mysql-period.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo ofa-mysql-period.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo ofa-module.lo
 libofa_mysql_la_OBJECTS = $(am_libofa_mysql_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -458,8 +458,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.h							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.c						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-ipreferences.h						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.c						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.h						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-period.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-period.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c							\
@@ -583,7 +583,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbprovider.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ipreferences.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-iprefs-provider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@

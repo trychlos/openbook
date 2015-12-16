@@ -30,7 +30,7 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbprovider.h"
-#include "ofa-mysql-ipreferences.h"
+#include "ofa-mysql-iprefs-provider.h"
 
 /* private instance data
  */
@@ -75,8 +75,8 @@ ofa_mysql_register_type( GTypeModule *module )
 		NULL
 	};
 
-	static const GInterfaceInfo ipreferences_iface_info = {
-		( GInterfaceInitFunc ) ofa_mysql_ipreferences_iface_init,
+	static const GInterfaceInfo iprefs_provider_iface_info = {
+		( GInterfaceInitFunc ) ofa_mysql_iprefs_provider_iface_init,
 		NULL,
 		NULL
 	};
@@ -89,7 +89,7 @@ ofa_mysql_register_type( GTypeModule *module )
 			module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
 
 	g_type_module_add_interface(
-			module, st_module_type, OFA_TYPE_IPREFS_PROVIDER, &ipreferences_iface_info );
+			module, st_module_type, OFA_TYPE_IPREFS_PROVIDER, &iprefs_provider_iface_info );
 }
 
 static void

@@ -690,7 +690,7 @@
 	* src/mysql/ofa-mysql-connect-display-piece.c,
 	* src/mysql/ofa-mysql-connect-enter-piece.c,
 	* src/mysql/ofa-mysql-idbms.c,
-	* src/mysql/ofa-mysql-ipreferences.c,
+	* src/mysql/ofa-mysql-iprefs-provider.c,
 	* src/ui/my-assistant.c,
 	* src/ui/my-editable-date.c,
 	* src/ui/ofa-account-properties.c,

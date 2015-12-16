@@ -54,8 +54,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-meta.h								\
 	ofa-mysql-idbprovider.c							\
 	ofa-mysql-idbprovider.h							\
-	ofa-mysql-ipreferences.c						\
-	ofa-mysql-ipreferences.h						\
+	ofa-mysql-iprefs-provider.c						\
+	ofa-mysql-iprefs-provider.h						\
 	ofa-mysql-period.c								\
 	ofa-mysql-period.h								\
 	ofa-mysql-prefs-bin.c							\

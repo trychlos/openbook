@@ -31,7 +31,7 @@
 #include "core/ofa-settings.h"
 
 #include "ofa-mysql-cmdline.h"
-#include "ofa-mysql-ipreferences.h"
+#include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
 
 #define PREFS_GROUP                     "MySQL"
@@ -41,9 +41,9 @@
 static guint ipreferences_get_interface_version( const ofaIPrefsProvider *instance );
 
 void
-ofa_mysql_ipreferences_iface_init( ofaIPrefsProviderInterface *iface )
+ofa_mysql_iprefs_provider_iface_init( ofaIPrefsProviderInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_ipreferences_iface_init";
+	static const gchar *thisfn = "ofa_mysql_iprefs_provider_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -60,7 +60,7 @@ ipreferences_get_interface_version( const ofaIPrefsProvider *instance )
 }
 
 /**
- * ofa_mysql_ipreferences_get_backup_command:
+ * ofa_mysql_iprefs_provider_get_backup_command:
  *
  * Returns: the backup command from the user settings, as a newly
  * allocated string which should be g_free() by the caller.
@@ -69,7 +69,7 @@ ipreferences_get_interface_version( const ofaIPrefsProvider *instance )
  * backup command.
  */
 gchar *
-ofa_mysql_ipreferences_get_backup_command ( void )
+ofa_mysql_iprefs_provider_get_backup_command ( void )
 {
 	gchar *cmdline;
 
@@ -83,26 +83,26 @@ ofa_mysql_ipreferences_get_backup_command ( void )
 }
 
 /**
- * ofa_mysql_ipreferences_set_backup_command:
+ * ofa_mysql_iprefs_provider_set_backup_command:
  * @command: the backup command to be set.
  *
  * Records the backup command @command in the user settings.
  */
 void
-ofa_mysql_ipreferences_set_backup_command ( const gchar *command )
+ofa_mysql_iprefs_provider_set_backup_command ( const gchar *command )
 {
 	ofa_settings_set_string_ex(
 			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE, command );
 }
 
 /**
- * ofa_mysql_ipreferences_get_restore_command:
+ * ofa_mysql_iprefs_provider_get_restore_command:
  *
  * Returns: the restore command from the user settings, as a newly
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_mysql_ipreferences_get_restore_command( void )
+ofa_mysql_iprefs_provider_get_restore_command( void )
 {
 	gchar *cmdline;
 
@@ -116,13 +116,13 @@ ofa_mysql_ipreferences_get_restore_command( void )
 }
 
 /**
- * ofa_mysql_ipreferences_set_restore_command:
+ * ofa_mysql_iprefs_provider_set_restore_command:
  * @command: the restore command to be set.
  *
  * Records the restore command @command in the user settings.
  */
 void
-ofa_mysql_ipreferences_set_restore_command( const gchar *command )
+ofa_mysql_iprefs_provider_set_restore_command( const gchar *command )
 {
 	ofa_settings_set_string_ex(
 			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE, command );

@@ -50,7 +50,7 @@
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
-#include "ofa-mysql-ipreferences.h"
+#include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
@@ -120,7 +120,7 @@ ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *uri )
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
-	template = ofa_mysql_ipreferences_get_backup_command();
+	template = ofa_mysql_iprefs_provider_get_backup_command();
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
 	fname = g_filename_from_uri( uri, NULL, NULL );
 
@@ -190,7 +190,7 @@ ofa_mysql_cmdline_restore_run( const ofaMySQLConnect *connect,
 			"/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", connect, period, NULL, NULL );
 
 	fname = g_filename_from_uri( uri, NULL, NULL );
-	template = ofa_mysql_ipreferences_get_restore_command();
+	template = ofa_mysql_iprefs_provider_get_restore_command();
 
 	ok = do_execute_async(
 				template,
