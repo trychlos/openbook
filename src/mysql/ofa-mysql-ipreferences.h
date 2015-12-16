@@ -22,21 +22,21 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_IPREFERENCES_H__
-#define __OFA_MYSQL_IPREFERENCES_H__
+#ifndef __OFA_MYSQL_IPREFS_PROVIDER_H__
+#define __OFA_MYSQL_IPREFS_PROVIDER_H__
 
 /**
  * SECTION: ofa_mysql_ipreferences
  * @short_description: #ofaMysql class definition.
  *
- * #ofaIPreferences interface management.
+ * #ofaIPrefsProvider interface management.
  */
 
-#include "api/ofa-ipreferences.h"
+#include "api/ofa-iprefs-provider.h"
 
 G_BEGIN_DECLS
 
-void   ofa_mysql_ipreferences_iface_init         ( ofaIPreferencesInterface *iface );
+void   ofa_mysql_ipreferences_iface_init         ( ofaIPrefsProviderInterface *iface );
 
 gchar *ofa_mysql_ipreferences_get_backup_command ( void );
 
@@ -48,4 +48,4 @@ void   ofa_mysql_ipreferences_set_restore_command( const gchar *command );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_IPREFERENCES_H__ */
+#endif /* __OFA_MYSQL_IPREFS_PROVIDER_H__ */

@@ -89,7 +89,7 @@ ofa_mysql_register_type( GTypeModule *module )
 			module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
 
 	g_type_module_add_interface(
-			module, st_module_type, OFA_TYPE_IPREFERENCES, &ipreferences_iface_info );
+			module, st_module_type, OFA_TYPE_IPREFS_PROVIDER, &ipreferences_iface_info );
 }
 
 static void

@@ -32,7 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-ipreferences.h"
+#include "api/ofa-iprefs-provider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-plugin.h"
 
@@ -123,12 +123,12 @@ static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferenc
 static const gchar *st_ui_id                          = "PreferencesDlg";
 
 typedef struct {
-	ofaIPreferences *object;
+	ofaIPrefsProvider *object;
 	GtkWidget       *page;
 }
 	sPagePlugin;
 
-typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPreferences * );
+typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPrefsProvider * );
 
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
@@ -143,7 +143,7 @@ static void       init_locale_sep( ofaPreferences *self, GtkContainer *toplevel,
 static void       init_export_page( ofaPreferences *self, GtkContainer *toplevel );
 static void       init_import_page( ofaPreferences *self, GtkContainer *toplevel );
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
-static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
+static void       init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *plugin );
 static void       activate_first_page( ofaPreferences *self );
 static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void       on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
@@ -164,8 +164,8 @@ static void       setup_date_formats( void );
 static void       setup_amount_formats( void );
 static void       do_update_export_page( ofaPreferences *self );
 static void       do_update_import_page( ofaPreferences *self );
-static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
-static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
+static void       update_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
+static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
 
 static void
 preferences_finalize( GObject *instance )
@@ -566,10 +566,10 @@ enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
 {
 	GList *list, *it;
 
-	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IPREFERENCES );
+	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IPREFS_PROVIDER );
 
 	for( it=list ; it ; it=it->next ){
-		( *pfn )( self, OFA_IPREFERENCES( it->data ));
+		( *pfn )( self, OFA_IPREFS_PROVIDER( it->data ));
 	}
 
 	ofa_plugin_free_extensions( list );
@@ -577,13 +577,13 @@ enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
 
 /*
  * @instance: an object maintained by a plugin, which implements our
- *  IPreferences interface.
+ *  IPrefsProvider interface.
  *
  * add a page to the notebook for each object type which implements the
- * ofaIPreferences interface
+ * ofaIPrefsProvider interface
  */
 static void
-init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
+init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *page, *wlabel;
@@ -592,7 +592,7 @@ init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 
 	priv = self->priv;
 
-	page = ofa_ipreferences_do_init( instance, &label );
+	page = ofa_iprefs_provider_do_init( instance, &label );
 	my_utils_widget_set_margin( page, 4, 4, 4, 4 );
 	wlabel = gtk_label_new( label );
 	g_free( label );
@@ -1151,18 +1151,18 @@ do_update_import_page( ofaPreferences *self )
 }
 
 static void
-update_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
+update_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
 	GtkWidget *page;
 
 	page = find_prefs_plugin( self, instance );
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
-	ofa_ipreferences_do_apply( instance, page );
+	ofa_iprefs_provider_do_apply( instance, page );
 }
 
 static GtkWidget *
-find_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
+find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
 	GList *it;
 	sPagePlugin *splug;

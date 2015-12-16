@@ -26,23 +26,23 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-ipreferences.h"
+#include "api/ofa-iprefs-provider.h"
 
-#define IPREFERENCES_LAST_VERSION       1
+#define IPREFS_PROVIDER_LAST_VERSION    1
 
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaIPreferencesInterface *klass );
-static void  interface_base_finalize( ofaIPreferencesInterface *klass );
+static void  interface_base_init( ofaIPrefsProviderInterface *klass );
+static void  interface_base_finalize( ofaIPrefsProviderInterface *klass );
 
 /**
- * ofa_ipreferences_get_type:
+ * ofa_iprefs_provider_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_ipreferences_get_type( void )
+ofa_iprefs_provider_get_type( void )
 {
 	static GType type = 0;
 
@@ -54,18 +54,18 @@ ofa_ipreferences_get_type( void )
 }
 
 /*
- * ofa_ipreferences_register_type:
+ * ofa_iprefs_provider_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_ipreferences_register_type";
+	static const gchar *thisfn = "ofa_iprefs_provider_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIPreferencesInterface ),
+		sizeof( ofaIPrefsProviderInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -78,7 +78,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIPreferences", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIPrefsProvider", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -86,9 +86,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIPreferencesInterface *klass )
+interface_base_init( ofaIPrefsProviderInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ipreferences_interface_base_init";
+	static const gchar *thisfn = "ofa_iprefs_provider_interface_base_init";
 
 	if( !st_initializations ){
 
@@ -101,9 +101,9 @@ interface_base_init( ofaIPreferencesInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIPreferencesInterface *klass )
+interface_base_finalize( ofaIPrefsProviderInterface *klass )
 {
-	static const gchar *thisfn = "ofa_ipreferences_interface_base_finalize";
+	static const gchar *thisfn = "ofa_iprefs_provider_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -117,53 +117,53 @@ interface_base_finalize( ofaIPreferencesInterface *klass )
  *
  */
 guint
-ofa_ipreferences_get_interface_last_version( void )
+ofa_iprefs_provider_get_interface_last_version( void )
 {
-	return( IPREFERENCES_LAST_VERSION );
+	return( IPREFS_PROVIDER_LAST_VERSION );
 }
 
 /**
- * ofa_ipreferences_do_init:
- * @importer: this #ofaIPreferences instance.
+ * ofa_iprefs_provider_do_init:
+ * @importer: this #ofaIPrefsProvider instance.
  * @label: the label to be set on the notebook page
  *
  * Initialize the page to let the user configure his preferences.
  */
 GtkWidget *
-ofa_ipreferences_do_init( const ofaIPreferences *instance, gchar **label )
+ofa_iprefs_provider_do_init( const ofaIPrefsProvider *instance, gchar **label )
 {
-	static const gchar *thisfn = "ofa_ipreferences_do_init";
+	static const gchar *thisfn = "ofa_iprefs_provider_do_init";
 	GtkWidget *page;
 
-	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), NULL );
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	page = NULL;
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init ){
-		page = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init( instance, label );
+	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_init ){
+		page = OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_init( instance, label );
 	}
 
 	return( page );
 }
 
 /**
- * ofa_ipreferences_do_check:
- * @importer: this #ofaIPreferences instance.
+ * ofa_iprefs_provider_do_check:
+ * @importer: this #ofaIPrefsProvider instance.
  * @page: the preferences page.
  * @message: [allow-none]: a message to be returned.
  *
  * Check that the page is valid.
  */
 gboolean
-ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page, gchar **message )
+ofa_iprefs_provider_do_check( const ofaIPrefsProvider *instance, GtkWidget *page, gchar **message )
 {
-	static const gchar *thisfn = "ofa_ipreferences_do_check";
+	static const gchar *thisfn = "ofa_iprefs_provider_do_check";
 	gboolean ok;
 
-	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), FALSE );
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), FALSE );
 	g_return_val_if_fail( page && GTK_IS_WIDGET( page ), FALSE );
 
 	ok = FALSE;
@@ -171,31 +171,31 @@ ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page, gch
 	g_debug( "%s: instance=%p (%s), page=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check ){
-		ok = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check( instance, page, message );
+	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_check ){
+		ok = OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_check( instance, page, message );
 	}
 
 	return( ok );
 }
 
 /**
- * ofa_ipreferences_do_apply:
- * @importer: this #ofaIPreferences instance.
+ * ofa_iprefs_provider_do_apply:
+ * @importer: this #ofaIPrefsProvider instance.
  *
  * Saves the user preferences.
  */
 void
-ofa_ipreferences_do_apply( const ofaIPreferences *instance, GtkWidget *page )
+ofa_iprefs_provider_do_apply( const ofaIPrefsProvider *instance, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_ipreferences_do_apply";
+	static const gchar *thisfn = "ofa_iprefs_provider_do_apply";
 
-	g_return_if_fail( instance && OFA_IS_IPREFERENCES( instance ));
+	g_return_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ));
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
 	g_debug( "%s: instance=%p (%s), page=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_apply ){
-		OFA_IPREFERENCES_GET_INTERFACE( instance )->do_apply( instance, page );
+	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_apply ){
+		OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_apply( instance, page );
 	}
 }

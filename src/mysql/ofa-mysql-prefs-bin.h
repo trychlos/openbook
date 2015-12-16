@@ -38,7 +38,7 @@
  * - current:    no
  */
 
-#include "api/ofa-ipreferences.h"
+#include "api/ofa-iprefs-provider.h"
 
 G_BEGIN_DECLS
 
@@ -68,14 +68,14 @@ typedef struct {
 
 GType      ofa_mysql_prefs_bin_get_type( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new     ( const ofaIPreferences *instance,
+GtkWidget *ofa_mysql_prefs_bin_new     ( const ofaIPrefsProvider *instance,
 													gchar **label );
 
-gboolean   ofa_mysql_prefs_bin_is_valid( const ofaIPreferences *instance,
+gboolean   ofa_mysql_prefs_bin_is_valid( const ofaIPrefsProvider *instance,
 													GtkWidget *bin,
 													gchar **message );
 
-void       ofa_mysql_prefs_bin_apply   ( const ofaIPreferences *instance,
+void       ofa_mysql_prefs_bin_apply   ( const ofaIPrefsProvider *instance,
 													GtkWidget *bin );
 
 G_END_DECLS

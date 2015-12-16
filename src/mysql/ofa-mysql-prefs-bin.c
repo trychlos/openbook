@@ -48,7 +48,7 @@ struct _ofaMySQLPrefsBinPrivate {
 
 	/* runtime data
 	 */
-	const ofaIPreferences *instance;
+	const ofaIPrefsProvider *instance;
 	gchar                 *backup_cmdline;
 	gchar                 *restore_cmdline;
 };
@@ -167,11 +167,11 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
  * Returns: a new #ofaMySQLPrefsBin instance as a #GtkWidget.
  */
 GtkWidget *
-ofa_mysql_prefs_bin_new( const ofaIPreferences *instance, gchar **label )
+ofa_mysql_prefs_bin_new( const ofaIPrefsProvider *instance, gchar **label )
 {
 	ofaMySQLPrefsBin *bin;
 
-	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), NULL );
 
 	bin = g_object_new( OFA_TYPE_MYSQL_PREFS_BIN, NULL );
 
@@ -264,12 +264,12 @@ on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin )
  * Returns: %TRUE if the widget is valid, %FALSE else.
  */
 gboolean
-ofa_mysql_prefs_bin_is_valid( const ofaIPreferences *instance, GtkWidget *bin, gchar **message )
+ofa_mysql_prefs_bin_is_valid( const ofaIPrefsProvider *instance, GtkWidget *bin, gchar **message )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), FALSE );
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), FALSE );
 	g_return_val_if_fail( bin && OFA_IS_MYSQL_PREFS_BIN( bin ), FALSE );
 
 	priv = OFA_MYSQL_PREFS_BIN( bin )->priv;
@@ -297,12 +297,12 @@ ofa_mysql_prefs_bin_is_valid( const ofaIPreferences *instance, GtkWidget *bin, g
  * Writes the data into the user's settings.
  */
 void
-ofa_mysql_prefs_bin_apply( const ofaIPreferences *instance, GtkWidget *bin )
+ofa_mysql_prefs_bin_apply( const ofaIPrefsProvider *instance, GtkWidget *bin )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 	GtkWidget *entry;
 
-	g_return_if_fail( instance && OFA_IS_IPREFERENCES( instance ));
+	g_return_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ));
 	g_return_if_fail( bin && OFA_IS_MYSQL_PREFS_BIN( bin ));
 
 	priv = OFA_MYSQL_PREFS_BIN( bin )->priv;

@@ -22,36 +22,38 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IPREFERENCES_H__
-#define __OPENBOOK_API_OFA_IPREFERENCES_H__
+#ifndef __OPENBOOK_API_OFA_IPREFS_PROVIDER_H__
+#define __OPENBOOK_API_OFA_IPREFS_PROVIDER_H__
 
 /**
  * SECTION: ipreferences
- * @title: ofaIPreferences
+ * @title: ofaIPrefsProvider
  * @short_description: The DMBS Interface
- * @include: openbook/ofa-ipreferences.h
+ * @include: openbook/ofa-iprefs-provider.h
  *
- * The #ofaIPreferences interface let the user choose and manage different
- * DBMS backends.
+ * The #ofaIPrefsxxx interfaces serie let plugins (and any tierce code)
+ * display and manage the user preferences.
+ *
+ * This #ofaIPrefsProvider is dedicated to instance management.
  */
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IPREFERENCES                      ( ofa_ipreferences_get_type())
-#define OFA_IPREFERENCES( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IPREFERENCES, ofaIPreferences ))
-#define OFA_IS_IPREFERENCES( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPREFERENCES ))
-#define OFA_IPREFERENCES_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPREFERENCES, ofaIPreferencesInterface ))
+#define OFA_TYPE_IPREFS_PROVIDER                      ( ofa_iprefs_provider_get_type())
+#define OFA_IPREFS_PROVIDER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IPREFS_PROVIDER, ofaIPrefsProvider ))
+#define OFA_IS_IPREFS_PROVIDER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPREFS_PROVIDER ))
+#define OFA_IPREFS_PROVIDER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPREFS_PROVIDER, ofaIPrefsProviderInterface ))
 
-typedef struct _ofaIPreferences                    ofaIPreferences;
+typedef struct _ofaIPrefsProvider                     ofaIPrefsProvider;
 
 /**
- * ofaIPreferencesInterface:
+ * ofaIPrefsProviderInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  *
- * This defines the interface that an #ofaIPreferences should implement.
+ * This defines the interface that an #ofaIPrefsProvider should implement.
  *
  * The DBMS backend presents two sets of functions:
  * - a first one which addresses the DB server itself,
@@ -65,29 +67,29 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIPreferences provider.
+	 * @instance: the #ofaIPrefsProvider provider.
 	 *
 	 * The application calls this method each time it needs to know
 	 * which version of this interface the plugin implements.
 	 *
 	 * If this method is not implemented by the plugin,
 	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIPreferences interface.
+	 * the version 1 of the ofaIPrefsProvider interface.
 	 *
 	 * Return value: if implemented, this method must return the version
 	 * number of this interface the provider is supporting.
 	 *
 	 * Defaults to 1.
 	 */
-	guint       ( *get_interface_version )( const ofaIPreferences *instance );
+	guint       ( *get_interface_version )( const ofaIPrefsProvider *instance );
 
 	/**
 	 * do_init:
-	 * @instance: the #ofaIPreferences provider.
+	 * @instance: the #ofaIPrefsProvider provider.
 	 *
 	 * Initialize the Preferences dialog.
 	 *
-	 * The IPreferences provider may use the ofa_settings_xxx_() API to
+	 * The IPrefsProvider provider may use the ofa_settings_xxx_() API to
 	 * get its value from the user's configuration file.
 	 *
 	 * Returns: a newly created page to be added to the User's
@@ -95,12 +97,12 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget * ( *do_init )             ( const ofaIPreferences *instance,
+	GtkWidget * ( *do_init )             ( const ofaIPrefsProvider *instance,
 													gchar **label );
 
 	/**
 	 * do_check:
-	 * @instance: the #ofaIPreferences provider.
+	 * @instance: the #ofaIPrefsProvider provider.
 	 * @page: the GtkNotebook page which handles these preferences, as
 	 *  returned by #do_init().
 	 * @message: a message to be returned.
@@ -112,42 +114,42 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean    ( *do_check )            ( const ofaIPreferences *instance,
+	gboolean    ( *do_check )            ( const ofaIPrefsProvider *instance,
 													GtkWidget *page,
 													gchar **message );
 
 	/**
 	 * do_apply:
-	 * @instance: the #ofaIPreferences provider.
+	 * @instance: the #ofaIPrefsProvider provider.
 	 * @page: the GtkNotebook page which handles these preferences, as
 	 *  returned by #do_init().
 	 *
 	 * Terminate the Preferences dialog.
 	 *
-	 * The IPreferences provider may use the ofa_settings_xxx_() API to
+	 * The IPrefsProvider provider may use the ofa_settings_xxx_() API to
 	 * write its value to the user's configuration file.
 	 *
 	 * Since: version 1
 	 */
-	void        ( *do_apply )             ( const ofaIPreferences *instance,
+	void        ( *do_apply )             ( const ofaIPrefsProvider *instance,
 													GtkWidget *page );
 }
-	ofaIPreferencesInterface;
+	ofaIPrefsProviderInterface;
 
-GType      ofa_ipreferences_get_type      ( void );
+GType      ofa_iprefs_provider_get_type      ( void );
 
-guint      ofa_ipreferences_get_interface_last_version( void );
+guint      ofa_iprefs_provider_get_interface_last_version( void );
 
-GtkWidget *ofa_ipreferences_do_init       ( const ofaIPreferences *instance,
+GtkWidget *ofa_iprefs_provider_do_init       ( const ofaIPrefsProvider *instance,
 													gchar **label );
 
-gboolean   ofa_ipreferences_do_check      ( const ofaIPreferences *instance,
+gboolean   ofa_iprefs_provider_do_check      ( const ofaIPrefsProvider *instance,
 													GtkWidget *page,
 													gchar **message );
 
-void       ofa_ipreferences_do_apply      ( const ofaIPreferences *instance,
+void       ofa_iprefs_provider_do_apply      ( const ofaIPrefsProvider *instance,
 													GtkWidget *page );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IPREFERENCES_H__ */
+#endif /* __OPENBOOK_API_OFA_IPREFS_PROVIDER_H__ */

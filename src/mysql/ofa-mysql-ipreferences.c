@@ -38,10 +38,10 @@
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
 #define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
-static guint ipreferences_get_interface_version( const ofaIPreferences *instance );
+static guint ipreferences_get_interface_version( const ofaIPrefsProvider *instance );
 
 void
-ofa_mysql_ipreferences_iface_init( ofaIPreferencesInterface *iface )
+ofa_mysql_ipreferences_iface_init( ofaIPrefsProviderInterface *iface )
 {
 	static const gchar *thisfn = "ofa_mysql_ipreferences_iface_init";
 
@@ -54,7 +54,7 @@ ofa_mysql_ipreferences_iface_init( ofaIPreferencesInterface *iface )
 }
 
 static guint
-ipreferences_get_interface_version( const ofaIPreferences *instance )
+ipreferences_get_interface_version( const ofaIPrefsProvider *instance )
 {
 	return( 1 );
 }

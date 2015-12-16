@@ -32,7 +32,7 @@
  * The main class which manages the MySQL database server.
  *
  * The class is instanciated once when loading the module.
- * It implements the #ofaIDBProvider and #ofaIPreferences interfaces.
+ * It implements the #ofaIDBProvider and #ofaIPrefsProvider interfaces.
  *
  * The companion classes #ofaMySQLMeta, #ofaMySQLPeriod,
  * #ofaMySQLConnect, #ofaMySQLEditorEnter or #ofaMySQLEditorDisplay
