@@ -200,6 +200,7 @@ ofa_idbmeta_set_provider( ofaIDBMeta *meta, const ofaIDBProvider *instance )
 	sIDBMeta *data;
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( instance && OFA_IS_IDBPROVIDER( instance ));
 
 	data = get_idbmeta_data( meta );
 	g_clear_object( &data->prov_instance );

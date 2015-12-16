@@ -38,7 +38,8 @@
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
 #define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
-static guint ipreferences_get_interface_version( const ofaIPrefsProvider *instance );
+static guint          iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance );
+static ofaIPrefsPage *iprefs_provider_new_page( void );
 
 void
 ofa_mysql_iprefs_provider_iface_init( ofaIPrefsProviderInterface *iface )
@@ -47,16 +48,24 @@ ofa_mysql_iprefs_provider_iface_init( ofaIPrefsProviderInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = ipreferences_get_interface_version;
-	iface->do_init = ofa_mysql_prefs_bin_new;
-	iface->do_check = ofa_mysql_prefs_bin_is_valid;
-	iface->do_apply = ofa_mysql_prefs_bin_apply;
+	iface->get_interface_version = iprefs_provider_get_interface_version;
+	iface->new_page = iprefs_provider_new_page;
 }
 
 static guint
-ipreferences_get_interface_version( const ofaIPrefsProvider *instance )
+iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance )
 {
 	return( 1 );
+}
+
+static ofaIPrefsPage *
+iprefs_provider_new_page( void )
+{
+	GtkWidget *page;
+
+	page = ofa_mysql_prefs_bin_new();
+
+	return( OFA_IPREFS_PAGE( page ));
 }
 
 /**

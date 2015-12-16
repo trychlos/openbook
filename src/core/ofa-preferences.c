@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-plugin.h"
@@ -123,8 +124,8 @@ static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferenc
 static const gchar *st_ui_id                          = "PreferencesDlg";
 
 typedef struct {
-	ofaIPrefsProvider *object;
-	GtkWidget       *page;
+	ofaIPrefsProvider *provider;
+	ofaIPrefsPage     *page;
 }
 	sPagePlugin;
 
@@ -132,40 +133,40 @@ typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPrefsProvider * );
 
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
-static void       v_init_dialog( myDialog *dialog );
-static void       init_quitting_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       init_dossier_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       init_account_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       init_locales_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           v_init_dialog( myDialog *dialog );
+static void           init_quitting_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           init_dossier_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           init_account_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           init_locales_page( ofaPreferences *self, GtkContainer *toplevel );
 /*static void       get_locales( void );*/
-static void       init_locale_date( ofaPreferences *self, GtkContainer *toplevel, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
-static void       init_locale_sep( ofaPreferences *self, GtkContainer *toplevel, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
-static void       init_export_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       init_import_page( ofaPreferences *self, GtkContainer *toplevel );
-static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
-static void       init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *plugin );
-static void       activate_first_page( ofaPreferences *self );
-static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void       on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void       on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void       on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void       on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
-static void       on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void       on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void       check_for_activable_dlg( ofaPreferences *self );
-static gboolean   v_quit_on_ok( myDialog *dialog );
-static gboolean   do_update( ofaPreferences *self );
-static void       do_update_quitting_page( ofaPreferences *self );
-static void       do_update_dossier_page( ofaPreferences *self );
-static void       do_update_account_page( ofaPreferences *self );
-static gboolean   do_update_locales_page( ofaPreferences *self );
+static void           init_locale_date( ofaPreferences *self, GtkContainer *toplevel, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
+static void           init_locale_sep( ofaPreferences *self, GtkContainer *toplevel, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
+static void           init_export_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           init_import_page( ofaPreferences *self, GtkContainer *toplevel );
+static void           enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
+static void           init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *plugin );
+static void           activate_first_page( ofaPreferences *self );
+static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void           on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void           on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void           on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
+static void           on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void           on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void           check_for_activable_dlg( ofaPreferences *self );
+static gboolean       v_quit_on_ok( myDialog *dialog );
+static gboolean       do_update( ofaPreferences *self );
+static void           do_update_quitting_page( ofaPreferences *self );
+static void           do_update_dossier_page( ofaPreferences *self );
+static void           do_update_account_page( ofaPreferences *self );
+static gboolean       do_update_locales_page( ofaPreferences *self );
 /*static void       error_decimal_sep( ofaPreferences *self );*/
-static void       setup_date_formats( void );
-static void       setup_amount_formats( void );
-static void       do_update_export_page( ofaPreferences *self );
-static void       do_update_import_page( ofaPreferences *self );
-static void       update_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
-static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
+static void           setup_date_formats( void );
+static void           setup_amount_formats( void );
+static void           do_update_export_page( ofaPreferences *self );
+static void           do_update_import_page( ofaPreferences *self );
+static void           update_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
+static ofaIPrefsPage *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
 
 static void
 preferences_finalize( GObject *instance )
@@ -586,29 +587,34 @@ static void
 init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *page, *wlabel;
+	ofaIPrefsPage *page;
+	GtkWidget *wlabel;
 	sPagePlugin *splug;
 	gchar *label;
+	myISettings *settings;
 
 	priv = self->priv;
+	settings = NULL;
 
-	page = ofa_iprefs_provider_do_init( instance, &label );
-	my_utils_widget_set_margin( page, 4, 4, 4, 4 );
-	wlabel = gtk_label_new( label );
-	g_free( label );
-	gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), page, wlabel );
+	page = ofa_iprefs_provider_new_page( instance );
+	if( page ){
+		ofa_iprefs_page_init( page, settings, &label );
+		my_utils_widget_set_margin( GTK_WIDGET( page ), 4, 4, 4, 4 );
+		wlabel = gtk_label_new( label );
+		g_free( label );
+		gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), GTK_WIDGET( page ), wlabel );
 
-	splug = g_new0( sPagePlugin, 1 );
-	splug->object = instance;
-	splug->page = page;
+		splug = g_new0( sPagePlugin, 1 );
+		splug->provider = instance;
+		splug->page = page;
+		priv->plugs = g_list_append( priv->plugs, splug );
 
-	priv->plugs = g_list_append( priv->plugs, splug );
-
-	/* try to identify if the plugin which implements this object is the
-	 * one which has been required */
-	if( priv->plugin && !priv->object_page ){
-		if( ofa_plugin_has_object( priv->plugin, G_OBJECT( instance ))){
-			priv->object_page = page;
+		/* try to identify if the plugin which implements this object is the
+		 * one which has been required */
+		if( priv->plugin && !priv->object_page ){
+			if( ofa_plugin_has_object( priv->plugin, G_OBJECT( instance ))){
+				priv->object_page = GTK_WIDGET( page );
+			}
 		}
 	}
 }
@@ -1153,15 +1159,19 @@ do_update_import_page( ofaPreferences *self )
 static void
 update_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
-	GtkWidget *page;
+	ofaIPrefsPage *page;
 
 	page = find_prefs_plugin( self, instance );
-	g_return_if_fail( page && GTK_IS_WIDGET( page ));
-
-	ofa_iprefs_provider_do_apply( instance, page );
+	if( page ){
+		ofa_iprefs_page_apply( page );
+	}
 }
 
-static GtkWidget *
+/*
+ * returns the #ofaIPrefsPage page which has been provided by this
+ * #ofaIPrefsProvider instance.
+ */
+static ofaIPrefsPage *
 find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
 {
 	GList *it;
@@ -1169,7 +1179,7 @@ find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
 
 	for( it=self->priv->plugs ; it ; it=it->next ){
 		splug = ( sPagePlugin * ) it->data;
-		if( splug->object == instance ){
+		if( splug->provider == instance ){
 			return( splug->page );
 		}
 	}

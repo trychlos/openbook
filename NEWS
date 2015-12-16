@@ -57,14 +57,18 @@
    - ofaIDBMeta: new dossier meta properties management interface.
    - ofaIDBPeriod: new exercice management interface.
    - ofaIDBProvider: new DBMS directory management interface.
+   - ofaIPreferences: is renamed to ofaIPrefsProvider.
+   - ofaIPrefsPage: new interface.
    - ofaMySQLConnect: new class which implements ofaIDBConnect interface.
    - ofaMySQLEditorEnter: new class which implements ofaIDBEditor interface.
    - ofaMySQLEditorDisplay: new class which implements ofaIDBEditor interface.
+   - ofaMySQLIPreferences: is renamed to ofaMySQLIPrefsProvider.
+   - ofaMySQLPrefsBin: implements ofaIPrefsPage interface.
    - ofaMySQLPeriod: new class which implements ofaIFilePeriod interface.
    - ofaMySQLMeta: new class which implements ofaIFileMeta interface.
    - ofaFileDir: new class for dossiers collection management.
    - myFileMonitor: new class.
-   - mySettings: new class.
+   - mySettings: new class which implements myISettings.
    - ofa-entry-columns.{c,h}: removed obsolete files.
    - ofa-reconcil-columns.{c,h}: removed obsolete files.
    - ofaIColumns: removed obsolete interface.

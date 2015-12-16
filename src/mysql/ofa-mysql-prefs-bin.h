@@ -68,15 +68,7 @@ typedef struct {
 
 GType      ofa_mysql_prefs_bin_get_type( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new     ( const ofaIPrefsProvider *instance,
-													gchar **label );
-
-gboolean   ofa_mysql_prefs_bin_is_valid( const ofaIPrefsProvider *instance,
-													GtkWidget *bin,
-													gchar **message );
-
-void       ofa_mysql_prefs_bin_apply   ( const ofaIPrefsProvider *instance,
-													GtkWidget *bin );
+GtkWidget *ofa_mysql_prefs_bin_new     ( void );
 
 G_END_DECLS
 

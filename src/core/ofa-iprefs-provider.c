@@ -90,7 +90,7 @@ interface_base_init( ofaIPrefsProviderInterface *klass )
 {
 	static const gchar *thisfn = "ofa_iprefs_provider_interface_base_init";
 
-	if( !st_initializations ){
+	if( st_initializations == 0 ){
 
 		g_debug( "%s: klass%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
@@ -107,14 +107,16 @@ interface_base_finalize( ofaIPrefsProviderInterface *klass )
 
 	st_initializations -= 1;
 
-	if( !st_initializations ){
+	if( st_initializations == 0 ){
 
 		g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 	}
 }
 
 /**
+ * ofa_iprefs_provider_get_interface_last_version:
  *
+ * Returns: the last version number of this interface.
  */
 guint
 ofa_iprefs_provider_get_interface_last_version( void )
@@ -123,79 +125,53 @@ ofa_iprefs_provider_get_interface_last_version( void )
 }
 
 /**
- * ofa_iprefs_provider_do_init:
- * @importer: this #ofaIPrefsProvider instance.
- * @label: the label to be set on the notebook page
+ * ofa_iprefs_provider_get_interface_version:
+ * @instance: this #ofaIPrefsProvider instance.
  *
- * Initialize the page to let the user configure his preferences.
+ * Returns: the version number of this interface the plugin implements.
  */
-GtkWidget *
-ofa_iprefs_provider_do_init( const ofaIPrefsProvider *instance, gchar **label )
+guint
+ofa_iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance )
 {
-	static const gchar *thisfn = "ofa_iprefs_provider_do_init";
-	GtkWidget *page;
+	static const gchar *thisfn = "ofa_iprefs_provider_get_interface_version";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), 0 );
+
+	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->get_interface_version( instance ));
+	}
+
+	g_info( "%s: ofaIPrefsProvider instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
+	return( 1 );
+}
+
+/**
+ * ofa_iprefs_provider_new_page:
+ * @instance: this #ofaIPrefsProvider instance.
+ *
+ * Returns: a newly allocated #ofaIPrefsPage object, which should be
+ * g_object_unref() by the caller.
+ */
+ofaIPrefsPage *
+ofa_iprefs_provider_new_page( ofaIPrefsProvider *instance )
+{
+	static const gchar *thisfn = "ofa_iprefs_provider_new_page";
+	ofaIPrefsPage *page;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), NULL );
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	page = NULL;
-
-	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_init ){
-		page = OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_init( instance, label );
+	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->new_page ){
+		page = OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->new_page();
+		ofa_iprefs_page_set_provider( page, instance );
+		return( page );
 	}
 
-	return( page );
-}
-
-/**
- * ofa_iprefs_provider_do_check:
- * @importer: this #ofaIPrefsProvider instance.
- * @page: the preferences page.
- * @message: [allow-none]: a message to be returned.
- *
- * Check that the page is valid.
- */
-gboolean
-ofa_iprefs_provider_do_check( const ofaIPrefsProvider *instance, GtkWidget *page, gchar **message )
-{
-	static const gchar *thisfn = "ofa_iprefs_provider_do_check";
-	gboolean ok;
-
-	g_return_val_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ), FALSE );
-	g_return_val_if_fail( page && GTK_IS_WIDGET( page ), FALSE );
-
-	ok = FALSE;
-
-	g_debug( "%s: instance=%p (%s), page=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
-
-	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_check ){
-		ok = OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_check( instance, page, message );
-	}
-
-	return( ok );
-}
-
-/**
- * ofa_iprefs_provider_do_apply:
- * @importer: this #ofaIPrefsProvider instance.
- *
- * Saves the user preferences.
- */
-void
-ofa_iprefs_provider_do_apply( const ofaIPrefsProvider *instance, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_iprefs_provider_do_apply";
-
-	g_return_if_fail( instance && OFA_IS_IPREFS_PROVIDER( instance ));
-	g_return_if_fail( page && GTK_IS_WIDGET( page ));
-
-	g_debug( "%s: instance=%p (%s), page=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
-
-	if( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_apply ){
-		OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->do_apply( instance, page );
-	}
+	g_info( "%s: ofaIPrefsProvider instance %p does not provide 'new_page()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
 }

@@ -26,9 +26,9 @@
 #define __OPENBOOK_API_OFA_IPREFS_PROVIDER_H__
 
 /**
- * SECTION: ipreferences
+ * SECTION: iprefs
  * @title: ofaIPrefsProvider
- * @short_description: The DMBS Interface
+ * @short_description: The ofaIPrefs Interface
  * @include: openbook/ofa-iprefs-provider.h
  *
  * The #ofaIPrefsxxx interfaces serie let plugins (and any tierce code)
@@ -39,6 +39,9 @@
 
 #include <gtk/gtk.h>
 
+#include "ofa-iprefs-page.h"
+#include "ofa-iprefs-provider-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_IPREFS_PROVIDER                      ( ofa_iprefs_provider_get_type())
@@ -46,19 +49,13 @@ G_BEGIN_DECLS
 #define OFA_IS_IPREFS_PROVIDER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPREFS_PROVIDER ))
 #define OFA_IPREFS_PROVIDER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPREFS_PROVIDER, ofaIPrefsProviderInterface ))
 
-typedef struct _ofaIPrefsProvider                     ofaIPrefsProvider;
-
 /**
  * ofaIPrefsProviderInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
+ * @new_page: [should] returns a new user preferences page.
  *
  * This defines the interface that an #ofaIPrefsProvider should implement.
- *
- * The DBMS backend presents two sets of functions:
- * - a first one which addresses the DB server itself,
- * - the second one which manages the inside dossier through the opened
- *   DB server connexion.
  */
 typedef struct {
 	/*< private >*/
@@ -81,74 +78,29 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint       ( *get_interface_version )( const ofaIPrefsProvider *instance );
+	guint           ( *get_interface_version )( const ofaIPrefsProvider *instance );
 
 	/**
-	 * do_init:
-	 * @instance: the #ofaIPrefsProvider provider.
+	 * new_page:
 	 *
-	 * Initialize the Preferences dialog.
-	 *
-	 * The IPrefsProvider provider may use the ofa_settings_xxx_() API to
-	 * get its value from the user's configuration file.
-	 *
-	 * Returns: a newly created page to be added to the User's
-	 * preferences notebook.
+	 * Returns: a new page to be added to the #GtkNotebook user
+	 * preferences dialog. The page must be a #GtkContainer, and
+	 * be returned as a #GtkWidget. The object class must implement
+	 * the #ofaIPrefsPage interface.
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget * ( *do_init )             ( const ofaIPrefsProvider *instance,
-													gchar **label );
-
-	/**
-	 * do_check:
-	 * @instance: the #ofaIPrefsProvider provider.
-	 * @page: the GtkNotebook page which handles these preferences, as
-	 *  returned by #do_init().
-	 * @message: a message to be returned.
-	 *
-	 * Checks for the Preferences dialog.
-	 *
-	 * Returns: %TRUE if the page doesn't contain any error, and is
-	 * validable.
-	 *
-	 * Since: version 1
-	 */
-	gboolean    ( *do_check )            ( const ofaIPrefsProvider *instance,
-													GtkWidget *page,
-													gchar **message );
-
-	/**
-	 * do_apply:
-	 * @instance: the #ofaIPrefsProvider provider.
-	 * @page: the GtkNotebook page which handles these preferences, as
-	 *  returned by #do_init().
-	 *
-	 * Terminate the Preferences dialog.
-	 *
-	 * The IPrefsProvider provider may use the ofa_settings_xxx_() API to
-	 * write its value to the user's configuration file.
-	 *
-	 * Since: version 1
-	 */
-	void        ( *do_apply )             ( const ofaIPrefsProvider *instance,
-													GtkWidget *page );
+	ofaIPrefsPage * ( *new_page )             ( void );
 }
 	ofaIPrefsProviderInterface;
 
-GType      ofa_iprefs_provider_get_type      ( void );
+GType          ofa_iprefs_provider_get_type                  ( void );
 
-guint      ofa_iprefs_provider_get_interface_last_version( void );
+guint          ofa_iprefs_provider_get_interface_last_version( void );
 
-GtkWidget *ofa_iprefs_provider_do_init       ( const ofaIPrefsProvider *instance,
-													gchar **label );
+guint          ofa_iprefs_provider_get_interface_version     ( const ofaIPrefsProvider *instance );
 
-gboolean   ofa_iprefs_provider_do_check      ( const ofaIPrefsProvider *instance,
-													GtkWidget *page,
-													gchar **message );
-
-void       ofa_iprefs_provider_do_apply      ( const ofaIPrefsProvider *instance,
-													GtkWidget *page );
+ofaIPrefsPage *ofa_iprefs_provider_new_page                  ( ofaIPrefsProvider *instance );
 
 G_END_DECLS
 

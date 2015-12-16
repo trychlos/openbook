@@ -394,7 +394,9 @@ api_include_HEADERS = \
 	ofa-iexportable.h									\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
+	ofa-iprefs-page.h									\
 	ofa-iprefs-provider.h								\
+	ofa-iprefs-provider-def.h							\
 	\
 	my-date.h											\
 	my-dialog.h											\
