@@ -486,7 +486,16 @@
  933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
                 while these are rather shortcuts to user preferences
 
- 934
+ 934 2015-12-17 DDLUpdate: have a scrolled window when remediating all
+                versions
+
+ 935 2015-12-17 DDLUpdate: does not show remediation when creating a
+                new dossier ?
+
+ 936 2015-12-17 dossier name must not have square brackets as GKeyFile
+                refuse them in group names
+
+ 937
 
 -----------------------------------------------------------------------
  DONE
