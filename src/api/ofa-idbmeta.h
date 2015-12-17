@@ -183,7 +183,7 @@ gchar          *ofa_idbmeta_get_dossier_name          ( const ofaIDBMeta *meta )
 void            ofa_idbmeta_set_dossier_name          ( ofaIDBMeta *meta,
 																const gchar *dossier_name );
 
-myISettings     *ofa_idbmeta_get_settings              ( const ofaIDBMeta *meta );
+myISettings    *ofa_idbmeta_get_settings              ( const ofaIDBMeta *meta );
 
 gchar          *ofa_idbmeta_get_group_name            ( const ofaIDBMeta *meta );
 
