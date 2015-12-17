@@ -507,8 +507,9 @@ v_quit_on_ok( myDialog *dialog )
 
 		} else if( !ofa_idbconnect_create_dossier(
 							connect, priv->meta, priv->adm_account, priv->adm_password )){
-			g_warning( "%s: unable to create the dossier", thisfn );
+			my_utils_dialog_warning( _( "Unable to create the dossier" ));
 			g_clear_object( &priv->meta );
+			gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 
 		} else {
 			ok = TRUE;
