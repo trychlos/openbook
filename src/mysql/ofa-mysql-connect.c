@@ -502,7 +502,7 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta
 		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
 		g_debug( "%s: %s", thisfn, query->str );
 		if( idbconnect_query( instance, query->str )){
-			g_string_printf( query, "CREATE DATABASE %s", database );
+			g_string_printf( query, "CREATE DATABASE %s CHARACTER SET utf8", database );
 			g_debug( "%s: %s", thisfn, query->str );
 			ok = idbconnect_query( instance, query->str );
 			if( !ok ){
