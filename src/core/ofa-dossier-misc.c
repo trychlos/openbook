@@ -39,12 +39,12 @@ static void    free_lines( GSList *lines );
 
 /**
  * ofa_dossier_misc_import_csv:
- * @dossier:
- * @object:
- * @uri:
- * @settings:
- * @caller: must be a #ofaIImporter or %NULL
- * @errors:
+ * @dossier: the target #ofoDossier
+ * @object: an empty object of the class to be imported.
+ * @uri: the input file
+ * @settings: the #ofaFileFormat instance which describes the @uri file.
+ * @caller: [allow-none]: the #ofaIImporter instance
+ * @errors: [allow-none][out]: errors count
  *
  * Import a CSV file into the dossier.
  *
