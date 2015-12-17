@@ -212,6 +212,7 @@ ofa_settings_set_uint_list( ofaSettingsTarget target, const gchar *group, const 
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
 		my_isettings_set_uint_list( MY_ISETTINGS( settings ), group, key, value );
+		return;
 	}
 
 	g_return_if_reached();
@@ -289,6 +290,7 @@ ofa_settings_set_string_list( ofaSettingsTarget target, const gchar *group, cons
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
 		my_isettings_set_string_list( MY_ISETTINGS( settings ), group, key, value );
+		return;
 	}
 
 	g_return_if_reached();
