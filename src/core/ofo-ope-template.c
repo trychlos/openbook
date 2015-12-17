@@ -1966,7 +1966,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	/* detail account locked */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_int( detail, OTE_DET_ACCOUNT_LOCKED, my_utils_boolean_from_str( cstr ));
+	ofa_box_set_string( detail, OTE_DET_ACCOUNT_LOCKED, cstr );
 
 	/* detail label */
 	itf = itf ? itf->next : NULL;
@@ -1976,7 +1976,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	/* detail label locked */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_int( detail, OTE_DET_LABEL_LOCKED, my_utils_boolean_from_str( cstr ));
+	ofa_box_set_string( detail, OTE_DET_LABEL_LOCKED, cstr );
 
 	/* detail debit */
 	itf = itf ? itf->next : NULL;
@@ -1986,7 +1986,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	/* detail debit locked */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_int( detail, OTE_DET_DEBIT_LOCKED, my_utils_boolean_from_str( cstr ));
+	ofa_box_set_string( detail, OTE_DET_DEBIT_LOCKED, cstr );
 
 	/* detail credit */
 	itf = itf ? itf->next : NULL;
@@ -1996,7 +1996,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	/* detail credit locked */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_int( detail, OTE_DET_CREDIT_LOCKED, my_utils_boolean_from_str( cstr ));
+	ofa_box_set_string( detail, OTE_DET_CREDIT_LOCKED, cstr );
 
 	return( detail );
 }
