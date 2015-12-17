@@ -877,16 +877,14 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 				"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
 				"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
 				"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query timestamp',"
-				"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') "
-				"CHARACTER SET utf8" );
+				"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') " );
 		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
 	}
 	if( ok ){
 		g_string_printf( query,
 				"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
 					"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
-					"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') "
-				"CHARACTER SET utf8" );
+					"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') " );
 		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
 	}
 	/* set admin credentials */
