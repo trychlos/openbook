@@ -36,12 +36,12 @@
 #include "api/ofa-iprefs-provider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-plugin.h"
+#include "api/ofa-settings.h"
 
 #include "my-date-combo.h"
 #include "my-decimal-combo.h"
 #include "ofa-dossier-delete-prefs-bin.h"
 #include "ofa-file-format-bin.h"
-#include "ofa-settings.h"
 
 /* private instance data
  */
@@ -530,7 +530,7 @@ init_export_page( ofaPreferences *self, GtkContainer *toplevel )
 			group, ofa_file_format_bin_get_size_group( priv->export_settings, 0 ));
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( toplevel, "p52-folder" ));
-	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
+	str = ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER );
 	if( my_strlen( str )){
 		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
 	}
@@ -774,29 +774,29 @@ do_update_quitting_page( ofaPreferences *self )
 
 	button = my_utils_container_get_child_by_name( container, "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_assistant_quit_on_escape,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_assistant_confirm_on_escape,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->confirm_on_escape_btn )));
 
 	button = my_utils_container_get_child_by_name( container, "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_assistant_confirm_on_cancel,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 
 	button = my_utils_container_get_child_by_name( container, "p1-confirm-altf4" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_appli_confirm_on_altf4,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 
 	button = my_utils_container_get_child_by_name( container, "p1-confirm-quit" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_appli_confirm_on_quit,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 }
@@ -807,7 +807,7 @@ do_update_quitting_page( ofaPreferences *self )
 gboolean
 ofa_prefs_assistant_quit_on_escape( void )
 {
-	return( ofa_settings_get_boolean( st_assistant_quit_on_escape ));
+	return( ofa_settings_user_get_boolean( st_assistant_quit_on_escape ));
 }
 
 /**
@@ -816,7 +816,7 @@ ofa_prefs_assistant_quit_on_escape( void )
 gboolean
 ofa_prefs_assistant_confirm_on_escape( void )
 {
-	return( ofa_settings_get_boolean( st_assistant_confirm_on_escape ));
+	return( ofa_settings_user_get_boolean( st_assistant_confirm_on_escape ));
 }
 
 /**
@@ -825,7 +825,7 @@ ofa_prefs_assistant_confirm_on_escape( void )
 gboolean
 ofa_prefs_assistant_confirm_on_cancel( void )
 {
-	return( ofa_settings_get_boolean( st_assistant_confirm_on_cancel ));
+	return( ofa_settings_user_get_boolean( st_assistant_confirm_on_cancel ));
 }
 
 /**
@@ -834,7 +834,7 @@ ofa_prefs_assistant_confirm_on_cancel( void )
 gboolean
 ofa_prefs_appli_confirm_on_altf4( void )
 {
-	return( ofa_settings_get_boolean( st_appli_confirm_on_altf4 ));
+	return( ofa_settings_user_get_boolean( st_appli_confirm_on_altf4 ));
 }
 
 /**
@@ -843,7 +843,7 @@ ofa_prefs_appli_confirm_on_altf4( void )
 gboolean
 ofa_prefs_appli_confirm_on_quit( void )
 {
-	return( ofa_settings_get_boolean( st_appli_confirm_on_quit ));
+	return( ofa_settings_user_get_boolean( st_appli_confirm_on_quit ));
 }
 
 static void
@@ -853,15 +853,15 @@ do_update_dossier_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_dossier_open_notes,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_btn )));
 
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_dossier_open_notes_if_empty,
 			!gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn )));
 
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_dossier_open_properties,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_properties_btn )));
 
@@ -874,7 +874,7 @@ do_update_dossier_page( ofaPreferences *self )
 gboolean
 ofa_prefs_dossier_open_notes( void )
 {
-	return( ofa_settings_get_boolean( st_dossier_open_notes ));
+	return( ofa_settings_user_get_boolean( st_dossier_open_notes ));
 }
 
 /**
@@ -883,7 +883,7 @@ ofa_prefs_dossier_open_notes( void )
 gboolean
 ofa_prefs_dossier_open_notes_if_empty( void )
 {
-	return( ofa_settings_get_boolean( st_dossier_open_notes_if_empty ));
+	return( ofa_settings_user_get_boolean( st_dossier_open_notes_if_empty ));
 }
 
 /**
@@ -892,7 +892,7 @@ ofa_prefs_dossier_open_notes_if_empty( void )
 gboolean
 ofa_prefs_dossier_open_properties( void )
 {
-	return( ofa_settings_get_boolean( st_dossier_open_properties ));
+	return( ofa_settings_user_get_boolean( st_dossier_open_properties ));
 }
 
 static void
@@ -905,7 +905,7 @@ do_update_account_page( ofaPreferences *self )
 
 	button = my_utils_container_get_child_by_name( container, "p4-delete-with-child" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	ofa_settings_set_boolean(
+	ofa_settings_user_set_boolean(
 			st_account_delete_root_with_child,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 }
@@ -916,7 +916,7 @@ do_update_account_page( ofaPreferences *self )
 gboolean
 ofa_prefs_account_delete_root_with_children( void )
 {
-	return( ofa_settings_get_boolean( st_account_delete_root_with_child ));
+	return( ofa_settings_user_get_boolean( st_account_delete_root_with_child ));
 }
 
 static gboolean
@@ -932,8 +932,8 @@ do_update_locales_page( ofaPreferences *self )
 
 	list = g_list_append( NULL, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_display_combo )));
 	list = g_list_append( list, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_check_combo )));
-	ofa_settings_set_int_list( SETTINGS_DATE, list );
-	ofa_settings_free_int_list( list );
+	ofa_settings_user_set_uint_list( SETTINGS_DATE, list );
+	ofa_settings_free_uint_list( list );
 
 	decimal_sep = my_decimal_combo_get_selected( priv->p4_decimal_sep );
 	list = g_list_append( NULL, decimal_sep );
@@ -949,7 +949,7 @@ do_update_locales_page( ofaPreferences *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma )) ? "True" : "False" );
 	list = g_list_append( list, str );
 
-	ofa_settings_set_string_list( SETTINGS_AMOUNT, list );
+	ofa_settings_user_set_string_list( SETTINGS_AMOUNT, list );
 	ofa_settings_free_string_list( list );
 
 	/* reinitialize the cache */
@@ -1001,7 +1001,7 @@ setup_date_formats( void )
 	st_date_display = MY_DATE_DMYY;
 	st_date_check = MY_DATE_DMMM;
 
-	list = ofa_settings_get_int_list( SETTINGS_DATE );
+	list = ofa_settings_user_get_uint_list( SETTINGS_DATE );
 	if( list ){
 		if( list->data ){
 			st_date_display = GPOINTER_TO_INT( list->data );
@@ -1011,7 +1011,7 @@ setup_date_formats( void )
 			st_date_check = GPOINTER_TO_INT( it->data );
 		}
 	}
-	ofa_settings_free_int_list( list );
+	ofa_settings_free_uint_list( list );
 	st_date_prefs_set = TRUE;
 }
 
@@ -1094,7 +1094,7 @@ setup_amount_formats( void )
 	st_amount_accept_dot = TRUE;
 	st_amount_accept_comma = TRUE;
 
-	list = ofa_settings_get_string_list( SETTINGS_AMOUNT );
+	list = ofa_settings_user_get_string_list( SETTINGS_AMOUNT );
 	if( list ){
 		g_free( st_amount_decimal );
 		st_amount_decimal = NULL;
@@ -1141,7 +1141,7 @@ do_update_export_page( ofaPreferences *self )
 
 	text = gtk_file_chooser_get_current_folder_uri( priv->p5_chooser );
 	if( my_strlen( text )){
-		ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );
+		ofa_settings_user_set_string( SETTINGS_EXPORT_FOLDER, text );
 	}
 	g_free( text );
 }

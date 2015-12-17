@@ -34,9 +34,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/my-tab-label.h"
 #include "ui/ofa-account-book-render.h"
@@ -385,7 +384,7 @@ pane_save_position( GtkPaned *pane )
 	gchar *key;
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	ofa_settings_set_int( key, gtk_paned_get_position( pane ));
+	ofa_settings_user_set_uint( key, gtk_paned_get_position( pane ));
 	g_free( key );
 }
 
@@ -988,7 +987,7 @@ pane_restore_position( GtkPaned *pane )
 	gchar *key;
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	gtk_paned_set_position( pane, ofa_settings_get_int( key ));
+	gtk_paned_set_position( pane, ofa_settings_user_get_uint( key ));
 	g_free( key );
 }
 

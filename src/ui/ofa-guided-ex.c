@@ -29,11 +29,10 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input-bin.h"
@@ -232,7 +231,7 @@ pane_restore_position( GtkWidget *pane )
 {
 	gint pos;
 
-	pos = ofa_settings_get_int( "GuidedInputExDlg-pane" );
+	pos = ofa_settings_user_get_uint( "GuidedInputExDlg-pane" );
 	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
 	gtk_paned_set_position( GTK_PANED( pane ), pos );
 }
@@ -1029,7 +1028,7 @@ pane_save_position( GtkWidget *pane )
 
 	pos = gtk_paned_get_position( GTK_PANED( pane ));
 	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
-	ofa_settings_set_int( "GuidedInputExDlg-pane", pos );
+	ofa_settings_user_set_uint( "GuidedInputExDlg-pane", pos );
 }
 
 static void

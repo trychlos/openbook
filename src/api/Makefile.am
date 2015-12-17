@@ -42,6 +42,7 @@ api_include_HEADERS = \
 	ofa-iprefs-page.h									\
 	ofa-iprefs-provider.h								\
 	ofa-iprefs-provider-def.h							\
+	ofa-settings.h										\
 	\
 	my-date.h											\
 	my-dialog.h											\

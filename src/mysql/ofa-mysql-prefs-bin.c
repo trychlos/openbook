@@ -37,6 +37,7 @@
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
+#include "ofa-mysql-user-prefs.h"
 
 /* private instance data
  */
@@ -255,11 +256,11 @@ iprefs_page_apply( const ofaIPrefsPage *instance )
 
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "mpb-backup-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		ofa_mysql_iprefs_provider_set_backup_command( gtk_entry_get_text( GTK_ENTRY( entry )));
+		ofa_mysql_user_prefs_set_backup_command( gtk_entry_get_text( GTK_ENTRY( entry )));
 
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "mpb-restore-entry" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		ofa_mysql_iprefs_provider_set_restore_command( gtk_entry_get_text( GTK_ENTRY( entry )));
+		ofa_mysql_user_prefs_set_restore_command( gtk_entry_get_text( GTK_ENTRY( entry )));
 	}
 }
 
@@ -306,7 +307,7 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_iprefs_provider_get_backup_command();
+	cmdline = ofa_mysql_user_prefs_get_backup_command();
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
@@ -316,7 +317,7 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_iprefs_provider_get_restore_command();
+	cmdline = ofa_mysql_user_prefs_get_restore_command();
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 

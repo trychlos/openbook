@@ -63,73 +63,12 @@ typedef struct {
 }
 	mySettingsClass;
 
-GType       my_settings_get_type        ( void ) G_GNUC_CONST;
+GType       my_settings_get_type       ( void ) G_GNUC_CONST;
 
-mySettings *my_settings_new             ( const gchar *filename );
+mySettings *my_settings_new            ( const gchar *filename );
 
-mySettings *my_settings_new_user_config ( const gchar *name,
-													const gchar *envvar );
-
-gchar      *my_settings_get_filename    ( const mySettings *settings );
-
-GKeyFile   *my_settings_get_keyfile     ( const mySettings *settings );
-
-gboolean    my_settings_get_boolean     ( const mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
-void        my_settings_set_boolean     ( mySettings *settings,
-													const gchar *group,
-													const gchar *key,
-													gboolean value );
-
-gint        my_settings_get_uint        ( const mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
-void        my_settings_set_uint        ( mySettings *settings,
-													const gchar *group,
-													const gchar *key,
-													guint value );
-
-GList      *my_settings_get_int_list    ( const mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
-#define     my_settings_free_int_list( L )		g_list_free( L )
-
-void        my_settings_set_int_list    ( mySettings *settings,
-													const gchar *group,
-													const gchar *key,
-													GList *list );
-
-gchar      *my_settings_get_string      ( const mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
-void        my_settings_set_string      ( mySettings *settings,
-													const gchar *group,
-													const gchar *key,
-													const gchar *value );
-
-GList      *my_settings_get_string_list ( const mySettings *settings,
-													const gchar *group,
-													const gchar *key );
-
-#define     my_settings_free_string_list( L )	g_list_free_full(( L ), \
-													( GDestroyNotify ) g_free )
-
-void        my_settings_set_string_list ( mySettings *settings,
-													const gchar *group,
-													const gchar *key,
-													GList *list );
-
-GList      *my_settings_get_groups      ( const mySettings *settings );
-
-#define     my_settings_free_groups( L )		g_list_free_full(( L ), \
-													( GDestroyNotify ) g_free )
-
-void        my_settings_reload          ( mySettings *settings );
+mySettings *my_settings_new_user_config( const gchar *name,
+												const gchar *envvar );
 
 G_END_DECLS
 

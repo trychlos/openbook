@@ -34,9 +34,9 @@
 #include "api/ofa-box.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 
 #include "core/ofa-file-dir.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
@@ -634,6 +634,9 @@ application_startup( GApplication *application )
 	if( G_APPLICATION_CLASS( ofa_application_parent_class )->startup ){
 		G_APPLICATION_CLASS( ofa_application_parent_class )->startup( application );
 	}
+
+	/* initialize the application settings */
+	ofa_settings_new();
 
 	/* define the application actions */
 	g_action_map_add_action_entries(

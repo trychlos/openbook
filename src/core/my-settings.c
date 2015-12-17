@@ -47,14 +47,22 @@ struct _mySettingsPrivate {
 
 static void       isettings_iface_init( myISettingsInterface *iface );
 static guint      isettings_get_interface_version( const myISettings *instance );
+static GKeyFile  *isettings_get_keyfile( const myISettings *instance );
+static gchar     *isettings_get_filename( const myISettings *instance );
+static GList     *isettings_get_groups( const myISettings *instance );
 static void       isettings_remove_group( myISettings *instance, const gchar *group );
 static GList     *isettings_get_keys( const myISettings *instance, const gchar *group );
 static void       isettings_remove_key( myISettings *instance, const gchar *group, const gchar *key );
-static GList     *isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key );
-static gchar     *isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key );
-static void       isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value );
+static gboolean   isettings_get_boolean( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_boolean( myISettings *instance, const gchar *group, const gchar *key, gboolean value );
 static guint      isettings_get_uint( const myISettings *instance, const gchar *group, const gchar *key );
 static void       isettings_set_uint( myISettings *instance, const gchar *group, const gchar *key, guint value );
+static GList     *isettings_get_uint_list( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_uint_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value );
+static gchar     *isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value );
+static GList     *isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key );
+static void       isettings_set_string_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value );
 static void       load_key_file( mySettings *settings, const gchar *filename );
 static gchar     *get_default_config_dir( void );
 static gchar     *get_conf_filename( const gchar *name, const gchar *envvar );
@@ -144,20 +152,92 @@ isettings_iface_init( myISettingsInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = isettings_get_interface_version;
+	iface->get_keyfile = isettings_get_keyfile;
+	iface->get_filename = isettings_get_filename;
+	iface->get_groups = isettings_get_groups;
 	iface->remove_group = isettings_remove_group;
 	iface->get_keys = isettings_get_keys;
 	iface->remove_key = isettings_remove_key;
-	iface->get_string_list = isettings_get_string_list;
-	iface->get_string = isettings_get_string;
-	iface->set_string = isettings_set_string;
+	iface->get_boolean = isettings_get_boolean;
+	iface->set_boolean = isettings_set_boolean;
 	iface->get_uint = isettings_get_uint;
 	iface->set_uint = isettings_set_uint;
+	iface->get_uint_list = isettings_get_uint_list;
+	iface->set_uint_list = isettings_set_uint_list;
+	iface->get_string = isettings_get_string;
+	iface->set_string = isettings_set_string;
+	iface->get_string_list = isettings_get_string_list;
+	iface->set_string_list = isettings_set_string_list;
 }
 
 static guint
 isettings_get_interface_version( const myISettings *instance )
 {
 	return( 1 );
+}
+
+static GKeyFile *
+isettings_get_keyfile( const myISettings *instance )
+{
+	mySettingsPrivate *priv;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+		return( priv->keyfile );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static gchar *
+isettings_get_filename( const myISettings *instance )
+{
+	mySettingsPrivate *priv;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+
+	if( !priv->dispose_has_run ){
+		return( g_strdup( priv->fname ));
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/*
+ * isettings_get_groups:
+ * @settings: this #mySettings instance.
+ *
+ * Returns: the list of all defined groups as a #GList which should be
+ * #my_settings_free_groups() by the caller.
+ */
+static GList *
+isettings_get_groups( const myISettings *settings )
+{
+	mySettingsPrivate *priv;
+	GList *list;
+	gchar **array, **iter;
+
+	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
+	priv = MY_SETTINGS( settings )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		list = NULL;
+		array = g_key_file_get_groups( priv->keyfile, NULL );
+		list = NULL;
+		iter = array;
+		while( *iter ){
+			list = g_list_prepend( list, g_strdup( *iter ));
+			iter++;
+		}
+		g_strfreev( array );
+		return( g_list_reverse( list ));
+	}
+
+	g_return_val_if_reached( NULL );
 }
 
 static void
@@ -224,69 +304,41 @@ isettings_remove_key( myISettings *instance, const gchar *group, const gchar *ke
 	g_return_if_reached();
 }
 
-static GList *
-isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key )
+static gboolean
+isettings_get_boolean( const myISettings *instance, const gchar *group, const gchar *key )
 {
 	mySettingsPrivate *priv;
-	GList *list;
+	gboolean value;
 	gchar *str;
-	gchar **array, **iter;
 
-	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), FALSE );
 	priv = MY_SETTINGS( instance )->priv;
-	g_return_val_if_fail( priv->keyfile, NULL );
+	g_return_val_if_fail( priv->keyfile, FALSE );
 
 	if( !priv->dispose_has_run ){
-		list = NULL;
 		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			array = str_to_array( str );
-			if( array ){
-				iter = ( gchar ** ) array;
-				while( *iter ){
-					list = g_list_prepend( list, g_strdup( *iter ));
-					iter++;
-				}
-			}
-			g_strfreev( array );
-		}
+		value = my_utils_boolean_from_str( str );
 		g_free( str );
-		return( g_list_reverse( list ));
+		return( value );
 	}
 
-	g_return_val_if_reached( NULL );
-}
-
-static gchar *
-isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	gchar *str;
-
-	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
-	g_return_val_if_fail( priv->keyfile, NULL );
-
-	if( !priv->dispose_has_run ){
-		str = NULL;
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		return( str );
-	}
-
-	g_return_val_if_reached( NULL );
+	g_return_val_if_reached( FALSE );
 }
 
 static void
-isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value )
+isettings_set_boolean( myISettings *instance, const gchar *group, const gchar *key, gboolean value )
 {
 	mySettingsPrivate *priv;
+	gchar *str;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
 	priv = MY_SETTINGS( instance )->priv;
 	g_return_if_fail( priv->keyfile );
 
 	if( !priv->dispose_has_run ){
-		g_key_file_set_string( priv->keyfile, group, key, value );
+		str = g_strdup_printf( "%s", value ? "True":"False" );
+		g_key_file_set_string( priv->keyfile, group, key, str );
+		g_free( str );
 		write_key_file( MY_SETTINGS( instance ));
 		return;
 	}
@@ -332,6 +384,182 @@ isettings_set_uint( myISettings *instance, const gchar *group, const gchar *key,
 		str = g_strdup_printf( "%u", value );
 		g_key_file_set_string( priv->keyfile, group, key, str );
 		g_free( str );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+/*
+ * Integers must be accessed through GPOINTER_TO_UINT() macro.
+ */
+static GList *
+isettings_get_uint_list( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	GList *list;
+	gchar *str;
+	gchar **array, **iter;
+	gint i;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		list = NULL;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		if( my_strlen( str )){
+			array = str_to_array( str );
+			if( array ){
+				iter = ( gchar ** ) array;
+				while( *iter ){
+					i = atoi( *iter );
+					list = g_list_prepend( list, GUINT_TO_POINTER( i < 0 ? 0 : i ));
+					iter++;
+				}
+			}
+			g_strfreev( array );
+		}
+		g_free( str );
+		return( g_list_reverse( list ));
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * The integers are expected to be accessible in the @list through
+ * GPOINTER_TO_UINT() macro.
+ */
+static void
+isettings_set_uint_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value )
+{
+	mySettingsPrivate *priv;
+	GString *str;
+	const GList *it;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		if( value && g_list_length(( GList * ) value )){
+			str = g_string_new( "" );
+			for( it=value ; it ; it=it->next ){
+				g_string_append_printf( str, "%u;", GPOINTER_TO_UINT( it->data ));
+			}
+			g_key_file_set_string( priv->keyfile, group, key, str->str );
+			g_string_free( str, TRUE );
+
+		} else {
+			g_key_file_remove_key( priv->keyfile, group, key, NULL );
+		}
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+static gchar *
+isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	gchar *str;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		str = NULL;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		return( str );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static void
+isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value )
+{
+	mySettingsPrivate *priv;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		g_key_file_set_string( priv->keyfile, group, key, value );
+		write_key_file( MY_SETTINGS( instance ));
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+static GList *
+isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	mySettingsPrivate *priv;
+	GList *list;
+	gchar *str;
+	gchar **array, **iter;
+
+	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_val_if_fail( priv->keyfile, NULL );
+
+	if( !priv->dispose_has_run ){
+		list = NULL;
+		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+		if( my_strlen( str )){
+			array = str_to_array( str );
+			if( array ){
+				iter = ( gchar ** ) array;
+				while( *iter ){
+					list = g_list_prepend( list, g_strdup( *iter ));
+					iter++;
+				}
+			}
+			g_strfreev( array );
+		}
+		g_free( str );
+		return( g_list_reverse( list ));
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * Store the @list string list into @settings file.
+ * Remove the @key if the @list is %NULL or empty.
+ */
+static void
+isettings_set_string_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value )
+{
+	mySettingsPrivate *priv;
+	GString *str;
+	const GList *it;
+
+	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
+	priv = MY_SETTINGS( instance )->priv;
+	g_return_if_fail( priv->keyfile );
+
+	if( !priv->dispose_has_run ){
+		if( value && g_list_length(( GList * ) value )){
+			str = g_string_new( "" );
+			for( it=value ; it ; it=it->next ){
+				g_string_append_printf( str, "%s;", ( const gchar * ) it->data );
+			}
+			g_key_file_set_string( priv->keyfile, group, key, str->str );
+			g_string_free( str, TRUE );
+
+		} else {
+			g_key_file_remove_key( priv->keyfile, group, key, NULL );
+		}
 		write_key_file( MY_SETTINGS( instance ));
 		return;
 	}
@@ -407,490 +635,6 @@ load_key_file( mySettings *settings, const gchar *filename )
 		}
 
 		g_error_free( error );
-	}
-}
-
-/**
- * my_settings_get_filename:
- * @settings: this #mySettings instance.
- *
- * Returns: the filename of the @settings file, as a newly allocated
- * string which should be g_free() by the caller.
- */
-gchar *
-my_settings_get_filename( const mySettings *settings )
-{
-	mySettingsPrivate *priv;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings) , NULL );
-
-	priv = settings->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_strdup( priv->fname ));
-	}
-
-	return( NULL );
-}
-
-/**
- * my_settings_get_keyfile:
- * @settings: this #mySettings instance.
- *
- * Returns: the #GKeyFile associated to the @settings file, as a new
- * reference which should be g_key_file_unref() by the caller.
- */
-GKeyFile *
-my_settings_get_keyfile( const mySettings *settings )
-{
-	mySettingsPrivate *priv;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings) , NULL );
-
-	priv = settings->priv;
-
-	if( !priv->dispose_has_run ){
-		return( g_key_file_ref( priv->keyfile ));
-	}
-
-	return( NULL );
-}
-
-/**
- * my_settings_get_boolean:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- *
- * Returns: the specified boolean value, or %FALSE if the key is not
- * found.
- */
-gboolean
-my_settings_get_boolean( const mySettings *settings, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	gboolean value;
-	gchar *str;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), FALSE );
-	g_return_val_if_fail( my_strlen( group ), FALSE );
-	g_return_val_if_fail( my_strlen( key ), FALSE );
-
-	priv = settings->priv;
-	value = FALSE;
-
-	g_return_val_if_fail( priv->keyfile, FALSE );
-
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		value = my_utils_boolean_from_str( str );
-		g_free( str );
-	}
-
-	return( value );
-}
-
-/**
- * my_settings_set_boolean:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- * @value: the boolean value to be set.
- *
- * Store the boolean @value, as a "True" or "False" string, in
- * @settings file.
- */
-void
-my_settings_set_boolean( mySettings *settings, const gchar *group, const gchar *key, gboolean value )
-{
-	mySettingsPrivate *priv;
-	gchar *str;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-	g_return_if_fail( my_strlen( group ));
-	g_return_if_fail( my_strlen( key ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-		str = g_strdup_printf( "%s", value ? "True":"False" );
-		g_key_file_set_string( priv->keyfile, group, key, str );
-		g_free( str );
-		write_key_file( settings );
-	}
-}
-
-/**
- * my_settings_get_uint:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- *
- * Returns: the specified unsigned integer value, or -1 if the key is
- * not found.
- */
-gint
-my_settings_get_uint( const mySettings*settings, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	gint value;
-	gchar *str;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), -1 );
-	g_return_val_if_fail( my_strlen( group ), -1 );
-	g_return_val_if_fail( my_strlen( key ), -1 );
-
-	priv = settings->priv;
-	value = -1;
-
-	g_return_val_if_fail( priv->keyfile, -1 );
-
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			value = abs( atoi( str ));
-		}
-		g_free( str );
-	}
-
-	return( value );
-}
-
-/**
- * my_settings_set_uint:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- * @value: the unsigned integer value to be set.
- *
- * Store the @value in @settings file.
- */
-void
-my_settings_set_uint( mySettings *settings, const gchar *group, const gchar *key, guint value )
-{
-	mySettingsPrivate *priv;
-	gchar *str;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-	g_return_if_fail( my_strlen( group ));
-	g_return_if_fail( my_strlen( key ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-		str = g_strdup_printf( "%u", value );
-		g_key_file_set_string( settings->priv->keyfile, group, key, str );
-		g_free( str );
-		write_key_file( settings );
-	}
-}
-
-/**
- * my_settings_get_int_list:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- *
- * Returns: a newly allocated #GList of integers, which should be
- * #my_settings_free_int_list() by the caller, or %NULL if the key is
- * not found.
- *
- * Integers must be accessed through GPOINTER_TO_INT() macro.
- */
-GList *
-my_settings_get_int_list( const mySettings *settings, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	GList *list;
-	gchar *str;
-	gchar **array, **iter;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( key ), NULL );
-
-	priv = settings->priv;
-	list = NULL;
-
-	g_return_val_if_fail( priv->keyfile, NULL );
-
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			array = str_to_array( str );
-			if( array ){
-				iter = ( gchar ** ) array;
-				while( *iter ){
-					list = g_list_prepend( list, GINT_TO_POINTER( atoi( *iter )));
-					iter++;
-				}
-			}
-			g_strfreev( array );
-		}
-		g_free( str );
-	}
-
-	return( g_list_reverse( list ));
-}
-
-/**
- * my_settings_set_int_list:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- * @list: the list of integers to be written.
- *
- * Store the @list into @settings file.
- * Remove the @key if the @list is %NULL or empty.
- *
- * The integers are expected to be accessible in the @list through
- * GPOINTER_TO_INT() macro.
- */
-void
-my_settings_set_int_list( mySettings *settings, const gchar *group, const gchar *key, GList *list )
-{
-	mySettingsPrivate *priv;
-	GString *str;
-	const GList *it;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-	g_return_if_fail( my_strlen( group ));
-	g_return_if_fail( my_strlen( key ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-
-		if( list && g_list_length( list )){
-			str = g_string_new( "" );
-			for( it=list ; it ; it=it->next ){
-				g_string_append_printf( str, "%d;", GPOINTER_TO_INT( it->data ));
-			}
-			g_key_file_set_string( settings->priv->keyfile, group, key, str->str );
-			g_string_free( str, TRUE );
-
-		} else {
-			g_key_file_remove_key( settings->priv->keyfile, group, key, NULL );
-		}
-
-		write_key_file( settings );
-	}
-}
-
-/**
- * my_settings_get_string:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- *
- * Returns: the specified string value as a newly allocated string which
- * should be g_free() by the caller.
- */
-gchar *
-my_settings_get_string( const mySettings *settings, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	gchar *str;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( key ), NULL );
-
-	priv = settings->priv;
-	str = NULL;
-
-	g_return_val_if_fail( priv->keyfile, NULL );
-
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-	}
-
-	return( str );
-}
-
-/**
- * my_settings_set_string:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- * @value: the string to be written.
- *
- * Store the @value string into @settings file.
- */
-void
-my_settings_set_string( mySettings *settings, const gchar *group, const gchar *key, const gchar *value )
-{
-	mySettingsPrivate *priv;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-	g_return_if_fail( my_strlen( group ));
-	g_return_if_fail( my_strlen( key ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-		g_key_file_set_string( settings->priv->keyfile, group, key, value );
-		write_key_file( settings );
-	}
-}
-
-/**
- * my_settings_get_string_list:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- *
- * Returns: a newly allocated #GList of strings, or %NULL if the key is
- * not found.
- *
- * The returned list should be #my_settings_free_string_list() by the
- * caller.
- */
-GList *
-my_settings_get_string_list( const mySettings *settings, const gchar *group, const gchar *key )
-{
-	mySettingsPrivate *priv;
-	GList *list;
-	gchar *str;
-	gchar **array, **iter;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( key ), NULL );
-
-	priv = settings->priv;
-	list = NULL;
-
-	g_return_val_if_fail( priv->keyfile, NULL );
-
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			array = str_to_array( str );
-			if( array ){
-				iter = ( gchar ** ) array;
-				while( *iter ){
-					list = g_list_prepend( list, g_strdup( *iter ));
-					iter++;
-				}
-			}
-			g_strfreev( array );
-		}
-		g_free( str );
-	}
-
-	return( g_list_reverse( list ));
-}
-
-/**
- * my_settings_set_string_list:
- * @settings: this #mySettings instance.
- * @group: the group name in the @settings file.
- * @key: the key name in the @settings file.
- * @list: the list of strings to be written.
- *
- * Store the @list string list into @settings file.
- * Remove the @key if the @list is %NULL or empty.
- */
-void
-my_settings_set_string_list( mySettings *settings, const gchar *group, const gchar *key, GList *list )
-{
-	mySettingsPrivate *priv;
-	GString *str;
-	const GList *it;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-	g_return_if_fail( my_strlen( group ));
-	g_return_if_fail( my_strlen( key ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-
-		if( list && g_list_length( list )){
-			str = g_string_new( "" );
-			for( it=list ; it ; it=it->next ){
-				g_string_append_printf( str, "%s;", ( const gchar * ) it->data );
-			}
-			g_key_file_set_string( settings->priv->keyfile, group, key, str->str );
-			g_string_free( str, TRUE );
-
-		} else {
-			g_key_file_remove_key( settings->priv->keyfile, group, key, NULL );
-		}
-
-		write_key_file( settings );
-	}
-}
-
-/**
- * my_settings_get_groups:
- * @settings: this #mySettings instance.
- *
- * Returns: the list of all defined groups as a #GList which should be
- * #my_settings_free_groups() by the caller.
- */
-GList *
-my_settings_get_groups( const mySettings *settings )
-{
-	mySettingsPrivate *priv;
-	GList *list;
-	gchar **array, **iter;
-
-	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-
-	priv = settings->priv;
-	list = NULL;
-
-	g_return_val_if_fail( priv->keyfile, NULL );
-
-	if( !priv->dispose_has_run ){
-		array = g_key_file_get_groups( priv->keyfile, NULL );
-		list = NULL;
-		iter = array;
-		while( *iter ){
-			list = g_list_prepend( list, g_strdup( *iter ));
-			iter++;
-		}
-		g_strfreev( array );
-	}
-
-	return( g_list_reverse( list ));
-}
-
-/**
- * my_settings_reload:
- * @settings: this #mySettings instance.
- *
- * Reload the content of the @settings file.
- */
-void
-my_settings_reload( mySettings *settings )
-{
-	mySettingsPrivate *priv;
-	gchar *filename;
-
-	g_return_if_fail( settings && MY_IS_SETTINGS( settings ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->keyfile );
-
-	if( !priv->dispose_has_run ){
-		filename = g_strdup( priv->fname );
-		g_key_file_unref( priv->keyfile );
-		load_key_file( settings, filename );
-		g_free( filename );
 	}
 }
 

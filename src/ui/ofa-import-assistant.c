@@ -36,6 +36,7 @@
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
@@ -48,7 +49,6 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-main-window.h"
@@ -1001,7 +1001,7 @@ get_settings( ofaImportAssistant *self )
 
 	priv = self->priv;
 
-	list = ofa_settings_get_string_list( st_prefs_import );
+	list = ofa_settings_user_get_string_list( st_prefs_import );
 
 	it = list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -1031,7 +1031,7 @@ update_settings( ofaImportAssistant *self )
 			priv->p2_type,
 			priv->p1_folder ? priv->p1_folder : "" );
 
-	ofa_settings_set_string( st_prefs_import, str );
+	ofa_settings_user_set_string( st_prefs_import, str );
 
 	g_free( str );
 }

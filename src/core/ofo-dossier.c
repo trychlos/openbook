@@ -46,7 +46,6 @@
 
 #include "ofa-ddl-update.h"
 #include "ofa-icollector.h"
-#include "ofa-settings.h"
 #include "ofo-marshal.h"
 
 /* priv instance data

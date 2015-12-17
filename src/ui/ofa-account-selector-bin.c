@@ -28,9 +28,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-selector-bin.h"
@@ -376,7 +375,7 @@ get_settings( ofaAccountSelectorBin *bin )
 
 	priv = bin->priv;
 
-	slist = ofa_settings_get_string_list( priv->pref_name );
+	slist = ofa_settings_user_get_string_list( priv->pref_name );
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -398,7 +397,7 @@ set_settings( ofaAccountSelectorBin *bin )
 
 	str = g_strdup_printf( "%s;", priv->acc_number ? priv->acc_number : "" );
 
-	ofa_settings_set_string( priv->pref_name, str );
+	ofa_settings_user_set_string( priv->pref_name, str );
 
 	g_free( str );
 }

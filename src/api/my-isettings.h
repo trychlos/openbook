@@ -52,16 +52,25 @@ typedef struct _ofaISettings                   myISettings;
  * myISettingsInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @get_keyfile: [should]: returns the underlying keyfile.
+ * @get_filename: [should]: returns the underlying filename.
+ * @get_groups: [should]: returns the list of groups.
  * @remove_group: [should]: removes a group.
  * @get_keys: [should]: returns the list of keys.
  * @free_keys: [may]: frees a list of keys.
  * @remove_key: [should]: removes a key.
- * @get_string_list: [should]: returns a list of strings.
- * @free_string_list: [may]: frees a list of strings.
- * @get_string: [should]: returns a string.
- * @set_string: [should]: sets a string.
+ * @get_boolean: [should]: returns a boolean.
+ * @set_boolean: [should]: sets a boolean.
  * @get_uint: [should]: returns an unsigned integer.
  * @set_uint: [should]: sets an unsigned integer.
+ * @get_uint_list: [should]: returns a list of unsigned integers.
+ * @set_uint_list: [should]: sets a list of unsigned integers.
+ * @free_uint_list: [may]: frees a list of unsigned integers.
+ * @get_string: [should]: returns a string.
+ * @set_string: [should]: sets a string.
+ * @get_string_list: [should]: returns a list of strings.
+ * @set_string_list: [should]: sets a list of strings.
+ * @free_string_list: [may]: frees a list of strings.
  *
  * This defines the interface that an #myISettings should/must
  * implement.
@@ -85,7 +94,39 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_interface_version )( const myISettings *instance );
+	guint      ( *get_interface_version )( const myISettings *instance );
+
+	/**
+	 * get_keyfile:
+	 * @instance: the #myISettings instance.
+	 *
+	 * Returns: the keyfile of the underlying settings file.
+	 *
+	 * Since: version 1
+	 */
+	GKeyFile * ( *get_keyfile )          ( const myISettings *instance );
+
+	/**
+	 * get_filename:
+	 * @instance: the #myISettings instance.
+	 *
+	 * Returns: the filename of the underlying settings file, as a newly
+	 * allocated string which should be g_free() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	gchar *    ( *get_filename )         ( const myISettings *instance );
+
+	/**
+	 * get_groups:
+	 * @instance: the #myISettings instance.
+	 *
+	 * Returns: the list of groups as a #GList of strings which should
+	 * be #my_isettings_free_groups() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	GList *    ( *get_groups )           ( const myISettings *instance );
 
 	/**
 	 * remove_group:
@@ -96,7 +137,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void     ( *remove_group )         ( myISettings *instance,
+	void       ( *remove_group )         ( myISettings *instance,
 												const gchar *group );
 
 	/**
@@ -109,7 +150,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GList *  ( *get_keys )             ( const myISettings *instance,
+	GList *    ( *get_keys )             ( const myISettings *instance,
 												const gchar *group );
 
 	/**
@@ -120,7 +161,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void     ( *free_keys )            ( GList *key_list );
+	void       ( *free_keys )            ( GList *key_list );
 
 	/**
 	 * remove_key:
@@ -132,68 +173,40 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void     ( *remove_key )           ( myISettings *instance,
+	void       ( *remove_key )           ( myISettings *instance,
 												const gchar *group,
 												const gchar *key );
 
 	/**
-	 * get_string_list:
+	 * get_boolean:
 	 * @instance: the #myISettings instance.
 	 * @group: the name of the group in the settings file.
 	 * @key: the name of the key.
 	 *
-	 * Returns: the value of the @key in the @group, as a #GList of
-	 * strings which should be #my_isettings_free_string_list() by the
-	 * caller.
+	 * Returns: the value of the @key in the @group,
+	 * or FALSE if not found.
 	 *
 	 * Since: version 1
 	 */
-	GList *  ( *get_string_list )      ( const myISettings *instance,
+	gboolean   ( *get_boolean )          ( const myISettings *instance,
 												const gchar *group,
 												const gchar *key );
 
 	/**
-	 * free_string_list:
-	 * @string_list: a list of strings as returned by #get_string_list()
-	 *  method.
-	 *
-	 * Frees the provided @string_list.
-	 *
-	 * Since: version 1
-	 */
-	void     ( *free_string_list )     ( GList *string_list );
-
-	/**
-	 * get_string:
+	 * set_boolean:
 	 * @instance: the #myISettings instance.
 	 * @group: the name of the group in the settings file.
 	 * @key: the name of the key.
-	 *
-	 * Returns: the value of the @key in the @group, as a newly
-	 * allocated string which should be g_free() by the caller,
-	 * or %NULL if not found.
-	 *
-	 * Since: version 1
-	 */
-	gchar *  ( *get_string )           ( const myISettings *instance,
-												const gchar *group,
-												const gchar *key );
-
-	/**
-	 * set_string:
-	 * @instance: the #myISettings instance.
-	 * @group: the name of the group in the settings file.
-	 * @key: the name of the key.
-	 * @value: the string to be set.
+	 * @value: the boolean to be set.
 	 *
 	 * Sets the @value to the @key of the @group.
 	 *
 	 * Since: version 1
 	 */
-	void     ( *set_string )           ( myISettings *instance,
+	void       ( *set_boolean )          ( myISettings *instance,
 												const gchar *group,
 												const gchar *key,
-												const gchar *value );
+												gboolean value );
 
 	/**
 	 * get_uint:
@@ -206,7 +219,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_uint )             ( const myISettings *instance,
+	guint      ( *get_uint )             ( const myISettings *instance,
 												const gchar *group,
 												const gchar *key );
 
@@ -221,62 +234,214 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void     ( *set_uint )             ( myISettings *instance,
+	void       ( *set_uint )             ( myISettings *instance,
 												const gchar *group,
 												const gchar *key,
 												guint value );
+
+	/**
+	 * get_uint_list:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 *
+	 * Returns: the value of the @key in the @group as a #GList of
+	 * unsigned integers, or %NULL if not found.
+	 *
+	 * Since: version 1
+	 */
+	GList *    ( *get_uint_list )        ( const myISettings *instance,
+												const gchar *group,
+												const gchar *key );
+
+	/**
+	 * set_uint_list:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 * @value: [allow-none]: the list of unsigned integers to be set.
+	 *
+	 * Sets the @value to the @key of the @group.
+	 * Removes the key if @value is %NULL.
+	 *
+	 * Since: version 1
+	 */
+	void       ( *set_uint_list )        ( myISettings *instance,
+												const gchar *group,
+												const gchar *key,
+												const GList *value );
+
+	/**
+	 * free_uint_list:
+	 * @value: a list of unsigned integers as returned by #get_uint_list()
+	 *  method.
+	 *
+	 * Frees the provided @value.
+	 *
+	 * Since: version 1
+	 */
+	void       ( *free_uint_list )       ( GList *value );
+
+	/**
+	 * get_string:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 *
+	 * Returns: the value of the @key in the @group, as a newly
+	 * allocated string which should be g_free() by the caller,
+	 * or %NULL if not found.
+	 *
+	 * Since: version 1
+	 */
+	gchar *    ( *get_string )           ( const myISettings *instance,
+												const gchar *group,
+												const gchar *key );
+
+	/**
+	 * set_string:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 * @value: the string to be set.
+	 *
+	 * Sets the @value to the @key of the @group.
+	 *
+	 * Since: version 1
+	 */
+	void       ( *set_string )           ( myISettings *instance,
+												const gchar *group,
+												const gchar *key,
+												const gchar *value );
+
+	/**
+	 * get_string_list:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 *
+	 * Returns: the value of the @key in the @group, as a #GList of
+	 * strings which should be #my_isettings_free_string_list() by the
+	 * caller.
+	 *
+	 * Since: version 1
+	 */
+	GList *    ( *get_string_list )      ( const myISettings *instance,
+												const gchar *group,
+												const gchar *key );
+
+	/**
+	 * set_string_list:
+	 * @instance: the #myISettings instance.
+	 * @group: the name of the group in the settings file.
+	 * @key: the name of the key.
+	 * @value: the list of strings to be set.
+	 *
+	 * Sets the @value to the @key of the @group.
+	 *
+	 * Since: version 1
+	 */
+	void       ( *set_string_list )      ( myISettings *instance,
+												const gchar *group,
+												const gchar *key,
+												const GList *value );
+
+	/**
+	 * free_string_list:
+	 * @string_list: a list of strings as returned by #get_string_list()
+	 *  method.
+	 *
+	 * Frees the provided @string_list.
+	 *
+	 * Since: version 1
+	 */
+	void       ( *free_string_list )     ( GList *string_list );
 }
 	myISettingsInterface;
 
-GType   my_isettings_get_type                  ( void );
+GType     my_isettings_get_type                  ( void );
 
-guint   my_isettings_get_interface_last_version( void );
+guint     my_isettings_get_interface_last_version( void );
 
-guint   my_isettings_get_interface_version     ( const myISettings *instance );
+guint     my_isettings_get_interface_version     ( const myISettings *instance );
+
+GKeyFile *my_isettings_get_keyfile               ( const myISettings *instance );
+
+gchar    *my_isettings_get_filename              ( const myISettings *instance );
 
 /* group management
  */
-void    my_isettings_remove_group              ( myISettings *settings,
+GList    *my_isettings_get_groups                ( const myISettings *settings );
+
+#define   my_isettings_free_groups( L )		     g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+
+void      my_isettings_remove_group              ( myISettings *settings,
 														const gchar *group );
 
 /* key management
  */
-GList  *my_isettings_get_keys                  ( const myISettings *instance,
+GList    *my_isettings_get_keys                  ( const myISettings *instance,
 														const gchar *group );
 
-void    my_isettings_free_keys                 ( const myISettings *instance,
+void      my_isettings_free_keys                 ( const myISettings *instance,
 														GList *key_list );
 
-void    my_isettings_remove_key                ( myISettings *settings,
+void      my_isettings_remove_key                ( myISettings *settings,
 														const gchar *group,
 														const gchar *key );
 
 /* data management
  */
-GList  *my_isettings_get_string_list           ( const myISettings *instance,
+gboolean  my_isettings_get_boolean               ( const myISettings *instance,
 														const gchar *group,
 														const gchar *key );
 
-void    my_isettings_free_string_list          ( const myISettings *instance,
-														GList *string_list );
+void      my_isettings_set_boolean               ( myISettings *instance,
+														const gchar *group,
+														const gchar *key,
+														gboolean value );
 
-gchar  *my_isettings_get_string                ( const myISettings *instance,
+guint     my_isettings_get_uint                  ( const myISettings *instance,
 														const gchar *group,
 														const gchar *key );
 
-void    my_isettings_set_string                ( myISettings *instance,
+void      my_isettings_set_uint                  ( myISettings *instance,
+														const gchar *group,
+														const gchar *key,
+														guint value );
+
+GList    *my_isettings_get_uint_list             ( const myISettings *instance,
+														const gchar *group,
+														const gchar *key );
+
+void      my_isettings_set_uint_list             ( myISettings *instance,
+														const gchar *group,
+														const gchar *key,
+														const GList *value );
+
+void      my_isettings_free_uint_list            ( const myISettings *instance,
+														GList *value );
+
+gchar    *my_isettings_get_string                ( const myISettings *instance,
+														const gchar *group,
+														const gchar *key );
+
+void      my_isettings_set_string                ( myISettings *instance,
 														const gchar *group,
 														const gchar *key,
 														const gchar *value );
 
-guint   my_isettings_get_uint                  ( const myISettings *instance,
+GList    *my_isettings_get_string_list           ( const myISettings *instance,
 														const gchar *group,
 														const gchar *key );
 
-void    my_isettings_set_uint                  ( myISettings *instance,
+void      my_isettings_set_string_list           ( myISettings *instance,
 														const gchar *group,
 														const gchar *key,
-														guint value );
+														const GList *value );
+
+void      my_isettings_free_string_list          ( const myISettings *instance,
+														GList *string_list );
 
 G_END_DECLS
 

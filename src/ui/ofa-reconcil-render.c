@@ -34,12 +34,11 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-main-window.h"
@@ -318,7 +317,10 @@ render_page_get_page_orientation( ofaRenderPage *page )
 static void
 render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
-	*keyfile = ofa_settings_get_keyfile( SETTINGS_TARGET_USER );
+	myISettings *settings;
+
+	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	*keyfile = my_isettings_get_keyfile( settings );
 	*group_name = g_strdup( st_print_settings );
 }
 

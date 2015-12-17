@@ -30,10 +30,9 @@
 #include <gtk/gtk.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-iaccount-filter.h"
@@ -676,7 +675,7 @@ load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	const gchar *cstr;
 	gboolean all_accounts;
 
-	slist = ofa_settings_get_string_list( sdata->prefs_key );
+	slist = ofa_settings_user_get_string_list( sdata->prefs_key );
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -714,7 +713,7 @@ set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 				gtk_entry_get_text( GTK_ENTRY( sdata->to_entry )),
 				sdata->all_accounts ? "True":"False" );
 
-		ofa_settings_set_string( sdata->prefs_key, str );
+		ofa_settings_user_set_string( sdata->prefs_key, str );
 
 		g_free( str );
 	}

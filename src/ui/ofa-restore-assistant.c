@@ -36,13 +36,13 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
@@ -1212,7 +1212,7 @@ get_settings( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	list = ofa_settings_get_string_list( st_prefs_import );
+	list = ofa_settings_user_get_string_list( st_prefs_import );
 
 	it = list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -1248,7 +1248,7 @@ update_settings( ofaRestoreAssistant *self )
 	list = g_list_append( list, g_strdup_printf( "%s", priv->p4_open ? "True":"False" ));
 	list = g_list_append( list, g_strdup_printf( "%d", priv->p1_filter ));
 
-	ofa_settings_set_string_list( st_prefs_import, list );
+	ofa_settings_user_set_string_list( st_prefs_import, list );
 
 	ofa_settings_free_string_list( list );
 }

@@ -36,6 +36,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -45,7 +46,6 @@
 
 #include "my-progress-bar.h"
 #include "ofa-ddl-update.h"
-#include "ofa-settings.h"
 
 /* private instance data
  */
@@ -1630,7 +1630,7 @@ load_settings( ofaDDLUpdate *self )
 
 	priv = self->priv;
 
-	slist = ofa_settings_get_string_list( st_settings );
+	slist = ofa_settings_user_get_string_list( st_settings );
 	it = slist ? slist : NULL;
 	priv->paned_pos = it ? atoi( it->data ) : 50;
 
@@ -1648,7 +1648,7 @@ write_settings( ofaDDLUpdate *self )
 	str = g_strdup_printf( "%d;",
 			gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	ofa_settings_set_string( st_settings, str );
+	ofa_settings_user_set_string( st_settings, str );
 
 	g_free( str );
 }

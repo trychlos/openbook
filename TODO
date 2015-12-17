@@ -456,13 +456,6 @@
  886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
                 bat files and entries are purged
 
- 888 2015-11-23 review ofaSettings class to use mySettings
-
- 889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
-
- 907 2015-11-26 define a myISettings interface to be used in the plugins
-                (instead of directly the mySettings object)
-
  909 2015-11-26 SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same signal
                 (exe_dates_changed) sent on main window so that it may
                 automatically update window title
@@ -490,16 +483,7 @@
                 SELECT schema_name,default_character_set_name FROM information_schema.SCHEMATA;
                 ALTER DATABASE ofat_1 CHARACTER SET='utf8';
 
- 929 2015-12-14 add ofa- prefix to LastBackupFolder key
-
- 930 2015-12-14 add ofa- prefix to OpeTemplateBookOrder key
-
- 931 2015-12-14 remove ofa_settings_dossier_xxx methods
-
- 932 2015-12-15 review IPrefsProvider interface so that MySQL plugin
-                does not have to use ofa_settings API
-
- 933 2015-12-15 rename ofa-preferences (too close of ofa-iprefs-provider)
+ 933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
                 while these are rather shortcuts to user preferences
 
  934
@@ -3849,7 +3833,7 @@
  806 2014- 4-16 when backuping the dossier
 (openbook:543): OFA-DEBUG: ofa_settings_dossier_set_string: dname=Test pré-clôture, key=LastBackupFolder
 (openbook:543): GLib-CRITICAL **: g_key_file_set_string: assertion 'string != NULL' failed
-#2  0x00007ffff7da9d16 in ofa_settings_set_string_ex (target=<optimized out>, group=0xb5a090 "Dossier Test pré-clôture", key=0x495c6c "LastBackupFolder", svalue=0x0)
+#2  0x00007ffff7da9d16 in ofa_settings_set_string (target=<optimized out>, group=0xb5a090 "Dossier Test pré-clôture", key=0x495c6c "LastBackupFolder", svalue=0x0)
     at ../../../src/core/ofa-settings.c:647
 #3  0x00007ffff7daa447 in ofa_settings_dossier_set_string (dname=<optimized out>, key=0x495c6c "LastBackupFolder", svalue=0x0) at ../../../src/core/ofa-settings.c:1055
 #4  0x000000000042ddfc in do_backup (self=0xcc5b60) at ../../../src/ui/ofa-backup.c:224
@@ -4245,6 +4229,12 @@
  887 2015-11-10 Reconciliation: implement ofaIColumns interface
      2015-11-12 done
 
+ 888 2015-11-23 review ofaSettings class to use mySettings
+     2015-12-17 done
+
+ 889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
+     2015-12-17 ofaSettingsMonitor is removed as obsolete
+
  890 2015-11-23 remove ofa_idbms_get_provider_by_name()
      2015-12-13 done
 
@@ -4320,6 +4310,10 @@
                 (cf. ofoDossier:do_open)
      2015-11-26 done
 
+ 907 2015-11-26 define a myISettings interface to be used in the plugins
+                (instead of directly the mySettings object)
+     2015-12-17 done
+
  908 2015-11-26 remove ofo_dossier_get_name()
      2015-12-13 done
 
@@ -4361,6 +4355,20 @@
 
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
      2015-12-13 done
+
+ 929 2015-12-14 add ofa- prefix to LastBackupFolder key
+     2015-12-17 done
+
+ 930 2015-12-14 add ofa- prefix to OpeTemplateBookOrder key
+     2015-12-17 done
+
+ 931 2015-12-14 remove ofa_settings_dossier_xxx methods
+     2015-12-17 done as much as possible
+
+ 932 2015-12-15 review IPrefsProvider interface so that MySQL plugin
+                does not have to use ofa_settings API
+     2015-12-17 done as much as possible though is is not avoidable that
+                dossier preferences use ofa_settings_dossier_xxx
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

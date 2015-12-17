@@ -31,9 +31,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
@@ -320,7 +319,7 @@ get_settings( ofaBatSelect *self )
 	const gchar *cstr;
 
 	priv = self->priv;
-	slist = ofa_settings_get_string_list( st_settings );
+	slist = ofa_settings_user_get_string_list( st_settings );
 
 	it = slist ? slist : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -338,6 +337,6 @@ set_settings( ofaBatSelect *self )
 	priv = self->priv;
 
 	str = g_strdup_printf( "%u;", priv->pane_pos );
-	ofa_settings_set_string( st_settings, str );
+	ofa_settings_user_set_string( st_settings, str );
 	g_free( str );
 }

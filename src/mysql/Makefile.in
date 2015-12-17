@@ -182,14 +182,16 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-idbprovider.c ofa-mysql-idbprovider.h \
 	ofa-mysql-iprefs-provider.c ofa-mysql-iprefs-provider.h \
 	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
-	ofa-mysql-prefs-bin.h ofa-module.c
+	ofa-mysql-prefs-bin.h ofa-mysql-user-prefs.c \
+	ofa-mysql-user-prefs.h ofa-module.c
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo ofa-mysql-period.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo ofa-module.lo
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-period.lo ofa-mysql-prefs-bin.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.lo ofa-module.lo
 libofa_mysql_la_OBJECTS = $(am_libofa_mysql_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -464,6 +466,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-period.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.h							\
 @HAVE_MYSQL_TRUE@	ofa-module.c									\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
@@ -587,6 +591,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-user-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql.Plo@am__quote@
 
 .c.o:

@@ -33,6 +33,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
@@ -44,7 +45,6 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofa-settings.h"
 
 #include "ui/my-cell-renderer-amount.h"
 #include "ui/my-cell-renderer-date.h"
@@ -546,7 +546,7 @@ setup_gen_selection( ofaEntryPage *self )
 	g_debug( "%s: account_btn=%p", thisfn, ( void * ) priv->account_btn );
 
 	/* init from the settings */
-	text = ofa_settings_get_string( st_pref_selection );
+	text = ofa_settings_user_get_string( st_pref_selection );
 	if( !my_collate( text, SEL_ACCOUNT )){
 		toggle = priv->account_btn;
 	/* default to select by ledger */
@@ -568,7 +568,7 @@ setup_ledger_selection( ofaEntryPage *self )
 
 	priv = self->priv;
 
-	initial_mnemo = ofa_settings_get_string( st_pref_ledger );
+	initial_mnemo = ofa_settings_user_get_string( st_pref_ledger );
 
 	priv->ledger_combo = ofa_ledger_combo_new();
 
@@ -616,7 +616,7 @@ setup_account_selection( ofaEntryPage *self )
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->f1_label = GTK_LABEL( widget );
 
-	text = ofa_settings_get_string( st_pref_account );
+	text = ofa_settings_user_get_string( st_pref_account );
 	if( my_strlen( text )){
 		gtk_entry_set_text( priv->account_entry, text );
 	}
@@ -655,7 +655,7 @@ setup_status_selection( ofaEntryPage *self )
 
 	priv = self->priv;
 
-	prefs = ofa_settings_get_string_list( st_pref_status );
+	prefs = ofa_settings_user_get_string_list( st_pref_status );
 	it = prefs;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	bpast = my_utils_boolean_from_str( cstr );
@@ -817,11 +817,11 @@ setup_entries_treeview( ofaEntryPage *self )
 	/* default is to sort by ascending operation date
 	 */
 	sort_column = NULL;
-	sort_id = ofa_settings_get_int( st_pref_sort_c );
+	sort_id = ofa_settings_user_get_uint( st_pref_sort_c );
 	if( sort_id < 0 ){
 		sort_id = ENT_COL_DOPE;
 	}
-	sort_sens = ofa_settings_get_int( st_pref_sort_s );
+	sort_sens = ofa_settings_user_get_uint( st_pref_sort_s );
 	if( sort_sens < 0 ){
 		sort_sens = OFA_SORT_ASCENDING;
 	}
@@ -1345,8 +1345,8 @@ on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self )
 			thisfn, new_column_id,
 			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
 
-	ofa_settings_set_int( st_pref_sort_c, new_column_id );
-	ofa_settings_set_int( st_pref_sort_s, sort_order );
+	ofa_settings_user_set_uint( st_pref_sort_c, new_column_id );
+	ofa_settings_user_set_uint( st_pref_sort_s, sort_order );
 }
 
 static void
@@ -1426,7 +1426,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 
 		/* and display the entries */
 		if( is_active ){
-			ofa_settings_set_string( st_pref_selection, SEL_LEDGER );
+			ofa_settings_user_set_string( st_pref_selection, SEL_LEDGER );
 			g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
 		}
 
@@ -1443,7 +1443,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 
 		/* and display the entries */
 		if( is_active ){
-			ofa_settings_set_string( st_pref_selection, SEL_ACCOUNT );
+			ofa_settings_user_set_string( st_pref_selection, SEL_ACCOUNT );
 			g_idle_add(( GSourceFunc ) display_entries_from_account, self );
 		}
 	}
@@ -1461,7 +1461,7 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self
 
 	g_free( priv->jou_mnemo );
 	priv->jou_mnemo = g_strdup( mnemo );
-	ofa_settings_set_string( st_pref_ledger, mnemo );
+	ofa_settings_user_set_string( st_pref_ledger, mnemo );
 
 	g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
 }
@@ -1507,13 +1507,13 @@ on_account_changed( GtkEntry *entry, ofaEntryPage *self )
 		str = g_strdup_printf( "%s: %s", _( "Account" ), ofo_account_get_label( account ));
 		gtk_label_set_text( priv->f1_label, str );
 		g_free( str );
-		ofa_settings_set_string( st_pref_account, priv->acc_number );
+		ofa_settings_user_set_string( st_pref_account, priv->acc_number );
 		priv->acc_valid = TRUE;
 		g_idle_add(( GSourceFunc ) display_entries_from_account, self );
 
 	} else {
 		gtk_label_set_text( priv->f1_label, "" );
-		ofa_settings_set_string( st_pref_account, "" );
+		ofa_settings_user_set_string( st_pref_account, "" );
 	}
 
 }
@@ -2117,7 +2117,7 @@ on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self )
 					priv->display_validated ? "True":"False",
 					priv->display_deleted ? "True":"False",
 					priv->display_future ? "True":"False" );
-	ofa_settings_set_string( st_pref_status, prefs );
+	ofa_settings_user_set_string( st_pref_status, prefs );
 	g_free( prefs );
 }
 

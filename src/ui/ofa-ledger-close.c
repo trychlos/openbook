@@ -32,12 +32,12 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
 #include "core/my-progress-bar.h"
-#include "core/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-ledger-close.h"
@@ -722,7 +722,7 @@ load_settings( ofaLedgerClose *self )
 	const gchar *cstr;
 
 	priv = self->priv;
-	list = ofa_settings_get_string_list( st_settings );
+	list = ofa_settings_user_get_string_list( st_settings );
 
 	it = list;
 	cstr = it ? it->data : NULL;
@@ -746,7 +746,7 @@ set_settings( ofaLedgerClose *self )
 	str = g_strdup_printf( "%s;",
 			priv->all_ledgers ? "True":"False" );
 
-	ofa_settings_set_string( st_settings, str );
+	ofa_settings_user_set_string( st_settings, str );
 
 	g_free( str );
 }

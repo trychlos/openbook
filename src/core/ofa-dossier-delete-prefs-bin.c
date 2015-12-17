@@ -29,9 +29,9 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 
 #include "ofa-dossier-delete-prefs-bin.h"
-#include "ofa-settings.h"
 
 /* private instance data
  */
@@ -371,7 +371,7 @@ setup_settings( ofaDossierDeletePrefsBin *bin )
 	gint dbmode;
 	gboolean drop_account;
 
-	strlist = ofa_settings_get_string_list( st_delete_prefs );
+	strlist = ofa_settings_user_get_string_list( st_delete_prefs );
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
@@ -404,7 +404,7 @@ ofa_dossier_delete_prefs_bin_set_settings( const ofaDossierDeletePrefsBin *bin )
 	if( !priv->dispose_has_run ){
 
 		str = g_strdup_printf( "%d;%s;", priv->db_mode, priv->account_mode ? "True":"False" );
-		ofa_settings_set_string( st_delete_prefs, str );
+		ofa_settings_user_set_string( st_delete_prefs, str );
 		g_free( str );
 	}
 }

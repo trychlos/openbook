@@ -32,8 +32,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-
-#include "core/ofa-settings.h"
+#include "api/ofa-settings.h"
 
 #include "ui/ofa-itreeview-display.h"
 
@@ -290,7 +289,7 @@ ofa_itreeview_display_init_visible( const ofaITreeviewDisplay *instance, const g
 	g_free( sdata->settings_key );
 	sdata->settings_key = g_strdup( key );
 
-	list = ofa_settings_get_int_list( sdata->settings_key );
+	list = ofa_settings_user_get_uint_list( sdata->settings_key );
 
 	for( it=sdata->columns_list ; it ; it=it->next ){
 		scol = ( sColumn * ) it->data;
@@ -300,7 +299,7 @@ ofa_itreeview_display_init_visible( const ofaITreeviewDisplay *instance, const g
 				G_ACTION_GROUP( sdata->action_group ), scol->name, g_variant_new_boolean( visible ));
 	}
 
-	ofa_settings_free_int_list( list );
+	ofa_settings_free_uint_list( list );
 	sdata->initialization = FALSE;
 }
 
@@ -494,7 +493,7 @@ update_settings( ofaITreeviewDisplay *instance, sITreeviewDisplay *sdata )
 			g_variant_unref( value );
 			it++;
 		}
-		ofa_settings_set_int_list( sdata->settings_key, id_list );
+		ofa_settings_user_set_uint_list( sdata->settings_key, id_list );
 		g_list_free( id_list );
 		g_strfreev( actions_list );
 	}

@@ -33,9 +33,8 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-iabout.h"
 #include "api/ofa-plugin.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"

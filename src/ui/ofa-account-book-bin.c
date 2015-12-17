@@ -30,10 +30,9 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
@@ -408,7 +407,7 @@ load_settings( ofaAccountBookBin *bin )
 	GDate date;
 
 	priv = bin->priv;
-	list = ofa_settings_get_string_list( st_settings );
+	list = ofa_settings_user_get_string_list( st_settings );
 
 	it = list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -490,7 +489,7 @@ set_settings( ofaAccountBookBin *bin )
 			my_strlen( sdto ) ? sdto : "",
 			priv->new_page ? "True":"False" );
 
-	ofa_settings_set_string( st_settings, str );
+	ofa_settings_user_set_string( st_settings, str );
 
 	g_free( sdfrom );
 	g_free( sdto );

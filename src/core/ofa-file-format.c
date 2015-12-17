@@ -32,8 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
-
-#include "ofa-settings.h"
+#include "api/ofa-settings.h"
 
 /* private instance data
  */
@@ -195,7 +194,7 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	priv = self->priv;
 
 	priv->prefs_name = g_strdup( prefs_name );
-	prefs_list = ofa_settings_get_string_list( prefs_name );
+	prefs_list = ofa_settings_user_get_string_list( prefs_name );
 
 	/* name of this file format */
 	it = prefs_list;
@@ -536,7 +535,7 @@ ofa_file_format_set( ofaFileFormat *settings,
 		/* save in user preferences */
 		g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
 		if( my_strlen( priv->prefs_name )){
-			ofa_settings_set_string_list( priv->prefs_name, prefs_list );
+			ofa_settings_user_set_string_list( priv->prefs_name, prefs_list );
 		}
 
 		g_list_free( prefs_list );

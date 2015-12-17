@@ -106,9 +106,6 @@ libofa_core_la_SOURCES = \
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
-	ofa-settings.h										\
-	ofa-settings-monitor.c								\
-	ofa-settings-monitor.h								\
 	\
 	ofo-account.c										\
 	ofo-base.c											\

@@ -36,6 +36,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -46,7 +47,6 @@
 #include "api/ofs-concil-id.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
@@ -3308,7 +3308,7 @@ get_settings( ofaReconcilPage *self )
 
 	priv = self->priv;
 
-	slist = ofa_settings_get_string_list( st_reconciliation );
+	slist = ofa_settings_user_get_string_list( st_reconciliation );
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -3362,7 +3362,7 @@ set_settings( ofaReconcilPage *self )
 
 	str = g_strdup_printf( "%s;%s;%s;", account ? account : "", smode, date_sql );
 
-	ofa_settings_set_string( st_reconciliation, str );
+	ofa_settings_user_set_string( st_reconciliation, str );
 
 	g_free( date_sql );
 	g_free( str );

@@ -150,6 +150,83 @@ my_isettings_get_interface_version( const myISettings *instance )
 }
 
 /**
+ * my_isettings_get_keyfile:
+ * @instance: this #myISettings instance.
+ *
+ * Returns: the keyfile of the underlying settings file.
+ *
+ * The returned reference is owned by the implementation, and should
+ * not be released by the caller.
+ */
+GKeyFile *
+my_isettings_get_keyfile( const myISettings *instance )
+{
+	static const gchar *thisfn = "my_isettings_get_keyfile";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_keyfile ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_keyfile( instance ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_keyfile()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
+ * my_isettings_get_filename:
+ * @instance: this #myISettings instance.
+ *
+ * Returns: the filename of the underlying settings file, as a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+my_isettings_get_filename( const myISettings *instance )
+{
+	static const gchar *thisfn = "my_isettings_get_filename";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_filename ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_filename( instance ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_filename()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
+ * my_isettings_get_groups:
+ * @instance: this #myISettings instance.
+ *
+ * Returns: the list of groups defined in the @group, as a #GList which
+ * should be #my_isettings_free_groups() by the caller.
+ */
+GList *
+my_isettings_get_groups( const myISettings *instance )
+{
+	static const gchar *thisfn = "my_isettings_get_groups";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_groups ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_groups( instance ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_groups()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
  * my_isettings_remove_group:
  * @instance: this #myISettings instance.
  * @group: the name of the group.
@@ -257,116 +334,60 @@ my_isettings_remove_key( myISettings *instance, const gchar *group, const gchar 
 }
 
 /**
- * my_isettings_get_string_list:
+ * my_isettings_get_boolean:
  * @instance: this #myISettings instance.
  * @group: the name of the group.
  * @key: the name of the key.
  *
- * Returns: the value of @key as a list of strings which should be
- * #my_isettings_free_string_list() by the caller.
+ * Returns: the value of @key, or %FALSE.
  */
-GList *
-my_isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key )
+gboolean
+my_isettings_get_boolean( const myISettings *instance, const gchar *group, const gchar *key )
 {
-	static const gchar *thisfn = "my_isettings_get_string_list";
+	static const gchar *thisfn = "my_isettings_get_boolean";
 
 	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
 
-	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( key ), NULL );
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), FALSE );
+	g_return_val_if_fail( my_strlen( group ), FALSE );
+	g_return_val_if_fail( my_strlen( key ), FALSE );
 
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_string_list ){
-		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string_list( instance, group, key ));
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_boolean ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_boolean( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_string_list()' method",
+	g_info( "%s: myISettings instance %p does not provide 'get_boolean()' method",
 			thisfn, ( void * ) instance );
-	return( NULL );
+	return( FALSE );
 }
 
 /**
- * my_isettings_free_string_list:
- * @instance: this #myISettings instance.
- * @string_list: the list of keys to be freed, as returned by
- *  #my_isettings_get_keys().
- *
- * Frees the provided @key_list.
- */
-void
-my_isettings_free_string_list( const myISettings *instance, GList *string_list )
-{
-	static const gchar *thisfn = "my_isettings_free_string_list";
-
-	g_debug( "%s: instance=%p, string_list=%p", thisfn, ( void * ) instance, ( void * ) string_list );
-
-	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-	g_return_if_fail( string_list );
-
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list( string_list );
-
-	} else {
-		g_list_free_full( string_list, ( GDestroyNotify ) g_free );
-	}
-}
-
-/**
- * my_isettings_get_string:
+ * my_isettings_set_boolean:
  * @instance: this #myISettings instance.
  * @group: the name of the group.
  * @key: the name of the key.
+ * @value: the boolean to be set.
  *
- * Returns: the value of @key as a newly allocated string which should
- * be g_free() by the caller, or %NULL.
- */
-gchar *
-my_isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key )
-{
-	static const gchar *thisfn = "my_isettings_get_string";
-
-	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
-
-	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( key ), NULL );
-
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_string ){
-		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string ( instance, group, key ));
-	}
-
-	g_info( "%s: myISettings instance %p does not provide 'get_string()' method",
-			thisfn, ( void * ) instance );
-	return( NULL );
-}
-
-/**
- * my_isettings_set_string:
- * @instance: this #myISettings instance.
- * @group: the name of the group.
- * @key: the name of the key.
- * @value: the string to be set.
- *
- * Sets the @value string as the value of the @key in the @group.
+ * Sets the @value boolean as the value of the @key in the @group.
  */
 void
-my_isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value )
+my_isettings_set_boolean( myISettings *instance, const gchar *group, const gchar *key, gboolean value )
 {
-	static const gchar *thisfn = "my_isettings_set_string";
+	static const gchar *thisfn = "my_isettings_set_boolean";
 
 	g_debug( "%s: instance=%p, group=%s, key=%s, value=%s",
-			thisfn, ( void * ) instance, group, key, value );
+			thisfn, ( void * ) instance, group, key, value ? "True":"False" );
 
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
 	g_return_if_fail( my_strlen( group ));
 	g_return_if_fail( my_strlen( key ));
 
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_string ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->set_string ( instance, group, key, value );
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_boolean ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->set_boolean( instance, group, key, value );
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_string()' method",
+	g_info( "%s: myISettings instance %p does not provide 'set_boolean()' method",
 			thisfn, ( void * ) instance );
 }
 
@@ -390,7 +411,7 @@ my_isettings_get_uint( const myISettings *instance, const gchar *group, const gc
 	g_return_val_if_fail( my_strlen( key ), 0 );
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint ){
-		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint ( instance, group, key ));
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint( instance, group, key ));
 	}
 
 	g_info( "%s: myISettings instance %p does not provide 'get_uint()' method",
@@ -420,10 +441,242 @@ my_isettings_set_uint( myISettings *instance, const gchar *group, const gchar *k
 	g_return_if_fail( my_strlen( key ));
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_uint ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->set_uint ( instance, group, key, value );
+		MY_ISETTINGS_GET_INTERFACE( instance )->set_uint( instance, group, key, value );
 		return;
 	}
 
 	g_info( "%s: myISettings instance %p does not provide 'set_uint()' method",
 			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_isettings_get_uint_list:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ *
+ * Returns: the value of @key as a list of unsigned integers which
+ * should be #my_isettings_free_uint_list() by the caller.
+ */
+GList *
+my_isettings_get_uint_list( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	static const gchar *thisfn = "my_isettings_get_uint_list";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_return_val_if_fail( my_strlen( key ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint_list ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint_list( instance, group, key ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_uint_list()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
+ * my_isettings_set_uint_list:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ * @value: [allow-none]: the list of unsigned integers to be set.
+ *
+ * Sets the @value list of unsigned integers as the value of the @key
+ * in the @group.
+ * Removes the key if @value is %NULL.
+ */
+void
+my_isettings_set_uint_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value )
+{
+	static const gchar *thisfn = "my_isettings_set_uint_list";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s, value=%p",
+			thisfn, ( void * ) instance, group, key, ( void * ) value );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( my_strlen( group ));
+	g_return_if_fail( my_strlen( key ));
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_uint_list ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->set_uint_list( instance, group, key, value );
+		return;
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'set_uint_list()' method",
+			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_isettings_free_uint_list:
+ * @instance: this #myISettings instance.
+ * @value: the list of unsigned integers to be freed, as returned by
+ *  #my_isettings_get_uint_list().
+ *
+ * Frees the provided @key_list.
+ */
+void
+my_isettings_free_uint_list( const myISettings *instance, GList *value )
+{
+	static const gchar *thisfn = "my_isettings_free_uint_list";
+
+	g_debug( "%s: instance=%p, value=%p", thisfn, ( void * ) instance, ( void * ) value );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( value );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list( value );
+
+	} else {
+		g_list_free( value );
+	}
+}
+
+/**
+ * my_isettings_get_string:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ *
+ * Returns: the value of @key as a newly allocated string which should
+ * be g_free() by the caller, or %NULL.
+ */
+gchar *
+my_isettings_get_string( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	static const gchar *thisfn = "my_isettings_get_string";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_return_val_if_fail( my_strlen( key ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_string ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string( instance, group, key ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_string()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
+ * my_isettings_set_string:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ * @value: the string to be set.
+ *
+ * Sets the @value string as the value of the @key in the @group.
+ */
+void
+my_isettings_set_string( myISettings *instance, const gchar *group, const gchar *key, const gchar *value )
+{
+	static const gchar *thisfn = "my_isettings_set_string";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s, value=%s",
+			thisfn, ( void * ) instance, group, key, value );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( my_strlen( group ));
+	g_return_if_fail( my_strlen( key ));
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_string ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->set_string( instance, group, key, value );
+		return;
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'set_string()' method",
+			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_isettings_get_string_list:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ *
+ * Returns: the value of @key as a list of strings which should be
+ * #my_isettings_free_string_list() by the caller.
+ */
+GList *
+my_isettings_get_string_list( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	static const gchar *thisfn = "my_isettings_get_string_list";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), NULL );
+	g_return_val_if_fail( my_strlen( group ), NULL );
+	g_return_val_if_fail( my_strlen( key ), NULL );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_string_list ){
+		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string_list( instance, group, key ));
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'get_string_list()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
+ * my_isettings_set_string_list:
+ * @instance: this #myISettings instance.
+ * @group: the name of the group.
+ * @key: the name of the key.
+ * @value: the list of strings to be set.
+ *
+ * Sets the @value list of strings as the value of the @key
+ * in the @group.
+ */
+void
+my_isettings_set_string_list( myISettings *instance, const gchar *group, const gchar *key, const GList *value )
+{
+	static const gchar *thisfn = "my_isettings_set_string_list";
+
+	g_debug( "%s: instance=%p, group=%s, key=%s, value=%p",
+			thisfn, ( void * ) instance, group, key, ( void * ) value );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( my_strlen( group ));
+	g_return_if_fail( my_strlen( key ));
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->set_string_list ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->set_string_list( instance, group, key, value );
+		return;
+	}
+
+	g_info( "%s: myISettings instance %p does not provide 'set_string_list()' method",
+			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_isettings_free_string_list:
+ * @instance: this #myISettings instance.
+ * @string_list: the list of keys to be freed, as returned by
+ *  #my_isettings_get_keys().
+ *
+ * Frees the provided @key_list.
+ */
+void
+my_isettings_free_string_list( const myISettings *instance, GList *string_list )
+{
+	static const gchar *thisfn = "my_isettings_free_string_list";
+
+	g_debug( "%s: instance=%p, string_list=%p", thisfn, ( void * ) instance, ( void * ) string_list );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( string_list );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list( string_list );
+
+	} else {
+		g_list_free_full( string_list, ( GDestroyNotify ) g_free );
+	}
 }

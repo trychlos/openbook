@@ -30,9 +30,8 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-date-filter-hv-bin.h"
 #include "ui/ofa-ledger-treeview.h"
@@ -477,7 +476,7 @@ load_settings( ofaLedgerBookBin *bin )
 	GDate date;
 
 	priv = bin->priv;
-	list = ofa_settings_get_string_list( st_settings );
+	list = ofa_settings_user_get_string_list( st_settings );
 
 	it = list;
 	cstr = it ? it->data : NULL;
@@ -535,7 +534,7 @@ set_settings( ofaLedgerBookBin *bin )
 			my_strlen( sdto ) ? sdto : "",
 			priv->new_page ? "True":"False" );
 
-	ofa_settings_set_string( st_settings, str );
+	ofa_settings_user_set_string( st_settings, str );
 
 	g_free( sdfrom );
 	g_free( sdto );

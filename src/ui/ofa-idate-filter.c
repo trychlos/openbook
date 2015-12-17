@@ -32,8 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-
-#include "core/ofa-settings.h"
+#include "api/ofa-settings.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-idate-filter.h"
@@ -690,7 +689,7 @@ load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 	GList *slist, *it;
 	const gchar *cstr;
 
-	slist = ofa_settings_get_string_list( sdata->prefs_key );
+	slist = ofa_settings_user_get_string_list( sdata->prefs_key );
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -721,7 +720,7 @@ set_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 
 		str = g_strdup_printf( "%s;%s;", sfrom, sto );
 
-		ofa_settings_set_string( sdata->prefs_key, str );
+		ofa_settings_user_set_string( sdata->prefs_key, str );
 
 		g_free( str );
 		g_free( sfrom );

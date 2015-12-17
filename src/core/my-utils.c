@@ -31,8 +31,7 @@
 #include <time.h>
 
 #include "api/my-utils.h"
-
-#include "ofa-settings.h"
+#include "api/ofa-settings.h"
 
 typedef struct {
 	gchar        *name;
@@ -1278,14 +1277,14 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
 
 	key = g_strdup_printf( "%s-pos", name );
-	list = ofa_settings_get_int_list( key );
+	list = ofa_settings_user_get_uint_list( key );
 	g_free( key );
 	/*g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));*/
 
 	if( list ){
 		int_list_to_position( list, &x, &y, &width, &height );
 		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
-		ofa_settings_free_int_list( list );
+		ofa_settings_free_uint_list( list );
 
 		gtk_window_move( toplevel, x, y );
 		gtk_window_resize( toplevel, width, height );
@@ -1345,7 +1344,7 @@ my_utils_window_save_position( GtkWindow *toplevel, const gchar *name )
 	list = position_to_int_list( x, y, width, height );
 
 	key = g_strdup_printf( "%s-pos", name );
-	ofa_settings_set_int_list( key, list );
+	ofa_settings_user_set_uint_list( key, list );
 
 	g_free( key );
 	g_list_free( list );

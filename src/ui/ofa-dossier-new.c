@@ -34,12 +34,12 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new.h"
@@ -557,7 +557,7 @@ get_settings( ofaDossierNew *self )
 
 	priv = self->priv;
 
-	slist = ofa_settings_get_string_list( "DossierNew" );
+	slist = ofa_settings_user_get_string_list( "DossierNew" );
 	it = slist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
@@ -590,7 +590,7 @@ update_settings( ofaDossierNew *self )
 	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_open ? "True":"False" ));
 	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_properties ? "True":"False" ));
 
-	ofa_settings_set_string_list( "DossierNew", slist );
+	ofa_settings_user_set_string_list( "DossierNew", slist );
 
 	g_list_free_full( slist, ( GDestroyNotify ) g_free );
 }

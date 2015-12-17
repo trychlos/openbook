@@ -31,8 +31,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-settings.h"
 
-#include "my-settings.h"
 #include "ofa-file-dir.h"
 
 /* private instance data
@@ -42,7 +42,7 @@ struct _ofaFileDirPrivate {
 
 	/* runtime data
 	 */
-	mySettings    *settings;
+	myISettings   *settings;
 	myFileMonitor *monitor;
 	GList         *list;
 	gboolean       ignore_next;
@@ -183,9 +183,9 @@ setup_settings( ofaFileDir *dir )
 	gchar *filename;
 
 	priv = dir->priv;
-	priv->settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
+	priv->settings = g_object_ref( ofa_settings_get_settings( SETTINGS_TARGET_DOSSIER ));
 
-	filename = my_settings_get_filename( priv->settings );
+	filename = my_isettings_get_filename( priv->settings );
 	priv->monitor = my_file_monitor_new( filename );
 	g_free( filename );
 
@@ -247,7 +247,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 		prev_list = priv->list;
 		priv->list = load_dossiers( dir, prev_list );
 		ofa_file_dir_free_dossiers( prev_list );
-		fname = my_settings_get_filename( priv->settings );
+		fname = my_isettings_get_filename( priv->settings );
 		g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
 		g_free( fname );
 	}
@@ -272,7 +272,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 	priv = dir->priv;
 	outlist = NULL;
 	prefix_len = my_strlen( FILE_DIR_DOSSIER_GROUP_PREFIX );
-	inlist = my_settings_get_groups( priv->settings );
+	inlist = my_isettings_get_groups( priv->settings );
 
 	for( it=inlist ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
@@ -290,7 +290,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 			g_debug( "%s: dossier_name=%s already exists with meta=%p, reusing it",
 					thisfn, dos_name, ( void * ) meta );
 		} else {
-			prov_name = my_settings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
+			prov_name = my_isettings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
 				g_warning( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
 				g_free( dos_name );
@@ -309,7 +309,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 		g_free( dos_name );
 	}
 
-	my_settings_free_groups( inlist );
+	my_isettings_free_groups( inlist );
 
 	return( g_list_reverse( outlist ));
 }
@@ -425,7 +425,7 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 		group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
 		prov_instance = ofa_idbeditor_get_provider( editor );
 		prov_name = ofa_idbprovider_get_name( prov_instance );
-		my_settings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
+		my_isettings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
 
 		ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 

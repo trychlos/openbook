@@ -34,6 +34,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -45,7 +46,6 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-main-window.h"
@@ -582,7 +582,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	if( my_strlen( priv->p3_furi )){
 		dirname = g_path_get_dirname( priv->p3_furi );
 	} else {
-		dirname = g_strdup( ofa_settings_get_string( SETTINGS_EXPORT_FOLDER ));
+		dirname = g_strdup( ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER ));
 	}
 	g_free( priv->p3_furi );
 	priv->p3_furi = g_build_filename( dirname, st_types[priv->p1_idx].base_name, NULL );
@@ -930,7 +930,7 @@ get_settings( ofaExportAssistant *self )
 
 	priv = self->priv;
 
-	slist = ofa_settings_get_string_list( st_pref_settings );
+	slist = ofa_settings_user_get_string_list( st_pref_settings );
 
 	it = slist;
 	cstr = it ? it->data : NULL;
@@ -959,7 +959,7 @@ set_settings( ofaExportAssistant *self )
 			priv->p1_last_code,
 			priv->p3_furi ? priv->p3_furi : "" );
 
-	ofa_settings_set_string( st_pref_settings, str );
+	ofa_settings_user_set_string( st_pref_settings, str );
 
 	g_free( str );
 }

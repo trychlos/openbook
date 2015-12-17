@@ -22,22 +22,28 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_IPREFS_PROVIDER_H__
-#define __OFA_MYSQL_IPREFS_PROVIDER_H__
+#ifndef __OFA_MYSQL_USER_PREFS_H__
+#define __OFA_MYSQL_USER_PREFS_H__
 
 /**
- * SECTION: ofa_mysql_iprefs_provider
+ * SECTION: ofa_mysql_user_prefs
  * @short_description: #ofaMysql class definition.
  *
- * #ofaIPrefsProvider interface management.
+ * User preferences management.
  */
 
-#include "api/ofa-iprefs-provider.h"
+#include <glib.h>
 
 G_BEGIN_DECLS
 
-void   ofa_mysql_iprefs_provider_iface_init         ( ofaIPrefsProviderInterface *iface );
+gchar *ofa_mysql_user_prefs_get_backup_command ( void );
+
+void   ofa_mysql_user_prefs_set_backup_command ( const gchar *command );
+
+gchar *ofa_mysql_user_prefs_get_restore_command( void );
+
+void   ofa_mysql_user_prefs_set_restore_command( const gchar *command );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_IPREFS_PROVIDER_H__ */
+#endif /* __OFA_MYSQL_USER_PREFS_H__ */

@@ -35,7 +35,6 @@
 #include "my-decimal-combo.h"
 #include "my-field-combo.h"
 #include "ofa-file-format-bin.h"
-#include "ofa-settings.h"
 
 /* private instance data
  */

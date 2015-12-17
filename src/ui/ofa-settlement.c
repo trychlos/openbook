@@ -33,11 +33,10 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-itreeview-column.h"
@@ -1467,7 +1466,7 @@ get_settings( ofaSettlement *self )
 
 	priv = self->priv;
 
-	slist = ofa_settings_get_string_list( st_pref_settlement );
+	slist = ofa_settings_user_get_string_list( st_pref_settlement );
 	it = slist ? slist : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
@@ -1507,7 +1506,7 @@ set_settings( ofaSettlement *self )
 	str = g_strdup_printf( "%s;%d;%d;%d;",
 			priv->account_number, priv->settlement, priv->sort_column_id, priv->sort_sens );
 
-	ofa_settings_set_string( st_pref_settlement, str );
+	ofa_settings_user_set_string( st_pref_settlement, str );
 
 	g_free( str );
 }

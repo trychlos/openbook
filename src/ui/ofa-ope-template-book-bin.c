@@ -31,11 +31,10 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
-
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-guided-input.h"
@@ -51,8 +50,8 @@ struct _ofaOpeTemplateBookBinPrivate {
 
 	const ofaMainWindow *main_window;
 	ofoDossier          *dossier;
+	ofaIDBMeta          *meta;
 	GList               *dos_handlers;
-	gchar               *dossier_name;	/* to be used after dossier finalization */
 
 	ofaOpeTemplateStore *ope_store;
 	GList               *ope_handlers;
@@ -75,7 +74,7 @@ typedef struct {
 
 /* a settings which holds the order of ledger mnemos as a string list
  */
-static const gchar *st_ledger_order         = "OpeTemplateBookOrder";
+static const gchar *st_ledger_order         = "ofa-OpeTemplateBookOrder";
 
 /* signals defined here
  */
@@ -130,7 +129,6 @@ static void
 ope_templates_book_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_finalize";
-	ofaOpeTemplateBookBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -138,9 +136,6 @@ ope_templates_book_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_BOOK_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_OPE_TEMPLATE_BOOK_BIN( instance )->priv;
-
-	g_free( priv->dossier_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ope_template_book_bin_parent_class )->finalize( instance );
@@ -161,6 +156,7 @@ ope_templates_book_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->meta );
 
 		/* disconnect from ofoDossier */
 		if( priv->dossier &&
@@ -342,22 +338,19 @@ setup_main_window( ofaOpeTemplateBookBin *bin )
 	gulong handler;
 	GList *strlist, *it;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
 
 	priv = bin->priv;
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 	priv->ope_store = ofa_ope_template_store_new( priv->dossier );
 	connect = ofo_dossier_get_connect( priv->dossier );
-	meta = ofa_idbconnect_get_meta( connect );
-	priv->dossier_name = ofa_idbmeta_get_dossier_name( meta );
-	g_object_unref( meta );
+	priv->meta = ofa_idbconnect_get_meta( connect );
 
 	/* create one page per ledger
 	 * if strlist is set, then create one page per ledger
 	 * other needed pages will be created on fly
 	 * nb: if the ledger no more exists, no page is created */
-	strlist = ofa_settings_dossier_get_string_list( priv->dossier_name, st_ledger_order );
+	strlist = ofa_settings_dossier_get_string_list( priv->meta, st_ledger_order );
 	for( it=strlist ; it ; it=it->next ){
 		book_get_page_by_ledger( bin, ( const gchar * ) it->data, TRUE );
 	}
@@ -1319,7 +1312,7 @@ write_settings( ofaOpeTemplateBookBin *bin )
 		}
 	}
 
-	ofa_settings_dossier_set_string_list( priv->dossier_name, st_ledger_order, strlist );
+	ofa_settings_dossier_set_string_list( priv->meta, st_ledger_order, strlist );
 
 	g_list_free( strlist );
 }

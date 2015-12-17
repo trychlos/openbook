@@ -35,7 +35,8 @@
    definition of an ecosystem of companion interfaces (ofaIDBConnect,
    ofaIDBEditor, ofaIDBMeta and ofaIDBPeriod).
 
-   As a consequence, ofaIDbms interface and ofaDbms class are obsoleted.
+   As a consequence, ofaIDbms interface and ofaDbms class are marked
+   obsolete and removed.
 
    - myISettings: new interface.
    - Upgrade DBMS to v27:
@@ -75,6 +76,14 @@
    - ofaITreeviewColumn: new interface.
    - ofaITreeviewDisplay: new interface.
    - ofaReconciliation class is renamed to ofaReconcilPage.
+   - ofaSettings:
+     - minimize use in MySQL plugin (todo #932).
+     - remove ofa_settings_dossier_xxx methods (todo #931).
+     - use mySettings class (todo #888).
+   - Add ofa- prefix to LastBackupFolder key (todo #929).
+   - Add ofa- prefix to OpeTemplateBookOrder key (todo #930).
+   - Define plugins interfaces to use myISettings (todo #907).
+   - ofaSettingsMonitor: removed class (todo #889).
 
 -----------------------------------------------------------------------
  Version 0.42
