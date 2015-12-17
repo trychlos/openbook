@@ -53,7 +53,6 @@ api_include_HEADERS = \
 	my-window.h											\
 	my-window-prot.h									\
 	ofa-box.h											\
-	ofa-dossier-misc.h									\
 	ofa-plugin.h										\
 	ofa-preferences.h									\
 	\

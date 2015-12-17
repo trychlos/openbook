@@ -32,7 +32,6 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
@@ -44,8 +43,9 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "my-progress-bar.h"
-#include "ofa-ddl-update.h"
+#include "core/my-progress-bar.h"
+#include "core/ofa-ddl-update.h"
+#include "core/ofa-dossier-misc.h"
 
 /* private instance data
  */
