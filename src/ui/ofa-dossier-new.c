@@ -473,7 +473,6 @@ root_credentials_get_valid( ofaDossierNew *self, gchar **message )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	static const gchar *thisfn = "ofa_dossier_new_v_quit_on_ok";
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
 	ofaIDBPeriod *period;
@@ -502,14 +501,11 @@ v_quit_on_ok( myDialog *dialog )
 
 		if( !ofa_idbconnect_open_with_editor(
 							connect, account, password, editor, TRUE )){
-			g_warning( "%s: unable to open the connection with editor informations", thisfn );
-			g_clear_object( &priv->meta );
+			my_utils_dialog_warning( _( "Unable to open the connection with editor informations" ));
 
 		} else if( !ofa_idbconnect_create_dossier(
 							connect, priv->meta, priv->adm_account, priv->adm_password )){
 			my_utils_dialog_warning( _( "Unable to create the dossier" ));
-			g_clear_object( &priv->meta );
-			gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 
 		} else {
 			ok = TRUE;
@@ -520,6 +516,12 @@ v_quit_on_ok( myDialog *dialog )
 		g_clear_object( &period );
 		g_clear_object( &connect );
 		g_clear_object( &provider );
+	}
+
+	if( !ok ){
+		ofa_idbmeta_remove_meta( priv->meta );
+		g_clear_object( &priv->meta );
+		gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 	}
 
 	priv->dossier_created = ok;
