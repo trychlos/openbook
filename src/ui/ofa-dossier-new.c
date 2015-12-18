@@ -325,8 +325,8 @@ v_init_dialog( myDialog *dialog )
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-properties" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_properties_toggled ), dialog );
-	/*gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_properties );*/
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), FALSE );
+	priv->b_properties = FALSE;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_properties );
 	gtk_widget_set_sensitive( toggle, FALSE );
 	priv->properties_toggle = toggle;
 
@@ -398,12 +398,13 @@ on_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 
 	priv = self->priv;
-
 	priv->b_open = gtk_toggle_button_get_active( button );
 
+#if 0
 	if( priv->properties_toggle ){
 		gtk_widget_set_sensitive( priv->properties_toggle, priv->b_open );
 	}
+#endif
 }
 
 static void
