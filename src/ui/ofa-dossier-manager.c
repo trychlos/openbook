@@ -291,7 +291,9 @@ do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 	ofaDossierManagerPrivate *priv;
 
 	priv = self->priv;
-	if( ofa_dossier_open_run( priv->main_window, meta, period, NULL, NULL )){
+	if( ofa_dossier_open_run_with_parent(
+			priv->main_window, my_window_get_toplevel( MY_WINDOW( self )), meta, period, NULL, NULL )){
+
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CLOSE );
