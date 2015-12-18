@@ -70,13 +70,20 @@ typedef struct {
 }
 	ofaDossierOpenClass;
 
-GType    ofa_dossier_open_get_type( void ) G_GNUC_CONST;
+GType    ofa_dossier_open_get_type       ( void ) G_GNUC_CONST;
 
-gboolean ofa_dossier_open_run     ( ofaMainWindow *main_widow,
-											ofaIDBMeta *meta,
-											ofaIDBPeriod *period,
-											const gchar *account,
-											const gchar *password );
+gboolean ofa_dossier_open_run            ( ofaMainWindow *main_widow,
+												ofaIDBMeta *meta,
+												ofaIDBPeriod *period,
+												const gchar *account,
+												const gchar *password );
+
+gboolean ofa_dossier_open_run_with_parent( ofaMainWindow *main_widow,
+												GtkWindow *parent,
+												ofaIDBMeta *meta,
+												ofaIDBPeriod *period,
+												const gchar *account,
+												const gchar *password );
 
 G_END_DECLS
 

@@ -170,21 +170,48 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  */
 gboolean
 ofa_dossier_open_run( ofaMainWindow *main_window,
-		ofaIDBMeta *meta, ofaIDBPeriod *period, const gchar *account, const gchar *password )
+							ofaIDBMeta *meta, ofaIDBPeriod *period,
+							const gchar *account, const gchar *password )
 {
-	static const gchar *thisfn = "ofa_dossier_open_run";
+	return( ofa_dossier_open_run_with_parent(
+					main_window, GTK_WINDOW( main_window ), meta, period, account, password ));
+}
+
+/**
+ * ofa_dossier_open_run_with_parent:
+ * @main_window: the main window of the application.
+ * @parent: the parent #GtkWindow.
+ * @meta: [allow-none]: the dossier to be opened.
+ * @period: [allow-none]: the exercice to be opened.
+ * @account: [allow-none]: the user account.
+ * @password: [allow-none]: the user password.
+ *
+ * Open the specified dossier, requiring the missing informations
+ * if needed.
+ *
+ * Returns: %TRUE if the dossier has been opened, %FALSE else.
+ */
+gboolean
+ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
+										ofaIDBMeta *meta, ofaIDBPeriod *period,
+										const gchar *account, const gchar *password )
+{
+	static const gchar *thisfn = "ofa_dossier_open_run_with_parent";
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
 	gboolean opened;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_debug( "%s: main_window=%p, parent=%p, meta=%p, period=%p, account=%s, password=%s",
+			thisfn, ( void * ) main_window, ( void * ) parent,
+			( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
 
-	g_debug( "%s: main_window=%p, meta=%p, period=%p, account=%s, password=%s",
-			thisfn, ( void * ) main_window, ( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_val_if_fail( parent && GTK_IS_WINDOW( parent ), FALSE );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
 				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_PARENT,      parent,
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
