@@ -475,16 +475,8 @@
 
  927 2015-12-14 close the restore assistant before opening the dossier
 
- 928 2015-12-14 have a preference option to force the restore to utf8
-                (alter the database after restore)
-                SELECT schema_name,default_character_set_name FROM information_schema.SCHEMATA;
-                ALTER DATABASE ofat_1 CHARACTER SET='utf8';
-
  933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
                 while these are rather shortcuts to user preferences
-
- 934 2015-12-17 DDLUpdate: have a scrolled window when remediating all
-                versions
 
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?
@@ -4364,6 +4356,13 @@
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
      2015-12-13 done
 
+ 928 2015-12-14 have a preference option to force the restore to utf8
+                (alter the database after restore)
+                SELECT schema_name,default_character_set_name FROM information_schema.SCHEMATA;
+                ALTER DATABASE ofat_1 CHARACTER SET='utf8';
+     2015-12-18 Rather force the character set at database creation
+     2015-12-18 done
+
  929 2015-12-14 add ofa- prefix to LastBackupFolder key
      2015-12-17 done
 
@@ -4377,6 +4376,10 @@
                 does not have to use ofa_settings API
      2015-12-17 done as much as possible though is is not avoidable that
                 dossier preferences use ofa_settings_dossier_xxx
+
+ 934 2015-12-17 DDLUpdate: have a scrolled window when remediating all
+                versions
+     2015-12-18 it is already there
 
  936 2015-12-17 dossier name must not have square brackets as GKeyFile
                 refuse them in group names

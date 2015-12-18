@@ -26,6 +26,7 @@
    - ofaDossierNew: no more propose to open properties right after dossier creation.
    - ofaDossierNew: keep dossier name to embed squate brackets (todo #936).
    - ofaMySQLEditor: check autorized character set in database name (todo #470).
+   - Database creation: force utf8 character set (todo #928).
 
  Bug fixes:
 

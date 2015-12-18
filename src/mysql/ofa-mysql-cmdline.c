@@ -151,7 +151,7 @@ const gchar *
 ofa_mysql_cmdline_restore_get_default_command( void )
 {
 	return( "mysql %O -u%U -p%P -e 'drop database if exists %B'; "
-			"mysql %O -u%U -p%P -e 'create database %B'; "
+			"mysql %O -u%U -p%P -e 'create database %B character set utf8'; "
 			"gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
 }
 
