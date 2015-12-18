@@ -53,6 +53,7 @@
    - ofa_dossier_misc_get_exercice_label(): removed function.
    - ofa_dossier_misc_set_current(): removed function.
    - ofa_dossier_new_run_with_parent(): new method.
+   - ofaDossierNew: no more propose to open properties right after dossier creation.
    - ofa_dossier_open_run_with_parent(): new method.
    - ofa_main_window_open_dossier(): new method.
    - ofaIDBConnect: new DBMS connection management interface.

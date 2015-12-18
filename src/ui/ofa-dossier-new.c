@@ -319,11 +319,15 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( priv->admin_credentials,
 			"ofa-changed", G_CALLBACK( on_admin_credentials_changed ), dialog );
 
-	/* set properties_toggle before setting open value */
+	/* set properties_toggle before setting open value
+	 * pwi 2015-12-18: no more try to open properties right after dossier
+	 * creation (this will nonetheless be proposed if exercice is not set) */
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-properties" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_properties_toggled ), dialog );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_properties );
+	/*gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_properties );*/
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), FALSE );
+	gtk_widget_set_sensitive( toggle, FALSE );
 	priv->properties_toggle = toggle;
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-open" );
