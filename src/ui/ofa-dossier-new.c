@@ -194,7 +194,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 gboolean
 ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 {
-	static const gchar *thisfn = "ofa_dossier_new_run";
+	static const gchar *thisfn = "ofa_dossier_new_run_with_parent";
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created, open_dossier, open_properties;
@@ -203,9 +203,11 @@ ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 	ofaIDBPeriod *period;
 	ofaIDBConnect *connect;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_debug( "%s: main_window=%p, parent=%p",
+			thisfn, ( void * ) main_window, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_val_if_fail( parent && GTK_IS_WINDOW( parent ), FALSE );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW,
 				MY_PROP_MAIN_WINDOW, main_window,
