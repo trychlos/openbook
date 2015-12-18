@@ -180,6 +180,7 @@
 
  470 2014-11-28 when entering a new database name, only accepts
                 [A..Z,a..z,0..9,_] characters
+     2015-12-18 see http://dev.mysql.com/doc/refman/5.7/en/identifiers.html
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
@@ -491,9 +492,6 @@
 
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?
-
- 936 2015-12-17 dossier name must not have square brackets as GKeyFile
-                refuse them in group names
 
  937
 
@@ -4378,6 +4376,10 @@
                 does not have to use ofa_settings API
      2015-12-17 done as much as possible though is is not avoidable that
                 dossier preferences use ofa_settings_dossier_xxx
+
+ 936 2015-12-17 dossier name must not have square brackets as GKeyFile
+                refuse them in group names
+     2015-12-18 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

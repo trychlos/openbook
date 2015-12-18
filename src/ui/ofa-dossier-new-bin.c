@@ -85,6 +85,7 @@ G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
 static void     setup_bin( ofaDossierNewBin *bin );
 static void     setup_dbms_provider( ofaDossierNewBin *bin );
+static void     on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierNewBin *bin );
 static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
 static void     on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self );
@@ -237,6 +238,7 @@ setup_bin( ofaDossierNewBin *bin )
 	/* dossier name */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( entry, "insert-text", G_CALLBACK( on_dossier_name_insert_text ), bin );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dossier_name_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -335,6 +337,25 @@ ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
 	}
 
 	g_return_val_if_reached( NULL );
+}
+
+/*
+ * just refuse any new text which would contain square brackets
+ * as this is refused by GKeyFile
+ */
+static void
+on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierNewBin *bin )
+{
+	//ofaDossierNewBinPrivate *priv;
+
+	if( g_strstr_len( new_text, -1, "[" ) || g_strstr_len( new_text, -1, "]" )){
+		g_signal_stop_emission_by_name( editable, "insert-text" );
+		/*
+		priv = bin->priv;
+		gtk_editable_insert_text(
+				editable, priv->dossier_name, my_strlen( priv->dossier_name ), position );
+				*/
+	}
 }
 
 static void
