@@ -174,12 +174,25 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 
 /**
  * ofa_dossier_new_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
  *
  * Returns: %TRUE if a dossier has been created, and opened in the UI.
  */
 gboolean
 ofa_dossier_new_run( ofaMainWindow *main_window )
+{
+	return( ofa_dossier_new_run_with_parent( main_window, GTK_WINDOW( main_window )));
+}
+
+/**
+ * ofa_dossier_new_run_with_parent:
+ * @main_window: the main window of the application.
+ * @parent: the parent window.
+ *
+ * Returns: %TRUE if a dossier has been created, and opened in the UI.
+ */
+gboolean
+ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
 	ofaDossierNew *self;
@@ -196,6 +209,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW,
 				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_PARENT,      parent,
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
