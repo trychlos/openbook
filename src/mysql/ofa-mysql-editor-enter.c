@@ -65,15 +65,16 @@ struct _ofaMySQLEditorEnterPrivate {
 
 static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-editor-enter.ui";
 
-static void           idbeditor_iface_init( ofaIDBEditorInterface *iface );
-static guint          idbeditor_get_interface_version( const ofaIDBEditor *instance );
-static GtkSizeGroup  *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
-static gboolean       idbeditor_get_valid( const ofaIDBEditor *instance, gchar **message );
-static void           setup_bin( ofaMySQLEditorEnter *bin );
-static void           on_host_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
-static void           on_port_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
-static void           on_socket_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
-static void           on_database_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
+static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
+static guint         idbeditor_get_interface_version( const ofaIDBEditor *instance );
+static GtkSizeGroup *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
+static gboolean      idbeditor_get_valid( const ofaIDBEditor *instance, gchar **message );
+static void          setup_bin( ofaMySQLEditorEnter *bin );
+static void          on_host_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
+static void          on_port_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
+static void          on_socket_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
+static void          on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMySQLEditorEnter *bin );
+static void          on_database_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLEditorEnter, ofa_mysql_editor_enter, GTK_TYPE_BIN, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEDITOR, idbeditor_iface_init ));
@@ -277,6 +278,7 @@ setup_bin( ofaMySQLEditorEnter *bin )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "insert-text", G_CALLBACK( on_database_insert_text ), bin );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), bin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-database-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -325,6 +327,28 @@ on_socket_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
 	priv->socket = g_strdup( gtk_entry_get_text( entry ));
 
 	g_signal_emit_by_name( bin, "ofa-changed" );
+}
+
+/*
+ * keep the database name to the authorized set
+ * see http://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+ * ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
+ */
+static void
+on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMySQLEditorEnter *bin )
+{
+	GRegex *regex;
+	gchar *replaced;
+
+	regex = g_regex_new( "[A-Za-z0-9$_]+", 0, 0, NULL );
+	replaced = g_regex_replace( regex, new_text, -1, 0, "", 0, NULL );
+	g_regex_unref( regex );
+
+	if( my_strlen( replaced )){
+		g_signal_stop_emission_by_name( editable, "insert-text" );
+	}
+
+	g_free( replaced );
 }
 
 static void

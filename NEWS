@@ -23,6 +23,9 @@
 
    - Reconciliation: let the user select displayed columns (todo #887).
    - Settlement: let the user select displayed columns.
+   - ofaDossierNew: no more propose to open properties right after dossier creation.
+   - ofaDossierNew: keep dossier name to embed squate brackets (todo #936).
+   - ofaMySQLEditor: check autorized character set in database name (todo #470).
 
  Bug fixes:
 
@@ -53,8 +56,6 @@
    - ofa_dossier_misc_get_exercice_label(): removed function.
    - ofa_dossier_misc_set_current(): removed function.
    - ofa_dossier_new_run_with_parent(): new method.
-   - ofaDossierNew: no more propose to open properties right after dossier creation.
-   - ofaDossierNew: keep dossier name to embed squate brackets (todo #936).
    - ofa_dossier_open_run_with_parent(): new method.
    - ofa_main_window_open_dossier(): new method.
    - ofaIDBConnect: new DBMS connection management interface.
