@@ -142,8 +142,6 @@ openbook_SOURCES = \
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
-	ofa-dossier-login.c									\
-	ofa-dossier-login.h									\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
 	ofa-dossier-new.c									\
@@ -289,7 +287,6 @@ ui_files = \
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
-	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\

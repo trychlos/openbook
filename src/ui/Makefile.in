@@ -161,12 +161,11 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-currency-properties.$(OBJEXT) ofa-currency-store.$(OBJEXT) \
 	ofa-date-filter-hv-bin.$(OBJEXT) ofa-dossier-delete.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
-	ofa-dossier-login.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
-	ofa-dossier-new.$(OBJEXT) ofa-dossier-new-bin.$(OBJEXT) \
-	ofa-dossier-new-mini.$(OBJEXT) ofa-dossier-open.$(OBJEXT) \
-	ofa-dossier-properties.$(OBJEXT) ofa-dossier-store.$(OBJEXT) \
-	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
-	ofa-exercice-combo.$(OBJEXT) \
+	ofa-dossier-manager.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
+	ofa-dossier-new-bin.$(OBJEXT) ofa-dossier-new-mini.$(OBJEXT) \
+	ofa-dossier-open.$(OBJEXT) ofa-dossier-properties.$(OBJEXT) \
+	ofa-dossier-store.$(OBJEXT) ofa-dossier-treeview.$(OBJEXT) \
+	ofa-entry-page.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
@@ -573,8 +572,6 @@ openbook_SOURCES = \
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
-	ofa-dossier-login.c									\
-	ofa-dossier-login.h									\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
 	ofa-dossier-new.c									\
@@ -720,7 +717,6 @@ ui_files = \
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
-	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
@@ -923,7 +919,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-login.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new-mini.Po@am__quote@

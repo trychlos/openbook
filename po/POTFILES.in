@@ -29,7 +29,6 @@ src/ui/ofa-date-filter-hv-bin.ui
 src/ui/ofa-dos-menubar.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui
-src/ui/ofa-dossier-login.ui
 src/ui/ofa-dossier-manager.ui
 src/ui/ofa-dossier-new.ui
 src/ui/ofa-dossier-new-bin.ui

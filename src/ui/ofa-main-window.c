@@ -49,7 +49,6 @@
 #include "ui/ofa-class-page.h"
 #include "ui/ofa-currency-page.h"
 #include "ui/ofa-dossier-display-notes.h"
-#include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-exercice-close-assistant.h"
