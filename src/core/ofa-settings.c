@@ -137,6 +137,7 @@ ofa_settings_set_boolean( ofaSettingsTarget target, const gchar *group, const gc
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
 		my_isettings_set_boolean( MY_ISETTINGS( settings ), group, key, value );
+		return;
 	}
 
 	g_return_if_reached();
@@ -173,6 +174,7 @@ ofa_settings_set_uint( ofaSettingsTarget target, const gchar *group, const gchar
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
 		my_isettings_set_uint( MY_ISETTINGS( settings ), group, key, value );
+		return;
 	}
 
 	g_return_if_reached();
@@ -250,6 +252,7 @@ ofa_settings_set_string( ofaSettingsTarget target, const gchar *group, const gch
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
 		my_isettings_set_string( MY_ISETTINGS( settings ), group, key, value );
+		return;
 	}
 
 	g_return_if_reached();
