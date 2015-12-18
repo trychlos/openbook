@@ -362,7 +362,8 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 }
 
 /*
- * an insert/update/delete/drop query (does not return any result)
+ * a create/insert/update/delete/drop query
+ * does not return any other result than an execution status
  */
 static gboolean
 idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
@@ -497,11 +498,19 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta
 
 		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
 		query = g_string_new( "" );
-		ok = FALSE;
+		ok = TRUE;
 
-		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
-		g_debug( "%s: %s", thisfn, query->str );
-		if( idbconnect_query( instance, query->str )){
+		if( ok ){
+			g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
+			g_debug( "%s: %s", thisfn, query->str );
+			ok = idbconnect_query( instance, query->str );
+			if( !ok ){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
+		}
+		if( ok ){
 			g_string_printf( query, "CREATE DATABASE %s CHARACTER SET utf8", database );
 			g_debug( "%s: %s", thisfn, query->str );
 			ok = idbconnect_query( instance, query->str );
@@ -511,7 +520,37 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta
 				g_free( msg );
 			}
 		}
+#if 0
+		if( ok ){
+			g_string_printf( query,
+					"CREATE TABLE IF NOT EXISTS %s.OFA_T_AUDIT ("
+					"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
+					"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query timestamp',"
+					"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') ",
+						database );
+			ok = idbconnect_query( instance, query->str );
+			if( !ok ){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
+		}
+		if( ok ){
+			g_string_printf( query,
+					"CREATE TABLE IF NOT EXISTS %s.OFA_T_ROLES ("
+						"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
+						"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') ",
+							database );
+			ok = idbconnect_query( instance, query->str );
+			if( !ok ){
+				msg = idbconnect_get_last_error( instance );
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
+		}
+#endif
 		g_object_unref( period );
+		g_string_free( query, TRUE );
 		return( ok );
 	}
 
