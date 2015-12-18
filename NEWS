@@ -32,6 +32,7 @@
  Bug fixes:
 
    - GuidedInput: fix the width of entries (todo #868).
+   - Restore: keep the password when opening the dossier (todo #926).
 
  Other changes:
 

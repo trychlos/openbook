@@ -472,8 +472,6 @@
 
  925 2015-12-13 remove obsolete ofaDossierLogin class ?
 
- 926 2015-12-14 password is lost when opening a dossier after restore ?
-
  933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
                 while these are rather shortcuts to user preferences
 
@@ -4354,6 +4352,9 @@
 
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
      2015-12-13 done
+
+ 926 2015-12-14 password is lost when opening a dossier after restore ?
+     2015-12-18 fixed
 
  927 2015-12-14 close the restore assistant before opening the dossier
      2015-12-18 done

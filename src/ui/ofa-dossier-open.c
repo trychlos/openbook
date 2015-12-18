@@ -44,11 +44,6 @@
  */
 struct _ofaDossierOpenPrivate {
 
-	/* initialization
-	 */
-	ofaIDBMeta         *init_meta;
-	ofaIDBPeriod       *init_period;
-
 	/* data
 	 */
 	ofaIDBMeta         *meta;			/* the selected dossier */
@@ -115,8 +110,6 @@ dossier_open_dispose( GObject *instance )
 		priv = OFA_DOSSIER_OPEN( instance )->priv;
 
 		/* unref object members here */
-		g_clear_object( &priv->init_meta );
-		g_clear_object( &priv->init_period );
 		g_clear_object( &priv->meta );
 		g_clear_object( &priv->period );
 		g_clear_object( &priv->connect );
@@ -200,6 +193,7 @@ ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
 	gboolean opened;
+	gchar *msg;
 
 	g_debug( "%s: main_window=%p, parent=%p, meta=%p, period=%p, account=%s, password=%s",
 			thisfn, ( void * ) main_window, ( void * ) parent,
@@ -218,17 +212,20 @@ ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
 
 	priv = self->priv;
 	if( meta ){
-		priv->init_meta = g_object_ref( meta );
+		priv->meta = g_object_ref( meta );
 		if( period ){
-			priv->init_period = g_object_ref( period );
+			priv->period = g_object_ref( period );
 		}
 	}
 	priv->account = g_strdup( account );
 	priv->password = g_strdup( password );
 
-	if( are_data_set( self, NULL ) && is_connection_valid( self, NULL )){
+	if( are_data_set( self, &msg ) && is_connection_valid( self, &msg )){
 		opened = do_open_dossier( self );
+
 	} else {
+		g_debug( "%s: %s", thisfn, msg );
+		g_free( msg );
 		my_dialog_run_dialog( MY_DIALOG( self ));
 		opened = priv->opened;
 	}
@@ -247,6 +244,7 @@ v_init_dialog( myDialog *dialog )
 	ofaUserCredentialsBin *user_credentials;
 	GtkSizeGroup *group;
 	gchar *dossier_name;
+	ofaIDBPeriod *init_period;
 	static ofaDossierDispColumn st_columns[] = {
 			DOSSIER_DISP_DOSNAME,
 			0 };
@@ -293,17 +291,22 @@ v_init_dialog( myDialog *dialog )
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
 	gtk_size_group_add_widget( group, label );
 
-	if( priv->init_meta ){
-		dossier_name = ofa_idbmeta_get_dossier_name( priv->init_meta );
+	if( priv->meta ){
+		/* because initial priv->period will be reset when selecting the
+		 * dossier */
+		init_period = priv->period ? g_object_ref( priv->period ) : NULL;
+		dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 		g_free( dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
-		if( priv->init_period ){
+		if( init_period ){
 			//ofa_idbperiod_dump( priv->init_period );
-			ofa_exercice_combo_set_selected( priv->exercice_combo, priv->init_period );
+			ofa_exercice_combo_set_selected( priv->exercice_combo, init_period );
 			focus = NULL;
 		}
+
+		g_clear_object( &init_period );
 	}
 
 	/* setup account and password */
