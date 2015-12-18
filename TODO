@@ -467,13 +467,12 @@
  919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
 
  920 2015-12-10 review RestoreAssistant
-                + let restore on a selected exercice
+                + let restore on a selected exercice rather than on the
+                   current one
 
  925 2015-12-13 remove obsolete ofaDossierLogin class ?
 
  926 2015-12-14 password is lost when opening a dossier after restore ?
-
- 927 2015-12-14 close the restore assistant before opening the dossier
 
  933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
                 while these are rather shortcuts to user preferences
@@ -4355,6 +4354,9 @@
 
  924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
      2015-12-13 done
+
+ 927 2015-12-14 close the restore assistant before opening the dossier
+     2015-12-18 done
 
  928 2015-12-14 have a preference option to force the restore to utf8
                 (alter the database after restore)

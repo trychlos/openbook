@@ -75,6 +75,19 @@ enum {
 	ASSIST_PAGE_DONE
 };
 
+/* a structure to store the data needed to open the dossier
+ * after the assistant has ran
+ */
+typedef struct {
+	gboolean       open;
+	ofaMainWindow *main_window;
+	ofaIDBMeta    *meta;
+	ofaIDBPeriod  *period;
+	gchar         *account;
+	gchar         *password;
+}
+	sOpenData;
+
 /* private instance data
  */
 struct _ofaRestoreAssistantPrivate {
@@ -135,6 +148,10 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_label1;
 	GtkWidget              *p6_label2;
+
+	/* open the dossier after restore
+	 */
+	sOpenData              *sdata;
 };
 
 /* GtkFileChooser filters
@@ -323,6 +340,7 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_run";
 	ofaRestoreAssistant *self;
+	sOpenData *data;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
@@ -346,8 +364,23 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 	}
 #endif
 
+	data = g_new0( sOpenData, 1 );
+	self->priv->sdata = data;
+
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 	my_assistant_run( MY_ASSISTANT( self ));
+
+	/* open the dossier after the assistant has quit */
+	if( data->open ){
+		ofa_dossier_open_run(
+				data->main_window, data->meta, data->period, data->account, data->password );
+		g_free( data->password );
+		g_free( data->account );
+		g_clear_object( &data->period );
+		g_clear_object( &data->meta );
+	}
+
+	g_free( data );
 }
 
 /*
@@ -1169,7 +1202,6 @@ p6_do_restore( ofaRestoreAssistant *self )
 	g_free( dossier_name );
 	g_free( str );
 
-	/* open the dossier */
 	if( ok ){
 		g_idle_add(( GSourceFunc ) p6_do_open, self );
 	}
@@ -1179,22 +1211,28 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 /*
  * open the dossier if asked for
+ * actually, keep the needed datas so that the dossier may be opened
+ * after the assistant has quit
  */
 static gboolean
 p6_do_open( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
+	sOpenData *sdata;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
-
 	if( priv->p4_open ){
-		ofa_dossier_open_run(
-				OFA_MAIN_WINDOW( main_window ),
-				priv->p2_meta, priv->p2_period, priv->p4_account, priv->p4_password );
+		sdata = priv->sdata;
+		sdata->open = priv->p4_open;
+		main_window = my_window_get_main_window( MY_WINDOW( self ));
+		g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
+		sdata->main_window = OFA_MAIN_WINDOW( main_window );
+		sdata->meta = g_object_ref( priv->p2_meta );
+		sdata->period = g_object_ref( priv->p2_period );
+		sdata->account = g_strdup( priv->p4_account );
+		sdata->password = g_strdup( priv->p4_password );
 	}
 
 	return( G_SOURCE_REMOVE );

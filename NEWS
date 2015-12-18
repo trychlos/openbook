@@ -27,6 +27,7 @@
    - ofaDossierNew: keep dossier name to embed squate brackets (todo #936).
    - ofaMySQLEditor: check autorized character set in database name (todo #470).
    - Database creation: force utf8 character set (todo #928).
+   - Restore: close the assistant before opening the dossier (todo #927).
 
  Bug fixes:
 
