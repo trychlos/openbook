@@ -520,35 +520,6 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta
 				g_free( msg );
 			}
 		}
-#if 0
-		if( ok ){
-			g_string_printf( query,
-					"CREATE TABLE IF NOT EXISTS %s.OFA_T_AUDIT ("
-					"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
-					"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query timestamp',"
-					"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') ",
-						database );
-			ok = idbconnect_query( instance, query->str );
-			if( !ok ){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-			}
-		}
-		if( ok ){
-			g_string_printf( query,
-					"CREATE TABLE IF NOT EXISTS %s.OFA_T_ROLES ("
-						"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
-						"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') ",
-							database );
-			ok = idbconnect_query( instance, query->str );
-			if( !ok ){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-			}
-		}
-#endif
 		g_object_unref( period );
 		g_string_free( query, TRUE );
 		return( ok );

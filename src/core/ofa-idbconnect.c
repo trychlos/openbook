@@ -871,7 +871,6 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 		ok = ofa_idbconnect_open_with_meta(
 					db_connection, data->account, data->password, meta, period );
 	}
-
 	if( ok ){
 		/* initialize the newly created database */
 		g_string_printf( query,
@@ -888,7 +887,6 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 					"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') " );
 		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
 	}
-
 	/* set admin credentials */
 	if( ok ){
 		ok = idbconnect_set_admin_credentials( db_connection, period, adm_account, adm_password );
