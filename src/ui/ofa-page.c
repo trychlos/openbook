@@ -439,22 +439,6 @@ ofa_page_get_theme( const ofaPage *page )
 }
 
 /**
- * ofa_page_get_dossier:
- */
-ofoDossier *
-ofa_page_get_dossier( const ofaPage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-
-	if( !page->prot->dispose_has_run ){
-
-		return( ofa_main_window_get_dossier( page->priv->main_window ));
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_page_get_top_focusable_widget:
  *
  * This virtual function should return the top focusable widget of

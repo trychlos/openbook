@@ -74,7 +74,7 @@
  *
  * ofaRatePage         a tree view on a list store                   Yes
  *
- * ofaReconcilPage   several top frames, with a treeview on        No
+ * ofaReconcilPage     several top frames, with a treeview on        No
  *                     a tree store
  *
  * ofaEntryPage        several top frames with a treeview on a       No
@@ -98,7 +98,7 @@ const ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
 
 gint                 ofa_page_get_theme                 ( const ofaPage *page );
 
-ofoDossier          *ofa_page_get_dossier               ( const ofaPage *page );
+#define              ofa_page_get_dossier(P)            ofa_main_window_get_dossier( ofa_page_get_main_window( P ))
 
 GtkWidget           *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 
