@@ -95,6 +95,7 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
 	ofa-idbconnect.c									\
+	ofa-idbcustomer.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\
 	ofa-idbperiod.c										\
