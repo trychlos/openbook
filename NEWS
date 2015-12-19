@@ -22,7 +22,7 @@
 
  New features and improvements:
 
-   - 
+   - TVA: new module for TVA operations management.
 
  Bug fixes:
 
@@ -30,7 +30,7 @@
 
  Other changes:
 
-   - 
+   - ofaApplication: new 'menu-definition' signal.
 
 -----------------------------------------------------------------------
  Version 0.43

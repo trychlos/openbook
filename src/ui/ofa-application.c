@@ -89,6 +89,7 @@ enum {
  */
 enum {
 	MAIN_WINDOW_CREATED = 0,
+	MENU_DEFINITION,
 	N_SIGNALS
 };
 
@@ -377,6 +378,38 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_POINTER );
+
+	/**
+	 * ofaApplication::menu-definition:
+	 *
+	 * This signal is sent on the application when we are about to
+	 * define the menus, either the application menu or the dossier
+	 * menu (i.e. with or without a dossier being opened).
+	 *
+	 * The plugins may take advantage of this signal for updating the
+	 * provided menus and actions maps.
+	 *
+	 * @main_window: %NULL when dealing with application menu.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaApplication  *application,
+	 * 						ofaMainWindow *main_window,
+	 * 						const gchar   *prefix,
+	 * 						GActionMap    *map,
+	 * 						GMenuModel    *model,
+	 * 						gpointer       user_data );
+	 */
+	st_signals[ MENU_DEFINITION ] = g_signal_new_class_handler(
+				"menu-definition",
+				OFA_TYPE_APPLICATION,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				4,
+				G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**
@@ -653,7 +686,7 @@ application_startup( GApplication *application )
 	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
 		if( menu ){
-			appli->priv->menu = g_object_ref( menu );
+			priv->menu = g_object_ref( menu );
 			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 					thisfn, st_appmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
 		} else {
@@ -664,6 +697,9 @@ application_startup( GApplication *application )
 		g_error_free( error );
 	}
 	g_object_unref( builder );
+
+	/* let the plugins update these menu map/model */
+	g_signal_emit_by_name( application, "menu-definition", NULL, "app", application, priv->menu );
 
 	/* setup the monitoring of action items */
 	setup_actions_monitor( OFA_APPLICATION( application ));

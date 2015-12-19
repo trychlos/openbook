@@ -438,6 +438,9 @@ main_window_constructed( GObject *instance )
 		}
 		g_object_unref( builder );
 
+		/* application (GtkWindow's property) is not set here because
+		 * this is not a 'construct' property */
+
 		/* build the main instance
 		 * it consists of a grid of one column:
 		 *  +--------------------------------------------------------------------+
@@ -624,7 +627,13 @@ ofa_main_window_new( const ofaApplication *application )
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
-	g_signal_emit_by_name(( gpointer ) application, "main-window-created", window );
+
+	/* let the plugins update these menu map/model */
+	g_signal_emit_by_name(
+			( gpointer ) application, "menu-definition", window, "win", window, window->priv->menu );
+
+	g_signal_emit_by_name(
+			( gpointer ) application, "main-window-created", window );
 
 	g_object_get( G_OBJECT( application ),
 			OFA_PROP_APPLICATION_NAME, &window->priv->orig_title,

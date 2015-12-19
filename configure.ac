@@ -150,6 +150,7 @@ AC_CONFIG_FILES([
 	src/mysql/Makefile
 	src/postgre/Makefile
 	src/recurrent/Makefile
+	src/tva/Makefile
 	src/ui/Makefile
 ])
 

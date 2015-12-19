@@ -20,17 +20,44 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-SUBDIRS = \
-	api									\
-	core								\
-	css									\
-	import-bourso						\
-	import-bourso-pdf					\
-	import-lcl							\
-	import-lcl-pdf						\
-	mysql								\
-	postgre								\
-	recurrent							\
-	tva									\
-	ui									\
+plugin_id = ofa-tva
+
+pkglib_LTLIBRARIES = libofa-tva.la
+
+plugin_datadir = $(pkgdatadir)/$(plugin_id)
+
+AM_CPPFLAGS += \
+	-I $(top_srcdir)								\
+	-I $(top_srcdir)/src							\
+	$(OPENBOOK_CFLAGS)								\
+	-DG_LOG_DOMAIN=\"OFA\"							\
+	-DPROVIDER_ID=\"$(plugin_id)\"					\
+	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+	$(NULL)
+
+libofa_tva_la_SOURCES = \
+	ofa-module.c									\
+	ofa-tva.c										\
+	ofa-tva.h										\
+	$(NULL)
+
+libofa_tva_la_LIBADD = \
+	$(OPENBOOK_LIBS)								\
+	$(NULL)
+
+libofa_tva_la_LDFLAGS = \
+	-module 										\
+	-no-undefined									\
+	-avoid-version									\
+	$(NULL)
+
+images_files = \
+	$(NULL)
+
+plugin_data_DATA = \
+	$(images_files)									\
+	$(NULL)
+
+EXTRA_DIST = \
+	$(plugin_data_DATA)								\
 	$(NULL)
