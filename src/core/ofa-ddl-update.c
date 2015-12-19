@@ -33,8 +33,10 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbcustomer.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
@@ -136,6 +138,7 @@ static sMigration st_migrates[] = {
 G_DEFINE_TYPE( ofaDDLUpdate, ofa_ddl_update, MY_TYPE_DIALOG )
 
 static gint       get_last_version( void );
+static gboolean   plugins_need_update( ofoDossier *dossier );
 static gboolean   run_dialog( ofoDossier *dossier, gint cur_version, gint last_version );
 static void       v_init_dialog( myDialog *dialog );
 static gboolean   do_run( ofaDDLUpdate *self );
@@ -151,6 +154,7 @@ static gboolean   insert_ope_templates( ofaDDLUpdate *self );
 static gboolean   insert_rates( ofaDDLUpdate *self );
 static gboolean   import_utf8_comma_pipe_file( ofaDDLUpdate *self, const gchar *table, const gchar *fname, gint headers, fnType fn );
 static gint       count_rows( const ofoDossier *dossier, const gchar *table );
+static gboolean   plugins_update( ofaDDLUpdate *self );
 static void       set_bar_progression( ofaDDLUpdate *self );
 static void       load_settings( ofaDDLUpdate *self );
 static void       write_settings( ofaDDLUpdate *self );
@@ -245,7 +249,7 @@ ofa_ddl_update_run( ofoDossier *dossier )
 	cur_version = ofo_dossier_get_database_version( dossier );
 	g_debug( "%s: cur_version=%d, last_version=%d", thisfn, cur_version, last_version );
 
-	if( cur_version < last_version ){
+	if( cur_version < last_version || plugins_need_update( dossier )){
 		up_to_date = run_dialog( dossier, cur_version, last_version );
 	}
 
@@ -266,6 +270,30 @@ get_last_version( void )
 	}
 
 	return( last_version );
+}
+
+/*
+ * ask any plugin whether it needs a DDL update
+ * the plugin must implement the ofaIDBCustomer interface
+ */
+static gboolean
+plugins_need_update( ofoDossier *dossier )
+{
+	GList *list, *it;
+	gboolean needs_update;
+	const ofaIDBConnect *connect;
+
+	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBCUSTOMER );
+	needs_update = FALSE;
+	connect = ofo_dossier_get_connect( dossier );
+
+	for( it=list ; it && !needs_update ; it=it->next ){
+		needs_update |= ofa_idbcustomer_needs_ddl_update( OFA_IDBCUSTOMER( it->data ), connect );
+	}
+
+	ofa_plugin_free_extensions( list );
+
+	return( needs_update );
 }
 
 /*
@@ -387,6 +415,9 @@ do_run( ofaDDLUpdate *self )
 		insert_ledgers( self );
 		insert_ope_templates( self );
 		insert_rates( self );
+	}
+	if( ok ){
+		plugins_update( self );
 	}
 
 	priv->up_to_date = ok;
@@ -1562,7 +1593,7 @@ import_utf8_comma_pipe_file( ofaDDLUpdate *self, const gchar *table, const gchar
 	ok = TRUE;
 	count = count_rows( priv->dossier, table );
 	if( !count ){
-		str = g_strdup_printf( "Importing into %s :", table );
+		str = g_strdup_printf( _( "Importing into %s :" ), table );
 		label = add_row( self, str, FALSE );
 		g_free( str );
 
@@ -1598,6 +1629,47 @@ count_rows( const ofoDossier *dossier, const gchar *table )
 	g_free( query );
 
 	return( count );
+}
+
+/*
+ * let any plugin update its DB model
+ */
+static gboolean
+plugins_update( ofaDDLUpdate *self )
+{
+	ofaDDLUpdatePrivate *priv;
+	GList *list, *it;
+	gboolean update_ok, ok;
+	const ofaIDBConnect *connect;
+	gchar *str;
+	const gchar *cname;
+	GtkWidget *label;
+
+	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBCUSTOMER );
+	update_ok = TRUE;
+	priv = self->priv;
+	connect = ofo_dossier_get_connect( priv->dossier );
+
+	for( it=list ; it && update_ok; it=it->next ){
+		if( ofa_idbcustomer_needs_ddl_update( OFA_IDBCUSTOMER( it->data ), connect )){
+			cname = ofa_idbcustomer_get_name( OFA_IDBCUSTOMER( it->data ));
+			str = g_strdup_printf( "Updating %s DB model:", cname );
+			label = add_row( self, str, FALSE );
+			g_free( str );
+
+			ok = ofa_idbcustomer_ddl_update( OFA_IDBCUSTOMER( it->data ), connect );
+			update_ok &= ok;
+
+			str = g_strdup_printf( ok ? _( "OK" ) : _( "NOT OK" ));
+			gtk_label_set_text( GTK_LABEL( label ), str );
+			gtk_widget_show( label );
+			g_free( str );
+		}
+	}
+
+	ofa_plugin_free_extensions( list );
+
+	return( update_ok );
 }
 
 static void
