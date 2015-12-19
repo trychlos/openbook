@@ -26,11 +26,30 @@
 #include <config.h>
 #endif
 
+#include <gio/gio.h>
+#include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
 #include "api/ofa-extension.h"
 
 #include "ofa-tva.h"
+
+typedef struct {
+	const gchar *id;
+	const gchar *label;
+}
+	sItem;
+
+static void on_tva( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+
+static const GActionEntry st_win_entries[] = {
+		{ "tva", on_tva, NULL, NULL, NULL },
+};
+
+static const sItem st_items_ope2[] = {
+		{ "tva", N_( "TVA management" ) },
+		{ 0 }
+};
 
 /* the count of GType types provided by this extension
  * each new GType type must
@@ -137,28 +156,49 @@ ofa_extension_shutdown( void )
 }
 
 /*
- * sequence:
-(openbook:12644): OFA-DEBUG: my_utils_action_enable: map=0x6d7180, action=0x6d70b0, name=open, enable=True
-(openbook:12644): OFA-DEBUG: ofa_application_activate: application=0x6d7180
-(openbook:12644): OFA-DEBUG: ofa_main_window_new: application=0x6d7180
-(openbook:12644): OFA-DEBUG: ofa_main_window_class_init: klass=0x803600
-(openbook:12644): OFA-DEBUG: ofa_main_window_init: self=0x884340 (ofaMainWindow)
-(openbook:12644): OFA-DEBUG: ofa_main_instance_constructed: instance=0x884340 (ofaMainWindow)
-(openbook:12644): OFA-DEBUG: my_utils_window_restore_position: name=MainWindow, x=14, y=31, width=1350, height=590
-(openbook:12644): OFA-DEBUG: tva/ofa-module/on_main_window_created: application=0x6d7180, window=0x884340, empty=(nil)
-(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x765ac0: found accel at i=0: <Control>n
-(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x765ac0: found accel at i=1: <Control>o
-(openbook:12644): OFA-DEBUG: ofa_main_window_extract_accels: model=0x839980: found accel at i=0: <Control>q
-(openbook:12644): OFA-DEBUG: set_menubar: model=0x764d60 (GMenu), menubar=0x915200, grid=0x724490 (GtkGrid)
-(openbook:12644): OFA-DEBUG: ofa_application_activate: main window instanciated at 0x884340
+ * the signal is expected to be sent once for each menu map/model defined
+ * by the application; this is a good time for the handler to add our own
+ * actions
  */
 static void
 on_menu_definition( GApplication *application,
 						GtkApplicationWindow *window,
 						const gchar *prefix, GActionMap *map, GMenuModel *model, void *empty )
 {
-	g_debug( "tva/ofa-module/on_menu_definition: application=%p, window=%p, prefix=%s, map=%p, model=%p, empty=%p",
-			( void * ) application, ( void * ) window, prefix, ( void * ) map, ( void * ) model, empty );
+	static const gchar *thisfn = "tva/ofa-module/on_menu_definition";
+	GMenuModel *placeholder;
+    GMenu *section;
+    GMenuItem *item;
+    gchar *label, *action_name;
+    gint i;
+
+	g_debug( "%s: application=%p, window=%p, prefix=%s, map=%p, model=%p, empty=%p",
+			thisfn, ( void * ) application, ( void * ) window, prefix, ( void * ) map,
+			( void * ) model, empty );
+
+	if( window ){
+		g_action_map_add_action_entries(
+				map, st_win_entries, G_N_ELEMENTS( st_win_entries ), window );
+
+		placeholder = ( GMenuModel * ) g_object_get_data( G_OBJECT( window ), "plugins_win_ope2" );
+		g_debug( "%s: placeholder=%p (%s), ref_count=%d",
+				thisfn, ( void * ) placeholder, G_OBJECT_TYPE_NAME( placeholder ),
+				G_OBJECT( placeholder )->ref_count );
+
+		section = g_menu_new();
+		for( i=0 ; st_items_ope2[i].id ; ++i ){
+			label = g_strdup( st_items_ope2[i].label );
+			action_name = g_strconcat( "win.", st_items_ope2[i].id, NULL );
+			g_menu_insert( section, 0, label, action_name );
+			g_free( label );
+			g_free( action_name );
+			item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
+			g_menu_item_set_attribute( item, "id", "s", st_items_ope2[i].id );
+			g_menu_append_item( G_MENU( placeholder ), item );
+			g_object_unref( item );
+		}
+		g_object_unref( section );
+	}
 }
 
 static void
@@ -166,4 +206,17 @@ on_main_window_created( GApplication *application, GtkApplicationWindow *window,
 {
 	g_debug( "tva/ofa-module/on_main_window_created: application=%p, window=%p, empty=%p",
 			( void * ) application, ( void * ) window, empty );
+}
+
+static void
+on_tva( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "tva/ofa-module/on_tva";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
+
+	//ofa_about_run( priv->main_window );
 }
