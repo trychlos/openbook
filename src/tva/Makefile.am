@@ -39,6 +39,8 @@ libofa_tva_la_SOURCES = \
 	ofa-module.c									\
 	ofa-tva.c										\
 	ofa-tva.h										\
+	ofa-tva-dbcustomer.c							\
+	ofa-tva-dbcustomer.h							\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \

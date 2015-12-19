@@ -27,6 +27,7 @@
 #endif
 
 #include "ofa-tva.h"
+#include "ofa-tva-dbcustomer.h"
 
 /* private instance data
  */
@@ -65,9 +66,18 @@ ofa_tva_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo idbcustomer_iface_info = {
+		( GInterfaceInitFunc ) ofa_tva_dbcustomer_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaTva", &info, 0 );
+
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IDBCUSTOMER, &idbcustomer_iface_info );
 }
 
 static void
