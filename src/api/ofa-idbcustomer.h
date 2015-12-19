@@ -49,6 +49,9 @@ typedef struct _ofaIDBCustomer                    ofaIDBCustomer;
 /**
  * ofaIDBCustomerInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @get_name: [should]: returns the name of the customer.
+ * @needs_ddl_update: [should]: returns whether the DB model needs an update.
+ * @ddl_update: [should]: returns whether the DB model has been successfully updated.
  *
  * This defines the interface that an #ofaIDBCustomer should implement.
  */
@@ -76,6 +79,19 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint           ( *get_interface_version )( const ofaIDBCustomer *instance );
+
+	/**
+	 * get_name:
+	 * @instance: the #ofaIDBCustomer provider.
+	 *
+	 * Returns: the name of @instance.
+	 *
+	 * The returned string is owned by the @instance, and should not be
+	 * released by the caller.
+	 *
+	 * Since: version 1
+	 */
+	const gchar *   ( *get_name )             ( const ofaIDBCustomer *instance );
 
 	/**
 	 * needs_ddl_update:
@@ -111,6 +127,8 @@ GType           ofa_idbcustomer_get_type                  ( void );
 guint           ofa_idbcustomer_get_interface_last_version( void );
 
 guint           ofa_idbcustomer_get_interface_version     ( const ofaIDBCustomer *instance );
+
+const gchar    *ofa_idbcustomer_get_name                  ( const ofaIDBCustomer *instance );
 
 gboolean        ofa_idbcustomer_needs_ddl_update          ( const ofaIDBCustomer *instance,
 																const ofaIDBConnect *connect );

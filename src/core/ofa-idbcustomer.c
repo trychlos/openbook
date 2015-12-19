@@ -150,6 +150,30 @@ ofa_idbcustomer_get_interface_version( const ofaIDBCustomer *instance )
 }
 
 /**
+ * ofa_idbcustomer_get_name:
+ * @instance: this #ofaIDBCustomer instance.
+ *
+ * Returns: the name of the @instance.
+ */
+const gchar *
+ofa_idbcustomer_get_name( const ofaIDBCustomer *instance )
+{
+	static const gchar *thisfn = "ofa_idbcustomer_get_name";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && OFA_IS_IDBCUSTOMER( instance ), NULL );
+
+	if( OFA_IDBCUSTOMER_GET_INTERFACE( instance )->get_name ){
+		return( OFA_IDBCUSTOMER_GET_INTERFACE( instance )->get_name( instance ));
+	}
+
+	g_info( "%s: ofaIDBCustomer instance %p does not provide 'get_name()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
  * ofa_idbcustomer_needs_ddl_update:
  * @instance: this #ofaIDBCustomer instance.
  * @connect: the opened #ofaIDBConnect connection.
