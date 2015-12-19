@@ -298,6 +298,7 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
 static void             pane_save_position( GtkPaned *pane );
+static void             window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             do_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediation );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
@@ -429,6 +430,13 @@ main_window_constructed( GObject *instance )
 				priv->menu = g_object_ref( menu );
 				g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 						thisfn, st_dosmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
+
+				/* store the references to the plugins placeholders */
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
+
 			} else {
 				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
 			}
@@ -482,6 +490,24 @@ main_window_constructed( GObject *instance )
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
 		}
+	}
+}
+
+/*
+ * stores against the @main_window GObject the data needed later by the
+ * plugins to be able to update the menus
+ */
+static void
+window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder )
+{
+	static const gchar *thisfn = "ofa_main_window_window_store_ref";
+	GObject *menu;
+
+	menu = gtk_builder_get_object( builder, placeholder );
+	if( !menu ){
+		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
+	} else {
+		g_object_set_data( G_OBJECT( main_window ), placeholder, menu );
 	}
 }
 

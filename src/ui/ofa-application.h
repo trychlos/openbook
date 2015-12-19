@@ -62,6 +62,34 @@
  *              ofa_main_window_init: self=0xfe43d0 (ofaMainWindow)
  *              ...
  *            ofa_application_activate: main window instanciated at 0xfe43d0
+ *
+ *   The application sends a 'main-window-created' signal on the
+ *   GApplication object right after main window creation.
+ *
+ * Letting the plugins update the menus
+ * ------------------------------------
+ *
+ * The application defines two menus which are to be displayed depending
+ * a dossier is opened, or not:
+ *
+ *   XML file definition  ofa-app-menubar.ui         ofa-dos-menubar.ui
+ *   displayed when       no dossier                 a dossier is opened
+ *   initialized in       ofa_application_startup()  ofa_main_window_constructed()
+ *   placeholders         plugins_app_dossier        plugins_win_ope1
+ *                        plugins_app_misc           plugins_win_ope2
+ *                                                   plugins_win_ope3
+ *                                                   plugins_win_ope4
+ *                                                   plugins_win_print
+ *                                                   plugins_win_ref
+ *
+ * Right after menus definition, the application sends a 'menu-definition'
+ * signal on the GApplication object. This signal may be handled by the
+ * plugins in order to update the menus.
+ *
+ * Each of the two menus defines various placeholders to let the plugins
+ * choose where to add their items. The corresponding menu models are
+ * set as data against the GtkApplication (resp. the GtkApplicationWindow),
+ * and may thus be retrieved by the plugins via g_object_get_data().
  */
 
 #include "core/ofa-file-dir.h"

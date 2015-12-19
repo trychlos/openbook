@@ -132,6 +132,7 @@ static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
 
 static void     application_startup( GApplication *application );
+static void     appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
 static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void     maintainer_test_function( void );
@@ -689,6 +690,11 @@ application_startup( GApplication *application )
 			priv->menu = g_object_ref( menu );
 			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 					thisfn, st_appmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
+
+			/* store the references to the plugins placeholders */
+			appli_store_ref( appli, builder, "plugins_app_dossier" );
+			appli_store_ref( appli, builder, "plugins_app_misc" );
+
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_appmenu_id, st_appmenu_xml );
 		}
@@ -707,6 +713,26 @@ application_startup( GApplication *application )
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
 	priv->dos_store = ofa_dossier_store_new( priv->file_dir );
+}
+
+/*
+ * stores against the @application GObject the data needed later by the
+ * plugins to be able to update the menus
+ */
+static void
+appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder )
+{
+	static const gchar *thisfn = "ofa_application_appli_store_ref";
+	GObject *menu;
+
+	menu = gtk_builder_get_object( builder, placeholder );
+	if( !menu ){
+		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
+	} else {
+		/* gtk+/examples/plugman.c uses g_object_set_data_full(), but
+		 *  menu appears to be unreffed with its parent GMenuModel */
+		g_object_set_data( G_OBJECT( application ), placeholder, menu );
+	}
 }
 
 /*
