@@ -40,14 +40,21 @@ typedef struct {
 }
 	sItem;
 
-static void on_tva( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_win_entries[] = {
-		{ "tva", on_tva, NULL, NULL, NULL },
+		{ "tvadecl", on_tva_declaration, NULL, NULL, NULL },
+		{ "tvadef",  on_tva_definition,  NULL, NULL, NULL },
 };
 
 static const sItem st_items_ope2[] = {
-		{ "tva", N_( "TVA management" ) },
+		{ "tvadecl", N_( "TVA declaration" ) },
+		{ 0 }
+};
+
+static const sItem st_items_ref[] = {
+		{ "tvadef", N_( "TVA definitions" ) },
 		{ 0 }
 };
 
@@ -58,7 +65,8 @@ static const sItem st_items_ope2[] = {
  */
 #define OFA_TYPES_COUNT	1
 
-static void on_menu_definition( GApplication *application, GtkApplicationWindow *window, const gchar *prefix, GActionMap *map, GMenuModel *model, void *empty );
+static void on_menu_defined( GApplication *application, GActionMap *map, void *empty );
+static void menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder );
 static void on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty );
 
 /*
@@ -75,7 +83,7 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
 
 	ofa_tva_register_type( module );
 
-	g_signal_connect( application, "menu-definition", G_CALLBACK( on_menu_definition ), NULL );
+	g_signal_connect( application, "menu-defined", G_CALLBACK( on_menu_defined ), NULL );
 	g_signal_connect( application, "main-window-created", G_CALLBACK( on_main_window_created ), NULL );
 
 	return( TRUE );
@@ -107,7 +115,7 @@ ofa_extension_get_api_version( void )
 const gchar *
 ofa_extension_get_name( void )
 {
-	return( "TVA operations management v1.2015" );
+	return( "TVA operations management" );
 }
 
 /*
@@ -161,40 +169,51 @@ ofa_extension_shutdown( void )
  * actions
  */
 static void
-on_menu_definition( GApplication *application,
-						GtkApplicationWindow *window,
-						const gchar *prefix, GActionMap *map, GMenuModel *model, void *empty )
+on_menu_defined( GApplication *application, GActionMap *map, void *empty )
 {
-	static const gchar *thisfn = "tva/ofa-module/on_menu_definition";
-	GMenuModel *placeholder;
+	static const gchar *thisfn = "tva/ofa-module/on_menu_defined";
+
+	g_debug( "%s: application=%p, map=%p, empty=%p",
+			thisfn, ( void * ) application, ( void * ) map, ( void * ) empty );
+
+	if( GTK_IS_APPLICATION_WINDOW( map )){
+		g_action_map_add_action_entries(
+				map, st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
+
+		menu_add_section( G_OBJECT( map ), st_items_ope2, "plugins_win_ope2" );
+		menu_add_section( G_OBJECT( map ), st_items_ref, "plugins_win_ref" );
+	}
+}
+
+static void
+menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder )
+{
+	static const gchar *thisfn = "tva/ofa-module/menu_add_section";
+	GMenuModel *menu_model;
     GMenu *section;
     GMenuItem *item;
     gchar *label, *action_name;
     gint i;
 
-	g_debug( "%s: application=%p, window=%p, prefix=%s, map=%p, model=%p, empty=%p",
-			thisfn, ( void * ) application, ( void * ) window, prefix, ( void * ) map,
-			( void * ) model, empty );
+	menu_model = ( GMenuModel * ) g_object_get_data( parent, placeholder );
+	g_debug( "%s: menu_model=%p", thisfn, ( void * ) menu_model );
+	/*
+	g_debug( "%s: menu_model=%p (%s), ref_count=%d",
+			thisfn, ( void * ) menu_model, G_OBJECT_TYPE_NAME( menu_model ),
+			G_OBJECT( menu_model )->ref_count );
+			*/
 
-	if( window ){
-		g_action_map_add_action_entries(
-				map, st_win_entries, G_N_ELEMENTS( st_win_entries ), window );
-
-		placeholder = ( GMenuModel * ) g_object_get_data( G_OBJECT( window ), "plugins_win_ope2" );
-		g_debug( "%s: placeholder=%p (%s), ref_count=%d",
-				thisfn, ( void * ) placeholder, G_OBJECT_TYPE_NAME( placeholder ),
-				G_OBJECT( placeholder )->ref_count );
-
+	if( menu_model ){
 		section = g_menu_new();
-		for( i=0 ; st_items_ope2[i].id ; ++i ){
-			label = g_strdup( st_items_ope2[i].label );
-			action_name = g_strconcat( "win.", st_items_ope2[i].id, NULL );
+		for( i=0 ; sitems[i].id ; ++i ){
+			label = g_strdup( sitems[i].label );
+			action_name = g_strconcat( "win.", sitems[i].id, NULL );
 			g_menu_insert( section, 0, label, action_name );
 			g_free( label );
 			g_free( action_name );
 			item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
-			g_menu_item_set_attribute( item, "id", "s", st_items_ope2[i].id );
-			g_menu_append_item( G_MENU( placeholder ), item );
+			g_menu_item_set_attribute( item, "id", "s", sitems[i].id );
+			g_menu_append_item( G_MENU( menu_model ), item );
 			g_object_unref( item );
 		}
 		g_object_unref( section );
@@ -209,9 +228,22 @@ on_main_window_created( GApplication *application, GtkApplicationWindow *window,
 }
 
 static void
-on_tva( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "tva/ofa-module/on_tva";
+	static const gchar *thisfn = "tva/ofa-module/on_tva_declaration";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
+
+	//ofa_about_run( priv->main_window );
+}
+
+static void
+on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "tva/ofa-module/on_tva_definition";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
