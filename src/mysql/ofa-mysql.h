@@ -82,33 +82,6 @@ typedef struct {
 }
 	ofaMysqlClass;
 
-/**
- * mysqlInfos:
- * @dname: the name of the dossier
- * @host: [allow-none]:
- * @port: [allow-none]:
- * @socket: [allow-none]:
- * @dbname: [allow-none]:
- * @account: [allow-none]:
- * @password: [allow-none]:
- * @mysql: the handle allocated by MySQL for the connection
- *
- * Connection information for MySQL.
- *
- * MySQL provides a default value for all optional fields.
- */
-typedef struct {
-	gchar *dname;
-	gchar *host;
-	gint   port;
-	gchar *socket;
-	gchar *dbname;
-	gchar *account;
-	gchar *password;
-	MYSQL *mysql;
-}
-	mysqlInfos;
-
 GType ofa_mysql_get_type     ( void );
 
 void  ofa_mysql_register_type( GTypeModule *module );
