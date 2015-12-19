@@ -25,6 +25,9 @@
           <attribute name="action">app.restore</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_app_dossier'></link>
+      </item>
       <section>
         <item>
           <attribute name="label" translatable="yes">_User preferences...</attribute>
@@ -47,6 +50,9 @@
           <attribute name="action">app.plugin_manage</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_app_misc'></link>
+      </item>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_Help</attribute>

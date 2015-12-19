@@ -39,6 +39,9 @@
           <attribute name="action">app.restore</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_app_dossier'></link>
+      </item>
       <section>
         <item>
           <attribute name="label" translatable="yes">_User preferences...</attribute>
@@ -65,6 +68,9 @@
           <attribute name="action">win.entries</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_ope1'></link>
+      </item>
       <section>
         <item>
           <attribute name="label" translatable="yes">Account _settlement...</attribute>
@@ -75,6 +81,9 @@
           <attribute name="action">win.concil</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_ope2'></link>
+      </item>
       <section>
         <item>
           <attribute name="label" translatable="yes">Provisional _ledger closing...</attribute>
@@ -85,6 +94,9 @@
           <attribute name="action">win.execlosing</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_ope3'></link>
+      </item>
       <section>
         <item>
           <attribute name="label" translatable="yes">_Import...</attribute>
@@ -95,6 +107,9 @@
           <attribute name="action">win.export</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_ope4'></link>
+      </item>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_Printings</attribute>
@@ -116,6 +131,9 @@
           <attribute name="action">win.render-reconcil</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_print'></link>
+      </item>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_References</attribute>
@@ -151,6 +169,9 @@
           <attribute name="action">win.batfiles</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_win_ref'></link>
+      </item>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_Miscellaneous</attribute>
@@ -170,6 +191,9 @@
           <attribute name="action">win.integrity</attribute>
         </item>
       </section>
+      <item>
+        <link name='section' id='plugins_app_misc'></link>
+      </item>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">Help</attribute>
