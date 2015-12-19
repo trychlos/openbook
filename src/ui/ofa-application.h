@@ -82,6 +82,10 @@
  *                                                   plugins_win_print
  *                                                   plugins_win_ref
  *
+ * The placeholders must be both defined in the XML definition file,
+ * and initialized in the ad-hoc function (ofa_application_startup/
+ * ofa_main_window_constructed).
+ *
  * Right after menus definition, the application sends a 'menu-definition'
  * signal on the GApplication object. This signal may be handled by the
  * plugins in order to update the menus.

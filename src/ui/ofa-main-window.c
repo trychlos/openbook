@@ -436,6 +436,8 @@ main_window_constructed( GObject *instance )
 				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
 				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
 				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
+				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
 
 			} else {
 				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
@@ -654,12 +656,11 @@ ofa_main_window_new( const ofaApplication *application )
 					"application", application,
 					NULL );
 
-	/* let the plugins update these menu map/model */
-	g_signal_emit_by_name(
-			( gpointer ) application, "menu-definition", window, "win", window, window->priv->menu );
+	/* let the plugins update these menu map/model
+	 * (here because application is not yet set in constructed() */
+	g_signal_emit_by_name(( gpointer ) application, "menu-defined", window );
 
-	g_signal_emit_by_name(
-			( gpointer ) application, "main-window-created", window );
+	g_signal_emit_by_name(( gpointer ) application, "main-window-created", window );
 
 	g_object_get( G_OBJECT( application ),
 			OFA_PROP_APPLICATION_NAME, &window->priv->orig_title,

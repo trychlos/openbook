@@ -381,11 +381,12 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_POINTER );
 
 	/**
-	 * ofaApplication::menu-definition:
+	 * ofaApplication::menu-defined:
 	 *
-	 * This signal is sent on the application when we are about to
-	 * define the menus, either the application menu or the dossier
-	 * menu (i.e. with or without a dossier being opened).
+	 * This signal is sent on the application after having defined the
+	 * actions map and loaded the menu definition. As our application
+	 * defines two menus (with or without a dossier being opened), this
+	 * signal is sent twice, once for each corresponding #GActionMap.
 	 *
 	 * The plugins may take advantage of this signal for updating the
 	 * provided menus and actions maps.
@@ -394,14 +395,11 @@ ofa_application_class_init( ofaApplicationClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaApplication  *application,
-	 * 						ofaMainWindow *main_window,
-	 * 						const gchar   *prefix,
 	 * 						GActionMap    *map,
-	 * 						GMenuModel    *model,
 	 * 						gpointer       user_data );
 	 */
 	st_signals[ MENU_DEFINITION ] = g_signal_new_class_handler(
-				"menu-definition",
+				"menu-defined",
 				OFA_TYPE_APPLICATION,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -409,8 +407,8 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				4,
-				G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER );
+				1,
+				G_TYPE_POINTER );
 }
 
 /**
@@ -705,7 +703,7 @@ application_startup( GApplication *application )
 	g_object_unref( builder );
 
 	/* let the plugins update these menu map/model */
-	g_signal_emit_by_name( application, "menu-definition", NULL, "app", application, priv->menu );
+	g_signal_emit_by_name( application, "menu-defined", application );
 
 	/* setup the monitoring of action items */
 	setup_actions_monitor( OFA_APPLICATION( application ));
