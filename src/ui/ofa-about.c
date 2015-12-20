@@ -28,9 +28,10 @@
 
 #include <glib/gi18n.h>
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

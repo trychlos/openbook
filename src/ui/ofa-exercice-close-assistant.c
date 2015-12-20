@@ -48,6 +48,7 @@
 #include "core/my-progress-bar.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-iconcil.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
@@ -56,7 +57,6 @@
 #include "ui/ofa-check-integrity-bin.h"
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-exercice-close-assistant.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

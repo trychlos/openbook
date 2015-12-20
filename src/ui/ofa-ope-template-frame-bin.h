@@ -37,7 +37,8 @@
  * sent by the underlying ofaOpeTemplateStore class.
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "api/ofa-main-window-def.h"
+
 #include "ui/ofa-ope-template-book-bin.h"
 
 G_BEGIN_DECLS

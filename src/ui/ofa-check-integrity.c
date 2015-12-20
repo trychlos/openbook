@@ -29,9 +29,10 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-check-integrity-bin.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

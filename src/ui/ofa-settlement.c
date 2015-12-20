@@ -32,18 +32,19 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 #include "ui/ofa-settlement.h"
 
 /*

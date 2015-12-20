@@ -29,17 +29,18 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/ofa-main-window.h"
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-template-frame-bin.h"
 #include "ui/ofa-ope-template-page.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */

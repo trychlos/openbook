@@ -40,12 +40,12 @@
 #include "api/ofo-ledger.h"
 
 #include "core/my-progress-bar.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-ledger-combo.h"
 
 /* private instance data

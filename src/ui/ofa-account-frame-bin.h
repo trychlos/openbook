@@ -40,8 +40,9 @@
  * - 'ofa-activated' when the selection is activated.
  */
 
+#include "api/ofa-main-window-def.h"
+
 #include "ui/ofa-account-chart-bin.h"
-#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

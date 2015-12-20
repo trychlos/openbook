@@ -26,9 +26,10 @@
 #include <config.h>
 #endif
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

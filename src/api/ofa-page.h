@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PAGE_H__
-#define __OFA_PAGE_H__
+#ifndef __OPENBOOK_API_OFA_PAGE_H__
+#define __OPENBOOK_API_OFA_PAGE_H__
 
 /**
  * SECTION: ofa_page
  * @short_description: #ofaPage class definition.
- * @include: ui/ofa-page.h
+ * @include: openbook/ofa-page.h
  *
  * The main window is organized with an horizontal paned which
  * includes:
@@ -81,10 +81,9 @@
  *                     list store
  */
 
+#include "api/ofa-main-window-def.h"
+#include "api/ofa-page-def.h"
 #include "api/ofo-dossier-def.h"
-
-#include "ui/ofa-main-window-def.h"
-#include "ui/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -104,4 +103,4 @@ GtkWidget           *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 
 G_END_DECLS
 
-#endif /* __OFA_PAGE_H__ */
+#endif /* __OPENBOOK_API_OFA_PAGE_H__ */

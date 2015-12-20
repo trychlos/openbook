@@ -33,11 +33,12 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-user-credentials-bin.h"
 
 /* private instance data

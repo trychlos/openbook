@@ -33,7 +33,7 @@
  * Display the entries with various selection criteria.
  */
 
-#include "ui/ofa-page-def.h"
+#include "api/ofa-page-def.h"
 
 G_BEGIN_DECLS
 

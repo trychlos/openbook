@@ -34,9 +34,10 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-main-window.h"
 
 /* data associated to each implementor object
  */

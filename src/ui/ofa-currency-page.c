@@ -29,17 +29,18 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currency-page.h"
 #include "ui/ofa-currency-store.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */

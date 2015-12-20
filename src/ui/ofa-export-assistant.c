@@ -46,9 +46,9 @@
 
 #include "core/my-progress-bar.h"
 #include "core/ofa-file-format-bin.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-export-assistant.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  *

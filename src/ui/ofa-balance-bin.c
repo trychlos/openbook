@@ -34,10 +34,11 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-date-filter-hv-bin.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-balance-bin.h"
 
 /* private instance data

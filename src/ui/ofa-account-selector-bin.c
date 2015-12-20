@@ -31,9 +31,10 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-selector-bin.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

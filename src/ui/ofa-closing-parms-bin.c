@@ -34,10 +34,11 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-select.h"
 
 /* private instance data

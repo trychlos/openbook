@@ -44,8 +44,7 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta-def.h"
-
-#include "ofa-main-window-def.h"
+#include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

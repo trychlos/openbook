@@ -33,6 +33,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -43,13 +45,11 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-idate-filter.h"
 #include "ui/ofa-irenderable.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 #include "ui/ofa-ledger-book-bin.h"
 #include "ui/ofa-ledger-book-render.h"
 

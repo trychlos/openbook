@@ -33,7 +33,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "ui/ofa-page-def.h"
+#include "api/ofa-page-def.h"
 
 G_BEGIN_DECLS
 

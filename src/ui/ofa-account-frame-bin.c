@@ -32,10 +32,11 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-buttons-box.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

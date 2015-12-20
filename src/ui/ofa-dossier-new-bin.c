@@ -33,11 +33,11 @@
 #include "api/ofa-idbprovider.h"
 
 #include "core/ofa-file-dir.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-store.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

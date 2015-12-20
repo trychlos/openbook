@@ -36,12 +36,13 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-template-store.h"
 #include "ui/ofa-ope-template-book-bin.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

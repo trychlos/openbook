@@ -38,9 +38,10 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-rate-properties.h"
 
 /* private instance data

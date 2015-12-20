@@ -30,8 +30,9 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-ledger-combo.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

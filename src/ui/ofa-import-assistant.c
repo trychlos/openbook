@@ -49,9 +49,9 @@
 #include "core/my-progress-bar.h"
 #include "core/ofa-dossier-misc.h"
 #include "core/ofa-file-format-bin.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-import-assistant.h"
-#include "ui/ofa-main-window.h"
 
 /* Export Assistant
  *

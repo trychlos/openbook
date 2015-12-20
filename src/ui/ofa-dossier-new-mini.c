@@ -36,10 +36,10 @@
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-dbms-root-bin.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-new-mini.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

@@ -34,10 +34,11 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-treeview.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

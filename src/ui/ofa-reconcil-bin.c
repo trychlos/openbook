@@ -35,9 +35,10 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-reconcil-bin.h"
 
 /* private instance data

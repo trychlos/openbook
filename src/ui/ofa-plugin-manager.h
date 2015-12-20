@@ -34,8 +34,7 @@
  */
 
 #include "api/my-dialog.h"
-
-#include "ui/ofa-main-window-def.h"
+#include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

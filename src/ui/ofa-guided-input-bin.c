@@ -43,12 +43,13 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-ledger-combo.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

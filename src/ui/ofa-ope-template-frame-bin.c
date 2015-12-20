@@ -32,9 +32,10 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "ui/ofa-ope-template-frame-bin.h"
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-buttons-box.h"
-#include "ui/ofa-main-window.h"
+#include "ui/ofa-ope-template-frame-bin.h"
 
 /* private instance data
  */

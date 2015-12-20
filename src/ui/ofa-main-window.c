@@ -33,9 +33,12 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-main-window.h"
 
 #include "ui/my-tab-label.h"
 #include "ui/ofa-account-book-render.h"
@@ -59,9 +62,7 @@
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-page.h"
-#include "ui/ofa-page.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-page.h"

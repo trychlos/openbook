@@ -33,6 +33,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -40,10 +42,9 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-irenderable.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 #include "ui/ofa-reconcil-bin.h"
 #include "ui/ofa-reconcil-render.h"
 

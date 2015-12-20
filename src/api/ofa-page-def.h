@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PAGE_DEF_H__
-#define __OFA_PAGE_DEF_H__
+#ifndef __OPENBOOK_API_OFA_PAGE_DEF_H__
+#define __OPENBOOK_API_OFA_PAGE_DEF_H__
 
 /**
  * SECTION: ofa_page
  * @short_description: #ofaPage class definition.
- * @include: ui/ofa-page.h
+ * @include: openbook/ofa-page.h
  */
 
 #include <gtk/gtk.h>
@@ -124,4 +124,4 @@ GType ofa_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_PAGE_DEF_H__ */
+#endif /* __OPENBOOK_API_OFA_PAGE_DEF_H__ */

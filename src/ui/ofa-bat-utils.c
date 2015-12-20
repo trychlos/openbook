@@ -33,7 +33,8 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 
-#include "ui/ofa-main-window.h"
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-bat-utils.h"
 
 /**

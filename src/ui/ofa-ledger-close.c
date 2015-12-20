@@ -38,11 +38,11 @@
 #include "api/ofo-ledger.h"
 
 #include "core/my-progress-bar.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-treeview.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

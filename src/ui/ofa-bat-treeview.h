@@ -34,10 +34,10 @@
  * dossier.
  */
 
+#include "api/ofa-main-window-def.h"
 #include "api/ofo-bat-def.h"
 
 #include "ui/ofa-bat-store.h"
-#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

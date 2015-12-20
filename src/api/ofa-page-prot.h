@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_PAGE_PROT_H__
-#define __OFA_PAGE_PROT_H__
+#ifndef __OPENBOOK_API_OFA_PAGE_PROT_H__
+#define __OPENBOOK_API_OFA_PAGE_PROT_H__
 
 /**
  * SECTION: ofa_page
  * @short_description: #ofaPage class definition.
- * @include: ui/ofa-page.h
+ * @include: openbook/ofa-page.h
  */
 
 G_BEGIN_DECLS
@@ -41,4 +41,4 @@ struct _ofaPageProtected {
 
 G_END_DECLS
 
-#endif /* __OFA_PAGE_PROT_H__ */
+#endif /* __OPENBOOK_API_OFA_PAGE_PROT_H__ */

@@ -41,8 +41,7 @@
 #include "api/my-dialog.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
-
-#include "ui/ofa-main-window-def.h"
+#include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

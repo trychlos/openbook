@@ -34,8 +34,9 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-bat-treeview.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

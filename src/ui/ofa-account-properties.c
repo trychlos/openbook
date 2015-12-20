@@ -38,9 +38,10 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-currency-combo.h"
-#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

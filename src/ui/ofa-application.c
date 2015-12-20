@@ -37,10 +37,10 @@
 #include "api/ofa-settings.h"
 
 #include "core/ofa-file-dir.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"

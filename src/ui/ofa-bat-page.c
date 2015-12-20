@@ -33,18 +33,19 @@
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-page.h"
+#include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-main-window.h"
+
+#include "ui/ofa-bat-page.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-bat-page.h"
 #include "ui/ofa-buttons-box.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-page.h"
-#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */

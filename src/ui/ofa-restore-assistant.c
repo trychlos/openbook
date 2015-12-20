@@ -43,14 +43,13 @@
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-restore-assistant.h"
-#include "ui/ofa-main-window.h"
 
 /* Export Assistant
  *

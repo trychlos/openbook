@@ -39,9 +39,8 @@
  */
 
 #include "api/my-dialog.h"
+#include "api/ofa-main-window-def.h"
 #include "api/ofo-ledger-def.h"
-
-#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

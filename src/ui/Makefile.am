@@ -209,8 +209,6 @@ openbook_SOURCES = \
 	ofa-list-store.c									\
 	ofa-list-store.h									\
 	ofa-main-window.c									\
-	ofa-main-window.h									\
-	ofa-main-window-def.h								\
 	ofa-ope-template-book-bin.c							\
 	ofa-ope-template-book-bin.h							\
 	ofa-ope-template-frame-bin.c						\
@@ -225,10 +223,6 @@ openbook_SOURCES = \
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
-	ofa-page.c											\
-	ofa-page.h											\
-	ofa-page-def.h										\
-	ofa-page-prot.h										\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-rate-page.c										\

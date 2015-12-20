@@ -184,13 +184,12 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) \
 	ofa-ope-template-properties.$(OBJEXT) \
 	ofa-ope-template-select.$(OBJEXT) \
-	ofa-ope-template-store.$(OBJEXT) ofa-page.$(OBJEXT) \
-	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
-	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
-	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
-	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
-	ofa-settlement.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-user-credentials-bin.$(OBJEXT)
+	ofa-ope-template-store.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
+	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
+	ofa-reconcil-bin.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
+	ofa-reconcil-render.$(OBJEXT) ofa-render-page.$(OBJEXT) \
+	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
+	ofa-tree-store.$(OBJEXT) ofa-user-credentials-bin.$(OBJEXT)
 openbook_OBJECTS = $(am_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
@@ -639,8 +638,6 @@ openbook_SOURCES = \
 	ofa-list-store.c									\
 	ofa-list-store.h									\
 	ofa-main-window.c									\
-	ofa-main-window.h									\
-	ofa-main-window-def.h								\
 	ofa-ope-template-book-bin.c							\
 	ofa-ope-template-book-bin.h							\
 	ofa-ope-template-frame-bin.c						\
@@ -655,10 +652,6 @@ openbook_SOURCES = \
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
-	ofa-page.c											\
-	ofa-page.h											\
-	ofa-page-def.h										\
-	ofa-page-prot.h										\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-rate-page.c										\
@@ -960,7 +953,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
