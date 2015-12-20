@@ -87,7 +87,8 @@ enum {
 	THM_RENDER_ACCOUNTS_BOOK,
 	THM_RENDER_LEDGERS_BOOK,
 	THM_RENDER_RECONCIL,
-	THM_SETTLEMENT
+	THM_SETTLEMENT,
+	THM_LAST_THEME
 };
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );

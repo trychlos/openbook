@@ -295,5 +295,12 @@ on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 static void
 activate_theme( GtkApplicationWindow *window, const gchar *action_name )
 {
+	guint i;
 
+	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
+		if( !g_utf8_collate( st_theme_defs[i].action_name, action_name )){
+			g_signal_emit_by_name( window, "activate-theme", st_theme_defs[i].theme_id );
+			break;
+		}
+	}
 }

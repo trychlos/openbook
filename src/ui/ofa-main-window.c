@@ -317,7 +317,7 @@ static void             on_dossier_properties( ofaMainWindow *window, gpointer u
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static const sThemeDef *get_theme_def_from_id( gint theme_id );
+static const sThemeDef *get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_dossier_opened( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
@@ -555,6 +555,7 @@ ofa_main_window_init( ofaMainWindow *self )
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MAIN_WINDOW, ofaMainWindowPrivate );
 
 	self->priv->dispose_has_run = FALSE;
+	self->priv->last_theme = THM_LAST_THEME;
 }
 
 static void
@@ -1186,19 +1187,31 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
  * return NULL if not found
  */
 static const sThemeDef *
-get_theme_def_from_id( gint theme_id )
+get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
 {
 	static const gchar *thisfn = "ofa_main_window_get_theme_def_from_id";
+	ofaMainWindowPrivate *priv;
 	gint i;
+	GList *it;
+	sThemeDef *def;
 
-	for( i=0 ; st_theme_defs[i].label ; ++i ){
-		if( st_theme_defs[i].theme_id == theme_id ){
-			return(( sThemeDef * ) &st_theme_defs[i] );
+	if( theme_id < THM_LAST_THEME ){
+		for( i=0 ; st_theme_defs[i].label ; ++i ){
+			if( st_theme_defs[i].theme_id == theme_id ){
+				return(( sThemeDef * ) &st_theme_defs[i] );
+			}
+		}
+	} else if( theme_id > THM_LAST_THEME ){
+		priv = main_window->priv;
+		for( it=priv->themes ; it ; it=it->next ){
+			def = ( sThemeDef * ) it->data;
+			if( def->theme_id == theme_id ){
+				return( def );
+			}
 		}
 	}
 
 	g_warning( "%s: unable to find theme definition for id=%d", thisfn, theme_id );
-
 	return( NULL );
 }
 
@@ -1719,7 +1732,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 		main_book = main_get_book( main_window );
 		g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
 
-		theme_def = get_theme_def_from_id( theme );
+		theme_def = get_theme_def_from_id( main_window, theme );
 		g_return_val_if_fail( theme_def, NULL );
 		g_return_val_if_fail( theme_def->fn_get_type, NULL );
 
