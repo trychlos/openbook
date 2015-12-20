@@ -32,7 +32,6 @@
 
    - ofaApplication: new 'menu-definition' signal.
    - ofaIDBCustomer: new interface.
-   - ofaITheme: new interface.
 
 -----------------------------------------------------------------------
  Version 0.43

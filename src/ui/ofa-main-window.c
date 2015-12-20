@@ -80,6 +80,8 @@ struct _ofaMainWindowPrivate {
 	GtkAccelGroup *accel_group;
 	GMenuModel    *menu;				/* the menu model when a dossier is opened */
 	GtkPaned      *pane;
+	GList         *themes;
+	guint          last_theme;
 	ofoDossier    *dossier;
 
 	/* menu items enabled status
@@ -101,6 +103,8 @@ enum {
 	DOSSIER_PROPERTIES,
 	OPENED_DOSSIER,
 	DIALOG_INIT,
+	ADD_THEME,
+	ACTIVATE_THEME,
 	N_SIGNALS
 };
 
@@ -170,10 +174,10 @@ static const GActionEntry st_dos_entries[] = {
  * to a same theme, or do not appear at all)
  */
 typedef struct {
-	gint         theme_id;
-	const gchar *label;
-	GType      (*fn_get_type)( void );
-	gboolean     if_entries_allowed;
+	gint       theme_id;
+	gchar     *label;
+	GType    (*fn_get_type)( void );
+	gboolean   if_entries_allowed;
 }
 	sThemeDef;
 
@@ -297,6 +301,8 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
+static void             theme_defs_free( GList *themes );
+static void             theme_free( sThemeDef *def );
 static void             pane_save_position( GtkPaned *pane );
 static void             window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
@@ -328,6 +334,8 @@ static void             main_book_activate_page( const ofaMainWindow *window, Gt
 static void             on_tab_close_clicked( myTabLabel *tab, ofaPage *page );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void             close_all_pages( ofaMainWindow *main_window );
+static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
+static void             on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
 
 static void
 main_window_finalize( GObject *instance )
@@ -372,10 +380,24 @@ main_window_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->menu );
 		g_clear_object( &priv->dossier );
+		theme_defs_free( priv->themes );
 	}
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_main_window_parent_class )->dispose( instance );
+}
+
+static void
+theme_defs_free( GList *themes )
+{
+	g_list_free_full( themes, ( GDestroyNotify ) theme_free );
+}
+
+static void
+theme_free( sThemeDef *def )
+{
+	g_free( def->label );
+	g_free( def );
 }
 
 static void
@@ -484,6 +506,13 @@ main_window_constructed( GObject *instance )
 				OFA_SIGNAL_DOSSIER_OPENED, G_CALLBACK( on_dossier_opened ), NULL );
 		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
+
+		/* connect the theme signals
+		 */
+		g_signal_connect( instance,
+				"add-theme", G_CALLBACK( on_add_theme ), NULL );
+		g_signal_connect( instance,
+				"activate-theme", G_CALLBACK( on_activate_theme ), NULL );
 
 		/* set the default icon for all windows of the application */
 		error = NULL;
@@ -636,6 +665,54 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_STRING, G_TYPE_POINTER );
+
+	/**
+	 * ofaMainWindow::add-theme:
+	 *
+	 * This signal is to be sent to the main window to define a new
+	 * theme. The signal handler returns the new theme identifier.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 *                      const gchar *theme_name,
+	 *                      gpointer     fntype,
+	 *                      gboolean     with_entries,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ ADD_THEME ] = g_signal_new_class_handler(
+				"add-theme",
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_ACTION,
+				NULL,
+				g_signal_accumulator_first_wins,	/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_UINT,
+				3,
+				G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN );
+
+	/**
+	 * ofaMainWindow::activate-theme:
+	 *
+	 * This signal is to be sent to the main window to activate a
+	 * previously defined theme.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 *                      guint        theme_id,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ ACTIVATE_THEME ] = g_signal_new_class_handler(
+				"activate-theme",
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_ACTION,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_UINT );
 }
 
 /**
@@ -646,6 +723,7 @@ ofa_main_window_new( const ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_main_window_new";
 	ofaMainWindow *window;
+	ofaMainWindowPrivate *priv;
 
 	g_return_val_if_fail( OFA_IS_APPLICATION( application ), NULL );
 
@@ -655,16 +733,16 @@ ofa_main_window_new( const ofaApplication *application )
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
+	priv = window->priv;
 
 	/* let the plugins update these menu map/model
 	 * (here because application is not yet set in constructed() */
 	g_signal_emit_by_name(( gpointer ) application, "menu-defined", window );
 
+	/* let the plugins update the managed themes */
 	g_signal_emit_by_name(( gpointer ) application, "main-window-created", window );
 
-	g_object_get( G_OBJECT( application ),
-			OFA_PROP_APPLICATION_NAME, &window->priv->orig_title,
-			NULL );
+	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
 
@@ -1801,4 +1879,28 @@ close_all_pages( ofaMainWindow *main_window )
 	while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
 		gtk_notebook_remove_page( book, count-1 );
 	}
+}
+
+static guint
+on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty )
+{
+	ofaMainWindowPrivate *priv;
+	sThemeDef *def;
+
+	priv = main_window->priv;
+	def = g_new0( sThemeDef, 1 );
+	def->label = g_strdup( theme_name );
+	def->fn_get_type = fntype;
+	def->if_entries_allowed = with_entries;
+	priv->last_theme += 1;
+	def->theme_id = priv->last_theme;
+	priv->themes = g_list_prepend( priv->themes, def );
+
+	return( priv->last_theme );
+}
+
+static void
+on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty )
+{
+	ofa_main_window_activate_theme( main_window, theme_id );
 }

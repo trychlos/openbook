@@ -34,30 +34,6 @@
 
 #include "ofa-tva.h"
 
-typedef struct {
-	const gchar *id;
-	const gchar *label;
-}
-	sItem;
-
-static void on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-
-static const GActionEntry st_win_entries[] = {
-		{ "tvadecl", on_tva_declaration, NULL, NULL, NULL },
-		{ "tvadef",  on_tva_definition,  NULL, NULL, NULL },
-};
-
-static const sItem st_items_ope2[] = {
-		{ "tvadecl", N_( "TVA declaration" ) },
-		{ 0 }
-};
-
-static const sItem st_items_ref[] = {
-		{ "tvadef", N_( "TVA definitions" ) },
-		{ 0 }
-};
-
 /* the count of GType types provided by this extension
  * each new GType type must
  * - be registered in ofa_extension_startup()
@@ -65,9 +41,60 @@ static const sItem st_items_ref[] = {
  */
 #define OFA_TYPES_COUNT	1
 
+/* a structure which defines the menu items
+ * menu items are identified by item_name, which must be linked
+ * with action_name.
+ */
+typedef struct {
+	const gchar *item_name;
+	const gchar *item_label;
+}
+	sItemDef;
+
+/* a structure which defines the themes
+ * theme identifier is returned by the interface implementer
+ */
+typedef struct {
+	const gchar *action_name;
+	const gchar *theme_name;
+	GType      (*fntype)( void );
+	gboolean     with_entries;
+	guint        theme_id;
+}
+	sThemeDef;
+
 static void on_menu_defined( GApplication *application, GActionMap *map, void *empty );
-static void menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder );
+static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
 static void on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty );
+static void on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void activate_theme( GtkApplicationWindow *window, const gchar *action_name );
+
+
+/* all the actions added for the TVA modules
+ */
+static const GActionEntry st_win_entries[] = {
+		{ "tvadecl", on_tva_declaration, NULL, NULL, NULL },
+		{ "tvadef",  on_tva_definition,  NULL, NULL, NULL },
+};
+
+/* the items respectively added to Operations[2] and References menus
+ */
+static const sItemDef st_items_ope2[] = {
+		{ "tvadecl", N_( "TVA declaration" ) },
+		{ 0 }
+};
+
+static const sItemDef st_items_ref[] = {
+		{ "tvadef", N_( "TVA definitions" ) },
+		{ 0 }
+};
+
+static sThemeDef st_theme_defs[] = {
+		{ "tvadecl", N_( "TVA declaration" ), NULL, FALSE, 0 },
+		{ "tvadef",  N_( "TVA management" ),  NULL,  FALSE, 0 },
+		{ 0 }
+};
 
 /*
  * ofa_extension_startup:
@@ -186,7 +213,7 @@ on_menu_defined( GApplication *application, GActionMap *map, void *empty )
 }
 
 static void
-menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder )
+menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder )
 {
 	static const gchar *thisfn = "tva/ofa-module/menu_add_section";
 	GMenuModel *menu_model;
@@ -205,14 +232,14 @@ menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder
 
 	if( menu_model ){
 		section = g_menu_new();
-		for( i=0 ; sitems[i].id ; ++i ){
-			label = g_strdup( sitems[i].label );
-			action_name = g_strconcat( "win.", sitems[i].id, NULL );
+		for( i=0 ; sitems[i].item_name ; ++i ){
+			label = g_strdup( sitems[i].item_label );
+			action_name = g_strconcat( "win.", sitems[i].item_name, NULL );
 			g_menu_insert( section, 0, label, action_name );
 			g_free( label );
 			g_free( action_name );
 			item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
-			g_menu_item_set_attribute( item, "id", "s", sitems[i].id );
+			g_menu_item_set_attribute( item, "id", "s", sitems[i].item_name );
 			g_menu_append_item( G_MENU( menu_model ), item );
 			g_object_unref( item );
 		}
@@ -223,8 +250,20 @@ menu_add_section( GObject *parent, const sItem *sitems, const gchar *placeholder
 static void
 on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty )
 {
-	g_debug( "tva/ofa-module/on_main_window_created: application=%p, window=%p, empty=%p",
-			( void * ) application, ( void * ) window, empty );
+	static const gchar *thisfn = "tva/ofa-module/on_main_window_created";
+	guint i;
+
+	g_debug( "%s: application=%p, window=%p, empty=%p",
+			thisfn, ( void * ) application, ( void * ) window, empty );
+
+	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
+		g_signal_emit_by_name( window, "add-theme",
+				st_theme_defs[i].theme_name,
+				st_theme_defs[i].fntype,
+				st_theme_defs[i].with_entries,
+				&st_theme_defs[i].theme_id );
+		g_debug( "%s: theme_id=%u", thisfn, st_theme_defs[i].theme_id );
+	}
 }
 
 static void
@@ -237,7 +276,7 @@ on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpointer user_da
 
 	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
 
-	//ofa_about_run( priv->main_window );
+	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "tvadecl" );
 }
 
 static void
@@ -250,5 +289,11 @@ on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
 
-	//ofa_about_run( priv->main_window );
+	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "tvadef" );
+}
+
+static void
+activate_theme( GtkApplicationWindow *window, const gchar *action_name )
+{
+
 }

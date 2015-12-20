@@ -105,7 +105,6 @@ libofa_core_la_SOURCES = \
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
 	ofa-iprefs-provider.c								\
-	ofa-itheme.c										\
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
