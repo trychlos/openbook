@@ -476,7 +476,22 @@
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?
 
- 937
+ 937 2015-12-21 either move ofa-main-window.h to api/ (because it is
+                needed by ofa-page.h) or say that api/ should only
+                contain the actual public API, and thus remove from
+                api/ some files which were only pulled up for compilation
+                reasons
+
+ 938 2015-12-21 distinguish a core api with core objects (eg. for
+                command-line only tools) and a ui api which contains
+                some base classes and interfaces which would be useful
+                for plugins => implies to have a core lib and a ui lib
+
+ 939 2015-12-21 ofoTVAForm: make it importable
+
+ 940 2015-12-21 ofoTVAForm: make it exportable
+
+ 941
 
 -----------------------------------------------------------------------
  DONE

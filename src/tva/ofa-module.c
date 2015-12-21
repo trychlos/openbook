@@ -92,8 +92,8 @@ static const sItemDef st_items_ref[] = {
 };
 
 static sThemeDef st_theme_defs[] = {
-		{ "tvadecl", N_( "TVA declaration" ), NULL, FALSE, 0 },
-		{ "tvadef",  N_( "TVA management" ),  ofa_tva_define_page_get_type,  FALSE, 0 },
+		{ "tvadecl", N_( "TVA _declaration" ), NULL, FALSE, 0 },
+		{ "tvadef",  N_( "TVA _management" ),  ofa_tva_define_page_get_type,  FALSE, 0 },
 		{ 0 }
 };
 

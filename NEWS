@@ -30,7 +30,7 @@
 
  Other changes:
 
-   - ofaApplication: new 'menu-definition' signal.
+   - ofaApplication: new 'menu-defined' signal.
    - ofaIDBCustomer: new interface.
 
 -----------------------------------------------------------------------

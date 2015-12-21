@@ -31,6 +31,8 @@
  * @include: tva/ofa-tva-define-page.h
  *
  * Defines a new TVA form.
+ * This is an ofaPage-derived page which shows the list of defined
+ * forms. The user has New, Update and Delete usual buttons.
  */
 
 #include "api/ofa-page-def.h"

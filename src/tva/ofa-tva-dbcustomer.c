@@ -195,7 +195,7 @@ dbmodel_to_v1( const ofaIDBConnect *connect, guint version )
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS ("
-			"	TFO_ID          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form identifier',"
+			"	TFO_MNEMO       VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
 			"	TFO_LABEL       VARCHAR(80)                  COMMENT 'Form label',"
 			"	TFO_NOTES       VARCHAR(4096)                COMMENT 'Notes',"
 			"	TFO_UPD_USER    VARCHAR(20)                  COMMENT 'User responsible of last update',"
@@ -205,8 +205,8 @@ dbmodel_to_v1( const ofaIDBConnect *connect, guint version )
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_DET ("
-			"	TFO_ID          VARCHAR(10)  NOT NULL        COMMENT 'Form identifier',"
-			"	TFO_DET_NUM     INTEGER      NOT NULL        COMMENT 'Form line number',"
+			"	TFO_MNEMO       VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_DET_ROW     INTEGER      NOT NULL        COMMENT 'Form line number',"
 			"	TFO_DET_CODE    VARCHAR(10)                  COMMENT 'Form line code',"
 			"	TFO_DET_LABEL   VARCHAR(80)                  COMMENT 'Form line label',"
 			"	TFO_DET_AMOUNT  VARCHAR(80)                  COMMENT 'Line amount computing rule',"
