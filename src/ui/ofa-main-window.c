@@ -1898,8 +1898,12 @@ close_all_pages( ofaMainWindow *main_window )
 static guint
 on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty )
 {
+	static const gchar *thisfn = "ofa_main_window_on_add_theme";
 	ofaMainWindowPrivate *priv;
 	sThemeDef *def;
+
+	g_debug( "%s: main_window=%p, theme_name=%s, fntype=%p, with_entries=%s, empty=%p",
+			thisfn,( void * ) main_window, theme_name, fntype, with_entries ? "True":"False", empty );
 
 	priv = main_window->priv;
 	def = g_new0( sThemeDef, 1 );

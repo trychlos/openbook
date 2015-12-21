@@ -31,8 +31,7 @@ AM_CPPFLAGS += \
 	-I $(top_srcdir)/src							\
 	$(OPENBOOK_CFLAGS)								\
 	-DG_LOG_DOMAIN=\"OFA\"							\
-	-DPROVIDER_ID=\"$(plugin_id)\"					\
-	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+	-DPLUGINUIDIR=\"$(plugin_datadir)\"				\
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
@@ -41,6 +40,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva.h										\
 	ofa-tva-dbcustomer.c							\
 	ofa-tva-dbcustomer.h							\
+	ofa-tva-define-page.c							\
+	ofa-tva-define-page.h							\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \

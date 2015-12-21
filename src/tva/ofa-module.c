@@ -33,6 +33,7 @@
 #include "api/ofa-extension.h"
 
 #include "ofa-tva.h"
+#include "ofa-tva-define-page.h"
 
 /* the count of GType types provided by this extension
  * each new GType type must
@@ -92,7 +93,7 @@ static const sItemDef st_items_ref[] = {
 
 static sThemeDef st_theme_defs[] = {
 		{ "tvadecl", N_( "TVA declaration" ), NULL, FALSE, 0 },
-		{ "tvadef",  N_( "TVA management" ),  NULL,  FALSE, 0 },
+		{ "tvadef",  N_( "TVA management" ),  ofa_tva_define_page_get_type,  FALSE, 0 },
 		{ 0 }
 };
 

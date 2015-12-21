@@ -165,7 +165,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo \
-	ofa-tva-dbcustomer.lo
+	ofa-tva-dbcustomer.lo ofa-tva-define-page.lo
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -243,8 +243,7 @@ AMTAR = @AMTAR@
 AM_CFLAGS = @AM_CFLAGS@
 AM_CPPFLAGS = @AM_CPPFLAGS@ -I $(top_srcdir) -I $(top_srcdir)/src \
 	$(OPENBOOK_CFLAGS) -DG_LOG_DOMAIN=\"OFA\" \
-	-DPROVIDER_ID=\"$(plugin_id)\" \
-	-DPROVIDER_DATADIR=\"$(plugin_datadir)\" $(NULL)
+	-DPLUGINUIDIR=\"$(plugin_datadir)\" $(NULL)
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
@@ -424,6 +423,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva.h										\
 	ofa-tva-dbcustomer.c							\
 	ofa-tva-dbcustomer.h							\
+	ofa-tva-define-page.c							\
+	ofa-tva-define-page.h							\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \
@@ -527,6 +528,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbcustomer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-define-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva.Plo@am__quote@
 
 .c.o:
