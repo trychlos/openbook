@@ -44,9 +44,8 @@
  * maintain itself up to date.
  */
 
+#include "api/ofa-list-store.h"
 #include "api/ofo-dossier-def.h"
-
-#include "ui/ofa-list-store.h"
 
 G_BEGIN_DECLS
 

@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ISTORE_H__
-#define __OFA_ISTORE_H__
+#ifndef __OPENBOOK_API_OFA_ISTORE_H__
+#define __OPENBOOK_API_OFA_ISTORE_H__
 
 /**
  * SECTION: istore
  * @title: ofaIStore
  * @short_description: The IStore Interface
- * @include: ui/ofa-istore.h
+ * @include: api/ofa-istore.h
  *
  * The #ofaIStore interface is implemented by #ofaListStore and
  * #ofaTreeStore. It lets us implement some common behavior between
@@ -91,4 +91,4 @@ void         ofa_istore_simulate_dataset_load( const ofaIStore *istore );
 
 G_END_DECLS
 
-#endif /* __OFA_ISTORE_H__ */
+#endif /* __OPENBOOK_API_OFA_ISTORE_H__ */

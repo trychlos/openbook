@@ -28,9 +28,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-istore.h"
 #include "api/ofo-dossier.h"
-
-#include "ui/ofa-istore.h"
 
 /* data associated to each implementor object
  */

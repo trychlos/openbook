@@ -184,8 +184,6 @@ openbook_SOURCES = \
 	ofa-iprintable.h									\
 	ofa-irenderable.c									\
 	ofa-irenderable.h									\
-	ofa-istore.c										\
-	ofa-istore.h										\
 	ofa-itreeview-column.c								\
 	ofa-itreeview-column.h								\
 	ofa-itreeview-display.c								\
@@ -206,8 +204,6 @@ openbook_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
-	ofa-list-store.c									\
-	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-ope-template-book-bin.c							\
 	ofa-ope-template-book-bin.h							\

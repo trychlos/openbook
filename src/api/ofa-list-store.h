@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_LIST_STORE_H__
-#define __OFA_LIST_STORE_H__
+#ifndef __OPENBOOK_API_OFA_LIST_STORE_H__
+#define __OPENBOOK_API_OFA_LIST_STORE_H__
 
 /**
  * SECTION: ofa_list_store
  * @title: ofaListStore
  * @short_description: The ofaListStore application class definition
- * @include: ui/ofa-list-store.h
+ * @include: api/ofa-list-store.h
  *
  * This is a very thin base class for other stores which will manage
  * the dossier objects.
@@ -97,4 +97,4 @@ void  ofa_list_store_load_dataset( ofaListStore *store );
 
 G_END_DECLS
 
-#endif /* __OFA_LIST_STORE_H__ */
+#endif /* __OPENBOOK_API_OFA_LIST_STORE_H__ */

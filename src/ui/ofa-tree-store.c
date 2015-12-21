@@ -26,9 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-istore.h"
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-istore.h"
 #include "ui/ofa-tree-store.h"
 
 /* private instance data
