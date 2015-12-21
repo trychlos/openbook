@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
@@ -45,7 +46,6 @@
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-buttons-box.h"
 
 /* private instance data
  */

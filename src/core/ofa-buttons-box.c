@@ -29,8 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-
-#include "ui/ofa-buttons-box.h"
+#include "api/ofa-buttons-box.h"
 
 /* private instance data
  */

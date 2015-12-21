@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
@@ -38,7 +39,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-template-store.h"

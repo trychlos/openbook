@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -36,7 +37,6 @@
 
 #include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-account-frame-bin.h"
-#include "ui/ofa-buttons-box.h"
 
 /* private instance data
  */

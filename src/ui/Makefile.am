@@ -112,8 +112,6 @@ openbook_SOURCES = \
 	ofa-bat-treeview.h									\
 	ofa-bat-utils.c										\
 	ofa-bat-utils.h										\
-	ofa-buttons-box.c									\
-	ofa-buttons-box.h									\
 	ofa-check-balances.c								\
 	ofa-check-balances.h								\
 	ofa-check-balances-bin.c							\

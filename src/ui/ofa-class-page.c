@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-class.h"
@@ -37,7 +38,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-class-page.h"
 

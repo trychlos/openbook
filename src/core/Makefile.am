@@ -70,6 +70,7 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
+	ofa-buttons-box.c									\
 	ofa-collection.c									\
 	ofa-collection.h									\
 	ofa-collection-prot.h								\

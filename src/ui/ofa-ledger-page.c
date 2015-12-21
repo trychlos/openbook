@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"
@@ -36,7 +37,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"

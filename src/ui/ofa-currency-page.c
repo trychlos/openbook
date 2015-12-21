@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-currency.h"
@@ -37,7 +38,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currency-page.h"
 #include "ui/ofa-currency-store.h"
