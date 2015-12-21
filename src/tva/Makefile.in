@@ -165,7 +165,8 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo \
-	ofa-tva-dbcustomer.lo ofa-tva-define-page.lo
+	ofa-tva-dbcustomer.lo ofa-tva-define-page.lo \
+	ofa-tva-form-store.lo ofo-tva-form.lo
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -425,6 +426,10 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-dbcustomer.h							\
 	ofa-tva-define-page.c							\
 	ofa-tva-define-page.h							\
+	ofa-tva-form-store.c							\
+	ofa-tva-form-store.h							\
+	ofo-tva-form.c									\
+	ofo-tva-form.h									\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \
@@ -529,7 +534,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbcustomer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-define-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-form.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

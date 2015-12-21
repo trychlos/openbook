@@ -42,6 +42,10 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-dbcustomer.h							\
 	ofa-tva-define-page.c							\
 	ofa-tva-define-page.h							\
+	ofa-tva-form-store.c							\
+	ofa-tva-form-store.h							\
+	ofo-tva-form.c									\
+	ofo-tva-form.h									\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \
