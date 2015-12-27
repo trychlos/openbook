@@ -251,12 +251,8 @@ dbmodel_to_v2( const ofaIDBConnect *connect, guint version )
 			"ALTER TABLE TVA_T_FORMS_DET "
 			"	MODIFY COLUMN TFO_DET_LABEL          VARCHAR(192) COMMENT 'Form line label',"
 			"	ADD    COLUMN TFO_DET_HAS_BASE       CHAR(1)      COMMENT 'Whether detail line has a base amount',"
-			"	ADD    COLUMN TFO_DET_BASE           VARCHAR(80)  COMMENT 'Detail base'", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofa_idbconnect_query( connect,
-			"UPDATE TVA_T_FORMS_DET SET TFO_DET_HAS_BASE='N'", TRUE )){
+			"	ADD    COLUMN TFO_DET_BASE           VARCHAR(80)  COMMENT 'Detail base',"
+			"	ADD    COLUMN TFO_DET_LEVEL          INTEGER      COMMENT 'Detail line level'", TRUE )){
 		return( FALSE );
 	}
 
@@ -264,7 +260,7 @@ dbmodel_to_v2( const ofaIDBConnect *connect, guint version )
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_BOOL ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_BOOL_ROW       INTEGER      NOT NULL        COMMENT 'Form line number',"
-			"	TFO_BOOL_LABEL     VARCHAR(80)                  COMMENT 'Form line label',"
+			"	TFO_BOOL_LABEL     VARCHAR(192)                 COMMENT 'Form line label',"
 			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_BOOL_ROW))", TRUE )){
 		return( FALSE );
 	}
