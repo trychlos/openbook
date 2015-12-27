@@ -49,7 +49,7 @@ typedef enum {
 	eBoxType;
 
 /**
- * ofsBox:
+ * ofsBoxDef:
  * @id: the identifier of the elementary data
  *  must be greater than zero
  *  is unique inside the object
