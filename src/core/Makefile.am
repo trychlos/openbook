@@ -58,6 +58,7 @@ libofa_core_la_SOURCES = \
 	my-field-combo.c									\
 	my-field-combo.h									\
 	my-file-monitor.c									\
+	my-igridlist.c										\
 	my-isettings.c										\
 	my-progress-bar.c									\
 	my-progress-bar.h									\

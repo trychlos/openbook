@@ -25,6 +25,7 @@ api_includedir = $(pkgincludedir)
 api_include_HEADERS = \
 	ofa-extension.h										\
 	\
+	my-igridlist.h										\
 	my-isettings.h										\
 	ofa-file-format.h									\
 	ofa-iabout.h										\

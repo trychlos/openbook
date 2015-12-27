@@ -22,7 +22,7 @@
 
  New features and improvements:
 
-   - TVA: new module for TVA operations management.
+   - TVA: new module for TVA operations management (todo #311).
 
  Bug fixes:
 
@@ -30,6 +30,7 @@
 
  Other changes:
 
+   - myIGridList: new interface.
    - ofaApplication: new 'menu-defined' signal.
    - ofaIDBCustomer: new interface.
 
