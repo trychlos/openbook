@@ -52,6 +52,7 @@ enum {
 	TFO_DET_ROW,
 	TFO_DET_CODE,
 	TFO_DET_LABEL,
+	TFO_DET_HAS_AMOUNT,
 	TFO_DET_AMOUNT
 };
 
@@ -100,6 +101,10 @@ static const ofsBoxDef st_details_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_HAS_AMOUNT ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -356,8 +361,9 @@ do_update_account_identifier( ofoDossier *dossier, const gchar *mnemo, const gch
 static GList *
 tva_form_load_dataset( ofoDossier *dossier )
 {
-	GList *dataset, *it;
-	ofoTVAForm *template;
+	static const gchar *thisfn = "ofo_tva_form_load_dataset";
+	GList *dataset, *it, *ir;
+	ofoTVAForm *form;
 	gchar *from;
 
 	dataset = ofo_base_load_dataset(
@@ -367,13 +373,19 @@ tva_form_load_dataset( ofoDossier *dossier )
 					OFO_TYPE_TVA_FORM );
 
 	for( it=dataset ; it ; it=it->next ){
-		template = OFO_TVA_FORM( it->data );
+		form = OFO_TVA_FORM( it->data );
 		from = g_strdup_printf(
 				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s' ORDER BY TFO_DET_ROW ASC",
-				ofo_tva_form_get_mnemo( template ));
-		template->priv->details =
+				ofo_tva_form_get_mnemo( form ));
+		form->priv->details =
 				ofo_base_load_rows( st_details_defs, ofo_dossier_get_connect( dossier ), from );
 		g_free( from );
+		/* dump the detail rows */
+		if( 0 ){
+			for( ir=form->priv->details ; ir ; ir=ir->next ){
+				ofa_box_dump_fields_list( thisfn, ir->data );
+			}
+		}
 	}
 
 	return( dataset );
@@ -496,6 +508,7 @@ ofo_tva_form_new_from_form( const ofoTVAForm *form )
 			ofo_tva_form_add_detail( dest,
 					ofo_tva_form_get_detail_code( form, i ),
 					ofo_tva_form_get_detail_label( form, i ),
+					ofo_tva_form_get_detail_has_amount( form, i ),
 					ofo_tva_form_get_detail_amount( form, i ));
 		}
 	}
@@ -621,6 +634,11 @@ ofo_tva_form_is_deletable( const ofoTVAForm *form, ofoDossier *dossier )
 
 /**
  * ofo_tva_form_is_valid:
+ * @dossier:
+ * @mnemo:
+ *
+ * Returns: %TRUE if provided datas are enough to make the future
+ * #ofoTVAForm valid, %FALSE else.
  */
 gboolean
 ofo_tva_form_is_valid( ofoDossier *dossier, const gchar *mnemo )
@@ -677,7 +695,7 @@ tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp )
 
 void
 ofo_tva_form_add_detail( ofoTVAForm *form,
-							const gchar *code, const gchar *label, const gchar *amount )
+							const gchar *code, const gchar *label, gboolean has_amount, const gchar *amount )
 {
 	GList *fields;
 
@@ -690,6 +708,7 @@ ofo_tva_form_add_detail( ofoTVAForm *form,
 		ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_form_get_detail_count( form ));
 		ofa_box_set_string( fields, TFO_DET_CODE, code );
 		ofa_box_set_string( fields, TFO_DET_LABEL, label );
+		ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
 		ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
 
 		form->priv->details = g_list_append( form->priv->details, fields );
@@ -768,6 +787,30 @@ ofo_tva_form_get_detail_label( const ofoTVAForm *form, guint idx )
 	}
 
 	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_form_get_detail_has_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_form_get_detail_has_amount( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->details, idx );
+		if( nth ){
+			cstr = ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT );
+			return( my_utils_boolean_from_str( cstr ));
+		}
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -923,12 +966,13 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 	GString *query;
 	gboolean ok;
 	gchar *code, *label, *amount;
+	const gchar *cstr;
 
 	query = g_string_new( "INSERT INTO TVA_T_FORMS_DET " );
 
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_DET_ROW,TFO_DET_CODE,"
-			"	 TFO_DET_LABEL,TFO_DET_AMOUNT) "
+			"	 TFO_DET_LABEL,TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT) "
 			"	VALUES('%s',%d,",
 			ofo_tva_form_get_mnemo( form ), rang );
 
@@ -948,11 +992,14 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 	}
 	g_free( label );
 
+	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
+	g_string_append_printf( query, "'%s',", cstr );
+
 	amount = my_utils_quote( ofa_box_get_string( details, TFO_DET_AMOUNT ));
 	if( my_strlen( amount )){
-		g_string_append_printf( query, "'%s',", amount );
+		g_string_append_printf( query, "'%s'", amount );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL" );
 	}
 	g_free( amount );
 
