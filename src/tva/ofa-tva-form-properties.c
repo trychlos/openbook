@@ -28,9 +28,11 @@
 
 #include <glib/gi18n.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-igridlist.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
@@ -56,10 +58,9 @@ struct _ofaTVAFormPropertiesPrivate {
 
 	/* UI
 	 */
-	GtkWidget     *grid;
-	gint           count;				/* count of data rows added to the grid */
-	 	 	 	 	 	 	 	 	 	/* - not including header */
-										/* - not including last row with only '+' button */
+	GtkWidget     *corresp_btn;
+	GtkWidget     *bool_grid;
+	GtkWidget     *det_grid;
 	GtkWidget     *ok_btn;
 
 	/* data
@@ -70,55 +71,68 @@ struct _ofaTVAFormPropertiesPrivate {
 
 #define DATA_COLUMN                     "ofa-data-column"
 #define DATA_ROW                        "ofa-data-row"
-#define RANG_WIDTH                      3
+#define DET_SPIN_WIDTH                  2
+#define DET_SPIN_MAX_WIDTH              2
 #define DET_CODE_WIDTH                  4
 #define DET_CODE_MAX_WIDTH              4
 #define DET_CODE_MAX_LENGTH             10
 #define DET_LABEL_MAX_WIDTH             80
+#define DET_LABEL_MAX_LENGTH            192
+#define DET_BASE_WIDTH                  8
+#define DET_BASE_MAX_WIDTH              10
+#define DET_BASE_MAX_LENGTH             80
 #define DET_AMOUNT_WIDTH                8
 #define DET_AMOUNT_MAX_WIDTH            10
 #define DET_AMOUNT_MAX_LENGTH           80
+#define BOOL_LABEL_MAX_WIDTH            80
+#define BOOL_LABEL_MAX_LENGTH           192
 
 /* the columns in the dynamic grid
+ * thy are numbered from zero, so that the N_DET_COLUMNS is the count
  */
 enum {
-	COL_ADD = 0,
-	COL_ROW = 0,
-	COL_CODE,
-	COL_LABEL,
-	COL_HAS_AMOUNT,
-	COL_AMOUNT,
-	COL_UP,
-	COL_DOWN,
-	COL_REMOVE,
-	N_COLUMNS
+	COL_DET_LEVEL = 0,
+	COL_DET_CODE,
+	COL_DET_LABEL,
+	COL_DET_HAS_BASE,
+	COL_DET_BASE,
+	COL_DET_HAS_AMOUNT,
+	COL_DET_AMOUNT,
+	N_DET_COLUMNS
+};
+
+enum {
+	COL_BOOL_LABEL = 0,
+	N_BOOL_COLUMNS
 };
 
 static const gchar  *st_ui_xml       = PLUGINUIDIR "/ofa-tva-form-properties.ui";
 static const gchar  *st_ui_id        = "TVAFormPropertiesDlg";
 
-G_DEFINE_TYPE( ofaTVAFormProperties, ofa_tva_form_properties, MY_TYPE_DIALOG )
+static void     igridlist_iface_init( myIGridListInterface *iface );
+static guint    igridlist_get_interface_version( const myIGridList *instance );
+static void     igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     set_detail_widgets( ofaTVAFormProperties *self, guint row );
+static void     set_detail_values( ofaTVAFormProperties *self, guint row );
+static void     set_boolean_widgets( ofaTVAFormProperties *self, guint row );
+static void     set_boolean_values( ofaTVAFormProperties *self, guint row );
+static void     v_init_dialog( myDialog *dialog );
+static void     on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_det_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
+static void     on_det_base_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
+static void     on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     check_for_enable_dlg( ofaTVAFormProperties *self );
+static gboolean is_dialog_validable( ofaTVAFormProperties *self );
+static gboolean v_quit_on_ok( myDialog *dialog );
+static gboolean do_update( ofaTVAFormProperties *self );
 
-static void      v_init_dialog( myDialog *dialog );
-static void      insert_new_row( ofaTVAFormProperties *self, guint idx );
-static void      add_empty_row( ofaTVAFormProperties *self );
-static void      add_button( ofaTVAFormProperties *self, const gchar *stock_id, gint column, gint row, gint right_margin );
-static void      update_detail_buttons( ofaTVAFormProperties *self );
-static void      signal_row_added( ofaTVAFormProperties *self );
-static void      signal_row_removed( ofaTVAFormProperties *self );
-static void      on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
-static void      on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self );
-static void      on_det_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
-static void      on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
-static void      on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *self );
-static void      on_button_clicked( GtkButton *button, ofaTVAFormProperties *self );
-static void      exchange_rows( ofaTVAFormProperties *self, gint row_a, gint row_b );
-static void      remove_row( ofaTVAFormProperties *self, gint row );
-static void      check_for_enable_dlg( ofaTVAFormProperties *self );
-static gboolean  is_dialog_validable( ofaTVAFormProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaTVAFormProperties *self );
+G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, MY_TYPE_DIALOG, 0, \
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
 
 static void
 tva_form_properties_finalize( GObject *instance )
@@ -168,7 +182,6 @@ ofa_tva_form_properties_init( ofaTVAFormProperties *self )
 
 	self->priv->is_new = FALSE;
 	self->priv->updated = FALSE;
-	self->priv->count = 0;
 }
 
 static void
@@ -185,6 +198,216 @@ ofa_tva_form_properties_class_init( ofaTVAFormPropertiesClass *klass )
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 
 	g_type_class_add_private( klass, sizeof( ofaTVAFormPropertiesPrivate ));
+}
+
+/*
+ * myIGridList interface management
+ */
+static void
+igridlist_iface_init( myIGridListInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_form_properties_igridlist_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = igridlist_get_interface_version;
+	iface->set_row = igridlist_set_row;
+}
+
+static guint
+igridlist_get_interface_version( const myIGridList *instance )
+{
+	return( 1 );
+}
+
+static void
+igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_TVA_FORM_PROPERTIES( instance ));
+
+	priv = OFA_TVA_FORM_PROPERTIES( instance )->priv;
+	if( grid == GTK_GRID( priv->det_grid )){
+		set_detail_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
+		set_detail_values( OFA_TVA_FORM_PROPERTIES( instance ), row );
+	}
+	if( grid == GTK_GRID( priv->bool_grid )){
+		set_boolean_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
+		set_boolean_values( OFA_TVA_FORM_PROPERTIES( instance ), row );
+	}
+}
+
+/*
+ * row is the index of the current row, counted from zero (including headers)
+ * so corresponding ofoTVAForm detail index is row-1
+ */
+static void
+set_detail_widgets( ofaTVAFormProperties *self, guint row )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	GtkWidget *entry, *toggle, *spin;
+	GtkAdjustment *adjustment;
+
+	priv = self->priv;
+
+	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
+	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
+	g_object_set_data( G_OBJECT( spin ), DATA_ROW, GUINT_TO_POINTER( row ));
+	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
+	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), spin, 1+COL_DET_LEVEL, row, 1, 1 );
+	gtk_widget_set_sensitive( spin, priv->is_current );
+
+	entry = gtk_entry_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_CODE_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_CODE_MAX_WIDTH );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_CODE, row, 1, 1 );
+	gtk_widget_set_sensitive( entry, priv->is_current );
+
+	entry = gtk_entry_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_det_label_changed ), self );
+	gtk_widget_set_hexpand( entry, TRUE );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_LABEL_MAX_WIDTH );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_LABEL_MAX_LENGTH );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_LABEL, row, 1, 1 );
+	gtk_widget_set_sensitive( entry, priv->is_current );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_base_toggled ), self );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_BASE, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
+
+	entry = gtk_entry_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_det_base_changed ), self );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_BASE_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_BASE_MAX_WIDTH );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_BASE_MAX_LENGTH );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_BASE, row, 1, 1 );
+	gtk_widget_set_sensitive( entry, FALSE );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_amount_toggled ), self );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_AMOUNT, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
+
+	entry = gtk_entry_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_det_amount_changed ), self );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_MAX_WIDTH );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_AMOUNT_MAX_LENGTH );
+	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_AMOUNT, row, 1, 1 );
+	gtk_widget_set_sensitive( entry, FALSE );
+}
+
+static void
+set_detail_values( ofaTVAFormProperties *self, guint row )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	GtkWidget *spin, *entry, *toggle, *previous_spin;
+	const gchar *cstr;
+	guint idx, level;
+	gboolean has_base, has_amount;
+
+	priv = self->priv;
+	idx = row-1;
+
+	spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, row );
+	g_return_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ));
+	level = ofo_tva_form_detail_get_level( priv->tva_form, idx );
+	/* set a default value equal to those of the previous line */
+	if( level == 0 && row > 1 ){
+		previous_spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, row-1 );
+		g_return_if_fail( previous_spin && GTK_IS_SPIN_BUTTON( previous_spin ));
+		level = gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( previous_spin ));
+	}
+	gtk_spin_button_set_value( GTK_SPIN_BUTTON( spin ), level );
+
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_CODE, row );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	cstr = ofo_tva_form_detail_get_code( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LABEL, row );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	cstr = ofo_tva_form_detail_get_label( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+
+	toggle = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_BASE, row );
+	g_return_if_fail( toggle && GTK_IS_TOGGLE_BUTTON( toggle ));
+	has_base = ofo_tva_form_detail_get_has_base( priv->tva_form, idx );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), has_base );
+	on_det_has_base_toggled( GTK_TOGGLE_BUTTON( toggle ), self );
+
+	cstr = ofo_tva_form_detail_get_base( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+
+	toggle = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_AMOUNT, row );
+	g_return_if_fail( toggle && GTK_IS_TOGGLE_BUTTON( toggle ));
+	has_amount = ofo_tva_form_detail_get_has_amount( priv->tva_form, idx );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), has_amount );
+	on_det_has_amount_toggled( GTK_TOGGLE_BUTTON( toggle ), self );
+
+	cstr = ofo_tva_form_detail_get_amount( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+}
+
+static void
+set_boolean_widgets( ofaTVAFormProperties *self, guint row )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	GtkWidget *entry;
+
+	priv = self->priv;
+
+	entry = gtk_entry_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_bool_label_changed ), self );
+	gtk_widget_set_hexpand( entry, TRUE );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), BOOL_LABEL_MAX_WIDTH );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), BOOL_LABEL_MAX_LENGTH );
+	gtk_grid_attach( GTK_GRID( priv->bool_grid ), entry, 1+COL_BOOL_LABEL, row, 1, 1 );
+	gtk_widget_set_sensitive( entry, priv->is_current );
+}
+
+static void
+set_boolean_values( ofaTVAFormProperties *self, guint row )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	GtkWidget *entry;
+	const gchar *cstr;
+	guint idx;
+
+	priv = self->priv;
+	idx = row-1;
+
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, row );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	cstr = ofo_tva_form_boolean_get_label( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
 }
 
 /**
@@ -283,6 +506,12 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	priv->corresp_btn = my_utils_container_get_child_by_name( container, "p1-has-corresp" );
+	g_return_if_fail( priv->corresp_btn && GTK_TOGGLE_BUTTON( priv->corresp_btn ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->corresp_btn ),
+			ofo_tva_form_get_has_correspondence( priv->tva_form ));
+
 	my_utils_container_notes_init( container, tva_form );
 	my_utils_container_updstamp_init( container, tva_form );
 	my_utils_container_set_editable( container, priv->is_current );
@@ -291,11 +520,22 @@ v_init_dialog( myDialog *dialog )
 	 * dossier (because my_utils_container_set_editable() set the
 	 * sensitivity flag without considering the has_amount flag or
 	 * the row number - which is ok in general but not here) */
-	priv->grid = my_utils_container_get_child_by_name( container, "p2-grid" );
-	add_button( self, "gtk-add", COL_ADD, 1, 4 );
-	count = ofo_tva_form_get_detail_count( priv->tva_form );
+	priv->det_grid = my_utils_container_get_child_by_name( container, "p2-grid" );
+	g_return_if_fail( priv->det_grid && GTK_IS_GRID( priv->det_grid ));
+	my_igridlist_init(
+			MY_IGRIDLIST( dialog ), GTK_GRID( priv->det_grid ), priv->is_current, N_DET_COLUMNS );
+	count = ofo_tva_form_detail_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
-		insert_new_row( self, idx );
+		my_igridlist_add_row( MY_IGRIDLIST( dialog ), GTK_GRID( priv->det_grid ));
+	}
+
+	priv->bool_grid = my_utils_container_get_child_by_name( container, "p3-grid" );
+	g_return_if_fail( priv->bool_grid && GTK_IS_GRID( priv->bool_grid ));
+	my_igridlist_init(
+			MY_IGRIDLIST( dialog ), GTK_GRID( priv->bool_grid ), priv->is_current, N_BOOL_COLUMNS );
+	count = ofo_tva_form_boolean_get_count( priv->tva_form );
+	for( idx=0 ; idx<count ; ++idx ){
+		my_igridlist_add_row( MY_IGRIDLIST( dialog ), GTK_GRID( priv->bool_grid ));
 	}
 
 	/* if not the current exercice, then only have a 'Close' button */
@@ -304,178 +544,6 @@ v_init_dialog( myDialog *dialog )
 	}
 
 	check_for_enable_dlg( self );
-}
-
-/*
- * idx is the index of the tva form detail to be added, and counted from zero
- * Due to the presence of headers, the 'idx' detail line will go to 'idx+1' row of the grid
- */
-static void
-insert_new_row( ofaTVAFormProperties *self, guint idx )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	GtkWidget *entry, *check;
-	const gchar *cstr;
-	gint row;
-	gboolean has_amount;
-
-	add_empty_row( self );
-	priv = self->priv;
-	row = priv->count;
-
-	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_CODE, row );
-	cstr = ofo_tva_form_get_detail_code( priv->tva_form, idx );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
-	}
-
-	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_LABEL, row );
-	cstr = ofo_tva_form_get_detail_label( priv->tva_form, idx );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
-	}
-
-	check = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_HAS_AMOUNT, row );
-	has_amount = ofo_tva_form_get_detail_has_amount( priv->tva_form, idx );
-	//g_debug( "insert_new_row: row=%d, has_amount=%s", row, has_amount ? "True":"False" );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), has_amount );
-	/* handler is not triggered when has_amount is false */
-	on_det_has_amount_toggled( GTK_TOGGLE_BUTTON( check ), self );
-
-	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_AMOUNT, row );
-	cstr = ofo_tva_form_get_detail_amount( priv->tva_form, idx );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
-	}
-}
-
-static void
-add_empty_row( ofaTVAFormProperties *self )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	GtkWidget *entry, *label, *check;
-	gchar *str;
-	guint row;
-
-	priv = self->priv;
-	row = priv->count+1;
-
-	gtk_widget_destroy( gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_ADD, row ));
-
-	str = g_strdup_printf( "%2u", row );
-	label = gtk_label_new( str );
-	g_object_set_data( G_OBJECT( label ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_free( str );
-	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
-	my_utils_widget_set_xalign( label, 1.0 );
-	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
-	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( label ), COL_ROW, row, 1, 1 );
-
-	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_CODE_WIDTH );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_CODE_MAX_WIDTH );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, COL_CODE, row, 1, 1 );
-	gtk_widget_set_sensitive( entry, priv->is_current );
-
-	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_det_label_changed ), self );
-	gtk_widget_set_hexpand( entry, TRUE );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_LABEL_MAX_WIDTH );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_LABEL_MAX_WIDTH );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, COL_LABEL, row, 1, 1 );
-	gtk_widget_set_sensitive( entry, priv->is_current );
-
-	check = gtk_check_button_new();
-	g_object_set_data( G_OBJECT( check ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_signal_connect( check, "toggled", G_CALLBACK( on_det_has_amount_toggled ), self );
-	gtk_grid_attach( GTK_GRID( priv->grid ), check, COL_HAS_AMOUNT, row, 1, 1 );
-	gtk_widget_set_sensitive( check, priv->is_current );
-
-	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_det_amount_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_WIDTH );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_MAX_WIDTH );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_AMOUNT_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, COL_AMOUNT, row, 1, 1 );
-	gtk_widget_set_sensitive( entry, priv->is_current );
-
-	add_button( self, "gtk-go-up", COL_UP, row, 0 );
-	add_button( self, "gtk-go-down", COL_DOWN, row, 0 );
-	add_button( self, "gtk-remove", COL_REMOVE, row, 0 );
-	add_button( self, "gtk-add", COL_ADD, row+1, 4 );
-
-	priv->count += 1;
-	signal_row_added( self );
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
-}
-
-
-static void
-add_button( ofaTVAFormProperties *self, const gchar *stock_id, gint column, gint row, gint right_margin )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	GtkWidget *image, *button;
-
-	priv = self->priv;
-	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
-	button = gtk_button_new();
-	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
-	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_halign( button, GTK_ALIGN_END );
-	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, 0, right_margin );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( button, "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( GTK_GRID( priv->grid ), button, column, row, 1, 1 );
-	gtk_widget_set_sensitive( button, priv->is_current );
-}
-
-static void
-update_detail_buttons( ofaTVAFormProperties *self )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	GtkWidget *up_btn, *down_btn;
-	guint i;
-
-	priv = self->priv;
-	for( i=1 ; i<=priv->count ; ++i ){
-
-		up_btn = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_UP, i );
-		g_return_if_fail( up_btn && GTK_IS_WIDGET( up_btn ));
-
-		down_btn = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_DOWN, i );
-		g_return_if_fail( down_btn && GTK_IS_WIDGET( down_btn ));
-
-		gtk_widget_set_sensitive( up_btn, priv->is_current );
-		gtk_widget_set_sensitive( down_btn, priv->is_current );
-
-		if( i == 1 ){
-			gtk_widget_set_sensitive( up_btn, FALSE );
-			//g_debug( "update_detail_buttons: setting up_btn sensitivity to FALSE for i=%u", i );
-		}
-
-		if( i == priv->count ){
-			gtk_widget_set_sensitive( down_btn, FALSE );
-			//g_debug( "update_detail_buttons: setting down_btn sensitivity to FALSE for i=%u", i );
-		}
-	}
-}
-
-static void
-signal_row_added( ofaTVAFormProperties *self )
-{
-	update_detail_buttons( self );
-}
-
-static void
-signal_row_removed( ofaTVAFormProperties *self )
-{
-	update_detail_buttons( self );
 }
 
 static void
@@ -517,6 +585,30 @@ on_det_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 }
 
 static void
+on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	guint row;
+	GtkWidget *entry;
+	gboolean checked;
+
+	priv = self->priv;
+	checked = gtk_toggle_button_get_active( button );
+	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, row );
+	gtk_widget_set_sensitive( entry, checked && priv->is_current );
+	//g_debug( "on_det_has_base_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_det_base_changed( GtkEntry *entry, ofaTVAFormProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
@@ -527,7 +619,7 @@ on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	priv = self->priv;
 	checked = gtk_toggle_button_get_active( button );
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
-	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_AMOUNT, row );
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
 	gtk_widget_set_sensitive( entry, checked && priv->is_current );
 	//g_debug( "on_det_has_amount_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
 
@@ -541,105 +633,9 @@ on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 }
 
 static void
-on_button_clicked( GtkButton *button, ofaTVAFormProperties *self )
+on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 {
-	gint column, row;
-
-	column = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
-	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
-	switch( column ){
-		case COL_ADD:
-			add_empty_row( self );
-			break;
-		case COL_UP:
-			g_return_if_fail( row > 1 );
-			exchange_rows( self, row, row-1 );
-			break;
-		case COL_DOWN:
-			g_return_if_fail( row < self->priv->count );
-			exchange_rows( self, row, row+1 );
-			break;
-		case COL_REMOVE:
-			remove_row( self, row );
-			break;
-	}
-}
-
-static void
-exchange_rows( ofaTVAFormProperties *self, gint row_a, gint row_b )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	gint i;
-	GtkWidget *w_a, *w_b;
-
-	priv = self->priv;
-
-	/* do not move the row number */
-	for( i=1 ; i<N_COLUMNS ; ++i ){
-
-		w_a = gtk_grid_get_child_at( GTK_GRID( priv->grid ), i, row_a );
-		g_object_ref( w_a );
-		gtk_container_remove( GTK_CONTAINER( priv->grid ), w_a );
-
-		w_b = gtk_grid_get_child_at( GTK_GRID( priv->grid ), i, row_b );
-		g_object_ref( w_b );
-		gtk_container_remove( GTK_CONTAINER( priv->grid ), w_b );
-
-		gtk_grid_attach( GTK_GRID( priv->grid ), w_a, i, row_b, 1, 1 );
-		g_object_set_data( G_OBJECT( w_a ), DATA_ROW, GINT_TO_POINTER( row_b ));
-
-		gtk_grid_attach( GTK_GRID( priv->grid ), w_b, i, row_a, 1, 1 );
-		g_object_set_data( G_OBJECT( w_b ), DATA_ROW, GINT_TO_POINTER( row_a ));
-
-		g_object_unref( w_a );
-		g_object_unref( w_b );
-	}
-
-	update_detail_buttons( self );
-}
-
-static void
-remove_row( ofaTVAFormProperties *self, gint row )
-{
-	ofaTVAFormPropertiesPrivate *priv;
-	gint i, line;
-	GtkWidget *widget, *label;
-	gchar *str;
-
-	priv = self->priv;
-
-	/* first remove the line */
-	for( i=0 ; i<N_COLUMNS ; ++i ){
-		gtk_widget_destroy( gtk_grid_get_child_at( GTK_GRID( priv->grid ), i, row ));
-	}
-
-	/* then move the following lines one row up */
-	for( line=row+1 ; line<=priv->count+1 ; ++line ){
-		for( i=0 ; i<N_COLUMNS ; ++i ){
-			widget = gtk_grid_get_child_at( GTK_GRID( priv->grid ), i, line );
-			if( widget ){
-				g_object_ref( widget );
-				gtk_container_remove( GTK_CONTAINER( priv->grid ), widget );
-				gtk_grid_attach( GTK_GRID( priv->grid ), widget, i, line-1, 1, 1 );
-				g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( line-1 ));
-				g_object_unref( widget );
-			}
-		}
-		if( line <= priv->count ){
-			/* update the rang number on each moved line */
-			label = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_ROW, line-1 );
-			g_return_if_fail( label && GTK_IS_LABEL( label ));
-			str = g_strdup_printf( "%d", line-1 );
-			gtk_label_set_text( GTK_LABEL( label ), str );
-			g_free( str );
-		}
-	}
-
-	/* last update the lines count */
-	priv->count -= 1;
-	signal_row_removed( self );
-
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
+	check_for_enable_dlg( self );
 }
 
 /*
@@ -704,9 +700,10 @@ do_update( ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	gint i;
-	GtkWidget *entry, *check;
-	const gchar *code, *label, *amount;
+	GtkWidget *entry, *base_check, *amount_check, *spin;
+	const gchar *code, *label, *base, *amount;
 	gchar *prev_mnemo;
+	guint rows_count, level;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -716,22 +713,48 @@ do_update( ofaTVAFormProperties *self )
 
 	ofo_tva_form_set_mnemo( priv->tva_form, priv->mnemo );
 	ofo_tva_form_set_label( priv->tva_form, priv->label );
+	ofo_tva_form_set_has_correspondence(
+			priv->tva_form,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->corresp_btn )));
 	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), tva_form );
 
-	ofo_tva_form_free_detail_all( priv->tva_form );
-
-	for( i=1 ; i<=priv->count ; ++i ){
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_CODE, i );
+	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
+	ofo_tva_form_detail_free_all( priv->tva_form );
+	for( i=1 ; i<=rows_count ; ++i ){
+		spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, i );
+		g_return_val_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ), FALSE );
+		level = gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( spin ));
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_CODE, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		code = gtk_entry_get_text( GTK_ENTRY( entry ));
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_LABEL, i );
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LABEL, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		label = gtk_entry_get_text( GTK_ENTRY( entry ));
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_AMOUNT, i );
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+		base = gtk_entry_get_text( GTK_ENTRY( entry ));
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		amount = gtk_entry_get_text( GTK_ENTRY( entry ));
-		if( my_strlen( code ) || my_strlen( label ) || my_strlen( amount )){
-			check = gtk_grid_get_child_at( GTK_GRID( priv->grid ), COL_HAS_AMOUNT, i );
-			ofo_tva_form_add_detail(
+		if( my_strlen( code ) || my_strlen( label ) || my_strlen( base ) || my_strlen( amount )){
+			base_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_BASE, i );
+			amount_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_AMOUNT, i );
+			ofo_tva_form_detail_add(
 					priv->tva_form,
-					code, label, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( check )), amount );
+					level, code, label,
+					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( base_check )), base,
+					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( amount_check )), amount );
+		}
+	}
+
+	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
+	ofo_tva_form_boolean_free_all( priv->tva_form );
+	for( i=1 ; i<=rows_count ; ++i ){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+		label = gtk_entry_get_text( GTK_ENTRY( entry ));
+		if( my_strlen( label )){
+			ofo_tva_form_boolean_add( priv->tva_form, label );
 		}
 	}
 
