@@ -54,6 +54,7 @@ typedef struct {
 }
 	sBoxData;
 
+static void   box_dump_def( const ofsBoxDef *def );
 static gchar *get_csv_name( const ofsBoxDef *def );
 static gchar *compute_csv_name( const gchar *dbms_name );
 static void   set_decimal_point( gchar *str, gchar decimal_sep );
@@ -487,6 +488,7 @@ ofa_box_register_types( void )
 static const sBoxHelpers *
 box_get_helper_for_type( eBoxType type )
 {
+	static const gchar *thisfn = "ofa_box_get_helper_for_type";
 	const sBoxHelpers *ihelper;
 
 	ihelper = st_box_helpers;
@@ -496,15 +498,28 @@ box_get_helper_for_type( eBoxType type )
 		}
 		ihelper++;
 	}
+	g_warning( "%s: no helper for type=%u", thisfn, type );
 	return( NULL );
+}
+
+static void
+box_dump_def( const ofsBoxDef *def )
+{
+	g_debug( "           id=%d", def->id );
+	g_debug( "         dbms=%s", def->dbms );
+	g_debug( "          csv=%s", def->csv );
+	g_debug( "         type=%u", def->type );
+	g_debug( "       import=%s", def->import ? "True":"False" );
+	g_debug( "zero_as_empty=%s", def->csv_zero_as_empty ? "True":"False" );
 }
 
 /**
  * ofa_box_init_fields_list:
  * @defs: the definition of ofaBox elementary data of the object
  *
- * Returns the list of fields for the object. All fields are allocated
- * in the same order than the definitions, and all are empty.
+ * Returns: the list of fields for the object.
+ *  Fields are allocated in the same order than the definitions,
+ *  and are empty.
  */
 GList *
 ofa_box_init_fields_list( const ofsBoxDef *defs )
@@ -540,6 +555,9 @@ ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
 
 	for( it=fields ; it ; it=it->next ){
 		box = ( sBoxData * ) it->data;
+		if( 0 ){
+			box_dump_def( box->def );
+		}
 		helper = box_get_helper_for_type( box->def->type );
 		key = get_csv_name( box->def );
 		value = helper->to_csv_str_fn( box );
