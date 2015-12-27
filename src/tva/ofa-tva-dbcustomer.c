@@ -40,6 +40,7 @@ static guint        version_get_last( void );
 static gboolean     version_begin( const ofaIDBConnect *connect, gint version );
 static gboolean     version_end( const ofaIDBConnect *connect, gint version );
 static gboolean     dbmodel_to_v1( const ofaIDBConnect *connect, guint version );
+static gboolean     dbmodel_to_v2( const ofaIDBConnect *connect, guint version );
 
 /* the functions which update the DB model
  */
@@ -51,6 +52,7 @@ typedef struct {
 
 static sMigration st_migrates[] = {
 		{ 1, dbmodel_to_v1 },
+		{ 2, dbmodel_to_v2 },
 		{ 0 }
 };
 
@@ -195,22 +197,75 @@ dbmodel_to_v1( const ofaIDBConnect *connect, guint version )
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS ("
-			"	TFO_MNEMO       VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
-			"	TFO_LABEL       VARCHAR(80)                  COMMENT 'Form label',"
-			"	TFO_NOTES       VARCHAR(4096)                COMMENT 'Notes',"
-			"	TFO_UPD_USER    VARCHAR(20)                  COMMENT 'User responsible of last update',"
-			"	TFO_UPD_STAMP   TIMESTAMP                    COMMENT 'Last update timestamp')", TRUE )){
+			"	TFO_MNEMO          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
+			"	TFO_LABEL          VARCHAR(80)                  COMMENT 'Form label',"
+			"	TFO_NOTES          VARCHAR(4096)                COMMENT 'Notes',"
+			"	TFO_UPD_USER       VARCHAR(20)                  COMMENT 'User responsible of last update',"
+			"	TFO_UPD_STAMP      TIMESTAMP                    COMMENT 'Last update timestamp')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_DET ("
-			"	TFO_MNEMO       VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
-			"	TFO_DET_ROW     INTEGER      NOT NULL        COMMENT 'Form line number',"
-			"	TFO_DET_CODE    VARCHAR(10)                  COMMENT 'Form line code',"
-			"	TFO_DET_LABEL   VARCHAR(80)                  COMMENT 'Form line label',"
-			"	TFO_DET_AMOUNT  VARCHAR(80)                  COMMENT 'Line amount computing rule',"
-			"	CONSTRAINT PRIMARY KEY (TFO_ID,TFO_DET_NUM))", TRUE )){
+			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_DET_ROW        INTEGER      NOT NULL        COMMENT 'Form line number',"
+			"	TFO_DET_CODE       VARCHAR(10)                  COMMENT 'Form line code',"
+			"	TFO_DET_LABEL      VARCHAR(80)                  COMMENT 'Form line label',"
+			"	TFO_DET_HAS_AMOUNT CHAR(1)                      COMMENT 'whether the form line has an amount',"
+			"	TFO_DET_AMOUNT     VARCHAR(80)                  COMMENT 'Line amount computing rule',"
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_DET_ROW))", TRUE )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * dbmodel_to_v2:
+ * -> set TFO_DET_LABEL to varchar(192)
+ * -> add has Mention Expresse
+ * -> add mention expresse
+ * -> add has paiement par imputation
+ * -> add paiement par imputation
+ * -> add has correspondance
+ * -> add cadre for correspondance
+ * -> add detail has base (some rows have two columns: base and taxe)
+ * -> add detail base
+ * -> add has declaration néant
+ * -> add declaration néant
+ */
+static gboolean
+dbmodel_to_v2( const ofaIDBConnect *connect, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbcustomer_dbmodel_to_v2";
+
+	g_debug( "%s: connect=%p, version=%u", thisfn, ( void * ) connect, version );
+
+	if( !ofa_idbconnect_query( connect,
+			"ALTER TABLE TVA_T_FORMS "
+			"	ADD    COLUMN TFO_HAS_CORRESPONDENCE CHAR(1)       COMMENT 'Whether this form has a correspondence frame'", TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_idbconnect_query( connect,
+			"ALTER TABLE TVA_T_FORMS_DET "
+			"	MODIFY COLUMN TFO_DET_LABEL          VARCHAR(192) COMMENT 'Form line label',"
+			"	ADD    COLUMN TFO_DET_HAS_BASE       CHAR(1)      COMMENT 'Whether detail line has a base amount',"
+			"	ADD    COLUMN TFO_DET_BASE           VARCHAR(80)  COMMENT 'Detail base'", TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_idbconnect_query( connect,
+			"UPDATE TVA_T_FORMS_DET SET TFO_DET_HAS_BASE='N'", TRUE )){
+		return( FALSE );
+	}
+
+	if( !ofa_idbconnect_query( connect,
+			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_BOOL ("
+			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_BOOL_ROW       INTEGER      NOT NULL        COMMENT 'Form line number',"
+			"	TFO_BOOL_LABEL     VARCHAR(80)                  COMMENT 'Form line label',"
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_BOOL_ROW))", TRUE )){
 		return( FALSE );
 	}
 
