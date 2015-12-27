@@ -323,13 +323,10 @@ v_init_dialog( myDialog *dialog )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
 
 	init_dialog_ledger_locked( self );
-
 	init_dialog_ref( self );
 
 	my_utils_container_notes_init( toplevel, ope_template );
 	my_utils_container_updstamp_init( toplevel, ope_template );
-
-	init_dialog_detail( self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-help" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -345,6 +342,10 @@ v_init_dialog( myDialog *dialog )
 	if( !priv->is_current ){
 		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
+
+	/* init dialog detail rows after having globally set the fields
+	 * sensitivity so that we can individually adjust rows sensitivity */
+	init_dialog_detail( self );
 
 	check_for_enable_dlg( self );
 }
@@ -568,6 +569,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	if( priv->is_current ){
 		gtk_widget_grab_focus( GTK_WIDGET( entry ));
 	}
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -575,12 +577,14 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_max_length( entry, 20 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
 	add_button( self, "gtk-index", DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE, 0 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_grid_attach( priv->grid, toggle, DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -589,10 +593,12 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 20 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_LABEL, row, 1, 1 );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_grid_attach( priv->grid, toggle, DET_COL_LABEL_LOCKED, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -600,10 +606,12 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_DEBIT, row, 1, 1 );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_grid_attach( priv->grid, toggle, DET_COL_DEBIT_LOCKED, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -611,10 +619,12 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_CREDIT, row, 1, 1 );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_grid_attach( priv->grid, toggle, DET_COL_CREDIT_LOCKED, row, 1, 1 );
+	gtk_widget_set_sensitive( toggle, priv->is_current );
 
 	add_button( self, "gtk-go-up", DET_COL_UP, row, DETAIL_SPACE, 0 );
 	add_button( self, "gtk-go-down", DET_COL_DOWN, row, DETAIL_SPACE, 0 );
@@ -629,42 +639,44 @@ add_empty_row( ofaOpeTemplateProperties *self )
 static void
 add_button( ofaOpeTemplateProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin )
 {
+	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkWidget *image;
 	GtkButton *button;
 
+	priv = self->priv;
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = GTK_BUTTON( gtk_button_new());
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, left_margin, right_margin );
 	gtk_button_set_image( button, image );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_button_clicked ), self );
 	gtk_grid_attach( self->priv->grid, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_widget_set_sensitive( GTK_WIDGET( button ), priv->is_current );
 }
 
 static void
 update_detail_buttons( ofaOpeTemplateProperties *self )
 {
+	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkWidget *button;
 
-	if( self->priv->count >= 1 ){
+	priv = self->priv;
 
-		button = gtk_grid_get_child_at(
-						self->priv->grid, DET_COL_UP, 1 );
+	if( priv->count >= 1 ){
+
+		button = gtk_grid_get_child_at( priv->grid, DET_COL_UP, 1 );
 		gtk_widget_set_sensitive( button, FALSE );
 
 		if( self->priv->count >= 2 ){
-			button = gtk_grid_get_child_at(
-							self->priv->grid, DET_COL_UP, 2 );
-			gtk_widget_set_sensitive( button, TRUE );
+			button = gtk_grid_get_child_at( priv->grid, DET_COL_UP, 2 );
+			gtk_widget_set_sensitive( button, priv->is_current );
 
-			button = gtk_grid_get_child_at(
-							self->priv->grid, DET_COL_DOWN, self->priv->count-1 );
-			gtk_widget_set_sensitive( button, TRUE );
+			button = gtk_grid_get_child_at( priv->grid, DET_COL_DOWN, priv->count-1 );
+			gtk_widget_set_sensitive( button, priv->is_current );
 		}
 
-		button = gtk_grid_get_child_at(
-						self->priv->grid, DET_COL_DOWN, self->priv->count );
+		button = gtk_grid_get_child_at( priv->grid, DET_COL_DOWN, priv->count );
 		gtk_widget_set_sensitive( button, FALSE );
 	}
 }
