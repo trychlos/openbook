@@ -46,12 +46,18 @@
 enum {
 	TFO_MNEMO = 1,
 	TFO_LABEL,
+	TFO_HAS_CORRESPONDENCE,
 	TFO_NOTES,
 	TFO_UPD_USER,
 	TFO_UPD_STAMP,
+	TFO_BOOL_ROW,
+	TFO_BOOL_LABEL,
 	TFO_DET_ROW,
+	TFO_DET_LEVEL,
 	TFO_DET_CODE,
 	TFO_DET_LABEL,
+	TFO_DET_HAS_BASE,
+	TFO_DET_BASE,
 	TFO_DET_HAS_AMOUNT,
 	TFO_DET_AMOUNT
 };
@@ -69,6 +75,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
 		{ OFA_BOX_CSV( TFO_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_HAS_CORRESPONDENCE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -96,11 +106,23 @@ static const ofsBoxDef st_details_defs[] = {
 				OFA_TYPE_INTEGER,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_LEVEL ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_CODE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_HAS_BASE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_BASE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -115,10 +137,27 @@ static const ofsBoxDef st_details_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_bools_defs[] = {
+		{ OFA_BOX_CSV( TFO_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,					/* importable */
+				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( TFO_BOOL_ROW ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_BOOL_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
 struct _ofoTVAFormPrivate {
 
 	/* the details of the form as a GList of GList fields
 	 */
+	GList     *bools;
 	GList     *details;
 };
 
@@ -137,8 +176,10 @@ static void            tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal 
 static gboolean        form_do_insert( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user );
 static gboolean        form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user );
 static gboolean        form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx );
+static gboolean        form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx );
 static gboolean        form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx );
 static gboolean        form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *details );
+static gboolean        form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *details );
 static gboolean        form_do_update( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
 static gboolean        form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
 static gboolean        form_do_delete( ofoTVAForm *form, const ofaIDBConnect *cnx );
@@ -158,6 +199,19 @@ details_list_free( ofoTVAForm *form )
 {
 	g_list_free_full( form->priv->details, ( GDestroyNotify ) details_list_free_detail );
 	form->priv->details = NULL;
+}
+
+static void
+bools_list_free_bool( GList *fields )
+{
+	ofa_box_free_fields_list( fields );
+}
+
+static void
+bools_list_free( ofoTVAForm *form )
+{
+	g_list_free_full( form->priv->bools, ( GDestroyNotify ) bools_list_free_bool );
+	form->priv->bools = NULL;
 }
 
 static void
@@ -374,18 +428,27 @@ tva_form_load_dataset( ofoDossier *dossier )
 
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );
+
 		from = g_strdup_printf(
 				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s' ORDER BY TFO_DET_ROW ASC",
 				ofo_tva_form_get_mnemo( form ));
 		form->priv->details =
 				ofo_base_load_rows( st_details_defs, ofo_dossier_get_connect( dossier ), from );
 		g_free( from );
+
 		/* dump the detail rows */
 		if( 0 ){
 			for( ir=form->priv->details ; ir ; ir=ir->next ){
 				ofa_box_dump_fields_list( thisfn, ir->data );
 			}
 		}
+
+		from = g_strdup_printf(
+				"TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s' ORDER BY TFO_BOOL_ROW ASC",
+				ofo_tva_form_get_mnemo( form ));
+		form->priv->bools =
+				ofo_base_load_rows( st_bools_defs, ofo_dossier_get_connect( dossier ), from );
+		g_free( from );
 	}
 
 	return( dataset );
@@ -501,15 +564,25 @@ ofo_tva_form_new_from_form( const ofoTVAForm *form )
 
 		ofo_tva_form_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
 		ofo_tva_form_set_label( dest, ofo_tva_form_get_label( form ));
+		ofo_tva_form_set_has_correspondence( dest, ofo_tva_form_get_has_correspondence( form ));
 		ofo_tva_form_set_notes( dest, ofo_tva_form_get_notes( form ));
 
-		count = ofo_tva_form_get_detail_count( form );
+		count = ofo_tva_form_detail_get_count( form );
 		for( i=0 ; i<count ; ++i ){
-			ofo_tva_form_add_detail( dest,
-					ofo_tva_form_get_detail_code( form, i ),
-					ofo_tva_form_get_detail_label( form, i ),
-					ofo_tva_form_get_detail_has_amount( form, i ),
-					ofo_tva_form_get_detail_amount( form, i ));
+			ofo_tva_form_detail_add( dest,
+					ofo_tva_form_detail_get_level( form, i ),
+					ofo_tva_form_detail_get_code( form, i ),
+					ofo_tva_form_detail_get_label( form, i ),
+					ofo_tva_form_detail_get_has_base( form, i ),
+					ofo_tva_form_detail_get_base( form, i ),
+					ofo_tva_form_detail_get_has_amount( form, i ),
+					ofo_tva_form_detail_get_amount( form, i ));
+		}
+
+		count = ofo_tva_form_boolean_get_count( form );
+		for( i=0 ; i<count ; ++i ){
+			ofo_tva_form_boolean_add( dest,
+					ofo_tva_form_boolean_get_label( form, i ));
 		}
 	}
 
@@ -578,6 +651,25 @@ const gchar *
 ofo_tva_form_get_label( const ofoTVAForm *form )
 {
 	ofo_base_getter( TVA_FORM, form, string, NULL, TFO_LABEL );
+}
+
+/**
+ * ofo_tva_form_get_has_correspondence:
+ */
+gboolean
+ofo_tva_form_get_has_correspondence( const ofoTVAForm *form )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_HAS_CORRESPONDENCE );
+		return( my_utils_boolean_from_str( cstr ));
+	}
+
+	g_return_val_if_reached( FALSE );
 }
 
 /**
@@ -667,6 +759,15 @@ ofo_tva_form_set_label( ofoTVAForm *form, const gchar *label )
 }
 
 /**
+ * ofo_tva_form_set_has_correspondence:
+ */
+void
+ofo_tva_form_set_has_correspondence( ofoTVAForm *form, gboolean has_correspondence )
+{
+	ofo_base_setter( TVA_FORM, form, string, TFO_HAS_CORRESPONDENCE, has_correspondence ? "Y":"N" );
+}
+
+/**
  * ofo_tva_form_set_notes:
  */
 void
@@ -694,8 +795,11 @@ tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp )
 }
 
 void
-ofo_tva_form_add_detail( ofoTVAForm *form,
-							const gchar *code, const gchar *label, gboolean has_amount, const gchar *amount )
+ofo_tva_form_detail_add( ofoTVAForm *form,
+							guint level,
+							const gchar *code, const gchar *label,
+							gboolean has_base, const gchar *base,
+							gboolean has_amount, const gchar *amount )
 {
 	GList *fields;
 
@@ -705,9 +809,12 @@ ofo_tva_form_add_detail( ofoTVAForm *form,
 
 		fields = ofa_box_init_fields_list( st_details_defs );
 		ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
-		ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_form_get_detail_count( form ));
+		ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_form_detail_get_count( form ));
+		ofa_box_set_int( fields, TFO_DET_LEVEL, level );
 		ofa_box_set_string( fields, TFO_DET_CODE, code );
 		ofa_box_set_string( fields, TFO_DET_LABEL, label );
+		ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
+		ofa_box_set_string( fields, TFO_DET_BASE, base );
 		ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
 		ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
 
@@ -716,10 +823,10 @@ ofo_tva_form_add_detail( ofoTVAForm *form,
 }
 
 /**
- * ofo_tva_form_free_detail_all:
+ * ofo_tva_form_detail_free_all:
  */
 void
-ofo_tva_form_free_detail_all( ofoTVAForm *form )
+ofo_tva_form_detail_free_all( ofoTVAForm *form )
 {
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
@@ -730,10 +837,10 @@ ofo_tva_form_free_detail_all( ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_get_detail_count:
+ * ofo_tva_form_detail_get_count:
  */
 guint
-ofo_tva_form_get_detail_count( const ofoTVAForm *form )
+ofo_tva_form_detail_get_count( const ofoTVAForm *form )
 {
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
 
@@ -746,90 +853,234 @@ ofo_tva_form_get_detail_count( const ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_get_detail_code:
+ * ofo_tva_form_detail_get_level:
  * @idx is the index in the details list, starting with zero
  */
-const gchar *
-ofo_tva_form_get_detail_code( const ofoTVAForm *form, guint idx )
+guint
+ofo_tva_form_detail_get_level( const ofoTVAForm *form, guint idx )
 {
 	GList *nth;
+	guint value;
 
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
 
 	if( !OFO_BASE( form )->prot->dispose_has_run ){
 
 		nth = g_list_nth( form->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, TFO_DET_CODE ));
-		}
+		value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
+		return( value );
 	}
 
-	g_return_val_if_reached( NULL );
+	g_return_val_if_reached( 0 );
 }
 
 /**
- * ofo_tva_form_get_detail_label:
+ * ofo_tva_form_detail_get_code:
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_get_detail_label( const ofoTVAForm *form, guint idx )
-{
-	GList *nth;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
-
-	if( !OFO_BASE( form )->prot->dispose_has_run ){
-
-		nth = g_list_nth( form->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, TFO_DET_LABEL ));
-		}
-	}
-
-	g_return_val_if_reached( NULL );
-}
-
-/**
- * ofo_tva_form_get_detail_has_amount:
- * @idx is the index in the details list, starting with zero
- */
-gboolean
-ofo_tva_form_get_detail_has_amount( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_code( const ofoTVAForm *form, guint idx )
 {
 	GList *nth;
 	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->details, idx );
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_CODE ) : NULL;
+		return( cstr );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_form_detail_get_label:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_form_detail_get_label( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->details, idx );
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
+		return( cstr );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_form_detail_get_has_base:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_form_detail_get_has_base( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+	gboolean value;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
 
 	if( !OFO_BASE( form )->prot->dispose_has_run ){
 
 		nth = g_list_nth( form->priv->details, idx );
-		if( nth ){
-			cstr = ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT );
-			return( my_utils_boolean_from_str( cstr ));
-		}
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_BASE ) : NULL;
+		value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+		return( value );
 	}
 
 	g_return_val_if_reached( FALSE );
 }
 
 /**
- * ofo_tva_form_get_detail_amount:
+ * ofo_tva_form_detail_get_base:
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_get_detail_amount( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_base( const ofoTVAForm *form, guint idx )
 {
 	GList *nth;
+	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
 
 	if( !OFO_BASE( form )->prot->dispose_has_run ){
 
 		nth = g_list_nth( form->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, TFO_DET_AMOUNT ));
-		}
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASE ) : NULL;
+		return( cstr );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_form_detail_get_has_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_form_detail_get_has_amount( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+	gboolean value;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->details, idx );
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT ) : NULL;
+		value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+		return( value );
+	}
+
+	g_return_val_if_reached( FALSE );
+}
+
+/**
+ * ofo_tva_form_detail_get_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_form_detail_get_amount( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->details, idx );
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNT ) : NULL;
+		return( cstr );
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_form_boolean_add:
+ * @form:
+ * @is_header:
+ * @label:
+ */
+void
+ofo_tva_form_boolean_add( ofoTVAForm *form, const gchar *label )
+{
+	GList *fields;
+
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		fields = ofa_box_init_fields_list( st_bools_defs );
+		ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
+		ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
+		ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
+
+		form->priv->bools = g_list_append( form->priv->bools, fields );
+	}
+}
+
+/**
+ * ofo_tva_form_boolean_free_all:
+ */
+void
+ofo_tva_form_boolean_free_all( ofoTVAForm *form )
+{
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		bools_list_free( form );
+	}
+}
+
+/**
+ * ofo_tva_form_boolean_get_count:
+ */
+guint
+ofo_tva_form_boolean_get_count( const ofoTVAForm *form )
+{
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		return( g_list_length( form->priv->bools ));
+	}
+
+	g_return_val_if_reached( 0 );
+}
+
+/**
+ * ofo_tva_form_boolean_get_label:
+ * @idx is the index in the booleans list, starting with zero
+ */
+const gchar *
+ofo_tva_form_boolean_get_label( const ofoTVAForm *form, guint idx )
+{
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+
+	if( !OFO_BASE( form )->prot->dispose_has_run ){
+
+		nth = g_list_nth( form->priv->bools, idx );
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
+		return( cstr );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -889,7 +1140,7 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user 
 	query = g_string_new( "INSERT INTO TVA_T_FORMS" );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_LABEL,"
+			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,"
 			"	 TFO_NOTES,TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s',",
 			ofo_tva_form_get_mnemo( form ));
 
@@ -898,6 +1149,8 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user 
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+
+	g_string_append_printf( query, "'%s',", ofo_tva_form_get_has_correspondence( form ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -939,6 +1192,23 @@ form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx )
 }
 
 static gboolean
+form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s'",
+			ofo_tva_form_get_mnemo( form ));
+
+	ok = ofa_idbconnect_query( cnx, query, TRUE );
+
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
 form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx )
 {
 	gboolean ok;
@@ -947,10 +1217,16 @@ form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx )
 
 	ok = FALSE;
 
-	if( form_delete_details( form, cnx )){
+	if( form_delete_details( form, cnx ) && form_delete_bools( form, cnx )){
 		ok = TRUE;
 		for( idet=form->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			if( !form_insert_details( form, cnx, rang, idet->data )){
+				ok = FALSE;
+				break;
+			}
+		}
+		for( idet=form->priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+			if( !form_insert_bools( form, cnx, rang, idet->data )){
 				ok = FALSE;
 				break;
 			}
@@ -965,16 +1241,20 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 {
 	GString *query;
 	gboolean ok;
-	gchar *code, *label, *amount;
+	gchar *code, *label, *base, *amount;
 	const gchar *cstr;
 
 	query = g_string_new( "INSERT INTO TVA_T_FORMS_DET " );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_DET_ROW,TFO_DET_CODE,"
-			"	 TFO_DET_LABEL,TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT) "
+			"	(TFO_MNEMO,TFO_DET_ROW,"
+			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
+			"	 TFO_DET_HAS_BASE,TFO_DET_BASE,"
+			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT) "
 			"	VALUES('%s',%d,",
 			ofo_tva_form_get_mnemo( form ), rang );
+
+	g_string_append_printf( query, "%u,", ofa_box_get_int( details, TFO_DET_LEVEL ));
 
 	code = my_utils_quote( ofa_box_get_string( details, TFO_DET_CODE ));
 	if( my_strlen( code )){
@@ -992,6 +1272,17 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 	}
 	g_free( label );
 
+	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
+	g_string_append_printf( query, "'%s',", cstr );
+
+	base = my_utils_quote( ofa_box_get_string( details, TFO_DET_BASE ));
+	if( my_strlen( base )){
+		g_string_append_printf( query, "'%s',", base );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+	g_free( base );
+
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
 	g_string_append_printf( query, "'%s',", cstr );
 
@@ -1002,6 +1293,34 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 		query = g_string_append( query, "NULL" );
 	}
 	g_free( amount );
+
+	query = g_string_append( query, ")" );
+
+	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+
+	g_string_free( query, TRUE );
+
+	return( ok );
+}
+
+static gboolean
+form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *fields )
+{
+	GString *query;
+	gboolean ok;
+	gchar *label;
+
+	query = g_string_new( "INSERT INTO TVA_T_FORMS_BOOL " );
+
+	g_string_append_printf( query,
+			"	(TFO_MNEMO,TFO_BOOL_ROW,"
+			"	 TFO_BOOL_LABEL) "
+			"	VALUES('%s',%d",
+			ofo_tva_form_get_mnemo( form ), rang );
+
+	label = my_utils_quote( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
+	g_string_append_printf( query, ",'%s'", label );
+	g_free( label );
 
 	query = g_string_append( query, ")" );
 
@@ -1081,6 +1400,10 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user,
 	} else {
 		query = g_string_append( query, "TFO_LABEL=NULL," );
 	}
+
+	g_string_append_printf(
+			query, "TFO_HAS_CORRESPONDENCE='%s',",
+			ofo_tva_form_get_has_correspondence( form ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "TFO_NOTES='%s',", notes );
