@@ -71,7 +71,6 @@ static void on_tva_declaration( GSimpleAction *action, GVariant *parameter, gpoi
 static void on_tva_definition( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void activate_theme( GtkApplicationWindow *window, const gchar *action_name );
 
-
 /* all the actions added for the TVA modules
  */
 static const GActionEntry st_win_entries[] = {
@@ -82,18 +81,18 @@ static const GActionEntry st_win_entries[] = {
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "tvadecl", N_( "TVA declaration" ) },
+		{ "tvadecl", N_( "TVA _declaration" ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "tvadef", N_( "TVA definitions" ) },
+		{ "tvadef", N_( "TVA _definitions..." ) },
 		{ 0 }
 };
 
 static sThemeDef st_theme_defs[] = {
 		{ "tvadecl", N_( "TVA _declaration" ), NULL, FALSE, 0 },
-		{ "tvadef",  N_( "TVA _management" ),  ofa_tva_define_page_get_type,  FALSE, 0 },
+		{ "tvadef",  N_( "TVA _management" ),  ofa_tva_define_page_get_type, FALSE, 0 },
 		{ 0 }
 };
 
