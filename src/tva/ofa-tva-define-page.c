@@ -37,6 +37,7 @@
 #include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-define-page.h"
+#include "tva/ofa-tva-form-properties.h"
 #include "tva/ofa-tva-form-store.h"
 #include "tva/ofo-tva-form.h"
 
@@ -70,6 +71,7 @@ static void        on_row_selected( GtkTreeSelection *selection, ofaTVADefinePag
 static void        on_new_clicked( GtkButton *button, ofaTVADefinePage *page );
 static void        on_update_clicked( GtkButton *button, ofaTVADefinePage *page );
 static void        on_delete_clicked( GtkButton *button, ofaTVADefinePage *page );
+static void        select_row_by_mnemo( ofaTVADefinePage *page, const gchar *mnemo );
 static void        try_to_delete_current_row( ofaTVADefinePage *page );
 static gboolean    delete_confirmed( ofaTVADefinePage *self, ofoTVAForm *form );
 static void        do_delete( ofaTVADefinePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -341,20 +343,21 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADefinePage *self )
 static void
 on_new_clicked( GtkButton *button, ofaTVADefinePage *page )
 {
-#if 0
+	ofaTVADefinePagePrivate *priv;
 	ofoTVAForm *form;
 
+	priv = page->priv;
 	form = ofo_tva_form_new();
 
-	//if( ofa_currency_properties_run(
-	//		ofa_page_get_main_window( OFA_PAGE( page )), currency )){
-	//
-	//	select_row_by_code( page, ofo_currency_get_code( currency ));
+	if( ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form )){
+		g_debug( "on_new_clicked: form=%p", ( void * ) form );
+		select_row_by_mnemo( page, ofo_tva_form_get_mnemo( form ));
 
 	} else {
-		g_object_unref( currency );
+		g_object_unref( form );
 	}
-#endif
+
+	gtk_widget_grab_focus( priv->treeview );
 }
 
 static void
@@ -373,14 +376,8 @@ on_update_clicked( GtkButton *button, ofaTVADefinePage *page )
 
 		gtk_tree_model_get( tmodel, &iter, TVA_COL_OBJECT, &form, -1 );
 		g_object_unref( form );
-
-#if 0
-		if( ofa_currency_properties_run(
-				ofa_page_get_main_window( OFA_PAGE( page )), form )){
-
-			/* take into account by dossier signaling system */
-		}
-#endif
+		ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form );
+		/* taken into account by dossier signaling system */
 	}
 
 	gtk_widget_grab_focus( priv->treeview );
@@ -401,6 +398,33 @@ on_delete_clicked( GtkButton *button, ofaTVADefinePage *page )
 	}
 
 	gtk_widget_grab_focus( priv->treeview );
+}
+
+static void
+select_row_by_mnemo( ofaTVADefinePage *page, const gchar *mnemo )
+{
+	ofaTVADefinePagePrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoTVAForm *form;
+	GtkTreeSelection *selection;
+
+	priv = page->priv;
+	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, TVA_COL_OBJECT, &form, -1 );
+			g_object_unref( form );
+			if( !g_utf8_collate( mnemo, ofo_tva_form_get_mnemo( form ))){
+				selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
+				gtk_tree_selection_select_iter( selection, &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
 }
 
 static void
