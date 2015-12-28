@@ -599,6 +599,33 @@ ofa_idbmeta_dump_rec( const ofaIDBMeta *meta )
 	}
 }
 
+/**
+ * ofa_idbmeta_are_equal:
+ * @a: a #ofaIDBMeta instance.
+ * @b: another #ofaIDBMeta instance.
+ *
+ * Returns: %TRUE if @a and @b defines the same dossier, %FALSE else.
+ *
+ * This comparison relies only on the respective dossier name of the
+ * instances.
+ */
+gboolean
+ofa_idbmeta_are_equal( const ofaIDBMeta *a, const ofaIDBMeta *b )
+{
+	gchar *a_name, *b_name;
+	gint cmp;
+
+	g_return_val_if_fail( a && OFA_IS_IDBMETA( a ), FALSE );
+	g_return_val_if_fail( b && OFA_IS_IDBMETA( b ), FALSE );
+
+	a_name = ofa_idbmeta_get_dossier_name( a );
+	b_name = ofa_idbmeta_get_dossier_name( b );
+	cmp = g_utf8_collate( a_name, b_name );
+	g_free( b_name );
+	g_free( a_name );
+	return( cmp == 0 );
+}
+
 static sIDBMeta *
 get_idbmeta_data( const ofaIDBMeta *meta )
 {

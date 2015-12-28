@@ -228,6 +228,9 @@ void            ofa_idbmeta_dump                      ( const ofaIDBMeta *meta )
 
 void            ofa_idbmeta_dump_rec                  ( const ofaIDBMeta *meta );
 
+gboolean        ofa_idbmeta_are_equal                 ( const ofaIDBMeta *a,
+																const ofaIDBMeta *b );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IDBMETA_H__ */
