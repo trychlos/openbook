@@ -251,9 +251,13 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaTVAManagePagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_TVA_MANAGE_PAGE( page ), NULL );
 
-	return( NULL );
+	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
+
+	return( priv->treeview );
 }
 
 /*
