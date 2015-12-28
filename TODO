@@ -486,6 +486,7 @@
                 command-line only tools) and a ui api which contains
                 some base classes and interfaces which would be useful
                 for plugins => implies to have a core lib and a ui lib
+     2015-12-27 have to choose between api/ui or api-ui styles
 
  939 2015-12-21 ofoTVAForm: make it importable
 
@@ -495,8 +496,6 @@
                  (and idem for ofa_page_get_dossier)
 
  944 2015-12-28 OpeTemplateProperties: use myIGridList
-
- 945 2015-12-28 RateProperties: use myIGridList
 
  946
 
@@ -4417,6 +4416,9 @@
                 + close the currently opened dossier before deleting
                 a dossier (at least before deleting the currently
                 opened dossier)
+     2015-12-28 done
+
+ 945 2015-12-28 RateProperties: use myIGridList
      2015-12-28 done
 
 -----------------------------------------------------------------------
