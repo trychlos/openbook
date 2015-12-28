@@ -46,7 +46,7 @@ G_BEGIN_DECLS
 #define MY_IS_ISETTINGS( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_ISETTINGS ))
 #define MY_ISETTINGS_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_ISETTINGS, myISettingsInterface ))
 
-typedef struct _ofaISettings                   myISettings;
+typedef struct _myISettings                    myISettings;
 
 /**
  * myISettingsInterface:
@@ -72,7 +72,7 @@ typedef struct _ofaISettings                   myISettings;
  * @set_string_list: [should]: sets a list of strings.
  * @free_string_list: [may]: frees a list of strings.
  *
- * This defines the interface that an #myISettings should/must
+ * This defines the interface that an #myISettings may/should/must
  * implement.
  */
 typedef struct {
