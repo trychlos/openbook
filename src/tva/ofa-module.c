@@ -33,6 +33,7 @@
 #include "api/ofa-extension.h"
 
 #include "ofa-tva.h"
+#include "ofa-tva-declare-page.h"
 #include "ofa-tva-manage-page.h"
 
 /* the count of GType types provided by this extension
@@ -67,19 +68,21 @@ typedef struct {
 static void on_menu_defined( GApplication *application, GActionMap *map, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
 static void on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty );
+static void on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void activate_theme( GtkApplicationWindow *window, const gchar *action_name );
 
 /* all the actions added for the TVA modules
  */
 static const GActionEntry st_win_entries[] = {
+		{ "tvadeclare",  on_tva_declare,  NULL, NULL, NULL },
 		{ "tvamanage",  on_tva_manage,  NULL, NULL, NULL },
 };
 
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "tvamanage", N_( "TVA _management" ) },
+		{ "tvadeclare", N_( "TVA _declaration" ) },
 		{ 0 }
 };
 
@@ -89,6 +92,7 @@ static const sItemDef st_items_ref[] = {
 };
 
 static sThemeDef st_theme_defs[] = {
+		{ "tvadeclare",  N_( "TVA _declaration" ),  ofa_tva_declare_page_get_type, FALSE, 0 },
 		{ "tvamanage",  N_( "TVA _management" ),  ofa_tva_manage_page_get_type, FALSE, 0 },
 		{ 0 }
 };
@@ -261,6 +265,19 @@ on_main_window_created( GApplication *application, GtkApplicationWindow *window,
 				&st_theme_defs[i].theme_id );
 		g_debug( "%s: theme_id=%u", thisfn, st_theme_defs[i].theme_id );
 	}
+}
+
+static void
+on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "tva/ofa-module/on_tva_declare";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
+
+	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "tvadeclare" );
 }
 
 static void

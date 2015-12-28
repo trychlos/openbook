@@ -165,8 +165,9 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo \
-	ofa-tva-dbcustomer.lo ofa-tva-form-properties.lo \
-	ofa-tva-form-store.lo ofa-tva-manage-page.lo ofo-tva-form.lo
+	ofa-tva-dbcustomer.lo ofa-tva-declare-page.lo \
+	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
+	ofa-tva-manage-page.lo ofo-tva-form.lo
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -424,6 +425,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva.h										\
 	ofa-tva-dbcustomer.c							\
 	ofa-tva-dbcustomer.h							\
+	ofa-tva-declare-page.c							\
+	ofa-tva-declare-page.h							\
 	ofa-tva-form-properties.c						\
 	ofa-tva-form-properties.h						\
 	ofa-tva-form-store.c							\
@@ -540,6 +543,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbcustomer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-declare-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-manage-page.Plo@am__quote@
