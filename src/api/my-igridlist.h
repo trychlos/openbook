@@ -51,7 +51,7 @@ G_BEGIN_DECLS
 #define MY_IS_IGRIDLIST( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_IGRIDLIST ))
 #define MY_IGRIDLIST_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_IGRIDLIST, myIGridListInterface ))
 
-typedef struct _ofaIGridList                   myIGridList;
+typedef struct _myIGridList                    myIGridList;
 
 /**
  * myIGridListInterface:
@@ -59,7 +59,7 @@ typedef struct _ofaIGridList                   myIGridList;
  *                         interface that the plugin implements.
  * @set_row: [may]: set widgets and values on the row.
 *
- * This defines the interface that an #myIGridList should/must
+ * This defines the interface that an #myIGridList may/should/must
  * implement.
  */
 typedef struct {
