@@ -100,21 +100,30 @@ typedef struct {
 }
 	myIGridListInterface;
 
-GType     my_igridlist_get_type                  ( void );
+GType      my_igridlist_get_type                  ( void );
 
-guint     my_igridlist_get_interface_last_version( void );
+guint      my_igridlist_get_interface_last_version( void );
 
-guint     my_igridlist_get_interface_version     ( const myIGridList *instance );
+guint      my_igridlist_get_interface_version     ( const myIGridList *instance );
 
-void      my_igridlist_init                      ( const myIGridList *instance,
+void       my_igridlist_init                      ( const myIGridList *instance,
 														GtkGrid *grid,
 														gboolean is_current,
 														guint columns_count );
 
-guint     my_igridlist_add_row                   ( const myIGridList *instance,
+guint      my_igridlist_add_row                   ( const myIGridList *instance,
 														GtkGrid *grid );
 
-guint     my_igridlist_get_rows_count            ( const myIGridList *instance,
+GtkWidget *my_igridlist_add_button                ( const myIGridList *instance,
+														GtkGrid *grid,
+														const gchar *stock_id,
+														guint column,
+														guint row,
+														guint right_margin,
+														GCallback cb,
+														void *user_data );
+
+guint      my_igridlist_get_rows_count            ( const myIGridList *instance,
 														GtkGrid *grid );
 
 G_END_DECLS

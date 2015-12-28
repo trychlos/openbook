@@ -62,7 +62,7 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType       register_type( void );
 static void        interface_base_init( myIGridListInterface *klass );
 static void        interface_base_finalize( myIGridListInterface *klass );
-static void        igridlist_add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint right_margin, sIGridList *data );
+static GtkWidget  *add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint right_margin, GCallback cb, void *user_data, sIGridList *data );
 static void        on_button_clicked( GtkButton *button, GtkGrid *grid );
 static void        exchange_rows( GtkGrid *grid, gint row_a, gint row_b, sIGridList *data );
 static void        remove_row( GtkGrid *grid, gint row, sIGridList *data );
@@ -211,11 +211,12 @@ my_igridlist_init( const myIGridList *instance, GtkGrid *grid, gboolean is_curre
 	data->is_current = is_current;
 	data->columns_count = columns_count;
 
-	igridlist_add_button( grid, "gtk-add", COL_ADD, 1, 4, data );
+	add_button( grid, "gtk-add", COL_ADD, 1, 4, G_CALLBACK( on_button_clicked ), grid, data );
 }
 
-static void
-igridlist_add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint right_margin, sIGridList *data )
+static GtkWidget *
+add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint right_margin,
+					GCallback cb, void *user_data, sIGridList *data )
 {
 	GtkWidget *image, *button;
 
@@ -226,9 +227,11 @@ igridlist_add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint 
 	gtk_widget_set_halign( button, GTK_ALIGN_END );
 	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, 0, right_margin );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( button, "clicked", G_CALLBACK( on_button_clicked ), grid );
+	g_signal_connect( button, "clicked", cb, user_data );
 	gtk_grid_attach( grid, button, column, row, 1, 1 );
 	gtk_widget_set_sensitive( button, data->is_current );
+
+	return( button );
 }
 
 static void
@@ -399,10 +402,10 @@ my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid )
 	data = get_igridlist_data( grid );
 	row = 1+data->rows_count;
 	add_empty_row( grid, row, data );
-	igridlist_add_button( grid, "gtk-go-up", COL_UP, row, 0, data );
-	igridlist_add_button( grid, "gtk-go-down", COL_DOWN, row, 0, data );
-	igridlist_add_button( grid, "gtk-remove", COL_REMOVE, row, 0, data );
-	igridlist_add_button( grid, "gtk-add", COL_ADD, row+1, 4, data );
+	add_button( grid, "gtk-go-up", COL_UP, row, 0, G_CALLBACK( on_button_clicked ), grid, data );
+	add_button( grid, "gtk-go-down", COL_DOWN, row, 0, G_CALLBACK( on_button_clicked ), grid, data );
+	add_button( grid, "gtk-remove", COL_REMOVE, row, 0, G_CALLBACK( on_button_clicked ), grid, data );
+	add_button( grid, "gtk-add", COL_ADD, row+1, 4, G_CALLBACK( on_button_clicked ), grid, data );
 
 	if( MY_IGRIDLIST_GET_INTERFACE( instance )->set_row ){
 		MY_IGRIDLIST_GET_INTERFACE( instance )->set_row( instance, grid, row );
@@ -438,6 +441,41 @@ add_empty_row( GtkGrid *grid, guint row, sIGridList *data )
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( grid, label, COL_ROW, row, 1, 1 );
+}
+
+/**
+ * my_igridlist_add_button:
+ * @instance: this #myIGridList instance.
+ * @grid: the target #GtkGrid.
+ * @stock_id: the name of the stock image of the button.
+ * @column: the column index in the @grid, counted from zero.
+ * @row: the row index in the @grid, counted from zero.
+ * @right_margin: the right margin.
+ * @cb: the callback function to be called when the the button is clicked.
+ * @user_data: the user data to be sent to the signal handler.
+ *
+ * Returns: the newly added button.
+ */
+GtkWidget *
+my_igridlist_add_button( const myIGridList *instance, GtkGrid *grid,
+							const gchar *stock_id, guint column, guint row, guint right_margin,
+							GCallback cb, void *user_data )
+{
+	static const gchar *thisfn = "my_igridlist_add_button";
+	sIGridList *data;
+	GtkWidget *button;
+
+	g_debug( "%s: instance=%p, grid=%p, stock_id=%s, column=%u, row=%u, right_margin=%u, cb=%p, user_data=%p",
+			thisfn, ( void * ) instance, ( void * ) grid, stock_id, column, row, right_margin,
+			( void * ) cb, ( void * ) user_data );
+
+	g_return_val_if_fail( instance && MY_IS_IGRIDLIST( instance ), NULL );
+	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), NULL );
+
+	data = get_igridlist_data( grid );
+	button = add_button( grid, stock_id, column, row, right_margin, cb, user_data, data );
+
+	return( button );
 }
 
 /**
