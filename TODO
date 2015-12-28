@@ -494,10 +494,7 @@
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)
-
- 946 2015-12-28 rate_cmp_by_validity: assertion 'my_date_is_valid( &a->end )' failed
-                when adding a new rate validity begin date without having
-                set an ending date on the previous line
+     2015-12-28 + idem for my_window_get_main_window()
 
  947
 
@@ -4425,6 +4422,11 @@
 
  945 2015-12-28 RateProperties: use myIGridList
      2015-12-28 done
+
+ 946 2015-12-28 rate_cmp_by_validity: assertion 'my_date_is_valid( &a->end )' failed
+                when adding a new rate validity begin date without having
+                set an ending date on the previous line
+     2015-12-28 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

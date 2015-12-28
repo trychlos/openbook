@@ -27,6 +27,7 @@
  Bug fixes:
 
    - DossierManager: close the currently opened dossier before deleting it (todo #943).
+   - ofoRate: fix validity comparison (todo #946).
 
  Other changes:
 

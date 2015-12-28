@@ -1127,62 +1127,75 @@ rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b )
 static gint
 rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent )
 {
+	gint cmp;
+
+	g_return_val_if_fail( a, 0 );
+	g_return_val_if_fail( b, 0 );
+	g_return_val_if_fail( consistent, 0 );
+
+	/* first deal with cases of inconsistency
+	 * only one period may have begin/end unset */
+	if( !my_date_is_valid( &a->begin ) && !my_date_is_valid( &b->begin )){
+		*consistent = FALSE;
+		return( my_date_compare_ex( &a->end, &b->end, FALSE ));
+	}
+	if( !my_date_is_valid( &a->end ) && !my_date_is_valid( &b->end )){
+		*consistent = FALSE;
+		return( my_date_compare_ex( &a->begin, &b->begin, TRUE ));
+	}
+
 	/* does 'a' start from the infinite ? */
 	if( !my_date_is_valid( &a->begin )){
-		/* 'a' starts from the infinite */
-		if( !my_date_is_valid( &b->begin )){
-			/* 'bi-bi' case
-			 * the two dates start from the infinite: this is not
-			 * consistent - compare the end dates */
-			if( consistent ){
-				*consistent = FALSE;
-			}
-			if( !my_date_is_valid( &a->end )){
-				return( my_date_is_valid( &b->end ) ? -1 : 0 );
-
-			} else if( !my_date_is_valid( &b->end )){
-				return( 1 );
-			} else {
-				return( my_date_compare_ex( &a->end, &b->end, FALSE ));
-			}
-		}
-		/* 'bi-bs' case
-		 *  'a' starts from the infinite while 'b-begin' is set
-		 * for this be consistant, a must ends before b starts
-		 * whatever be the case, 'a' is said lesser than 'b' */
+		/* 'a' starts from the infinite => 'b' begin is set */
+		/* in order to be consistent, a_end must be set before b_begin */
 		if( !my_date_is_valid( &a->end ) || my_date_compare_ex( &a->end, &b->begin, TRUE ) >= 0 ){
-			if( consistent ){
-				*consistent = FALSE;
-			}
+			*consistent = FALSE;
 		}
 		return( -1 );
 	}
 
-	/* a starts from a fixed date */
+	/* does 'b' start from the infinite ? */
 	if( !my_date_is_valid( &b->begin )){
 		/* 'bs-bi' case
 		 * 'b' is said lesser than 'a'
 		 * for this be consistent, 'b' must ends before 'a' starts */
 		if( !my_date_is_valid( &b->end ) || my_date_compare_ex( &b->end, &a->begin, TRUE ) >= 0 ){
-			if( consistent ){
-				*consistent = FALSE;
-			}
+			*consistent = FALSE;
 		}
 		return( 1 );
 	}
 
-	/* 'bs-bs' case
-	 * 'a' and 'b' both starts from a set date: b must ends before 'a' starts */
-	if( !my_date_is_valid( &b->end ) || my_date_compare_ex( &b->end, &a->begin, TRUE ) >= 0 ){
-		if( consistent ){
+	/* a_begin and b_begin are both set */
+	cmp = my_date_compare( &a->begin, &b->begin );
+
+	/* does 'a' end to the infinite ? */
+	if( !my_date_is_valid( &a->end )){
+		/* 'a' ends to the infinite => b_end is set */
+		/* in order to be consistent, b_begin must be less than b_end,
+		 * which must itself be less than a_begin */
+		if( my_date_compare( &b->begin, &b->end ) >= 0 || my_date_compare( &b->end, &a->begin ) >= 0 ){
 			*consistent = FALSE;
 		}
+		return( cmp );
 	}
 
-	g_return_val_if_fail( my_date_is_valid( &a->begin ), 0 );
-	g_return_val_if_fail( my_date_is_valid( &a->end ), 0 );
+	/* does 'b' end to the infinite ? */
+	if( !my_date_is_valid( &b->end )){
+		/* 'b' ends to the infinite */
+		/* in order to be consistent, a_begin must be less than a_end,
+		 * which must itself be less than b_begin */
+		if( my_date_compare( &a->begin, &a->end ) >= 0 || my_date_compare( &a->end, &b->begin ) >= 0 ){
+			*consistent = FALSE;
+		}
+		return( cmp );
+	}
 
-	return( my_date_compare( &a->begin, &a->end ));
+	/* all dates are set */
+	if( my_date_compare( &a->begin, &a->end ) >= 0 || my_date_compare( &b->begin, &b->end ) >= 0 ){
+		*consistent = FALSE;
+	}
+
+	return( cmp );
 }
 
 /*
