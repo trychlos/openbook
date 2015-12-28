@@ -491,7 +491,14 @@
 
  940 2015-12-21 ofoTVAForm: make it exportable
 
- 941
+ 941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
+                 (and idem for ofa_page_get_dossier)
+
+ 944 2015-12-28 OpeTemplateProperties: use myIGridList
+
+ 945 2015-12-28 RateProperties: use myIGridList
+
+ 946
 
 -----------------------------------------------------------------------
  DONE
@@ -4403,6 +4410,14 @@
  936 2015-12-17 dossier name must not have square brackets as GKeyFile
                 refuse them in group names
      2015-12-18 done
+
+ 943 2015-12-27 DossierManager: deleting a dossier does not remove the
+                group from the dossier settings: only dbms infos are
+                removed but some keys are left there
+                + close the currently opened dossier before deleting
+                a dossier (at least before deleting the currently
+                opened dossier)
+     2015-12-28 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -305,8 +305,11 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
-	ofaIDBMeta *meta;
-	ofaIDBPeriod *period;
+	const ofaIDBConnect *dossier_connect;
+	ofaIDBMeta *meta, *dossier_meta;
+	ofaIDBPeriod *period, *dossier_period;
+	ofoDossier *dossier;
+	gint cmp;
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
@@ -314,6 +317,27 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period ) &&
 		confirm_delete( self, meta, period )){
 
+		/* close the currently opened dossier/exercice if we are about
+		 * to delete it */
+		dossier = ofa_main_window_get_dossier( priv->main_window );
+		if( dossier ){
+			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
+			dossier_connect = ofo_dossier_get_connect( dossier );
+			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
+			dossier_meta = ofa_idbconnect_get_meta( dossier_connect );
+			g_return_if_fail( dossier_meta && OFA_IS_IDBMETA( dossier_meta ));
+			cmp = 1;
+			if( ofa_idbmeta_are_equal( meta, dossier_meta )){
+				dossier_period = ofa_idbconnect_get_period( dossier_connect );
+				g_return_if_fail( dossier_period && OFA_IS_IDBPERIOD( dossier_period ));
+				cmp = ofa_idbperiod_compare( period, dossier_period );
+				g_object_unref( dossier_period );
+			}
+			g_object_unref( dossier_meta );
+			if( cmp == 0 ){
+				ofa_main_window_close_dossier( priv->main_window );
+			}
+		}
 		ofa_idbmeta_remove_period( meta, period );
 	}
 
