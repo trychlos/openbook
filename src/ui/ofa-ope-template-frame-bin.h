@@ -67,6 +67,16 @@ typedef struct {
 }
 	ofaOpeTemplateFrameBinClass;
 
+/* "clicked" signal on frame buttons are proxyed with the following id's
+ */
+enum {
+	TEMPLATE_BUTTON_NEW = 1,
+	TEMPLATE_BUTTON_PROPERTIES,
+	TEMPLATE_BUTTON_DELETE,
+	TEMPLATE_BUTTON_DUPLICATE,
+	TEMPLATE_BUTTON_GUIDED_INPUT
+};
+
 GType                   ofa_ope_template_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
 ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new        ( const ofaMainWindow *main_window );

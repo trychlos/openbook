@@ -70,6 +70,17 @@ typedef struct {
 }
 	ofaAccountFrameBinClass;
 
+/* "clicked" signal on frame buttons are proxyed with the following id's
+ */
+enum {
+	ACCOUNT_BUTTON_NEW = 1,
+	ACCOUNT_BUTTON_PROPERTIES,
+	ACCOUNT_BUTTON_DELETE,
+	ACCOUNT_BUTTON_VIEW_ENTRIES,
+	ACCOUNT_BUTTON_SETTLEMENT,
+	ACCOUNT_BUTTON_RECONCILIATION
+};
+
 GType               ofa_account_frame_bin_get_type   ( void ) G_GNUC_CONST;
 
 ofaAccountFrameBin *ofa_account_frame_bin_new        ( const ofaMainWindow *main_window );

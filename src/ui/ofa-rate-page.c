@@ -49,6 +49,7 @@ struct _ofaRatePagePrivate {
 	/* internals
 	 */
 	GList        *handlers;
+	ofoDossier   *dossier;
 	gboolean      is_current;
 
 	/* UI
@@ -182,15 +183,20 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_rate_page_v_setup_view";
 	ofaRatePagePrivate *priv;
+	ofoDossier *dossier;
 	GtkWidget *tview;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_RATE_PAGE( page )->priv;
 
+	dossier = ofa_page_get_dossier( page );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->dossier = dossier;
+	priv->is_current = ofo_dossier_is_current( dossier );
+
 	setup_dossier_signaling( OFA_RATE_PAGE( page ));
 	tview = setup_tree_view( OFA_RATE_PAGE( page ));
-	priv->is_current = ofo_dossier_is_current( ofa_page_get_dossier( page ));
 	insert_dataset( OFA_RATE_PAGE( page ));
 
 	return( tview );
@@ -200,29 +206,27 @@ static void
 setup_dossier_signaling( ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
-	ofoDossier *dossier;
 	gulong handler;
 
 	priv = self->priv;
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
 	handler = g_signal_connect(
-						G_OBJECT( dossier ),
+						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( dossier ),
+						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( dossier ),
+						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( dossier ),
+						G_OBJECT( priv->dossier ),
 						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
@@ -323,12 +327,19 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	priv->new_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	priv->new_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
+	gtk_widget_set_sensitive( priv->new_btn, priv->is_current );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -562,6 +573,7 @@ on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
 	ofaRatePagePrivate *priv;
 	GtkTreeIter iter;
 	ofoRate *rate;
+	gboolean is_rate;
 
 	priv = self->priv;
 
@@ -570,23 +582,16 @@ on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
 		g_object_unref( rate );
 	}
 
-	if( priv->new_btn ){
-		gtk_widget_set_sensitive(
-				priv->new_btn,
-				rate && OFO_IS_RATE( rate ) && priv->is_current );
-	}
+	is_rate = rate && OFO_IS_RATE( rate );
 
 	if( priv->update_btn ){
-		gtk_widget_set_sensitive(
-				priv->update_btn,
-				rate && OFO_IS_RATE( rate ));
+		gtk_widget_set_sensitive( priv->update_btn,
+				is_rate );
 	}
 
 	if( priv->delete_btn ){
-		gtk_widget_set_sensitive(
-				priv->delete_btn,
-				rate && OFO_IS_RATE( rate ) &&
-					ofo_rate_is_deletable( rate, ofa_page_get_dossier( OFA_PAGE( self ))));
+		gtk_widget_set_sensitive( priv->delete_btn,
+				priv->is_current && is_rate && ofo_rate_is_deletable( rate, priv->dossier ));
 	}
 }
 

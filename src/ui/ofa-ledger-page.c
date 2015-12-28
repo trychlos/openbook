@@ -48,6 +48,8 @@ struct _ofaLedgerPagePrivate {
 
 	/* internals
 	 */
+	ofoDossier         *dossier;
+	gboolean            is_current;
 	gint                exe_id;			/* internal identifier of the current exercice */
 
 	/* UI
@@ -149,9 +151,18 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
+	ofaLedgerPagePrivate *priv;
 	GtkWidget *frame;
+	ofoDossier *dossier;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	priv = OFA_LEDGER_PAGE( page )->priv;
+
+	dossier = ofa_page_get_dossier( page );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->dossier = dossier;
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	frame = setup_tree_view( page );
 
@@ -198,19 +209,24 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
-	my_utils_widget_set_editable(
-			btn,
-			ofo_dossier_is_current( ofa_main_window_get_dossier( ofa_page_get_main_window( page ))));
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic(
+				buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
+	gtk_widget_set_sensitive( btn, priv->is_current );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	priv->entries_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_entry_page ), page );
+
+	priv->entries_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_VIEW_ENTRIES, G_CALLBACK( on_entry_page ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -229,12 +245,13 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
-	ofoDossier *dossier;
+	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 
+	priv = self->priv;
+
 	if( selected ){
-		dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-		ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+		ledger = ofo_ledger_get_by_mnemo( priv->dossier, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 		do_update( self, ledger );
@@ -248,32 +265,27 @@ static void
 on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
-	ofoDossier *dossier;
 	ofoLedger *ledger;
+	gboolean is_ledger;
 
 	priv = self->priv;
 	ledger = NULL;
 
 	if( selected ){
-		dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-		ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+		ledger = ofo_ledger_get_by_mnemo( priv->dossier, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	}
 
-	gtk_widget_set_sensitive(
-			priv->update_btn,
-			ledger && OFO_IS_LEDGER( ledger ));
+	is_ledger = ledger && OFO_IS_LEDGER( ledger );
 
-	gtk_widget_set_sensitive(
-			priv->delete_btn,
-			ledger &&
-				OFO_IS_LEDGER( ledger ) &&
-				ofo_ledger_is_deletable( ledger, ofa_page_get_dossier( OFA_PAGE( self ))));
+	gtk_widget_set_sensitive( priv->update_btn,
+			is_ledger );
 
-	gtk_widget_set_sensitive(
-			priv->entries_btn,
-			ledger && OFO_IS_LEDGER( ledger ) &&
-				ofo_ledger_has_entries( ledger, ofa_page_get_dossier( OFA_PAGE( self ))));
+	gtk_widget_set_sensitive( priv->delete_btn,
+			priv->is_current && is_ledger && ofo_ledger_is_deletable( ledger, priv->dossier ));
+
+	gtk_widget_set_sensitive( priv->entries_btn,
+			is_ledger && ofo_ledger_has_entries( ledger, priv->dossier ));
 }
 
 static void

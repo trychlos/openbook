@@ -76,37 +76,26 @@ typedef struct {
 }
 	ofaButtonsBoxClass;
 
-/**
- * #ofaButtonsBox class provides typical used identifiers.
+/* Some standard button mnemonics are defined here
+ *  as an effort to get them homogene
  */
-enum {
-	BUTTON_NEW = 1,
-	BUTTON_PROPERTIES,
-	BUTTON_DUPLICATE,
-	BUTTON_DELETE,
-	BUTTON_IMPORT,
-	BUTTON_EXPORT,
-	BUTTON_PRINT,
-	BUTTON_VIEW_ENTRIES,
-	BUTTON_GUIDED_INPUT,
-	BUTTON_RECONCILIATE,
-	BUTTON_DECLINE,
-	BUTTON_UNRECONCILIATE,
-	BUTTON_SETTLEMENT,
-	BUTTON_RECONCIL_PAGE
-};
+#define BUTTON_DELETE                   _( "_Delete..." )
+#define BUTTON_NEW                      _( "_New..." )
+#define BUTTON_PROPERTIES               _( "_Properties..." )
+#define BUTTON_RECONCILIATION           _( "_Reconciliation" )
+#define BUTTON_SETTLEMENT               _( "_Settlement" )
+#define BUTTON_VIEW_ENTRIES             _( "View _entries" )
 
-GType          ofa_buttons_box_get_type      ( void ) G_GNUC_CONST;
+GType          ofa_buttons_box_get_type                ( void ) G_GNUC_CONST;
 
-ofaButtonsBox *ofa_buttons_box_new           ( void );
+ofaButtonsBox *ofa_buttons_box_new                     ( void );
 
-void           ofa_buttons_box_add_spacer    ( ofaButtonsBox *box );
+void           ofa_buttons_box_add_spacer              ( ofaButtonsBox *box );
 
-GtkWidget     *ofa_buttons_box_add_button    ( ofaButtonsBox *box,
-														gint button_id,
-														gboolean sensitive,
-														GCallback cb,
-														void *user_data );
+GtkWidget     *ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box,
+															const gchar *mnemonic,
+															GCallback cb,
+															void *user_data );
 
 G_END_DECLS
 

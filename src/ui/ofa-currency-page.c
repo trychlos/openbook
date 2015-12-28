@@ -49,6 +49,8 @@ struct _ofaCurrencyPagePrivate {
 	/* internals
 	 */
 	GList            *handlers;
+	ofoDossier       *dossier;
+	gboolean          is_current;
 
 	/* UI
 	 */
@@ -175,6 +177,9 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_CURRENCY_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->dossier = dossier;
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
@@ -206,7 +211,6 @@ static GtkWidget *
 setup_tree_view( ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
-	ofoDossier *dossier;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -215,7 +219,6 @@ setup_tree_view( ofaCurrencyPage *self )
 	GtkTreeSelection *select;
 
 	priv = self->priv;
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margin( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -237,7 +240,7 @@ setup_tree_view( ofaCurrencyPage *self )
 			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 	priv->tview = tview;
 
-	priv->store = ofa_currency_store_new( dossier );
+	priv->store = ofa_currency_store_new( priv->dossier );
 	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -331,13 +334,18 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
-	my_utils_widget_set_editable( btn, ofo_dossier_is_current( ofa_page_get_dossier( page )));
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic(
+			buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
+	gtk_widget_set_sensitive( btn, priv->is_current );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -381,6 +389,7 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
+	gboolean is_currency;
 
 	currency = NULL;
 
@@ -390,18 +399,16 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self )
 	}
 
 	priv = self->priv;
+	is_currency = currency && OFO_IS_CURRENCY( currency );
 
 	if( priv->update_btn ){
-		gtk_widget_set_sensitive(
-				priv->update_btn,
-				currency && OFO_IS_CURRENCY( currency ));
+		gtk_widget_set_sensitive( priv->update_btn,
+				is_currency );
 	}
 
 	if( priv->delete_btn ){
-		gtk_widget_set_sensitive(
-				priv->delete_btn,
-				currency && OFO_IS_CURRENCY( currency ) &&
-					ofo_currency_is_deletable( currency, ofa_page_get_dossier( OFA_PAGE( self ))));
+		gtk_widget_set_sensitive( priv->delete_btn,
+				priv->is_current && is_currency && ofo_currency_is_deletable( currency, priv->dossier ));
 	}
 }
 

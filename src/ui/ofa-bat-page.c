@@ -53,7 +53,8 @@ struct _ofaBatPagePrivate {
 
 	/* runtime data
 	 */
-	gboolean        is_current;
+	ofoDossier     *dossier;
+	gboolean        is_current;			/* whether the dossier is current */
 
 	/* UI
 	 */
@@ -152,6 +153,7 @@ v_setup_view( ofaPage *page )
 
 	dossier = ofa_page_get_dossier( page );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->dossier = dossier;
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	priv->tview = ofa_bat_treeview_new();
@@ -169,24 +171,31 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaBatPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	GtkWidget *btn;
 
 	priv = OFA_BAT_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, FALSE, NULL, NULL );
-	my_utils_widget_set_editable( btn, priv->is_current );
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	/* always disabled */
+	ofa_buttons_box_add_button_with_mnemonic(
+				buttons_box, BUTTON_NEW, NULL, NULL );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	priv->import_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_IMPORT, TRUE, G_CALLBACK( on_import_clicked ), page );
+
+	priv->import_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, _( "_Import..." ), G_CALLBACK( on_import_clicked ), page );
+	gtk_widget_set_sensitive( priv->import_btn, priv->is_current );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -201,17 +210,16 @@ static void
 on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
 {
 	ofaBatPagePrivate *priv;
+	gboolean is_bat;
 
 	priv = page->priv;
+	is_bat = bat && OFO_IS_BAT( bat );
 
-	gtk_widget_set_sensitive(
-			priv->update_btn,
-			bat && OFO_IS_BAT( bat ));
+	gtk_widget_set_sensitive( priv->update_btn,
+			is_bat );
 
-	gtk_widget_set_sensitive(
-			priv->delete_btn,
-			bat && OFO_IS_BAT( bat ) &&
-			ofo_bat_is_deletable( bat, ofa_page_get_dossier( OFA_PAGE( page ))));
+	gtk_widget_set_sensitive( priv->delete_btn,
+			priv->is_current && is_bat && ofo_bat_is_deletable( bat, priv->dossier ));
 }
 
 static GtkWidget *

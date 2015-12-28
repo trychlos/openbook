@@ -44,6 +44,8 @@ struct _ofaAccountFrameBinPrivate {
 	gboolean             dispose_has_run;
 
 	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	gboolean             is_current;	/* whether the dossier is current */
 	GtkGrid             *grid;
 	gint                 buttons;
 
@@ -236,8 +238,14 @@ setup_bin( ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 	GtkWidget *grid;
+	ofoDossier *dossier;
 
 	priv = bin->priv;
+
+	dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = dossier;
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
 	gtk_container_add( GTK_CONTAINER( bin ), grid );
@@ -265,7 +273,7 @@ on_new_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_NEW );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_NEW );
 }
 
 static void
@@ -274,7 +282,7 @@ on_properties_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_PROPERTIES );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_PROPERTIES );
 }
 
 static void
@@ -283,7 +291,7 @@ on_delete_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_DELETE );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_DELETE );
 }
 
 static void
@@ -292,7 +300,7 @@ on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_VIEW_ENTRIES );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_VIEW_ENTRIES );
 }
 
 static void
@@ -301,7 +309,7 @@ on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_SETTLEMENT );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_SETTLEMENT );
 }
 
 static void
@@ -310,7 +318,7 @@ on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_account_chart_bin_button_clicked( priv->account_chart, BUTTON_RECONCIL_PAGE );
+	ofa_account_chart_bin_button_clicked( priv->account_chart, ACCOUNT_BUTTON_RECONCILIATION );
 }
 
 /**
@@ -339,25 +347,41 @@ ofa_account_frame_bin_set_buttons( ofaAccountFrameBin *bin,
 
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-		priv->new_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), bin );
-		priv->update_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), bin );
-		priv->delete_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), bin );
+
+		priv->new_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_NEW,
+						G_CALLBACK( on_new_clicked ), bin );
+		gtk_widget_set_sensitive( priv->new_btn, priv->is_current );
+
+		priv->update_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_PROPERTIES,
+						G_CALLBACK( on_properties_clicked ), bin );
+
+		priv->delete_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_DELETE,
+						G_CALLBACK( on_delete_clicked ), bin );
 
 		if( view_entries ){
 			ofa_buttons_box_add_spacer( priv->box );
-			priv->view_entries_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), bin );
+			priv->view_entries_btn =
+					ofa_buttons_box_add_button_with_mnemonic(
+							priv->box, BUTTON_VIEW_ENTRIES,
+							G_CALLBACK( on_view_entries_clicked ), bin );
 		}
 		if( settlement ){
-			priv->settlement_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_SETTLEMENT, FALSE, G_CALLBACK( on_settlement_clicked ), bin );
+			priv->settlement_btn =
+					ofa_buttons_box_add_button_with_mnemonic(
+							priv->box, BUTTON_SETTLEMENT,
+							G_CALLBACK( on_settlement_clicked ), bin );
 		}
 		if( reconciliation ){
-			priv->reconciliation_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_RECONCIL_PAGE, FALSE, G_CALLBACK( on_reconciliation_clicked ), bin );
+			priv->reconciliation_btn =
+					ofa_buttons_box_add_button_with_mnemonic(
+							priv->box, BUTTON_RECONCILIATION,
+							G_CALLBACK( on_reconciliation_clicked ), bin );
 		}
 	}
 }
@@ -404,28 +428,23 @@ static void
 update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id )
 {
 	ofaAccountFrameBinPrivate *priv;
-	ofoDossier *dossier;
 	ofoAccount *account;
 	gboolean has_account;
 
 	priv = bin->priv;
 	account = NULL;
 	has_account = FALSE;
-	dossier = ofa_main_window_get_dossier( priv->main_window );
 
 	if( account_id ){
-		account = ofo_account_get_by_number( dossier, account_id );
+		account = ofo_account_get_by_number( priv->dossier, account_id );
 		has_account = ( account && OFO_IS_ACCOUNT( account ));
 	}
 
-	gtk_widget_set_sensitive( priv->new_btn,
-				ofo_dossier_is_current( dossier ));
-
 	gtk_widget_set_sensitive( priv->update_btn,
-				has_account );
+			has_account );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-				has_account && ofo_account_is_deletable( account, dossier ));
+			priv->is_current && has_account && ofo_account_is_deletable( account, priv->dossier ));
 
 	if( priv->view_entries_btn ){
 		gtk_widget_set_sensitive( priv->view_entries_btn,
@@ -434,11 +453,11 @@ update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id )
 
 	if( priv->settlement_btn ){
 		gtk_widget_set_sensitive( priv->settlement_btn,
-				has_account && ofo_account_is_settleable( account ));
+				priv->is_current && has_account && ofo_account_is_settleable( account ));
 	}
 
 	if( priv->reconciliation_btn ){
 		gtk_widget_set_sensitive( priv->reconciliation_btn,
-				has_account && ofo_account_is_reconciliable( account ));
+				priv->is_current && has_account && ofo_account_is_reconciliable( account ));
 	}
 }

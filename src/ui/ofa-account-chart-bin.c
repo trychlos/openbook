@@ -41,6 +41,7 @@
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-account-chart-bin.h"
+#include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-account-store.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-settlement.h"
@@ -1659,22 +1660,22 @@ ofa_account_chart_bin_button_clicked( ofaAccountChartBin *book, gint button_id )
 	if( !priv->dispose_has_run ){
 
 		switch( button_id ){
-			case BUTTON_NEW:
+			case ACCOUNT_BUTTON_NEW:
 				do_insert_account( book );
 				break;
-			case BUTTON_PROPERTIES:
+			case ACCOUNT_BUTTON_PROPERTIES:
 				do_update_account( book );
 				break;
-			case BUTTON_DELETE:
+			case ACCOUNT_BUTTON_DELETE:
 				do_delete_account( book );
 				break;
-			case BUTTON_VIEW_ENTRIES:
+			case ACCOUNT_BUTTON_VIEW_ENTRIES:
 				do_view_entries( book );
 				break;
-			case BUTTON_SETTLEMENT:
+			case ACCOUNT_BUTTON_SETTLEMENT:
 				do_settlement( book );
 				break;
-			case BUTTON_RECONCIL_PAGE:
+			case ACCOUNT_BUTTON_RECONCILIATION:
 				do_reconciliation( book );
 				break;
 		}

@@ -55,6 +55,7 @@ struct _ofaTVAManagePagePrivate {
 	GtkWidget       *treeview;
 	GtkWidget       *update_btn;
 	GtkWidget       *delete_btn;
+	GtkWidget       *declare_btn;
 
 	ofaTVAFormStore *store;
 };
@@ -75,6 +76,8 @@ static void        select_row_by_mnemo( ofaTVAManagePage *page, const gchar *mne
 static void        try_to_delete_current_row( ofaTVAManagePage *page );
 static gboolean    delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form );
 static void        do_delete( ofaTVAManagePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void        on_declare_clicked( GtkButton *button, ofaTVAManagePage *page );
+static void        do_declare( ofaTVAManagePage *page, ofoTVAForm *form );
 
 G_DEFINE_TYPE( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE )
 
@@ -223,13 +226,24 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
-	my_utils_widget_set_editable( btn, priv->editable );
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic(
+				buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
+	gtk_widget_set_sensitive( btn, priv->editable );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
+
+	ofa_buttons_box_add_spacer( buttons_box );
+
+	priv->declare_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, _( "D_eclaration..." ), G_CALLBACK( on_declare_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -316,6 +330,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
+	gboolean is_form;
 
 	form = NULL;
 
@@ -325,18 +340,21 @@ on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self )
 	}
 
 	priv = self->priv;
+	is_form = form && OFO_IS_TVA_FORM( form );
 
 	if( priv->update_btn ){
-		gtk_widget_set_sensitive(
-				priv->update_btn,
-				form && OFO_IS_TVA_FORM( form ));
+		gtk_widget_set_sensitive( priv->update_btn,
+				is_form );
 	}
 
 	if( priv->delete_btn ){
-		gtk_widget_set_sensitive(
-				priv->delete_btn,
-				form && OFO_IS_TVA_FORM( form ) &&
-					ofo_tva_form_is_deletable( form, priv->dossier ));
+		gtk_widget_set_sensitive( priv->delete_btn,
+				priv->editable && is_form && ofo_tva_form_is_deletable( form, priv->dossier ));
+	}
+
+	if( priv->declare_btn ){
+		gtk_widget_set_sensitive( priv->declare_btn,
+				priv->editable && is_form );
 	}
 }
 
@@ -473,4 +491,26 @@ do_delete( ofaTVAManagePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTr
 		ofo_tva_form_delete( form, priv->dossier );
 		/* taken into account by dossier signaling system */
 	}
+}
+
+static void
+on_declare_clicked( GtkButton *button, ofaTVAManagePage *page )
+{
+	ofaTVAManagePagePrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoTVAForm *form;
+
+	priv = page->priv;
+	form = treeview_get_selected( page, &tmodel, &iter );
+	if( form ){
+		do_declare( page, form );
+	}
+
+	gtk_widget_grab_focus( priv->treeview );
+}
+
+static void
+do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
+{
 }

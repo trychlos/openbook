@@ -43,8 +43,6 @@ struct _ofaButtonsBoxPrivate {
 	gint          spacers;
 };
 
-#define BUTTON_ID                       "button-id"
-
 /* some styles layout
  */
 #define STYLE_ROW_MARGIN                4
@@ -176,94 +174,44 @@ ofa_buttons_box_add_spacer( ofaButtonsBox *box )
 }
 
 /**
- * ofa_buttons_box_add_button:
+ * ofa_buttons_box_add_button_with_mnemonic:
  * @box: this #ofaButtonsBox object.
- * @button: the button to be packed.
- * @sensitive: whether the button is initially sensitive.
- * @callback: a callback function for the "clicked" signal.
- * @user_data: user data to be provided to the callback function.
+ * @mnemonic: the mnemonic to be set on the new button.
+ * @callback: [allow-none]: the handler of the "clicked" signal.
+ * @user_data: user data to be provided to the @callback function.
  *
  * Packs a button in the specified @box.
+ * The new button sensitivity defaults to %FALSE.
  *
  * Returns: the newly created button, or %NULL.
  */
 GtkWidget *
-ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensitive, GCallback cb, void *user_data )
+ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box, const gchar *mnemonic, GCallback cb, void *user_data )
 {
-	static const gchar *thisfn = "ofa_buttons_box_add_button";
 	ofaButtonsBoxPrivate *priv;
 	GtkWidget *button;
 
 	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
+	g_return_val_if_fail( my_strlen( mnemonic ), NULL );
 
 	priv = box->priv;
-	button = NULL;
 
 	if( !priv->dispose_has_run ){
 
-		switch( button_id ){
-			case BUTTON_NEW:
-				button = gtk_button_new_with_mnemonic( _( "_New..." ));
-				break;
-			case BUTTON_PROPERTIES:
-				button = gtk_button_new_with_mnemonic( _( "_Properties..." ));
-				break;
-			case BUTTON_DUPLICATE:
-				button = gtk_button_new_with_mnemonic( _( "_Duplicate" ));
-				break;
-			case BUTTON_DELETE:
-				button = gtk_button_new_with_mnemonic( _( "_Delete" ));
-				break;
-			case BUTTON_IMPORT:
-				button = gtk_button_new_with_mnemonic( _( "_Import..." ));
-				break;
-			case BUTTON_EXPORT:
-				button = gtk_button_new_with_mnemonic( _( "_Export..." ));
-				break;
-			case BUTTON_PRINT:
-				button = gtk_button_new_with_mnemonic( _( "_Print..." ));
-				break;
-			case BUTTON_VIEW_ENTRIES:
-				button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
-				break;
-			case BUTTON_GUIDED_INPUT:
-				button = gtk_button_new_with_mnemonic( _( "_Guided input..." ));
-				break;
-			case BUTTON_RECONCILIATE:
-				button = gtk_button_new_with_mnemonic( _( "_Reconciliate" ));
-				break;
-			case BUTTON_DECLINE:
-				button = gtk_button_new_with_mnemonic( _( "_Decline" ));
-				break;
-			case BUTTON_UNRECONCILIATE:
-				button = gtk_button_new_with_mnemonic( _( "_Unreconciliate" ));
-				break;
-			case BUTTON_SETTLEMENT:
-				button = gtk_button_new_with_mnemonic( _( "_Settlement..." ));
-				break;
-			case BUTTON_RECONCIL_PAGE:
-				button = gtk_button_new_with_mnemonic( _( "_Reconciliation" ));
-				break;
-			default:
-				g_warning( "%s: button=%u not implemented", thisfn, button_id );
-				break;
+		button = gtk_button_new_with_mnemonic( mnemonic );
+		my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
+		priv->spacers = 0;
+		gtk_widget_set_sensitive( button, FALSE );
+
+		if( cb ){
+			g_signal_connect( button, "clicked", cb, user_data );
 		}
 
-		if( button ){
-			my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
-			priv->spacers = 0;
+		gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
+		priv->rows += 1;
 
-			g_object_set_data( G_OBJECT( button ), BUTTON_ID, GINT_TO_POINTER( button_id ));
-			gtk_widget_set_sensitive( button, sensitive );
-
-			if( cb ){
-				g_signal_connect( G_OBJECT( button ), "clicked", cb, user_data );
-			}
-
-			gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
-			priv->rows += 1;
-		}
+		return( button );
 	}
 
-	return( button );
+	g_return_val_if_reached( NULL );
 }

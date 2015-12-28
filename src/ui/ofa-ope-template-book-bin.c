@@ -43,6 +43,7 @@
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-template-store.h"
 #include "ui/ofa-ope-template-book-bin.h"
+#include "ui/ofa-ope-template-frame-bin.h"
 
 /* private instance data
  */
@@ -1259,19 +1260,19 @@ ofa_ope_template_book_bin_button_clicked( ofaOpeTemplateBookBin *bin, gint butto
 	if( !priv->dispose_has_run ){
 
 		switch( button_id ){
-			case BUTTON_NEW:
+			case TEMPLATE_BUTTON_NEW:
 				do_insert_ope_template( bin );
 				break;
-			case BUTTON_PROPERTIES:
+			case TEMPLATE_BUTTON_PROPERTIES:
 				do_update_ope_template( bin );
 				break;
-			case BUTTON_DUPLICATE:
+			case TEMPLATE_BUTTON_DUPLICATE:
 				do_duplicate_ope_template( bin );
 				break;
-			case BUTTON_DELETE:
+			case TEMPLATE_BUTTON_DELETE:
 				do_delete_ope_template( bin );
 				break;
-			case BUTTON_GUIDED_INPUT:
+			case TEMPLATE_BUTTON_GUIDED_INPUT:
 				do_guided_input( bin );
 				break;
 			default:

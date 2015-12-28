@@ -48,6 +48,7 @@ struct _ofaClassPagePrivate {
 	/* internals
 	 */
 	GList       *handlers;
+	ofoDossier  *dossier;
 	gboolean     is_current;
 
 	/* UI
@@ -184,6 +185,8 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_CLASS_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->dossier = dossier;
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	handler = g_signal_connect(
@@ -319,13 +322,18 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 
 	ofa_buttons_box_add_spacer( buttons_box );
-	btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
-	my_utils_widget_set_editable( btn, priv->is_current );
-	priv->update_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->delete_btn = ofa_buttons_box_add_button(
-			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic(
+			buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
+	gtk_widget_set_sensitive( btn, priv->is_current );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -452,6 +460,7 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoClass *class;
+	gboolean is_class;
 
 	class = NULL;
 
@@ -461,18 +470,16 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 	}
 
 	priv = self->priv;
+	is_class = class && OFO_IS_CLASS( class );
 
 	if( priv->update_btn ){
-		gtk_widget_set_sensitive(
-				priv->update_btn,
-				class && OFO_IS_CLASS( class ));
+		gtk_widget_set_sensitive( priv->update_btn,
+				is_class );
 	}
 
 	if( priv->delete_btn ){
-		gtk_widget_set_sensitive(
-				priv->delete_btn,
-				class && OFO_IS_CLASS( class ) &&
-					ofo_class_is_deletable( class, ofa_page_get_dossier( OFA_PAGE( self ))));
+		gtk_widget_set_sensitive( priv->delete_btn,
+				priv->is_current && is_class && ofo_class_is_deletable( class, priv->dossier ));
 	}
 }
 
@@ -554,15 +561,15 @@ delete_confirmed( ofaClassPage *self, ofoClass *class )
 static void
 do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
+	ofaClassPagePrivate *priv;
 	gboolean deletable;
-	ofoDossier *dossier;
 
-	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
-	deletable = ofo_class_is_deletable( class, dossier );
+	priv = page->priv;
+	deletable = ofo_class_is_deletable( class, priv->dossier );
 	g_return_if_fail( deletable );
 
 	if( delete_confirmed( page, class )){
-		ofo_class_delete( class, dossier );
+		ofo_class_delete( class, priv->dossier );
 
 		/* remove the row from the tmodel
 		 * this will cause an automatic new selection */

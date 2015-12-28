@@ -40,20 +40,22 @@
 /* private instance data
  */
 struct _ofaOpeTemplateFrameBinPrivate {
-	gboolean             dispose_has_run;
+	gboolean               dispose_has_run;
 
-	const ofaMainWindow *main_window;
-	GtkGrid             *grid;
-	gint                 buttons;
+	const ofaMainWindow   *main_window;
+	ofoDossier            *dossier;
+	gboolean               is_current;
+	GtkGrid               *grid;
+	gint                   buttons;
 
 	ofaOpeTemplateBookBin *book;
-	ofaButtonsBox       *box;
+	ofaButtonsBox         *box;
 
-	GtkWidget           *new_btn;
-	GtkWidget           *update_btn;
-	GtkWidget           *duplicate_btn;
-	GtkWidget           *delete_btn;
-	GtkWidget           *guided_input_btn;
+	GtkWidget             *new_btn;
+	GtkWidget             *update_btn;
+	GtkWidget             *duplicate_btn;
+	GtkWidget             *delete_btn;
+	GtkWidget             *guided_input_btn;
 };
 
 /* signals defined here
@@ -258,9 +260,15 @@ static void
 setup_bin( ofaOpeTemplateFrameBin *bin )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	ofoDossier *dossier;
 	GtkWidget *grid;
 
 	priv = bin->priv;
+
+	dossier = ofa_main_window_get_dossier( priv->main_window );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->dossier = dossier;
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
 	my_utils_widget_set_margin( grid, 0, 4, 4, 0 );
@@ -284,7 +292,7 @@ on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_ope_template_book_bin_button_clicked( priv->book, BUTTON_NEW );
+	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_NEW );
 }
 
 static void
@@ -293,7 +301,7 @@ on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_ope_template_book_bin_button_clicked( priv->book, BUTTON_PROPERTIES );
+	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_PROPERTIES );
 }
 
 static void
@@ -302,7 +310,7 @@ on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_ope_template_book_bin_button_clicked( priv->book, BUTTON_DUPLICATE );
+	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_DUPLICATE );
 }
 
 static void
@@ -311,7 +319,7 @@ on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_ope_template_book_bin_button_clicked( priv->book, BUTTON_DELETE );
+	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_DELETE );
 }
 
 static void
@@ -320,7 +328,7 @@ on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	priv = bin->priv;
-	ofa_ope_template_book_bin_button_clicked( priv->book, BUTTON_GUIDED_INPUT );
+	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_GUIDED_INPUT );
 }
 
 /**
@@ -342,19 +350,29 @@ ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *bin, gboolean gu
 
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
-		priv->new_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), bin );
-		priv->update_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), bin );
-		priv->duplicate_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DUPLICATE, FALSE, G_CALLBACK( on_duplicate_clicked ), bin );
-		priv->delete_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), bin );
+
+		priv->new_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), bin );
+		gtk_widget_set_sensitive( priv->new_btn, priv->is_current );
+
+		priv->update_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), bin );
+
+		priv->duplicate_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, _( "D_uplicate" ), G_CALLBACK( on_duplicate_clicked ), bin );
+
+		priv->delete_btn =
+				ofa_buttons_box_add_button_with_mnemonic(
+						priv->box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), bin );
 
 		if( guided_input ){
 			ofa_buttons_box_add_spacer( priv->box );
-			priv->guided_input_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_GUIDED_INPUT, FALSE, G_CALLBACK( on_guided_input_clicked ), bin );
+			priv->guided_input_btn =
+					ofa_buttons_box_add_button_with_mnemonic(
+							priv->box, _( "_Guided input..." ), G_CALLBACK( on_guided_input_clicked ), bin );
 		}
 	}
 }
@@ -403,41 +421,27 @@ update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gboolean has_ope;
-	ofoDossier *dossier;
-	gboolean is_current;
 
 	priv = bin->priv;
-
 	has_ope = FALSE;
-	dossier = ofa_main_window_get_dossier( priv->main_window );
-	is_current = ofo_dossier_is_current( dossier );
 
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
 		has_ope = ( ope && OFO_IS_OPE_TEMPLATE( ope ));
 	}
 
-	gtk_widget_set_sensitive(
-				priv->new_btn,
-				is_current );
+	gtk_widget_set_sensitive( priv->update_btn,
+			has_ope );
 
-	gtk_widget_set_sensitive(
-				priv->update_btn,
-				has_ope );
+	gtk_widget_set_sensitive( priv->duplicate_btn,
+			priv->is_current && has_ope );
 
-	gtk_widget_set_sensitive(
-				priv->duplicate_btn,
-				has_ope && is_current );
-
-	gtk_widget_set_sensitive(
-				priv->delete_btn,
-				has_ope &&
-				ofo_ope_template_is_deletable( ope, dossier ));
+	gtk_widget_set_sensitive( priv->delete_btn,
+			priv->is_current && has_ope && ofo_ope_template_is_deletable( ope, priv->dossier ));
 
 	if( priv->guided_input_btn ){
-		gtk_widget_set_sensitive(
-					priv->guided_input_btn,
-					has_ope && is_current );
+		gtk_widget_set_sensitive( priv->guided_input_btn,
+				priv->is_current && has_ope );
 	}
 }
 
