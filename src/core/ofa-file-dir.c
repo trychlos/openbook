@@ -282,7 +282,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 		}
 		dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
 		if( !my_strlen( dos_name )){
-			g_warning( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
+			g_info( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
 			continue;
 		}
 		meta = file_dir_get_meta( dos_name, prev_list );
@@ -292,7 +292,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 		} else {
 			prov_name = my_isettings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
-				g_warning( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
+				g_info( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
 				g_free( dos_name );
 				continue;
 			}
