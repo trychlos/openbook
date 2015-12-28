@@ -495,9 +495,11 @@
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)
 
- 944 2015-12-28 OpeTemplateProperties: use myIGridList
+ 946 2015-12-28 rate_cmp_by_validity: assertion 'my_date_is_valid( &a->end )' failed
+                when adding a new rate validity begin date without having
+                set an ending date on the previous line
 
- 946
+ 947
 
 -----------------------------------------------------------------------
  DONE
@@ -4416,6 +4418,9 @@
                 + close the currently opened dossier before deleting
                 a dossier (at least before deleting the currently
                 opened dossier)
+     2015-12-28 done
+
+ 944 2015-12-28 OpeTemplateProperties: use myIGridList
      2015-12-28 done
 
  945 2015-12-28 RateProperties: use myIGridList
