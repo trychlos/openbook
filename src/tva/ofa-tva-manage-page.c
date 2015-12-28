@@ -36,14 +36,14 @@
 
 #include "core/ofa-main-window.h"
 
-#include "tva/ofa-tva-define-page.h"
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofa-tva-form-store.h"
 #include "tva/ofo-tva-form.h"
+#include "tva/ofa-tva-manage-page.h"
 
 /* priv instance data
  */
-struct _ofaTVADefinePagePrivate {
+struct _ofaTVAManagePagePrivate {
 
 	/* internals
 	 */
@@ -60,44 +60,44 @@ struct _ofaTVADefinePagePrivate {
 };
 
 static GtkWidget  *v_setup_view( ofaPage *page );
-static GtkWidget  *setup_treeview( ofaTVADefinePage *self );
+static GtkWidget  *setup_treeview( ofaTVAManagePage *self );
 static GtkWidget  *v_setup_buttons( ofaPage *page );
 static GtkWidget  *v_get_top_focusable_widget( const ofaPage *page );
-static gboolean    on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADefinePage *self );
-static ofoTVAForm *treeview_get_selected( ofaTVADefinePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void        setup_first_selection( ofaTVADefinePage *self );
-static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADefinePage *page );
-static void        on_row_selected( GtkTreeSelection *selection, ofaTVADefinePage *self );
-static void        on_new_clicked( GtkButton *button, ofaTVADefinePage *page );
-static void        on_update_clicked( GtkButton *button, ofaTVADefinePage *page );
-static void        on_delete_clicked( GtkButton *button, ofaTVADefinePage *page );
-static void        select_row_by_mnemo( ofaTVADefinePage *page, const gchar *mnemo );
-static void        try_to_delete_current_row( ofaTVADefinePage *page );
-static gboolean    delete_confirmed( ofaTVADefinePage *self, ofoTVAForm *form );
-static void        do_delete( ofaTVADefinePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean    on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVAManagePage *self );
+static ofoTVAForm *treeview_get_selected( ofaTVAManagePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void        setup_first_selection( ofaTVAManagePage *self );
+static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVAManagePage *page );
+static void        on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self );
+static void        on_new_clicked( GtkButton *button, ofaTVAManagePage *page );
+static void        on_update_clicked( GtkButton *button, ofaTVAManagePage *page );
+static void        on_delete_clicked( GtkButton *button, ofaTVAManagePage *page );
+static void        select_row_by_mnemo( ofaTVAManagePage *page, const gchar *mnemo );
+static void        try_to_delete_current_row( ofaTVAManagePage *page );
+static gboolean    delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form );
+static void        do_delete( ofaTVAManagePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
 
-G_DEFINE_TYPE( ofaTVADefinePage, ofa_tva_define_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE )
 
 static void
-tva_define_page_finalize( GObject *instance )
+tva_manage_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_tva_define_page_finalize";
+	static const gchar *thisfn = "ofa_tva_manage_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_TVA_DEFINE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_TVA_MANAGE_PAGE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_tva_define_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_tva_manage_page_parent_class )->finalize( instance );
 }
 
 static void
-tva_define_page_dispose( GObject *instance )
+tva_manage_page_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_TVA_DEFINE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_TVA_MANAGE_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
@@ -105,62 +105,62 @@ tva_define_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_tva_define_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_tva_manage_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_tva_define_page_init( ofaTVADefinePage *self )
+ofa_tva_manage_page_init( ofaTVAManagePage *self )
 {
-	static const gchar *thisfn = "ofa_tva_define_page_init";
+	static const gchar *thisfn = "ofa_tva_manage_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_TVA_DEFINE_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_TVA_MANAGE_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_DEFINE_PAGE, ofaTVADefinePagePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_MANAGE_PAGE, ofaTVAManagePagePrivate );
 }
 
 static void
-ofa_tva_define_page_class_init( ofaTVADefinePageClass *klass )
+ofa_tva_manage_page_class_init( ofaTVAManagePageClass *klass )
 {
-	static const gchar *thisfn = "ofa_tva_define_page_class_init";
+	static const gchar *thisfn = "ofa_tva_manage_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = tva_define_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = tva_define_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = tva_manage_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = tva_manage_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
-	g_type_class_add_private( klass, sizeof( ofaTVADefinePagePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaTVAManagePagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_tva_define_page_v_setup_view";
-	ofaTVADefinePagePrivate *priv;
+	static const gchar *thisfn = "ofa_tva_manage_page_v_setup_view";
+	ofaTVAManagePagePrivate *priv;
 	GtkWidget *treeview;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_TVA_DEFINE_PAGE( page )->priv;
+	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
 	priv->editable = ofo_dossier_is_current( priv->dossier );
 
-	treeview = setup_treeview( OFA_TVA_DEFINE_PAGE( page ));
-	setup_first_selection( OFA_TVA_DEFINE_PAGE( page ));
+	treeview = setup_treeview( OFA_TVA_MANAGE_PAGE( page ));
+	setup_first_selection( OFA_TVA_MANAGE_PAGE( page ));
 
 	return( treeview );
 }
 
 static GtkWidget *
-setup_treeview( ofaTVADefinePage *self )
+setup_treeview( ofaTVAManagePage *self )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkWidget *frame, *scroll, *tview;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
@@ -214,11 +214,11 @@ setup_treeview( ofaTVADefinePage *self )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_TVA_DEFINE_PAGE( page )->priv;
+	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -237,7 +237,7 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_TVA_DEFINE_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_TVA_MANAGE_PAGE( page ), NULL );
 
 	return( NULL );
 }
@@ -248,7 +248,7 @@ v_get_top_focusable_widget( const ofaPage *page )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADefinePage *self )
+on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVAManagePage *self )
 {
 	gboolean stop;
 
@@ -266,9 +266,9 @@ on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADefinePage
 }
 
 static ofoTVAForm *
-treeview_get_selected( ofaTVADefinePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+treeview_get_selected( ofaTVAManagePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeSelection *select;
 	ofoTVAForm *form;
 
@@ -286,9 +286,9 @@ treeview_get_selected( ofaTVADefinePage *page, GtkTreeModel **tmodel, GtkTreeIte
 }
 
 static void
-setup_first_selection( ofaTVADefinePage *self )
+setup_first_selection( ofaTVAManagePage *self )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
@@ -304,15 +304,15 @@ setup_first_selection( ofaTVADefinePage *self )
 }
 
 static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADefinePage *page )
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVAManagePage *page )
 {
 	on_update_clicked( NULL, page );
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaTVADefinePage *self )
+on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
@@ -341,9 +341,9 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADefinePage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaTVADefinePage *page )
+on_new_clicked( GtkButton *button, ofaTVAManagePage *page )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	ofoTVAForm *form;
 
 	priv = page->priv;
@@ -361,9 +361,9 @@ on_new_clicked( GtkButton *button, ofaTVADefinePage *page )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaTVADefinePage *page )
+on_update_clicked( GtkButton *button, ofaTVAManagePage *page )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -384,9 +384,9 @@ on_update_clicked( GtkButton *button, ofaTVADefinePage *page )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaTVADefinePage *page )
+on_delete_clicked( GtkButton *button, ofaTVAManagePage *page )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
@@ -401,9 +401,9 @@ on_delete_clicked( GtkButton *button, ofaTVADefinePage *page )
 }
 
 static void
-select_row_by_mnemo( ofaTVADefinePage *page, const gchar *mnemo )
+select_row_by_mnemo( ofaTVAManagePage *page, const gchar *mnemo )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
@@ -428,9 +428,9 @@ select_row_by_mnemo( ofaTVADefinePage *page, const gchar *mnemo )
 }
 
 static void
-try_to_delete_current_row( ofaTVADefinePage *page )
+try_to_delete_current_row( ofaTVAManagePage *page )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
@@ -444,7 +444,7 @@ try_to_delete_current_row( ofaTVADefinePage *page )
 }
 
 static gboolean
-delete_confirmed( ofaTVADefinePage *self, ofoTVAForm *form )
+delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -460,9 +460,9 @@ delete_confirmed( ofaTVADefinePage *self, ofoTVAForm *form )
 }
 
 static void
-do_delete( ofaTVADefinePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter )
+do_delete( ofaTVAManagePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 	gboolean deletable;
 
 	priv = page->priv;

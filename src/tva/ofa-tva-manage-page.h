@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TVA_DEFINE_PAGE_H__
-#define __OFA_TVA_DEFINE_PAGE_H__
+#ifndef __OFA_TVA_MANAGE_PAGE_H__
+#define __OFA_TVA_MANAGE_PAGE_H__
 
 /**
- * SECTION: ofa_tva_define_page
- * @short_description: #ofaTVADefinePage class definition.
+ * SECTION: ofa_tva_manage_page
+ * @short_description: #ofaTVAManagePage class definition.
  * @include: tva/ofa-tva-define-page.h
  *
  * Defines a new TVA form.
@@ -39,32 +39,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_TVA_DEFINE_PAGE                ( ofa_tva_define_page_get_type())
-#define OFA_TVA_DEFINE_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TVA_DEFINE_PAGE, ofaTVADefinePage ))
-#define OFA_TVA_DEFINE_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TVA_DEFINE_PAGE, ofaTVADefinePageClass ))
-#define OFA_IS_TVA_DEFINE_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TVA_DEFINE_PAGE ))
-#define OFA_IS_TVA_DEFINE_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_DEFINE_PAGE ))
-#define OFA_TVA_DEFINE_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_DEFINE_PAGE, ofaTVADefinePageClass ))
+#define OFA_TYPE_TVA_MANAGE_PAGE                ( ofa_tva_manage_page_get_type())
+#define OFA_TVA_MANAGE_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TVA_MANAGE_PAGE, ofaTVAManagePage ))
+#define OFA_TVA_MANAGE_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TVA_MANAGE_PAGE, ofaTVAManagePageClass ))
+#define OFA_IS_TVA_MANAGE_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TVA_MANAGE_PAGE ))
+#define OFA_IS_TVA_MANAGE_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_MANAGE_PAGE ))
+#define OFA_TVA_MANAGE_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_MANAGE_PAGE, ofaTVAManagePageClass ))
 
-typedef struct _ofaTVADefinePagePrivate         ofaTVADefinePagePrivate;
+typedef struct _ofaTVAManagePagePrivate         ofaTVAManagePagePrivate;
 
 typedef struct {
 	/*< public members >*/
 	ofaPage                  parent;
 
 	/*< private members >*/
-	ofaTVADefinePagePrivate *priv;
+	ofaTVAManagePagePrivate *priv;
 }
-	ofaTVADefinePage;
+	ofaTVAManagePage;
 
 typedef struct {
 	/*< public members >*/
 	ofaPageClass             parent;
 }
-	ofaTVADefinePageClass;
+	ofaTVAManagePageClass;
 
-GType ofa_tva_define_page_get_type( void ) G_GNUC_CONST;
+GType ofa_tva_manage_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_TVA_DEFINE_PAGE_H__ */
+#endif /* __OFA_TVA_MANAGE_PAGE_H__ */

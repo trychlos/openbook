@@ -40,12 +40,12 @@ libofa_tva_la_SOURCES = \
 	ofa-tva.h										\
 	ofa-tva-dbcustomer.c							\
 	ofa-tva-dbcustomer.h							\
-	ofa-tva-define-page.c							\
-	ofa-tva-define-page.h							\
 	ofa-tva-form-properties.c						\
 	ofa-tva-form-properties.h						\
 	ofa-tva-form-store.c							\
 	ofa-tva-form-store.h							\
+	ofa-tva-manage-page.c							\
+	ofa-tva-manage-page.h							\
 	ofo-tva-form.c									\
 	ofo-tva-form.h									\
 	$(NULL)
