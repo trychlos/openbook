@@ -32,7 +32,10 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -51,12 +54,9 @@
 #include "core/ofa-iconcil.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-date-filter-hv-bin.h"
-#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-reconcil-page.h"

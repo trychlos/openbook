@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_IDATE_FILTER_H__
-#define __OFA_IDATE_FILTER_H__
+#ifndef __OPENBOOK_API_OFA_IDATE_FILTER_H__
+#define __OPENBOOK_API_OFA_IDATE_FILTER_H__
 
 /**
  * SECTION: idate_filter
  * @title: ofaIDateFilter
  * @short_description: The IDateFilter Interface
- * @include: ui/ofa-idate-filter.h
+ * @include: openbook/ofa-idate-filter.h
  *
  * The #ofaIDateFilter interface is implemented by #ofaDateFilterBin
  * class. It implements all needed methods to manage the composite
@@ -141,4 +141,4 @@ GtkWidget   *ofa_idate_filter_get_prompt           ( ofaIDateFilter *filter,
 
 G_END_DECLS
 
-#endif /* __OFA_IDATE_FILTER_H__ */
+#endif /* __OPENBOOK_API_OFA_IDATE_FILTER_H__ */

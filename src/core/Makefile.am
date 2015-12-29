@@ -55,6 +55,7 @@ libofa_core_la_SOURCES = \
 	my-decimal-combo.h									\
 	my-dialog.c											\
 	my-double.c											\
+	my-editable-date.c									\
 	my-field-combo.c									\
 	my-field-combo.h									\
 	my-file-monitor.c									\
@@ -77,6 +78,7 @@ libofa_core_la_SOURCES = \
 	ofa-collection-prot.h								\
 	ofa-concil-collection.c								\
 	ofa-concil-collection.h								\
+	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-ddl-update.c									\
@@ -96,6 +98,7 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
+	ofa-idate-filter.c									\
 	ofa-idbconnect.c									\
 	ofa-idbcustomer.c									\
 	ofa-idbeditor.c										\
@@ -154,6 +157,7 @@ libofa_core_la_LDFLAGS = \
 
 ui_files = \
 	ofa-admin-credentials-bin.ui						\
+	ofa-date-filter-hv-bin.ui							\
 	ofa-dbms-root-bin.ui								\
 	ofa-ddl-update.ui									\
 	ofa-dossier-delete-prefs-bin.ui						\

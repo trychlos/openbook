@@ -40,9 +40,9 @@
  * - current:    no
  */
 
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-main-window-def.h"
 
-#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-ledger-treeview.h"
 
 G_BEGIN_DECLS

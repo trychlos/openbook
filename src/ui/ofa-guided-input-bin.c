@@ -31,6 +31,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
@@ -46,7 +47,6 @@
 #include "core/ofa-main-window.h"
 
 #include "ui/my-editable-amount.h"
-#include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-ledger-combo.h"

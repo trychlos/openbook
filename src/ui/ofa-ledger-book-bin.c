@@ -30,12 +30,12 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-date-filter-hv-bin.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledger-book-bin.h"
 

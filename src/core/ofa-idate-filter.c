@@ -30,12 +30,11 @@
 #include <gtk/gtk.h>
 
 #include "api/my-date.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
-
-#include "ui/my-editable-date.h"
-#include "ui/ofa-idate-filter.h"
 
 /* data associated to each implementor object
  */

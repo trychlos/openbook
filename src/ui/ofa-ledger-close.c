@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-preferences.h"
@@ -40,7 +41,6 @@
 #include "core/my-progress-bar.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-editable-date.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-treeview.h"
 

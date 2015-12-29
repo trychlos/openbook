@@ -48,7 +48,6 @@
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-ledger-book-bin.h"
 #include "ui/ofa-ledger-book-render.h"

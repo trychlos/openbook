@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-editable-date.h"
+
 #include "ui/my-cell-renderer-date.h"
-#include "ui/my-editable-date.h"
 
 static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data );
 

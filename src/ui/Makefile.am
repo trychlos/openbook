@@ -61,8 +61,6 @@ openbook_SOURCES = \
 	my-cell-renderer-date.h								\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
-	my-editable-date.c									\
-	my-editable-date.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
 	ofa-about.c											\
@@ -134,8 +132,6 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-date-filter-hv-bin.c							\
-	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
@@ -174,8 +170,6 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
-	ofa-idate-filter.c									\
-	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-iprintable.c									\
@@ -271,7 +265,6 @@ ui_files = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
-	ofa-date-filter-hv-bin.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\

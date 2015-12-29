@@ -27,9 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
-
-#include "ui/ofa-date-filter-hv-bin.h"
-#include "ui/ofa-idate-filter.h"
+#include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-idate-filter.h"
 
 /* private instance data
  */

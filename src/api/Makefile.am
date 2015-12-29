@@ -30,6 +30,7 @@ api_include_HEADERS = \
 	ofa-file-format.h									\
 	ofa-iabout.h										\
 	ofa-idataset.h										\
+	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
 	ofa-idbcustomer.h									\
 	ofa-idbeditor.h										\
@@ -51,6 +52,7 @@ api_include_HEADERS = \
 	my-date.h											\
 	my-dialog.h											\
 	my-double.h											\
+	my-editable-date.h									\
 	my-file-monitor.h									\
 	my-timeout.h										\
 	my-utils.h											\
@@ -58,6 +60,7 @@ api_include_HEADERS = \
 	my-window-prot.h									\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
+	ofa-date-filter-hv-bin.h							\
 	ofa-main-window-def.h								\
 	ofa-page.h											\
 	ofa-page-def.h										\

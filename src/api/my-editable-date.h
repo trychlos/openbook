@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_EDITABLE_DATE_H__
-#define __MY_EDITABLE_DATE_H__
+#ifndef __OPENBOOK_API_MY_EDITABLE_DATE_H__
+#define __OPENBOOK_API_MY_EDITABLE_DATE_H__
 
 /**
  * SECTION: my_editable_date
  * @short_description: #my_editable_date set of functons
- * @include: ui/my-editable-date.h
+ * @include: openbook/my-editable-date.h
  *
  * This class lets the user enter dates in entries.
  *
@@ -61,4 +61,4 @@ gboolean     my_editable_date_is_empty        ( GtkEditable *editable );
 
 G_END_DECLS
 
-#endif /* __MY_EDITABLE_DATE_H__ */
+#endif /* __OPENBOOK_API_MY_EDITABLE_DATE_H__ */

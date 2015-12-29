@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DATE_FILTER_HV_BIN_H__
-#define __OFA_DATE_FILTER_HV_BIN_H__
+#ifndef __OPENBOOK_API_OFA_DATE_FILTER_HV_BIN_H__
+#define __OPENBOOK_API_OFA_DATE_FILTER_HV_BIN_H__
 
 /**
  * SECTION: ofa_date_filter_hv_bin
  * @short_description: #ofaDateFilterHVBin class definition.
- * @include: ui/ofa-date-filter-hv-bin.h
+ * @include: openbook/ofa-date-filter-hv-bin.h
  *
  * Display a frame with a starting and an ending date to be used as
  * filters in a treeview.
@@ -81,4 +81,4 @@ ofaDateFilterHVBin *ofa_date_filter_hv_bin_new     ( void );
 
 G_END_DECLS
 
-#endif /* __OFA_DATE_FILTER_HV_BIN_H__ */
+#endif /* __OPENBOOK_API_OFA_DATE_FILTER_HV_BIN_H__ */

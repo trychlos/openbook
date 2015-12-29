@@ -46,7 +46,6 @@
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idate-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-balance-bin.h"
 #include "ui/ofa-balance-render.h"

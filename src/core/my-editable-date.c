@@ -31,9 +31,8 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
-
-#include "ui/my-editable-date.h"
 
 typedef struct {
 	guint        date_format;

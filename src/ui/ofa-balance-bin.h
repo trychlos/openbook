@@ -45,10 +45,10 @@
  * - current:    no
  */
 
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-main-window-def.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-idate-filter.h"
 
 G_BEGIN_DECLS
 

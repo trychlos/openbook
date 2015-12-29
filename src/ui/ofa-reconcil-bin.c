@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -37,7 +38,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-reconcil-bin.h"
 

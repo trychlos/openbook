@@ -30,6 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"
@@ -37,6 +39,7 @@
 #include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-declare-page.h"
+#include "tva/ofa-tva-form-store.h"
 #include "tva/ofo-tva-form.h"
 
 /* priv instance data
@@ -45,37 +48,28 @@ struct _ofaTVADeclarePagePrivate {
 
 	/* internals
 	 */
-	ofoDossier      *dossier;
-	gboolean         editable;
+	ofoDossier *dossier;
+	gboolean    editable;
 
 	/* UI
 	 */
-	GtkWidget       *treeview;
-	GtkWidget       *update_btn;
-	GtkWidget       *delete_btn;
-	GtkWidget       *declare_btn;
-
-	ofaTVAFormStore *store;
+	GtkWidget  *main_grid;				/* inside of the top frame */
+	GtkWidget  *selection_combo;
+	GtkWidget  *declare_frame;
 };
 
-static GtkWidget  *v_setup_view( ofaPage *page );
-static GtkWidget  *setup_treeview( ofaTVADeclarePage *self );
-static GtkWidget  *v_setup_buttons( ofaPage *page );
-static GtkWidget  *v_get_top_focusable_widget( const ofaPage *page );
-static gboolean    on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self );
-static ofoTVAForm *treeview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void        setup_first_selection( ofaTVADeclarePage *self );
-static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page );
-static void        on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self );
-static void        on_new_clicked( GtkButton *button, ofaTVADeclarePage *page );
-static void        on_update_clicked( GtkButton *button, ofaTVADeclarePage *page );
-static void        on_delete_clicked( GtkButton *button, ofaTVADeclarePage *page );
-static void        select_row_by_mnemo( ofaTVADeclarePage *page, const gchar *mnemo );
-static void        try_to_delete_current_row( ofaTVADeclarePage *page );
-static gboolean    delete_confirmed( ofaTVADeclarePage *self, ofoTVAForm *form );
-static void        do_delete( ofaTVADeclarePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void        on_declare_clicked( GtkButton *button, ofaTVADeclarePage *page );
-static void        do_declare( ofaTVADeclarePage *page, ofoTVAForm *form );
+static const gchar *st_pref_effect      = "TVADeclareEffectDates";
+
+static GtkWidget *v_setup_view( ofaPage *page );
+static GtkWidget *setup_top_grid( ofaTVADeclarePage *self );
+static GtkWidget *setup_form_selection( ofaTVADeclarePage *self );
+static GtkWidget *setup_dates_filter( ofaTVADeclarePage *self );
+static GtkWidget *setup_declare_grid( ofaTVADeclarePage *self );
+static GtkWidget *v_setup_buttons( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       on_form_selected( GtkComboBox *combo, ofaTVADeclarePage *page );
+static void       init_declare_grid_with_form( ofaTVADeclarePage *page, ofoTVAForm *form );
+static void       on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaTVADeclarePage *page );
 
 G_DEFINE_TYPE( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE )
 
@@ -145,7 +139,7 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_tva_declare_page_v_setup_view";
 	ofaTVADeclarePagePrivate *priv;
 	ofoDossier *dossier;
-	GtkWidget *treeview;
+	GtkWidget *frame, *widget;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -155,64 +149,95 @@ v_setup_view( ofaPage *page )
 	priv->dossier = dossier;
 	priv->editable = ofo_dossier_is_current( dossier );
 
-	treeview = setup_treeview( OFA_TVA_DECLARE_PAGE( page ));
-	setup_first_selection( OFA_TVA_DECLARE_PAGE( page ));
+	/* actually a grid */
+	frame = setup_top_grid( OFA_TVA_DECLARE_PAGE( page ));
 
-	return( treeview );
+	widget = setup_form_selection( OFA_TVA_DECLARE_PAGE( page ));
+	gtk_grid_attach( GTK_GRID( priv->main_grid ), widget, 0, 0, 1, 1 );
+
+	widget = setup_dates_filter( OFA_TVA_DECLARE_PAGE( page ));
+	gtk_grid_attach( GTK_GRID( priv->main_grid ), widget, 1, 0, 1, 1 );
+
+	widget = setup_declare_grid( OFA_TVA_DECLARE_PAGE( page ));
+	gtk_grid_attach( GTK_GRID( priv->main_grid ), widget, 0, 1, 2, 1 );
+
+	return( frame );
 }
 
 static GtkWidget *
-setup_treeview( ofaTVADeclarePage *self )
+setup_top_grid( ofaTVADeclarePage *self )
 {
 	ofaTVADeclarePagePrivate *priv;
-	GtkWidget *frame, *scroll, *tview;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
 
 	priv = self->priv;
 
-	frame = gtk_frame_new( NULL );
-	my_utils_widget_set_margin( frame, 4, 4, 4, 0 );
+	priv->main_grid = gtk_grid_new();
+
+	return( priv->main_grid );
+}
+
+static GtkWidget *
+setup_form_selection( ofaTVADeclarePage *self )
+{
+	ofaTVADeclarePagePrivate *priv;
+	GtkWidget *frame, *grid, *combo;
+	ofaTVAFormStore *store;
+	GtkCellRenderer *cell;
+
+	priv = self->priv;
+
+	frame = gtk_frame_new( _( " Form selection " ));
+	gtk_widget_set_hexpand( frame, TRUE );
+	my_utils_widget_set_margin( frame, 0, 0, 4, 4 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
-	scroll = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW( scroll ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), scroll );
+	grid = gtk_grid_new();
+	my_utils_widget_set_margin( grid, 4, 4, 12, 4 );
+	gtk_container_add( GTK_CONTAINER( frame ), grid );
 
-	tview = gtk_tree_view_new();
-	gtk_widget_set_hexpand( tview, TRUE );
-	gtk_widget_set_vexpand( tview, TRUE );
-	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), tview );
-	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
-	priv->treeview = tview;
+	combo = gtk_combo_box_new();
+	gtk_grid_attach( GTK_GRID( grid ), combo, 0, 0, 1, 1 );
+	priv->selection_combo = combo;
 
-	priv->store = ofa_tva_form_store_new( priv->dossier );
-	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->treeview ), GTK_TREE_MODEL( priv->store ));
+	g_signal_connect( combo, "changed", G_CALLBACK( on_form_selected ), self );
 
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnemo" ),
-			text_cell, "text", TVA_COL_MNEMO,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->treeview ), column );
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", TVA_COL_MNEMO );
 
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			text_cell, "text", TVA_COL_LABEL,
-			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->treeview ), column );
+	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( combo ), TVA_COL_MNEMO );
 
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+	store = ofa_tva_form_store_new( priv->dossier );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
 
-	return( GTK_WIDGET( frame ));
+	return( frame );
+}
+
+static GtkWidget *
+setup_dates_filter( ofaTVADeclarePage *self )
+{
+	ofaDateFilterHVBin *filter;
+
+	filter = ofa_date_filter_hv_bin_new();
+	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( filter ), st_pref_effect );
+	g_signal_connect( filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
+
+	return( GTK_WIDGET( filter ));
+}
+
+static GtkWidget *
+setup_declare_grid( ofaTVADeclarePage *self )
+{
+	ofaTVADeclarePagePrivate *priv;
+
+	priv = self->priv;
+
+	priv->declare_frame = gtk_frame_new( _( " Form declaration " ));
+	gtk_widget_set_vexpand( priv->declare_frame, TRUE );
+	my_utils_widget_set_margin( priv->declare_frame, 0, 4, 4, 4 );
+	gtk_frame_set_shadow_type( GTK_FRAME( priv->declare_frame ), GTK_SHADOW_IN );
+
+	return( priv->declare_frame );
 }
 
 static GtkWidget *
@@ -224,266 +249,87 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaTVADeclarePagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_TVA_DECLARE_PAGE( page ), NULL );
 
-	return( NULL );
+	priv = OFA_TVA_DECLARE_PAGE( page )->priv;
+
+	return( priv->selection_combo );
 }
 
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self )
+static void
+on_form_selected( GtkComboBox *combo, ofaTVADeclarePage *page )
 {
-	gboolean stop;
+	ofaTVADeclarePagePrivate *priv;
+	GtkWidget *child;
+	const gchar *cstr;
+	ofoTVAForm *form;
 
-	stop = FALSE;
+	priv = page->priv;
 
-	if( event->state == 0 ){
-		if( event->keyval == GDK_KEY_Insert ){
-			on_new_clicked( NULL, self );
-		} else if( event->keyval == GDK_KEY_Delete ){
-			try_to_delete_current_row( self );
+	/* first destroy the previous declaration grid */
+	child = gtk_bin_get_child( GTK_BIN( priv->declare_frame ));
+	if( child ){
+		gtk_widget_destroy( child );
+	}
+
+	cstr = gtk_combo_box_get_active_id( combo );
+	if( my_strlen( cstr )){
+		form = ofo_tva_form_get_by_mnemo( priv->dossier, cstr );
+		if( form ){
+			init_declare_grid_with_form( page, form );
 		}
 	}
 
-	return( stop );
+	gtk_widget_show_all( priv->declare_frame );
 }
 
-static ofoTVAForm *
-treeview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+static void
+init_declare_grid_with_form( ofaTVADeclarePage *page, ofoTVAForm *form )
 {
 	ofaTVADeclarePagePrivate *priv;
-	GtkTreeSelection *select;
-	ofoTVAForm *form;
+	GtkWidget *grid, *label, *entry;
+	const gchar *cstr;
+
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	priv = page->priv;
-	form = NULL;
 
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
+	grid = gtk_grid_new();
+	my_utils_widget_set_margin( grid, 4, 4, 12, 4 );
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
+	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
+	gtk_container_add( GTK_CONTAINER( priv->declare_frame ), grid );
 
-		gtk_tree_model_get( *tmodel, iter, TVA_COL_OBJECT, &form, -1 );
-		g_object_unref( form );
+	label = gtk_label_new_with_mnemonic( _( "_Mnemo :" ));
+	gtk_widget_set_halign( label, 1.0 );
+	gtk_grid_attach( GTK_GRID( grid ), label, 0, 0, 1, 1 );
+
+	entry = gtk_entry_new();
+	my_utils_widget_set_editable( entry, FALSE );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_grid_attach( GTK_GRID( grid ), entry, 1, 0, 1, 1 );
+
+	cstr = ofo_tva_form_get_mnemo( form );
+	gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+
+	label = gtk_label_new_with_mnemonic( _( "_Label :" ));
+	gtk_widget_set_halign( label, 1.0 );
+	gtk_grid_attach( GTK_GRID( grid ), label, 2, 0, 1, 1 );
+
+	entry = gtk_entry_new();
+	gtk_widget_set_hexpand( entry, TRUE );
+	my_utils_widget_set_editable( entry, FALSE );
+	gtk_grid_attach( GTK_GRID( grid ), entry, 3, 0, 1, 1 );
+
+	cstr = ofo_tva_form_get_label( form );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
-
-	return( form );
 }
-
 static void
-setup_first_selection( ofaTVADeclarePage *self )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-
-	priv = self->priv;
-	model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
-	if( gtk_tree_model_get_iter_first( model, &iter )){
-		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	gtk_widget_grab_focus( priv->treeview );
-}
-
-static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page )
-{
-	on_update_clicked( NULL, page );
-}
-
-static void
-on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-	gboolean is_form;
-
-	form = NULL;
-
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, TVA_COL_OBJECT, &form, -1 );
-		g_object_unref( form );
-	}
-
-	priv = self->priv;
-	is_form = form && OFO_IS_TVA_FORM( form );
-
-	if( priv->update_btn ){
-		gtk_widget_set_sensitive( priv->update_btn,
-				is_form );
-	}
-
-	if( priv->delete_btn ){
-		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->editable && is_form && ofo_tva_form_is_deletable( form, priv->dossier ));
-	}
-
-	if( priv->declare_btn ){
-		gtk_widget_set_sensitive( priv->declare_btn,
-				priv->editable && is_form );
-	}
-}
-
-static void
-on_new_clicked( GtkButton *button, ofaTVADeclarePage *page )
-{
-	ofaTVADeclarePagePrivate *priv;
-	ofoTVAForm *form;
-
-	priv = page->priv;
-	form = ofo_tva_form_new();
-
-	if( ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form )){
-		g_debug( "on_new_clicked: form=%p", ( void * ) form );
-		select_row_by_mnemo( page, ofo_tva_form_get_mnemo( form ));
-
-	} else {
-		g_object_unref( form );
-	}
-
-	gtk_widget_grab_focus( priv->treeview );
-}
-
-static void
-on_update_clicked( GtkButton *button, ofaTVADeclarePage *page )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-
-	priv = page->priv;
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, TVA_COL_OBJECT, &form, -1 );
-		g_object_unref( form );
-		ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form );
-		/* taken into account by dossier signaling system */
-	}
-
-	gtk_widget_grab_focus( priv->treeview );
-}
-
-static void
-on_delete_clicked( GtkButton *button, ofaTVADeclarePage *page )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-
-	priv = page->priv;
-	form = treeview_get_selected( page, &tmodel, &iter );
-	if( form ){
-		do_delete( page, form, tmodel, &iter );
-	}
-
-	gtk_widget_grab_focus( priv->treeview );
-}
-
-static void
-select_row_by_mnemo( ofaTVADeclarePage *page, const gchar *mnemo )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-	GtkTreeSelection *selection;
-
-	priv = page->priv;
-	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, TVA_COL_OBJECT, &form, -1 );
-			g_object_unref( form );
-			if( !g_utf8_collate( mnemo, ofo_tva_form_get_mnemo( form ))){
-				selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-				gtk_tree_selection_select_iter( selection, &iter );
-				break;
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
-}
-
-static void
-try_to_delete_current_row( ofaTVADeclarePage *page )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-
-	priv = page->priv;
-	form = treeview_get_selected( page, &tmodel, &iter );
-	if( form &&
-			ofo_tva_form_is_deletable( form, priv->dossier )){
-		do_delete( page, form, tmodel, &iter );
-	}
-}
-
-static gboolean
-delete_confirmed( ofaTVADeclarePage *self, ofoTVAForm *form )
-{
-	gchar *msg;
-	gboolean delete_ok;
-
-	msg = g_strdup_printf( _( "Are you sure you want delete the '%s' TVA form ?" ),
-			ofo_tva_form_get_mnemo( form ));
-
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
-
-	g_free( msg );
-
-	return( delete_ok );
-}
-
-static void
-do_delete( ofaTVADeclarePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	ofaTVADeclarePagePrivate *priv;
-	gboolean deletable;
-
-	priv = page->priv;
-	deletable = ofo_tva_form_is_deletable( form, priv->dossier );
-	g_return_if_fail( deletable );
-
-	if( delete_confirmed( page, form )){
-		ofo_tva_form_delete( form, priv->dossier );
-		/* taken into account by dossier signaling system */
-	}
-}
-
-static void
-on_declare_clicked( GtkButton *button, ofaTVADeclarePage *page )
-{
-	ofaTVADeclarePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *form;
-
-	priv = page->priv;
-	form = treeview_get_selected( page, &tmodel, &iter );
-	if( form ){
-		do_declare( page, form );
-	}
-
-	gtk_widget_grab_focus( priv->treeview );
-}
-
-static void
-do_declare( ofaTVADeclarePage *page, ofoTVAForm *form )
+on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaTVADeclarePage *page )
 {
 }

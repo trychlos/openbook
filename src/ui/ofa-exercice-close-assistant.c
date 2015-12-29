@@ -31,6 +31,7 @@
 #include <math.h>
 
 #include "api/my-date.h"
+#include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
@@ -51,7 +52,6 @@
 #include "core/ofa-main-window.h"
 
 #include "ui/my-assistant.h"
-#include "ui/my-editable-date.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"

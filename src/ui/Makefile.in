@@ -139,8 +139,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-cell-renderer-amount.$(OBJEXT) \
 	my-cell-renderer-date.$(OBJEXT) my-editable-amount.$(OBJEXT) \
-	my-editable-date.$(OBJEXT) my-tab-label.$(OBJEXT) \
-	ofa-about.$(OBJEXT) ofa-account-book-bin.$(OBJEXT) \
+	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
+	ofa-account-book-bin.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-chart-bin.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) \
@@ -159,7 +159,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
 	ofa-currency-page.$(OBJEXT) ofa-currency-combo.$(OBJEXT) \
 	ofa-currency-properties.$(OBJEXT) ofa-currency-store.$(OBJEXT) \
-	ofa-date-filter-hv-bin.$(OBJEXT) ofa-dossier-delete.$(OBJEXT) \
+	ofa-dossier-delete.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-manager.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
 	ofa-dossier-new-bin.$(OBJEXT) ofa-dossier-new-mini.$(OBJEXT) \
@@ -170,14 +170,14 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
 	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-idate-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
-	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
-	ofa-itreeview-column.$(OBJEXT) ofa-itreeview-display.$(OBJEXT) \
-	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
-	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
-	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
-	ofa-ledger-store.$(OBJEXT) ofa-ledger-treeview.$(OBJEXT) \
-	ofa-main-window.$(OBJEXT) ofa-ope-template-book-bin.$(OBJEXT) \
+	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
+	ofa-irenderable.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
+	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
+	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
+	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
+	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
+	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
+	ofa-ope-template-book-bin.$(OBJEXT) \
 	ofa-ope-template-frame-bin.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) \
@@ -489,8 +489,6 @@ openbook_SOURCES = \
 	my-cell-renderer-date.h								\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
-	my-editable-date.c									\
-	my-editable-date.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
 	ofa-about.c											\
@@ -562,8 +560,6 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-date-filter-hv-bin.c							\
-	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
@@ -602,8 +598,6 @@ openbook_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
-	ofa-idate-filter.c									\
-	ofa-idate-filter.h									\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-iprintable.c									\
@@ -699,7 +693,6 @@ ui_files = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
-	ofa-date-filter-hv-bin.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
@@ -865,7 +858,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-date.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-amount.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-date.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
@@ -901,7 +893,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-manager.Po@am__quote@
@@ -921,7 +912,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
