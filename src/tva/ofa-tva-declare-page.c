@@ -55,7 +55,13 @@ struct _ofaTVADeclarePagePrivate {
 	 */
 	GtkWidget  *main_grid;				/* inside of the top frame */
 	GtkWidget  *selection_combo;
-	GtkWidget  *declare_frame;
+	GtkWidget  *selection_label;
+	GtkWidget  *booleans_viewport;
+	GtkWidget  *taxes_viewport;
+
+	/* runtime
+	 */
+	ofoTVAForm *form;
 };
 
 static const gchar *st_pref_effect      = "TVADeclareEffectDates";
@@ -64,11 +70,17 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_top_grid( ofaTVADeclarePage *self );
 static GtkWidget *setup_form_selection( ofaTVADeclarePage *self );
 static GtkWidget *setup_dates_filter( ofaTVADeclarePage *self );
-static GtkWidget *setup_declare_grid( ofaTVADeclarePage *self );
+static GtkWidget *setup_declare_frame( ofaTVADeclarePage *self );
+static GtkWidget *setup_book_booleans_page( ofaTVADeclarePage *page );
+static GtkWidget *setup_book_taxes_page( ofaTVADeclarePage *page );
+static GtkWidget *setup_book_notes_page( ofaTVADeclarePage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_form_selected( GtkComboBox *combo, ofaTVADeclarePage *page );
-static void       init_declare_grid_with_form( ofaTVADeclarePage *page, ofoTVAForm *form );
+static void       clear_declare_frame( ofaTVADeclarePage *page );
+static void       init_declare_frame_with_form( ofaTVADeclarePage *page, ofoTVAForm *form );
+static GtkWidget *init_declare_grid_booleans( ofaTVADeclarePage *page, ofoTVAForm *form );
+static GtkWidget *init_declare_grid_bases_and_taxes( ofaTVADeclarePage *page, ofoTVAForm *form );
 static void       on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaTVADeclarePage *page );
 
 G_DEFINE_TYPE( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE )
@@ -158,7 +170,7 @@ v_setup_view( ofaPage *page )
 	widget = setup_dates_filter( OFA_TVA_DECLARE_PAGE( page ));
 	gtk_grid_attach( GTK_GRID( priv->main_grid ), widget, 1, 0, 1, 1 );
 
-	widget = setup_declare_grid( OFA_TVA_DECLARE_PAGE( page ));
+	widget = setup_declare_frame( OFA_TVA_DECLARE_PAGE( page ));
 	gtk_grid_attach( GTK_GRID( priv->main_grid ), widget, 0, 1, 2, 1 );
 
 	return( frame );
@@ -180,15 +192,14 @@ static GtkWidget *
 setup_form_selection( ofaTVADeclarePage *self )
 {
 	ofaTVADeclarePagePrivate *priv;
-	GtkWidget *frame, *grid, *combo;
+	GtkWidget *frame, *grid, *combo, *label;
 	ofaTVAFormStore *store;
 	GtkCellRenderer *cell;
 
 	priv = self->priv;
 
 	frame = gtk_frame_new( _( " Form selection " ));
-	gtk_widget_set_hexpand( frame, TRUE );
-	my_utils_widget_set_margin( frame, 0, 0, 4, 4 );
+	my_utils_widget_set_margin( frame, 0, 4, 4, 4 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	grid = gtk_grid_new();
@@ -198,6 +209,11 @@ setup_form_selection( ofaTVADeclarePage *self )
 	combo = gtk_combo_box_new();
 	gtk_grid_attach( GTK_GRID( grid ), combo, 0, 0, 1, 1 );
 	priv->selection_combo = combo;
+
+	label = gtk_label_new( NULL );
+	gtk_widget_set_sensitive( label, FALSE );
+	gtk_grid_attach( GTK_GRID( grid ), label, 0, 1, 1, 1 );
+	priv->selection_label = label;
 
 	g_signal_connect( combo, "changed", G_CALLBACK( on_form_selected ), self );
 
@@ -219,6 +235,7 @@ setup_dates_filter( ofaTVADeclarePage *self )
 	ofaDateFilterHVBin *filter;
 
 	filter = ofa_date_filter_hv_bin_new();
+	my_utils_widget_set_margin( GTK_WIDGET( filter ), 0, 4, 0, 4 );
 	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( filter ), st_pref_effect );
 	g_signal_connect( filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
 
@@ -226,18 +243,81 @@ setup_dates_filter( ofaTVADeclarePage *self )
 }
 
 static GtkWidget *
-setup_declare_grid( ofaTVADeclarePage *self )
+setup_declare_frame( ofaTVADeclarePage *self )
+{
+	GtkWidget *book, *label, *booleans, *taxes, *notes;
+
+	book = gtk_notebook_new();
+	my_utils_widget_set_margin( book, 0, 4, 4, 4 );
+	gtk_widget_set_hexpand( book, TRUE );
+	gtk_widget_set_vexpand( book, TRUE );
+
+	label = gtk_label_new_with_mnemonic( _( "_Booleans" ));
+	booleans = setup_book_booleans_page( self );
+	gtk_notebook_append_page( GTK_NOTEBOOK( book ), booleans, label );
+
+	label = gtk_label_new_with_mnemonic( _( "Bases and _Taxes" ));
+	taxes = setup_book_taxes_page( self );
+	gtk_notebook_append_page( GTK_NOTEBOOK( book ), taxes, label );
+
+	label = gtk_label_new_with_mnemonic( _( "Notes" ));
+	notes = setup_book_notes_page( self );
+	gtk_notebook_append_page( GTK_NOTEBOOK( book ), notes, label );
+
+	return( book );
+}
+
+static GtkWidget *
+setup_book_booleans_page( ofaTVADeclarePage *page )
 {
 	ofaTVADeclarePagePrivate *priv;
+	GtkWidget *scrolled, *viewport;
 
-	priv = self->priv;
+	priv = page->priv;
 
-	priv->declare_frame = gtk_frame_new( _( " Form declaration " ));
-	gtk_widget_set_vexpand( priv->declare_frame, TRUE );
-	my_utils_widget_set_margin( priv->declare_frame, 0, 4, 4, 4 );
-	gtk_frame_set_shadow_type( GTK_FRAME( priv->declare_frame ), GTK_SHADOW_IN );
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	my_utils_widget_set_margin( scrolled, 4, 4, 4, 4 );
 
-	return( priv->declare_frame );
+	viewport = gtk_viewport_new( NULL, NULL );
+	gtk_container_add( GTK_CONTAINER( scrolled ), viewport );
+
+	priv->booleans_viewport = viewport;
+
+	return( scrolled );
+}
+
+static GtkWidget *
+setup_book_taxes_page( ofaTVADeclarePage *page )
+{
+	ofaTVADeclarePagePrivate *priv;
+	GtkWidget *scrolled, *viewport;
+
+	priv = page->priv;
+
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	my_utils_widget_set_margin( scrolled, 4, 4, 4, 4 );
+
+	viewport = gtk_viewport_new( NULL, NULL );
+	gtk_container_add( GTK_CONTAINER( scrolled ), viewport );
+
+	priv->taxes_viewport = viewport;
+
+	return( scrolled );
+}
+
+static GtkWidget *
+setup_book_notes_page( ofaTVADeclarePage *page )
+{
+	GtkWidget *scrolled, *textview;
+
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	my_utils_widget_set_margin( scrolled, 4, 4, 4, 4 );
+
+	textview = gtk_text_view_new();
+	gtk_container_add( GTK_CONTAINER( scrolled ), textview );
+	my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( textview ), NULL, TRUE );
+
+	return( scrolled );
 }
 
 static GtkWidget *
@@ -262,73 +342,162 @@ static void
 on_form_selected( GtkComboBox *combo, ofaTVADeclarePage *page )
 {
 	ofaTVADeclarePagePrivate *priv;
-	GtkWidget *child;
-	const gchar *cstr;
+	const gchar *cstr, *clabel;
 	ofoTVAForm *form;
 
 	priv = page->priv;
 
 	/* first destroy the previous declaration grid */
-	child = gtk_bin_get_child( GTK_BIN( priv->declare_frame ));
-	if( child ){
-		gtk_widget_destroy( child );
-	}
+	clear_declare_frame( page );
+	priv->form = NULL;
+	clabel = NULL;
 
+	/* then setup the frame with the current selection */
 	cstr = gtk_combo_box_get_active_id( combo );
 	if( my_strlen( cstr )){
 		form = ofo_tva_form_get_by_mnemo( priv->dossier, cstr );
 		if( form ){
-			init_declare_grid_with_form( page, form );
+			clabel = ofo_tva_form_get_label( form );
+			init_declare_frame_with_form( page, form );
+			priv->form = form;
 		}
 	}
 
-	gtk_widget_show_all( priv->declare_frame );
+	gtk_label_set_text( GTK_LABEL( priv->selection_label ), my_strlen( clabel ) ? clabel : "" );
+	gtk_widget_show_all( GTK_WIDGET( page ));
 }
 
 static void
-init_declare_grid_with_form( ofaTVADeclarePage *page, ofoTVAForm *form )
+clear_declare_frame( ofaTVADeclarePage *page )
 {
 	ofaTVADeclarePagePrivate *priv;
-	GtkWidget *grid, *label, *entry;
-	const gchar *cstr;
+	GtkWidget *child;
+
+	priv = page->priv;
+
+	g_return_if_fail( priv->booleans_viewport && GTK_IS_VIEWPORT( priv->booleans_viewport ));
+	child = gtk_bin_get_child( GTK_BIN( priv->booleans_viewport ));
+	if( child ){
+		gtk_widget_destroy( child );
+	}
+
+	g_return_if_fail( priv->taxes_viewport && GTK_IS_VIEWPORT( priv->taxes_viewport ));
+	child = gtk_bin_get_child( GTK_BIN( priv->taxes_viewport ));
+	if( child ){
+		gtk_widget_destroy( child );
+	}
+}
+
+static void
+init_declare_frame_with_form( ofaTVADeclarePage *page, ofoTVAForm *form )
+{
+	ofaTVADeclarePagePrivate *priv;
+	GtkWidget *widget;
 
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	priv = page->priv;
 
+	widget = init_declare_grid_booleans( page, form );
+	gtk_container_add( GTK_CONTAINER( priv->booleans_viewport ), widget );
+
+	widget = init_declare_grid_bases_and_taxes( page, form );
+	gtk_container_add( GTK_CONTAINER( priv->taxes_viewport ), widget );
+}
+
+static GtkWidget *
+init_declare_grid_booleans( ofaTVADeclarePage *page, ofoTVAForm *form )
+{
+	GtkWidget *grid, *check;
+	guint i, count;
+	const gchar *cstr;
+
 	grid = gtk_grid_new();
-	my_utils_widget_set_margin( grid, 4, 4, 12, 4 );
 	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
-	gtk_container_add( GTK_CONTAINER( priv->declare_frame ), grid );
 
-	label = gtk_label_new_with_mnemonic( _( "_Mnemo :" ));
-	gtk_widget_set_halign( label, 1.0 );
-	gtk_grid_attach( GTK_GRID( grid ), label, 0, 0, 1, 1 );
-
-	entry = gtk_entry_new();
-	my_utils_widget_set_editable( entry, FALSE );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
-	gtk_grid_attach( GTK_GRID( grid ), entry, 1, 0, 1, 1 );
-
-	cstr = ofo_tva_form_get_mnemo( form );
-	gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
-
-	label = gtk_label_new_with_mnemonic( _( "_Label :" ));
-	gtk_widget_set_halign( label, 1.0 );
-	gtk_grid_attach( GTK_GRID( grid ), label, 2, 0, 1, 1 );
-
-	entry = gtk_entry_new();
-	gtk_widget_set_hexpand( entry, TRUE );
-	my_utils_widget_set_editable( entry, FALSE );
-	gtk_grid_attach( GTK_GRID( grid ), entry, 3, 0, 1, 1 );
-
-	cstr = ofo_tva_form_get_label( form );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	count = ofo_tva_form_boolean_get_count( form );
+	for( i=0 ; i<count ; ++i ){
+		cstr = ofo_tva_form_boolean_get_label( form, i );
+		check = gtk_check_button_new_with_label( cstr );
+		gtk_grid_attach( GTK_GRID( grid ), check, 0, i, 1, 1 );
 	}
+
+	return( grid );
 }
+
+static GtkWidget *
+init_declare_grid_bases_and_taxes( ofaTVADeclarePage *page, ofoTVAForm *form )
+{
+	GtkWidget *grid, *label, *entry;
+	guint i, count;
+	const gchar *cstr;
+	gchar *str;
+	gboolean has_base, has_amount;
+
+	grid = gtk_grid_new();
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
+	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
+
+	count = ofo_tva_form_detail_get_count( form );
+	for( i=0 ; i<count ; ++i ){
+
+		label = gtk_label_new( NULL );
+		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
+		my_utils_widget_set_xalign( label, 1.0 );
+		str = g_strdup_printf( "<i>%u</i>", i+1 );
+		gtk_label_set_markup( GTK_LABEL( label ), str );
+		g_free( str );
+		gtk_label_set_width_chars( GTK_LABEL( label ), 3 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, i, 1, 1 );
+
+		/* code */
+		entry = gtk_entry_new();
+		my_utils_widget_set_editable( entry, FALSE );
+		gtk_entry_set_width_chars( GTK_ENTRY( entry ), 4 );
+		gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 4 );
+		gtk_grid_attach( GTK_GRID( grid ), entry, 1, i, 1, 1 );
+
+		cstr = ofo_tva_form_detail_get_code( form, i );
+		gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+
+		/* label */
+		entry = gtk_entry_new();
+		my_utils_widget_set_editable( entry, FALSE );
+		gtk_widget_set_hexpand( entry, TRUE );
+		gtk_grid_attach( GTK_GRID( grid ), entry, 2, i, 1, 1 );
+
+		cstr = ofo_tva_form_detail_get_label( form, i );
+		gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+
+		/* base */
+		has_base = ofo_tva_form_detail_get_has_base( form, i );
+		if( has_base ){
+			entry = gtk_entry_new();
+			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_grid_attach( GTK_GRID( grid ), entry, 3, i, 1, 1 );
+
+			cstr = ofo_tva_form_detail_get_base( form, i );
+			gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+		}
+
+		/* amount */
+		has_amount = ofo_tva_form_detail_get_has_amount( form, i );
+		if( has_amount ){
+			entry = gtk_entry_new();
+			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_grid_attach( GTK_GRID( grid ), entry, 4, i, 1, 1 );
+
+			cstr = ofo_tva_form_detail_get_amount( form, i );
+			gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+		}
+	}
+
+	return( grid );
+}
+
 static void
 on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaTVADeclarePage *page )
 {
