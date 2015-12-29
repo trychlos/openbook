@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
 
