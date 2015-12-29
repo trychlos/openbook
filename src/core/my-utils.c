@@ -731,27 +731,46 @@ my_utils_container_notes_setup_full(
 		GtkContainer *container, const gchar *widget_name, const gchar *notes, gboolean editable )
 {
 	GtkWidget *view;
+
+	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+
+	view = my_utils_container_get_child_by_name( container, widget_name );
+	g_return_val_if_fail( view && GTK_IS_TEXT_VIEW( view ), NULL );
+
+	my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( view ), notes, editable );
+
+	return( view );
+}
+
+/**
+ * my_utils_container_notes_setup_ex:
+ * @textview: the #GtkTextView widget.
+ * @content: the current 'notes' content.
+ * @editable: whether the widget must be set editable.
+ *
+ * Setup the @content in the widget and the editability status.
+ */
+void
+my_utils_container_notes_setup_ex( GtkTextView *textview, const gchar *notes, gboolean editable )
+{
 	GtkTextBuffer *buffer;
 	gchar *str;
 
-	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+	g_return_if_fail( textview && GTK_IS_TEXT_VIEW( textview ));
 
 	str = g_strdup( my_strlen( notes ) ? notes : "" );
 	buffer = gtk_text_buffer_new( NULL );
 	gtk_text_buffer_set_text( buffer, str, -1 );
 	g_free( str );
 
-	view = my_utils_container_get_child_by_name( container, widget_name );
-	g_return_val_if_fail( view && GTK_IS_TEXT_VIEW( view ), NULL );
-	gtk_text_view_set_buffer( GTK_TEXT_VIEW( view ), buffer );
+	gtk_text_view_set_buffer( textview, buffer );
 	g_object_unref( buffer );
 
-	my_utils_widget_set_editable( view, editable );
+	my_utils_widget_set_editable( GTK_WIDGET( textview ), editable );
 
 	if( editable ){
 		g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), NULL );
 	}
-	return( view );
 }
 
 /*

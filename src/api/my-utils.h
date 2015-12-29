@@ -84,6 +84,10 @@ GtkWidget    *my_utils_container_notes_setup_full     ( GtkContainer *container,
 																const gchar *content,
 																gboolean editable );
 
+void          my_utils_container_notes_setup_ex       ( GtkTextView *textview,
+																const gchar *content,
+																gboolean editable );
+
 #define       my_utils_container_notes_init( C,T )    my_utils_container_notes_setup_full( \
 																GTK_CONTAINER(C),"pn-notes", \
 																ofo_ ## T ## _get_notes( priv->T ), TRUE )
