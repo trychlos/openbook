@@ -56,8 +56,6 @@ struct _ofaTVAManagePagePrivate {
 	GtkWidget       *update_btn;
 	GtkWidget       *delete_btn;
 	GtkWidget       *declare_btn;
-
-	ofaTVAFormStore *store;
 };
 
 static GtkWidget  *v_setup_view( ofaPage *page );
@@ -168,6 +166,7 @@ setup_treeview( ofaTVAManagePage *self )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+	ofaTVAFormStore *store;
 
 	priv = self->priv;
 
@@ -189,8 +188,8 @@ setup_treeview( ofaTVAManagePage *self )
 	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
 	priv->treeview = tview;
 
-	priv->store = ofa_tva_form_store_new( priv->dossier );
-	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->treeview ), GTK_TREE_MODEL( priv->store ));
+	store = ofa_tva_form_store_new( priv->dossier );
+	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->treeview ), GTK_TREE_MODEL( store ));
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
