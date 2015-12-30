@@ -82,12 +82,12 @@ static const GActionEntry st_win_entries[] = {
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "tvadeclare", N_( "TVA _declaration" ) },
+		{ "tvadeclare", N_( "TVA _declaration..." ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "tvamanage", N_( "TVA _management..." ) },
+		{ "tvamanage", N_( "TVA _management" ) },
 		{ 0 }
 };
 
