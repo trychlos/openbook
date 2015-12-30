@@ -98,7 +98,7 @@ typedef enum {
 	TVA_DISP_LABEL     = 1 << 1,
 	TVA_DISP_NOTES     = 1 << 2,
 	TVA_DISP_UPD_USER  = 1 << 3,
-	TVA_DISP_UPD_STAMP = 1 << 4,
+	TVA_DISP_UPD_STAMP = 1 << 4
 }
 	ofaTVAFormColumns;
 
