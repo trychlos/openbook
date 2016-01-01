@@ -92,11 +92,13 @@ void          my_utils_container_notes_setup_ex       ( GtkTextView *textview,
 																GTK_CONTAINER(C),"pn-notes", \
 																ofo_ ## T ## _get_notes( priv->T ), TRUE )
 
-#define       my_utils_container_notes_get( C,T )     GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( \
-																GTK_CONTAINER( C ), "pn-notes" )); GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); \
+#define       my_utils_container_notes_get_ex( W,T )  GtkTextBuffer *buffer = gtk_text_view_get_buffer( W ); \
 																GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start ); \
 																gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes = gtk_text_buffer_get_text( \
 																buffer, &start, &end, TRUE ); ofo_ ## T ## _set_notes( priv->T, notes ); g_free( notes );
+
+#define       my_utils_container_notes_get( C,T )     GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( \
+																GTK_CONTAINER( C ), "pn-notes" )); my_utils_container_notes_get_ex( text, T );
 
 void          my_utils_container_updstamp_setup_full  ( GtkContainer *container,
 																const gchar *label_name,
