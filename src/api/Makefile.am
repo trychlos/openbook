@@ -52,6 +52,7 @@ api_include_HEADERS = \
 	my-date.h											\
 	my-dialog.h											\
 	my-double.h											\
+	my-editable-amount.h								\
 	my-editable-date.h									\
 	my-file-monitor.h									\
 	my-timeout.h										\

@@ -31,6 +31,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-editable-amount.h"
 #include "api/my-editable-date.h"
 #include "api/my-igridlist.h"
 #include "api/my-utils.h"
@@ -42,7 +43,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/my-editable-amount.h"
 #include "ui/ofa-rate-properties.h"
 
 /* private instance data

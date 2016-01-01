@@ -59,8 +59,6 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
 	my-cell-renderer-date.h								\
-	my-editable-amount.c								\
-	my-editable-amount.h								\
 	my-tab-label.c										\
 	my-tab-label.h										\
 	ofa-about.c											\

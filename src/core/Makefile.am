@@ -55,6 +55,7 @@ libofa_core_la_SOURCES = \
 	my-decimal-combo.h									\
 	my-dialog.c											\
 	my-double.c											\
+	my-editable-amount.c								\
 	my-editable-date.c									\
 	my-field-combo.c									\
 	my-field-combo.h									\

@@ -27,10 +27,9 @@
 #endif
 
 #include "api/my-double.h"
+#include "api/my-editable-amount.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-
-#include "ui/my-editable-amount.h"
 
 /*
  * data attached to each implementor object

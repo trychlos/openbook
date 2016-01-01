@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_EDITABLE_AMOUNT_H__
-#define __MY_EDITABLE_AMOUNT_H__
+#ifndef __OPENBOOK_API_MY_EDITABLE_AMOUNT_H__
+#define __OPENBOOK_API_MY_EDITABLE_AMOUNT_H__
 
 /**
  * SECTION: my_editable_amount
  * @short_description: #my_editable_amount set of functons
- * @include: ui/my-editable-amount.h
+ * @include: openbook/my-editable-amount.h
  *
  * This class lets the user enter amounts in entries.
  *
@@ -74,4 +74,4 @@ void    my_editable_amount_set_changed_cb( GtkEditable *editable,
 
 G_END_DECLS
 
-#endif /* __MY_EDITABLE_AMOUNT_H__ */
+#endif /* __OPENBOOK_API_MY_EDITABLE_AMOUNT_H__ */

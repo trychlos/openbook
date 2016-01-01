@@ -138,9 +138,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-cell-renderer-amount.$(OBJEXT) \
-	my-cell-renderer-date.$(OBJEXT) my-editable-amount.$(OBJEXT) \
-	my-tab-label.$(OBJEXT) ofa-about.$(OBJEXT) \
-	ofa-account-book-bin.$(OBJEXT) \
+	my-cell-renderer-date.$(OBJEXT) my-tab-label.$(OBJEXT) \
+	ofa-about.$(OBJEXT) ofa-account-book-bin.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-chart-bin.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) \
@@ -487,8 +486,6 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
 	my-cell-renderer-date.h								\
-	my-editable-amount.c								\
-	my-editable-amount.h								\
 	my-tab-label.c										\
 	my-tab-label.h										\
 	ofa-about.c											\
@@ -857,7 +854,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-date.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab-label.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@

@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-editable-amount.h"
+
 #include "ui/my-cell-renderer-amount.h"
-#include "ui/my-editable-amount.h"
 
 static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data );
 
