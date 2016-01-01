@@ -1,0 +1,4447 @@
+ Open Freelance Accounting - TODO
+
+ Summary
+ =======
+
+   TODO
+   DONE
+
+-----------------------------------------------------------------------
+ TODO
+ ====
+
+   1 2014- 5- 2 have a dns domain for the application
+                (e.g. open-freelance-accounting.org)
+
+   3 2014- 5- 2 ofa.doap: have a download page
+
+   5 2014- 5- 2 ofa.doap: have a mailing list
+
+   7 2014- 5- 2 have a preference to set the application menu on the
+                top bar (gnome-shell) or on the main windows
+
+  21 2014- 5- 6 DossierNew: let the user be able to choose to
+                create a new database (if the data provider allows it)
+                or to use an existing one
+     2014- 7-14 when using an existing database, have an option to
+                reinitialize it, or to use it as is
+
+  40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
+
+  41 2014- 5-12 ofaMainWindow: set menu tooltips
+
+  43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
+                a label instead of only a text
+
+  49 2014- 5-15 All properties: monitor "notes" size so
+                that we stop the entering at 512 chars
+     2014- 6-21 at 4096 chars now...
+     2015-10- 6 monitoring works and doesn't allow more than 4095 chars
+                but keep emitting a Gtk-Warning
+
+  85 2014- 5-21 Color the frame of the invalid GtkEntry
+                + set data "ofa-data-entry-valid"
+                + my_utils_entry_is_valid
+                + my_utils_entry_set_valid
+     2014- 5-22 see also (cancelled) todo #20
+
+  89 2014- 522 Guided input: have a transaction when writing the new
+               entries so that we can rollback in case of an error
+
+ 126 2014- 5-28 have several demo dossiers
+
+ 152 2014- 6- 3 import qif files
+
+ 153 2014- 6- 3 import ofx/ofc files
+
+ 161 2014- 6- 5 Reconciliation: display the bank account balance if
+                present
+
+ 195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
+                OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
+                 times on a journal selection in journal_treeview from
+                 journals_set)
+
+ 213 2014- 6-13 recurrente entries
+     2014- 6-16 to be built as a plugin
+     2015- 3-17 define new 'recurrent' plugin - git #4affe14
+
+ 215 2014- 6-13 assets management
+     2014- 6-16 to be built as a plugin
+
+ 217 2014- 6-13 tableau de trésorerie
+     2014-10- 6 this may require the balance be printed
+     2014-10- 6 this should be implemented as a plugin
+
+ 253 2014- 6-24 editing rough entries: have a 'select' button besides 
+                of the account number when editing an entry
+
+ 254 2014- 6-24 editing rough entries: have a 'select' button besides
+                of the ledger mnemo when editing an entry
+
+ 255 2014- 6-23 editing rough entries: add a button to revert the 
+                modifications
+ 
+ 256 2014- 6-23 editing rough entries: add an icon to advertise that 
+                the row has been modified
+     2015- 2- 5 the entry is saved as soon as the edition finishes
+                so there would be an added value if and only if we
+                would have a modification history and would be capable
+                of going back...
+
+ 259 2014- 6-23 editing rough entries: copy/paste a line
+
+ 273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
+                styles
+
+ 296 2014- 7-20 creating a new dossier from an existing database needs
+                to insert the new admin user from root account (else
+                the new user will not be able to connect for updating
+                the model)
+     2015- 1-22 this is removed from now: only able to create a new
+                database when restoring an exercice
+
+ 303 2014- 8-15 dropping the administrative accounts when deleting a
+                dossier is not possible without first checking that
+                none of the candidate admin accounts are used in
+                any of the databases of the DB server
+                -> so the dossier manager should take care of that
+
+ 311 2014- 9-21 editing CA12 VAT declaration
+     2015-11-14 due to new VAT declaration rules, must also provide a
+                monthly CA3
+
+ 312 2014- 9-22 myEditableAmount: should limit the count of decimals
+
+ 313 2014- 9-22 myEditableAmount: should have a format string to
+                display a 'decoration' when rendering (e.g. a unit, or
+                a standard prefix, or a display format)
+
+ 314 2014- 9-26 have a preference to use millenary shortcut
+                (i.e. entering '14' gives '2014')
+
+ 325 2014-10-12 DossierManage Properties: to be written
+
+ 333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
+                a GtkTreeView with debit/credit amount columns:
+                homogeneize the display (frame), define a footer bar,
+                updating the right decalage as far as columns are 
+                displayed
+
+ 334 2014-10-18 homogeneize styles:
+                e.g. displaying validated entries in ofaViewEntries or
+                validated balances if AccountProperties should have the
+                same font/background
+                + may be useful to use styles ?
+
+ 335 2014-10-18 some columns are displayed in several pages/dialogs,
+                and should have the same display properties (e.g.
+                piece reference, label, debit/credit, etc.) -> the 
+                treeview setup should be factorized
+
+ 336 2014-10-18 all treeview columns in main pages should be resizeable
+                (autoresize on double click is automatically handled)
+                and the current width should be kept in settings
+     2015- 1-22 no GtkTreeViewColumn primitive for setting a width ??
+
+ 429 2014-11-11 implement print preview inside of Openbook
+
+ 442 2014-11-13 AccountsBook: add a notes indicator
+     2014-12-19 started with svn #4348
+                bug left: no background of backgrounded rows...
+
+ 445 2014-11-13 my_date: do not accept two successive '/'
+     2014-11-23 done - svn #4145
+     2015- 1- 8 opened back as doesn't work
+
+ 461 2014-11-24 ExportAssistant: implement 'on_new_profile'
+
+ 462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
+     2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
+                the ofaIExportable interface - so it is not urgent
+
+ 463 2014-11-26 move ofoCurrency to ofaBoxed
+     2015- 1- 5 really only required when ofoCurrency will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+
+ 464 2014-11-26 move ofoDossier to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+
+ 469 2014-11-28 ExportSettings: the field separator should be free 
+                (but not empty nor space) instead of having to select
+                among predefined values
+     2015- 4- 1 when done, review the Preferences which becomes non
+                validable if export field separator is empty
+
+ 472 2014-11-29 set dialogs readonly if not current exercice
+     2015- 2- 5 done for properties
+
+ 494 2014-12- 4 ExeClosing: have a dossier option to have only one  
+                centralisation entry when balancing the accounts, or
+                have one entry per account
+     2014-12- 7 maybe in a next version...
+
+ 513 2014-12- 9 whether balancing accounts are settleable or 
+                reconciliable (and shouldn't) has to be checked when 
+                setting these accounts for balance
+
+ 519 2014-12-11 ExportAssistant: the list of exportables should be
+                dynamically computed from the list of classes which
+                implement the ofaIExportable interface
+
+ 520 2014-12-11 ImportAssistant: the list of importables should be
+                dynamically computed from the list of classes which
+                implement the ofaIImportable interface
+
+ 525 2014-12-13 when importing entries: review the code to be faster
+                import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
+                import ledgers:  0.02982 s/row (9 rows)
+                import entries:  0.13268 s/row (2431 rows)
+                import entries:  0.13237 s/row (1985 rows)
+     2015- 1- 9 problem is the same when closing ledgers
+     2015- 1-10 idem when validating entries:
+                count=484: average is 0.09846 s
+
+ 553 2015- 1- 6 deleting a dossier only removes its references from
+                settings - so DossierDelete and DossierDeletePrefs
+                become useless (see also #522)
+
+ 559 2015- 1- 8 have a macro language to automate dossier creation,
+                import of files
+
+ 562 2015- 1- 8 Add misc menu option to see the loaded stores, and
+                reset them
+
+ 567 2015- 1- 9 have an EntryStore ?
+     2015- 1-18 - ofaViewEntries add its own columns to its store
+                - ofaReconciliation is a tree store with bat lines
+                so the usefulness has yet to be proved...
+
+ 572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
+                them with integers ?
+     2015- 2-16 ofsCurrency makes use of a work-around when checking
+                the accounts/entries/ledgers balances
+     2015- 3-11 or move the currency to an arbitrary unit per account,
+                the currency being only a sort of unit (but may also
+                be a day count, etc.) 
+
+ 584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
+                settlement data groups if they are set in the object
+                (would prevent two updates when closing the exercice)
+
+ 599 2015- 1-22 GtkFileChooser in an assistant: unable to select again
+                the previously selected file when coming back from an
+                other page
+
+ 601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
+                database
+
+ 607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
+                dossier_login in order to mutualize some code if possible
+                common behavior is: do not close current dossier if we
+                are not sure that credentials are ok
+
+ 621 2015- 2- 2 ope template: have an help dialog which lists the 
+                available macro and functions
+     2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
+                while keeping to react to user interactions
+
+ 628 2015- 2- 3 FATAL: OpeTemplateProperties: segfault when saving
+
+ 632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
+                than standard prefix=/usr
+
+ 652 2015- 2-15 let the user configure colors
+     2015- 3-13 (branch colors) doesn't know how to go back from custom 
+                in GtkColorChooserWidget (this is bad)
+                + have to decide whether dossier color is a user pref
+                or a dossier pref (for all users of this dossier)
+
+ 653 2015- 2-17 GuidedInputBin/OpeTemplateProperties dialogs should be
+                non-modal (use case: consult rates)
+
+ 656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
+
+ 668 2015- 2-17 have main notebook pages detachable ? getting so non-
+                modal dialogs
+     2015- 2-20 this requires to implement DnD on some non-modal windows
+
+ 669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
+                color, a logo, etc.)
+
+ 677 2015- 2-19 preferences for the dossier should be set in the dbms
+                (e.g. order of ope_templates pages)
+     2015- 2-20 why ? to save them in backups and be able to restore 
+                them 
+
+ 678 2015- 2-19 visual bug which seems to come from GTK+: updating a
+                list/tree store only update the display when moving the
+                mouse over the row (not necessarily the updated cell)
+                -> gtk_tree_model_filter_refilter doesn't help
+
+ 684 2015- 2-21 MainWindow left pane: these are shortcuts which should
+                be choosable by the user among the defined features
+
+ 701 2015- 3- 8 be able to open a current dossier as read-only
+                (use case: when user wants to make sure he will not
+                modify it inadvertently)
+
+ 706 2015- 3- 9 be able to configure some user shortcuts (in particular,
+                it would be easier that row-activate on templates page
+                opens the guided input rather that the properties)
+
+ 707 2015- 3- 9 it would be easier to be directly in overwrite mode
+                (and to better manage it) when entering a date: this
+                would prevent the user to have to first select the digits
+                to be changed
+
+ 714 2015- 3-11 associate an account with a piece ref
+                (e.g. ESP->531, CCP->51441, and so on)
+
+ 717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
+     2015- 3-12 are we sure we want this ?
+
+ 719 2015- 3-13 Reconciliation: when new entries are added after having
+                already set a BAT file, new propositions are not 
+                expanded
+
+ 720 2015- 3-13 Reconciliation: when declining a proposition, should
+                search for the next
+
+ 729 2015- 3-14 PrintLedgers: have an option to print a summary
+
+ 732 2015- 3-15 have a misc option to consult the audit log
+
+ 733 2015- 3-15 be able to search for an entry
+
+ 744 2015- 3-19 have an option to automatically check the balances when
+               opening the dossier
+
+ 745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
+                selected account is displayed
+
+ 751 2015- 3-20 Reconciliation: associate the bat file with the openbook
+                account as soon as we reconciliate one line thus refusing
+                the selection for another account
+                + add this account number to treeview from bat page
+                + add this account number to bat properties
+
+ 752 2015- 3-20 Reconciliation: when selecting a bat file, only allow
+                those which are associated with the current account
+                number (if any) - of those which are not yet associated
+
+ 754 2015- 3-21 add unused count to bat page treeview
+
+ 758 2015- 3-21 warns when deleting a settled or reconciliated entry
+                +unsettle/unreconciliate
+
+ 761 2015- 3-22 in the warning displayed when restoring to a database,
+                display the target database in bold (or red)
+
+ 766 2015- 3-26 replace ofaIDataset interface by ofaICollector
+
+ 783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
+                will be reported after exercice closing
+
+ 790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
+
+ 791 2015- 4- 6 after having entered new AVRLOY operation template:
+                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
+#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
+#3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
+    at ../../../src/ui/ofa-guided-ex.c:734
+#4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
+     2015- 4- 7 not reproduced
+
+ 792 2015- 4- 6 have a comment in the backup
+
+ 793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
+                the calling window (as much as possible)
+
+ 796 2015- 4-13 IRenderable: have a second level of grouping (subgroup)
+                use case: when printing accounts book, have a subtotal
+                per class
+
+ 798 2015- 4-13 creating a new ledger let the user enter an entry at
+                any effect date, even if all other ledgers has been
+                previously closed - this may or may not be wanted -
+                so we have to distinguish:
+                - closing a ledger at a given date
+                - closing a period at a given date
+                (+ closing an exercice)
+     2015-10- 8 DOS_LAST_CLOSING is date of last closed period and has
+                been introduced with DB model v26; it is not used at
+                this time
+
+ 799 2015- 4-13 AccountsBook account top and bottom reports:
+                - add a label [bottom report] or [top report] ?
+                - in italic ?
+                - added to the account label or rigt-aligned before the
+                  debit ?
+
+ 808 2015- 4-17 when rendering, automatically computes the width of 
+                standard field as date or amount
+     2015- 4-20 depending of the different headers and footers of the
+                current print, this should involve selecting the ad-hoc
+                font before computing the size
+
+ 809 2015- 4-17 when computing the ODs, do not generate an OD for 
+                "forfait kilométrique BNC" when option is "FR"
+
+ 810 2015- 4-17 when computing the ODs, the "Frais réels du véhicule"
+                should distinguish HT and TVA (but, yes, compute on
+                TTC)
+
+ 811 2015- 4-17 Le compte d'équilibre de l'OD de régularisation de la
+                CSG non déductible ne devrait pas être un compte de
+                charge
+
+ 812 2015- 4-17 libellé des écritures d'amortissement: ajouter le numéro
+                d'annuité et le nb total (#7 - 3/4)
+
+ 814 2015- 4-17 Dossier: have list of classes allowed to be reconciliated
+                 + classes allowed to be settled
+
+ 821 2015- 4-27 check that concenating strings doesn't override the limit
+                (as the MySQL truncation may make the string invalid utf-8)
+                and take care to truncate to a valid utf-8
+
+ 822 2015- 4-27 Review "solde at 01/01": these are not accounts balances
+                after entries from 01/01, but opening exercice after 
+                carried forward entries *only*
+
+ 824 2015- 9-22 use AX_COMPILER_FLAGS
+
+ 825 2015- 9-22 use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
+
+ 826 2015- 9-22 use GResource
+
+ 840 2015- 9-29 ofaAccountSelectorBin: is unused
+     2015-10- 1 but see ofaReconciliation and ofaSettlement which both
+                need a single account selection
+     2015-10- 7 see also (closed) #778
+
+ 843 2015- 9-30 account number should be renamed as account identifier
+
+ 853 2015-10- 1 review v_init_dialog's:
+                - only store GtkWidget (as GtkWidget *) when needed
+                - store object data members
+                - set data before connecting the signal
+                  (or after the end of init ?)
+                  (so is not triggered now)
+                - set container editable after notes
+                - have ok_btn instead of btn_ok
+                - update ok_btn when setting readonly buttons
+                - call check_enable_dlg at the very end
+
+ 862 2015-10- 7 fix focus order on GtkBin-derived widgets on the assistants
+                - RestoreAssistant: dossier treeview after created a new dossier
+                - administrative credentials
+
+ 869 2015-10-30 GuidedInput: after having clicked on Validate, disable
+                fields while recording the entries
+
+ 885 2015-11- 7 Have an operation counter (identifier)
+                Use case: be able to delete the whole operation when the
+                user wants to delete an entry
+
+ 886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
+                bat files and entries are purged
+
+ 909 2015-11-26 SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same signal
+                (exe_dates_changed) sent on main window so that it may
+                automatically update window title
+
+ 910 2015-11-30 let the user configure the main title as a preference
+
+ 915 2015-12- 4 a class object (say e.g. ofoClass) should implement
+                the ofaIExportable/ofaIImportable interfaces - but the
+                exporter/importer plugins should rather implement a
+                ofaIEXporter/ofaIImporter interface 
+
+ 919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
+
+ 920 2015-12-10 review RestoreAssistant
+                + let restore on a selected exercice rather than on the
+                   current one
+
+ 933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
+                while these are rather shortcuts to user preferences
+
+ 935 2015-12-17 DDLUpdate: does not show remediation when creating a
+                new dossier ?
+
+ 937 2015-12-21 either move ofa-main-window.h to api/ (because it is
+                needed by ofa-page.h) or say that api/ should only
+                contain the actual public API, and thus remove from
+                api/ some files which were only pulled up for compilation
+                reasons
+
+ 938 2015-12-21 distinguish a core api with core objects (eg. for
+                command-line only tools) and a ui api which contains
+                some base classes and interfaces which would be useful
+                for plugins => implies to have a core lib and a ui lib
+     2015-12-27 have to choose between api/ui or api-ui styles
+
+ 939 2015-12-21 ofoTVAForm: make it importable
+
+ 940 2015-12-21 ofoTVAForm: make it exportable
+
+ 941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
+                 (and idem for ofa_page_get_dossier)
+     2015-12-28 + idem for my_window_get_main_window()
+
+ 947 2015-12-29 shouldn't all xxx_set_main_window() be xxx_set_dossier() ?
+
+ 948 2015-12-31 review the ofoDossier class
+                which is actually a pivot class with dossier props + connect
+
+ 949 2015-12-31 review all ofoBase API: shouldn't need to always have 
+                ofoDossier
+
+ 950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
+                intrinsic of take into account dossier_is_current
+
+ 951 2015-12-31 review the DB model upgrade to be more explicit on
+                plugins DB model updates
+
+ 952
+
+-----------------------------------------------------------------------
+ DONE
+ ====
+
+   2 2014- 5- 2 ofa.doap & configure.ac: have a web site
+     2015- 3- 8 done - git #d48d6bf
+
+   4 2014- 5- 2 ofa.doap: have a bug system
+     2015- 3- 8 use Github issues page at https://github.com/pwieser/openbook/issues
+
+   6 2014- 5- 2 ofa_application_on_version: to be written
+     2015- 9-24 done in v 0.40
+
+   8 2014- 5- 2 ofa_application_on_about: to be written
+     2015- 3-31 done - git #f30593a
+
+   9 2014- 5- 3 ofa_application_on_new: to be written
+     2014- 5-10 Done
+
+  10 2014- 5- 3 ofa_application_on_open: to be written
+     2014- 5-10 Done
+
+  11 2014- 5- 3 Alt+F4: application gracefully exits and main window and
+                application are correctly finalized - should intercept
+                the keystroke to ask the user (quit requested)
+     2014- 5- 3 Done (svn commit #3355)
+
+  12 2014- 5- 3 Control-Q: exit the application without finalizing the
+                objects
+     2014- 5- 3 Done (svn commit # 3356)
+
+  13 2014- 5- 4 cancel on escape in dossier_new assistant
+     2014- 5- 5 Done
+
+  14 2014- 5- 4 have a preference: assistant cancel on escape
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_quit_on_escape'
+     2014- 6-30 done
+
+  15 2014- 5- 4 take into account cancel on escape preference in
+                dossier_new assistant
+     2014- 5- 5 Done
+
+  16 2014- 5- 4 preference: ask confirmation when clicking cancel in
+                an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_cancel'
+     2014- 6-30 done
+
+  17 2014- 5- 4 preference: ask confirmation when hitting escape in
+                an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_escape'
+     2014- 6-30 done
+
+  18 2014- 5- 4 preference: ask confirmation when quitting the
+                 application
+     2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
+                ofa-main-window.c: variable 'pref_confirm_on_altf4'
+     2014-10-30 done - svn #4012
+
+  19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
+                of the focus of the fields (provider selector is the first
+                but should be the second)
+     2014- 5- 5 Done
+
+  20 2014- 5- 5 DossierNew: display the asterisks (mandatory)
+                in another color (grey ? red ? blue ?)
+     2014- 5-22 see also Todo #85
+     2014- 7-19 cancelled
+
+  22 2014- 5- 7 Assistant DossierNew: determine if an holder should be
+                hidden (the initial connection password is just entered
+                as clear text, but shouldn't) - For now, there is a bad
+                hack on the holder id 'PASSWORD'
+                (see do_init_p2_provider_params and display_p4_params
+                 functions)
+     2014- 5- 7 Given up with 0.1.9-libgda version
+
+  23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
+                the executed SQL statements
+     2015-10- 6 define new ofaDDLUpdate class
+
+  24 2014- 5- 8 Have a configuration parameter which says if user
+                preferences supersede global ones, or if global
+                preferences must be seen as mandatory ones.
+     2014- 5- 9 cancelled
+
+  25 2014- 5- 8 ofa_utils_g_value_compare
+     2014- 5- 9 cancelled
+
+  26 2014- 5- 8 ofa_utils_g_value_dup
+     2014- 5- 9 cancelled
+
+  27 2014- 5- 8 ofa_utils_g_value_new_from_string
+     2014- 5- 9 cancelled
+
+  28 2014- 5- 8 ofa_utils_g_value_dump
+     2014- 5- 9 cancelled
+
+  29 2014- 5- 8 Define a G_TYPE_STRING_LIST GType to be used as a GValue
+     2014- 5- 9 cancelled
+
+  30 2014- 5- 8 Define a G_TYPE_INT_LIST GType to be used as a GValue
+     2014- 5- 9 cancelled
+
+  31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
+                terminated (acting as a commit transaction), so that all
+                is left as this was initially if something goes wrong
+     2014- 7-19 when undoing, let the user choose if database and user
+                should be dropped
+     2014- 7-19 properly deleting a user:
+                delete from user...
+                + drop user
+                + flush privileges
+     2014- 7-19 done - svn #3795
+
+  32 2014- 5- 9 settings_gvalue_compare to be written
+     2014- 5- 9 cancelled
+
+  33 2014- 5- 9 DossierNew: get rid of error_on_applied variable which
+                appears useless since we have abandonned libgda
+     2014- 5-10 Done
+
+  34 2014- 5- 9 DossierNew: move the settings key names to ofa_settings
+                (as ofa_settings_get_dossier)
+     2014- 5-10 Done
+
+  35 2014- 5-10 DossierOpen should monitor the configuration, only
+                enabling the action when there is at least one defined
+                dossier
+     2014- 5-22 see also TODO #42
+     2015- 2- 9 done - svn #4568
+
+  36 2014- 5-11 win.close action should only be enabled when a dossier 
+                is opened
+     2014- 5-22 see also TODO #42
+     2014-10-30 cancelled as the option is only defined in the main
+                window menu, and so doesn't even appear when no dossier
+                is opened
+
+  37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
+                p3 (a try with gtk_container_set_focus_chain is not
+                successful)
+     2014- 7-14 closed - cf. #277
+
+  38 2014- 5-11 DossierOpen: fix the order of the focus
+     2014- 5-22 done
+
+  39 2014- 5-11 DossierNew: add fields needed to complete the
+                OFA_T_DOSSIER table to p1 page
+     2014- 6-30 same fields than DossierProperties
+     2014- 7-14 closed - cf. #280
+
+  42 2014- 5-12 ofaMainWindow: set menu items sensitivities
+     2014- 5-22 See also TODO #35 and #36
+     2015- 2- 9 done - svn #4568
+
+  44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
+                the classes book (e.g. Alt+1, etc.); set the label of
+                this accel as a tooltip of the notebook's page
+     2014- 5-22 done svn #3474
+
+  45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
+     2014- 7-14 done (pane position is saved)
+
+  46 2014- 5-13 chart of accounts: this is a user preference whether
+                a double clic enter in 'Update' or in 'Consult entries'
+     2014- 5-24 no, default should be to update, as this the general 
+                rule for other treeviews
+
+  47 2014- 5-13 ofaAccountProperties: check that account number begins
+                with a 1-9 digit
+     2014- 5-15 Done
+
+  48 2014- 5-14 ofoDossier: loading accounts chart should be made with
+                collaboration of ofoAccount typically for the list of
+                fields 
+     2014- 5-14 Done
+
+  50 2014- 5-17 when defining a new model, the default family should be
+                the current family in models_set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal class
+     2014- 5-26 Done - svn #3508
+
+  51 2014- 5-17 Be able to use an underscore in the label of the model
+                families; this underscore should be usable as a shortcut
+                when dealing with the models in models set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal class
+     2014- 5-22 done svn #3477
+
+  52 2014- 5-17 change the title of the pages of the models notebook
+                when the label of a journal is changed
+     2014-10-30 done - svn #4014
+
+  53 2014- 5-17 on pages which embed a notebook, one should reset
+                button sensititviy when switching the page
+                because the on_selection_changed may not be triggered,
+                e.g. if the list is empty
+     2014- 5-27 done
+
+  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
+                re-enabling error messages.
+     2014- 5-22 done svn #3472
+
+  55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
+     2014- 5-24 definitively, no -> cancelled
+
+  56 2014- 5-19 have an entry-derived class for date
+     2014- 6-26 done - svn #3748
+
+  57 2014- 5-19 have an entry-derived class for numbers (amounts and
+                rates)
+     2014-10-13 done with myEditableAmount
+
+  58 2014- 5-19 allow the treeviewes to be sorted
+     2014- 6-12 this is mostly needed only in ViewEntries
+     2014-10-13 also in reconciliation
+     2014-10-16 ofaViewEntries: done - svn #3910 (cf. also todo #260)
+     2014-10-19 ofaReconciliation: done - svn #3911
+
+  59 2014- 5-19 reset all sentences in english
+                as the g_date_set_parse uses the current locale, the 
+                only way to enter a date as dd/mm/yyyy is to use the
+                french locale 
+     2014- 5-22 done
+
+  60 2014- 5-19 manage locale as a user preference (format for entering
+                date, amounts and rates)
+     2014-11-30 done - svn #4210
+
+  61 2014- 5-19 manage dataserver locale as a user preference (format 
+                for storing date, amounts and rates) - this is rather
+                a configuration information than actually a user pref..
+     2014-12-31 no: the dataserver charmap is always 'utf-8' and this 
+                is forced at the database creation.
+
+  62 2014- 5-19 review all the rates management:
+                there should be a master record (the rate) and child
+                records (the different periods of validity)
+     2014- 5-26 done
+
+  63 2014- 5-19 TauxPropertiesDlg: second column of grid seems to extends,
+                but shouldn't. Labels on the third column are correctly 
+                left-aligned but shifted on the right 
+     2014- 5-26 done
+
+  64 2014- 5-19 there is no need to store the dataset in the ofaMainPage
+                as the TreeModel is enough to store the data
+     2014- 5-27 done - svn #3510
+
+  65 2014- 5-19 Entry model properties: be able to reorder the detail
+                lines by drag and drop. 
+     2014- 5-27 cancelled (not useful)
+
+  66 2014- 5-19 Entry model properties - check_enable_dlg
+                check that detail lines are ok (enough and balanced).
+     2014- 5-22 done
+
+  67 2014- 5-19 EntryModel properties: row number is not right aligned
+                but should
+     2014- 5-22 done
+
+  68 2014- 5-19 EntryModel properties: display row number as an 
+                insensitive (grayed) text
+     2014- 5-22 done
+
+  69 2014- 5-19 EntryModel properties: implement Up/Down
+     2014- 5-27 done - svn #3514
+
+  70 2014- 5-19 EntryModel properties: implement Remove with a user
+                confirmation.
+     2014- 5-26 no confirmation needed as it is enough for the user to
+                hit the Cancel key to cancel its modifications
+     2014- 5-27 done
+
+  71 2014- 5-19 Get an entry with a model
+     2014- 5-22 done
+
+  72 2014- 5-20 check that ofaJournalCombo object is disposed
+     2014- 5-20 done svn commit #3463
+
+  73 2014- 5-20 GuidedInput: use TAB to navigate between fields of the
+                entries tree view
+     2014- 5-21 done by using GtkGrid + GtkEntry instead of a treeview.
+
+  74 2014- 5-21 Guided input: when quitting the dialog with Escape
+                while the focus is on an Account entry, then the
+                account notebook fires, but shouldn't.
+     2014- 5-27 replace the focus-out-event by a Tab keypressed monitor
+     2014- 5-27 done - svn #3515
+
+  75 2014- 5-21 Optimize AccountNotebook to not recreate it each time
+                it is called
+     2014- 5-27 done - svn #3513
+
+  76 2014- 5-21 Open AccountNotebook on a specified account, or as close
+                as it is possible when only giving first digit(s)
+     2014- 5-22 Done svn #3475
+
+  77 2014- 5-21 Guided Input: default effect date is operation date
+                or first davailable date
+     2014- 5-28 done - svn #3516
+
+  78 2014- 5-21 Guided Input: check that the effect date is valid
+     2014- 5-28 done - svn #3516
+
+  79 2014- 5-21 replace memcpy with g_memdup when possible
+     2014- 6-27 all memcpy are used for copying GDate of timestamp, so
+                are to be replaced with my_utils_date_set_from_date()
+                or my_utils_stamp_set_from_???()
+     2014-10-13 done - svn #3905
+
+  80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
+     2014- 9-14 cancelled as without added value
+
+  81 2014- 5-21 guided input: check_for_entry: also check that total
+                debit+credit balance is not nul
+     2014- 5-21 done svn #3488
+
+  82 2014- 5-21 when creating a new entry, also pass the dossier so 
+                that the record is immediately written in sgbd
+     2014- 5-21 done
+
+  83 2014- 5-21 account notebook: display sum of validated+rough
+                balances
+     2014- 5-22 Done svn# 3478
+
+  84 2014- 5-21 Port the GuidedInput code model to ModelProperties
+                (GtkGrid+GtkEntry instead of GtkTreeView)
+     2014- 5-27 done - svn #3511
+
+  86 2014- 5-21 all GtkFrame: make sure that the label doesn't use
+                underscore as the widget can not get focus
+     2014-10-30 done
+
+  87 2014- 5-22 Guided input: check that the selected account is of
+                type detail
+     2014- 5-22 done
+
+  88 2014- 5-22 rename ofaSgbd to ofoSgbd
+     2014 -5-22 done svn #3471
+
+  90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
+     2014- 5-22 done svn #3473
+
+  91 2014- 5-22 the name of the class names in the accounts chart
+                should be configured in a table
+     2014- 5-31 done - svn #3587
+
+  92 2014- 5-22 are we allowed to delete a journal ?
+                - if it contains some entries ? -> NO
+                - if entry models are defined on it ? -> yes, but
+                  entry models have so to be reclassed in "no journal"
+                  which made them invalid if their journal is locked
+     2014- 5-22 actually, no - cf. svn #3495 
+
+  93 2014- 5-22 implement journal_load_set: load the journal_det
+                table
+     2014- 5-22 done
+
+  94 2014- 5-22 implement journal_record_entry
+     2014- 5-28 done - svn #3518
+
+  95 2014- 5-22 implement journal_is_deletable
+     2014- 5-22 done
+
+  96 2014- 5-22 entry_models: check that journal always exist as it
+                may be deleted at any time while it is empty -
+                so reclass the entry models on journal-changed signal
+     2015- 1-22 unable to delete a ledger on which an operation template
+                is defined -> cancelled
+
+  97 2014- 5-22 journals set: add a 'view entries' function 
+     2014- 5-24 done - svn #3496
+
+  98 2014- 5-22 refactoring of ofoBase which maintains the dataset
+                as a private data of the class
+                -> ofoJournal - done svn #3480
+                -> ofoDevise - done svn #3483
+                -> ofoAccount - done svn #3484
+                -> ofoTaux - done
+                -> ofoModel -> done svn #3485
+                -> ofoEntry
+
+  99 2014- 5-23 when loading Journal, only load for the current exercice
+     2014- 5-24 done: for now, load all what is exists
+
+ 100 2014- 5-24 add a ofo_sgbd_query_1_1 method which takes a query and
+                returns the first column of the first row as an integer
+                applications are: <class>_get_back_id 
+                                  <class>_count_for_devise
+     2014-10-14 cancelled (no added value)
+
+ 101 2014- 5-24 when updating the currency of an account, the 'delete'
+                button of the 'currencies' page should be updated
+     2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
+                _object...
+     2015- 1-22 done - svn #4498
+
+ 102 2014- 5-24 test the GtkTreeSortable interface - if not works:
+                define an interface for ofaMainPage which sorts the 
+                embedded treeview on the specified column
+     2014- 5-24 done - svn #3487
+
+ 103 2014- 5-24 load OFA_T_DOSSIER data when opening
+     2014- 5-28 done - svn #3535
+
+ 104 2014- 5-24 when updating a devise, only enable OK if code is not
+                a duplicate
+     2014- 5-24 done - svn #3489
+
+ 105 2014- 5-24 after delete, reset the focus to tree view
+     2014- 5-24 done with devise - svn #3489
+     2014- 5-24 done with journal - svn #3494
+     2014- 5-26 done with taux - svn #3505
+
+ 106 2014- 5-24 check how and when is set the ofaMainPage 'theme' 
+                property ?
+     2014- 5-24 done svn #3491
+
+ 107 2014- 5-24 have a message when current exercice changes
+                so that e.g. the journals set may adapt its display
+     2015- 1-22 the ledgers page doesn't display the dates of the
+                exercice -> cancelled
+
+ 108 2014- 5-24 ofaJournalsSet: implement on_view_entries
+     2014- 6-11 done - svn #3685
+
+ 109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
+     2014- 5-25 done - svn #3501
+
+ 110 2014- 5-25 p1-last-update -> px-last-update
+     2014- 5-25 done - svn #3500
+
+ 111 2014- 5-26 ofo_taux_get_val_rate_by_date
+     2014- 6-18 done - svn #3723
+
+ 112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
+                base class
+     2014 -5-26 done svn #3506
+
+ 113 2014- 5-26 have a base class for properties dialogs
+     2014- 5-28 done - svn #3540
+
+ 114 2014- 5-26 dispose_has_run should be a protected data of the
+                ofaMainPage base class
+     2014-10-28 done
+
+ 115 2014- 5-26 it seems that an account cannot be finalized after 
+                having be udated in AccountsChart (ref count issue ?)
+     2014- 5-26 done - svn#3509
+
+ 116 2014- 5-26 only include '-def.h' header files in the headers
+     2014- 5-28 done - svn #3527
+
+ 117 2014- 5-27 ofaModelsProperties: implement account selection
+     2014- 5-28 done - svn #3519
+
+ 118 2014- 5-27 ofaGuidedInput: implement account selection
+     2014- 5-28 done - svn #3520
+
+ 119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
+                initial selection
+     2014- 5-27 done - svn #3512
+
+ 120 2014- 5-28 import accounts
+     2014- 6- 6 done - svn #3645
+
+ 121 2014- 5-28 import entry models
+     2014- 6-14 done - svn #3708
+
+ 122 2014- 5-28 import journals
+     2014- 6- 7 done
+
+ 123 2014- 5-28 import currencies
+     2014- 6- 7 done
+
+ 124 2014- 5-28 import standard rates
+     2014- 6- 9 done - svn #3674
+
+ 125 2014- 5-28 import accounts
+     2014- 6- 7 done
+
+ 127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
+     2014- 5-29 done - svn #3547
+
+ 128 2014- 5-28 Dossier: have a default currency
+     2014- 5-31 done - svn #3569
+
+ 129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
+                table details
+     2015- 1-12 done - svn #4434
+
+ 130 2014- 5-28 do not delete an account which has an account_exe archive
+                detail record, but set a 'deleted' flag
+     2015- 1-22 obsolete
+
+ 131 2014- 5-28 have a currency combo box convenience class
+     2014- 5-31 done - svn #3566
+
+ 132 2014- 5-28 remove my_utils_init_notes_ex and 
+                my_utils_init_maj_user_stamp_ex as they should be no 
+                more used when all dialog box will be derived from 
+                ofaBseDialog
+     2014- 5-31 done - svn #3568
+
+ 133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
+     2014- 5-31 done - svn #3567
+
+ 134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
+     2014- 5-29 done - svn #3544
+
+ 135 2014- 5-28 odaDeviseProperties derives from ofaBaseDialog
+     2014- 5-29 done - svn #3545
+
+ 136 2014- 5-28 ofaDossierOpen derives from ofaBaseDialog
+     2014- 5-29 done - svn #3546
+
+ 137 2014- 5-28 ofaDossierProperties derives from ofaBaseDialog
+     2014- 5-30 done - svn #3557
+
+ 138 2014- 5-28 ofaGuidedInput derives from ofaBaseDialog
+     2014- 5-30 done - svn #3558
+
+ 139 2014- 5-28 ofaJournalProperties derives from ofaBaseDialog
+     2014- 5-30 done - svn #3559
+
+ 140 2014- 5-28 ofaModelProperties derives from ofaBaseDialog
+     2014- 5-30 done - svn #3560
+
+ 141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
+     2014- 5-30 done - svn #3561
+
+ 142 2014- 5-28 remove xxxClassPrivate
+     2014- 5-30 done - svn #3556
+
+ 143 2014- 5-29 add iso 3a code to accout notebook view
+     2014- 5-29 done - svn #3548
+
+ 144 2014- 5-29 always use g_define_type 
+     2014- 5-30 done - svn #3562
+
+ 145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
+     2014- 5-31 done - svn #3563
+
+ 146 2014- 5-31 ImportAssistant::do_init_p3_confirm: remove the mnemonic
+                ('_') from the GtktoggleButton label when displaying it
+     2014-12-12 done - svn #4276
+
+ 147 2014- 6- 2 ImportAssistant: keep the last folder and reselect it
+     2014-12-12 done - svn #4276
+
+ 148 2014- 6- 2 ImportAssistant: selecting a folder shouldn't make the
+                page complete
+     2014-12-12 done - svn #4276
+
+ 149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
+                the current selection) should advance to the next page
+     2015- 1-22 this suppose to be able to simulate the click on the
+                'Continue' button, but unfortunately GtkAssistant is 
+                not a GtkDialog, so do not known how to do ?
+     2015-10- 6 try to intercept double-click on GtkFileChooser
+     2015-10- 7 issue is not detecting the activation, but automatically
+                advance to next page
+     2015-10- 7 RestoreAssistant: done
+                ImportAssistant: done
+                ExportAssistant: done
+
+ 150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
+                'label' title column to the account label
+     2014- 6- 3 done
+
+ 151 2014- 6- 2 ofaImport::on_apply: to be written
+     2014-12-12 done - svn #4276
+
+ 154 2014- 6- 3 be able to re-use an already imported BAT (for the same
+                account) if we have been interrupted in a previous
+                session
+     2014- 6- 4 done - svn #3617
+
+ 155 2014- 6- 3 GuidedInput: diff should be red
+     2015- 1-22 done
+
+ 156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
+     2015- 1-22 done - svn #4499
+
+ 157 2014- 6- 4 BatList: the treeview doesn't vertically expand
+     2014- 6- 4 done
+
+ 158 2014- 6- 4 do a coherency check (sgbd constraints, account and
+                journal balances, etc.)
+     2015- 1-24 done - svn #4514
+
+ 159 2014- 6- 4 open a dossier from the command-line:
+                ./_install/bin/openbook "Test OFAT v0.3" ofat ofat
+     2014- 6- 7 done - svn #3662
+
+ 160 2014- 6- 4 print a reconciliation page (as a pdf)
+     2014- 6-21 done
+
+ 162 2014- 6- 5 Reconciliation: remove/add a proposition
+     2015- 2-15 removing a proposition: done
+                adding a proposition: no use case -> cancelled
+
+ 163 2014- 6- 5 move the table definition from ofo-dossier to the
+                corresponding classes
+     2015- 1-30 cancelled: all ddl is grouped into ofo-dossier-ddl.c
+
+ 164 2014- 6- 5 ExportAssistant: improve the entering of the output file
+     2014-11-26 done - svn #4149
+
+ 165 2014- 6- 5 ExportAssistant: overwrite confirmation doesn't work 
+     2014-11-26 done - svn #4149
+
+ 167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
+                output filename doesn't work
+     2014-11-26 done - svn #4149
+
+ 166 2014- 6- 5 Have an audit table which records _all_ sql queries
+                This may be managed by ofoSgbd class
+     2014- 6- 7 done - svn #3660
+
+ 168 2014- 6- 6 ImportAssistant: check that only one file is selected
+                when importing a reference table or entries (multiple
+                selection is in fact only allowed when importing BAT)
+                So is it worth ?
+     2014- 6- 7 done - svn #3659
+
+ 169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
+     2014- 6- 7 done - svn #3658
+
+ 170 2014- 6- 6 rename ofaAccountNotebook to (e.g.) ofaAccountCommon
+     2014- 6- 7 cancelled
+
+ 171 2014- 6- 6 rename ofaDeviseCombo to (e.g.) ofaDeviseCommon
+     2014- 6- 7 cancelled
+
+ 172 2014- 6- 6 rename ofaJournalCombo to (e.g.) ofaJournalCommon
+     2014- 6- 7 cancelled
+
+ 173 2014- 6- 6 When importing a reference, the main page must be 
+                reloaded
+     2014- 6- 7 done with OFA_SIGNAL_RELOADED_DATASET signal handler
+
+ 174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
+     2014- 6- 7 the exported character set should be a choice of the 
+                user (default is UTF-8)
+     2014-11-23 done - see ExportSettings
+
+ 175 2014- 6- 6 When opening a dossier in response to 
+                OFA_SIGNAL_OPEN_DOSSIER signal, one should 
+                unconditionally close a previously already opened
+                dossier.
+     2014- 6- 7 done - svn #3657
+
+ 176 2014- 6- 6 ImportAssistant: let the user select the encoding
+                character set of the imported file, so that we are
+                able to convert to UTF-8
+     2014-12-12 done - svn #4276
+
+ 177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
+     2014-10-28 done - svn #3995
+
+ 178 2014- 6- 9 ofaModelsSet: manage update journal (tab labels)
+     2014- 6-12 same item as #52 
+
+ 179 2014- 6- 9 ofaModelsSet: manage ledger deletion (reclass in 
+                'Unclassed')
+     2015- 1-24 cancelled as ledger deletion is forbidden if referenced
+                in an operation template
+
+ 180 2014- 6- 9 ofoEntry: manage change journal mnemo
+     2014- 6-12 done - svn #3706
+
+ 181 2014- 6- 9 ofoModel: manage change journal mnemo
+     2014- 6-12 ofoModel: manage change taux mnemo
+     2014- 6-12 done - svn #3706
+
+ 182 2014- 6-10 configure at the dossier level the default import journal 
+                when we are importing entries
+                for now, this is harcoded with 'IMPORT' mnemo
+                Note that the journal should be configurable: it is ok
+                to import e.g. amortissements entries
+     2015- 1-24 done - svn #4516
+
+ 183 2014- 6-10 consistency check: check that we do not have entries on 
+                unexistant account (this is the case on EBP export which
+                 has kept entries on closed accounts
+     2015- 1-24 done - svn #4514
+
+ 184 2014- 6-10 use the count of decimal digits of the currency when 
+                displaying all amounts
+     2014-10-13 done with myEditableAmount
+
+ 185 2014- 6-10 imported entries must be balanced
+     2014- 6-10 done - svn #3681
+
+ 186 2014- 6-10 check that the IMPORT journal exists before trying to
+                import the entries
+     2014- 6-11 Is it really mandatory as the imported entries may do
+                not use this default import journal at all ?
+     2015- 1-24 see also #182
+                Importing an entry is just refused if it has no ledger
+                and no default import ledger is set in the dossier
+     2015- 1-24 done - svn #4516
+
+ 187 2014- 6-10 TauxProperties: the validities begin and end displayed
+                in the treeview do not take into account all validity
+                records
+     2014- 6-13 fixed
+
+ 187 2014- 6-10 TauxProperties - Validities page: should be sorted by
+                end date desc (most recent first)
+     2014- 6-13 no: this should be left sorted as the user entered the
+                data - so let him reorder the lines
+     2015- 4-26 done - git #ae3f800
+
+ 188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
+     2014- 6-16 done - svn #3712
+
+ 189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
+     2014- 6-11 done - svn #3686
+
+ 190 2014- 6-10 Have a display of journal balances
+     2014- 6-13 done
+
+ 191 2014- 6-11 Note that a multi-currency journal is not balanced per
+                currency, and so its global balance cannot be checked
+     2014- 6-18 not exactly: a multi-currency journal may be balanced
+                per currency depending of the way the operations are
+                entered (and this way should maybe be forced)
+     2014-11- 5 Having a multi-currencies operation involves:
+                - defining operation with multi currencies
+                - have shadow accounts in both currencies
+                - entering balanced entries in both currencies.
+     2014-11- 5 done (operation template must be balanced per currency)
+
+ 192 2014- 6-11 save database:
+                mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
+                 >/tmp/pwi_consultants-20140611.gz
+     2014- 8-31 done - svn #3842
+
+ 193 2014- 6-11 record the entry most recent effect date in the
+                 journal_exe_dev detail
+     2014- 6-13 done
+
+ 194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
+                ofo_journal_get_last_closing()
+     2014-10-13 done
+
+ 196 2014- 6-11 journal closing: there is no sens to execure the same 
+                query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
+              	WHERE JOU_MNEMO='AC' each time we change a char in the
+              	date entry
+     2014- 6-12 done - svn #3702
+
+ 197 2014- 6-12 g_signal_connect (e.g.) to dossier: must disconnect from
+                the instance if it stays alive and we are willing to
+                reconnect a new handler later
+     2014- 6-12 done - svn #3701
+
+ 198 2014- 6-12 go up the ofo_account_init_handlers to ofaMainWindow
+                in order to systematize the connection to signals
+     2014- 6-12 actually goes to ofo_dossier_open()
+     2014- 6-12 done - svn #3704
+
+ 199 2014- 6-12 does the ofoEntry class not need a init_handlers also ?
+     2014- 6-12 not yet
+
+ 200 2015- 6-12 do not try to close a journal at the same date
+     2015- 6-12 done - svn #3702
+
+ 201 2014- 6-12 systematize ofo_xxx class connect handlers when opening
+                the dossier
+     2014- 6-12 done for classes who need this - svn #3706
+
+ 202 2014- 6-12 check that dossier is alive when disconnecting the
+                handlers
+     2014- 6-12 done - svn #3706
+
+ 203 2014- 6-12 DATESET_GLOBAL should not be systematic when connecting
+                the handlers. Instead they should be set back when 
+                needed
+     2014- 6-13 done
+
+ 204 2014- 6-12 check_for_enable_dlg/is_dialog_validable: should only
+                check the modified data => the checked data should be
+                flagged, and this flag unset when the data is modified
+     2014- 8-17 this is done in later dialog box (e.g. ofa-dossier-new),
+                but will not be reported in already written
+
+ 205 2014- 6-12 ofoClass: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 206 2014- 6-12 ofoDevise: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 207 2014- 6-12 ofoJournal: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 208 2014- 6-12 ofoModel: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
+                - acount properties  - done
+                - account select     - done
+                - bat properties     - done
+                - bat select         - done
+                - class properties   - done
+                - devise properties  - done
+                - dossier open       - done
+                - dossier properties - done
+                - guided input       - done
+                - journal properties - done
+                - model properties   - done
+                - taux properties    - done
+     2014- 7-14 done - svn #3782 
+
+ 211 2014- 6-12 move all assistants to myAssistant
+                - import
+                - export
+                - new dossier
+     2014- 7-14 closed - cf. #281 and #282
+
+ 212 2014- 6-13 when importing, accept decimal comma as well as decimal
+                dot (and this should be a configuration option of the
+                assistant, as well as the character set)
+     2014-12-12 done - svn #4276
+
+ 214 2014- 6-13 edit rough entries
+     2014- 6-21 have a visual distinction depending of the entry status:
+                ok
+     2014- 6-21 forbid the edition and disable the edition switch when 
+                on a validated entry: ok
+     2014- 6-21 modified entries should be saved when we change the 
+                current row
+     2014- 6-21 connect to dossier signals to be advertised on 
+                intermediate closing, new entries..
+     2014- 6-24 done - svn #3746
+
+ 216 2014- 6-13 exercice closing
+     2014-10- 6 keep the account balances at the end of the exercice N
+                and at the beginning of exercice N+1
+     2014-12- 3 Checks for entries balance - svn #4230
+     2014-12- 3 Checks for ledgers balance - svn #4233
+     2014-12- 3 Checks for accounts balance - svn #4235
+     2015- 1-12 done - svn #4434
+
+ 218 2014- 6-15 this is an error if entry number is not strictly 
+                increasing when we update the account balance
+     2014- 6-20 done - svn #3745
+
+ 219 2014- 6-15 one should take care of not increasing the entry number
+                until going back to zero during a same exercice (but
+                INT_MAX is a very big number)
+     2014- 6-16 maybe by prefixing the entry number with the exercice id
+                thus having a full entry identifier as '1-1234'
+     2014- 6-16 another way may be to just ignore the issue...
+     2014-10-13 report duplicated #265 here:
+                review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                describe the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
+     2014-11-10 Mysql signed INT (4 bytes): 2 147 483 647
+                limits.h INT_MAX:          +2,147,483,647
+                Mysql signed BIGINT (8 bytes): 9223372036854775807
+                limits.h LONG_MAX: +9,223,372,036,854,775,807 	
+                GLib: 
+                - gint64: a signed integer guaranteed to be 64 bits on all platforms
+                - G_MAXINT64
+                - G_GINT64_MODIFIER to be used for printing
+                - G_GINT64_FORMAT to be used for printing
+                PostgreSQL: also defines BIGINT
+                see: http://www.postgresql.org/docs/9.3/static/datatype-numeric.html
+     2014-11-10 done - svn #4083
+
+ 220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
+                a normal label + move it to the right in order to be
+                aligned with account entry
+     2014-11- 5 done - svn #4048
+
+ 221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
+     2014- 6-16 done - svn #3717
+
+ 222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
+                the dates)
+     2014- 6-18 done
+
+ 223 2014- 6-16 DossierProperties: add a tab for the current exercice
+                enter begin and end dates, display last entry number
+     2014- 6-20 done - svn #3744
+
+ 224 2014- 6-16 DossierProperties: add a tab for the archived exercices
+     2014-11-11 exercice is selected through a combo box
+     2014-11-11 done
+
+ 225 2014- 6-16 When selecting an account, should be able to create a
+                new account
+     2014- 6-20 + have the standard facilities of the accounts chart
+                (new, update, delete, view entries) ; this would imply
+                that view entries is able to run in a dialog box
+     2014- 6-20 done - svn #3737
+
+ 226 2014- 6-16 Notes should be passed to 4096 chars
+     2014- 6-16 done - svn #3713
+
+ 227 2014- 6-16 Duplicate an entry model
+     2014- 6-16 done - svn #3716
+
+ 228 2014- 6-16 Entry model, after having clicked '+', set the focus
+                on the just inserted 'comment' field
+     2014- 6-16 done - svn #3715
+
+ 229 2014- 6-16 Entry model: duplicate a line
+     2015- 2- 9 done
+
+ 230 2014- 6-16 Viewing entries: it is not worth to display the 
+                currency code on each line when displaying per account
+                (only the footer balance line is useful)
+     2014- 6-16 done - svn #3714
+
+ 231 2014- 6-16 Viewing entries: take care of not adding different
+                currencies when viewing per journal + have a balance
+                per currency
+     2014- 6-16 done - svn #3714
+
+ 232 2014- 6-16 ofaGuidedEx: seg fault
+     2014- 6-16 done - svn #3718
+
+ 233 2014- 6-16 factorize the code common to ofaGuidedInput and
+                 ofaGuidedEx
+     2014- 6-17 done - svn #3721  
+
+ 234 2014- 6-17 the ofaMainPage derived-classes should be named
+                ofaPageXxxx (or maybe better ofaXxxxPage)
+     2014- 6-20 src/ui/ofa-accounts-chart.h -> ofaAccountsPage
+                src/ui/ofa-bat-set.h        -> ofaBatsPage
+                src/ui/ofa-classes-set.h    -> ofaClassesPage
+                src/ui/ofa-devises-set.h    -> ofaCurrenciesPage
+                src/ui/ofa-guided-ex.h         x
+                src/ui/ofa-journals-set.h   -> ofaLedgersPage
+                src/ui/ofa-models-set.h     -> ofaOpeTemplatesPage
+                src/ui/ofa-rappro.h         -> ofaReconciliation
+                src/ui/ofa-taux-set.h       -> ofaRatesPage
+                src/ui/ofa-view-entries.h      x
+     2014-10-28 done
+
+ 235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
+     2014- 6-20 done - svn #3734
+
+ 236 2014- 6-18 when updating an entry model, the right pane of
+                ofaGuidedInputEx should be updated (if the updated
+                entry model is currently displayed)
+     2014- 6-20 done - svn #3730
+
+ 237 2014- 6-20 Print reconciliation: have a light gray background
+                every other line
+     2014- 6-20 done - svn #3728
+
+ 238 2014- 6-20 ofoEntry: only entries of the current exercice must
+                be updated of the mnemo of the journal is modified
+                (but we have UPDATE OFA_T_ECRITURES 
+                SET ECR_JOU_MNEMO='TRESO' WHERE ECR_JOU_MNEMO='BQ')
+     2014- 6-20 this was already ok (just have to set the beginning
+                of the exercice) - comment added - svn #3733
+
+ 239 2014- 6-20 DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='EFBUR2'
+                is called twice
+     2014- 6-20 done - svn #3732
+
+ 240 2014- 6-20 entry model properties: the journal combo should 
+                display labels (and so the corresponding GtkLabel
+                should be removed) 
+     2014- 6-20 done - svn #3731
+
+ 241 2014- 6-20 ofaJournalTreeview: pfnSelection becomes pfnSelected,
+                pfnActivation becomes pfnActivated
+     2014- 6-20 done - svn #3743
+
+ 242 2014- 6-20 ofaJournalCombo: pfn becomes pfnSelected
+     2014- 6-20 done - svn #3742
+
+ 243 2014- 6-20 ofaDeviseCombo: pfn becomes pfnSelected
+     2014- 6-20 done - svn #3741
+
+ 244 2014- 6-20 ofaAccountNotebook: pfnSelect becomes pfnSelected,
+                pfnDoubleClic becomes pfnActivated
+                + have a single user_data for the two callbacks
+     2014- 6-20 done - svn #3736
+
+ 245 2014- 6-20 ofa_account_notebook_init_dialog() becomes
+                 ofa_account_notebook_new()
+     2014- 6-20 done - svn #3736
+
+ 246 2014- 6-20 ofa_devise_combo_init_combo() becomes
+                 ofa_devise_combo_new()
+     2014- 6-20 done - svn #3740
+
+ 247 2014- 6-20 ofaAccountSelect: be able to view entries in a dialog
+                box - or disable the button
+     2014- 6-20 done - svn #3738
+
+ 248 2014- 6-20 ofaMainPage: has_import_export becomes has_import+
+                has_export
+     2014- 6-20 done - svn #3739
+
+ 249 2014- 6-20 record user and stamp on entry reconciliation
+     2014- 8-24 done - svn #3824
+
+ 250 2014- 6-20 Print Reconciliation: display dates as dd/mm/yyyy
+     2014- 6-27 done
+
+ 251 2014- 6-21 ofaIntClosing:do_close: 
+                replace ofa_journal_treeview_foreach_sel()
+                Rationale: The model has been modified from within 
+                gtk_tree_selection_selected_foreach. This function is 
+                for observing the selections of the tree only.  If you
+                are trying to get all selected items from the tree, try 
+                using gtk_tree_selection_get_selected_rows instead.
+     2014- 6-27 done
+
+ 252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
+                library (not a dynamically loadabled plugin) of same
+                version than sgbd (i.e. 1 as for now)
+     2015-11-14 undefined use case -> cancelled
+
+ 257 2014- 6-23 editing rough entries: insert a new line
+     2014- 6-27 done
+
+ 258 2014- 6-23 editing rough entries: delete a line
+     2014- 6-27 done - svn #3750
+
+ 260 2014- 6-24 editing rough entries: make the columns sortable
+     2014-10-16 done - svn #3910
+
+ 261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
+                gdouble instead of strings
+     2014- 9-14 cancelled as without added value
+     2014- 9-14 reopened -> rate as a gdouble
+     2014-10- 5 done
+
+ 262 2014- 6-27 make g_date_set_parse locale independant (especially
+                when parsing from sql)
+     2014- 6-27 this seems good, but treeview cells are not connected
+                to my_date, and this interprets the date along the
+                locale
+     2014-10-13 done: g_date_set_parse() is only used when parsing a
+                sql string, which is not sensible to the locale
+
+ 263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
+                is displayed in the top of the page, instead of the
+                bottom
+     2014- 6-27 done - svn #3749 
+
+ 264 2014- 6-27 review MySQL data types against C data types
+     2014-11-10 closed as duplicate of #219
+
+ 265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                describe the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
+     2014-10-13 closed as duplicate of #219
+
+ 266 2014- 6-27 PrintReconciliation: the page footer makes use of a
+                system timestamp (yyyy-mm-dd hh:mi:ss) but should 
+                rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
+     2014- 6-27 done - svn #3751
+
+ 267 2014- 6-27 PrintReconciliation: when the account is empty (no entry
+                has never been imputed), then no date is displayed on 
+                the account solde line. 
+                At least, should use the entered reconciliation date.
+     2014- 6-27 done - svn #3753
+
+ 268 2014- 6-27 ViewEntries: when selecting an account, set default
+                currency on the currently edited line if not already
+                set
+     2014- 6-27 done - svn #3752
+
+ 269 2014- 6-27 lettrage des comptes de tiers
+     2014-11- 1 done - svn #4034
+
+ 270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
+                parse an amount with a space thousand separator
+     2014- 8-18 OFA-DEBUG: on_cell_edited: text='23,45', amount=23,450000, str='23,45'
+                OFA-DEBUG: save_entry: sdeb='23,45', debit=23,450000, scre='0,00', credit=0,000000
+                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=23.449999999999999,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:06' 	WHERE ECR_NUMBER=328', display_error=True
+                [...]
+                OFA-DEBUG: on_cell_edited: text='1223,45', amount=1223,450000, str='1 223,45'
+                OFA-DEBUG: save_entry: sdeb='1 223,45', debit=1,000000, scre='0,00', credit=0,000000
+                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=1,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:11' 	WHERE ECR_NUMBER=328'
+     2014- 9- 6 done
+
+ 271 2014- 6-27 ViewEntries: set a default effect date with the ope date
+     2015- 1-24 done
+
+ 272 2014- 6-27 Have a myDate class or family of functions and take an
+                inventory of use (single case vs. couple case - e.g.
+                dope/deff, dfrom/dto, etc.)
+     2014- 6-28 svn #3754: introduce myDate class
+     2014-10-13 done 
+
+ 274 2014- 6-29 put back the main GtkNotebook popup menu
+     2014- 8-17 done - svn #3820
+
+ 275 2014- 6-30 DossierNew: should be able to use the same db account
+                than another database (so ignore duplicate account)
+     2014- 8-17 done - svn #3810
+
+ 276 2014- 7-13 ofoSgbd: move error management to caller (as GError)
+                so that caller may decide what to do instead of 
+                displaying an error message
+     2014- 7-18 query option: ignore error, display error
+                query option: no audit
+     2014- 8-17 display error is reported in ofoSgbd, set up when calling
+                the method - cancelled
+
+ 277 2014- 7-13 DossierNew is not an assistant, but a dialog box
+     2014- 7-14 done - svn #3769
+
+ 278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
+     2014- 8-17 cancelled (see #276)
+
+ 279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
+     2014- 7-14 done - svn #3794
+
+ 280 2014- 7-14 DossierNew: update properties right after having opened
+                the dossier
+     2014- 7-14 done - svn #3770
+
+ 281 2014- 7-14 move import to myAssistant
+     2014-12-12 done - svn #4276
+
+ 282 2014- 7-14 move export to myAssistant
+     2014-11-24 done - svn #4158
+
+ 283 2014- 7-14 DossierNew: set the default values:
+                - long label should default to dossier short label
+                - exercice length
+     2014- 7-14 done - svn #3772
+
+ 284 2014- 7-14 Dossier Properties : ok is not enabled
+     2014- 7-14 done - svn #3771
+
+ 285 2014- 7-14 DossierNew: there is an error in a SQL sentence
+     2014- 7-14 the error appears because of a bad quoting when 
+                inserting into ofa_t_audit
+     2014- 7-14 done - svn #3785
+
+ 286 2014- 7-14 DossierNew: audit table doesn't exist
+     2014- 7-14 done - svn #3773
+
+ 287 2014- 7-14 ofa_account_notebook_init_view: 
+                assertion `page_w && GTK_IS_CONTAINER( page_w )' failed
+                (when there is no account ?)
+     2014- 7-14 done - svn #3784
+
+ 288 2014- 7-14 DossierNew: enable dlg should not depend of connection
+                check
+     2014- 7-14 done - svn #3787
+
+ 289 2014- 7-14 DossierNew: there is no error message when passwords 
+                are not equals
+     2014- 7-14 done - svn #3786
+
+ 290 2014- 7-15 in classes (finalize, init), g_debug should appear
+                before g_return_if_fail (in order to know why something
+                fails)
+     2014- 7-18 done
+
+ 291 2014- 7-19 DossierManage: if host is empty, display 'localhost'
+                in italics
+     2014- 8-21 done - svn #3823
+
+ 292 2014- 7-19 DossierManage: be able to update external dossier
+                properties (those which are displayed by dossier
+                manager)
+     2014- 8-17 no obvious use case - cancelled
+
+ 293 2014- 7-19 isolate in a structure the MySQL connection parameters
+                and union it in a structure passed through functions
+                and able to hold other providers
+     2014- 8-17 obsoleted with introduction of DBMS provider plugins
+                as of svn #3810
+
+ 294 2014- 7-19 what to do when deleting a dossier is a preference
+     2014- 7-21 done
+
+ 295 2014- 7-19 ask confirmation when dropping an existing db
+     2014- 7-20 done - svn #3799
+
+ 297 2014- 7-20 DossierManage: when deleting a dossier, make use of
+                ofa_dossier_delete_run_direct() method
+     2014- 8-17 use now ofa_idbms_delete_dosser() interface method
+     2014- 8-17 closed
+
+ 298 2014- 7-30 ofa_sgbd: remove get_host() function
+     2014- 8-17 done - svn #3810
+
+ 299 2014- 7-30 ofa_settings: cleanup ofa_settings_set/get_dossier
+     2014- 8-17 done - svn #3810
+
+ 300 2014- 8- 7 Dossier Manager: have an Open button
+     2014- 8-17 done - svn #3818
+
+ 301 2014- 8- 7 Dossier Manager: have a New button
+     2014- 8-17 done - svn #3815
+
+ 302 2014- 8- 9 sgbd should be dbms
+     2014- 8-17 eventually the interface is named ofaIDbms, but the
+                convenience object ofoSgbd keeps to be named like that
+     2014- 8-17 closed
+
+ 304 2014- 8-24 Archive account balances on intermediate closing
+     2014- 8-24 this is not relevant as we are not closing accounts,
+                but journals -> cancelled
+
+ 305 2014- 8-24 have a plugin management menu item
+     2014- 8-24 done - svn #3829
+
+ 306 2014- 8-24 have a plugin preferences api
+     2014- 8-24 done - svn #3830
+
+ 307 2014- 8-26 label+account+password should be kept in the DBMS 
+                connection structure (and not in the ofoSgbd data)
+     2014- 9- 5 done
+
+ 308 2014- 8-26 mysql: have a get_connect_parms() function to read a
+                mysqlConnect structure from the settings
+     2014- 9- 5 done
+
+ 309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
+                but should be allowed to
+     2014- 9-15 done
+
+ 310 2014- 9-15 locale user preferences:
+                for amounts, whether to allow the comma as decimal point
+                when entering
+                for dates, entry as d/m/yyyy ?
+     2014-11-30 done - svn #4210
+
+ 315 2014-10- 3 the originating model should be kept in the generated
+                entries
+                - dossier_v1 - ok
+                - update entries when model mnemo changes - ok
+                - setter/getter - ok
+                - export entries - ok
+                - import entries - ok
+                - set model mnemos when generating entries - ok
+                - add in view_entries - postponed
+                - check ecritures before delete an ope template - ok
+     2014-10- 5 done - svn #3882
+
+ 316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
+     2014-10- 5 done - svn #3883
+
+ 317 2014-10- 5 view_entries: let the user select an operation template
+     2015- 1-25 find a use case/rationale ?
+     2015- 2- 5 cancelled
+
+ 318 2014-10- 6 print the balance for a periode
+     2014-11- 1 done - svn #4022
+
+ 319 2014-10- 7 review ofo_entry_get_csv()
+     2015- 1-24 done
+
+ 320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
+                the top right part, as the operation templates are 
+                already sorted by ledgers
+     2014-10-13 cancelled: permit the ledger be modified by the user
+
+ 321 2014-10- 8 Ledger properties balance: should have '€' sign like
+                account properties balance
+     2015- 1-24 done
+
+ 322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
+     2014-10-30 done - svn #4016
+
+ 323 2014-10- 9 review the setters as most probably only properties
+                setters are useful, while others may be only internally
+                used
+                command is:
+                grep _set_ src/api/ofo-*.h | while read l; do \
+                fi="$(echo "$l" | awk -F: '{ print $1 }' | \
+                sed -e 's/src\/api\///' | sed -e 's/\.h//')"; \
+                fn="$(echo "$l" | awk '{ print $2 }' | \
+                sed -e 's/(//')"; echo $fi $fn; grep $fn src/*/* | \
+                grep -vE "src/api/$fi.h|src/core/$fi.c" ; done
+                - ofo_bat_set_id
+                - ofo_bat_line_set_id
+                - ofo_dossier_set_current_exe_id
+                - ofo_entry_set_number
+                - ofo_entry_set_ope_template
+                - ofo_entry_set_status
+                - ofo_entry_set_concil_user
+                - ofo_entry_set_concil_stamp
+                - ofo_ledger_set_clo_deb
+                - ofo_ledger_set_clo_cre
+                - ofo_ledger_set_deb
+                - ofo_ledger_set_deb_date
+                - ofo_ledger_set_cre
+                - ofo_ledger_set_cre_date
+     2015- 1-24 done - svn #4517
+
+ 324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
+     2014-10-13 cancelled as myDate class has been obsoleted
+
+ 326 2014-10-12 when entering a new operation via an operation template,
+                let the user enter only dd/mm, then automatically
+                computing the year on focus out
+     2015- 1-24 done - svn #4518
+
+ 327 2014-10-14 Select account: size and position should be kept 
+                distinctly for each usage
+     2014-12-19 cancelled
+
+ 328 2014-10-17 DossierOpen: display an error message box if account or
+                password are false
+     2014-10-29 done - svn #4005
+
+ 329 2014-10-17 updating an entry in ViewEntries should be repercuted
+                to the same entry in Reconciliation
+     2015- 2- 1 done - svn #4536
+
+ 330 2014-10-17 reconciliating an entry in Reconciliation should update
+                the display of corresponding column in ViewEntries
+     2015- 2- 1 done - svn #4536
+
+ 331 2014-10-17 clearing the display BAT lines in Reconciliation : what
+                is it supposed to do ?
+     2015- 2- 1 this is supposed to clear an erroneous loaded BAT!
+
+ 332 2014-10-17 Reconciliation: should not accept Enter to annulate the
+                reconciliation on an entry, as it is too easy to make
+                an error
+     2015- 2- 9 idem when cancelling a settled entry
+     2015- 2-15 that this would be easy is just the idea! so cancel that
+
+ 337 2014-10-19 ofaAccountsChart: should be a tree store
+     2014-10-29 note that this may imply to define fake root accounts
+                and this - at least - implies to get the dataseset
+                ordered per account number (which is the case when
+                loading the dataset)
+     2014-10-29 done - svn #4009
+
+ 338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
+                method (rather put in ofaMainWindow or in my_utils)
+     2014-10-26 done - svn #3923
+
+ 339 2014-10-19 ofaMainPage becomes ofaPage
+     2014-10-19 done - svn #3915
+
+ 340 2014-10-19 defines an ofaPageTree, derived from ofaPage, which will
+                be the base of pages with a GtkTreeView
+     2014-10-19 done - svn #3920
+
+ 341 2014-10-19 defines an ofaPageBook, derived from ofaPage, which will
+                be the base of pages with a GtkNotebook
+     2014-10-19 done - svn #3916
+
+ 342 2014-10-26 document signals + callbacks should be signals
+                - ofaAccountsBook
+     2015- 1-17 done
+
+ 343 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myDialog
+     2014-10-26 done - svn #3986
+
+ 344 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myWindow
+     2014-10-26 done - svn #3985
+
+ 345 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDBLogin
+     2014-10-26 done - svn #3984
+
+ 346 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPlugin
+     2014-10-26 done - svn #3983
+
+ 347 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaSettings
+     2014-10-26 done - svn #3982
+
+ 348 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBase
+     2014-10-26 done - svn #3981
+
+ 349 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoAccount
+     2014-10-26 done - svn #3980
+
+ 350 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBat
+     2014-10-26 done - svn #3979
+
+ 351 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBatLine
+     2014-10-26 done - svn #3978
+
+ 352 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoClass
+     2014-10-26 done - svn #3977
+
+ 353 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoCurrency
+     2014-10-26 done - svn #3976
+
+ 354 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoDossier
+     2014-10-26 done - svn #3975
+
+ 355 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoEntry
+     2014-10-26 done - svn #3974
+
+ 356 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoLedger
+     2014-10-26 done - svn #3973
+
+ 357 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoOpeTemplate
+     2014-10-26 done - svn #3972
+
+ 358 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoRate
+     2014-10-26 done - svn #3971
+
+ 359 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoSgbd
+     2014-10-26 done - svn #3970
+
+ 360 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myAssistant
+     2014-10-26 done - svn #3969
+
+ 361 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountProperties
+     2014-10-26 done - svn #3968
+
+ 362 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountsBook
+     2014-10-26 done - svn #3967
+
+ 363 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountSelect
+     2014-10-26 done - svn #3966
+
+ 364 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountsPage
+     2014-10-26 done - svn #3965
+
+ 365 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaApplication
+     2014-10-26 done - svn #3964
+
+ 366 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBackup
+     2014-10-26 done - svn #3963
+
+ 367 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatCommon
+     2014-10-26 done - svn #3962
+
+ 368 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatProperties
+     2014-10-26 done - svn #3961
+
+ 369 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatSelect
+     2014-10-26 done - svn #3960
+
+ 370 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatSet + rename to ofaBatsPage
+     2014-10-26 done - svn #3959
+
+ 371 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaClassesSet + rename to ofaClassesPage
+     2014-10-26 done - svn #3958
+
+ 372 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaClassProperties
+     2014-10-26 done - svn #3957
+
+ 373 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrenciesSet + rename to ofaCurrenciesPage
+     2014-10-26 done - svn #3956
+
+ 374 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrencyCombo
+     2014-10-26 done - svn #3955
+
+ 375 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrencyProperties
+     2014-10-26 done - svn #3954
+
+ 376 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierDelete
+     2014-10-26 done - svn #3953
+
+ 377 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierDeletePrefs
+     2014-10-26 done - svn #3952
+
+ 378 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierLogin
+     2014-10-26 done - svn #3951
+
+ 379 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierManager
+     2014-10-26 done - svn #3950
+
+ 380 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierNew
+     2014-10-26 done - svn #3949
+
+ 381 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierOpen
+     2014-10-26 done - svn #3948
+
+ 382 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierProperties
+     2014-10-26 done - svn #3947
+
+ 383 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaExport
+     2014-10-26 done - svn #3946
+
+ 384 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedCommon
+     2014-10-26 done - svn #3945
+
+ 385 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedEx
+     2014-10-26 done - svn #3944
+
+ 386 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedInput
+     2014-10-26 done - svn #3942
+
+ 387 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaImport
+     2014-10-26 done - svn #3941
+
+ 388 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaIntClosing
+     2014-10-26 done - svn #3940
+
+ 389 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerCombo
+     2014-10-26 done - svn #3939
+
+ 390 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerProperties
+     2014-10-26 done - svn #3938
+
+ 391 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgersSet + rename to ofaLedgersPage
+     2014-10-26 done - svn #3937
+
+ 392 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerProperties
+     2014-10-26 cancelled as duplicate of #390
+
+ 393 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerTreeview
+     2014-10-26 done - svn #3936
+
+ 394 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaMainWindow
+     2014-10-26 done - svn #3924
+
+ 395 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplateProperties
+     2014-10-26 done - svn #3935
+
+ 396 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplatesSet + rename to ofaOpeTemplatesPage
+     2014-10-26 done - svn #3934
+
+ 397 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPluginManager
+     2014-10-26 done - svn #3933
+
+ 398 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPreferences
+     2014-10-26 done - svn #3932
+
+ 399 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPrintReconcil
+     2014-10-26 done - svn #3931
+
+ 400 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRateProperties
+     2014-10-26 done - svn #3930
+
+ 401 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRatesSet + rename to ofaRatesPage
+     2014-10-26 done - svn #3929
+
+ 402 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaReconciliation
+     2014-10-26 done - svn #3928
+
+ 403 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRestore
+     2014-10-26 done - svn #3927
+
+ 404 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaTabLabel
+     2014-10-26 done - svn #3926
+
+ 405 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaViewEntries
+     2014-10-26 done - svn #3925
+
+ 406 2014-10-26 review application startup, making sure when and how
+                startup/activate/open methods are called
+     2014-10-29 done - svn #4004
+
+ 407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
+                not the ofaPage
+     2014-10-29 done
+
+ 408 2014-10-26 buttons should be properties of the ofaPage
+     2014-10-28 No: the main page is only a grid created on top of the
+                main notebook page, with a theme id attached.
+                Buttons are to be created via a separated class.
+     2014-10-29 done - svn #4003
+
+ 409 2014-10-26 print reconcil: should also print currency symbol
+     2014-10-27 done - svn #3989
+
+ 410 2014-10-26 when opening the properties of a plugin, the preferences
+                dialog should open on the appropriate tab
+     2014-10-27 done - svn #3988
+
+ 411 2014-10-29 have a preference to allow the deletion of root accounts
+                which have detail accounts ?
+     2014-10-29 done - svn #4008
+
+ 412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
+                are reclassed under 'unclassed'
+     2014-11-23 done - svn #4148
+
+ 413 2014-10-30 Review use of (quasi empty) dlgboxes:
+                - ofa-bat-select.ui: a frame handled by ofaBatCommon
+                - ofa-bat-properties.ui: a frame handled by ofaBatCommon
+                - ofa-account-select.ui: a container handled by ofaAccountsBook
+     2014-10-30
+
+ 414 2014-10-30 backup and restore default commands should be provided
+                by the dbms provider
+     2014-11-12 done - svn #4094
+
+ 415 2014-11- 1 need the account soldes at the beginning of the exercice
+                use case: print a balance of the exercice
+     2014-11- 1 no: the balance of the exercice is just a balance which
+                starts at 01/01 of the exercice: it includes the 'report
+                à nouveau' entries ?
+     2014-11- 1 it appears that EBP Compta historize plenty of balances,
+                but doesn't care to use them to display an exercice 
+                balance - so have to store the account balances just 
+                after exercice opening - this will let us edit this
+                exercice balance...
+     2014-11- 3 done - svn #4042
+
+ 416 2014-11- 2 this must be a user locale preference to export csv
+                with a decimal comma or a decimal dot - default is
+                decimal dot
+     2014-11-23 done - svn #4154
+
+ 417 2014-11- 3 when inserting a new account, reorder the children
+                under the new root
+     2014-11- 3 done - svn #4045
+
+ 418 2014-11- 3 new account: if root, then 'currency' label should be
+                disabled (not only the combo box)
+     2014-11- 3 done - svn #4044 
+
+ 419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
+                book, but most probably also in other treeviews)
+     2014-11- 5 ofaAccountsBook:     done - svn #4047
+     2014-11- 7 ofaBatsPage:         done - svn #4052
+     2014-11- 7 ofaClassesPage:      done - svn #4053
+     2014-11- 7 ofaCurrenciesPage:   done - svn #4054
+                ofaLedgerTreeview:   done - svn #4346
+                ofaOpeTemplatesPage: done
+                ofaRatesPage:        done - svn #4347
+
+ 420 2014-11- 3 when deleting a root with children, and corresponding
+                user preference is set, then the rows 'seem' to be
+                deleted, but the account is not
+     2014-11- 5 done - svn #4046
+
+ 421 2014-11- 5 GuidedInput: when selecting an account after having
+                began to enter a prefix, should open the dialog with
+                the closest account selected
+     2014-11- 7 done - svn #4051 
+
+ 422 2014-11- 5 GuidedInput: it is possible to enter an operation with
+                an amount on accounts which do not have the same 
+                currency, but should not be
+     2014-11- 5 Actually, which is incorrect is that we do not have 
+                a good balance per currency
+     2014-11- 7 done - svn #4049
+
+ 423 2014-11- 8 Settlement: should be able to unselect a row
+     2014-11-10 this is ok with Ctrl key
+
+ 424 2014-11- 9 add exercice notes
+     2014-11-10 done - svn #4070
+
+ 425 2014-11-10 ofaDossierProperties: doesn't take into account
+                'changed' signal on exercice notes - so unable to
+                have this field updated
+     2014-11-10 done - svn #4146
+
+ 426 2014-11-10 compare ofo_account_archive_open_balances() vs.
+                ofo_account_histo_valid_to_open()
+     2014-11-10 same functions: remove ofo_account_histo_valid_to_open.
+     2014-11-10 done - svn #4084
+
+ 427 2014-11-11 print general ledger
+     2014-11-11 done - svn #4088
+
+ 428 2014-11-11 implement export to PDF for printed summaries (let us
+                set the export filename)
+     2014-11-18 PrintBalance: done - svn #4119
+     2014-11-20 PrintReconcil: done - svn #4120
+     2014-11-21 PrintBooks: done - svn #4122
+
+ 430 2014-11-11 print_balance: add currency on each line + have a
+                general total per currency 
+     2014-11-14 done - svn #4117
+
+ 431 2014-11-11 print general ledger: have a general total per currency
+     2014-11-14 done - svn #4114
+
+ 432 2014-11-12 on import, do not apply on account nor ledger entries
+                which have an effect date before the beginning of the 
+                exercice (the ledger will stay unbalanced)
+     2014-11-19 done: entries with PAST status are not imputed
+
+ 433 2014-11-12 print ledgers
+     2014-11-22 done - svn #4142
+
+ 434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
+                view_entries displays an error message like
+                "effect date (01/01/2014) lesser than last closing date
+                (31/12/2014)" which is obviously wrong
+     2014-11-12 done - svn #4096
+
+ 435 2014-11-12 view_entries: do not display 'invalid date' when the
+                field is empty
+     2014-11-12 done - svn #4095
+
+ 436 2014-11-12 view entries: do not recheck entries which are not new
+     2014-11-12 done - svn #4097
+
+ 437 2014-11-12 view entries: insert does not work (add empty lines as
+                we insert more entries)
+     2014-11-12 done - svn #4098
+
+ 438 2014-11-12 view entries: display in red invalid entries + in red
+                the error message
+     2014-11-14 have red for errors, orange for warnings, blue for
+                balance per currency
+     2014-11-14 done - svn #4107
+
+ 439 2014-11-12 view entries: delete the row even it is not a valid 
+                entry
+     2014-11-14 ok
+
+ 440 2014-11-12 view entries: escape should cancel the new entry being
+                entered
+     2014-11-14 nope: Escape cancel the edition -> cancelled
+
+ 441 2014-11-13 general ledger: the from_date and the to_date are set
+                in the dialog box while only the from_date is set in
+                the configuration file
+     2014-11-13 same for Accounts Balance
+     2014-11-14 done - svn #4113 
+
+ 442 2014-11-13 General Ledger: rather use settled and reconciliated
+                indicators than the settlement number (either a coche
+                or a colored 'S/R' letter)
+     2014-11-14 done - svn #4116
+
+ 443 2014-11-13 General Ledger: date is marked invalid when empty (but
+                shouldn't)
+     2014-11-14 done - svn #4111
+
+ 444 2014-11-13 General Ledger: last account is not taken into account
+     2014-11-13 done - svn #4110
+
+ 446 2014-11-13 General Ledger: account header/footer: font size -= 1
+     2014-11-14 done - svn #4106
+
+ 447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
+     2014-11-24 done - svn #4144
+
+ 448 2014-11-13 view entries: when entering an operation date, and if
+                the effect date has not yet been forced by the user, 
+                then set a default effect date
+     2014-11-14 done - svn #4105 
+
+ 449 2014-11-13 view entries: use my_cell_editable_date
+     2014-11-14 done - svn #4104
+
+ 450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
+                or Del)
+     2014-11-14 done - svn #4100
+
+ 451 2014-11-13 view entries: one should be able to enter any effect 
+                date -> have a save anyway button + take care of 
+                updating ofoEntry to not apply to account nor ledger
+     2014-11-22 have a rationale (other than unreconciliated on 
+                unsettled entries from a previous exercice) ?
+     2014-11-26 no other use case, and this one must only be dealt
+                with via a dedicated ledger -> cancelled
+
+ 452 2014-11-13 view entries: default currency should be set as soon as
+                the account is set
+     2014-11-14 done - svn #4099
+
+ 453 2014-11-14 view entries: debit or credit + currency should be 
+                enough to update the amounts
+     2014-11-14 done - svn #4106
+
+ 454 2014-11-14 view entries: save display configuration as preferences
+     2014-11-21 done - svn #4138
+
+ 455 2014-11-14 report colored footer in other pages with balances
+                (as view entries)
+     2015- 1-17 done in ofaSettlement
+                left to be done: ofaReconciliation
+     2015- 1-29 done - svn #4527
+
+ 456 2014-11-14 printings: there is no sens to have a special header
+                on last page: remove 'is_last' argument
+     2014-11-14 done - svn #4115
+
+ 457 2014-11-14 have more entries and more accounts in OFAT base of test
+     2015- 1-17 no more useful since we are able to safely restore db
+
+ 458 2014-11-17 view_entries: the st_renderes should not be a static
+                variable, but member of the instance data
+     2014-11-21 done - svn #4133
+
+ 459 2014-11-18 print accounts balances : option group by class
+     2014-11-21 done - svn #4131
+
+ 460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
+                aligned, have other columns (reconcil) on the left
+     2014-11-22 done - svn #4143
+
+ 465 2014-11-26 move ofoEntry to ofaBoxed
+     2015- 1- 5 duplicate of #552
+
+ 466 2014-11-26 move ofoOpeTemplate to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+     2015- 1-17 field sep is currently (and rightly) taken into account
+                by ImportAssistant
+     2015- 3-15 done - git #2ca8762
+
+ 467 2014-11-26 move ofoRate to ofaBoxed
+     2014-11-19 done - svn #4344
+
+ 468 2014-11-27 have one database per exercice
+                merge OFA_T_DOSSIER & OFA_T_DOSSIER_EXE
+                merge OFA_T_LEDGERS & OFA_T_LEDGERS_EXE
+                change status indicator from int to char(1)
+                remove LED_CUR_DEB_DATE & LED_CUR_CRE_DATE
+                add DOS_SIREN
+     2014-11-28 done - svn #4172
+
+ 470 2014-11-28 when entering a new database name, only accepts
+                [A..Z,a..z,0..9,_] characters
+     2015-12-18 see http://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+     2015-12-18 done
+
+ 471 2014-11-29 migrate to ofaDbms
+     2014-11-29 done - svn #4192
+
+ 473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
+     2015- 1- 6 deleting a dossier leaves unchanged the database(s)
+     2015- 1- 6 done - svn #4410
+
+ 474 2014-11-29 st_global datasets should be owned by the dossier
+     2014-11-30 done - svn #4203
+
+ 475 2014-11-29 review backup and restore: have a dedicated interface
+     2014-11-13 no dedicated interface (because we need a connection)
+                backup is ok.
+     2014-11-13 Have to restore with a better interface:
+                select the dossier name, the target database, extract
+                the date of the exercice and the status from the archive
+     2014-12-29 done - svn #4387
+
+ 476 2014-11-29 DossierManager review: have a Dossier treeview and an
+                Exercices treeview
+     2015- 1- 5 done
+
+ 477 2014-11-30 Dossier Open option should be insensitive when a dossier
+                is already opened
+     2015- 2-15 no as DossierOpen is just a shortcut for DossierClose+
+                DossierOpen -> cancelled
+
+ 478 2014-11-30 have a decimal dot combo
+     2014-11-30 done - svn #4215
+
+ 479 2014-11-30 get rid of mysqlConnect and mysqlInfos
+                after that rename sMySQLInfos to sMysqlInfos
+     2014-12-19 done - svn #4342
+
+ 480 2014-11-30 ofaBoxed class is renamed to ofaBox
+                ofaIBoxed becomes the corresponding interface
+     2014-12-19 done - svn #4343
+
+ 481 2014-12- 1 review ofaCurrencyCombo
+     2014-12-13 done
+
+ 482 2014-12- 2 change BAT_URI to X(256)
+     2014-12- 7 done - svn #4248
+
+ 483 2014-12- 2 add BAT_IMPORT_USER and BAT_IMPORT_STAMP
+     2014-12- 7 cancelled (already done)
+
+ 484 2014-12- 2 change DOS_SIREN to X(9)
+     2014-12- 7 done - svn #4250
+
+ 485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
+     2014-12- 7 done - svn #4253
+
+ 486 2014-12- 2 ledger: not deletable if referenced in dossier
+     2014-12-13 done - svn #4294
+
+ 487 2014-12- 2 ope_template: not deletable if referenced in dossier
+     2014-12-13 done - svn #4294
+
+ 488 2014-12- 2 when the begin exercice date misses, directly open the
+                dossier properties for updates
+     2014-12-13 a button proposes this in the warning dialog box -> OK
+
+ 489 2014-12- 2 Exe Closing: have default for date of next exercice
+     2014-12-13 done
+
+ 490 2014-12- 2 ExeClosing: implement ledger select, ope select
+     2014-12-19 moved to ofaExeForwardPiece
+     2014-12-19 done - svn #4341
+
+ 491 2014-12- 3 check that ledger is only imputed with entries of the
+                exercice (not before, not after)
+     2014-12-13 done
+
+ 492 2014-12- 3 check that account is only imputed with entries of the
+                exercice (not before, not after)
+     2014-12-13 done
+
+ 493 2014-12- 4 ViewEntries: setting effect dates should refresh the 
+                display (but don't)
+     2014-12-13 fixed
+
+ 495 2014-12- 4 ExeClosing: have a balancing account per currency
+                these balancing accounts must not be settleable, nor
+                reconciliable
+     2014-12- 9 done - svn #4259
+
+ 496 2014-12- 4 entry_validate_by_ledger: only consider effect date
+                in the current exercice
+     2014-12- 7 OK
+
+ 497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
+                into account the settings
+     2014-12- 7 have to migrate to ofaBox
+     2014-12-19 cancelled as duplicate of #467
+
+ 498 2014-12- 6 on import, display all the errors in a dialog box
+     2014-12-13 done
+
+ 499 2014-12- 6 entry: import past entries doesn't affect accounts nor
+                ledgers
+     2014-12- 6 done - svn #4239
+
+ 500 2014-12- 6 warns if begin or end of the exercice are not set
+     2014-12- 6 done - svn #4240
+
+ 501 2014-12- 6 do not accept entry before the begin of the exercice
+                (or the last close of the ledger)
+     2014-12- 7 OK - done
+
+ 502 2014-12- 6 when entered in the command-line, accept an empty 
+                database (and defaults to the current)
+     2014-12- 7 idem for account and password (let the user enter them)
+                + has to with command-line management and maybe also
+                command language
+     2015- 2- 6 done
+
+ 503 2014-12- 6 when entered in the command-line, accept empty account 
+                password, and let the user enter them
+     2014-12- 7 almost the same that #502
+
+ 504 2014-12- 7 ViewEntries: update the view when a new entry is created
+     2014-12- 7 done - svn #4257
+
+ 505 2014-12- 7 Account: remove entry, date from balances
+                + add balance for futur
+     2014-12- 7 done - svn #4254
+
+ 506 2014-12- 7 ofo_account_get_global_deffect ?
+     2014-12- 7 done - svn #4256
+
+ 507 2014-12- 6 remove dossier_dates_changed signal ?
+     2014-12- 7 done - svn #4258
+
+ 508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
+     2015- 1-17 no as this may lead to a security drawback - cancelled
+
+ 509 2014-12- 8 LedgerCombo: use same column enumeration than Ledger
+                Treeview (instead of two booleans)
+     2014-12-13 done
+
+ 510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
+     2014-12-18 fixed
+
+ 511 2014-12- 8 AccountProperties: a detail account with entries should
+                have currencies disabled (idem for root account)
+     2014-12- 9 done - svn #4267
+
+ 512 2014-12- 9 have an error message in all dialog box to say why it
+                is not validable
+     2015- 4- 1 -> review api, signals, readonly, err_ message, settings
+                src/core/ofa-admin-credentials-bin.ui       : #d69d42d
+                src/core/ofa-dbms-root-bin.ui               : #366e131
+                src/core/ofa-dossier-delete-prefs.piece.ui  : #bd9c322
+                src/core/ofa-file-format-bin.ui             : ok
+                src/core/ofa-preferences.ui                 : #d2f554b
+                src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
+                src/mysql/ofa-mysql-connect-enter-piece.ui  : d53ac94
+                src/mysql/ofa-mysql-prefs.piece.ui
+                src/ui/ofa-account-properties.ui
+                src/ui/ofa-account-select.ui
+                src/ui/ofa-account-selector-bin.ui
+                src/ui/ofa-app-menubar.ui
+                src/ui/ofa-bat-properties-bin.ui
+                src/ui/ofa-bat-properties.ui
+                src/ui/ofa-bat-select.ui
+                src/ui/ofa-check-balances-bin.ui
+                src/ui/ofa-check-balances.ui
+                src/ui/ofa-check-integrity-bin.ui
+                src/ui/ofa-check-integrity.ui
+                src/ui/ofa-class-properties.ui
+                src/ui/ofa-closing-parms-bin.ui
+                src/ui/ofa-currency-properties.ui
+                src/ui/ofa-date-filter-bin.ui
+                src/ui/ofa-dos-menubar.ui
+                src/ui/ofa-dossier-delete.ui
+                src/ui/ofa-dossier-display-notes.ui
+                src/ui/ofa-dossier-login.ui
+                src/ui/ofa-dossier-manager.ui
+                src/ui/ofa-dossier-new-bin.ui
+                src/ui/ofa-dossier-new-mini.ui
+                src/ui/ofa-dossier-new.ui
+                src/ui/ofa-dossier-open.ui
+                src/ui/ofa-dossier-properties.ui
+                src/ui/ofa-exercice-close-assistant.ui
+                src/ui/ofa-export-assistant.ui
+                src/ui/ofa-guided-input-bin.ui
+                src/ui/ofa-guided-input.ui
+                src/ui/ofa-import-assistant.ui
+                src/ui/ofa-import-ex.ui
+                src/ui/ofa-ledger-close.ui
+                src/ui/ofa-ledger-properties.ui
+                src/ui/ofa-ope-template-help.ui
+                src/ui/ofa-ope-template-properties.ui
+                src/ui/ofa-ope-template-select.ui
+                src/ui/ofa-plugin-manager.ui
+                src/ui/ofa-print-balances.ui                : cancelled
+                src/ui/ofa-print-books.ui
+                src/ui/ofa-print-ledgers.ui
+                src/ui/ofa-print-reconcil.ui
+                src/ui/ofa-rate-properties.ui
+                src/ui/ofa-reconciliation.ui
+                src/ui/ofa-restore-assistant.ui
+                src/ui/ofa-settlement.ui
+                src/ui/ofa-view-entries.ui
+     2015- 9-25 closed - see #839
+
+ 514 2014-12- 9 current exercice has no ending date (but should)
+     2014-12- 9 done - svn #4266
+
+ 515 2014-12- 9 refactor ledger amount names as account
+     2014-12- 9 done - svn #4265
+
+ 516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
+                + forbid that an entry becomes in the past before exercice
+     2015- 1- 6 actually all changes on begin and end exercice dates 
+                should be forbidden, or a remediation be provided (which
+                is possible in all cases)
+     2015- 1-29 actually done
+
+ 517 2014-12-10 define two new entry status: PAST and FUTURE
+     2014-12-13 done - svn #4293
+
+ 518 2014-12-10 DossierCur: try to make transient vs the main window
+     2014-12-18 obsoleted as merged in ofaExeForwardPiece
+
+ 521 2014-12-11 IExportable: use myProgressBar
+                getting rid of defined callbacks
+     2015- 1- 5 done - svn #4407
+
+ 522 2014-12-12 pieces of dialogs should have the corresponding code
+                isolated and named accordingly (see ofaFileFormatPiece)
+     2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
+                ofa_preferences_dispose
+     2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
+     2015- 1- 9 review ofaBatCommon
+     2015- 1-17 done
+
+ 523 2014-12-12 review BAT import
+     2014-12-22 done - svn #4365
+
+ 524 2014-12-13 LedgerProperties: review the display of the balances per
+                currency
+     2014-12-20 done - svn #4357
+
+ 526 2014-12-13 ExeForward: there is no sense to check ledger attached
+                to the operation template
+     2014-12-13 done - svn #4301
+
+ 527 2014-12-13 ExeForward: as DossierCur depends of ExeForward (via
+                the button), validation should not be allowed while
+                DossierCur is not set
+     2014-12-18 obsolete as the two pieces are merged in ofaExeForwardPiece
+
+ 528 2014-12-13 Settlement: after dbms update:
+                 The model has been modified from within
+                gtk_tree_selection_selected_foreach. This function is for
+                observing the selections of the tree only.  If you are
+                trying to get all selected items from the tree, try using
+                gtk_tree_selection_get_selected_rows instead.
+     2014-12-14 fixed - svn #4302
+
+ 529 2014-12-14 ExeClosing: piece=SOLDE
+                label = Solde du compte nnnn - llll
+     2015- 1- 4 done - svn #4400
+
+ 530 2014-12-15 ViewEntries: no more display the entries !?
+                 + have some warning on initialization
+     2014-12-17 done - svn #4327
+
+ 531 2014-12-15 replace myButtonsBox with ofaButtonsBox
+     2014-12-17 done - svn #4326
+
+ 532 2014-12-15 the xxxIStore should have a singleton store, even if
+                data may be personalized per implementor object
+     2014-12-17 remediated - svn #4322
+
+ 533 2014-12-15 xxxIStore: remove the useless  set_columns method
+     2014-12-17 remediated - svn #4322
+
+ 534 2014-12-18 ofoDossier table refactoring : only rely on ope codes
+     2014-12-18 done - svn #4328
+
+ 535 2014-12-18 Merge ofaExeForward and ofaDossierCur to ofaExeForwardPiece
+     2014-12-18 done - svn #4328
+
+ 536 2014-12-18 have a ofaOpeTemplateStore as ofaAccountStore
+                have a ofaOpeTemplateBook as ofaAccountsBook
+                rename ofAccountsPiece to ofaAccountFrame
+                have a ofaOpeTemplateFrame as ofaAccountFrame
+     2014-12-18 done - svn #4328
+
+ 537 2014-12-18 refactoring dbms scrits are renamed to v0.x
+                + directory is renamed to -v0
+     2014-12-18 done - svn #4330
+
+ 538 2014-12-18 ViewEntries: have distinct color backgrounds for past,
+                validated, rough and future entries
+     2014-12-19 done - svn #4331 
+
+ 539 2014-12-19 import entries: have total per currency
+                + imported PAST entries do not need to be balanced
+     2014-12-20 done - svn #4350
+
+ 540 2014-12-20 add the piece to operation template detail
+     2014-12-20 done - svn #4355
+
+ 541 2014-12-22 ofoBat: remove count
+     2014-12-22 done - svn #4366
+
+ 542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
+     2014-12-22 NO because the dataset would be potentially as big as 
+                all entries of the year for all accounts !
+
+ 543 2014-12-28 piece of dialog should be weak_ref against the top
+                widget instead of the parent container (so that removing
+                the widget from the container also finalize the piece
+                itself)
+     2014-12-29 done - svn #4389
+
+ 544 2014-12-29 when opening a dossier, update the current settings
+                (if opening the current exercice)
+     2014-12-29 done - svn #4388
+
+ 545 2014-12-29 set the main window title to the description of the
+                opened exercice
+     2014-12-29 done - svn #4390
+
+ 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
+                main ope template or of the detail line - makes change
+                accordingly (doc, database, class, ofsOpe struct)
+     2015- 1- 4 piece ref is part of detail entry - it is in the global
+                part of the GuidedInput UI just for simplification
+                reasons.
+                This is ok in documentation and database.
+     2015- 1-11 opened back: the ref should be part of the main operation
+     2015- 1-17 done - svn #4467
+
+ 547 2014-12-31 migrate local sCurrency used for currency balance 
+                computings to the global ofsCurrency struct declaration
+     2015- 1- 5 done - svn #4407
+
+ 548 2014-12-31 Rate: the rate mnemo should be compared against keywords
+                reserved by operation template formulas
+     2015- 1- 4 no as the RATE() macro may use any rate mnemo
+
+ 549 2014-12-31 OpeTemplates page: the ledger tabs are sorted depending
+                of the mnemo of the first ope template of the tab -
+                the consequence is that the ledger tabs are not in the 
+                same order, nor in the order the user has set them
+                => keep the same order (defaulting to ledger label alpha
+                order, keeping user rearrangements)
+     2015- 1- 4 done - svn #4405
+
+ 550 2015- 1- 1 GuidedInputPiece: remove useless entries_count data ?
+     2015- 1- 4 no - this is used and would lead to a too fragile code
+
+ 551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
+                a trigger on "page-removed" signal
+     2015- 1- 4 done - svn #4406
+
+ 552 2015- 1- 5 at least classes which export an amount should use the
+                ofaBox definitions as ofaBox is able to output the data
+                following the ofaFileFormat recommandations:
+                ofoEntry
+                ofoLedger
+     2015- 1- 5 done - svn #4407
+
+ 554 2015- 1- 6 Preferences: saves ExportSettings as a null string !?
+     2015- 1- 6 done - svn #4411
+
+ 555 2015- 1- 6 OpeTemplateSelect: creating a new ope template doesn't
+                show it after creation
+     2015- 1- 6 unable to reproduce
+     2015- 1- 6 finally fixed - svn #4416
+
+ 556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
+                shows 'unclassed' ledgers
+     2015- 1- 6 done - svn #4413
+
+ 557 2015- 1- 8 ImportAssistant: add to import file format dialog the
+                count of headers to be removed from the file (rather
+                than with_headers)
+     2015- 1-17 done - svn #4466
+
+ 558 2015- 1- 8 DossierManager: display databases used by a dossier
+     2015- 2-20 done - svn #4634
+
+ 560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
+                a field separator!
+     2015- 1-17 done - svn #4468
+
+ 561 2015- 1- 8 importing operation templates (while the corresponding
+                page is opened) doesn't update it - As the store is
+                loaded, there is no way to reset it :(
+     2015- 1-19 done - svn #4496
+
+ 563 2015- 1- 8 IImportable interface: take FileFormat settings into
+                account
+     2015- 1-17 done - svn #4469
+
+ 564 2015- 1- 8 Changing the dates of the exercice should update the
+                main window title
+     2015- 1-18 done - svn #4495
+
+ 565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
+     2015- 1- 8 due to a bad management of weak references
+     2015- 1- 9 done - svn #4427
+
+ 566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
+                of only Reconcil.
+     2015- 1- 9 done - svn #4428
+
+ 568 2015- 1- 9 would be a GtkFrame-derived class suitable for any 
+                piece of dialog ?
+     2015- 1-16 ofaDBMSRootPiece: ok as ofaDBMSRootBin
+                ofaAdminCredentialsPiece: ok as ofaAdminCredentialsBin
+                cannot do anything for MySQL pieces of UI
+                ofaDossierNewPiece: ok as ofaDossierNewBin
+                ofaExeForwardPiece: ok as ofaClosingParmsBin
+                ofaGuidedInputPiece: ok as ofaGuidedInputBin
+     2015- 1-16 done - svn #4462
+
+ 569 2015- 1-10 intermediate ledger closing: refuse to close at the 
+                date of the end of the exercice
+     2015- 1-16 done - svn #4461
+
+ 570 2015- 1-10 refactor int-closing to "provisional closure" and
+                ledger-closure
+     2015- 1-16 done - svn #4460
+
+ 571 2015- 1-10 refactor exe-closing to exe-closure-assistant
+     2015- 1-16 done - svn #4459
+
+ 573 2015- 1-10 put back init, display, forward signals to myAssistant
+                checking if these three signals are actually sent to
+                each page including intro
+     2015- 1-10 done - svn #4458
+
+ 574 2015- 1-10 Settlement: set the view sortable, defaulting to dope
+                ascending
+     2015- 1-16 done - svn #4457
+
+ 575 2015- 1-10 Settlement: display settle balance with labels instead 
+                of insensitive entries
+                + add the currency
+                + red color if unbalanced
+     2015- 1-16 done - svn #4456
+
+ 576 2015- 1-10 Reconciliation: should use a filter instead of reloading
+                reconciliated/unreconciliated/all entries
+                (settlement seems to be fine)
+     2015- 1-11 done - svn #4433
+
+ 577 2015- 1-11 Reconciliation: keep parameters in user settings
+     2015- 1-15 done - svn #4455
+
+ 578 2015- 1-11 converting from EBP entries: add settlement and 
+                reconciliation infos
+     2015- 1-14 done - svn #4445
+
+ 579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
+                (ofaCurrencyStore), ref_count=47, 
+                finalized_dossier=0x740430
+     2015- 1-13 not reproduced
+     2015- 1-16 not important at this time, the principal being that
+                the objects keep to be rightly finalized
+                cancelled
+
+ 580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
+                for closing (reffered in OFA_T_DOSSIER_CUR)
+     2015- 1-12 done 
+
+ 581 2015- 1-12 when serializing to/unserializing from sql, quote all
+                labels  (cf. ope_template_detail_label)
+     2015- 1-13 done - svn #4443
+
+ 582 2015- 1-12 general books: how are sorted the accounts ?
+                (cf for ex OFATv0.25Closing-2011_opening-General.pdf)
+     2015- 1-13 done - svn #4442 
+
+ 583 2015- 1-12 homogeneïze ofo_entry_update_settlement() and
+                ofo_entry_update_concil( with or without provider arg)
+     2015- 1-13 done - svn #4441
+
+ 585 2015- 1-12 Restore: must adapt title and settings to the restored 
+                content so that we cannot end with the same archive
+                staying in two databases for a dossier
+                => can only restore an exercice on the same exercice
+                + as we cannot restore on an archived exercice (read-
+                only), we should only be able to restore an archived
+                exercice on a new dossier.
+     2015- 1-18 only restore as a current exercice
+
+ 586 2015- 1-12 when entering account/password for opening a database,
+                do not sensitive OK button only when password is ok
+                (security rule), but as soon as it is not empty
+     2015- 1-13 done - svn #4438 
+
+ 587 2015- 1-12 Restore: Open should not have a _O keybord shortcut
+     2015- 1-12 done - svn #4437
+
+ 588 2015- 1-14 future entries become rough when opening a new
+                exercice
+     2015- 1-14 done - svn #4446
+
+ 589 2015- 1-14 restoring in a newly created dossier doesn't work
+                (as cloning ?)
+     2015- 1-14 done (though not really sure..) - svn #4449
+
+ 590 2015- 1-14 ofa_accounts_book_on_widget_finalized: (dossier) has
+                no handler with (id) : 4 times
+     2015- 1-14 done - svn #4448
+
+ 591 2015- 1-14 closing the exercice: one date is enough to compute the
+                three others
+     2015- 1-14 done - svn #4447
+
+ 592 2015- 1-14 should MySQLDatabase be an Openbook key ?
+     2015- 1-18 done - svn #4493
+
+ 593 2015- 1-15 GuidedInput: %RATE doesn't work ?
+     2015- 1-15 Have to choose between %TVAN and %RATE(TVAN) !
+     2015- 1-15 done - svn #4453
+
+ 594 2015- 1-15 model line number is a GtkLabel in GuidedInput - should
+                be the same in OpeTemplateProperties
+     2015- 1-15 done - svn #4452
+
+ 595 2015- 1-15 GuidedInput: error message "invalid amounts" when one
+                line has nul amounts - but should be fine, the entry
+                is just not generated
+     2015- 1-15 done - svn #4451
+
+ 596 2015- 1-16 AccountsChart: when creating the first account, is not
+                displayed - but is refreshed when we double-clic on the
+                AccountsChart page
+     2015- 1-17 done - svn #4465
+
+ 597 2015- 1-17 filenames in settings must be URIs
+     2015- 1-18 done - svn #4492
+
+ 598 2015- 1-18 remediate the entries when modifying the exercice
+                beginning or end dates
+     2015- 1-19 have a function to display count of involved entries
+                only display the confirmation dialog if count > 0
+     2015- 1-22 done - svn #4497 
+
+ 600 2015- 1-24 ExerciceClose: check DBMS integrity
+     2015- 1-25 done - svn #4520
+
+ 602 2015- 1-24 GuidedInputEx: ledger treeview should expand on double
+                click
+     2015- 1-24 done - svn #4519
+
+ 603 2015- 1-26 have a real version number in database (not 1, but 21 ?)
+     2015- 1-30 done - svn #4535
+
+ 604 2015- 1-26 Bat: solde becomes end_solde (dbms, methods, properties)
+     2015- 2-16 done - svn #4607
+
+ 605 2015- 1-28 add the dbname in the main window title
+     2015- 1-29 done - svn #4523
+
+ 606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
+     2015- 1-29 done - svn #4523
+
+ 608 2015- 1-29 ViewEntries: when modifying account or ledger, make sure
+                corresponding balances are updated
+     2015- 1-30 done - svn #4533
+
+ 609 2015- 1-29 BatProperties: entries should be read only, but not
+                disabled
+     2015- 1-30 done - svn #4529
+
+ 610 2015- 1-29 Reconciliation, Settlement: make sure new entries are
+                displayed
+     2015- 1-29 done - svn #4528
+
+ 611 2015- 1-30 refactor BatCommon as a Bin + replace callbacks with 
+                signals
+     2015- 1-30 done - svn #4530
+
+ 612 2015- 1-30 BatProperties: view bat lines
+     2015- 1-30 done - svn #4532
+
+ 613 2015- 1-30 have a BatStore+BatTreeview ?
+                would be used in BatSelect and BatPage
+     2015- 2- 9 ofaBatStore defined - svn #4574
+     2015- 2- 9 ofaBatTreeview defined - svn #4579
+
+ 614 2015- 2- 1 configure.ac: POPPLER should be optional, and determine
+                the compilation of pdf-aware plugins
+     2015- 3- 8 done - git #772dfc000f
+
+ 615 2015- 2- 1 configure.ac: MYSQL should be optional, and determine
+                the compilation of mysql plugin
+     2015- 3- 8 done - git #aa2522f
+
+ 616 2015- 2- 1 configure.ac: have a warning if no sgbd plugin is compiled
+                (only a warning as a plugin may be provided from elsewhere)
+     2015- 3- 8 done - git #65da176
+
+ 617 2015- 2- 2 configure.ac: display built plugins
+     2015- 3- 8 done
+
+ 618 2015- 2- 2 display Bat lines
+     2015- 2- 5 already done
+
+ 619 2015- 2- 2 ope template properties: locking the ledger makes the
+                piece ref insensitive (but shouldn't)
+     2015- 2- 2 fixed
+
+ 620 2015- 2- 2 guided input: the piece ref which comes from ope template
+                is ignored (but shouldn't)
+     2015- 2- 2 fixed
+
+ 622 2015- 2- 3 GuidedInput: when setting a new model, the dates are not
+                reset (fine), check the check dialog sees them as empty
+                (wrong)
+     2015- 2- 4 done - svn #4545 
+
+ 623 2015- 2- 3 Accounts Chart: double-click expand/collapse the tree
+     2015- 2- 5 feature would only be available on selection when double-
+                clicking on a root account and root accounts are not 
+                permitted
+                -> in AccountsChart, double-clicking activates properties
+                -> in AccountSelection, double-clicking a detail account
+                   validates the selection
+     2015- 2- 5 done
+
+ 624 2015- 2- 3 GuidedInput: display the label of the account
+                (either in the comment zone, moving the comment as a
+                 tooltip of the row widgets, or elsewhere)
+     2015- 2- 5 done
+
+ 625 2015- 2- 3 ViewEntries: modifying the account number of an entry
+                doesn't update the accounts balances
+     2015- 2- 4 done - svn #4549
+
+ 626 2015- 2- 3 GuidedInputEx: Total and Diff should be reset (erased
+                and redisplayed) on new model
+     2015- 2- 4 done
+
+ 627 2015- 2- 3 OpeTemplateProperties: locking ledger/ref shouldn't
+                make the widgets insensitive
+     2015- 2- 4 done - svn #4548
+
+ 629 2015- 2- 3 GuidedInput dialog: Total and Diff are only displayed
+                when the dialog is validable: why ??
+     2015- 2- 4 done - svn #4547
+
+ 630 2015- 2- 3 OpeTemplateProperties: when modifying an ope template
+                mnemo, also update the entries which were created from
+                this same mnemo
+     2015- 2- 4 already done
+
+ 631 2015- 2- 3 GuidedInputBin: do not display the diff if 0,00
+     2015- 2- 4 done - svn #4546
+
+ 633 2015- 2- 8 GuidedInputBin: when the ledger has not yet been closed
+                in the exercice, the begin of the exercice is an acceptable
+                effect date
+     2015- 2-15 done - svn #4603
+
+ 634 2015- 2- 8 be able to print a reconciliation summary from within 
+                the reconciliation page
+     2015- 2-13 done - svn #4594
+
+ 635 2015- 2- 8 Reconciliation: keep displaying the entries which have
+                been reconciliated during the session (have an auto
+                refresh toggle switch ?)
+                rationale: it is comfortable to keep seeing the recently
+                reconciliated entries - while no more seeing the entries
+                which have been reconciliated, say last month 
+     2015- 2-15 done - svn #4600
+
+ 636 2015- 2- 8 make the application have an icon
+     2015- 2-13 done - svn #4595
+
+ 637 2015- 2- 8 opened dialogs shouldn't appear as another icon in the
+                shell bar
+     2015- 2-14 if the dialog is modal, only way seems to make the dialog
+                transient for its parent, which makes the two window 
+                strictly bound, which is not what we want
+     2015- 2-15 this is fine if the dialog is non modal
+                -> cancelled
+
+ 638 2015- 2- 8 Reconciliation: how to accept a proposition (as double-
+                clicking set the manual date, not the proposed one)
+                + keep displaying the accepted BAT line
+     2015- 2-13 done - svn #4592
+
+ 639 2015- 2- 9 Reconciliation: when having selected an imported BAT
+                file, its references should be displayed somewhere with
+                a count of propositions
+     2015- 2- 9 done - svn #4591
+
+ 640 2015- 2- 9 BAT: have been able to import twice the same BAT file
+     2015- 2-11 nope 
+
+ 641 2015- 2- 9 BAT: properties are editable (even if not saved) while
+                notes are not (but should)
+     2015- 2- 9 done - svn #4570
+
+ 642 2015- 2- 9 implement BAT page, import button
+     2015- 2-15 for now, just disable it - svn #4599
+     2015-10- 8 closed (done)
+
+ 643 2015- 2- 9 when importing a BAT file, update the BAT store of the
+                page
+     2015- 2-11 done - svn #4580
+
+ 644 2015- 2- 9 import boursorama xls: doesn't have the right end date
+     2015- 2- 9 done - svn #4571 
+
+ 645 2015- 2-12 FATAL: when importing from reconciliation page, but no 
+                importer is willing to import, then fatal warning on 
+                g_object_unref() somewhere
+     2015- 2-13 this is only from reconciliation page: same situation
+                from import assistant doesn't break
+     2015- 2-16 done - svn #4607
+
+ 646 2015- 2-13 import: do not check the settings when format is other
+     2015- 2-13 done - svn #4594
+
+ 647 2015- 2-13 import: when unable to find a plugin, display an error
+                message and make the close button sensitive on the last
+                page
+     2015- 2-13 done - svn #4594
+
+ 648 2015- 2-13 reconciliation: have a button to dismiss a proposed bat
+                line, moving it from an entry child to a level 0 bat line
+                (not kept, only used during reconciliation session)
+     2015- 2-13 done - svn #4593
+
+ 649 2015- 2-13 reconciliation: expand_view doesn't work
+     2015- 2-13 done - svn #4594
+     2015- 2-15 reopened
+     2015- 2-15 fixed - svn #4601
+
+ 650 2015- 2-15 move ENT_SETTLEMENT_XXX to ofa_settlement.c 
+     2015- 2-15 done - svn #4602
+
+ 651 2015- 2-15 replace fixed date and amount configurations with user
+                preferences (date display format, comma vs. dot)
+     2015- 3-16 was already ok for amounts
+                done for dates - git #08a93b8
+
+ 654 2015- 2-17 GuidedInput: account label should be updated on account
+                change
+     2015- 2-20 done - svn #4633
+
+ 655 2015- 2-17 GuidedInput: Alt+O shortcut should be reserved for OK
+     2015- 2-20 done - svn #4632
+
+ 657 2015- 2-17 GuidedInput: weird behavior when entering an operation:
+                amounts blink (and more time when validating the dialog)
+     2015- 3- 6 fixed
+
+ 658 2015- 2-17 AccountSelect: replace OK label with Select
+     2015- 2-20 idem for OpeTemplateSelect and BatSelect
+                done - svn #4625
+
+ 659 2015- 2-17 Reconciliation using a manual date:
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
+                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_day_of_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_day: assertion 'g_date_valid_day (day)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_month: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_month: assertion 'g_date_valid_month (m)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_get_year: assertion 'datetime != NULL' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_set_year: assertion 'g_date_valid_year (y)' failed
+                (openbook:11236): GLib-CRITICAL **: g_date_time_unref: assertion 'datetime != NULL' failed
+                (openbook:11236): OFA-CRITICAL **: file my-date.c: line 100 (my_date_compare): should not be reached
+     2015- 2-20 done - svn #4624
+
+ 660 2015- 2-17 FATAL: Reconciliation: segfault on double-click on a
+                newly created entry
+                #0  0x0000003d04a32758 in g_date_time_new_from_timeval_local () from /lib64/libglib-2.0.so.0
+                #1  0x00007ffff7da2b57 in my_date_set_from_stamp (date=date@entry=0x7fffffffc4f0, stamp=<optimized out>) at my-date.c:428
+                #2  0x000000000047cd02 in is_entry_session_conciliated (entry=entry@entry=0x7fffcc005a00, self=<optimized out>) at ofa-reconciliation.c:1270
+                #3  0x000000000047d013 in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0x7fffcc005a00, self=0x74a520) at ofa-reconciliation.c:1190
+                work-around is to change the account, then come back to 
+                the first one
+     2015- 2-19 done - svn#4620
+
+ 661 2015- 2-17 three entries deleted, but have not remediated the 
+                accounts and ledger balances
+                | ENT_DEFFECT | ENT_NUMBER | ENT_DOPE   | ENT_LABEL                                       | ENT_REF | ENT_ACCOUNT | ENT_CURRENCY | ENT_DEBIT | ENT_CREDIT | ENT_LEDGER | ENT_OPE_TEMPLATE | ENT_STATUS | ENT_UPD_USER | ENT_UPD_STAMP       | ENT_CONCIL_DVAL | ENT_CONCIL_USER | ENT_CONCIL_STAMP    | ENT_STLMT_NUMBER | ENT_STLMT_USER | ENT_STLMT_STAMP     |
+                | 2014-01-03  |        210 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 66411       | EUR          |  18.25000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:35 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-01-03  |        211 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 445673      | EUR          |   3.65000 |    0.00000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:41 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-01-03  |        212 | 2014-01-03 | AccÃ¨s Internet ADSL SFR Arcueil dÃ©c. 2013     | PREL    | 51241       | EUR          |   0.00000 |   21.90000 | ACH        | ARCADS           |          2 | wieser       | 2015-02-08 16:28:46 | 2014-01-03      | wieser          | 2015-02-08 12:51:39 |             NULL | NULL           | 0000-00-00 00:00:00 |
+     2015- 2-17 idem for two entries 45,15 (remboursement mutuelle)
+     2015- 2-17 idem for:
+                | 2014-02-05  |        379 | 2014-02-05 | Toner Brother            | CP      | 6621        | EUR          | 200.26000 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:44 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-02-05  |        380 | 2014-02-05 | Toner Brother            | CP      | 445673      | EUR          |  40.04999 |    0.00000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+                | 2014-02-05  |        381 | 2014-02-05 | Toner Brother            | CP      | 51241       | EUR          |   0.00000 |  240.31000 | ACH        | FMAT             |          2 | wieser       | 2015-02-17 21:31:45 | NULL            | NULL            | 0000-00-00 00:00:00 |             NULL | NULL           | 0000-00-00 00:00:00 |
+     2015- 2-19 done - svn #4620
+
+ 662 2015- 2-17 when modifying an account in ViewEntries, accounts are
+                remediated, but entry doesn't appear in reconciliation
+                view (which actually targets the new account)
+     2015- 2-19 reacting to on_updated_object signal on entry, as we do
+                not know if the account has been actually modified, just
+                re-fetch the entries
+                Unfortunatly, this doesn't remediate to the Gtk bug 
+                which only displays the actual value of a cell when the
+                mouse is moving over it (todo #679)
+     2015- 2-19 done - svn #4620
+
+ 663 2015- 2-17 OpeTemplate properties: when reordering a line, the 
+                line number should stay fixed, and not follow the line
+                being reordered
+     2015- 2-20 done - svn #4623
+
+ 664 2015- 2-17 have a calculation line (checkbox) which let the user
+                have intermediate computations - or improve the formula
+                analyser to be able to compute TTC/(1+TVAN)
+     2015- 2-19 done - svn #4620
+
+ 665 2015- 2-17 Reconciliation: keep uri besides of batlines in order
+                to reset it when re-fetching entries
+     2015- 2-19 not needed as the BAT lines data are not really cleared
+                when a new account is fetched
+
+ 666 2015- 2-17 Reconciliation: when a new entry is created, reset
+                batlines propositions
+     2015- 2-19 done by searching for an ad-hoc batline to be proposed
+                svn #4620
+
+ 667 2015- 2-17 remove traversing calls, replacing them with a get_object(),
+                plus a direct use of the object api 
+     2015- 2-20 ope_templates: ok - svn #4626
+     2015- 2-20 accounts: ok - svn #4630
+
+ 670 2015- 2-17 when opening a dossier, display notes if not empty
+     2015- 2-19 done - svn #4619
+
+ 671 2015- 2-18 ...it appears that some distorsion has happened among
+                them.
+     2015- 2-18 done - svn #4615
+
+ 672 2015- 2-18 when importing a new chart of accounts in a new dossier,
+                the displayed page (if opened) is not updated - it is
+                then impossible to display the newly imported accounts,
+                even if close and reopen the page
+     2015- 2-18 done - svn #4613
+
+ 673 2015- 2-18 when importing a freshly exporting ope templates file,
+                have error message: "empty operation template mnemonic"
+                (cf. CSVExports/ofaModels_bad.csv, which actually is 
+                fine)
+     2015- 2-18 nope: this was a bad settings configuration
+
+ 674 2015- 2-18 ExerciceClosing: set reconciliation date on forward 
+                entries on reconciliable account to first day of the
+                exercice
+     2015- 2-18 done - svn #4612
+
+ 675 2015- 2-18 Reconciliation: bank reconciliated balance is wrong
+     2015- 2-18 done - svn #4611
+
+ 676 2015- 2-18 check loading new collection on opened pages for all
+                reference tables (but accounts which is already fixed)
+                - classes: ok
+                - currencies: ok
+                - ledgers: ok
+                - ope_templates: ok
+                - rates: ok
+
+ 679 2015- 2-19 ofsOpe: actually do not have an account or a label
+                is not an error: the entry will just not be generated,
+                and the amounts are not taken into account when
+                computing the ope balance
+                The only error is so: valid lines are not balanced.
+     2015- 2-19 done - svn #4621
+
+ 680 2015- 2-19 GuidedInputBin: have a green coche when an entry will be
+                generated
+     2015- 2-20 done - svn #4622
+
+ 681 2015- 2-20 Have a 'allow entries' on detail accounts, which would
+                be active by default (use case: forbid new entries on
+                closed accounts)
+     2015- 2-20 done - svn #4635
+
+ 682 2015- 2-20 OpeTemplateSelect: all rows are duplicated
+     2015- 2-20 done - svn #4626
+
+ 683 2015- 2-20 when deleting a dossier, should update the store for all
+                lines of the dossier
+     2015- 2-21 actually DossierManager only deletes the currently 
+                selected exercice
+     2015- 2-21 done - svn #4640
+
+ 685 2015- 2-21 due to git migration to Githib, remove "$Id$" svn tag
+                from source files
+     2015- 3- 2 done
+
+ 686 2015- 3- 2 regression in v0.34: account properties is validable
+                while the currency is not set (for a detail account)
+     2015- 3- 6 done - git #9ce381c
+
+ 687 2015- 3- 2 0.34: segfault: when reconciliating with a manual date
+                (but reconciliation has been taken into account)
+                file my-date.c: line 100 (my_date_compare): should not be reached
+                #2  0x00007ffff7da254c in my_date_compare (a=0x7fffffffc500, b=0x7fffffffc510) at my-date.c:103
+                #3  0x000000000047e885 in is_entry_session_conciliated (entry=entry@entry=0xc4d1b0, self=<optimized out>) at ofa-reconciliation.c:1286
+                #4  0x000000000047eb3d in is_visible_entry (tmodel=<optimized out>, iter=<optimized out>, entry=0xc4d1b0, self=0x74c520) at ofa-reconciliation.c:1205
+                Mode is "Reconciliation session"
+     2015- 3- 6 done - git #188d32c
+
+ 688 2015- 3- 3 regression in 0.34: a newly bat files appear twice, 
+                while it appears again only once after program re-run
+     2015- 3- 6 closed as unable to reproduce
+     2015- 3- 7 this happened only on the first imported BAT
+                fixed - git #5c4ecec
+
+ 689 2015- 3- 4 new: be able to point out bat lines corresponding to
+                already reconciliated entries (use case: importing a
+                bat file for completeness after having reconciliated
+                manually the entries)
+     2015- 3- 8 the imported BAT lines are rightly inserted under the
+                corresponding entry, though are displayed in italic
+                as not associated to a reconciliated entry
+                -> have an Accept button to individually set a bat line
+                -> have a check button to make the bat file all 
+                   reconciliated
+     2015- 3- 8 done - git #ca9a60e
+
+ 690 2015- 3- 4 bat_lines: upd_timestamp is not displayed
+     2015- 3- 6 done - git #b7459c9
+
+ 691 2015- 3- 4 Reconciliation: when loading a bat file, a proposition
+                is made even if the entry is already reconciliated, the
+                value date from bat line visually overriding the 
+                reconciliation date already set in the entry (no update
+                in sgbd)
+     2015- 3- 6 closed as non reproducible
+
+ 692 2015- 3- 4 it may happen that the bat line is before the entry to
+                be reconciliated and thus the proposition is not made;
+                let the user force the appariement
+     2015- 3- 7 closed as non reproducible
+
+ 693 2015- 3- 4 Chart of accounts: add the solde of the account
+     2015- 3- 6 done - git #617d1c8
+
+ 694 2015- 3- 4 It would definitively be useful to be able to recompute 
+                the solde of the account at the end of the period when 
+                editing a balance
+     2015- 3- 7 done with AccountsBalance - git #81264e2
+
+ 695 2015- 3- 4 all printings should be first viewable in Openbook
+                (to be printed only after user visual validation)
+     2015- 4-11 Balances: done
+     2015- 4-12 Books: done
+     2015- 4-12 Ledgers: done
+     2015-10- 8 done
+
+ 696 2015- 3- 4 when printing from an account to an account, the
+                accounts may not exist (they are just limits)
+     2015- 3- 6 done - git #544baa4
+
+ 697 2015- 3- 4 when printing general books for existing accounts:
+                (openbook:4652): OFA-CRITICAL **: ofo_account_get_label: assertion 'OFO_IS_ACCOUNT(account)' failed
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                ...
+                (openbook:4652): GLib-CRITICAL **: g_utf8_collate: assertion 'str1 != NULL' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                (openbook:4652): OFA-CRITICAL **: ofo_currency_get_by_code: assertion 'code && g_utf8_strlen( code, -1 )' failed
+                (openbook:4652): OFA-CRITICAL **: iprintable_draw_bottom_summary: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                + accounts limits have not been taken into account
+     2015- 3- 6 done - git #3250021
+
+ 698 2015- 3- 4 general book is wrong as soon as there are entries 
+                before the RAN
+     2015- 3- 6 no, but we are computing the solde of displayed entries
+                instead of the solde of the account (which is not the
+                purpose of the GeneralBooks print)
+     2015- 3- 6 done - git #257ef3b
+
+ 699 2015- 3- 7 isolate ofsAccountBalance struct
+     2015- 3- 7 done - git #c1c230585
+
+ 700 2015- 3- 7 Reconciliation: open the bat selection and cancel:
+                the bat will be wrongly selected
+     2015- 3- 7 done - git #f18a9c0
+
+ 702 2015- 3- 8 maintainer and distcheck: enable ISO C
+     2015- 3- 8 done - git #5a3bdba
+
+ 703 2015- 3- 8 have a Boursorama-pdf plugin
+     2015- 3- 9 done - git #98d851e
+
+ 704 2015- 3- 8 bat properties: display the count of unreconciliated
+                bat lines
+     2015- 3- 8 done - git #ae4a022
+
+ 705 2015- 3- 8 have an interface to add an item to the menubar
+                (use case: plugins)
+     2015- 3-17 done via 'main-window-created' signal - git #4dcb4e1
+
+ 708 2015- 3- 9 when selecting an account for reconciliation (resp.
+                settlement), display in gray those who are not 
+                reconciliable (resp. settleable), and refuse the 
+                selection
+     2015- 3-15 done - git #522f283
+
+ 709 2015- 3-10 reconciliation: computing bank reconciliated balance is
+                wrong (see screen print)
+     2015- 3-10 done - git #455f66c
+
+ 710 2015- 3-10 as Github directly provides link to download a tarball,
+                it will easier for users to directly provides auto-built
+                files (as configure, Makefile.in and so on) - so add
+                them to git (remove the ignore)
+     2015- 3-10 done - git #0a0c523
+
+ 711 2015- 3-10 reconciliation: doesn't print 0,00 amounts
+     2013- 3-10 done - git #76b495e
+
+ 712 2015- 3-11 accept comma as well as dot as decimal separator
+                (is a user pref ?)
+     2015- 3-15 this has been included in v0.36
+
+ 713 2015- 3-11 segfault when deleting the row n°2 from an operation
+                template
+                GLib-GObject-WARNING **: invalid cast from 'GtkLabel' to 'GtkEntry'
+                in remove_row (row=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-ope-template-properties.c:807
+                in on_button_clicked (button=<optimized out>, self=0x74c510) at ../../../src/ui/ofa-ope-template-properties.c:775
+     2015- 3-12 fixed - git #5b59941
+
+ 715 2015- 3-11 ViewEntries: display balance in orange if not balanced
+     2015- 3-12 done - git #aabdbf7
+
+ 716 2015- 3-11 ViewEntries: doesn't display '0,00'
+     2015- 3-12 done - git #e975abb
+
+ 718 2015- 3-12 Reconciliation: wrong propositions
+     2015- 3-12 fixed - git #fc690bd
+
+ 721 2015- 3-13 Reconciliation: be able to associate an entry with a
+                bat line - this makes the 'Accept' button useless
+                (as we do not want a batline be marked used without a
+                corresponding entry)
+     2015- 3-13 done - git #27f95bc
+
+ 722 2015- 3-13 Reconciliation: some bat lines are rightly imported but
+                not displayed (see lcl-201406, backup 20140630_1)
+                reason: proposition is evaluated first by amount;
+                these batlines are so proposed against entries of 
+                previous months whith the same amount which happen to
+                be already reconciliated; the filter so doesn't display
+                these entries (or only in 'All' mode), and thus nor
+                the batlines
+                fix: propose against un-reconciliated entry
+     2015- 3-13 fixed - git #30d4d29
+
+ 723 2015- 3-13 Reconciliation: add footer lines
+                'left unreconciliated batlines' &
+                'left unreconciliated entries'
+     2015- 4- 3 cancelled:
+                > unreconciliated batlines count is already displayed
+                > unreconciliated entries is visually obvious
+
+ 724 2015- 3-13 Reconciliation: add effect date filter
+     2015- 3-14 done - git #c886e4e
+
+ 725 2015- 3-13 Bat files list: order by descending id to get the most
+                recent on top of the list
+     2015- 3-13 done - git #c4d7aa4
+
+ 726 2015- 3-13 Reconciliation: display count+unused batlines on top
+     2015- 3-13 done - git #f17be6c
+
+ 727 2015- 3-14 ViewEntries: doesn't show all entries for an account
+                (eg TVA collectée)
+     2015- 3-14 this seems to be fixed when adding effect dates filter
+
+ 728 2015- 3-14 PrintLedgers: entries should be ordered by ascending
+                operation date
+     2015- 3-15 fixed - git #c3d9088
+
+ 730 2015- 3-15 Reconciliation: bank reconciliated account should not
+                depend of the filters
+     2015- 3-15 and it doesn't.
+
+ 731 2015- 3-15 Reconciliation: when selecting two rows, make sure the
+                candidate entry doesn't already have a batline child
+     2015- 3-15 this would mean:
+                - either the entry has no child
+                - or the entry has a child, and this child is the selected
+                  bat line
+                As an alternative, doing nothing means that the entry 
+                will be rightly reconciliated with the selected bat
+                line, and thus will have two children:
+                - the reconciliated bat line (right)
+                - the initially wrongly proposed bat line.
+                It is then enough to decline the initial bat line and
+                all is ok
+                -> so do nothing as this is not a bug and the user has
+                visually all the informations to decline the wrongly
+                proposed line
+
+ 734 2015- 3-15 when sorting entries, makes sure they are always in the
+                same order (add ent_number as last discriminant)
+     20156 4- 3 ok - done
+
+ 735 2015- 3-15 closing ledger ui: center date label
+     2015- 3-15 done - git #6798321
+
+ 736 2015- 3-15 DMS integrity ui: make the textview fill vertically
+     2015- 3-15 fixed - git #ed300ed
+
+ 737 2015- 3-15 Exporting: entry models becomes ope templates
+     2015- 3-15 done - git #e3e3803
+
+ 738 2015- 3-16 ViewEntries: have a Delete button
+     2015- 4- 3 no more space for this in the view, and this is even
+                better as this should leave an unsually used feature
+                -> cancelled
+
+ 739 2015- 3-18 Reconciliation: be able to select two opposite BAT lines
+                cf. also #747
+     2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 740 2015- 3-18 ViewEntries: solde should be blue (normal) even in the
+                case of a rounding error
+     2015- 4- 3 fixed - git #f7aaf05
+
+ 741 2015- 3-19 we have an example of unbalanced entries/ledgers/accounts
+                appeared between PWIConsultants-20140731_1.gz (kept) and
+                PWIConsultants-20140731_1.gz (in TODO/741)
+                -> to be analyzed
+                -> ledgers are not correctly updated when modifying an
+                amount in ViewEntries
+     2015- 4- 3 fixed - git #f87eb36
+
+ 742 2015- 3-19 RestoreAssistant: have a filter on *.gz
+     2015- 4- 3 done - git #aec67de
+
+ 743 2015- 3-19 Reconciliation: when only displaying non reconciliated,
+                reconciliating a couple entry+batline makes this entry
+                disappear (normal), but the focus go to the next line
+                which becomes wrongly collapsed
+     2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 746 2015- 3-19 when importing lcl-201408.pdf
+                GLib-CRITICAL **: g_str_has_prefix: assertion 'str != NULL' failed
+                in read_lines (rc_list=0xb8f200 = {...}, page_i=3, page=0x10afe80, bat=<optimized out>, importer=0x6e2d20) at ../../../src/import-lcl-pdf/ofa-importer.c:689
+                #4  lcl_pdf_v1_import (importer=0x6e2d20, uri=uri@entry=0x9d4b40 "file:///home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/PWI-Consultants/2014/documents/lcl-201408.pdf")
+                at ../../../src/import-lcl-pdf/ofa-importer.c:416
+     2015- 3-19 fixed - git #0eb6bef
+
+ 747 2015- 3-19 Reconciliation: accept multi-lines (1 debit+2 credits)
+                where sum(debit)=sum(credit)
+                use case: two peage tickets which are debited together
+                + remediate lcl-201408.pdf imported bat file
+     2015- 3-21 done - git #a6bfe8a
+
+ 748 2015- 3-19 Reconciliation
+                OFA-CRITICAL **: set_reconciliated_balance: assertion 'my_strlen( account_number )' failed
+                set_reconciliated_balance (self=self@entry=0x1112b10) at ../../../src/ui/ofa-reconciliation.c:2824
+                after having cleared the account number, trying to clear
+                the bat lines
+     2015- 4- 3 already fixed when refactoring the reconciliation
+
+ 749 2015- 3-19 Have a summary of non fully used bat files
+                because they will not be purged at the closing of the 
+                exercice
+     2015-10- 8 closed (see #783)
+
+ 750 2015- 3-20 Reconciliation: when opening the page, the last seen
+                account is displayed (normal), no line is selected,
+                but the Accept button is enabled
+     2015- 4- 3 done - git #811dee9
+
+ 753 2015- 3-21 ofo_bat_get_unused_count(): normalize the args list
+                using ofoBat object instead of bat_id
+     2015- 3-28 done in v0.37
+
+ 755 2015- 3-21 add DBMS version to dossier properties
+     2015- 3-31 + add last reconciliation id.
+     2015- 3-31 done - git #e84dcb0
+
+ 756 2015- 3-21 use my_utils_dialog_question() function
+     2015- 4- 3 done - git #0caf944
+
+ 757 2015- 3-21 Reconciliation: rewrite to generalize n-p reconciliations
+     2015- 3-29 done in v0.38
+
+ 759 2015- 3-22 review ofa_bats_page_on_import_clicked()
+     2015- 3-31 no more needed
+
+ 760 2015- 3-22 DBMS upgrade may be long (notably in v25), so have a
+                progress bar in Restore assistant
+                + (page result of the restore) message converting from
+                to...
+     2015- 3-29 update_ddl is called not ony from restore assistant,
+                but also each time we open the dossier - so have to
+                take care of that
+     2015-10- 6 done with new ofaDDLUpdate class
+
+ 762 2015- 3-22 have an OPENBOOK_API_ prefix in all api headers
+     2015- 3-28 done - git #bca6ea7
+
+ 763 2015- 3-23 systematize the use of my_strlen
+     2015- 3-28 done - git #8afb1aa
+
+ 764 2015- 3-23 entry_load_dataset(): add order clause as an argument
+     2015- 3-27 done - git #63cf859
+
+ 765 2015- 3-25 when backing up, close all pages
+     2015- 3-27 done - git #22005b1
+
+ 767 2015- 3-27 Reconciliation: replace 'Accept' with 'Reconciliate'
+     2015- 3-27 done - git #0f42251
+
+ 768 2015- 3-27 Reconciliation: have an 'Unreconciliate' button
+     2015- 3-27 done - git #0168e08
+
+ 769 2015- 3-27 Reconciliation: replace GtkFileChooser button with an
+                'Import' one, setting the labels under the buttons
+     2015- 3-27 done - git #3235e9f
+
+ 770 2015- 3-28 have my_collate()
+     2015- 3-28 done - git #c86b583
+
+ 771 2015- 3-28 when converting entries, have a table to convert accounts
+     2015- 3-30 done - git #73c186f
+
+ 772 2015- 3-28 review ledger closing dialog: may be date check should
+                be moved to is_dialog_validable() function + all ledgers
+                should be closeable
+     2015- 3-30 done - git #ccb7ba9
+
+ 773 2015- 3-28 Settlement: have a light background to indicate the
+                settled entries
+     2015- 3-29 done - git #0fdcc6d
+
+ 774 2015- 3-28 Settlement: move the settle/unsettle buttons to the right
+     2015- 3-29 done - git #edee846
+
+ 775 2015- 3-28 Settlement: footer: have all the line the same color
+     2015- 3-29 done - git #edee846
+
+ 776 2015- 3-28 ViewEntries: status doesn't work as a filter (but should)
+     2015- 3-29 actually it does
+
+ 777 2015- 3-28 GuidedInputEx: validate should not be sensitive while 
+                there is not at least one generable entry
+     2015- 3-29 fixed - git #4148c19
+
+ 778 2015- 3-30 use ofaAccountSelector where appropriate
+     2015-10- 7 closed (see also #840)
+
+ 779 2015- 3-30 import settleable indicator from EBP accounts
+     2015- 3-31 done - git #918430877
+
+ 780 2015- 3-30 is_visible_row: assertion 'my_date_is_valid( deffect )' failed
+                is_visible_row (tmodel=<optimized out>, iter=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-reconciliation.c:1690
+                while importing and mode=All (but actually imported)
+                even if mode=Session
+     2015- 3-31 fixed - git #2b55207f1fb4ad3587670426eb43b8ac8d3c961c
+
+ 781 2015- 3-30 when trying to import again the same file
+                Segmentation fault.
+                in ofa_bat_utils_import (main_window=0x886340) at ../../../src/ui/ofa-bat-utils.c:79
+     2015- 3-31 fixed - git #78b524a
+
+ 782 2015- 3-30 printing general book for 51541 account
+                ofo_account_get_number: assertion 'OFO_IS_ACCOUNT(account)' failed
+                ofo_account_get_number (account=0x0) at ../../../src/core/ofo-account.c:802
+#3  0x000000000046bf7e in draw_account_report (self=0xc201d0, context=0x0, with_solde=0, operation=<optimized out>) at ../../../src/ui/ofa-pdf-books.c:895
+#4  0x000000000045495b in get_group_bottom_report_height (sdata=0x152bd00, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1236
+#5  draw_line (page_num=0, sdata=0x152bd00, next=0x108f080 = {...}, line=0x108f0e0 = {...}, line_num=0, context=0x0, operation=0x0, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:1136
+#6  draw_page (instance=instance@entry=0xc201d0, operation=operation@entry=0x0, context=context@entry=0x0, page_num=page_num@entry=0, sdata=sdata@entry=0x152bd00)
+    at ../../../src/ui/ofa-iprintable.c:671
+#7  0x0000000000454e5c in on_paginate (operation=0x74ef30, context=0x12c1310, instance=0xc201d0) at ../../../src/ui/ofa-iprintable.c:581
+     2015- 3-30 fixed - git #0111b0b
+
+ 784 2015- 4- 3 archive the entries last number when opening the exercice
+                (this is for the audit trace: be able to prove that we
+                have kept all generated entries on an exercice base)
+                > next dbms version:
+                  - last entry number from previous exercice
+                  - row number in rate detail validities
+                  - account number in bat file
+                  - last period closing date
+     2015-10- 8 done with DB model v26
+
+ 785 2015- 4- 3 updating the amount of an entry make the operation date
+                change when it is less that the minimum allowed (though
+                the effect date is correct)
+     2015- 4- 3 fixed - git #2506676
+
+ 786 2015- 4- 3 when inserting a new entry:
+                g_utf8_collate: assertion 'str2 != NULL' failed
+#2  0x0000003d04a780ca in g_utf8_collate () from /lib64/libglib-2.0.so.0
+#3  0x00007ffff7dcf130 in currency_get_by_code (currency=0x0, list=0x9e06c8, list@entry=0xdb8bd0) at ../../../src/core/ofs-currency.c:50
+#4  ofs_currency_add_currency (list=list@entry=0x9e06c8, currency=0x0, debit=0, credit=credit@entry=0) at ../../../src/core/ofs-currency.c:109
+#5  0x0000000000481f69 in compute_balances (self=self@entry=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:1776
+#6  0x0000000000482ffb in on_cell_edited (cell=<optimized out>, path_str=<optimized out>, text=<optimized out>, self=0x9e06f0) at ../../../src/ui/ofa-view-entries.c:2221
+     2015- 4- 3 fixed - git #da27804
+
+ 787 2015- 4- 3 Taxe foncières 2014 du 9/10: piece is displayed as null
+     2015- 4- 3 fixed - git #f1ab147
+
+ 788 2015- 4- 4 review ofa_date_filter_api
+     2015- 4- 8 done - git #601f95c
+
+ 789 2015- 4- 6 GuidedInputBin: check date label is in display format
+                instead of check format
+     2015- 4- 7 fixed - git #5d41bd8
+
+ 794 2015- 4-13 Balances: first render doesn't take into account subtotal
+                per class, but this is ok starting with the second render
+                (or printing after having rendered)
+     2015- 4-13 fixed - git #4829832
+
+ 795 2015- 4-13 IRenderable: not a good idea to free and recreate sdata
+                because this is not consistent with page life cycle -
+                instead reinit the data
+     2015- 4-13 fixed - git #63124d6
+
+ 797 2015- 4-13 AccountsBook is not balanced (should have same totals
+                than AccountsBalance)
+     2015- 4-13 fixed - git #a2de48a
+
+ 800 2015- 4-13 LedgersBook: doesn't print last page(s)!!
+     2015- 4-13 fixed - git #f95e872
+
+ 801 2015- 4-13 rename:
+                RenderBooks -> RenderAccountsBook
+                RenderLedgers -> RenderLedgersBook
+                + update Bin composite widgets accordingly
+     2015- 4-16 done - git #c1ed09e
+
+ 802 2015- 4-13 importing lcl-01800_493012R_du_16-06-2014_au_19-12-2014.xls
+                doesn't take into account decimal fields (which are comma-
+                separated)
+     2015- 4-15 fixed - git #9c64316
+
+ 803 2015- 4-13 Reconciliation: display the ledger
+     2015- 4-14 done - git #ef267bb
+
+ 804 2015- 4-13 while importing entries.
+(openbook:14117): OFA-DEBUG: ofa_guided_ex_on_updated_object: dossier=0x744cb0, object=0x7fffe400a960 (ofoLedger), prev_id=(null), self=0x11be4f0
+(openbook:14117): Gtk-CRITICAL **: gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
+#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
+#3  0x0000000000449c52 in find_left_ledger_by_mnemo (self=self@entry=0x11be4f0, mnemo=0x112ace0 "OD", tmodel=tmodel@entry=0x7fffffffc178, iter=iter@entry=0x7fffffffc180)
+    at ../../../src/ui/ofa-guided-ex.c:734
+#4  0x000000000044a62c in update_left_ledger_row (prev_id=0x0, ledger=0x7fffe400a960, self=0x11be4f0) at ../../../src/ui/ofa-guided-ex.c:667
+#5  on_updated_object (dossier=<optimized out>, object=<optimized out>, prev_id=0x0, self=0x11be4f0) at ../../../src/ui/ofa-guided-ex.c:971
+                though GuidedEx was not currently opened 
+                this can be due to a dossier handler which doesn"t have 
+                been removed
+     2015- 4-14 fixed - git #b246f59
+
+ 805 2015- 4-13 add a check box to AccountsBalance to display the 
+                "accounts" balances (=> since the beginning of the exercice)
+                Else these are entries balance
+     2015- 4-15 done - git #3c0b704
+
+ 806 2014- 4-16 when backuping the dossier
+(openbook:543): OFA-DEBUG: ofa_settings_dossier_set_string: dname=Test pré-clôture, key=LastBackupFolder
+(openbook:543): GLib-CRITICAL **: g_key_file_set_string: assertion 'string != NULL' failed
+#2  0x00007ffff7da9d16 in ofa_settings_set_string (target=<optimized out>, group=0xb5a090 "Dossier Test pré-clôture", key=0x495c6c "LastBackupFolder", svalue=0x0)
+    at ../../../src/core/ofa-settings.c:647
+#3  0x00007ffff7daa447 in ofa_settings_dossier_set_string (dname=<optimized out>, key=0x495c6c "LastBackupFolder", svalue=0x0) at ../../../src/core/ofa-settings.c:1055
+#4  0x000000000042ddfc in do_backup (self=0xcc5b60) at ../../../src/ui/ofa-backup.c:224
+     2014- 4-16 fixed - git #c81da22
+
+ 807 2015- 4-17 close before restore
+     2015- 4-20 done - git #c2c9f53
+
+ 813 2015- 4-17 Chart of accounts: enable a 'Settle' button on settleable
+                buttons + a 'Reconciliate' button on reconciliable ones
+     2015- 4-18 done - git #be09d14
+
+ 815 2015- 4-17 ClosingLedger: have a checkbox 'All ledgers'
+     2015- 4-18 done - git #5872340
+
+ 816 2015- 4-18 Rename AccountsBook -> AccountsChart to distinguish
+                book of entries by account (ofaAccountsBookRender)
+     2015- 4-18 done - git #501b573
+
+ 817 2015- 4-24 change SIREN with SIRET (keep the two fields distinct)
+     2015- 4-27 see. also todo #819
+     2015-12-14 done with DB model v27
+
+ 819 2015- 4-26 next dbms version:
+                - rename RAT_VAL_BEG as RAT_VAL_BEGIN
+                - move SIREN to SIRET (todo #817)
+     2015-12-14 done with DB model v27
+
+ 820 2015- 4-26 have a special-development dossier.conf to not mix
+                development dossiers with production dossiers
+     2015- 4-26 done - git #aadaccc
+
+ 820 2015- 4-27 check that strings are valid utf-8
+     2015- 9-23 where ?
+     2015-10- 8 closed as not enough infos
+
+ 823 2015- 4-27 review mnemonic activation in all dialogs
+     2015- 9-25 closed - see #839
+
+ 827 2015- 9-23 review usage of ofa-import-ex.ui
+     2015- 9-24 delete file
+
+ 828 2015- 9-23 DossierManager: when selecting a dossier for opening,
+                we open the DossierOpen dialog. The selected dossier
+                should be pe-selected; the focus should be on login
+                name
+     2015- 9-24 there are two bugs here:
+                - dossier name is already passed to DossierOpen and
+                  should be initially selected
+                - DossierManager row embeds the exercice, which should
+                  be passed to DossierOpen
+     2015- 9-24 fixed
+
+ 829 2015- 9-23 BatProperties: entries should be read-only, and this
+                should be visible for the user
+     2015- 9-24 introduce my_utils_widget_set_editable
+
+ 830 2015- 9-24 keep the ExerciceStore sorted
+     2015- 9-25 already sorted by descending exercice
+
+ 831 2015- 9-24 keep the DossierStore sorted by dossier name and exercice
+     2015- 9-25 done
+
+ 832 2015- 9-24 DossierStore should be a singleton, and maitain itself
+                up to date
+     2015- 9-24 done
+
+ 833 2015- 9-24 several occurrences (too many) of ofa_settings_load_key_file
+     2015- 9-25 - this was due to several occurrences of 'changed' event
+                  settings GFileMonitor
+                - this is fixed by:
+                  1/ set a timeout on settings 'changed' event
+                  2/ make ofaDossierStore a proxy to settings changed
+                  3/ reload once the store on 'changed' timeout
+                  4/ make ofaDossierStore a proxy to application actions
+                     monitoring
+
+ 834 2015- 9-24 when creating a new dossier when restoring a database, the
+                dossier stays recorded even if the restoration is cancelled
+                by the user (with an non-existent database)
+     2015- 9-24 fixed
+
+ 835 2015- 9-24 closing the restore assistant makes _g_dbus_worker_unref()
+                segfault (whether we have cancelled the restore or not)
+                this is reproductible :(
+     2015- 9-24 this behavior disappears after a reboot
+     2015- 9-24 closed
+
+ 836 2015- 9-24 ImportAssistant: recall the imported filename at the
+                top of 'type of data' and format settings' pages
+     2015- 9-24 done
+
+ 837 2015- 9-24 initialization of the assistants is very long
+     2015- 9-24 this behavior disappears after a reboot
+     2015- 9-24 closed
+
+ 838 2015- 9-24 ImportAssistant: data type page has a Finish button
+                when we arrive on this page from format settings back
+                button
+     2015- 9-24 idem for RestoreAssistant 'root credentials' page
+     2015- 9-24 This is normal GtkAssistant behavior as long as
+                following pages are set as completed; the Finish button
+                is just a shortcut to the Summary page.
+     2015- 9-24 closed
+
+ 839 2015- 9-25 review all dialog boxes
+                - provide an error message if not validable 
+                  > via a is_valid() method (todo #512)
+                  > with a ofa-changed signal
+                - review mnemonic activation (todo #823)
+                - manage an horizontal size group
+                src/core/ofa-admin-credentials-bin.ui       OK
+                src/core/ofa-dbms-root-bin.ui               OK
+                src/core/ofa-dossier-delete-prefs-bin.ui    OK
+                src/core/ofa-file-format-bin.ui             OK
+                src/core/ofa-preferences.ui                 OK
+                src/mysql/ofa-mysql-connect-display-bin.ui  OK
+                src/mysql/ofa-mysql-connect-enter-bin.ui    OK
+                src/mysql/ofa-mysql-prefs.piece.ui          OK
+                src/ui/ofa-account-properties.ui            OK
+                src/ui/ofa-accounts-book-bin.ui             OK
+                src/ui/ofa-account-selector-bin.ui          OK
+                src/ui/ofa-account-select.ui                OK
+                src/ui/ofa-accounts-filter-vv-bin.ui        OK
+                src/ui/ofa-app-menubar.ui                   --
+                src/ui/ofa-balance-bin.ui                   OK
+                src/ui/ofa-bat-properties-bin.ui            OK
+                src/ui/ofa-bat-properties.ui                OK
+                src/ui/ofa-bat-select.ui                    --
+                src/ui/ofa-check-balances-bin.ui            OK
+                src/ui/ofa-check-balances.ui                --
+                src/ui/ofa-check-integrity-bin.ui           OK
+                src/ui/ofa-check-integrity.ui               --
+                src/ui/ofa-class-properties.ui              OK
+                src/ui/ofa-closing-parms-bin.ui             OK
+                src/ui/ofa-currency-properties.ui           OK
+                src/ui/ofa-dates-filter-hv-bin.ui           OK
+                src/ui/ofa-dos-menubar.ui                   --
+                src/ui/ofa-dossier-delete.ui                OK
+                src/ui/ofa-dossier-display-notes.ui         OK
+                src/ui/ofa-dossier-login.ui                 --
+                src/ui/ofa-dossier-manager.ui               --
+                src/ui/ofa-dossier-new-bin.ui               OK
+                src/ui/ofa-dossier-new-mini.ui              OK
+                src/ui/ofa-dossier-new.ui                   --
+                src/ui/ofa-dossier-open.ui                  OK
+                src/ui/ofa-dossier-properties.ui            OK
+                src/ui/ofa-exercice-close-assistant.ui      OK
+                src/ui/ofa-export-assistant.ui              --
+                src/ui/ofa-guided-input-bin.ui              OK
+                src/ui/ofa-guided-input.ui                  --
+                src/ui/ofa-import-assistant.ui              --
+                src/ui/ofa-ledger-close.ui                  --
+                src/ui/ofa-ledger-properties.ui             OK
+                src/ui/ofa-ledgers-book-bin.ui              OK
+                src/ui/ofa-ope-template-help.ui             --
+                src/ui/ofa-ope-template-properties.ui       OK
+                src/ui/ofa-ope-template-select.ui           --
+                src/ui/ofa-plugin-manager.ui                --
+                src/ui/ofa-rate-properties.ui               OK
+                src/ui/ofa-reconcil-bin.ui                  OK
+                src/ui/ofa-reconciliation.ui                OK
+                src/ui/ofa-render-page.ui                   --
+                src/ui/ofa-restore-assistant.ui             --
+                src/ui/ofa-settlement.ui                    OK
+                src/ui/ofa-view-entries.ui                  --
+     2015-10- 2 done
+
+ 841 2015- 9-29 ofaRenderPage: have a paned to separate the args from
+                the print
+     2015-10- 5 cancelled as a duplicate of #855
+
+ 842 2015- 9-29 ofaRenderPage: action buttons should be horizontally
+                aligned
+     2015-10- 5 done
+
+ 844 2015- 9-30 rename ofa-accounts-xxx to ofa-account-xxx
+                idem for ledgers, ope-templates, etc.
+     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
+                ofaAccountsPage -> ofaAccountPage
+                ofaAccountsBookBin -> ofaAccountBookBin
+                ofaAccountsBookRender -> ofaAccountBookRender
+                ofaAccountsFilterVVBin -> ofaAccountFilterVVBin
+                ofaIAccountsFilter -> ofaIAccountFilter
+                ofaDatesFilterHVBin -> ofaDateFilterHVBin
+                ofaIDatesFilter -> ofaIDateFilter
+                ofaClassesPage -> ofaClassPage
+                ofaBatsPage -> ofaBatPage
+                ofaBalancesGrid -> ofaBalanceGridBin
+                ofaCurrenciesPage -> ofaCurrencyPage
+                ofaLedgersPage -> ofaLedgerPage
+                ofaLedgersBookBin -> ofaLedgerBookBin
+                ofaLedgersBookRender -> ofaLedgerBookRender
+                ofaOpeTemplatesPage -> ofaOpeTemplatePage
+                ofaRatesPage -> ofaRatePage
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
+                ofaOpeTemplatesBook -> ofaOpeTemplateBookBin
+
+ 845 2015-10- 1 have a UserCredentialsBin to be used in DossierLogin
+                and DossierOpen
+     2015-10- 1 done
+
+ 846 2015-10- 1 opening a dossier from DossierManager should be equal
+                to opening a dossier from the command-line (i.e. rather
+                use DossierLogin than DossierOpen)
+     2015-10- 5 done
+
+ 847 2015-10- 1 ConnectDisplay/ConnectEnter: the port number should be
+                a fixed size (eg. 6 chars) while hostname, socket path
+                and database name should horizontally expand
+     2015-10- 5 done
+
+ 848 2015-10- 1 DossierNewBin: having a frame with its label, even if
+                hidden, leaves a vertical space above the dossier name
+     2015-10- 5 always set the frame visible
+
+ 849 2015-10- 1 ofo_dossier_set_last_closing_date(): seems not used
+                there would be so a *ghost* data stored in dbms and
+                displayed in properties, but absolutely useless
+                NB: if restored to some use, check in DossierProperties
+                if this data is updatable by the user, or should be
+                read-only.
+     2015-10- 8 DOS_LAST_CLOSING is date of last closed period and has
+                been introduced with DB model v26
+                -> closed as duplicate of #798)
+
+ 850 2015-10- 1 shouldn't be AccountsFrame and OpeTemplatesFrame some
+                GtkBin-derived widgets ?
+     2015-10- 5 ofaAccountsChart -> ofaAccountChartBin
+                ofaAccountsFrame -> ofaAccountFrameBin
+                ofaBalancesGrid -> ofaBalanceGridBin
+                ofaOpeTemplatesFrame -> ofaOpeTemplateFrameBin
+
+ 851 2015-10- 1 segfault when closing the exercice
+                database trest6 restored from PWIConsultants-20150319.gz
+     2015-10- 6 fixed
+
+ 852 2015-10- 1 myDate: set width and max width (unless otherwise
+                specified) + set placeholder text + center
+                + remove corresponding specs from .xml UI definitions
+     2015-10- 5 > width and 'start' layout is set in .xml UI definition
+                  to have a layout mockup easier
+                > content (max length, centering, placeholder) is set
+                  in myEditableDate as this depends of runtime
+                  conditions
+
+ 854 2015-10- 1 when restoring a dossier, insertions in dbms continue
+                long after having acknowledged the good restore !
+                (see debug messages) -> this should be done before the
+                acknowledge, or have a spinner, or have a progress bar
+     2015-10- 6 this is the consequence of the DDL update which happens
+                when opening the dossier - see also #23
+
+ 855 2015-10- 1 render page should have a pane between the drawing area
+                and the args zone
+     2015-10- 5 set actions area end-aligned instead
+
+ 856 2015-10- 1 ofo_xxx_is_deletable: should be FALSE if dossier is not
+                current
+     2015-10- 2 done
+
+ 857 2015-10- 2 on widgets which do not have a label as a mnemonic
+                widget, set the surounding frame (as an exception)
+                These must be frames with only one single addressable
+                child
+     2015-10- 2 src/core/:                       n/a
+                src/mysql/:                      n/a
+                src/ui/ofa-account-selector-bin: done
+                src/ui/ofa-ledger-close:         done
+                src/ui/ofa-ledgers-book-bin:     done
+
+ 858 2015-10- 2 PluginManager: the properties of a plugin should be
+                distinct from its preferences -> have another interface
+     2015-10- 2 new ofaIAbout interface defined
+
+ 859 2015-10- 2 my_utils_init_notes:
+                - common case is with same editability than the dialog
+                  > my_utils_init_notes
+                - one single case is have two notes (dossier)
+                  > my_utils_init_notes_fn
+                - another single case is have distinct editability (bat)
+                  > my_utils_init_notes_ex
+     2015-10- 2 done
+
+ 860 2015-10- 5 get rid of ofaIPrintable interface
+     2015-10- 5 done
+
+ 861 2015-10- 5 GtkBin: set MainWindow (so dossier) in _new()
+     2015-10- 5 ofaAccountFrameBin: done
+                ofaAccountChartBin: done
+                ofaClosingParmsBin: done
+                ofaGuidedInputBin: done
+                ofaOpeTemplateFrameBin: done
+                ofaOpeTemplateBookBin: done
+
+ 863 2015-10- 7 myAssistant: create get_current_page() method to get
+                rid of derived classes storing the current page
+     2015-10- 7 done
+
+ 864 2015-10- 7 myAssistant: show_all after call to display to get
+                rid of derived classes showing all
+     2015-10- 7 fixed
+
+ 865 2015-10- 7 ofa_idbms_restore(): get an uri instead of the filename
+     2015-10- 7 done
+
+ 866 2015-10- 7 progress bars in db model remediation touch the border
+                (see print screen)
+     2015-10- 7 fixed
+
+ 867 2015-10- 8 ofaDossierNewBin: priv->infos is never released
+     2015-12-14 globally fixed with new ofaIDBProvider interface and
+                companion classes
+
+ 868 2015-10-30 GuidedInput: review account/entry label/debit/credit
+                resp. fields width
+     2015-11-18 fixed - Also done the minimal width of the panes
+
+ 870 2015-10-30 GuidedInput/ViewEntries: when an entry has ESP piece ref
+                (or EXP ledger ?), this piece ref is not displayed in
+                view entries
+     2015-11-11 not reproductible as not sure that a reference was really
+                entered when this bug report was identified -> cancelled
+
+ 871 2015-11- 1 Reconciliation: selected account label is displayed with
+                red font color - why ?
+     2015-11- 6 fixed
+
+ 872 2015-11- 1 Reconciliation: when cliking on print and the reconciliation
+                summary page is already opened for another account, the
+                new account is rightly displayed in account selection,
+                but the render area is left with old account - should be
+                cleared, or pre-rendered
+     2015-11-10 done
+
+ 873 2015-11- 1 GuidedInput: display the account in red when invalid
+     2015-11-10 difficult as there is no linl between a data and the control
+                it comes from, so do not know how to handle an error
+                -> cancelled
+
+ 874 2015-11- 1 ViewEntries: reconciliation date is not updated
+     2015-11-11 fixed
+
+ 875 2015-11- 1 ViewEntries: warns when deleting a reconciliated/settled
+                entry
+     2015-11-11 done
+
+ 876 2015-11- 1 Reconciliation: unable to reconciliate two entries of 34,62
+                see PWIConsultants-20150131_1.gz
+     2015-11- 5 fixed
+
+ 877 2015-11- 1 Reconciliation: when reconciliating two lines, and bat line
+                is not child of entry, then move bat line under entry
+     2015-11- 6 Actually: make sure that a conciliation group is displayed
+                with a first line, and others as children
+     2015-11- 9 done
+
+ 878 2015-11- 1 Reconciliation: reconciliate two bat lines
+                + be able to make a BAT file terminated
+     2015-11- 6 fixed
+
+ 879 2015-11- 1 Reconciliation: ignore bat line (?)
+                + be able to make a BAT file terminated
+     2015-11- 5 there is no sense to ignore a BAT line, but we may put
+                it in a waiting state, waiting for the bank to send us
+                the opposite line
+     2015-11- 5 cancelled
+
+ 880 2015-11- 1 Have a TVA module
+     2015-11-14 cancelled as duplicate of #311
+
+ 881 2015-11- 1 ReconciliationSummary: 'Reconciliation' frame label:
+                leading space missing
+     2015-11- 5 ofa-reconcil-bin.ui fixed
+
+ 882 2015-11- 2 GuidedInput on Avron Internet operation template:
+                controls are shifted to the right - why for this ope ?
+     2015-11-10 this was due to the length of the ope template label
+                fixed by reviewing the UI layout + ellipsize the label
+
+ 883 2015-11- 2 Reconciliation; after Reconciliate or Unreconciliate,
+                the action should become disabled
+     2015-11- 5 done
+
+ 884 2015-11- 4 there is no difference between v_setup_view and v_init_view
+                in ofaPage derived classes ?
+                if confirmed, remove one of these two functions
+     2015-11- 5 there is a diff in the returned value, thus these two
+                functions have distinct use cases -> all pages are
+                reviewed
+
+ 887 2015-11-10 Reconciliation: implement ofaIColumns interface
+     2015-11-12 done
+
+ 888 2015-11-23 review ofaSettings class to use mySettings
+     2015-12-17 done
+
+ 889 2015-11-23 review ofaSettingsMonitor class to use myFileMonitor
+     2015-12-17 ofaSettingsMonitor is removed as obsolete
+
+ 890 2015-11-23 remove ofa_idbms_get_provider_by_name()
+     2015-12-13 done
+
+ 891 2015-11-23 remove ofaDossierStore() from ofaApplication
+     2015-12-13 kept as this is needed to be sure the store is ready
+                (and maintains itself up to date) when the main window
+                is created
+
+ 892 2015-11-24 remove from ofaDossierStore:
+                - DOSSIER_COL_DBNAME
+                - DOSSIER_COL_CODE
+                - DOSSIER_DISP_DBNAME
+                - DOSSIER_DISP_CODE
+     2015-12-13 done
+
+ 893 2015-11-24 remove ofa_dossier_misc_get_dossiers
+     2015-11-26 done
+
+ 894 2015-11-24 remove database name + dossier code from dossier store
+     2015-12-13 duplicate of #892
+
+ 895 2015-11-24 DossierTreeview: the filter is just for displaying
+                a) only dossiers, or b) all exercices
+                so DOSSIER_SHOW_ARCHIVED is useless
+     2015-11-26 done
+
+ 896 2015-11-24 remove database name from exercice store
+     2015-12-13 done
+
+ 897 2015-11-24 remove database name from command-line application
+     2015-12-13 done
+
+ 898 2015-11-24 DossierManager: review
+                - on_open_clicked(),
+                - open_dossier()
+     2015-12-13 done
+
+ 899 2015-11-25 remove ofsDossierOpen structure & associated signal
+     2015-12-13 done
+
+ 900 2015-11-25 set provider instance/dossier name in IFileMeta data
+     2015-11-25 done
+
+ 901 2015-11-25 attach periods to meta (do no re-read settings)
+     2015-11-26 done
+
+ 902 2015-11-26 remove ofa_idbprovider_get_dossier_periods() ?
+     2015-11-26 done
+
+ 903 2015-11-26 ofa_main_window_get_dossier_credentials(): should be
+                obsoleted in favor of ofa_idbconnect method - this
+                should allow of removing user credentials from main
+                window
+     2015-12-13 done
+
+ 904 2015-11-26 DOS_STATUS_OPENED, DOS_STATUS_CLOSED: should be just a
+                boolean (Y/N in the database, true/false in the code)
+                + should we store this in the db
+                  (as this is already recorded in the settings) ??
+                => yes, it must be stored, because an archived (closed)
+                dossier is expected to be read-only - so that it is not
+                enough to just change a settings to force the dossier
+                to be updatable
+     2015-12-13 go to v27
+     2015-12-14 done with DB model v27
+
+ 905 2015-11-26 remove account from ofaMySQLConnect
+     2015-12-10 done (somewhere in the past)
+
+ 906 2015-11-26 when opening a dossier, check that begin/end dates
+                are consistent with settings - else remediate
+                + set also status
+                (cf. ofoDossier:do_open)
+     2015-11-26 done
+
+ 907 2015-11-26 define a myISettings interface to be used in the plugins
+                (instead of directly the mySettings object)
+     2015-12-17 done
+
+ 908 2015-11-26 remove ofo_dossier_get_name()
+     2015-12-13 done
+
+ 911 2015-12- 1 remove ofa_dbms_root_bin_set_dossier() method
+     2015-12-13 done
+
+ 912 2015-12- 1 ofa_dossier_treeview_get_selected(): remove method ?
+                or update it to be able to get a meta and/or a period
+     2015-12- 1 updated to return meta+period
+
+ 913 2015-12- 2 myDialog/myWindow: distinguish the main window (resp.
+                the application) which is needed to get access to 
+                global vars, from the parent window which may not be
+                the main window
+     2015-12-13 done
+
+ 914 2015-12- 2 add filename to ofaFileDir::changed signal args
+     2015-12-10 done
+
+ 916 2015-12- 4 rename ofaIFileMeta to ofaIDBMeta
+     2015-12-10 done
+
+ 917 2015-12- 4 rename ofaIFilePeriod to ofaIDBPeriod
+     2015-12-10 done
+
+ 918 2015-12- 9 remove ofa_dossier_new_bin_get_credentials
+     2015-12-10 replaced with ofa_dossier_bin_get_dbms_root_bin()
+                + ofa_dbms_root_bin_get_credentials()
+
+ 921 2015-12-10 remove ofa_settings_remove_dossier()
+     2015-12-13 done
+
+ 922 2015-12-10 ofaDossierNewMini must return a ofaIDBMeta
+     2015-12-12 done
+
+ 923 2015-12-11 myAssistant is not transient vs the main window
+     2015-12-13 or is it ?
+     2015-12-13 it is.
+
+ 924 2015-12-12 remove ofa_dossier_new_bin_get_dossier_name() method
+     2015-12-13 done
+
+ 925 2015-12-13 remove obsolete ofaDossierLogin class ?
+     2015-12-18 done
+
+ 926 2015-12-14 password is lost when opening a dossier after restore ?
+     2015-12-18 fixed
+
+ 927 2015-12-14 close the restore assistant before opening the dossier
+     2015-12-18 done
+
+ 928 2015-12-14 have a preference option to force the restore to utf8
+                (alter the database after restore)
+                SELECT schema_name,default_character_set_name FROM information_schema.SCHEMATA;
+                ALTER DATABASE ofat_1 CHARACTER SET='utf8';
+     2015-12-18 Rather force the character set at database creation
+     2015-12-18 done
+
+ 929 2015-12-14 add ofa- prefix to LastBackupFolder key
+     2015-12-17 done
+
+ 930 2015-12-14 add ofa- prefix to OpeTemplateBookOrder key
+     2015-12-17 done
+
+ 931 2015-12-14 remove ofa_settings_dossier_xxx methods
+     2015-12-17 done as much as possible
+
+ 932 2015-12-15 review IPrefsProvider interface so that MySQL plugin
+                does not have to use ofa_settings API
+     2015-12-17 done as much as possible though is is not avoidable that
+                dossier preferences use ofa_settings_dossier_xxx
+
+ 934 2015-12-17 DDLUpdate: have a scrolled window when remediating all
+                versions
+     2015-12-18 it is already there
+
+ 936 2015-12-17 dossier name must not have square brackets as GKeyFile
+                refuse them in group names
+     2015-12-18 done
+
+ 943 2015-12-27 DossierManager: deleting a dossier does not remove the
+                group from the dossier settings: only dbms infos are
+                removed but some keys are left there
+                + close the currently opened dossier before deleting
+                a dossier (at least before deleting the currently
+                opened dossier)
+     2015-12-28 done
+
+ 944 2015-12-28 OpeTemplateProperties: use myIGridList
+     2015-12-28 done
+
+ 945 2015-12-28 RateProperties: use myIGridList
+     2015-12-28 done
+
+ 946 2015-12-28 rate_cmp_by_validity: assertion 'my_date_is_valid( &a->end )' failed
+                when adding a new rate validity begin date without having
+                set an ending date on the previous line
+     2015-12-28 fixed
+
+-----------------------------------------------------------------------
+ P. Wieser - Created on 2014, may 2nd
+             Last updated on 2015, march 7th.
