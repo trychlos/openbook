@@ -432,15 +432,14 @@ add_empty_row( GtkGrid *grid, guint row, sIGridList *data )
 	gtk_widget_destroy( gtk_grid_get_child_at( grid, COL_ADD, row ));
 
 	/* add the row number */
-	str = g_strdup_printf( "%2u", row );
-	label = gtk_label_new( str );
-	g_object_set_data( G_OBJECT( label ), DATA_ROW, GUINT_TO_POINTER( row ));
-	g_free( str );
+	label = gtk_label_new( NULL );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
+	my_utils_widget_set_margin( label, 0, 0, 0, 4 );
 	my_utils_widget_set_xalign( label, 1.0 );
-	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( grid, label, COL_ROW, row, 1, 1 );
+	str = g_strdup_printf( "<i>%u</i>", row );
+	gtk_label_set_markup( GTK_LABEL( label ), str );
+	g_free( str );
 }
 
 /**
