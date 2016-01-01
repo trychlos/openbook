@@ -28,11 +28,13 @@
 /**
  * SECTION: ofa_tva_declare_page
  * @short_description: #ofaTVADeclarePage class definition.
- * @include: tva/ofa-tva-define-page.h
+ * @include: tva/ofa-tva-declare-page.h
  *
- * Defines a new TVA form.
- * This is an ofaPage-derived page which shows the list of defined
- * forms. The user has New, Update and Delete usual buttons.
+ * This is an ofaPage-derived page which shows the list of existing
+ * TVA declaration, either current or validated. The user has Update
+ * and Delete usual buttons.
+ * Defining a new TVA declaration means selecting a TVA form from
+ * management page, and clicking 'Declare from form' button.
  */
 
 #include "api/ofa-page-def.h"

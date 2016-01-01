@@ -229,7 +229,9 @@ tva_form_finalize( GObject *instance )
 	g_return_if_fail( instance && OFO_IS_TVA_FORM( instance ));
 
 	/* free data members here */
-
+	if( priv->bools ){
+		bools_list_free( OFO_TVA_FORM( instance ));
+	}
 	if( priv->details ){
 		details_list_free( OFO_TVA_FORM( instance ));
 	}
@@ -741,6 +743,33 @@ ofo_tva_form_is_valid( ofoDossier *dossier, const gchar *mnemo )
 }
 
 /**
+ * ofo_tva_form_compare_id:
+ * @a:
+ * @b:
+ *
+ * Returns: -1 if @a'ids are lesser than @b'ids, 0 if they are equal,
+ * +1 if they are greater.
+ */
+gint
+ofo_tva_form_compare_id( const ofoTVAForm *a, const ofoTVAForm *b )
+{
+	const gchar *ca, *cb;
+	gint cmp;
+
+	g_return_val_if_fail( a && OFO_IS_TVA_FORM( a ), 0 );
+	g_return_val_if_fail( b && OFO_IS_TVA_FORM( b ), 0 );
+
+	if( !OFO_BASE( a )->prot->dispose_has_run && !OFO_BASE( b )->prot->dispose_has_run ){
+		ca = ofo_tva_form_get_mnemo( a );
+		cb = ofo_tva_form_get_mnemo( b );
+		cmp = g_utf8_collate( ca, cb );
+		return( cmp );
+	}
+
+	g_return_val_if_reached( 0 );
+}
+
+/**
  * ofo_tva_form_set_mnemo:
  */
 void
@@ -1013,7 +1042,6 @@ ofo_tva_form_detail_get_amount( const ofoTVAForm *form, guint idx )
 /**
  * ofo_tva_form_boolean_add:
  * @form:
- * @is_header:
  * @label:
  */
 void
@@ -1476,7 +1504,9 @@ form_do_delete( ofoTVAForm *form, const ofaIDBConnect *cnx )
 
 	g_free( query );
 
-	ok &= form_delete_details( form, cnx );
+	if( ok ){
+		ok = form_delete_details( form, cnx ) && form_delete_bools( form, cnx );
+	}
 
 	return( ok );
 }

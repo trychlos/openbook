@@ -32,7 +32,7 @@
  *
  * This file defines the #ofoTVAForm class behavior.
  *
- * An #ofoTVAForm describes a TVA formular.
+ * An #ofoTVAForm describes a TVA form.
  */
 
 #include "api/ofo-base-def.h"
@@ -86,6 +86,8 @@ const GTimeVal *ofo_tva_form_get_upd_stamp         ( const ofoTVAForm *form );
 gboolean        ofo_tva_form_is_deletable          ( const ofoTVAForm *form, ofoDossier *dossier );
 gboolean        ofo_tva_form_is_valid              ( ofoDossier *dossier,
 														const gchar *mnemo );
+
+gint            ofo_tva_form_compare_id            ( const ofoTVAForm *a, const ofoTVAForm *b );
 
 void            ofo_tva_form_set_mnemo             ( ofoTVAForm *form, const gchar *mnemo );
 void            ofo_tva_form_set_label             ( ofoTVAForm *form, const gchar *label );

@@ -962,7 +962,6 @@ void
 ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, const gchar *base )
 {
 	GList *nth;
-	const gchar *cstr;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
@@ -985,7 +984,6 @@ void
 ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, const gchar *amount )
 {
 	GList *nth;
-	const gchar *cstr;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 

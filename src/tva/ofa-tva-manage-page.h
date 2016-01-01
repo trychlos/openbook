@@ -32,7 +32,8 @@
  *
  * Defines a new TVA form.
  * This is an ofaPage-derived page which shows the list of defined
- * forms. The user has New, Update and Delete usual buttons.
+ * forms. The user has New, Display/Update and Delete usual buttons,
+ * plus one 'New declaration from form' extra button.
  */
 
 #include "api/ofa-page-def.h"

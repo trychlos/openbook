@@ -87,13 +87,13 @@ static const sItemDef st_items_ope2[] = {
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "tvamanage", N_( "TVA _management" ) },
+		{ "tvamanage", N_( "TVA _form management" ) },
 		{ 0 }
 };
 
 static sThemeDef st_theme_defs[] = {
 		{ "tvadeclare",  N_( "TVA _declaration" ),  ofa_tva_declare_page_get_type, FALSE, 0 },
-		{ "tvamanage",  N_( "TVA _management" ),  ofa_tva_manage_page_get_type, FALSE, 0 },
+		{ "tvamanage",  N_( "TVA _form management" ),  ofa_tva_manage_page_get_type, FALSE, 0 },
 		{ 0 }
 };
 

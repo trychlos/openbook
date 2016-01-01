@@ -183,8 +183,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVAFormS
 	gchar *amnemo, *bmnemo;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, TVA_COL_MNEMO, &amnemo, -1 );
-	gtk_tree_model_get( tmodel, b, TVA_COL_MNEMO, &bmnemo, -1 );
+	gtk_tree_model_get( tmodel, a, TVA_FORM_COL_MNEMO, &amnemo, -1 );
+	gtk_tree_model_get( tmodel, b, TVA_FORM_COL_MNEMO, &bmnemo, -1 );
 
 	cmp = g_utf8_collate( amnemo, bmnemo );
 
@@ -227,11 +227,11 @@ set_row( ofaTVAFormStore *store, ofoDossier *dossier, const ofoTVAForm *form, Gt
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
-			TVA_COL_MNEMO,     ofo_tva_form_get_mnemo( form ),
-			TVA_COL_LABEL,     ofo_tva_form_get_label( form ),
-			TVA_COL_UPD_USER,  ofo_tva_form_get_upd_user( form ),
-			TVA_COL_UPD_STAMP, stamp,
-			TVA_COL_OBJECT,    form,
+			TVA_FORM_COL_MNEMO,     ofo_tva_form_get_mnemo( form ),
+			TVA_FORM_COL_LABEL,     ofo_tva_form_get_label( form ),
+			TVA_FORM_COL_UPD_USER,  ofo_tva_form_get_upd_user( form ),
+			TVA_FORM_COL_UPD_STAMP, stamp,
+			TVA_FORM_COL_OBJECT,    form,
 			-1 );
 
 	g_free( stamp );
@@ -309,7 +309,7 @@ find_form_by_mnemo( ofaTVAFormStore *store, const gchar *code, GtkTreeIter *iter
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, TVA_COL_MNEMO, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, TVA_FORM_COL_MNEMO, &str, -1 );
 			cmp = g_utf8_collate( str, code );
 			g_free( str );
 			if( cmp == 0 ){

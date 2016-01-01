@@ -282,20 +282,23 @@ dbmodel_to_v3( const ofaIDBConnect *connect, guint version )
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS ("
-			"	TFO_MNEMO          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
+			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_LABEL          VARCHAR(80)                  COMMENT 'Form label',"
+			"	TFO_HAS_CORRESPONDENCE CHAR(1)                  COMMENT 'Whether this form has a correspondence frame',"
 			"	TFO_NOTES          VARCHAR(4096)                COMMENT 'Notes',"
 			"	TFO_VALIDATED      CHAR(1)      DEFAULT 'N'     COMMENT 'Whether this declaration is validated',"
 			"	TFO_BEGIN          DATE                         COMMENT 'Declaration period begin',"
-			"	TFO_END            DATE                         COMMENT 'Declaration period end',"
+			"	TFO_END            DATE         NOT NULL        COMMENT 'Declaration period end',"
 			"	TFO_UPD_USER       VARCHAR(20)                  COMMENT 'User responsible of last update',"
-			"	TFO_UPD_STAMP      TIMESTAMP                    COMMENT 'Last update timestamp')", TRUE )){
+			"	TFO_UPD_STAMP      TIMESTAMP                    COMMENT 'Last update timestamp',"
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_END))", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_DET ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_END            DATE         NOT NULL        COMMENT 'Declaration period end',"
 			"	TFO_DET_ROW        INTEGER      NOT NULL        COMMENT 'Form line number',"
 			"	TFO_DET_LEVEL      INTEGER                      COMMENT 'Detail line level',"
 			"	TFO_DET_CODE       VARCHAR(10)                  COMMENT 'Form line code',"
@@ -304,17 +307,18 @@ dbmodel_to_v3( const ofaIDBConnect *connect, guint version )
 			"	TFO_DET_BASE       VARCHAR(80)                  COMMENT 'Detail base',"
 			"	TFO_DET_HAS_AMOUNT CHAR(1)                      COMMENT 'whether the form line has an amount',"
 			"	TFO_DET_AMOUNT     VARCHAR(80)                  COMMENT 'Line amount computing rule',"
-			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_DET_ROW))", TRUE )){
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_END,TFO_DET_ROW))", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_BOOL ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_END            DATE         NOT NULL        COMMENT 'Declaration period end',"
 			"	TFO_BOOL_ROW       INTEGER      NOT NULL        COMMENT 'Form line number',"
 			"	TFO_BOOL_LABEL     VARCHAR(192)                 COMMENT 'Form line label',"
 			"	TFO_BOOL_TRUE      CHAR(1)                      COMMENT 'Whether this boolean is set',"
-			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_BOOL_ROW))", TRUE )){
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_END,TFO_BOOL_ROW))", TRUE )){
 		return( FALSE );
 	}
 

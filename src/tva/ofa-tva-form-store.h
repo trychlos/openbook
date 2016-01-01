@@ -80,12 +80,12 @@ typedef struct {
  * The columns stored in the subjacent #GtkListStore.
  */
 enum {
-	TVA_COL_MNEMO = 0,
-	TVA_COL_LABEL,
-	TVA_COL_NOTES,
-	TVA_COL_UPD_USER,
-	TVA_COL_UPD_STAMP,
-	TVA_COL_OBJECT,
+	TVA_FORM_COL_MNEMO = 0,
+	TVA_FORM_COL_LABEL,
+	TVA_FORM_COL_NOTES,
+	TVA_FORM_COL_UPD_USER,
+	TVA_FORM_COL_UPD_STAMP,
+	TVA_FORM_COL_OBJECT,
 	TVA_N_COLUMNS
 };
 
@@ -94,11 +94,11 @@ enum {
  * The columns displayed in the views.
  */
 typedef enum {
-	TVA_DISP_MNEMO     = 1 << 0,
-	TVA_DISP_LABEL     = 1 << 1,
-	TVA_DISP_NOTES     = 1 << 2,
-	TVA_DISP_UPD_USER  = 1 << 3,
-	TVA_DISP_UPD_STAMP = 1 << 4
+	TVA_FORM_DISP_MNEMO     = 1 << 0,
+	TVA_FORM_DISP_LABEL     = 1 << 1,
+	TVA_FORM_DISP_NOTES     = 1 << 2,
+	TVA_FORM_DISP_UPD_USER  = 1 << 3,
+	TVA_FORM_DISP_UPD_STAMP = 1 << 4
 }
 	ofaTVAFormColumns;
 
