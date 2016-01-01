@@ -729,7 +729,7 @@ my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
 /**
  * my_editable_date_get_date:
  * @editable: this #GtkEditable instance.
- * @valid: [out]: whether the current date is valid or not
+ * @valid: [allow-none][out]: whether the current date is valid or not
  *
  * A pointer to the current date. This pointer is read-only and should
  * not be cleared nor modified by the caller.
