@@ -34,7 +34,8 @@
  *
  * We are running this dialog either with an already recorded
  * declaration which is here displayed or updated, or with a new
- * declaration from a form.
+ * declaration from a form. This new declaration is nonetheless
+ * already recorded, with an end date.
  *
  * Development rules:
  * - type:       dialog
