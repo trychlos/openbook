@@ -181,12 +181,10 @@ setup_form_treeview( ofaTVAManagePage *self )
 	priv = self->priv;
 
 	frame = gtk_frame_new( NULL );
-	my_utils_widget_set_margin( frame, 0, 4, 4, 0 );
+	my_utils_widget_set_margin( frame, 4, 4, 4, 0 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_set_border_width( GTK_CONTAINER( scrolled ), 0 );
-	gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
 
 	tview = gtk_tree_view_new();
@@ -253,7 +251,7 @@ v_setup_buttons( ofaPage *page )
 
 	priv->declare_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "D_eclare from form..." ), G_CALLBACK( on_declare_clicked ), page );
+					buttons_box, _( "Declare from _form..." ), G_CALLBACK( on_declare_clicked ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }

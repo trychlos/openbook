@@ -62,6 +62,7 @@ struct _ofaTVAFormPropertiesPrivate {
 	GtkWidget     *bool_grid;
 	GtkWidget     *det_grid;
 	GtkWidget     *ok_btn;
+	GtkWidget     *msg_label;
 
 	/* data
 	 */
@@ -130,6 +131,7 @@ static void     check_for_enable_dlg( ofaTVAFormProperties *self );
 static gboolean is_dialog_validable( ofaTVAFormProperties *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_update( ofaTVAFormProperties *self );
+static void     set_message( ofaTVAFormProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, MY_TYPE_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
@@ -661,22 +663,24 @@ is_dialog_validable( ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	gboolean ok, exists, subok;
+	gchar *msgerr;
 
 	priv = self->priv;
-	ok = ofo_tva_form_is_valid( priv->dossier, priv->mnemo);
+	msgerr = NULL;
+	ok = ofo_tva_form_is_valid( priv->dossier, priv->mnemo, &msgerr );
 	//g_debug( "is_dialog_validable: is_valid=%s", ok ? "True":"False" );
 
 	if( ok ){
 		exists = ( ofo_tva_form_get_by_mnemo( priv->dossier, priv->mnemo ) != NULL );
-		//g_debug( "is_dialog_validable: exists=%s", exists ? "True":"False" );
-		//g_debug( "is_dialog_validable: is_new=%s", priv->is_new ? "True":"False" );
 		subok = !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
-		//g_debug( "is_dialog_validable: subok=%s", subok ? "True":"False" );
 		ok = !exists || subok;
-		//g_debug( "is_dialog_validable: ok=%s", ok ? "True":"False" );
-		/* ok &= something does not work */
+		if( !ok ){
+			msgerr = g_strdup( _( "Mnemonic is already defined" ));
+		}
 	}
+	set_message( self, msgerr );
+	g_free( msgerr );
 
 	return( ok );
 }
@@ -769,4 +773,23 @@ do_update( ofaTVAFormProperties *self )
 	g_free( prev_mnemo );
 
 	return( priv->updated );
+}
+
+static void
+set_message( ofaTVAFormProperties *dialog, const gchar *msg )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+
+	priv = dialog->priv;
+
+	if( !priv->msg_label ){
+		priv->msg_label =
+				my_utils_container_get_child_by_name(
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
+						"px-msgerr" );
+		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+		my_utils_widget_set_style( priv->msg_label, "labelerror");
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

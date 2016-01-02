@@ -461,7 +461,7 @@ tva_form_load_dataset( ofoDossier *dossier )
  * @dossier:
  * @mnemo:
  *
- * Returns: the searched tva formula, or %NULL.
+ * Returns: the searched tva form, or %NULL.
  *
  * The returned object is owned by the #ofoTVAForm class, and should
  * not be unreffed by the caller.
@@ -730,16 +730,31 @@ ofo_tva_form_is_deletable( const ofoTVAForm *form, ofoDossier *dossier )
  * ofo_tva_form_is_valid:
  * @dossier:
  * @mnemo:
+ * @msgerr: [allow-none][out]:
  *
  * Returns: %TRUE if provided datas are enough to make the future
  * #ofoTVAForm valid, %FALSE else.
  */
 gboolean
-ofo_tva_form_is_valid( ofoDossier *dossier, const gchar *mnemo )
+ofo_tva_form_is_valid( ofoDossier *dossier, const gchar *mnemo, gchar **msgerr )
 {
+	gboolean ok;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( my_strlen( mnemo ));
+	ok = TRUE;
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	if( !my_strlen( mnemo )){
+		ok = FALSE;
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty mnemonic" ));
+		}
+	}
+
+	return( ok );
 }
 
 /**

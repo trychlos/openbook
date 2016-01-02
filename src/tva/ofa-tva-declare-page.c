@@ -57,7 +57,6 @@ struct _ofaTVADeclarePagePrivate {
 	GtkWidget    *record_treeview;
 	GtkWidget    *update_btn;
 	GtkWidget    *delete_btn;
-	GtkWidget    *validate_btn;
 
 	/* runtime
 	 */
@@ -77,8 +76,6 @@ static void          on_delete_clicked( GtkButton *button, ofaTVADeclarePage *pa
 static void          try_to_delete_current_row( ofaTVADeclarePage *page );
 static void          do_delete( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean      delete_confirmed( ofaTVADeclarePage *self, ofoTVARecord *record );
-static void          on_validate_clicked( GtkButton *button, ofaTVADeclarePage *page );
-static void          do_validate( ofaTVADeclarePage *page, ofoTVARecord *record );
 
 G_DEFINE_TYPE( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE )
 
@@ -182,12 +179,10 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	priv = self->priv;
 
 	frame = gtk_frame_new( NULL );
-	my_utils_widget_set_margin( frame, 0, 4, 4, 0 );
+	my_utils_widget_set_margin( frame, 4, 4, 4, 0 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_set_border_width( GTK_CONTAINER( scrolled ), 0 );
-	gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
 
 	tview = gtk_tree_view_new();
@@ -275,10 +270,6 @@ v_setup_buttons( ofaPage *page )
 
 	ofa_buttons_box_add_spacer( buttons_box );
 
-	priv->validate_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "_Validate" ), G_CALLBACK( on_validate_clicked ), page );
-
 	return( GTK_WIDGET( buttons_box ));
 }
 
@@ -342,11 +333,6 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
 				priv->editable && is_record && ofo_tva_record_is_deletable( record, priv->dossier ));
-	}
-
-	if( priv->validate_btn ){
-		gtk_widget_set_sensitive( priv->validate_btn,
-				priv->editable && is_record && ofo_tva_record_is_validable( record ));
 	}
 }
 
@@ -453,27 +439,4 @@ delete_confirmed( ofaTVADeclarePage *self, ofoTVARecord *record )
 	g_free( send );
 
 	return( delete_ok );
-}
-
-/*
- * new declaration from the currently selected form
- */
-static void
-on_validate_clicked( GtkButton *button, ofaTVADeclarePage *page )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVARecord *record;
-
-	record = treeview_get_selected( page, &tmodel, &iter );
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
-
-	do_validate( page, record );
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
-}
-
-static void
-do_validate( ofaTVADeclarePage *page, ofoTVARecord *record )
-{
 }

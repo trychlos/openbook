@@ -65,6 +65,8 @@ static void     insert_row( ofaTVARecordStore *store, ofoDossier *dossier, const
 static void     set_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *record, GtkTreeIter *iter );
 static void     setup_signaling_connect( ofaTVARecordStore *store, ofoDossier *dossier );
 static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store );
+static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store );
+static gboolean find_record_by_key( ofaTVARecordStore *store, const gchar *mnemo, const GDate *end, GtkTreeIter *iter );
 static gboolean find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTreeIter *iter );
 static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store );
 static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaTVARecordStore *store );
@@ -262,6 +264,10 @@ setup_signaling_connect( ofaTVARecordStore *store, ofoDossier *dossier )
 
 	g_signal_connect(
 			G_OBJECT( dossier ),
+			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), store );
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
 			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
 
 	g_signal_connect(
@@ -285,8 +291,32 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store )
 	}
 }
 
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store )
+{
+	static const gchar *thisfn = "ofa_tva_record_store_on_updated_object";
+	GtkTreeIter iter;
+	const gchar *mnemo;
+	const GDate *dend;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, store=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) store );
+
+	if( OFO_IS_TVA_RECORD( object )){
+		mnemo = ofo_tva_record_get_mnemo( OFO_TVA_RECORD( object ));
+		dend = ofo_tva_record_get_end( OFO_TVA_RECORD( object ));
+		if( find_record_by_key( store, mnemo, dend, &iter )){
+			set_row( store, dossier, OFO_TVA_RECORD( object ), &iter);
+		}
+	}
+}
+
 static gboolean
-find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTreeIter *iter )
+find_record_by_key( ofaTVARecordStore *store, const gchar *mnemo, const GDate *end, GtkTreeIter *iter )
 {
 	ofoTVARecord *iter_obj;
 	gint cmp;
@@ -295,7 +325,34 @@ find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTre
 		while( TRUE ){
 			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, TVA_RECORD_COL_OBJECT, &iter_obj, -1 );
 			g_object_unref( iter_obj );
-			cmp = ofo_tva_record_compare_id( record, iter_obj );
+			cmp = ofo_tva_record_compare_by_key( iter_obj, mnemo, end );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTreeIter *iter )
+{
+	ofoTVARecord *iter_obj;
+	const gchar *mnemo;
+	const GDate *dend;
+	gint cmp;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+		mnemo = ofo_tva_record_get_mnemo( record );
+		dend = ofo_tva_record_get_end( record );
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, TVA_RECORD_COL_OBJECT, &iter_obj, -1 );
+			g_object_unref( iter_obj );
+			cmp = ofo_tva_record_compare_by_key( iter_obj, mnemo, dend );
 			if( cmp == 0 ){
 				return( TRUE );
 			}

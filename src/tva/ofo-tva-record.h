@@ -71,9 +71,12 @@ typedef struct {
 GType           ofo_tva_record_get_type              ( void ) G_GNUC_CONST;
 
 GList          *ofo_tva_record_get_dataset           ( ofoDossier *dossier );
+ofoTVARecord   *ofo_tva_record_get_by_key            ( ofoDossier *dossier, const gchar *mnemo, const GDate *end );
 
 ofoTVARecord   *ofo_tva_record_new                   ( void );
 ofoTVARecord   *ofo_tva_record_new_from_form         ( const ofoTVAForm *form );
+
+void            ofo_tva_record_dump                  ( const ofoTVARecord *record );
 
 const gchar    *ofo_tva_record_get_mnemo             ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_label             ( const ofoTVARecord *record );
@@ -88,7 +91,9 @@ const GTimeVal *ofo_tva_record_get_upd_stamp         ( const ofoTVARecord *recor
 gboolean        ofo_tva_record_is_deletable          ( const ofoTVARecord *record, const ofoDossier *dossier );
 gboolean        ofo_tva_record_is_validable          ( const ofoTVARecord *record );
 
-gint            ofo_tva_record_compare_id            ( const ofoTVARecord *a, const ofoTVARecord *b );
+gint            ofo_tva_record_compare_by_key        ( const ofoTVARecord *record,
+															const gchar *mnemo,
+															const GDate *end );
 
 void            ofo_tva_record_set_mnemo             ( ofoTVARecord *record, const gchar *mnemo );
 void            ofo_tva_record_set_label             ( ofoTVARecord *record, const gchar *label );
@@ -99,13 +104,13 @@ void            ofo_tva_record_set_begin             ( ofoTVARecord *record, con
 void            ofo_tva_record_set_end               ( ofoTVARecord *record, const GDate *date );
 
 void            ofo_tva_record_detail_add            ( ofoTVARecord *record,
-														guint level,
-														const gchar *code,
-														const gchar *label,
-														gboolean has_base,
-														const gchar *base,
-														gboolean has_amount,
-														const gchar *amount );
+															guint level,
+															const gchar *code,
+															const gchar *label,
+															gboolean has_base,
+															const gchar *base,
+															gboolean has_amount,
+															const gchar *amount );
 
 void            ofo_tva_record_detail_free_all       ( ofoTVARecord *record );
 
@@ -132,7 +137,7 @@ const gchar    *ofo_tva_record_boolean_get_label     ( const ofoTVARecord *recor
 gboolean        ofo_tva_record_boolean_get_is_true   ( const ofoTVARecord *record, guint idx );
 
 gboolean        ofo_tva_record_insert                ( ofoTVARecord *record, ofoDossier *dossier );
-gboolean        ofo_tva_record_update                ( ofoTVARecord *record, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_tva_record_update                ( ofoTVARecord *record, ofoDossier *dossier );
 gboolean        ofo_tva_record_delete                ( ofoTVARecord *record, ofoDossier *dossier );
 
 G_END_DECLS
