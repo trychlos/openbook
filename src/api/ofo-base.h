@@ -69,8 +69,8 @@ G_BEGIN_DECLS
  * #ofoBase object.
  */
 #define ofo_base_setter(C,V,T,I,D)			\
-		g_return_if_fail( OFO_IS_ ## C(V)); \
-		if( OFO_BASE(V)->prot->dispose_has_run ) return; \
+		g_return_if_fail((V) && OFO_IS_ ## C(V)); \
+		g_return_if_fail( !OFO_BASE(V)->prot->dispose_has_run ); \
 		ofa_box_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
 GList *ofo_base_init_fields_list( const ofsBoxDef *defs );
