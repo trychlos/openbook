@@ -110,6 +110,7 @@
  311 2014- 9-21 editing CA12 VAT declaration
      2015-11-14 due to new VAT declaration rules, must also provide a
                 monthly CA3
+     2016- 1- 2 have a form and recordable declarations
 
  312 2014- 9-22 myEditableAmount: should limit the count of decimals
 
@@ -488,9 +489,9 @@
                 for plugins => implies to have a core lib and a ui lib
      2015-12-27 have to choose between api/ui or api-ui styles
 
- 939 2015-12-21 ofoTVAForm: make it importable
+ 939 2015-12-21 tva/ofoTVAForm: make it importable
 
- 940 2015-12-21 ofoTVAForm: make it exportable
+ 940 2015-12-21 tva/ofoTVAForm: make it exportable
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)
