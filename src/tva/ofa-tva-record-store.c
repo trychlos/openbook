@@ -184,20 +184,30 @@ ofa_tva_record_store_new( ofoDossier *dossier )
 
 /*
  * sorting the store per record code
+ * we are sorting by mnemo asc, end date desc
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *store )
 {
-	gchar *amnemo, *bmnemo;
+	ofoTVARecord *aobj, *bobj;
+	gchar *aend, *bend;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, TVA_RECORD_COL_MNEMO, &amnemo, -1 );
-	gtk_tree_model_get( tmodel, b, TVA_RECORD_COL_MNEMO, &bmnemo, -1 );
+	gtk_tree_model_get( tmodel, a, TVA_RECORD_COL_OBJECT, &aobj, -1 );
+	g_object_unref( aobj );
 
-	cmp = g_utf8_collate( amnemo, bmnemo );
+	gtk_tree_model_get( tmodel, b, TVA_RECORD_COL_OBJECT, &bobj, -1 );
+	g_object_unref( bobj );
 
-	g_free( amnemo );
-	g_free( bmnemo );
+	cmp = g_utf8_collate( ofo_tva_record_get_mnemo( aobj ), ofo_tva_record_get_mnemo( bobj ));
+
+	if( cmp == 0 ){
+		aend = my_date_to_str( ofo_tva_record_get_end( aobj ), MY_DATE_SQL );
+		bend = my_date_to_str( ofo_tva_record_get_end( bobj ), MY_DATE_SQL );
+		cmp = -1 * g_utf8_collate( aend, bend );
+		g_free( aend );
+		g_free( bend );
+	}
 
 	return( cmp );
 }
