@@ -45,11 +45,12 @@
             </child>
             <child>
               <object class="GtkButton" id="ok-btn">
-                <property name="label">_Record</property>
+                <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
+                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -321,6 +322,33 @@
                             <property name="vexpand">True</property>
                             <property name="row_spacing">2</property>
                             <property name="column_spacing">2</property>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
                           </object>
                         </child>
                       </object>
