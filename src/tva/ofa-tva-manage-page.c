@@ -500,6 +500,7 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *page )
 	form = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 	do_declare( page, form );
+
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 

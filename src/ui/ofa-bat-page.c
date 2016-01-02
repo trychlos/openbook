@@ -249,7 +249,7 @@ on_update_clicked( GtkButton *button, ofaBatPage *page )
 		ofa_bat_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), bat );
 	}
 
-	gtk_widget_grab_focus( ofa_bat_treeview_get_treeview( priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -263,8 +263,8 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
 	if( bat ){
 		g_return_if_fail( ofo_bat_is_deletable( bat, ofa_page_get_dossier( OFA_PAGE( page ))));
 		ofa_bat_treeview_delete_bat( priv->tview, bat );
-		gtk_widget_grab_focus( ofa_bat_treeview_get_treeview( priv->tview ));
 	}
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 /*
@@ -275,4 +275,5 @@ static void
 on_import_clicked( GtkButton *button, ofaBatPage *page )
 {
 	ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }

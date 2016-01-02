@@ -427,6 +427,8 @@ on_new_clicked( GtkButton *button, ofaCurrencyPage *page )
 	} else {
 		g_object_unref( currency );
 	}
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -494,24 +496,22 @@ on_update_clicked( GtkButton *button, ofaCurrencyPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
 on_delete_clicked( GtkButton *button, ofaCurrencyPage *page )
 {
-	ofaCurrencyPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	priv = page->priv;
 	currency = tview_get_selected( page, &tmodel, &iter );
 	if( currency ){
 		do_delete( page, currency, tmodel, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void

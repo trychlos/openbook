@@ -508,18 +508,19 @@
                 ofoDossier
 
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
-                intrinsic of take into account dossier_is_current
+                intrinsic or take into account dossier_is_current
 
  951 2015-12-31 review the DB model upgrade to be more explicit on
                 plugins DB model updates
-
- 952 2016- 1- 1 gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 
  953
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 952 2016- 1- 1 gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+     2016- 1- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -611,6 +611,8 @@ on_new_clicked( GtkButton *button, ofaRatePage *page )
 	} else {
 		g_object_unref( rate );
 	}
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -654,7 +656,7 @@ on_update_clicked( GtkButton *button, ofaRatePage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -705,7 +707,7 @@ on_delete_clicked( GtkButton *button, ofaRatePage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static gboolean

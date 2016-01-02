@@ -323,6 +323,8 @@ on_new_clicked( GtkButton *button, ofaLedgerPage *page )
 	} else {
 		g_object_unref( ledger );
 	}
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -343,6 +345,8 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 	ofa_ledger_treeview_free_selected( selected );
 
 	do_update( page, ledger );
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -379,7 +383,6 @@ on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
 	ofoLedger *ledger;
 	GList *selected;
 	const gchar *mnemo;
-	GtkWidget *view;
 
 	priv = page->priv;
 	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
@@ -399,10 +402,7 @@ on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
 		 * class, graceful to the dossier signaling system */
 	}
 
-	view = ofa_ledger_treeview_get_top_focusable_widget( priv->tview );
-	if( view ){
-		gtk_widget_grab_focus( view );
-	}
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static gboolean

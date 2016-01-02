@@ -498,6 +498,8 @@ on_new_clicked( GtkButton *button, ofaClassPage *page )
 
 		g_object_unref( class );
 	}
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -512,7 +514,7 @@ on_update_clicked( GtkButton *button, ofaClassPage *page )
 		ofa_class_properties_run(
 				ofa_page_get_main_window( OFA_PAGE( page )), class );
 	}
-	gtk_widget_grab_focus( GTK_WIDGET( page->priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
@@ -526,7 +528,7 @@ on_delete_clicked( GtkButton *button, ofaClassPage *page )
 	if( class ){
 		do_delete( page, class, tmodel, &iter );
 	}
-	gtk_widget_grab_focus( GTK_WIDGET( page->priv->tview ));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
