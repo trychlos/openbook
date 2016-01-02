@@ -54,7 +54,6 @@ struct _ofaTVARecordPropertiesPrivate {
 	ofoDossier    *dossier;
 	gboolean       is_current;
 	ofoTVARecord  *tva_record;
-	gboolean       is_new;
 	gboolean       updated;
 
 	/* UI
@@ -97,7 +96,6 @@ static void     check_for_enable_dlg( ofaTVARecordProperties *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_update( ofaTVARecordProperties *self );
 static void     on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void     set_message( ofaTVARecordProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE( ofaTVARecordProperties, ofa_tva_record_properties, MY_TYPE_DIALOG )
 
@@ -143,7 +141,6 @@ ofa_tva_record_properties_init( ofaTVARecordProperties *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_RECORD_PROPERTIES, ofaTVARecordPropertiesPrivate );
 
-	self->priv->is_new = FALSE;
 	self->priv->updated = FALSE;
 }
 
@@ -222,12 +219,7 @@ v_init_dialog( myDialog *dialog )
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 	send = my_date_to_str( ofo_tva_record_get_end( priv->tva_record ), MY_DATE_SQL );
-	if( !my_strlen( send )){
-		priv->is_new = TRUE;
-		title = g_strdup_printf( _( "New declaration from « %s » TVA form" ), mnemo );
-	} else {
-		title = g_strdup_printf( _( "Updating « %s - %s » TVA record" ), mnemo, send );
-	}
+	title = g_strdup_printf( _( "Updating « %s - %s » TVA declaration" ), mnemo, send );
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 	g_free( send );
 
@@ -507,41 +499,19 @@ on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self )
 }
 
 /*
- * must have an end date to be able to record the declaration
  * must have both begin and end dates to validate it
  */
 static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	const GDate *dend;
-	const gchar *mnemo;
-	gboolean ok_valid, exists, is_validated;
-	gchar *msgerr;
+	gboolean is_validated;
 
 	priv = self->priv;
-	msgerr = NULL;
-	ok_valid = FALSE;
-
-	dend = ofo_tva_record_get_end( priv->tva_record );
-	if( !my_date_is_valid( dend )){
-		msgerr = g_strdup( _( "End date is not valid" ));
-	} else {
-		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( priv->dossier, mnemo, dend ) != NULL );
-		if( priv->is_new && exists ){
-			msgerr = g_strdup( _( "Same declaration is already defined" ));
-		} else {
-			ok_valid = TRUE;
-		}
-	}
-
-	set_message( self, msgerr );
-	g_free( msgerr );
 
 	gtk_widget_set_sensitive(
 			priv->ok_btn,
-			ok_valid );
+			TRUE );
 
 	is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
 	gtk_widget_set_sensitive(
@@ -608,13 +578,7 @@ do_update( ofaTVARecordProperties *self )
 		}
 	}
 
-	if( priv->is_new ){
-		priv->updated =
-				ofo_tva_record_insert( priv->tva_record, priv->dossier );
-	} else {
-		priv->updated =
-				ofo_tva_record_update( priv->tva_record, priv->dossier );
-	}
+	priv->updated = ofo_tva_record_update( priv->tva_record, priv->dossier );
 
 	return( priv->updated );
 }
@@ -635,23 +599,4 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))), GTK_RESPONSE_OK );
 	}
-}
-
-static void
-set_message( ofaTVARecordProperties *dialog, const gchar *msg )
-{
-	ofaTVARecordPropertiesPrivate *priv;
-
-	priv = dialog->priv;
-
-	if( !priv->msg_label ){
-		priv->msg_label =
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-						"px-msgerr" );
-		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-		my_utils_widget_set_style( priv->msg_label, "labelerror");
-	}
-
-	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }
