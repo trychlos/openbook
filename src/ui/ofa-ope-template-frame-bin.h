@@ -35,6 +35,8 @@
  *
  * The class also acts as a proxy for "changed" and "activated" messages
  * sent by the underlying ofaOpeTemplateStore class.
+ *
+ * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-main-window-def.h"

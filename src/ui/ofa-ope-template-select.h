@@ -32,6 +32,8 @@
  *
  * Display the notebook of the operation templates, letting the user
  * edit or select one.
+ *
+ * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/my-dialog.h"

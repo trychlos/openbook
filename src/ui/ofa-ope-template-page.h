@@ -31,6 +31,8 @@
  * @include: ui/ofa-ope_templates-set.h
  *
  * Display entering ope_templates.
+ *
+ * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-page-def.h"

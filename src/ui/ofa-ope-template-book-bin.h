@@ -45,6 +45,8 @@
  * ledger.
  * So attaching to the parent widget should be called before setting
  * the main window, so that the treeviews are rightly created.
+ *
+ * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-main-window-def.h"

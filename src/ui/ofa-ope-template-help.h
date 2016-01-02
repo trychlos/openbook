@@ -32,6 +32,8 @@
  *
  * A non-modal dialog box which display an help about operation
  * templates.
+ *
+ * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-main-window-def.h"
