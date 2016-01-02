@@ -167,8 +167,9 @@ libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo \
 	ofa-tva-dbcustomer.lo ofa-tva-declare-page.lo \
 	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
-	ofa-tva-manage-page.lo ofa-tva-record-properties.lo \
-	ofa-tva-record-store.lo ofo-tva-form.lo ofo-tva-record.lo
+	ofa-tva-manage-page.lo ofa-tva-record-new.lo \
+	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
+	ofo-tva-form.lo ofo-tva-record.lo
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -434,6 +435,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-form-store.h							\
 	ofa-tva-manage-page.c							\
 	ofa-tva-manage-page.h							\
+	ofa-tva-record-new.c							\
+	ofa-tva-record-new.h							\
 	ofa-tva-record-properties.c						\
 	ofa-tva-record-properties.h						\
 	ofa-tva-record-store.c							\
@@ -456,6 +459,7 @@ libofa_tva_la_LDFLAGS = \
 
 ui_files = \
 	ofa-tva-form-properties.ui						\
+	ofa-tva-record-new.ui							\
 	ofa-tva-record-properties.ui					\
 	$(NULL)
 
@@ -555,6 +559,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-manage-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-new.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva.Plo@am__quote@

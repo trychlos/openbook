@@ -48,6 +48,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-form-store.h							\
 	ofa-tva-manage-page.c							\
 	ofa-tva-manage-page.h							\
+	ofa-tva-record-new.c							\
+	ofa-tva-record-new.h							\
 	ofa-tva-record-properties.c						\
 	ofa-tva-record-properties.h						\
 	ofa-tva-record-store.c							\
@@ -70,6 +72,7 @@ libofa_tva_la_LDFLAGS = \
 
 ui_files = \
 	ofa-tva-form-properties.ui						\
+	ofa-tva-record-new.ui							\
 	ofa-tva-record-properties.ui					\
 	$(NULL)
 
