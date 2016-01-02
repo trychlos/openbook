@@ -43,6 +43,7 @@
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofa-tva-form-store.h"
 #include "tva/ofa-tva-manage-page.h"
+#include "tva/ofa-tva-record-new.h"
 #include "tva/ofa-tva-record-properties.h"
 #include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
@@ -53,15 +54,16 @@ struct _ofaTVAManagePagePrivate {
 
 	/* internals
 	 */
-	ofoDossier *dossier;
-	gboolean    editable;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	gboolean             editable;
 
 	/* UI
 	 */
-	GtkWidget  *form_treeview;
-	GtkWidget  *update_btn;
-	GtkWidget  *delete_btn;
-	GtkWidget  *declare_btn;
+	GtkWidget           *form_treeview;
+	GtkWidget           *update_btn;
+	GtkWidget           *delete_btn;
+	GtkWidget           *declare_btn;
 };
 
 static GtkWidget  *v_setup_view( ofaPage *page );
@@ -154,6 +156,7 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
+	priv->main_window = ofa_page_get_main_window( page );
 	priv->dossier = ofa_page_get_dossier( page );
 	priv->editable = ofo_dossier_is_current( priv->dossier );
 
@@ -353,11 +356,13 @@ treeview_get_selected( ofaTVAManagePage *page, GtkTreeModel **tmodel, GtkTreeIte
 static void
 on_new_clicked( GtkButton *button, ofaTVAManagePage *page )
 {
+	ofaTVAManagePagePrivate *priv;
 	ofoTVAForm *form;
 
+	priv = page->priv;
 	form = ofo_tva_form_new();
 
-	if( ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form )){
+	if( ofa_tva_form_properties_run( priv->main_window, form )){
 		select_row_by_object( page, form );
 
 	} else {
@@ -400,14 +405,16 @@ select_row_by_object( ofaTVAManagePage *page, ofoTVAForm *object )
 static void
 on_update_clicked( GtkButton *button, ofaTVAManagePage *page )
 {
+	ofaTVAManagePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
 
+	priv = page->priv;
 	form = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), form );
+	ofa_tva_form_properties_run( priv->main_window, form );
 	/* update is taken into account by dossier signaling system */
 
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
@@ -499,9 +506,13 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *page )
 static void
 do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 {
+	ofaTVAManagePagePrivate *priv;
 	ofoTVARecord *record;
 
+	priv = page->priv;
 	record = ofo_tva_record_new_from_form( form );
-	ofa_tva_record_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), record );
+	if( ofa_tva_record_new_run( priv->main_window, record )){
+		ofa_tva_record_properties_run( priv->main_window, record );
+	}
 	g_object_unref( record );
 }
