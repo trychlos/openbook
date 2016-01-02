@@ -33,6 +33,28 @@
  * This file defines the #ofoTVAForm class behavior.
  *
  * An #ofoTVAForm describes a TVA form.
+ *
+ * A form here is the exact image of the form asked by the
+ * administration. Both bases and taxes are:
+ * - either directly taken from an account,
+ * - either computed from another field of the form.
+ *
+ * The language used here is mainly a substituting system where final
+ * values are just the content of the fields after having replaced the
+ * substitution tokens.
+ * A substitution token is identified by a percent character '%',
+ * followed by an uppercase letter. Unrecognized tokens are just
+ * reconducted as-is to the output string.
+ * Tokens are case sensitive.
+ *
+ * Tokens may be:
+ *
+ * 1/ a function, arguments being passed between parenthesis:
+ *    - '%ROW()': returns the amount of the row whose code name is
+ *                identified by the argument
+ *    - '%ACCOUNT()': returns the balance of the specified account at
+ *                the date specified by declaration end_date.
+ *    The opening parenthesis must immediately follow the function name.
  */
 
 #include "api/ofo-base-def.h"
