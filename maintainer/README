@@ -65,5 +65,8 @@
    OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf
      gdb ./_install/bin/openbook
 
+ Total lines count:
+ for f in $(find src -type f | grep -E 'c$|h$|ui$|am$'); do c=$(wc -l $f | awk '{ print $1 }'); let total+=$c; done; echo $total
+
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2015, apr. 23rd.
