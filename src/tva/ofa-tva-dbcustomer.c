@@ -297,16 +297,18 @@ dbmodel_to_v3( const ofaIDBConnect *connect, guint version )
 
 	if( !ofa_idbconnect_query( connect,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_DET ("
-			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
-			"	TFO_END            DATE         NOT NULL        COMMENT 'Declaration period end',"
-			"	TFO_DET_ROW        INTEGER      NOT NULL        COMMENT 'Form line number',"
-			"	TFO_DET_LEVEL      INTEGER                      COMMENT 'Detail line level',"
-			"	TFO_DET_CODE       VARCHAR(10)                  COMMENT 'Form line code',"
-			"	TFO_DET_LABEL      VARCHAR(192)                 COMMENT 'Form line label',"
-			"	TFO_DET_HAS_BASE   CHAR(1)                      COMMENT 'Whether detail line has a base amount',"
-			"	TFO_DET_BASE       VARCHAR(80)                  COMMENT 'Detail base',"
-			"	TFO_DET_HAS_AMOUNT CHAR(1)                      COMMENT 'whether the form line has an amount',"
-			"	TFO_DET_AMOUNT     VARCHAR(80)                  COMMENT 'Line amount computing rule',"
+			"	TFO_MNEMO           VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
+			"	TFO_END             DATE         NOT NULL        COMMENT 'Declaration period end',"
+			"	TFO_DET_ROW         INTEGER      NOT NULL        COMMENT 'Form line number',"
+			"	TFO_DET_LEVEL       INTEGER                      COMMENT 'Detail line level',"
+			"	TFO_DET_CODE        VARCHAR(10)                  COMMENT 'Form line code',"
+			"	TFO_DET_LABEL       VARCHAR(192)                 COMMENT 'Form line label',"
+			"	TFO_DET_HAS_BASE    CHAR(1)                      COMMENT 'Whether detail line has a base amount',"
+			"	TFO_DET_BASE_RULE   VARCHAR(80)                  COMMENT 'Detail base computing rule',"
+			"	TFO_DET_BASE        DECIMAL(20,5)                COMMENT 'Detail base',"
+			"	TFO_DET_HAS_AMOUNT  CHAR(1)                      COMMENT 'whether the form line has an amount',"
+			"	TFO_DET_AMOUNT_RULE VARCHAR(80)                  COMMENT 'Line amount computing rule',"
+			"	TFO_DET_AMOUNT      DECIMAL(20,5)                COMMENT 'Line amount',"
 			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_END,TFO_DET_ROW))", TRUE )){
 		return( FALSE );
 	}

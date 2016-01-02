@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-idataset.h"
@@ -62,9 +63,11 @@ enum {
 	TFO_DET_CODE,
 	TFO_DET_LABEL,
 	TFO_DET_HAS_BASE,
+	TFO_DET_BASE_RULE,
 	TFO_DET_BASE,
 	TFO_DET_HAS_AMOUNT,
-	TFO_DET_AMOUNT
+	TFO_DET_AMOUNT_RULE,
+	TFO_DET_AMOUNT,
 };
 
 /*
@@ -143,16 +146,24 @@ static const ofsBoxDef st_details_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_BASE ),
+		{ OFA_BOX_CSV( TFO_DET_BASE_RULE ),
 				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_BASE ),
+				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_HAS_AMOUNT ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
+		{ OFA_BOX_CSV( TFO_DET_AMOUNT_RULE ),
 				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
+				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
 		{ 0 }
@@ -186,8 +197,8 @@ struct _ofoTVARecordPrivate {
 
 	/* the details of the record as a GList of GList fields
 	 */
-	GList     *bools;
-	GList     *details;
+	GList *bools;
+	GList *details;
 };
 
 /* a structure to compare mnemos and end dates
@@ -486,9 +497,11 @@ ofo_tva_record_new_from_form( const ofoTVAForm *form )
 					ofo_tva_form_detail_get_code( form, i ),
 					ofo_tva_form_detail_get_label( form, i ),
 					ofo_tva_form_detail_get_has_base( form, i ),
-					NULL,
+					ofo_tva_form_detail_get_base( form, i ),
+					0,
 					ofo_tva_form_detail_get_has_amount( form, i ),
-					NULL );
+					ofo_tva_form_detail_get_amount( form, i ),
+					0 );
 		}
 
 		count = ofo_tva_form_boolean_get_count( form );
@@ -780,8 +793,8 @@ void
 ofo_tva_record_detail_add( ofoTVARecord *record,
 							guint level,
 							const gchar *code, const gchar *label,
-							gboolean has_base, const gchar *base,
-							gboolean has_amount, const gchar *amount )
+							gboolean has_base, const gchar *base_rule, ofxAmount base,
+							gboolean has_amount, const gchar *amount_rule, ofxAmount amount )
 {
 	GList *fields;
 
@@ -797,9 +810,11 @@ ofo_tva_record_detail_add( ofoTVARecord *record,
 		ofa_box_set_string( fields, TFO_DET_CODE, code );
 		ofa_box_set_string( fields, TFO_DET_LABEL, label );
 		ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
-		ofa_box_set_string( fields, TFO_DET_BASE, base );
+		ofa_box_set_string( fields, TFO_DET_BASE_RULE, base_rule );
+		ofa_box_set_amount( fields, TFO_DET_BASE, base );
 		ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
-		ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
+		ofa_box_set_string( fields, TFO_DET_AMOUNT_RULE, amount_rule );
+		ofa_box_set_amount( fields, TFO_DET_AMOUNT, amount );
 
 		record->priv->details = g_list_append( record->priv->details, fields );
 	}
@@ -926,11 +941,11 @@ ofo_tva_record_detail_get_has_base( const ofoTVARecord *record, guint idx )
 }
 
 /**
- * ofo_tva_record_detail_get_base:
+ * ofo_tva_record_detail_get_base_rule:
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
+ofo_tva_record_detail_get_base_rule( const ofoTVARecord *record, guint idx )
 {
 	GList *nth;
 	const gchar *cstr;
@@ -940,11 +955,33 @@ ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
 	if( !OFO_BASE( record )->prot->dispose_has_run ){
 
 		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASE ) : NULL;
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASE_RULE ) : NULL;
 		return( cstr );
 	}
 
 	g_return_val_if_reached( NULL );
+}
+
+/**
+ * ofo_tva_record_detail_get_base:
+ * @idx is the index in the details list, starting with zero
+ */
+ofxAmount
+ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
+{
+	GList *nth;
+	ofxAmount amount;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+
+	if( !OFO_BASE( record )->prot->dispose_has_run ){
+
+		nth = g_list_nth( record->priv->details, idx );
+		amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_BASE ) : 0;
+		return( amount );
+	}
+
+	g_return_val_if_reached( 0 );
 }
 
 /**
@@ -972,11 +1009,11 @@ ofo_tva_record_detail_get_has_amount( const ofoTVARecord *record, guint idx )
 }
 
 /**
- * ofo_tva_record_detail_get_amount:
+ * ofo_tva_record_detail_get_amount_rule:
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
+ofo_tva_record_detail_get_amount_rule( const ofoTVARecord *record, guint idx )
 {
 	GList *nth;
 	const gchar *cstr;
@@ -986,7 +1023,7 @@ ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
 	if( !OFO_BASE( record )->prot->dispose_has_run ){
 
 		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNT ) : NULL;
+		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNT_RULE ) : NULL;
 		return( cstr );
 	}
 
@@ -994,11 +1031,33 @@ ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
 }
 
 /**
+ * ofo_tva_record_detail_get_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+ofxAmount
+ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
+{
+	GList *nth;
+	ofxAmount amount;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+
+	if( !OFO_BASE( record )->prot->dispose_has_run ){
+
+		nth = g_list_nth( record->priv->details, idx );
+		amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_AMOUNT ) : 0;
+		return( amount );
+	}
+
+	g_return_val_if_reached( 0 );
+}
+
+/**
  * ofo_tva_record_detail_set_base:
  * @idx is the index in the details list, starting with zero
  */
 void
-ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, const gchar *base )
+ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, ofxAmount base )
 {
 	GList *nth;
 
@@ -1008,7 +1067,7 @@ ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, const gchar *ba
 
 		nth = g_list_nth( record->priv->details, idx );
 		g_return_if_fail( nth );
-		ofa_box_set_string( nth->data, TFO_DET_BASE, base );
+		ofa_box_set_amount( nth->data, TFO_DET_BASE, base );
 		return;
 	}
 
@@ -1020,7 +1079,7 @@ ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, const gchar *ba
  * @idx is the index in the details list, starting with zero
  */
 void
-ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, const gchar *amount )
+ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, ofxAmount amount )
 {
 	GList *nth;
 
@@ -1030,7 +1089,7 @@ ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, const gchar *
 
 		nth = g_list_nth( record->priv->details, idx );
 		g_return_if_fail( nth );
-		ofa_box_set_string( nth->data, TFO_DET_AMOUNT, amount );
+		ofa_box_set_amount( nth->data, TFO_DET_AMOUNT, amount );
 		return;
 	}
 
@@ -1327,8 +1386,8 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *cnx, guint ran
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_END,TFO_DET_ROW,"
 			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
-			"	 TFO_DET_HAS_BASE,TFO_DET_BASE,"
-			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT) "
+			"	 TFO_DET_HAS_BASE,TFO_DET_BASE_RULE,TFO_DET_BASE,"
+			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT_RULE,TFO_DET_AMOUNT) "
 			"	VALUES('%s','%s',%d",
 			ofo_tva_record_get_mnemo( record ), send, rang );
 
@@ -1353,7 +1412,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *cnx, guint ran
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
 	g_string_append_printf( query, ",'%s'", cstr );
 
-	base = my_utils_quote( ofa_box_get_string( details, TFO_DET_BASE ));
+	base = my_utils_quote( ofa_box_get_string( details, TFO_DET_BASE_RULE ));
 	if( my_strlen( base )){
 		g_string_append_printf( query, ",'%s'", base );
 	} else {
@@ -1361,15 +1420,23 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *cnx, guint ran
 	}
 	g_free( base );
 
+	base = my_double_to_sql( ofa_box_get_amount( details, TFO_DET_BASE ));
+	g_string_append_printf( query, ",%s", base );
+	g_free( base );
+
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
 	g_string_append_printf( query, ",'%s'", cstr );
 
-	amount = my_utils_quote( ofa_box_get_string( details, TFO_DET_AMOUNT ));
+	amount = my_utils_quote( ofa_box_get_string( details, TFO_DET_AMOUNT_RULE ));
 	if( my_strlen( amount )){
 		g_string_append_printf( query, ",'%s'", amount );
 	} else {
 		query = g_string_append( query, ",NULL" );
 	}
+	g_free( amount );
+
+	amount = my_double_to_sql( ofa_box_get_amount( details, TFO_DET_AMOUNT ));
+	g_string_append_printf( query, ",%s", amount );
 	g_free( amount );
 
 	query = g_string_append( query, ")" );

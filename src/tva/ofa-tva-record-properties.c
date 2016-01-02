@@ -361,6 +361,7 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 	const gchar *cstr;
 	gchar *str;
 	gboolean has_base, has_amount;
+	ofxAmount amount;
 
 	priv = self->priv;
 	grid = my_utils_container_get_child_by_name( container, "p2-grid" );
@@ -409,8 +410,8 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_base_changed ), self );
 
-			cstr = ofo_tva_record_detail_get_base( priv->tva_record, idx );
-			gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+			amount = ofo_tva_record_detail_get_base( priv->tva_record, idx );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
 		}
 
 		/* amount */
@@ -424,8 +425,8 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_amount_changed ), self );
 
-			cstr = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
-			gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
 		}
 	}
 }
@@ -542,7 +543,7 @@ do_update( ofaTVARecordProperties *self )
 	GtkWidget *button, *entry;
 	const gchar *clabel;
 	gboolean is_true;
-	gchar *str;
+	ofxAmount amount;
 
 	priv = self->priv;
 
@@ -565,16 +566,14 @@ do_update( ofaTVARecordProperties *self )
 		if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			str = my_editable_amount_get_string( GTK_EDITABLE( entry ));
-			ofo_tva_record_detail_set_base( priv->tva_record, idx, str );
-			g_free( str );
+			amount = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+			ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 		}
 		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			str = my_editable_amount_get_string( GTK_EDITABLE( entry ));
-			ofo_tva_record_detail_set_amount( priv->tva_record, idx, str );
-			g_free( str );
+			amount = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+			ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
 		}
 	}
 

@@ -513,6 +513,7 @@ do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 	record = ofo_tva_record_new_from_form( form );
 	if( ofa_tva_record_new_run( priv->main_window, record )){
 		ofa_tva_record_properties_run( priv->main_window, record );
+	} else {
+		g_object_unref( record );
 	}
-	g_object_unref( record );
 }

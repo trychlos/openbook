@@ -108,9 +108,11 @@ void            ofo_tva_record_detail_add            ( ofoTVARecord *record,
 															const gchar *code,
 															const gchar *label,
 															gboolean has_base,
-															const gchar *base,
+															const gchar *base_rule,
+															ofxAmount base,
 															gboolean has_amount,
-															const gchar *amount );
+															const gchar *amount_rule,
+															ofxAmount amount );
 
 void            ofo_tva_record_detail_free_all       ( ofoTVARecord *record );
 
@@ -119,12 +121,14 @@ guint           ofo_tva_record_detail_get_level      ( const ofoTVARecord *recor
 const gchar    *ofo_tva_record_detail_get_code       ( const ofoTVARecord *record, guint idx );
 const gchar    *ofo_tva_record_detail_get_label      ( const ofoTVARecord *record, guint idx );
 gboolean        ofo_tva_record_detail_get_has_base   ( const ofoTVARecord *record, guint idx );
-const gchar    *ofo_tva_record_detail_get_base       ( const ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_base_rule  ( const ofoTVARecord *record, guint idx );
+ofxAmount       ofo_tva_record_detail_get_base       ( const ofoTVARecord *record, guint idx );
 gboolean        ofo_tva_record_detail_get_has_amount ( const ofoTVARecord *record, guint idx );
-const gchar    *ofo_tva_record_detail_get_amount     ( const ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_amount_rule( const ofoTVARecord *record, guint idx );
+ofxAmount       ofo_tva_record_detail_get_amount     ( const ofoTVARecord *record, guint idx );
 
-void            ofo_tva_record_detail_set_base       ( ofoTVARecord *record, guint idx, const gchar *base );
-void            ofo_tva_record_detail_set_amount     ( ofoTVARecord *record, guint idx, const gchar *amount );
+void            ofo_tva_record_detail_set_base       ( ofoTVARecord *record, guint idx, ofxAmount base );
+void            ofo_tva_record_detail_set_amount     ( ofoTVARecord *record, guint idx, ofxAmount amount );
 
 void            ofo_tva_record_boolean_add           ( ofoTVARecord *record,
 														const gchar *label,
