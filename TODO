@@ -111,6 +111,8 @@
      2015-11-14 due to new VAT declaration rules, must also provide a
                 monthly CA3
      2016- 1- 2 have a form and recordable declarations
+                -> have to interpret the rules to get the amounts
+                   + ofo_account_get_balance( account_id, date );
 
  312 2014- 9-22 myEditableAmount: should limit the count of decimals
 
