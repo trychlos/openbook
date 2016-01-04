@@ -32,6 +32,7 @@
 
 #include "api/my-date.h"
 #include "api/my-editable-date.h"
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
@@ -46,7 +47,6 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
-#include "core/my-progress-bar.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-main-window.h"

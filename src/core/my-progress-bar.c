@@ -26,9 +26,8 @@
 #include <config.h>
 #endif
 
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
-
-#include "core/my-progress-bar.h"
 
 /* private instance data
  */

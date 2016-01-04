@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <math.h>
 
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -36,8 +37,6 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofs-currency.h"
-
-#include "core/my-progress-bar.h"
 
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"

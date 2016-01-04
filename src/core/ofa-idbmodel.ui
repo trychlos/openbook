@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
-  <object class="GtkDialog" id="DDLUpdateDlg">
+  <object class="GtkDialog" id="DBModelDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Upgrading the database to last DDL version</property>
@@ -20,7 +20,7 @@
               <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="btn-close">
+              <object class="GtkButton" id="close-btn">
                 <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -46,103 +46,6 @@
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
             <property name="column_spacing">4</property>
-            <child>
-              <object class="GtkFrame" id="frame1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label_xalign">0</property>
-                <property name="shadow_type">in</property>
-                <child>
-                  <object class="GtkGrid" id="grid1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="margin_left">12</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
-                    <property name="column_spacing">4</property>
-                    <child>
-                      <object class="GtkLabel" id="dud-open-label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Database version on open :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="dud-last-label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Last version :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="dud-current-version">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="width_chars">6</property>
-                        <property name="max_width_chars">6</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="dud-last-version">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="width_chars">6</property>
-                        <property name="max_width_chars">6</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label13">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="hexpand">True</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">2</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                </child>
-                <child type="label">
-                  <object class="GtkLabel" id="label1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes"> Versions status </property>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
             <child>
               <object class="GtkPaned" id="dud-paned">
                 <property name="visible">True</property>
@@ -175,30 +78,6 @@
                                 <property name="can_focus">False</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
                                 <child>
                                   <placeholder/>
                                 </child>
@@ -245,7 +124,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
+                <property name="top_attach">0</property>
               </packing>
             </child>
           </object>
@@ -258,7 +137,7 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-5">btn-close</action-widget>
+      <action-widget response="-5">close-btn</action-widget>
     </action-widgets>
   </object>
 </interface>

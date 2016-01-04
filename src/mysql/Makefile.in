@@ -120,6 +120,7 @@ target_triplet = @target@
 @HAVE_MYSQL_TRUE@	-DPROVIDER_ID=\"$(plugin_id)\"					\
 @HAVE_MYSQL_TRUE@	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
 @HAVE_MYSQL_TRUE@	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
+@HAVE_MYSQL_TRUE@	-DINIT1DIR=\""$(init1_datadir)"\"				\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 subdir = src/mysql
@@ -179,6 +180,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-connect.h ofa-mysql-editor-display.c \
 	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
 	ofa-mysql-editor-enter.h ofa-mysql-meta.c ofa-mysql-meta.h \
+	ofa-mysql-idbmodel.c ofa-mysql-idbmodel.h \
 	ofa-mysql-idbprovider.c ofa-mysql-idbprovider.h \
 	ofa-mysql-iprefs-provider.c ofa-mysql-iprefs-provider.h \
 	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
@@ -188,6 +190,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-period.lo ofa-mysql-prefs-bin.lo \
@@ -445,6 +448,7 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@plugin_id = ofa-mysql
 @HAVE_MYSQL_TRUE@pkglib_LTLIBRARIES = libofa-mysql.la
 @HAVE_MYSQL_TRUE@plugin_datadir = $(pkgdatadir)/$(plugin_id)
+@HAVE_MYSQL_TRUE@init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
 @HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
 @HAVE_MYSQL_TRUE@	ofa-mysql.c										\
 @HAVE_MYSQL_TRUE@	ofa-mysql.h										\
@@ -458,6 +462,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.c						\
@@ -586,6 +592,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-iprefs-provider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-meta.Plo@am__quote@

@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
@@ -44,7 +45,6 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
-#include "ofa-ddl-update.h"
 #include "ofa-icollector.h"
 #include "ofo-marshal.h"
 
@@ -563,7 +563,7 @@ do_open( ofoDossier *dossier, gboolean remediation )
 	priv = dossier->priv;
 	priv->userid = ofa_idbconnect_get_account( priv->cnx );
 
-	if( ofa_ddl_update_run( dossier )){
+	if( ofa_idbmodel_run( dossier )){
 		connect_objects_handlers( dossier );
 		if( dossier_do_read( dossier )){
 			if( remediation ){

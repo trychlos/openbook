@@ -63,7 +63,6 @@ libofa_core_la_SOURCES = \
 	my-igridlist.c										\
 	my-isettings.c										\
 	my-progress-bar.c									\
-	my-progress-bar.h									\
 	my-settings.c										\
 	my-settings.h										\
 	my-timeout.c										\
@@ -82,12 +81,9 @@ libofa_core_la_SOURCES = \
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
-	ofa-ddl-update.c									\
-	ofa-ddl-update.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-misc.c									\
-	ofa-dossier-misc.h									\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\
@@ -101,9 +97,9 @@ libofa_core_la_SOURCES = \
 	ofa-idataset.c										\
 	ofa-idate-filter.c									\
 	ofa-idbconnect.c									\
-	ofa-idbcustomer.c									\
 	ofa-idbeditor.c										\
 	ofa-idbmeta.c										\
+	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
@@ -160,9 +156,9 @@ ui_files = \
 	ofa-admin-credentials-bin.ui						\
 	ofa-date-filter-hv-bin.ui							\
 	ofa-dbms-root-bin.ui								\
-	ofa-ddl-update.ui									\
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
+	ofa-idbmodel.ui										\
 	ofa-preferences.ui									\
 	$(NULL)
 

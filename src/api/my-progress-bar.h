@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_PROGRESS_BAR_H__
-#define __MY_PROGRESS_BAR_H__
+#ifndef __OPENBOOK_API_MY_PROGRESS_BAR_H__
+#define __OPENBOOK_API_MY_PROGRESS_BAR_H__
 
 /**
  * SECTION: my_progress_bar
  * @short_description: #myProgressBar class definition.
- * @include: core/my-progress-bar.h
+ * @include: openbook/my-progress-bar.h
  *
  * A convenience class to manage the progress bars.
  *
@@ -72,4 +72,4 @@ myProgressBar *my_progress_bar_new      ( void );
 
 G_END_DECLS
 
-#endif /* __MY_PROGRESS_BAR_H__ */
+#endif /* __OPENBOOK_API_MY_PROGRESS_BAR_H__ */

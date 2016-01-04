@@ -30,8 +30,10 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
@@ -46,8 +48,6 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "core/my-progress-bar.h"
-#include "core/ofa-dossier-misc.h"
 #include "core/ofa-file-format-bin.h"
 #include "core/ofa-main-window.h"
 

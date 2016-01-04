@@ -23,6 +23,7 @@
  New features and improvements:
 
    - TVA: new module for TVA operations management (todo #311).
+   - ofaIDBModel: new DDL management interface (todo #951).
 
  Bug fixes:
 

@@ -38,8 +38,8 @@ libofa_tva_la_SOURCES = \
 	ofa-module.c									\
 	ofa-tva.c										\
 	ofa-tva.h										\
-	ofa-tva-dbcustomer.c							\
-	ofa-tva-dbcustomer.h							\
+	ofa-tva-dbmodel.c								\
+	ofa-tva-dbmodel.h								\
 	ofa-tva-declare-page.c							\
 	ofa-tva-declare-page.h							\
 	ofa-tva-form-properties.c						\

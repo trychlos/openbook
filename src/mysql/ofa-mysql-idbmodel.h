@@ -22,22 +22,26 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TVA_DBCUSTOMER_H__
-#define __OFA_TVA_DBCUSTOMER_H__
+#ifndef __OFA_MYSQL_IDBMODEL_H__
+#define __OFA_MYSQL_IDBMODEL_H__
 
 /**
- * SECTION: ofa_tva_idbcustomer
- * @short_description: #ofaTva class definition.
+ * SECTION: ofa_mysql_idbmodel
+ * @short_description: #ofaMysql class definition.
  *
- * #ofaIDBCustomer interface management.
+ * #ofaIDBModel interface management.
+ *
+ * The #ofaMySQLIDBModel is the MySQL implementation of the
+ * #ofaIDBModel interface. It manages the DB model and let this
+ * plugin upgrades it when needed.
  */
 
-#include "api/ofa-idbcustomer.h"
+#include "api/ofa-idbmodel.h"
 
 G_BEGIN_DECLS
 
-void ofa_tva_dbcustomer_iface_init( ofaIDBCustomerInterface *iface );
+void ofa_mysql_idbmodel_iface_init( ofaIDBModelInterface *iface );
 
 G_END_DECLS
 
-#endif /* __OFA_TVA_DBCUSTOMER_H__ */
+#endif /* __OFA_MYSQL_IDBMODEL_H__ */

@@ -27,15 +27,16 @@ api_include_HEADERS = \
 	\
 	my-igridlist.h										\
 	my-isettings.h										\
+	ofa-dossier-misc.h									\
 	ofa-file-format.h									\
 	ofa-iabout.h										\
 	ofa-idataset.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
-	ofa-idbcustomer.h									\
 	ofa-idbeditor.h										\
 	ofa-idbmeta.h										\
 	ofa-idbmeta-def.h									\
+	ofa-idbmodel.h										\
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
@@ -55,6 +56,7 @@ api_include_HEADERS = \
 	my-editable-amount.h								\
 	my-editable-date.h									\
 	my-file-monitor.h									\
+	my-progress-bar.h									\
 	my-timeout.h										\
 	my-utils.h											\
 	my-window.h											\

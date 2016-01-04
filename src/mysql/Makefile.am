@@ -29,6 +29,8 @@ pkglib_LTLIBRARIES = libofa-mysql.la
 
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
+init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
+
 AM_CPPFLAGS += \
 	-I $(top_srcdir)								\
 	-I $(top_srcdir)/src							\
@@ -37,6 +39,7 @@ AM_CPPFLAGS += \
 	-DPROVIDER_ID=\"$(plugin_id)\"					\
 	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
+	-DINIT1DIR=\""$(init1_datadir)"\"				\
 	$(NULL)
 
 libofa_mysql_la_SOURCES = \
@@ -52,6 +55,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-enter.h						\
 	ofa-mysql-meta.c								\
 	ofa-mysql-meta.h								\
+	ofa-mysql-idbmodel.c							\
+	ofa-mysql-idbmodel.h							\
 	ofa-mysql-idbprovider.c							\
 	ofa-mysql-idbprovider.h							\
 	ofa-mysql-iprefs-provider.c						\

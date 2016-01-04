@@ -29,14 +29,14 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
+#include "api/my-dialog.h"
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
+#include "api/ofa-dossier-misc.h"
+#include "api/ofa-file-format.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbcustomer.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
@@ -45,81 +45,51 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "core/my-progress-bar.h"
-#include "core/ofa-ddl-update.h"
-#include "core/ofa-dossier-misc.h"
+#include "ofa-mysql.h"
+#include "ofa-mysql-idbmodel.h"
 
-/* private instance data
- */
-struct _ofaDDLUpdatePrivate {
-
-	/* input data
-	 */
-	ofoDossier          *dossier;
-
-	/* runtime data
-	 */
-	gint                 cur_version;
-	gint                 last_version;
-	const ofaIDBConnect *cnx;
-	gint                 row;
-	gulong               total;				/* for the lastly added row */
-	gulong               current;			/* for the lastly added row */
-
-	/* UI
-	 */
-	GtkWidget           *close_btn;
-	GtkWidget           *paned;
-	GtkWidget           *grid;
-	GtkWidget           *textview;
-	GtkTextBuffer       *buffer;
-	GtkSizeGroup        *hgroup;
-	GtkWidget           *bar;				/* the bar for the lastly added row */
-
-	/* settings
-	 */
-	gint                 paned_pos;
-
-	/* returned value
-	 */
-	gboolean             up_to_date;
-};
-
-static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-ddl-update.ui";
-static const gchar      *st_ui_id       = "DDLUpdateDlg";
-static const gchar      *st_settings    = "DDLUpdateDlg-settings";
-
-typedef GType ( *fnType )( void );
-
-static const gchar *st_classes          = INIT1DIR "/classes-h1.csv";
-static const gchar *st_currencies       = INIT1DIR "/currencies-h1.csv";
-static const gchar *st_ledgers          = INIT1DIR "/ledgers-h1.csv";
-static const gchar *st_ope_templates    = INIT1DIR "/ope-templates-h2.csv";
-static const gchar *st_rates            = INIT1DIR "/rates-h2.csv";
-
-static gboolean dbmodel_v20( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v20( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v21( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v21( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v22( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v22( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v23( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v23( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v24( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v24( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v25( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v25( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v26( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v26( ofaDDLUpdate *dialog );
-static gboolean dbmodel_v27( ofaDDLUpdate *dialog, gint version );
-static gulong   count_v27( ofaDDLUpdate *dialog );
-
-/* the functions which update the DB model
+/* a dedicated structure to hold needed datas
  */
 typedef struct {
+
+	/* initialization
+	 */
+	const ofaIDBModel   *instance;
+	ofoDossier          *dossier;
+	const ofaIDBConnect *connect;
+	myDialog            *dialog;
+
+	/* progression bar
+	 */
+	GtkWidget           *bar;
+	gulong               total;
+	gulong               current;
+}
+	sUpdate;
+
+/* the functions to upgrade the DB model
+ */
+static gboolean dbmodel_v20( sUpdate *update_data, gint version );
+static gulong   count_v20( sUpdate *update_data );
+static gboolean dbmodel_v21( sUpdate *update_data, gint version );
+static gulong   count_v21( sUpdate *update_data );
+static gboolean dbmodel_v22( sUpdate *update_data, gint version );
+static gulong   count_v22( sUpdate *update_data );
+static gboolean dbmodel_v23( sUpdate *update_data, gint version );
+static gulong   count_v23( sUpdate *update_data );
+static gboolean dbmodel_v24( sUpdate *update_data, gint version );
+static gulong   count_v24( sUpdate *update_data );
+static gboolean dbmodel_v25( sUpdate *update_data, gint version );
+static gulong   count_v25( sUpdate *update_data );
+static gboolean dbmodel_v26( sUpdate *update_data, gint version );
+static gulong   count_v26( sUpdate *update_data );
+static gboolean dbmodel_v27( sUpdate *update_data, gint version );
+static gulong   count_v27( sUpdate *update_data );
+
+typedef struct {
 	gint        ver_target;
-	gboolean ( *fnquery )( ofaDDLUpdate *dialog, gint version );
-	gulong   ( *fncount )( ofaDDLUpdate *dialog );
+	gboolean ( *fnquery )( sUpdate *update_data, gint version );
+	gulong   ( *fncount )( sUpdate *update_data );
 }
 	sMigration;
 
@@ -135,131 +105,89 @@ static sMigration st_migrates[] = {
 		{ 0 }
 };
 
-G_DEFINE_TYPE( ofaDDLUpdate, ofa_ddl_update, MY_TYPE_DIALOG )
-
-static gint       get_last_version( void );
-static gboolean   plugins_need_update( ofoDossier *dossier );
-static gboolean   run_dialog( ofoDossier *dossier, gint cur_version, gint last_version );
-static void       v_init_dialog( myDialog *dialog );
-static gboolean   do_run( ofaDDLUpdate *self );
-static gboolean   upgrade_to( ofaDDLUpdate *self, sMigration *smig );
-static GtkWidget *add_row( ofaDDLUpdate *self, const gchar *title, gboolean with_bar );
-static gboolean   exec_query( ofaDDLUpdate *self, const gchar *query );
-static gboolean   version_begin( ofaDDLUpdate *self, gint version );
-static gboolean   version_end( ofaDDLUpdate *self, gint version );
-static gboolean   insert_classes( ofaDDLUpdate *self );
-static gboolean   insert_currencies( ofaDDLUpdate *self );
-static gboolean   insert_ledgers( ofaDDLUpdate *self );
-static gboolean   insert_ope_templates( ofaDDLUpdate *self );
-static gboolean   insert_rates( ofaDDLUpdate *self );
-static gboolean   import_utf8_comma_pipe_file( ofaDDLUpdate *self, const gchar *table, const gchar *fname, gint headers, fnType fn );
-static gint       count_rows( const ofoDossier *dossier, const gchar *table );
-static gboolean   plugins_update( ofaDDLUpdate *self );
-static void       set_bar_progression( ofaDDLUpdate *self );
-static void       load_settings( ofaDDLUpdate *self );
-static void       write_settings( ofaDDLUpdate *self );
-
-static void
-ddl_update_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_ddl_update_finalize";
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	g_return_if_fail( instance && OFA_IS_DDL_UPDATE( instance ));
-
-	/* free data members here */
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ddl_update_parent_class )->finalize( instance );
-}
-
-static void
-ddl_update_dispose( GObject *instance )
-{
-	ofaDDLUpdatePrivate *priv;
-
-	g_return_if_fail( instance && OFA_IS_DDL_UPDATE( instance ));
-
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
-
-		priv = OFA_DDL_UPDATE( instance )->priv;
-
-		/* unref object members here */
-		g_clear_object( &priv->hgroup );
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ddl_update_parent_class )->dispose( instance );
-}
-
-static void
-ofa_ddl_update_init( ofaDDLUpdate *self )
-{
-	static const gchar *thisfn = "ofa_ddl_update_init";
-
-	g_return_if_fail( self && OFA_IS_DDL_UPDATE( self ));
-
-	g_debug( "%s: self=%p (%s)",
-			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DDL_UPDATE, ofaDDLUpdatePrivate );
-
-	self->priv->up_to_date = FALSE;
-	self->priv->row = 0;
-}
-
-static void
-ofa_ddl_update_class_init( ofaDDLUpdateClass *klass )
-{
-	static const gchar *thisfn = "ofa_ddl_update_class_init";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	G_OBJECT_CLASS( klass )->dispose = ddl_update_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ddl_update_finalize;
-
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-
-	g_type_class_add_private( klass, sizeof( ofaDDLUpdatePrivate ));
-}
-
-/**
- * ofa_ddl_update_run:
- * @dossier: the dossier being opened.
+/* default imported datas
  *
- * Make sure the database is up to date.
- *
- * Returns: %TRUE if the database is up to date.
+ * Note that the construct
+ *   static const gchar *st_classes = INIT1DIR "/classes-h1.csv";
+ * plus a reference to st_classes in the array initializer
+ * is refused with the message "initializer element is not constant"
  */
-gboolean
-ofa_ddl_update_run( ofoDossier *dossier )
+typedef GType ( *fnType )( void );
+
+typedef struct {
+	const gchar *label;
+	const gchar *table;
+	const gchar *filename;
+	gint         header_count;
+	fnType       typefn;
+}
+	sImport;
+
+static sImport st_imports[] = {
+		{ N_( "Classes" ),
+				"OFA_T_CLASSES",       "classes-h1.csv",       1, ofo_class_get_type },
+		{ N_( "Currencies" ),
+				"OFA_T_CURRENCIES",    "currencies-h1.csv",    1, ofo_currency_get_type },
+		{ N_( "Ledgers" ),
+				"OFA_T_LEDGERS",       "ledgers-h1.csv",       1, ofo_ledger_get_type },
+		{ N_( "Operation templates" ),
+				"OFA_T_OPE_TEMPLATES", "ope-templates-h2.csv", 2, ofo_ope_template_get_type },
+		{ N_( "Rates" ),
+				"OFA_T_RATES",         "rates-h2.csv",         2, ofo_rate_get_type },
+		{ 0 }
+};
+
+#define MARGIN_LEFT                     20
+
+static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
+static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier );
+static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier );
+static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog );
+static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
+static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
+static void       set_bar_progression( sUpdate *update_data );
+static gboolean   exec_query( sUpdate *update_data, const gchar *query );
+static gboolean   version_begin( sUpdate *update_data, gint version );
+static gboolean   version_end( sUpdate *update_data, gint version );
+static gboolean   import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import );
+static gint       count_rows( sUpdate *update_data, const gchar *table );
+
+/*
+ * #ofaIDBModel interface setup
+ */
+void
+ofa_mysql_idbmodel_iface_init( ofaIDBModelInterface *iface )
 {
-	static const gchar *thisfn = "ofa_ddl_update_run";
-	gboolean up_to_date;
-	gint cur_version, last_version;
+	static const gchar *thisfn = "ofa_mysql_idbmodel_iface_init";
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	up_to_date = TRUE;
-	last_version = get_last_version();
-	cur_version = ofo_dossier_get_database_version( dossier );
-	g_debug( "%s: cur_version=%d, last_version=%d", thisfn, cur_version, last_version );
-
-	if( cur_version < last_version || plugins_need_update( dossier )){
-		up_to_date = run_dialog( dossier, cur_version, last_version );
-	}
-
-	return( up_to_date );
+	iface->get_interface_version = idbmodel_get_interface_version;
+	iface->get_current_version = idbmodel_get_current_version;
+	iface->get_last_version = idbmodel_get_last_version;
+	iface->ddl_update = idbmodel_ddl_update;
 }
 
-static gint
-get_last_version( void )
+static guint
+idbmodel_get_interface_version( const ofaIDBModel *instance )
 {
-	gint last_version, i;
+	return( 1 );
+}
+
+static guint
+idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+{
+	guint cur_version;
+
+	cur_version = ofo_dossier_get_database_version( dossier );
+
+	return( cur_version );
+}
+
+static guint
+idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+{
+	guint last_version, i;
 
 	last_version = 0;
 
@@ -272,199 +200,95 @@ get_last_version( void )
 	return( last_version );
 }
 
-/*
- * ask any plugin whether it needs a DDL update
- * the plugin must implement the ofaIDBCustomer interface
- */
 static gboolean
-plugins_need_update( ofoDossier *dossier )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog )
 {
-	GList *list, *it;
-	gboolean needs_update;
-	const ofaIDBConnect *connect;
-
-	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBCUSTOMER );
-	needs_update = FALSE;
-	connect = ofo_dossier_get_connect( dossier );
-
-	for( it=list ; it && !needs_update ; it=it->next ){
-		needs_update |= ofa_idbcustomer_needs_ddl_update( OFA_IDBCUSTOMER( it->data ), connect );
-	}
-
-	ofa_plugin_free_extensions( list );
-
-	return( needs_update );
-}
-
-/*
- * this is only run if database needs an update
- */
-static gboolean
-run_dialog( ofoDossier *dossier, gint cur_version, gint last_version )
-{
-	ofaDDLUpdate *self;
-	ofaDDLUpdatePrivate *priv;
-	gboolean up_to_date;
-
-	self = g_object_new(
-				OFA_TYPE_DDL_UPDATE,
-				MY_PROP_WINDOW_XML,    st_ui_xml,
-				MY_PROP_WINDOW_NAME,   st_ui_id,
-				NULL );
-
-	priv = self->priv;
-	priv->dossier = dossier;
-	priv->cur_version = cur_version;
-	priv->last_version = last_version;
-	priv->up_to_date = FALSE;
-
-	load_settings( self );
-	my_dialog_run_dialog( MY_DIALOG( self ));
-	write_settings( self );
-
-	up_to_date = priv->up_to_date;
-	g_object_unref( self );
-
-	return( up_to_date );
-}
-
-static void
-v_init_dialog( myDialog *dialog )
-{
-	ofaDDLUpdatePrivate *priv;
-	GtkWindow *toplevel;
+	sUpdate *update_data;
+	guint i, cur_version, last_version;
+	gboolean ok;
 	GtkWidget *label;
 	gchar *str;
 
-	priv = OFA_DDL_UPDATE( dialog )->priv;
-
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-close" );
-	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
-	gtk_widget_set_sensitive( priv->close_btn, FALSE );
-
-	priv->hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-
-	priv->paned = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-paned" );
-	g_return_if_fail( priv->paned && GTK_IS_PANED( priv->paned ));
-	gtk_paned_set_position( GTK_PANED( priv->paned ), priv->paned_pos );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-open-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( priv->hgroup, label );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-current-version" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup_printf( "%d", priv->cur_version );
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-last-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_size_group_add_widget( priv->hgroup, label );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-last-version" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup_printf( "%d", priv->last_version );
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-grid" );
-	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
-
-	priv->textview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-textview" );
-	g_return_if_fail( priv->textview && GTK_IS_TEXT_VIEW( priv->textview ));
-	priv->buffer = gtk_text_buffer_new( NULL );
-	gtk_text_buffer_set_text( priv->buffer, "", -1 );
-	gtk_text_view_set_buffer( GTK_TEXT_VIEW( priv->textview ), priv->buffer );
-
-	g_idle_add(( GSourceFunc ) do_run, dialog );
-}
-
-static gboolean
-do_run( ofaDDLUpdate *self )
-{
-	static const gchar *thisfn = "ofa_ddl_update_do_run";
-	ofaDDLUpdatePrivate *priv;
-	gint i;
-	gboolean ok;
-	GtkWidget *dlg;
-	gchar *str;
-
-	priv = self->priv;
 	ok = TRUE;
-	priv->cnx = ofo_dossier_get_connect( priv->dossier );
+	update_data = g_new0( sUpdate, 1 );
+	update_data->instance = instance;
+	update_data->dossier = dossier;
+	update_data->connect = ofo_dossier_get_connect( dossier );
+	update_data->dialog = dialog;
 
-	for( i=0 ; st_migrates[i].ver_target ; ++i ){
-		if( priv->cur_version < st_migrates[i].ver_target ){
-			if( !upgrade_to( self, &st_migrates[i] )){
-				g_warning( "%s: current DBMS model is version %d, unable to update it to v %d",
-						thisfn, priv->cur_version, st_migrates[i].ver_target );
-				ok = FALSE;
-				break;
+	cur_version = idbmodel_get_current_version( instance, dossier );
+	last_version = idbmodel_get_last_version( instance, dossier );
+
+	label = gtk_label_new( _( "Updating DBMS model" ));
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	ofa_idbmodel_add_row_widget( instance, dialog, label );
+
+	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
+	label = gtk_label_new( str );
+	g_free( str );
+	my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	ofa_idbmodel_add_row_widget( instance, dialog, label );
+
+	if( cur_version < last_version ){
+		for( i=0 ; st_migrates[i].ver_target ; ++i ){
+			if( cur_version < st_migrates[i].ver_target ){
+				if( !upgrade_to( update_data, &st_migrates[i] )){
+					str = g_strdup_printf(
+								_( "Unable to upgrade current DBMS model to v %d" ),
+								st_migrates[i].ver_target );
+					label = gtk_label_new( str );
+					g_free( str );
+					my_utils_widget_set_margin( label, 0, 0, 2*MARGIN_LEFT, 0 );
+					my_utils_widget_set_style( label, "labelerror" );
+					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+					ofa_idbmodel_add_row_widget( instance, dialog, label );
+					ok = FALSE;
+					break;
+				}
 			}
 		}
-	}
-	if( ok ){
-		insert_classes( self );
-		insert_currencies( self );
-		insert_ledgers( self );
-		insert_ope_templates( self );
-		insert_rates( self );
-	}
-	if( ok ){
-		plugins_update( self );
-	}
-
-	priv->up_to_date = ok;
-
-	if( ok ){
-		str = g_strdup_printf(
-				_( "The database has been successfully upgraded to v %d" ),
-				priv->last_version );
+		if( ok ){
+			for( i=0 ; st_imports[i].label ; ++i ){
+				if( !import_utf8_comma_pipe_file( update_data, &st_imports[i] )){
+					ok = FALSE;
+					break;
+				}
+			}
+		}
 	} else {
-		str = g_strdup( "An error has occured while upgrading the database model" );
+		str = g_strdup_printf( _( "Last version is v %u: up to date" ), last_version );
+		label = gtk_label_new( str );
+		g_free( str );
+		my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
+		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+		ofa_idbmodel_add_row_widget( instance, dialog, label );
 	}
-	dlg = gtk_message_dialog_new(
-				my_window_get_toplevel( MY_WINDOW( self )),
-				GTK_DIALOG_MODAL,
-				GTK_MESSAGE_INFO,
-				GTK_BUTTONS_CLOSE,
-				"%s", str );
 
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-	g_free( str );
+	g_free( update_data );
 
-	gtk_widget_set_sensitive( priv->close_btn, TRUE );
-
-	/* do not continue and remove from idle callbacks list */
-	return( G_SOURCE_REMOVE );
+	return( ok );
 }
 
+/*
+ * upgrade the DB model to the specified version
+ */
 static gboolean
-upgrade_to( ofaDDLUpdate *self, sMigration *smig )
+upgrade_to( sUpdate *update_data, sMigration *smig )
 {
-	ofaDDLUpdatePrivate *priv;
 	gboolean ok;
 	gchar *str;
 
-	priv = self->priv;
-
 	str = g_strdup_printf( _( "Upgrading to v %d :" ), smig->ver_target );
-	priv->bar = add_row( self, str, TRUE );
+	update_data->bar = add_row( update_data, str, TRUE );
 	g_free( str );
 
-	priv->total = smig->fncount( self )+3;	/* counting version_begin+version_end */
-	priv->current = 0;
+	update_data->total = smig->fncount( update_data )+3;	/* counting version_begin+version_end */
+	update_data->current = 0;
 
-	ok = version_begin( self, smig->ver_target ) &&
-			smig->fnquery( self, smig->ver_target ) &&
-			version_end( self, smig->ver_target );
+	ok = version_begin( update_data, smig->ver_target ) &&
+			smig->fnquery( update_data, smig->ver_target ) &&
+			version_end( update_data, smig->ver_target );
 
 	return( ok );
 }
@@ -474,69 +298,74 @@ upgrade_to( ofaDDLUpdate *self, sMigration *smig )
  * else add a label
  */
 static GtkWidget *
-add_row( ofaDDLUpdate *self, const gchar *title, gboolean with_bar )
+add_row( sUpdate *update_data, const gchar *title, gboolean with_bar )
 {
-	ofaDDLUpdatePrivate *priv;
-	GtkWidget *label;
+	GtkWidget *grid, *label;
 	myProgressBar *bar;
-	gint row;
 
-	priv = self->priv;
-	row = priv->row++;
-	bar = NULL;
+	grid = gtk_grid_new();
+	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 
 	label = gtk_label_new( title );
+	my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
 	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), label, 0, row, 1, 1 );
-	gtk_size_group_add_widget( priv->hgroup, label );
+	gtk_grid_attach( GTK_GRID( grid ), label, 0, 0, 1, 1 );
+
+	bar = NULL;
 
 	if( with_bar ){
 		bar = my_progress_bar_new();
-		gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( bar ), 1, row, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, 0, 1, 1 );
+
 	} else {
-		label = gtk_label_new( title );
+		label = gtk_label_new( NULL );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		gtk_grid_attach( GTK_GRID( priv->grid ), label, 1, row, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, 0, 1, 1 );
 	}
 
-	gtk_widget_show_all( priv->grid );
+	ofa_idbmodel_add_row_widget( update_data->instance, update_data->dialog, grid );
 
 	return( with_bar ? GTK_WIDGET( bar ) : label );
 }
 
-static gboolean
-exec_query( ofaDDLUpdate *self, const gchar *query )
+static void
+set_bar_progression( sUpdate *update_data )
 {
-	ofaDDLUpdatePrivate *priv;
+	gdouble progress;
+	gchar *text;
+
+	if( update_data->total > 0 ){
+		progress = ( gdouble ) update_data->current / ( gdouble ) update_data->total;
+		g_signal_emit_by_name( update_data->bar, "ofa-double", progress );
+	}
+	if( 0 ){
+		text = g_strdup_printf( "%lu/%lu", update_data->current, update_data->total );
+		g_signal_emit_by_name( update_data->bar, "ofa-text", text );
+		g_free( text );
+	}
+}
+
+static gboolean
+exec_query( sUpdate *update_data, const gchar *query )
+{
 	gboolean ok;
-	GtkTextIter iter;
-	gchar *str;
 
-	priv = self->priv;
-
-	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-	str = g_strdup_printf( "%s\n", query );
-	gtk_text_buffer_insert( priv->buffer, &iter, str, -1 );
-	g_free( str );
-	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-	gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
-
-	ok = ofa_idbconnect_query( priv->cnx, query, TRUE );
-
-	priv->current += 1;
-	set_bar_progression( self );
+	ofa_idbmodel_add_text( update_data->instance, update_data->dialog, query );
+	ok = ofa_idbconnect_query( update_data->connect, query, TRUE );
+	update_data->current += 1;
+	set_bar_progression( update_data );
 
 	return( ok );
 }
 
 static gboolean
-version_begin( ofaDDLUpdate *self, gint version )
+version_begin( sUpdate *update_data, gint version )
 {
 	gboolean ok;
 	gchar *query;
 
 	/* default value for timestamp cannot be null */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
 			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB model version number',"
 			"	VER_DATE   TIMESTAMP                 DEFAULT 0 COMMENT 'Version application timestamp') "
@@ -547,14 +376,14 @@ version_begin( ofaDDLUpdate *self, gint version )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_VERSION "
 			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", version );
-	ok = exec_query( self, query );
+	ok = exec_query( update_data, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-version_end( ofaDDLUpdate *self, gint version )
+version_end( sUpdate *update_data, gint version )
 {
 	gchar *query;
 	gboolean ok;
@@ -564,7 +393,7 @@ version_end( ofaDDLUpdate *self, gint version )
 	 */
 	query = g_strdup_printf(
 			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", version );
-	ok = exec_query( self, query );
+	ok = exec_query( update_data, query );
 	g_free( query );
 
 	return( ok );
@@ -576,22 +405,19 @@ version_end( ofaDDLUpdate *self, gint version )
  * This is the initial creation of the schema
  */
 static gboolean
-dbmodel_v20( ofaDDLUpdate *self, gint version )
+dbmodel_v20( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v20";
-	ofaDDLUpdatePrivate *priv;
 	gchar *query, *dossier_name;
 	gboolean ok;
 	ofaIDBMeta *meta;
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
-
-	priv = self->priv;
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
 	/* n° 1 */
 	/* ACC_TYPE is renamed to ACC_ROOT in v27 */
 	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	ACC_LABEL           VARCHAR(80)   NOT NULL           COMMENT 'Account label',"
@@ -656,7 +482,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 2 */
 	/* BAT_SOLDE is remediated in v22 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(256)                           COMMENT 'Imported URI',"
@@ -676,7 +502,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	/* n° 3 */
 	/* BAT_LINE_UPD_STAMP is remediated in v21 */
 	/* BAT_LINE_ENTRY and BAT_LINE_UPD_USER are remediated in v24 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL                 COMMENT 'Intern import identifier',"
 			"	BAT_LINE_ID        BIGINT   NOT NULL UNIQUE          COMMENT 'Intern imported line identifier',"
@@ -694,7 +520,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 4 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE         COMMENT 'Class number',"
 			"	CLA_LABEL        VARCHAR(80) NOT NULL                COMMENT 'Class label',"
@@ -706,7 +532,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 5 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
 			"	CUR_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
@@ -721,7 +547,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 6 */
 	/* DOS_STATUS is renamed to DOS_CURRENT in v27 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
 			"	DOS_DEF_CURRENCY     VARCHAR(3)                      COMMENT 'Default currency identifier',"
@@ -748,7 +574,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 7
 	 * dossier name is set as a default value for the label */
-	meta = ofa_idbconnect_get_meta( priv->cnx );
+	meta = ofa_idbconnect_get_meta( update_data->connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
@@ -756,7 +582,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
 			dossier_name, DOS_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
-	ok = exec_query( self, query );
+	ok = exec_query( update_data, query );
 	g_free( query );
 	g_free( dossier_name );
 	g_object_unref( meta );
@@ -765,7 +591,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 8 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR ("
 			"	DOS_ID               INTEGER   NOT NULL              COMMENT 'Row identifier',"
 			"	DOS_CURRENCY         VARCHAR(3)                      COMMENT 'Currency identifier',"
@@ -776,7 +602,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 9 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
 			"	ENT_NUMBER       BIGINT  NOT NULL UNIQUE             COMMENT 'Entry number',"
@@ -803,7 +629,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 10 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS ("
 			"	LED_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE     COMMENT 'Mnemonic identifier of the ledger',"
 			"	LED_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Ledger label',"
@@ -816,7 +642,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 11 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO            VARCHAR(6) NOT NULL             COMMENT 'Internal ledger identifier',"
 			"	LED_CUR_CODE         VARCHAR(3) NOT NULL             COMMENT 'Internal currency identifier',"
@@ -833,7 +659,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 12 */
 	/* locked indicators are remediated in v27 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
 			"	OTE_LABEL      VARCHAR(80)       NOT NULL            COMMENT 'Template label',"
@@ -850,7 +676,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 13 */
 	/* locked indicators are remediated in v27 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL           COMMENT 'Operation template menmonic',"
 			"	OTE_DET_ROW            INTEGER    NOT NULL           COMMENT 'Detail line number',"
@@ -886,7 +712,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 #endif
 
 	/* n° 14 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL UNIQUE  COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_LABEL         VARCHAR(80)       NOT NULL         COMMENT 'Rate label',"
@@ -899,7 +725,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
 
 	/* n° 15 */
 	/* RAT_VAL_BEG is renamed as RAT_VAL_BEGIN in v27 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
 			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key while keeping NULL values',"
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL         COMMENT 'Mnemonic identifier of the rate',"
@@ -919,7 +745,7 @@ dbmodel_v20( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v20( ofaDDLUpdate *self )
+count_v20( sUpdate *update_data )
 {
 	return( 15 );
 }
@@ -929,14 +755,14 @@ count_v20( ofaDDLUpdate *self )
  * have zero timestamp on unreconciliated batlines
  */
 static gboolean
-dbmodel_v21( ofaDDLUpdate *self, gint version )
+dbmodel_v21( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v21";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
 	/* n° 1 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"	MODIFY COLUMN BAT_LINE_UPD_STAMP TIMESTAMP DEFAULT 0 "
 			"	COMMENT 'Reconciliation timestamp'" )){
@@ -944,7 +770,7 @@ dbmodel_v21( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_BAT_LINES "
 			"	SET BAT_LINE_UPD_STAMP=0 WHERE BAT_LINE_ENTRY IS NULL" )){
 		return( FALSE );
@@ -958,7 +784,7 @@ dbmodel_v21( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v21( ofaDDLUpdate *self )
+count_v21( sUpdate *update_data )
 {
 	return( 2 );
 }
@@ -968,14 +794,14 @@ count_v21( ofaDDLUpdate *self )
  * have begin_solde and end_solde in bat
  */
 static gboolean
-dbmodel_v22( ofaDDLUpdate *self, gint version )
+dbmodel_v22( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v22";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
 	/* n° 1 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_BAT "
 			"	CHANGE COLUMN BAT_SOLDE BAT_SOLDE_END DECIMAL(20,5) "
 			"	COMMENT 'Signed end balance of the account'" )){
@@ -983,7 +809,7 @@ dbmodel_v22( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD COLUMN BAT_SOLDE_BEGIN DECIMAL(20,5) "
 			"	COMMENT 'Signed begin balance of the account'" )){
@@ -998,7 +824,7 @@ dbmodel_v22( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v22( ofaDDLUpdate *self )
+count_v22( sUpdate *update_data )
 {
 	return( 2 );
 }
@@ -1009,14 +835,14 @@ count_v22( ofaDDLUpdate *self )
  * remediated in v27
  */
 static gboolean
-dbmodel_v23( ofaDDLUpdate *self, gint version )
+dbmodel_v23( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v23";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
 	/* n° 1 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_ACCOUNTS "
 			"	ADD COLUMN ACC_CLOSED CHAR(1) "
 			"	COMMENT 'Whether the account is closed'" )){
@@ -1031,7 +857,7 @@ dbmodel_v23( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v23( ofaDDLUpdate *self )
+count_v23( sUpdate *update_data )
 {
 	return( 1 );
 }
@@ -1044,14 +870,14 @@ count_v23( ofaDDLUpdate *self )
  * (cf. dbmodel v25 below)
  */
 static gboolean
-dbmodel_v24( ofaDDLUpdate *self, gint version )
+dbmodel_v24( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v24";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
 	/* n° 1 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_CONCIL ("
 			"       BAT_LINE_ID       BIGINT      NOT NULL           COMMENT 'BAT line identifier',"
 			"       BAT_REC_ENTRY     BIGINT      NOT NULL           COMMENT 'Entry the BAT line was reconciliated against',"
@@ -1063,7 +889,7 @@ dbmodel_v24( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"INSERT INTO OFA_T_BAT_CONCIL "
 			"       (BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
 			"       SELECT BAT_LINE_ID,BAT_LINE_ENTRY,BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
@@ -1075,7 +901,7 @@ dbmodel_v24( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 3 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"       DROP COLUMN BAT_LINE_ENTRY,"
 			"       DROP COLUMN BAT_LINE_UPD_USER,"
@@ -1091,7 +917,7 @@ dbmodel_v24( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v24( ofaDDLUpdate *self )
+count_v24( sUpdate *update_data )
 {
 	return( 3 );
 }
@@ -1106,22 +932,20 @@ count_v24( ofaDDLUpdate *self )
  * 1-1.
  */
 static gboolean
-dbmodel_v25( ofaDDLUpdate *self, gint version )
+dbmodel_v25( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v25";
-	ofaDDLUpdatePrivate *priv;
 	GSList *result, *irow, *icol;
 	ofxCounter last_concil, number, rec_id, bat_id;
 	gchar *query, *sdval, *user, *stamp;
 	gboolean ok;
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
-	priv = self->priv;
 	last_concil = 0;
 
 	/* n° 1 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL ("
 			"	REC_ID        BIGINT PRIMARY KEY NOT NULL            COMMENT 'Reconciliation identifier',"
 			"	REC_DVAL      DATE               NOT NULL            COMMENT 'Bank value date',"
@@ -1132,7 +956,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL_IDS ("
 			"	REC_ID         BIGINT             NOT NULL           COMMENT 'Reconciliation identifier',"
 			"	REC_IDS_TYPE   CHAR(1)            NOT NULL           COMMENT 'Identifier type Bat/Entry',"
@@ -1142,21 +966,21 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 3 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_LAST_CONCIL BIGINT NOT NULL DEFAULT 0 COMMENT 'Last reconciliation identifier used'" )){
 		return( FALSE );
 	}
 
 	/* not counted */
-	if( !ofa_idbconnect_query_ex( priv->cnx,
+	if( !ofa_idbconnect_query_ex( update_data->connect,
 			"SELECT ENT_NUMBER,ENT_CONCIL_DVAL,ENT_CONCIL_USER,ENT_CONCIL_STAMP "
 			"	FROM OFA_T_ENTRIES "
 			"	WHERE ENT_CONCIL_DVAL IS NOT NULL", &result, TRUE )){
 		return( FALSE );
 	} else {
 		ok = TRUE;
-		priv->total += 2*g_slist_length( result );
+		update_data->total += 2*g_slist_length( result );
 		for( irow=result ; irow && ok ; irow=irow->next ){
 			/* read reconciliated entries */
 			icol = ( GSList * ) irow->data;
@@ -1173,7 +997,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 					"INSERT INTO OFA_T_CONCIL "
 					"	(REC_ID,REC_DVAL,REC_USER,REC_STAMP) "
 					"	VALUES (%ld,'%s','%s','%s')", rec_id, sdval, user, stamp );
-			ok = exec_query( self, query );
+			ok = exec_query( update_data, query );
 			g_free( query );
 			g_free( stamp );
 			g_free( user );
@@ -1187,7 +1011,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
 					"	VALUES (%ld,'E',%ld)",
 					rec_id, number );
-			ok = exec_query( self, query );
+			ok = exec_query( update_data, query );
 			g_free( query );
 			if( !ok ){
 				break;
@@ -1202,14 +1026,14 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	/* n° 4 */
 	query = g_strdup_printf(
 			"UPDATE OFA_T_DOSSIER SET DOS_LAST_CONCIL=%ld WHERE DOS_ID=%u", last_concil, THIS_DOS_ID );
-	ok = exec_query( self, query );
+	ok = exec_query( update_data, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
 	}
 
 	/* not counted */
-	if( !ofa_idbconnect_query_ex( priv->cnx,
+	if( !ofa_idbconnect_query_ex( update_data->connect,
 			"SELECT a.BAT_LINE_ID,b.REC_ID "
 			"	FROM OFA_T_BAT_CONCIL a, OFA_T_CONCIL_IDS b "
 			"	WHERE a.BAT_REC_ENTRY=b.REC_IDS_OTHER "
@@ -1217,7 +1041,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	} else {
 		ok = TRUE;
-		priv->total += g_slist_length( result );
+		update_data->total += g_slist_length( result );
 		for( irow=result ; irow && ok ; irow=irow->next ){
 			/* read reconciliated bat lines */
 			icol = ( GSList * ) irow->data;
@@ -1229,7 +1053,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 					"INSERT INTO OFA_T_CONCIL_IDS "
 					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
 					"	VALUES (%ld,'B',%ld)", rec_id, bat_id );
-			ok = exec_query( self, query );
+			ok = exec_query( update_data, query );
 			g_free( query );
 		}
 		ofa_idbconnect_free_results( result );
@@ -1239,13 +1063,13 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
 	}
 
 	/* n° 5 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"DROP TABLE OFA_T_BAT_CONCIL" )){
 		return( FALSE );
 	}
 
 	/* n° 6 */
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	DROP COLUMN ENT_CONCIL_DVAL, "
 			"	DROP COLUMN ENT_CONCIL_USER, "
@@ -1261,7 +1085,7 @@ dbmodel_v25( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v25( ofaDDLUpdate *self )
+count_v25( sUpdate *update_data )
 {
 	return( 6 );
 }
@@ -1277,26 +1101,26 @@ count_v25( ofaDDLUpdate *self )
  * - have a date in order to be able to close a period.
  */
 static gboolean
-dbmodel_v26( ofaDDLUpdate *self, gint version )
+dbmodel_v26( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v26";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_LAST_CLOSING DATE COMMENT 'Last closed period',"
 			"	ADD COLUMN DOS_PREVEXE_ENTRY BIGINT COMMENT 'last entry number of the previous exercice'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_RATES_VAL "
 			"	ADD COLUMN RAT_VAL_ROW INTEGER COMMENT 'Row number of the validity detail line'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD COLUMN BAT_ACCOUNT VARCHAR(20) COMMENT 'Associated Openbook account'" )){
 		return( FALSE );
@@ -1310,7 +1134,7 @@ dbmodel_v26( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v26( ofaDDLUpdate *self )
+count_v26( sUpdate *update_data )
 {
 	return( 3 );
 }
@@ -1323,13 +1147,13 @@ count_v26( ofaDDLUpdate *self )
  * - OTE_xxx_LOCKED: CHAR(1)
  */
 static gboolean
-dbmodel_v27( ofaDDLUpdate *self, gint version )
+dbmodel_v27( sUpdate *update_data, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v27";
 
-	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_SIRET VARCHAR(13) COMMENT 'SIRET',"
 			"	CHANGE COLUMN DOS_STATUS "
@@ -1337,19 +1161,19 @@ dbmodel_v27( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_DOSSIER "
 			"	SET DOS_CURRENT='Y' WHERE DOS_CURRENT='O'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_DOSSIER "
 			"	SET DOS_CURRENT='N' WHERE DOS_CURRENT!='Y' OR DOS_CURRENT IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_ACCOUNTS "
 			"	CHANGE COLUMN ACC_TYPE "
 			"              ACC_ROOT        CHAR(1) DEFAULT 'N' COMMENT 'Root account',"
@@ -1358,105 +1182,105 @@ dbmodel_v27( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_ROOT='Y' WHERE ACC_ROOT='R'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_ROOT='N' WHERE ACC_ROOT!='Y' OR ACC_ROOT IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_SETTLEABLE='Y' WHERE ACC_SETTLEABLE='S'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_SETTLEABLE='N' WHERE ACC_SETTLEABLE!='Y' OR ACC_SETTLEABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_RECONCILIABLE='Y' WHERE ACC_RECONCILIABLE='R'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_RECONCILIABLE='N' WHERE ACC_RECONCILIABLE!='Y' OR ACC_RECONCILIABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_FORWARDABLE='Y' WHERE ACC_FORWARDABLE='F'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_FORWARDABLE='N' WHERE ACC_FORWARDABLE!='Y' OR ACC_FORWARDABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_CLOSED='Y' WHERE ACC_CLOSED='C'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_CLOSED='N' WHERE ACC_CLOSED!='Y' OR ACC_CLOSED IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	CHANGE COLUMN OTE_LED_LOCKED OTE_LED_LOCKED2 INTEGER,"
 			"	CHANGE COLUMN OTE_REF_LOCKED OTE_REF_LOCKED2 INTEGER" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	ADD COLUMN OTE_LED_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Ledger is locked',"
 			"	ADD COLUMN OTE_REF_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Operation reference is locked'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_LED_LOCKED='Y' WHERE OTE_LED_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_LED_LOCKED='N' WHERE OTE_LED_LOCKED2=0 OR OTE_LED_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_REF_LOCKED='Y' WHERE OTE_REF_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_REF_LOCKED='N' WHERE OTE_REF_LOCKED2=0 OR OTE_REF_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	CHANGE COLUMN OTE_DET_ACCOUNT_LOCKED OTE_DET_ACCOUNT_LOCKED2 INTEGER,"
 			"	CHANGE COLUMN OTE_DET_LABEL_LOCKED OTE_DET_LABEL_LOCKED2 INTEGER,"
@@ -1465,7 +1289,7 @@ dbmodel_v27( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	ADD COLUMN OTE_DET_ACCOUNT_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Account number is locked',"
 			"	ADD COLUMN OTE_DET_LABEL_LOCKED   CHAR(1) DEFAULT 'N' COMMENT 'Entry label is locked',"
@@ -1474,55 +1298,55 @@ dbmodel_v27( ofaDDLUpdate *self, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_ACCOUNT_LOCKED='Y' WHERE OTE_DET_ACCOUNT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_ACCOUNT_LOCKED='N' WHERE OTE_DET_ACCOUNT_LOCKED2=0 OR OTE_DET_ACCOUNT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_LABEL_LOCKED='Y' WHERE OTE_DET_LABEL_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_LABEL_LOCKED='N' WHERE OTE_DET_LABEL_LOCKED2=0 OR OTE_DET_LABEL_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_DEBIT_LOCKED='Y' WHERE OTE_DET_DEBIT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_DEBIT_LOCKED='N' WHERE OTE_DET_DEBIT_LOCKED2=0 OR OTE_DET_DEBIT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_CREDIT_LOCKED='Y' WHERE OTE_DET_CREDIT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_CREDIT_LOCKED='N' WHERE OTE_DET_CREDIT_LOCKED2=0 OR OTE_DET_CREDIT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( self,
+	if( !exec_query( update_data,
 			"ALTER TABLE OFA_T_RATES_VAL "
 			"	CHANGE COLUMN RAT_VAL_BEG "
 			"              RAT_VAL_BEGIN DATE DEFAULT NULL COMMENT 'Validity begin date'" )){
@@ -1537,73 +1361,37 @@ dbmodel_v27( ofaDDLUpdate *self, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v27( ofaDDLUpdate *self )
+count_v27( sUpdate *update_data )
 {
 	return( 31 );
 }
 
 static gboolean
-insert_classes( ofaDDLUpdate *self )
+import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import )
 {
-	return( import_utf8_comma_pipe_file(
-					self, "OFA_T_CLASSES", st_classes, 1, ofo_class_get_type ));
-}
-
-static gboolean
-insert_currencies( ofaDDLUpdate *self )
-{
-	return( import_utf8_comma_pipe_file(
-					self, "OFA_T_CURRENCIES", st_currencies, 1, ofo_currency_get_type ));
-}
-
-static gboolean
-insert_ledgers( ofaDDLUpdate *self )
-{
-	return( import_utf8_comma_pipe_file(
-					self, "OFA_T_LEDGERS", st_ledgers, 1, ofo_ledger_get_type ));
-}
-
-static gboolean
-insert_ope_templates( ofaDDLUpdate *self )
-{
-	return( import_utf8_comma_pipe_file(
-					self, "OFA_T_OPE_TEMPLATES", st_ope_templates, 2, ofo_ope_template_get_type ));
-}
-
-static gboolean
-insert_rates( ofaDDLUpdate *self )
-{
-	return( import_utf8_comma_pipe_file(
-					self, "OFA_T_RATES", st_rates, 2, ofo_rate_get_type ));
-}
-
-static gboolean
-import_utf8_comma_pipe_file( ofaDDLUpdate *self, const gchar *table, const gchar *fname, gint headers, fnType fn )
-{
-	ofaDDLUpdatePrivate *priv;
 	gint count;
 	gboolean ok;
 	ofaFileFormat *settings;
 	ofoBase *object;
-	gchar *uri;
-	gchar *str;
+	gchar *uri, *fname, *str;
 	GtkWidget *label;
 
-	priv = self->priv;
 	ok = TRUE;
-	count = count_rows( priv->dossier, table );
+	count = count_rows( update_data, import->table );
 	if( !count ){
-		str = g_strdup_printf( _( "Importing into %s :" ), table );
-		label = add_row( self, str, FALSE );
+		str = g_strdup_printf( _( "Importing into %s :" ), import->table );
+		label = add_row( update_data, str, FALSE );
 		g_free( str );
 
 		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', headers );
-		object = g_object_new( fn(), NULL );
+				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', import->header_count );
+		object = g_object_new( import->typefn(), NULL );
+		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );
+		g_free( fname );
 		count = ofa_dossier_misc_import_csv(
-						priv->dossier, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
+						update_data->dossier, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
 		ok = ( count > 0 );
 		g_free( uri );
 		g_object_unref( object );
@@ -1619,108 +1407,14 @@ import_utf8_comma_pipe_file( ofaDDLUpdate *self, const gchar *table, const gchar
 }
 
 static gint
-count_rows( const ofoDossier *dossier, const gchar *table )
+count_rows( sUpdate *update_data, const gchar *table )
 {
 	gint count;
 	gchar *query;
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
-	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( update_data->connect, query, &count, TRUE );
 	g_free( query );
 
 	return( count );
-}
-
-/*
- * let any plugin update its DB model
- */
-static gboolean
-plugins_update( ofaDDLUpdate *self )
-{
-	ofaDDLUpdatePrivate *priv;
-	GList *list, *it;
-	gboolean update_ok, ok;
-	const ofaIDBConnect *connect;
-	gchar *str;
-	const gchar *cname;
-	GtkWidget *label;
-
-	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBCUSTOMER );
-	update_ok = TRUE;
-	priv = self->priv;
-	connect = ofo_dossier_get_connect( priv->dossier );
-
-	for( it=list ; it && update_ok; it=it->next ){
-		if( ofa_idbcustomer_needs_ddl_update( OFA_IDBCUSTOMER( it->data ), connect )){
-			cname = ofa_idbcustomer_get_name( OFA_IDBCUSTOMER( it->data ));
-			str = g_strdup_printf( "Updating %s DB model:", cname );
-			label = add_row( self, str, FALSE );
-			g_free( str );
-
-			ok = ofa_idbcustomer_ddl_update( OFA_IDBCUSTOMER( it->data ), connect );
-			update_ok &= ok;
-
-			str = g_strdup_printf( ok ? _( "OK" ) : _( "NOT OK" ));
-			gtk_label_set_text( GTK_LABEL( label ), str );
-			gtk_widget_show( label );
-			g_free( str );
-		}
-	}
-
-	ofa_plugin_free_extensions( list );
-
-	return( update_ok );
-}
-
-static void
-set_bar_progression( ofaDDLUpdate *self )
-{
-	ofaDDLUpdatePrivate *priv;
-	gdouble progress;
-	gchar *text;
-
-	priv = self->priv;
-
-	if( priv->total > 0 ){
-		progress = ( gdouble ) priv->current / ( gdouble ) priv->total;
-		g_signal_emit_by_name( priv->bar, "ofa-double", progress );
-	}
-	text = g_strdup_printf( "%lu/%lu", priv->current, priv->total );
-	g_signal_emit_by_name( priv->bar, "ofa-text", text );
-	g_free( text );
-}
-
-/*
- * settings are a string list, with:
- * - paned pos
- */
-static void
-load_settings( ofaDDLUpdate *self )
-{
-	ofaDDLUpdatePrivate *priv;
-	GList *slist, *it;
-
-	priv = self->priv;
-
-	slist = ofa_settings_user_get_string_list( st_settings );
-	it = slist ? slist : NULL;
-	priv->paned_pos = it ? atoi( it->data ) : 50;
-
-	ofa_settings_free_string_list( slist );
-}
-
-static void
-write_settings( ofaDDLUpdate *self )
-{
-	ofaDDLUpdatePrivate *priv;
-	gchar *str;
-
-	priv = self->priv;
-
-	str = g_strdup_printf( "%d;",
-			gtk_paned_get_position( GTK_PANED( priv->paned )));
-
-	ofa_settings_user_set_string( st_settings, str );
-
-	g_free( str );
 }

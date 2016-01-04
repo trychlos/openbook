@@ -30,6 +30,7 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbprovider.h"
+#include "ofa-mysql-idbmodel.h"
 #include "ofa-mysql-iprefs-provider.h"
 
 /* private instance data
@@ -75,6 +76,12 @@ ofa_mysql_register_type( GTypeModule *module )
 		NULL
 	};
 
+	static const GInterfaceInfo idbmodel_iface_info = {
+		( GInterfaceInitFunc ) ofa_mysql_idbmodel_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iprefs_provider_iface_info = {
 		( GInterfaceInitFunc ) ofa_mysql_iprefs_provider_iface_init,
 		NULL,
@@ -87,6 +94,9 @@ ofa_mysql_register_type( GTypeModule *module )
 
 	g_type_module_add_interface(
 			module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
+
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
 
 	g_type_module_add_interface(
 			module, st_module_type, OFA_TYPE_IPREFS_PROVIDER, &iprefs_provider_iface_info );

@@ -503,6 +503,7 @@
 
  948 2015-12-31 review the ofoDossier class
                 which is actually a pivot class with dossier props + connect
+     2016- 1- 4 ofa_dossier_misc_xxx should then move to this new class
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier
@@ -510,14 +511,15 @@
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
 
- 951 2015-12-31 review the DB model upgrade to be more explicit on
-                plugins DB model updates
-
  953
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 951 2015-12-31 review the DB model upgrade to be more explicit on
+                plugins DB model updates
+     2016- 1- 4 done
 
  952 2016- 1- 1 gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
      2016- 1- 2 done

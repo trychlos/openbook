@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-idbconnect.h"
@@ -39,7 +40,6 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/my-progress-bar.h"
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-file-dir.h"
