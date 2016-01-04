@@ -1,13 +1,17 @@
 data/desktop/openbook.desktop.in
 src/core/ofa-admin-credentials-bin.ui
+src/core/ofa-date-filter-hv-bin.ui
 src/core/ofa-dbms-root-bin.ui
 src/core/ofa-dossier-delete-prefs-bin.ui
 src/core/ofa-file-format-bin.ui
+src/core/ofa-idbmodel.ui
 src/core/ofa-preferences.ui
-src/core/ofa-ddl-update.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
+src/tva/ofa-tva-form-properties.ui
+src/tva/ofa-tva-record-new.ui
+src/tva/ofa-tva-record-properties.ui
 src/ui/ofa-account-book-bin.ui
 src/ui/ofa-account-filter-vv-bin.ui
 src/ui/ofa-account-properties.ui
@@ -25,7 +29,6 @@ src/ui/ofa-check-integrity-bin.ui
 src/ui/ofa-class-properties.ui
 src/ui/ofa-closing-parms-bin.ui
 src/ui/ofa-currency-properties.ui
-src/ui/ofa-date-filter-hv-bin.ui
 src/ui/ofa-dos-menubar.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui
