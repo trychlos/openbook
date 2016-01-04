@@ -2,7 +2,7 @@
  * ConcilIdn Freelance Accounting
  * A double-entry accounting application for freelances.
  *
- * Copyright (C) 2014,2015 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
  *
  * ConcilIdn Freelance Accounting is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
