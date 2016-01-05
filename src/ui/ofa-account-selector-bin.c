@@ -27,6 +27,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -47,6 +48,7 @@ struct _ofaAccountSelectorBinPrivate {
 	gint                 allowed;
 	gchar               *def_account;
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 
 	/* UI
 	 */
@@ -245,6 +247,7 @@ ofa_account_selector_bin_set_select_args(
 		ofaAccountSelectorBin *bin, const gchar *default_account, const ofaMainWindow *main_window )
 {
 	ofaAccountSelectorBinPrivate *priv;
+	GtkApplication *application;
 
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_SELECTOR_BIN( bin ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -255,6 +258,12 @@ ofa_account_selector_bin_set_select_args(
 
 		priv->def_account = g_strdup( default_account );
 		priv->main_window = main_window;
+
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 		gtk_widget_set_sensitive( priv->acc_select, TRUE );
 	}
@@ -274,8 +283,7 @@ on_entry_changed( GtkEntry *entry, ofaAccountSelectorBin *bin )
 	g_free( priv->acc_number );
 	priv->acc_number = g_strdup( gtk_entry_get_text( GTK_ENTRY( priv->acc_entry )));
 
-	account = ofo_account_get_by_number(
-						ofa_main_window_get_dossier( priv->main_window ), priv->acc_number );
+	account = ofo_account_get_by_number( priv->hub, priv->acc_number );
 
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));

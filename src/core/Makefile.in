@@ -170,21 +170,22 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-file-monitor.lo my-igridlist.lo my-isettings.lo \
 	my-progress-bar.lo my-settings.lo my-timeout.lo my-utils.lo \
 	my-window.lo ofa-admin-credentials-bin.lo ofa-box.lo \
-	ofa-buttons-box.lo ofa-collection.lo ofa-concil-collection.lo \
-	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-dossier-misc.lo \
+	ofa-buttons-box.lo ofa-collection.lo ofa-date-filter-hv-bin.lo \
+	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
 	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
-	ofa-iabout.lo ofa-icollector.lo ofa-iconcil.lo ofa-idataset.lo \
+	ofa-hub.lo ofa-iabout.lo ofa-icollectionable.lo \
+	ofa-icollector.lo ofa-iconcil.lo ofa-idataset.lo \
 	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
 	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
-	ofa-idbprovider.lo ofa-iexportable.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-iprefs-page.lo ofa-iprefs-provider.lo \
-	ofa-istore.lo ofa-list-store.lo ofa-page.lo ofa-plugin.lo \
-	ofa-preferences.lo ofa-settings.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-bat.lo ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
+	ofa-idbprovider.lo ofa-iexportable.lo ofa-ihubber.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-iprefs-page.lo \
+	ofa-iprefs-provider.lo ofa-istore.lo ofa-list-store.lo \
+	ofa-page.lo ofa-plugin.lo ofa-preferences.lo ofa-settings.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
+	ofs-currency.lo ofs-ope.lo
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -476,22 +477,20 @@ libofa_core_la_SOURCES = \
 	ofa-collection.c									\
 	ofa-collection.h									\
 	ofa-collection-prot.h								\
-	ofa-concil-collection.c								\
-	ofa-concil-collection.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
-	ofa-dossier-misc.c									\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
+	ofa-hub.c											\
 	ofa-iabout.c										\
+	ofa-icollectionable.c								\
 	ofa-icollector.c									\
-	ofa-icollector.h									\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
@@ -503,6 +502,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
+	ofa-ihubber.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
@@ -667,15 +667,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-collection.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-concil-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-misc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-dir.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-hub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iabout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icollectionable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icollector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iconcil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idataset.Plo@am__quote@
@@ -687,6 +687,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ihubber.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprefs-page.Plo@am__quote@

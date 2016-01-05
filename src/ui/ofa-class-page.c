@@ -479,7 +479,7 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_class && ofo_class_is_deletable( class, priv->dossier ));
+				priv->is_current && is_class && ofo_class_is_deletable( class ));
 	}
 }
 
@@ -539,7 +539,7 @@ try_to_delete_current_row( ofaClassPage *self )
 	GtkTreeIter iter;
 
 	class = tview_get_selected( self, &tmodel, &iter );
-	if( ofo_class_is_deletable( class, ofa_page_get_dossier( OFA_PAGE( self )))){
+	if( ofo_class_is_deletable( class )){
 		do_delete( self, class, tmodel, &iter );
 	}
 }
@@ -567,7 +567,7 @@ do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIte
 	gboolean deletable;
 
 	priv = page->priv;
-	deletable = ofo_class_is_deletable( class, priv->dossier );
+	deletable = ofo_class_is_deletable( class );
 	g_return_if_fail( deletable );
 
 	if( delete_confirmed( page, class )){

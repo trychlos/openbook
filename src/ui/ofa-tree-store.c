@@ -26,26 +26,25 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-istore.h"
-#include "api/ofo-dossier-def.h"
-
 #include "ui/ofa-tree-store.h"
+
+#include "api/ofa-istore.h"
 
 /* private instance data
  */
 struct _ofaTreeStorePrivate {
-	gboolean    dispose_has_run;
+	gboolean  dispose_has_run;
 
 	/* properties
 	 */
-	ofoDossier *dossier;
-	gboolean    dataset_loaded;
+	ofaHub   *hub;
+	gboolean  dataset_loaded;
 };
 
 /* class properties
  */
 enum {
-	OFA_PROP_DOSSIER_ID = 1,
+	OFA_PROP_HUB_ID = 1,
 };
 
 /* signals defined here
@@ -111,8 +110,8 @@ tree_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_DOSSIER_ID:
-				g_value_set_object( value, priv->dossier );
+			case OFA_PROP_HUB_ID:
+				g_value_set_object( value, priv->hub );
 				break;
 
 			default:
@@ -134,8 +133,8 @@ tree_store_set_property( GObject *object, guint property_id, const GValue *value
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_DOSSIER_ID:
-				priv->dossier = g_value_get_object( value );
+			case OFA_PROP_HUB_ID:
+				priv->hub = g_value_get_object( value );
 				break;
 
 			default:
@@ -160,9 +159,9 @@ tree_store_constructed( GObject *instance )
 	 * dossier finalization
 	 */
 	priv = OFA_TREE_STORE( instance )->priv;
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	ofa_istore_init( OFA_ISTORE( instance ), priv->dossier );
+	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
 }
 
 static void
@@ -195,12 +194,12 @@ ofa_tree_store_class_init( ofaTreeStoreClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
-			OFA_PROP_DOSSIER_ID,
+			OFA_PROP_HUB_ID,
 			g_param_spec_object(
-					OFA_PROP_DOSSIER,
-					"Dossier",
-					"The currently opened dossier",
-					OFO_TYPE_DOSSIER,
+					OFA_PROP_HUB,
+					"Hub",
+					"The current ofaHub object",
+					OFA_TYPE_HUB,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	/**

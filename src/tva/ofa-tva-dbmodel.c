@@ -30,8 +30,8 @@
 
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofo-dossier.h"
 
 #include "ofa-tva.h"
 #include "ofa-tva-dbmodel.h"
@@ -43,7 +43,7 @@ typedef struct {
 	/* initialization
 	 */
 	const ofaIDBModel   *instance;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 	const ofaIDBConnect *connect;
 	myDialog            *dialog;
 
@@ -81,9 +81,10 @@ static sMigration st_migrates[] = {
 #define MARGIN_LEFT                     20
 
 static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
-static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier );
-static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog );
+static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static void       idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub );
+static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
 static void       set_bar_progression( sUpdate *update_data );
@@ -105,6 +106,7 @@ ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->get_current_version = idbmodel_get_current_version;
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
+	iface->connect_handlers = idbmodel_connect_handlers;
 }
 
 /*
@@ -117,19 +119,19 @@ idbmodel_get_interface_version( const ofaIDBModel *instance )
 }
 
 static guint
-idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	gint vcurrent;
 
 	vcurrent = 0;
-	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ),
+	ofa_idbconnect_query_int( connect,
 			"SELECT MAX(VER_NUMBER) FROM TVA_T_VERSION WHERE VER_DATE > 0", &vcurrent, FALSE );
 
 	return(( guint ) vcurrent );
 }
 
 static guint
-idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	guint last_version, i;
 
@@ -144,8 +146,16 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossie
 	return( last_version );
 }
 
+static void
+idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_idbmodel_connect_handlers";
+
+	g_debug( "%s: instance=%p, hub=%p", thisfn, ( void * ) instance, ( void * ) hub );
+}
+
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog )
 {
 	sUpdate *update_data;
 	guint i, cur_version, last_version;
@@ -156,12 +166,12 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog 
 	ok = TRUE;
 	update_data = g_new0( sUpdate, 1 );
 	update_data->instance = instance;
-	update_data->dossier = dossier;
-	update_data->connect = ofo_dossier_get_connect( dossier );
+	update_data->hub = hub;
+	update_data->connect = ofa_hub_get_connect( hub );
 	update_data->dialog = dialog;
 
-	cur_version = idbmodel_get_current_version( instance, dossier );
-	last_version = idbmodel_get_last_version( instance, dossier );
+	cur_version = idbmodel_get_current_version( instance, update_data->connect );
+	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
 	label = gtk_label_new( _( "Updating VAT DB model" ));
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );

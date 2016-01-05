@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -52,6 +53,7 @@
  */
 struct _ofaReconcilRenderPrivate {
 
+	ofaHub         *hub;
 	ofoDossier     *dossier;
 	ofaReconcilBin *args_bin;
 
@@ -271,6 +273,7 @@ page_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_page_init_view";
 	ofaReconcilRenderPrivate *priv;
+	GtkApplication *application;
 
 	OFA_PAGE_CLASS( ofa_reconcil_render_parent_class )->init_view( page );
 
@@ -280,6 +283,11 @@ page_init_view( ofaPage *page )
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
 
 	priv->dossier = ofa_page_get_dossier( page );
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -339,7 +347,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
 	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
 
-	priv->account = ofo_account_get_by_number( priv->dossier, priv->account_number );
+	priv->account = ofo_account_get_by_number( priv->hub, priv->account_number );
 	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
 
 	priv->currency = ofo_account_get_currency( priv->account );
@@ -597,7 +605,7 @@ irenderable_draw_top_summary( ofaIRenderable *instance )
 
 	y = ofa_irenderable_get_last_y( instance );
 
-	ofo_account_get_global_deffect( priv->account, priv->dossier, &priv->global_deffect );
+	ofo_account_get_global_deffect( priv->account, &priv->global_deffect );
 	my_date_set_from_date( &date, &priv->global_deffect );
 	if( !my_date_is_valid( &date )){
 		my_date_set_from_date( &date, &priv->date );

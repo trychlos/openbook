@@ -27,11 +27,11 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-icollector.h"
+#include "api/ofo-base.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-concil-collection.h"
-#include "core/ofa-icollector.h"
 #include "core/ofa-iconcil.h"
 
 /* this structure is held by the object
@@ -52,6 +52,7 @@ static void         interface_base_init( ofaIConcilInterface *klass );
 static void         interface_base_finalize( ofaIConcilInterface *klass );
 static const gchar *iconcil_get_type( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_id( const ofaIConcil *instance );
+static ofoConcil   *get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id );
 
 /**
  * ofa_iconcil_get_type:
@@ -165,32 +166,38 @@ ofa_iconcil_get_interface_version( const ofaIConcil *instance )
 
 /**
  * ofa_iconcil_get_concil:
- * @instance:
- * @dossier:
+ * @instance: a #ofoConcil object.
  *
  * Returns: the reconciliation group this instance belongs to, or %NULL.
  *
  * The reconciliation group is first searched in the in-memory
- * collection which is attached to the dossier, then only is requested
+ * collection which is attached to the ICollector, then only is requested
  * from the database.
  */
 ofoConcil *
-ofa_iconcil_get_concil( const ofaIConcil *instance, ofoDossier *dossier )
+ofa_iconcil_get_concil( const ofaIConcil *instance )
 {
 	ofoConcil *concil;
-	GObject *collection;
+	ofaHub *hub;
+	GList *collection;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	collection = ofa_icollector_get_object( OFA_ICOLLECTOR( dossier ), OFA_TYPE_CONCIL_COLLECTION );
-	g_return_val_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ), NULL );
+	hub = ofo_base_get_hub( OFO_BASE( instance ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	concil = ofa_concil_collection_get_by_other_id(
-					OFA_CONCIL_COLLECTION( collection ),
+	collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CONCIL );
+	concil = get_concil_from_collection(
+					collection,
 					iconcil_get_type( instance ),
-					iconcil_get_id( instance ),
-					dossier );
+					iconcil_get_id( instance ));
+
+	if( !concil ){
+		concil = ofo_concil_get_by_other_id(
+						hub,
+						iconcil_get_type( instance ),
+						iconcil_get_id( instance ));
+	}
 
 	return( concil );
 }
@@ -199,26 +206,34 @@ ofa_iconcil_get_concil( const ofaIConcil *instance, ofoDossier *dossier )
  * ofa_iconcil_new_concil:
  * @instance:
  * @dval:
- * @dossier:
  *
  * Returns: a newly created conciliation group from the @instance.
  */
 ofoConcil *
-ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval, ofoDossier *dossier )
+ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 {
+	ofaHub *hub;
 	ofoConcil *concil;
+	const ofaIDBConnect *connect;
 	GTimeVal stamp;
+	gchar *userid;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
+	hub = ofo_base_get_hub( OFO_BASE( instance ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	connect = ofa_hub_get_connect( hub );
+	userid = ofa_idbconnect_get_account( connect );
 	concil = ofo_concil_new();
 
 	ofo_concil_set_dval( concil, dval );
-	ofo_concil_set_user( concil, ofo_dossier_get_user( dossier ));
+	ofo_concil_set_user( concil, userid );
 	ofo_concil_set_stamp( concil, my_utils_stamp_set_now( &stamp ));
 
-	ofa_iconcil_new_concil_ex( instance, concil, dossier );
+	ofa_iconcil_new_concil_ex( instance, concil );
+
+	g_free( userid );
 
 	return( concil );
 }
@@ -227,65 +242,49 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval, ofoDossier *dos
  * ofa_iconcil_new_concil_ex:
  * @instance:
  * @concil:
- * @dossier:
  *
  * An #ofoConcil object is already set with dval, user and stamp.
  * Add the ofaIConcil instance to it and write in DBMS.
  */
 void
-ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil, ofoDossier *dossier )
+ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 {
-	GObject *collection;
+	ofaHub *hub;
 
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	ofo_concil_insert( concil, dossier );
-	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ), dossier );
+	hub = ofo_base_get_hub( OFO_BASE( instance ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	collection = ofa_icollector_get_object( OFA_ICOLLECTOR( dossier ), OFA_TYPE_CONCIL_COLLECTION );
-	g_return_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ));
-
-	ofa_concil_collection_add( OFA_CONCIL_COLLECTION( collection ), concil );
+	ofo_concil_insert( concil, hub );
+	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
 }
 
 /**
  * ofa_iconcil_add_to_concil:
  * @instance:
  * @concil:
- * @dossier:
  */
 void
-ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil, ofoDossier *dossier )
+ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 {
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ), dossier );
+	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
 }
 
 /**
  * ofa_iconcil_remove_concil:
  * @concil:
- * @dossier:
  */
 void
-ofa_iconcil_remove_concil( ofoConcil *concil, ofoDossier *dossier )
+ofa_iconcil_remove_concil( ofoConcil *concil )
 {
-	GObject *collection;
-
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	if( ofo_concil_delete( concil, dossier )){
-
-		collection = ofa_icollector_get_object( OFA_ICOLLECTOR( dossier ), OFA_TYPE_CONCIL_COLLECTION );
-		g_return_if_fail( collection && OFA_IS_CONCIL_COLLECTION( collection ));
-
-		ofa_concil_collection_remove( OFA_CONCIL_COLLECTION( collection ), concil );
-	}
+	ofo_concil_delete( concil );
 }
 
 static const gchar *
@@ -310,4 +309,21 @@ iconcil_get_id( const ofaIConcil *instance )
 	id = OFA_ICONCIL_GET_INTERFACE( instance )->get_object_id( instance );
 
 	return( id );
+}
+
+static ofoConcil *
+get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id )
+{
+	GList *it;
+	ofoConcil *concil;
+
+	for( it=collection ; it ; it=it->next ){
+		concil = ( ofoConcil * ) it->data;
+		g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+		if( ofo_concil_has_member( concil, type, id )){
+			return( concil );
+		}
+	}
+
+	return( NULL );
 }

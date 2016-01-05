@@ -38,6 +38,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -63,6 +64,7 @@
 struct _ofaExerciceCloseAssistantPrivate {
 
 	ofaMainWindow        *main_window;
+	ofaHub               *hub;
 
 	/* dossier
 	 */
@@ -294,6 +296,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplication *application;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -301,7 +304,13 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	priv = self->priv;
 
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	priv->connect = ofo_dossier_get_connect( priv->dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( priv->connect );
 	priv->dos_name = ofa_idbmeta_get_dossier_name( priv->meta );
 }
@@ -625,7 +634,7 @@ p3_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 
 	if( !priv->p3_done ){
 		my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_PROGRESS );
-		ofa_check_balances_bin_set_dossier( priv->p3_checks_bin, priv->dossier );
+		ofa_check_balances_bin_set_hub( priv->p3_checks_bin, priv->hub );
 	}
 }
 
@@ -675,7 +684,7 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 
 	if( !priv->p4_done ){
 		my_assistant_set_page_type( MY_ASSISTANT( self ), GTK_ASSISTANT_PAGE_PROGRESS );
-		ofa_check_integrity_bin_set_dossier( priv->p4_checks_bin, priv->dossier );
+		ofa_check_integrity_bin_set_hub( priv->p4_checks_bin, priv->hub );
 	}
 }
 
@@ -829,7 +838,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	bar = NULL;
 	errors = 0;
-	accounts = ofo_account_get_dataset_for_solde( priv->dossier );
+	accounts = ofo_account_get_dataset_for_solde( priv->hub );
 	count = g_list_length( accounts );
 	precision = 1/PRECISION;
 
@@ -944,7 +953,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				}
 				if( ofo_account_is_reconciliable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
-					ofa_iconcil_new_concil( OFA_ICONCIL( entry ), end_cur, priv->dossier );
+					ofa_iconcil_new_concil( OFA_ICONCIL( entry ), end_cur );
 				}
 			}
 			ofo_entry_free_dataset( sld_entries );
@@ -1094,6 +1103,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	const GDate *begin_next, *end_next;
 	gchar *str, *cur_account, *cur_password;
 	ofaIDBProvider *provider;
+	GtkApplication *application;
+	ofaHub *hub;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1145,11 +1156,12 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
 
 		} else {
-			ofa_main_window_open_dossier( priv->main_window, OFA_IDBCONNECT( cnx ), FALSE );
-			priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-			priv->connect = ofo_dossier_get_connect( priv->dossier );
-
-			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+			application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+			g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
+			hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), cnx );
+			if( hub ){
+				priv->dossier = ofa_hub_get_dossier( hub );
+				priv->connect = ofa_hub_get_connect( hub );
 				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
@@ -1377,10 +1389,10 @@ p6_forward( ofaExerciceCloseAssistant *self )
 		}
 
 		/* set reconciliation on reconciliable account */
-		account = ofo_account_get_by_number( priv->dossier, ofo_entry_get_account( entry ));
+		account = ofo_account_get_by_number( priv->hub, ofo_entry_get_account( entry ));
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 		if( ofo_account_is_reconciliable( account )){
-			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin, priv->dossier );
+			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
 		}
 
 		g_signal_emit_by_name( priv->dossier,
@@ -1426,7 +1438,7 @@ p6_open( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	accounts = ofo_account_get_dataset( priv->dossier );
+	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
 
 	bar = get_new_bar( self, "p6-open" );

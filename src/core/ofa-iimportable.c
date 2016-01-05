@@ -248,7 +248,7 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
 gint
 ofa_iimportable_import( ofaIImportable *importable,
 									GSList *lines, const ofaFileFormat *settings,
-									ofoDossier *dossier, void *caller )
+									ofaHub *hub, void *caller )
 {
 	static const gchar *thisfn = "ofa_iimportable_import";
 	sIImportable *sdata;
@@ -262,7 +262,7 @@ ofa_iimportable_import( ofaIImportable *importable,
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 	g_return_val_if_fail( OFO_IS_BASE( importable ), 0 );
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
 	my_utils_stamp_set_now( &stamp_start );
 	sdata = get_iimportable_data( importable );
@@ -278,7 +278,7 @@ ofa_iimportable_import( ofaIImportable *importable,
 	sdata->count = g_slist_length( content );
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
-		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, content, settings, dossier );
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, content, settings, hub );
 	}
 
 	my_utils_stamp_set_now( &stamp_end );
@@ -465,17 +465,17 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  */
 guint
 ofa_iimportable_import_uri( ofaIImportable *importable,
-									ofoDossier *dossier, void *caller, ofxCounter *imported_id )
+								ofoDossier *dossier, void *caller, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_iimportable_import_uri";
 	sIImportable *sdata;
 	gint errors;
 
-	g_debug( "%s: importable=%p, dossier=%p, caller=%p",
+	g_debug( "%s: importable=%p, hub=%p, caller=%p",
 			thisfn, ( void * ) importable, ( void * ) dossier, ( void * ) caller );
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	//g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );

@@ -462,7 +462,7 @@ display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, 
 	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
 	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
 	samount = my_double_to_str( ofo_bat_line_get_amount( line ));
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ), dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
 	snumbers = g_string_new( "" );
 	if( concil ){
 		cuser = ofo_concil_get_user( concil );

@@ -33,10 +33,13 @@
  * This file defines the #ofoCurrency public API.
  */
 
+#include "api/ofa-hub.h"
 #include "api/ofo-currency-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+void            ofo_currency_connect_signaling_system( const ofaHub *hub );
 
 GList          *ofo_currency_get_dataset  ( ofoDossier *dossier );
 ofoCurrency    *ofo_currency_get_by_code  ( ofoDossier *dossier, const gchar *code );

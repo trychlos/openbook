@@ -22,33 +22,29 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ICOLLECTOR_H__
-#define __OFA_ICOLLECTOR_H__
+#ifndef __OPENBOOK_API_OFA_ICOLLECTOR_H__
+#define __OPENBOOK_API_OFA_ICOLLECTOR_H__
 
 /**
  * SECTION: icollector
  * @title: ofaICollector
  * @short_description: The ICollector Interface
- * @include: core/ofa-icollector.h
+ * @include: openbook/ofa-icollector.h
  *
- * The #ofaICollector interface is implemented by the #ofoDossier class,
- * so that it is able to manage the a class-wide though dossier-attached
- * object for its client classes.
+ * The #ofaICollector interface lets an object manage collection(s) of
+ * other objects.
  *
- * From the #ofaICollector interface point of view, the dossier just
- * maintains a list of GObjects-derived objects. These objects
- * themselves are managed by the collections.
+ * It is expected that these other objects (whose collections are
+ * managed by this #ofaICollector interface) implement themselves the
+ * #ofaICollectionable interface.
  *
- * Though this whole interface may have been included directly in the
- * #ofoDossier class code, this interface let us isolate the feature,
- * making thus it more reusable.
- *
- * The #ofaICollector implementation should call:
- * - ofa_icollector_init(), on instance intialization
- * - ofa_icollector_dispose(), on (first) instance dispose.
+ * For Openbook needs, the #ofaICollector interface is implemented by
+ * the #ofaHub class, so that it is able to manage the collections of
+ * accounts, classes, currencies, and so on.
  */
 
-#include <glib-object.h>
+#include "api/ofa-hub.h"
+#include "api/ofa-icollectionable.h"
 
 G_BEGIN_DECLS
 
@@ -61,8 +57,11 @@ typedef struct _ofaICollector                    ofaICollector;
 
 /**
  * ofaICollectorInterface:
+ * @get_interface_version: [should]: get the version number of the
+ *                                   interface implementation.
  *
- * This defines the interface that an #ofaICollector should implement.
+ * This defines the interface that an #ofaICollector may/should
+ * implement.
  */
 typedef struct {
 	/*< private >*/
@@ -71,17 +70,19 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaICollector provider.
+	 * @instance: the #ofaICollector instance.
 	 *
 	 * The interface calls this method each time it need to know which
 	 * version is implented.
 	 *
-	 * Return value: if implemented, this method must return the version
+	 * Returns: if implemented, this method must return the version
 	 * number of this interface the provider is supporting.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( const ofaICollector *collector );
+	guint ( *get_interface_version )( const ofaICollector *instance );
 }
 	ofaICollectorInterface;
 
@@ -89,16 +90,27 @@ GType    ofa_icollector_get_type                  ( void );
 
 guint    ofa_icollector_get_interface_last_version( void );
 
-guint    ofa_icollector_get_interface_version     ( const ofaICollector *collector );
+guint    ofa_icollector_get_interface_version     ( const ofaICollector *instance );
 
-GObject *ofa_icollector_get_object                ( ofaICollector *collector, GType type );
+GList   *ofa_icollector_get_collection            ( ofaICollector *instance,
+														ofaHub *hub,
+														GType type );
 
-/* an API dedicated to the #ofaICollector implementation
- */
-void     ofa_icollector_init                      ( ofaICollector *collector );
+void     ofa_icollector_add_object                ( ofaICollector *instance,
+														ofaHub *hub,
+														ofaICollectionable *object,
+														GCompareFunc func );
 
-void     ofa_icollector_dispose                   ( ofaICollector *collector );
+void     ofa_icollector_remove_object             ( ofaICollector *instance,
+														const ofaICollectionable *object );
+
+void     ofa_icollector_sort_collection           ( ofaICollector *instance,
+														GType type,
+														GCompareFunc func );
+
+void     ofa_icollector_free_collection           ( ofaICollector *instance,
+														GType type );
 
 G_END_DECLS
 
-#endif /* __OFA_ICOLLECTOR_H__ */
+#endif /* __OPENBOOK_API_OFA_ICOLLECTOR_H__ */

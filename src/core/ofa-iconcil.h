@@ -110,23 +110,18 @@ guint      ofa_iconcil_get_interface_last_version( void );
 
 guint      ofa_iconcil_get_interface_version     ( const ofaIConcil *instance );
 
-ofoConcil *ofa_iconcil_get_concil                ( const ofaIConcil *instance,
-														ofoDossier *dossier );
+ofoConcil *ofa_iconcil_get_concil                ( const ofaIConcil *instance );
 
 ofoConcil *ofa_iconcil_new_concil                ( ofaIConcil *instance,
-														const GDate *dval,
-														ofoDossier *dossier );
+														const GDate *dval );
 
 void       ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
-														ofoConcil *concil,
-														ofoDossier *dossier );
+														ofoConcil *concil );
 
 void       ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
-														ofoConcil *concil,
-														ofoDossier *dossier );
+														ofoConcil *concil );
 
-void       ofa_iconcil_remove_concil             ( ofoConcil *concil,
-														ofoDossier *dossier );
+void       ofa_iconcil_remove_concil             ( ofoConcil *concil );
 
 G_END_DECLS
 

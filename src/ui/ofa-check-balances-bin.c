@@ -48,7 +48,7 @@ struct _ofaCheckBalancesBinPrivate {
 
 	/* runtime data
 	 */
-	ofoDossier *dossier;
+	ofaHub     *hub;
 
 	gboolean    entries_ok;
 	GList      *entries_list;
@@ -215,24 +215,24 @@ setup_bin( ofaCheckBalancesBin *bin )
 }
 
 /**
- * ofa_check_balances_bin_set_dossier:
+ * ofa_check_balances_bin_set_hub:
  */
 void
-ofa_check_balances_bin_set_dossier( ofaCheckBalancesBin *bin, ofoDossier *dossier )
+ofa_check_balances_bin_set_hub( ofaCheckBalancesBin *bin, ofaHub *hub )
 {
 	ofaCheckBalancesBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_CHECK_BALANCES_BIN( bin ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run ){
-
-		priv->dossier = dossier;
-
-		g_idle_add(( GSourceFunc ) do_run, bin );
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
 	}
+
+	priv->hub = hub;
+	g_idle_add(( GSourceFunc ) do_run, bin );
 }
 
 static gboolean
@@ -266,6 +266,7 @@ static void
 check_entries_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *entries, *it;
@@ -280,10 +281,12 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ) );
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->entries_list = NULL;
-	dbegin = ofo_dossier_get_exe_begin( priv->dossier );
-	dend = ofo_dossier_get_exe_end( priv->dossier );
-	entries = ofo_entry_get_dataset_for_print_general_books( priv->dossier, NULL, NULL, dbegin, dend );
+	dbegin = ofo_dossier_get_exe_begin( dossier );
+	dend = ofo_dossier_get_exe_end( dossier );
+	entries = ofo_entry_get_dataset_for_print_general_books( dossier, NULL, NULL, dbegin, dend );
 	count = g_list_length( entries );
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
@@ -320,6 +323,7 @@ static void
 check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *ledgers, *it;
@@ -334,8 +338,10 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->ledgers_list = NULL;
-	ledgers = ofo_ledger_get_dataset( priv->dossier );
+	ledgers = ofo_ledger_get_dataset( dossier );
 	count = g_list_length( ledgers );
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
@@ -388,7 +394,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 
 	priv = bin->priv;
 	priv->accounts_list = NULL;
-	accounts = ofo_account_get_dataset( priv->dossier );
+	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
 
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
@@ -421,6 +427,7 @@ static ofsCurrency *
 get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *currency )
 {
 	ofaCheckBalancesBinPrivate *priv;
+	ofoDossier *dossier;
 	GList *it;
 	ofsCurrency *sbal;
 	ofoCurrency *cur_object;
@@ -428,6 +435,7 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 
 	priv = bin->priv;
 	found = FALSE;
+	dossier = ofa_hub_get_dossier( priv->hub );
 
 	for( it=*list ; it ; it=it->next ){
 		sbal = ( ofsCurrency * ) it->data;
@@ -440,7 +448,7 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 	if( !found ){
 		sbal = g_new0( ofsCurrency, 1 );
 		sbal->currency = g_strdup( currency );
-		cur_object = ofo_currency_get_by_code( priv->dossier, currency );
+		cur_object = ofo_currency_get_by_code( dossier, currency );
 		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
 		sbal->digits = ofo_currency_get_digits( cur_object );
 		*list = g_list_prepend( *list, sbal );

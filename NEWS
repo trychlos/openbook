@@ -23,7 +23,8 @@
 
  New features and improvements:
 
-   - 
+   - ofaHub: new hub management class (todo #948).
+   - ofaIHubber: new interface for ofaHub management (todo #941).
 
  Bug fixes:
 
@@ -31,7 +32,9 @@
 
  Other changes:
 
-   - 
+   - ofa_dossier_misc_import_csv(): removed function.
+   - ofo_dossier_new(): removed method.
+   - ofaICollectionable: new interface for classes which have in-memory datasets.
 
 -----------------------------------------------------------------------
  Version 0.44

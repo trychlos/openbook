@@ -82,9 +82,9 @@ typedef struct {
 /**
  * Properties defined by the ofaTreeStore class.
  *
- * @OFA_PROP_DOSSIER: the currently opened #ofoDossier.
+ * @OFA_PROP_HUB: the current #ofaHub object.
  */
-#define OFA_PROP_DOSSIER                "ofa-store-prop-dossier"
+#define OFA_PROP_HUB                    "ofa-store-prop-hub"
 
 GType ofa_tree_store_get_type    ( void ) G_GNUC_CONST;
 

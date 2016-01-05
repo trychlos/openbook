@@ -34,8 +34,10 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -73,16 +75,23 @@ G_BEGIN_DECLS
 		g_return_if_fail( !OFO_BASE(V)->prot->dispose_has_run ); \
 		ofa_box_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
-GList *ofo_base_init_fields_list( const ofsBoxDef *defs );
+GList  *ofo_base_init_fields_list( const ofsBoxDef *defs );
 
-GList *ofo_base_load_dataset    ( const ofsBoxDef *defs,
-											const ofaIDBConnect *cnx,
+GList  *ofo_base_load_dataset    ( const ofsBoxDef *defs,
+											const gchar *from,
+											GType type,
+											ofaHub *hub );
+
+GList  *ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs,
+											const ofaIDBConnect *connect,
 											const gchar *from,
 											GType type );
 
-GList *ofo_base_load_rows       ( const ofsBoxDef *defs,
-											const ofaIDBConnect *cnx,
+GList  *ofo_base_load_rows       ( const ofsBoxDef *defs,
+											const ofaIDBConnect *connect,
 											const gchar *from );
+
+ofaHub *ofo_base_get_hub         ( const ofoBase *base );
 
 G_END_DECLS
 

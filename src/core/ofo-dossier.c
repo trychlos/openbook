@@ -45,9 +45,6 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
-#include "ofa-icollector.h"
-#include "ofo-marshal.h"
-
 /* priv instance data
  */
 struct _ofoDossierPrivate {
@@ -96,14 +93,7 @@ typedef struct {
 /* signals defined here
  */
 enum {
-	NEW_OBJECT = 0,
-	UPDATED_OBJECT,
-	DELETED_OBJECT,
-	RELOAD_DATASET,
-	FUTURE_ROUGH,
-	EXE_DATE_CHANGED,
-	ENTRY_STATUS_COUNT,
-	ENTRY_STATUS_CHANGED,
+	ENTRY_STATUS_COUNT = 0,
 	N_SIGNALS
 };
 
@@ -114,12 +104,11 @@ static ofoBaseClass *ofo_dossier_parent_class = NULL;
 static GType       register_type( void );
 static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
-static gboolean    do_open( ofoDossier *dossier, gboolean remediation );
-static void        check_db_vs_settings( ofoDossier *dossier );
-static void        connect_objects_handlers( const ofoDossier *dossier );
-static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
-static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void        on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
+//static gboolean    do_open( ofoDossier *dossier, gboolean remediation );
+//static void        connect_objects_handlers( const ofoDossier *dossier );
+static void        on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
+static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void        on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
 static gint        dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
@@ -133,12 +122,13 @@ static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter count
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
-static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
-static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
-static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
-static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
+//static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
+//static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
+//static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
+//static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
+static gboolean    dossier_read_currencies( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier );
 static gboolean    do_update_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
@@ -153,8 +143,6 @@ static void        idataset_set_datasets( ofaIDataset *instance, GList *list );
 static void        free_datasets( GList *datasets );
 static void        free_cur_detail( sCurrency *details );
 static void        free_cur_details( GList *details );
-static void        icollector_iface_init( ofaICollectorInterface *iface );
-static guint       icollector_get_interface_version( const ofaICollector *instance );
 
 GType
 ofo_dossier_get_type( void )
@@ -198,12 +186,6 @@ register_type( void )
 		NULL
 	};
 
-	static const GInterfaceInfo icollector_iface_info = {
-		( GInterfaceInitFunc ) icollector_iface_init,
-		NULL,
-		NULL
-	};
-
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
@@ -211,8 +193,6 @@ register_type( void )
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IDATASET, &idataset_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTOR, &icollector_iface_info );
 
 	return( type );
 }
@@ -263,8 +243,6 @@ dossier_dispose( GObject *instance )
 		free_cur_details( priv->cur_details );
 		free_datasets( priv->datasets );
 		g_clear_object( &priv->cnx );
-
-		ofa_icollector_dispose( OFA_ICOLLECTOR( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -280,8 +258,6 @@ dossier_instance_init( ofoDossier *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_DOSSIER, ofoDossierPrivate );
-
-	ofa_icollector_init( OFA_ICOLLECTOR( self ));
 }
 
 static void
@@ -297,132 +273,6 @@ dossier_class_init( ofoDossierClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoDossierPrivate ));
-
-	/**
-	 * ofoDossier::ofa-signal-new-object:
-	 *
-	 * The signal is emitted after a new object has been successfully
-	 * inserted in the DBMS. A connected handler may take advantage of
-	 * this signal e.g. to update its own list of displayed objects.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								ofoBase      *object,
-	 * 								gpointer      user_data );
-	 */
-	st_signals[ NEW_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_NEW_OBJECT,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_new_object_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofoDossier::ofa-signal-updated-object:
-	 *
-	 * The signal is emitted just after an object has been successfully
-	 * updated in the DBMS. A connected handler may take advantage of
-	 * this signal e.g. for updating its own list of displayed objects,
-	 * or for updating its internal links, or so.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								ofoBase      *object,
-	 * 								const gchar  *prev_id,
-	 * 								gpointer      user_data );
-	 */
-	st_signals[ UPDATED_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_UPDATED_OBJECT,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_updated_object_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				ofo_cclosure_marshal_VOID__OBJECT_STRING,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_OBJECT, G_TYPE_STRING );
-
-	/**
-	 * ofoDossier::ofa-signal-deleted-object:
-	 *
-	 * The signal is emitted just after an object has been successfully
-	 * deleted from the DBMS. A connected handler may take advantage of
-	 * this signal e.g. for updating its own list of displayed objects.
-	 *
-	 * Note that the emitter of this signal should attach a new reference
-	 * to the deleted object, as the class cleanup handler will decrease
-	 * the reference count from 1.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								ofoBase      *object,
-	 * 								gpointer      user_data );
-	 */
-	st_signals[ DELETED_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_DELETED_OBJECT,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_deleted_object_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofoDossier::ofa-signal-reload-dataset:
-	 *
-	 * The signal is emitted when such an update has been made in the
-	 * DBMS that it is considered easier for a connected handler just
-	 * to reload the whole dataset if this later whishes keep
-	 * synchronized with the database.
-	 *
-	 * This signal is so less an information signal that an action hint.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								GType     type_class,
-	 * 								gpointer  user_data );
-	 */
-	st_signals[ RELOAD_DATASET ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_RELOAD_DATASET,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_reloaded_dataset_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_GTYPE );
-
-	/**
-	 * ofoDossier::ofa-signal-exe-date-changed:
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier  *dossier,
-	 * 								const GDate *prev_begin,
-	 * 								const GDate *prev_end,
-	 * 								gpointer user_data );
-	 */
-	st_signals[ EXE_DATE_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_EXE_DATE_CHANGED,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
 
 	/**
 	 * ofoDossier::ofa-signal-entry-status-count:
@@ -447,53 +297,36 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_UINT, G_TYPE_ULONG );
-
-	/**
-	 * ofoDossier::ofa-signal-entry-status-changed:
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier         *dossier,
-	 * 								const ofoEntry *entry
-	 * 								gint            prev_status,
-	 *								gint            new_status,
-	 * 								gpointer        user_data );
-	 */
-	st_signals[ ENTRY_STATUS_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				3,
-				G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_UINT );
 }
 
 /**
- * ofo_dossier_new:
- * @cnx: a #ofaIDBConnect object which handles an already opened
- *  connection.
- * @remediation: whether remediate the dossier settings regarding
- *  the actual content of the dossier database.
+ * ofo_dossier_new_with_hub:
+ * @hub: the #ofaHub object which will manage this dossier.
  *
  * Returns: a newly allocated #ofoDossier object, or %NULL if an error
  * has occured.
  */
 ofoDossier *
-ofo_dossier_new( ofaIDBConnect *cnx, gboolean remediation )
+ofo_dossier_new_with_hub( ofaHub *hub )
 {
 	ofoDossier *dossier;
 
-	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
-	dossier->priv->cnx = g_object_ref( cnx );
 
-	if( !do_open( dossier, remediation )){
+	OFO_BASE( dossier )->prot->hub = hub;
+
+	if( dossier_do_read( dossier )){
+		g_signal_connect( hub,
+				SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
+		g_signal_connect( hub,
+				SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
+
+	} else {
 		g_clear_object( &dossier );
 	}
+
 
 	return( dossier );
 }
@@ -507,188 +340,31 @@ ofo_dossier_has_dispose_run( const ofoDossier *dossier )
 	return( OFO_BASE( dossier )->prot->dispose_has_run );
 }
 
-#if 0
-static gboolean
-check_user_exists( ofaDbms *dbms, const gchar *account )
-{
-	gchar *query;
-	GSList *res;
-	gboolean exists;
-
-	exists = FALSE;
-	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
-	res = ofa_dbms_query_ex( dbms, query );
-	if( res ){
-		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
-		if( !g_utf8_collate( account, s )){
-			exists = TRUE;
-		}
-		ofa_dbms_free_results( res );
-	}
-	g_free( query );
-
-	return( exists );
-}
-
 static void
-error_user_not_exists( ofoDossier *dossier, const gchar *account )
-{
-	GtkMessageDialog *dlg;
-	gchar *str;
-
-	str = g_strdup_printf(
-			_( "'%s' account is not allowed to connect to '%s' dossier" ),
-			account, dossier->priv->dname );
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", str ));
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-}
-#endif
-
-static gboolean
-do_open( ofoDossier *dossier, gboolean remediation )
-{
-	ofoDossierPrivate *priv;
-	gboolean ok;
-
-	ok = FALSE;
-	priv = dossier->priv;
-	priv->userid = ofa_idbconnect_get_account( priv->cnx );
-
-	if( ofa_idbmodel_run( dossier )){
-		connect_objects_handlers( dossier );
-		if( dossier_do_read( dossier )){
-			if( remediation ){
-				check_db_vs_settings( dossier );
-			}
-			ok = TRUE;
-		}
-	}
-
-	return( ok );
-}
-
-/* when opening the dossier, make sure the settings are up to date
- * (this may not be the case when the dossier has just been restored
- *  or created)
- * The datas found in the dossier database take precedence over those
- * read from dossier settings. This is because dossier database is
- * (expected to be) updated via the Openbook software suite and so be
- * controlled, while the dossier settings may easily be tweaked by the
- * user.
- */
-static void
-check_db_vs_settings( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_check_db_vs_settings";
-	gboolean db_current, settings_current;
-	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
-	const ofaIDBConnect *cnx;
-	ofaIDBPeriod *period;
-	ofaIDBMeta *meta;
-	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
-
-	/* data from db */
-	db_current = ofo_dossier_is_current( dossier );
-	db_begin = ofo_dossier_get_exe_begin( dossier );
-	db_end = ofo_dossier_get_exe_end( dossier );
-
-	/* data from settings */
-	cnx = ofo_dossier_get_connect( dossier );
-	period = ofa_idbconnect_get_period( cnx );
-	settings_current = ofa_idbperiod_get_current( period );
-	settings_begin = ofa_idbperiod_get_begin_date( period );
-	settings_end = ofa_idbperiod_get_end_date( period );
-
-	/* update settings if not equal */
-	if( db_current != settings_current ||
-			my_date_compare_ex( db_begin, settings_begin, TRUE ) != 0 ||
-			my_date_compare_ex( db_end, settings_end, FALSE ) != 0 ){
-
-		sdbbegin = my_date_to_str( db_begin, MY_DATE_SQL );
-		sdbend = my_date_to_str( db_end, MY_DATE_SQL );
-		ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
-		ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
-
-		g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s: updating settings",
-				thisfn,
-				db_current ? "True":"False", sdbbegin, sdbend,
-				settings_current ? "True":"False", ssetbegin, ssetend );
-
-		g_free( sdbbegin );
-		g_free( sdbend );
-		g_free( ssetbegin );
-		g_free( ssetend );
-
-		meta = ofa_idbconnect_get_meta( cnx );
-		ofa_idbmeta_update_period( meta, period, db_current, db_begin, db_end );
-		g_object_unref( meta );
-	}
-
-	g_object_unref( period );
-}
-
-/*
- * be sure object class handlers are connected to the dossier signaling
- * system, as they may be needed before the class has the opportunity
- * to initialize itself
- *
- * example of a use case: the intermediate closing by ledger may be run
- * without having first loaded the accounts, but the accounts should be
- * connected in order to update themselves.
- */
-static void
-connect_objects_handlers( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_connect_objects_handlers";
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	ofo_account_connect_handlers( dossier );
-	ofo_entry_connect_handlers( dossier );
-	ofo_ledger_connect_handlers( dossier );
-	ofo_ope_template_connect_handlers( dossier );
-
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
-
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_EXE_DATE_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
-}
-
-static void
-on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_on_updated_object";
 	const gchar *code;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, dossier=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) user_data );
+			( void * ) dossier );
 
 	if( OFO_IS_CURRENCY( object )){
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( dossier, prev_id, code );
+				on_updated_object_currency_code( hub, prev_id, code );
 			}
 		}
 	}
 }
 
 static void
-on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -696,7 +372,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_DOSSIER "
 					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
 }
@@ -706,15 +382,15 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
  *  exercice
  */
 static void
-on_exe_dates_changed( const ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
+on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier )
 {
-	const ofaIDBConnect *cnx;
+	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 
-	cnx = ofo_dossier_get_connect( dossier );
-	meta = ofa_idbconnect_get_meta( cnx );
-	period = ofa_idbconnect_get_period( cnx );
+	connect = ofa_hub_get_connect( hub );
+	meta = ofa_idbconnect_get_meta( connect );
+	period = ofa_idbconnect_get_period( connect );
 
 	ofa_idbmeta_update_period( meta, period,
 			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
@@ -871,7 +547,7 @@ dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *
 	gint count;
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, THIS_DOS_ID );
+					field, mnemo, DOSSIER_ROW_ID );
 
 	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 
@@ -887,7 +563,7 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 	gint count;
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, THIS_DOS_ID );
+					field, mnemo, DOSSIER_ROW_ID );
 
 	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
 
@@ -906,20 +582,11 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 gint
 ofo_dossier_get_database_version( const ofoDossier *dossier )
 {
-	gint vmax;
-
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
-	vmax = 0;
+	g_warning( "ofo_dossier_get_database_version: obsoleted" );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		ofa_idbconnect_query_int(
-				ofo_dossier_get_connect( dossier ),
-				"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", &vmax, FALSE );
-	}
-
-	return( vmax );
+	return( 0 );
 }
 
 /**
@@ -1420,7 +1087,7 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 			"UPDATE OFA_T_DOSSIER "
 			"	SET %s=%ld "
 			"	WHERE DOS_ID=%d",
-					field, next_number, THIS_DOS_ID );
+					field, next_number, DOSSIER_ROW_ID );
 
 	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
 	g_free( query );
@@ -2115,6 +1782,7 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 	}
 }
 
+#if 0
 static void
 on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
 {
@@ -2162,25 +1830,28 @@ on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type )
 
 	g_debug( "%s: dossier=%p, type=%lu", thisfn, ( void * ) dossier, type );
 }
+#endif
 
 static gboolean
 dossier_do_read( ofoDossier *dossier )
 {
-	return( dossier_read_properties( dossier ));
+	return( dossier_read_properties( dossier ) &&
+			dossier_read_currencies( dossier ));
 }
 
 static gboolean
 dossier_read_properties( ofoDossier *dossier )
 {
+	const ofaIDBConnect *connect;
 	gchar *query;
-	GSList *result, *irow, *icol;
+	GSList *result, *icol;
 	gboolean ok;
-	const gchar *cstr, *currency;
+	const gchar *cstr;
 	GTimeVal timeval;
 	GDate date;
-	sCurrency *sdet;
 
 	ok = FALSE;
+	connect = ofa_hub_get_connect( OFO_BASE( dossier )->prot->hub );
 
 	query = g_strdup_printf(
 			"SELECT DOS_DEF_CURRENCY,"
@@ -2191,9 +1862,9 @@ dossier_read_properties( ofoDossier *dossier )
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
 			"	DOS_LAST_CONCIL,DOS_CURRENT,DOS_LAST_CLOSING,DOS_PREVEXE_ENTRY "
 			"FROM OFA_T_DOSSIER "
-			"WHERE DOS_ID=%d", THIS_DOS_ID );
+			"WHERE DOS_ID=%d", DOSSIER_ROW_ID );
 
-	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
 		icol = ( GSList * ) result->data;
 		cstr = icol->data;
 		if( my_strlen( cstr )){
@@ -2309,12 +1980,28 @@ dossier_read_properties( ofoDossier *dossier )
 
 	g_free( query );
 
+	return( ok );
+}
+
+static gboolean
+dossier_read_currencies( ofoDossier *dossier )
+{
+	const ofaIDBConnect *connect;
+	gchar *query;
+	GSList *result, *irow, *icol;
+	gboolean ok;
+	const gchar *cstr, *currency;
+	sCurrency *sdet;
+
+	ok = FALSE;
+	connect = ofa_hub_get_connect( OFO_BASE( dossier )->prot->hub );
+
 	query = g_strdup_printf(
 			"SELECT DOS_CURRENCY,DOS_SLD_ACCOUNT "
 			"	FROM OFA_T_DOSSIER_CUR "
-			"	WHERE DOS_ID=%d ORDER BY DOS_CURRENCY ASC", THIS_DOS_ID );
+			"	WHERE DOS_ID=%d ORDER BY DOS_CURRENCY ASC", DOSSIER_ROW_ID );
 
-	if( ofa_idbconnect_query_ex( ofo_dossier_get_connect( dossier ), query, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			currency = icol->data;
@@ -2327,8 +2014,11 @@ dossier_read_properties( ofoDossier *dossier )
 				}
 			}
 		}
+		ok = TRUE;
 		ofa_idbconnect_free_results( result );
 	}
+
+	g_free( query );
 
 	return( ok );
 }
@@ -2491,7 +2181,7 @@ do_update_properties( ofoDossier *dossier )
 			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", userid, stamp_str );
 	g_free( stamp_str );
 
-	g_string_append_printf( query, "WHERE DOS_ID=%d", THIS_DOS_ID );
+	g_string_append_printf( query, "WHERE DOS_ID=%d", DOSSIER_ROW_ID );
 
 	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
 		dossier_set_upd_user( dossier, userid );
@@ -2556,7 +2246,7 @@ do_update_currency_properties( ofoDossier *dossier )
 			sdet = ( sCurrency * ) it->data;
 			query = g_strdup_printf(
 					"INSERT INTO OFA_T_DOSSIER_CUR (DOS_ID,DOS_CURRENCY,DOS_SLD_ACCOUNT) VALUES "
-					"	(%d,'%s','%s')", THIS_DOS_ID, sdet->currency, sdet->sld_account );
+					"	(%d,'%s','%s')", DOSSIER_ROW_ID, sdet->currency, sdet->sld_account );
 			ok &= ofa_idbconnect_query( priv->cnx, query, TRUE );
 			g_free( query );
 			count += 1;
@@ -2568,7 +2258,7 @@ do_update_currency_properties( ofoDossier *dossier )
 			query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER SET "
 					"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' "
-					"	WHERE DOS_ID=%d", userid, stamp_str, THIS_DOS_ID );
+					"	WHERE DOS_ID=%d", userid, stamp_str, DOSSIER_ROW_ID );
 			g_free( stamp_str );
 
 			if( !ofa_idbconnect_query( priv->cnx, query, TRUE )){
@@ -2594,7 +2284,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	iface->export_from_dossier = iexportable_export;
 }
 
 static guint
@@ -2763,23 +2453,4 @@ free_cur_details( GList *details )
 	if( details ){
 		g_list_free_full( details, ( GDestroyNotify ) free_cur_detail );
 	}
-}
-
-/*
- * ofaICollector interface management
- */
-static void
-icollector_iface_init( ofaICollectorInterface *iface )
-{
-	static const gchar *thisfn = "ofo_dossier_icollector_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = icollector_get_interface_version;
-}
-
-static guint
-icollector_get_interface_version( const ofaICollector *instance )
-{
-	return( 1 );
 }

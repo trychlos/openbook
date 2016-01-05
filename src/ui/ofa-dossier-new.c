@@ -34,6 +34,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -195,6 +196,7 @@ gboolean
 ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_with_parent";
+	GtkApplication *application;
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created, open_dossier, open_properties;
@@ -202,6 +204,7 @@ ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 	ofaIDBProvider *provider;
 	ofaIDBPeriod *period;
 	ofaIDBConnect *connect;
+	ofaHub *hub;
 
 	g_debug( "%s: main_window=%p, parent=%p",
 			thisfn, ( void * ) main_window, ( void * ) parent );
@@ -224,32 +227,34 @@ ofa_dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
 	open_dossier = priv->b_open;
 	open_properties = priv->b_properties;
 
-	if( dossier_created ){
-		if( open_dossier ){
-			provider = ofa_idbmeta_get_provider( priv->meta );
-			period = ofa_idbmeta_get_current_period( priv->meta );
-			connect = ofa_idbprovider_new_connect( provider );
-			if( !ofa_idbconnect_open_with_meta(
-					connect, priv->adm_account, priv->adm_password, priv->meta, period )){
-				g_warning( "%s: unable to connect to newly created dossier", thisfn );
-				g_clear_object( &connect );
-				open_dossier = FALSE;
-			}
-			g_clear_object( &period );
-			g_clear_object( &provider );
+	if( dossier_created && open_dossier ){
+		provider = ofa_idbmeta_get_provider( priv->meta );
+		period = ofa_idbmeta_get_current_period( priv->meta );
+		connect = ofa_idbprovider_new_connect( provider );
+		if( !ofa_idbconnect_open_with_meta(
+				connect, priv->adm_account, priv->adm_password, priv->meta, period )){
+			g_warning( "%s: unable to connect to newly created dossier", thisfn );
+			g_clear_object( &connect );
+			open_dossier = FALSE;
 		}
+		g_clear_object( &period );
+		g_clear_object( &provider );
 	}
 
 	g_object_unref( self );
 
-	if( dossier_created ){
-		if( open_dossier ){
-			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_OPEN, connect, TRUE );
+	if( dossier_created && open_dossier ){
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
+		hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), connect );
+		if( hub ){
+			dossier_opened = TRUE;
+			ofa_hub_remediate_settings( hub );
 			if( open_properties ){
 				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_PROPERTIES );
 			}
-			dossier_opened = TRUE;
 		}
+		g_object_unref( connect );
 	}
 
 	return( dossier_opened );

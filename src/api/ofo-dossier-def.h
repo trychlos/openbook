@@ -66,28 +66,6 @@ typedef struct {
 }
 	ofoDossierClass;
 
-/**
- * Dossier signals:
- * @SIGNAL_DOSSIER_NEW_OBJECT:
- *  sent on the dossier by one the #ofoBase class when a new object is
- *  inserted.
- * @SIGNAL_DOSSIER_UPDATED_OBJECT:
- *  sent on the dossier by one the #ofoBase class when an existing
- *  object is updated.
- * @SIGNAL_DOSSIER_DELETED_OBJECT:
- *  sent on the dossier by one the #ofoBase class when an existing
- *  object is deleted.
- * @SIGNAL_DOSSIER_RELOAD_DATASET:
- *  sent on the dossier by one the #ofoBase class when the full dataset
- *  is reloaded.
- * @SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY:
- *  sent on the dossier when the status becomes 'rough' from 'future'.
- * @SIGNAL_DOSSIER_VALIDATED_ENTRY:
- *  sent on the dossier when an entry is validated.
- * @SIGNAL_DOSSIER_EXE_DATE_CHANGED:
- *  sent on the dossier when the beginning or the ending date of the
- *  exercice has been changed.
- */
 #define SIGNAL_DOSSIER_NEW_OBJECT           "ofa-signal-dossier-new-object"
 #define SIGNAL_DOSSIER_UPDATED_OBJECT       "ofa-signal-dossier-updated-object"
 #define SIGNAL_DOSSIER_DELETED_OBJECT       "ofa-signal-dossier-deleted-object"
@@ -98,7 +76,11 @@ typedef struct {
 
 /* default length of exercice in months
  */
-#define DOS_DEFAULT_LENGTH              12
+#define DOSSIER_EXERCICE_DEFAULT_LENGTH 12
+
+/* the identifier of the dossier row
+ */
+#define DOSSIER_ROW_ID                  1
 
 GType ofo_dossier_get_type( void ) G_GNUC_CONST;
 

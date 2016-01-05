@@ -28,6 +28,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
 #include "api/ofo-dossier.h"
 
@@ -39,6 +40,7 @@ typedef struct {
 	 * to be set at initialization time
 	 */
 	ofoDossier *dossier;
+	ofaHub     *hub;
 }
 	sIStore;
 
@@ -50,7 +52,8 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType    register_type( void );
 static void     interface_base_init( ofaIStoreInterface *klass );
 static void     interface_base_finalize( ofaIStoreInterface *klass );
-static void     on_dossier_finalized( ofaIStore *istore, ofoDossier *finalized_dossier );
+static void     on_dossier_finalized( ofaIStore *istore, GObject *finalized_dossier );
+static void     on_hub_finalized( ofaIStore *istore, GObject *finalized_hub );
 static void     on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore );
 static void     simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
 
@@ -148,7 +151,38 @@ ofa_istore_get_interface_last_version( const ofaIStore *instance )
  * implementation take benefit of the interface.
  */
 void
-ofa_istore_init( ofaIStore *istore, ofoDossier *dossier )
+ofa_istore_init( ofaIStore *istore, ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_istore_init";
+	sIStore *sdata;
+
+	g_return_if_fail( G_IS_OBJECT( istore ));
+	g_return_if_fail( OFA_IS_ISTORE( istore ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
+	if( sdata ){
+		g_warning( "%s: already initialized ofaIStore=%p", thisfn, ( void * ) sdata );
+	}
+
+	sdata = g_new0( sIStore, 1 );
+	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, sdata );
+
+	g_object_weak_ref( G_OBJECT( hub ), ( GWeakNotify ) on_hub_finalized, istore );
+
+	g_signal_connect( istore, "row-inserted", G_CALLBACK( on_row_inserted ), istore );
+}
+
+/**
+ * ofa_istore_init:
+ * @istore: this #ofaIStore instance.
+ *
+ * Initialize a structure attached to the implementor #GObject.
+ * This should be done as soon as possible in order to let the
+ * implementation take benefit of the interface.
+ */
+void
+ofa_istore_init_with_dossier( ofaIStore *istore, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofa_istore_init";
 	sIStore *sdata;
@@ -171,7 +205,7 @@ ofa_istore_init( ofaIStore *istore, ofoDossier *dossier )
 }
 
 static void
-on_dossier_finalized( ofaIStore *istore, ofoDossier *finalized_dossier )
+on_dossier_finalized( ofaIStore *istore, GObject *finalized_dossier )
 {
 	static const gchar *thisfn = "ofa_istore_on_dossier_finalized";
 	sIStore *sdata;
@@ -191,19 +225,25 @@ on_dossier_finalized( ofaIStore *istore, ofoDossier *finalized_dossier )
 	g_object_unref( istore );
 }
 
-/**
- * ofa_istore_get_dossier:
- */
-ofoDossier *
-ofa_istore_get_dossier( const ofaIStore *istore )
+static void
+on_hub_finalized( ofaIStore *istore, GObject *finalized_hub )
 {
+	static const gchar *thisfn = "ofa_istore_on_hub_finalized";
 	sIStore *sdata;
 
-	g_return_val_if_fail( istore && OFA_IS_ISTORE( istore ), NULL );
+	g_debug( "%s: istore=%p (%s), ref_count=%d, finalized_hub=%p",
+			thisfn,
+			( void * ) istore, G_OBJECT_TYPE_NAME( istore ), G_OBJECT( istore )->ref_count,
+			( void * ) finalized_hub );
+
+	g_return_if_fail( istore && OFA_IS_ISTORE( istore ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
 
-	return( sdata->dossier );
+	g_free( sdata );
+	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, NULL );
+
+	g_object_unref( istore );
 }
 
 static void

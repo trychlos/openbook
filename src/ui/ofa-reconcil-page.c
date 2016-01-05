@@ -36,6 +36,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -129,6 +130,7 @@ struct _ofaReconcilPagePrivate {
 
 	/* internals
 	 */
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	GList               *handlers;
 	GList               *bats;			/* loaded ofoBat objects */
@@ -348,7 +350,7 @@ static void
 reconciliation_dispose( GObject *instance )
 {
 	ofaReconcilPagePrivate *priv;
-	GList *it;
+	//GList *it;
 
 	g_return_if_fail( OFA_IS_RECONCIL_PAGE( instance ));
 
@@ -357,12 +359,14 @@ reconciliation_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ( OFA_RECONCIL_PAGE( instance ))->priv;
 
+		/*
 		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( it=priv->handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
 			}
 			priv->handlers = NULL;
 		}
+		*/
 		if( priv->bats ){
 			g_list_free( priv->bats );
 			priv->bats = NULL;
@@ -468,6 +472,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
 	ofaReconcilPagePrivate *priv;
+	GtkApplication *application;
 	GtkWidget *widget, *page_widget;
 	GtkTreeSelection *select;
 
@@ -475,6 +480,11 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_RECONCIL_PAGE( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( page_widget ), st_ui_xml, st_ui_name, "top" );
@@ -1127,7 +1137,7 @@ get_reconciliable_account( ofaReconcilPage *self )
 	ok = FALSE;
 
 	number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-	account = ofo_account_get_by_number( priv->dossier, number );
+	account = ofo_account_get_by_number( priv->hub, number );
 
 	if( account ){
 		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
@@ -1264,13 +1274,10 @@ insert_entry( ofaReconcilPage *self, ofoEntry *entry )
 static void
 set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
 {
-	ofaReconcilPagePrivate *priv;
 	ofxAmount amount;
 	gchar *sdope, *sdeb, *scre, *sdrap, *sid;
 	const GDate *dconcil;
 	ofoConcil *concil;
-
-	priv = self->priv;
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
@@ -1285,7 +1292,7 @@ set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, o
 	} else {
 		scre = g_strdup( "" );
 	}
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	dconcil = concil ? ofo_concil_get_dval( concil ) : NULL;
 	sdrap = my_date_to_str( dconcil, ofa_prefs_date_display());
 	sid = concil ? g_strdup_printf( "%lu", ofo_concil_get_id( concil )) : g_strdup( "" );
@@ -1592,13 +1599,10 @@ insert_batline( ofaReconcilPage *self, ofoBatLine *batline )
 static void
 set_row_batline( ofaReconcilPage *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline )
 {
-	ofaReconcilPagePrivate *priv;
 	ofxAmount bat_amount;
 	gchar *sdeb, *scre, *sdope, *sdreconcil, *sid;
 	ofoConcil *concil;
 	const GDate *dope;
-
-	priv = self->priv;
 
 	bat_amount = ofo_bat_line_get_amount( batline );
 	if( bat_amount < 0 ){
@@ -1613,7 +1617,7 @@ set_row_batline( ofaReconcilPage *self, GtkTreeModel *store, GtkTreeIter *iter, 
 	sdope = my_date_to_str( dope, ofa_prefs_date_display());
 	sid = g_strdup( "" );
 	sdreconcil = g_strdup( "" );
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
 	if( concil ){
 		g_free( sid );
 		sid = g_strdup_printf( "%lu", ofo_concil_get_id( concil ));
@@ -1809,22 +1813,18 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 			cmp = amount_a > amount_b ? 1 : ( amount_a < amount_b ? -1 : 0 );
 			break;
 		case COL_IDCONCIL:
-			concil_a = ofa_iconcil_get_concil( OFA_ICONCIL( object_a ), priv->dossier );
+			concil_a = ofa_iconcil_get_concil( OFA_ICONCIL( object_a ));
 			id_a = concil_a ? ofo_concil_get_id( concil_a ) : 0;
-			concil_b = ofa_iconcil_get_concil( OFA_ICONCIL( object_b ), priv->dossier );
+			concil_b = ofa_iconcil_get_concil( OFA_ICONCIL( object_b ));
 			id_b = concil_b ? ofo_concil_get_id( concil_b ) : 0;
 			cmp = id_a < id_b ? -1 : ( id_a > id_b ? 1 : 0 );
 			break;
 		case COL_DRECONCIL:
 			concil_a = OFO_IS_ENTRY( object_a ) ?
-					ofa_iconcil_get_concil(
-							OFA_ICONCIL( object_a ), priv->dossier ) :
-						NULL;
+					ofa_iconcil_get_concil( OFA_ICONCIL( object_a )) : NULL;
 			date_a = concil_a ? ofo_concil_get_dval( concil_a ) : NULL;
 			concil_b = OFO_IS_ENTRY( object_b ) ?
-					ofa_iconcil_get_concil(
-							OFA_ICONCIL( object_b ), priv->dossier ) :
-					NULL;
+					ofa_iconcil_get_concil( OFA_ICONCIL( object_b )) : NULL;
 			date_b = concil_b ? ofo_concil_get_dval( concil_b ) : NULL;
 			g_return_val_if_fail( my_date_is_valid( date_a ), 0 );
 			g_return_val_if_fail( my_date_is_valid( date_b ), 0 );
@@ -1956,7 +1956,7 @@ is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter
 		return( FALSE );
 	}
 
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	visible = TRUE;
 
 	switch( priv->mode ){
@@ -2006,7 +2006,7 @@ is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 
 	priv = self->priv;
 	visible = FALSE;
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
 
 	switch( priv->mode ){
 		case ENT_CONCILED_ALL:
@@ -2050,15 +2050,12 @@ is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 static gboolean
 is_entry_session_conciliated( ofaReconcilPage *self, ofoEntry *entry, ofoConcil *concil )
 {
-	ofaReconcilPagePrivate *priv;
 	gboolean is_session;
 	const GTimeVal *stamp;
 	GDate date, dnow;
 
-	priv = self->priv;
-
 	if( !concil ){
-		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	}
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
 
@@ -2085,13 +2082,10 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 						ofaReconcilPage *self )
 {
-	ofaReconcilPagePrivate *priv;
 	GObject *object;
 	GdkRGBA color;
 	gint id;
 	ofoConcil *concil;
-
-	priv = self->priv;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 
@@ -2108,7 +2102,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						NULL );
 
 	id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
-	concil =  ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+	concil =  ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 
 	if( !concil && id == COL_DRECONCIL && gtk_tree_model_iter_has_child( tmodel, iter )){
 		gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
@@ -2312,7 +2306,7 @@ examine_selection( ofaReconcilPage *self,
 		}
 
 		/* manage conciliation groups */
-		row_concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+		row_concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 		row_id = row_concil ? ofo_concil_get_id( row_concil ) : 0;
 		if( row_concil ){
 			if( concil_id == 0 ){
@@ -2504,7 +2498,7 @@ default_expand_view( ofaReconcilPage *self )
 			 * - collapse if entry is reconciliated and batline points
 			 *   to this same entry
 			 * - else expand */
-			concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+			concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 			if( concil ){
 				collapse_node_by_iter( self, priv->tview, tmodel, &iter );
 			} else {
@@ -2629,11 +2623,11 @@ do_reconciliate( ofaReconcilPage *self )
 		g_object_unref( object );
 
 		if( !concil ){
-			concil = ofa_iconcil_new_concil( OFA_ICONCIL( object ), &dval, priv->dossier );
+			concil = ofa_iconcil_new_concil( OFA_ICONCIL( object ), &dval );
 			concil_id = ofo_concil_get_id( concil );
 		}
-		if( !ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier )){
-			ofa_iconcil_add_to_concil( OFA_ICONCIL( object ), concil, priv->dossier );
+		if( !ofa_iconcil_get_concil( OFA_ICONCIL( object ))){
+			ofa_iconcil_add_to_concil( OFA_ICONCIL( object ), concil );
 		}
 		update_concil_data_by_path( self, ( GtkTreePath * ) it->data, concil_id, &dval );
 
@@ -2891,7 +2885,7 @@ do_unconciliate( ofaReconcilPage *self )
 	g_return_if_fail( concil );
 
 	my_date_clear( &dval );
-	ofa_iconcil_remove_concil( concil, priv->dossier );
+	ofa_iconcil_remove_concil( concil );
 
 	selection = gtk_tree_view_get_selection( priv->tview );
 	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
@@ -2993,7 +2987,7 @@ set_reconciliated_balance( ofaReconcilPage *self )
 
 				if( OFO_IS_ENTRY( object )){
 					if( ofo_entry_get_status( OFO_ENTRY( object )) != ENT_STATUS_DELETED ){
-						concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+						concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 						if( !concil ){
 							debit += ofo_entry_get_debit( OFO_ENTRY( object ));
 							credit += ofo_entry_get_credit( OFO_ENTRY( object ));
@@ -3002,7 +2996,7 @@ set_reconciliated_balance( ofaReconcilPage *self )
 						}
 					}
 				} else {
-					concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+					concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 					if( !concil ){
 						amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 						if( amount < 0 ){
@@ -3109,13 +3103,11 @@ get_bat_line_dope( ofaReconcilPage *self, ofoBatLine *batline )
 static void
 get_indice_concil_id_by_path( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id )
 {
-	ofaReconcilPagePrivate *priv;
 	GtkTreeIter iter;
 	gint *indices, depth;
 	ofoBase *object;
 	ofoConcil *concil;
 
-	priv = self->priv;
 	*indice = -1;
 	*concil_id = 0;
 
@@ -3129,7 +3121,7 @@ get_indice_concil_id_by_path( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTr
 	gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &object, -1 );
 	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 	g_object_unref( object );
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 	if( concil ){
 		*concil_id = ofo_concil_get_id( concil );
 	}
@@ -3195,7 +3187,7 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 
 	priv = self->priv;
 
-	if( ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier )){
+	if( ofa_iconcil_get_concil( OFA_ICONCIL( object ))){
 		return( FALSE );
 	}
 
@@ -3223,7 +3215,7 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 				gtk_tree_model_get( tmodel, iter, COL_OBJECT, &obj, -1 );
 				g_return_val_if_fail( obj && ( OFO_IS_ENTRY( obj ) || OFO_IS_BAT_LINE( obj )), FALSE );
 				g_object_unref( obj );
-				if( !ofa_iconcil_get_concil( OFA_ICONCIL( obj ), priv->dossier )){
+				if( !ofa_iconcil_get_concil( OFA_ICONCIL( obj ))){
 					if( OFO_IS_ENTRY( obj )){
 						iter_balance = ofo_entry_get_credit( OFO_ENTRY( obj ))
 											- ofo_entry_get_debit( OFO_ENTRY( obj ));
@@ -3260,16 +3252,13 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 static gboolean
 search_for_parent_by_concil( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaReconcilPagePrivate *priv;
 	ofoConcil *concil;
 	ofxCounter object_id;
 	ofoBase *obj;
 
 	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), FALSE );
 
-	priv = self->priv;
-
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 	if( concil ){
 		object_id = ofo_concil_get_id( concil );
 		if( gtk_tree_model_get_iter_first( tmodel, iter )){
@@ -3277,7 +3266,7 @@ search_for_parent_by_concil( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 				gtk_tree_model_get( tmodel, iter, COL_OBJECT, &obj, -1 );
 				g_return_val_if_fail( obj && ( OFO_IS_ENTRY( obj ) || OFO_IS_BAT_LINE( obj )), FALSE );
 				g_object_unref( obj );
-				concil = ofa_iconcil_get_concil( OFA_ICONCIL( obj ), priv->dossier );
+				concil = ofa_iconcil_get_concil( OFA_ICONCIL( obj ));
 				if( concil && ofo_concil_get_id( concil ) == object_id ){
 					return( TRUE );
 				}

@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -54,6 +55,7 @@
  */
 struct _ofaBalanceRenderPrivate {
 
+	ofaHub        *hub;
 	ofoDossier    *dossier;
 	ofaBalanceBin *args_bin;
 
@@ -292,6 +294,7 @@ page_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_balance_render_page_init_view";
 	ofaBalanceRenderPrivate *priv;
+	GtkApplication *application;
 
 	OFA_PAGE_CLASS( ofa_balance_render_parent_class )->init_view( page );
 
@@ -301,6 +304,12 @@ page_init_view( ofaPage *page )
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
 
 	priv->dossier = ofa_page_get_dossier( page );
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -801,7 +810,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	sbal = ( ofsAccountBalance * ) current->data;
 	g_return_if_fail( my_strlen( sbal->account ));
-	account = ofo_account_get_by_number( priv->dossier, sbal->account );
+	account = ofo_account_get_by_number( priv->hub, sbal->account );
 	/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
 
 	solde = 0;

@@ -63,16 +63,6 @@ typedef struct {
 	ofaMainWindowClass;
 
 /**
- * OFA_SIGNAL_DOSSIER_OPEN:
- * Action signal to be sent to the main window in order to ask for the
- * opening of a dossier.
- * Args:
- * - a #ofaIDBConnect opened connection on the dossier
- * - whether to remediate the settings.
- */
-#define OFA_SIGNAL_DOSSIER_OPEN         "ofa-dossier-open"
-
-/**
  * OFA_SIGNAL_DOSSIER_PROPERTIES:
  *  Action signal to be sent to the main window in order to update the
  *  properties of the currently opened dossier.

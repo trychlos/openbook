@@ -504,6 +504,22 @@
  948 2015-12-31 review the ofoDossier class
                 which is actually a pivot class with dossier props + connect
      2016- 1- 4 ofa_dossier_misc_xxx should then move to this new class
+                > remove ofa_dossier_misc (replaced by ofa_hub)
+                > review ofa_hub_import_csv api
+     2016- 1- 5 obsolete ofa_main_window_open_dossier()
+                + obsolete ofo_dossier_get_user()
+                + obsolete ofo_dossier_get_connect()
+                + obsolete core/ofo-marshal
+                + remove dossier signaling system
+                + remove exportable_from_dossier
+                + remove importable_to_dossier
+                + ofa-tree-store.c/ofa-list-store.c: compilation
+                + ofo_base_get/set_hub
+                + remediate ofa-hub-def
+                + remediate ofa_page_get_hub
+                + remediate dialog/assistant get_hub
+                + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
+                + ofa_dossier_properties_run: w/o dossier
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier

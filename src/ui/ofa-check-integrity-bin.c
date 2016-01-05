@@ -51,7 +51,7 @@ struct _ofaCheckIntegrityBinPrivate {
 
 	/* runtime data
 	 */
-	ofoDossier    *dossier;
+	ofaHub        *hub;
 
 	gulong         dossier_errs;
 	gulong         bat_lines_errs;
@@ -216,24 +216,24 @@ setup_bin( ofaCheckIntegrityBin *bin )
 }
 
 /**
- * ofa_check_integrity_bin_set_dossier:
+ * ofa_check_integrity_bin_set_hub:
  */
 void
-ofa_check_integrity_bin_set_dossier( ofaCheckIntegrityBin *bin, ofoDossier *dossier )
+ofa_check_integrity_bin_set_hub( ofaCheckIntegrityBin *bin, ofaHub *hub )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_CHECK_INTEGRITY_BIN( bin ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run ){
-
-		priv->dossier = dossier;
-
-		g_idle_add(( GSourceFunc ) do_run, bin );
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
 	}
+
+	priv->hub = hub;
+	g_idle_add(( GSourceFunc ) do_run, bin );
 }
 
 static gboolean
@@ -265,6 +265,7 @@ static void
 check_dossier_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	gulong count, i;
 	const gchar *cur_code, *for_ope, *sld_ope, *acc_number;
@@ -278,18 +279,20 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ) );
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->dossier_errs = 0;
-	currencies = ofo_dossier_get_currencies( priv->dossier );
+	currencies = ofo_dossier_get_currencies( dossier );
 	count = 3+g_slist_length( currencies );
 	i = 0;
 
 	/* check for default currency */
-	cur_code = ofo_dossier_get_default_currency( priv->dossier );
+	cur_code = ofo_dossier_get_default_currency( dossier );
 	if( !my_strlen( cur_code )){
 		add_message( bin, _( "Dossier has no default currency" ));
 		priv->dossier_errs += 1;
 	} else {
-		cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+		cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 		if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 			str = g_strdup_printf(
 					_( "Dossier default currency '%s' doesn't exist" ), cur_code );
@@ -301,12 +304,12 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 	set_bar_progression( bar, count, ++i );
 
 	/* check for forward and solde operation templates */
-	for_ope = ofo_dossier_get_forward_ope( priv->dossier );
+	for_ope = ofo_dossier_get_forward_ope( dossier );
 	if( !my_strlen( for_ope )){
 		add_message( bin, _( "Dossier has no forward operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( priv->dossier, for_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( dossier, for_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf(
 					_( "Dossier forward operation template '%s' doesn't exist" ), for_ope );
@@ -317,12 +320,12 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 	}
 	set_bar_progression( bar, count, ++i );
 
-	sld_ope = ofo_dossier_get_sld_ope( priv->dossier );
+	sld_ope = ofo_dossier_get_sld_ope( dossier );
 	if( !my_strlen( sld_ope )){
 		add_message( bin, _( "Dossier has no solde operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( priv->dossier, sld_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( dossier, sld_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf(
 					_( "Dossier solde operation template '%s' doesn't exist" ), sld_ope );
@@ -341,7 +344,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 			add_message( bin, _( "Dossier solde account has no currency" ));
 			priv->dossier_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Dossier solde account currency '%s' doesn't exist" ), cur_code );
@@ -349,7 +352,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->dossier_errs += 1;
 			}
-			acc_number = ofo_dossier_get_sld_account( priv->dossier, cur_code );
+			acc_number = ofo_dossier_get_sld_account( dossier, cur_code );
 			if( !my_strlen( acc_number )){
 				str = g_strdup_printf(
 						_( "Dossier solde account for currency '%s' is empty" ), cur_code );
@@ -357,7 +360,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->dossier_errs += 1;
 			} else {
-				acc_obj = ofo_account_get_by_number( priv->dossier, acc_number );
+				acc_obj = ofo_account_get_by_number( priv->hub, acc_number );
 				if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 					str = g_strdup_printf(
 							_( "Dossier solde account '%s' for currency '%s' doesn't exist" ),
@@ -383,6 +386,7 @@ static void
 check_bat_lines_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	gulong count, i;
 	GList *bats, *it, *lines, *itl;
@@ -397,8 +401,10 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->bat_lines_errs = 0;
-	bats = ofo_bat_get_dataset( priv->dossier );
+	bats = ofo_bat_get_dataset( dossier );
 	count = g_list_length( bats );
 
 	if( count == 0 ){
@@ -412,7 +418,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 		/* it is ok for a BAT file to not have a currency set */
 		cur_code = ofo_bat_get_currency( bat );
 		if( my_strlen( cur_code )){
-			cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
@@ -422,7 +428,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 			}
 		}
 
-		lines = ofo_bat_line_get_dataset( priv->dossier, id );
+		lines = ofo_bat_line_get_dataset( dossier, id );
 
 		for( itl=lines ; itl ; itl=itl->next ){
 			line = OFO_BAT_LINE( itl->data );
@@ -431,7 +437,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 			/* it is ok for a BAT line to not have a currency */
 			cur_code = ofo_bat_line_get_currency( line );
 			if( my_strlen( cur_code )){
-				cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
@@ -460,6 +466,7 @@ static void
 check_accounts_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *accounts, *it;
 	gulong count, i;
@@ -474,8 +481,10 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->accounts_errs = 0;
-	accounts = ofo_account_get_dataset( priv->dossier );
+	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
 
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
@@ -483,7 +492,7 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 		acc_num = ofo_account_get_number( account );
 
 		cla_num = ofo_account_get_class( account );
-		cla_obj = ofo_class_get_by_number( priv->dossier, cla_num );
+		cla_obj = ofo_class_get_by_number( dossier, cla_num );
 		if( !cla_obj || !OFO_IS_CLASS( cla_obj )){
 			str = g_strdup_printf(
 					_( "Class %d doesn't exist for account %s" ), cla_num, acc_num );
@@ -500,7 +509,7 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->accounts_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Account %s currency '%s' doesn't exist" ), acc_num, cur_code );
@@ -524,6 +533,7 @@ static void
 check_entries_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *entries, *it;
 	gulong count, i;
@@ -540,8 +550,10 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->entries_errs = 0;
-	entries = ofo_entry_get_dataset_by_account( priv->dossier, NULL );
+	entries = ofo_entry_get_dataset_by_account( dossier, NULL );
 	count = g_list_length( entries );
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
@@ -556,7 +568,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			acc_obj = ofo_account_get_by_number( priv->dossier, acc_number );
+			acc_obj = ofo_account_get_by_number( priv->hub, acc_number );
 			if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has account %s which doesn't exist" ), number, acc_number );
@@ -573,7 +585,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has currency '%s' which doesn't exist" ), number, cur_code );
@@ -590,7 +602,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			led_obj = ofo_ledger_get_by_mnemo( priv->dossier, led_mnemo );
+			led_obj = ofo_ledger_get_by_mnemo( dossier, led_mnemo );
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has ledger '%s' which doesn't exist" ), number, led_mnemo );
@@ -603,7 +615,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 		/* ope template is not mandatory */
 		ope_mnemo = ofo_entry_get_ope_template( entry );
 		if( my_strlen( ope_mnemo )){
-			ope_obj = ofo_ope_template_get_by_mnemo( priv->dossier, ope_mnemo );
+			ope_obj = ofo_ope_template_get_by_mnemo( dossier, ope_mnemo );
 			if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has operation template '%s' which doesn't exist" ), number, ope_mnemo );
@@ -626,6 +638,7 @@ static void
 check_ledgers_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *ledgers, *it;
 	GList *currencies, *itc;
@@ -639,8 +652,9 @@ check_ledgers_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
 	priv->ledgers_errs = 0;
-	ledgers = ofo_ledger_get_dataset( priv->dossier );
+	ledgers = ofo_ledger_get_dataset( dossier );
 	count = g_list_length( ledgers );
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
@@ -655,7 +669,7 @@ check_ledgers_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->ledgers_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( priv->dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Ledger %s has currency '%s' which doesn't exist" ), mnemo, cur_code );
@@ -680,6 +694,7 @@ static void
 check_ope_templates_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *ope_templates, *it;
 	gulong count, i;
@@ -693,8 +708,10 @@ check_ope_templates_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	priv->ope_templates_errs = 0;
-	ope_templates = ofo_ope_template_get_dataset( priv->dossier );
+	ope_templates = ofo_ope_template_get_dataset( dossier );
 	count = g_list_length( ope_templates );
 
 	for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
@@ -704,7 +721,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *bin )
 		/* ledger is optional here */
 		led_mnemo = ofo_ope_template_get_ledger( ope_template );
 		if( my_strlen( led_mnemo )){
-			led_obj = ofo_ledger_get_by_mnemo( priv->dossier, led_mnemo );
+			led_obj = ofo_ledger_get_by_mnemo( dossier, led_mnemo );
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );

@@ -32,6 +32,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -59,6 +61,7 @@ struct _ofaApplicationPrivate {
 	gchar           *application_name;
 	gchar           *description;
 	gchar           *icon_name;
+	ofaHub          *hub;
 
 	/* internals
 	 */
@@ -82,6 +85,7 @@ enum {
 	OFA_PROP_APPLICATION_NAME_ID,
 	OFA_PROP_DESCRIPTION_ID,
 	OFA_PROP_ICON_NAME_ID,
+	OFA_PROP_HUB_ID
 };
 
 /* signals defined here
@@ -124,7 +128,11 @@ static       GOptionEntry st_option_entries[]   = {
 	{ NULL }
 };
 
-G_DEFINE_TYPE( ofaApplication, ofa_application, GTK_TYPE_APPLICATION )
+static void     ihubber_iface_init( ofaIHubberInterface *iface );
+static guint    ihubber_get_interface_version( const ofaIHubber *instance );
+static ofaHub  *ihubber_new_hub( ofaIHubber *instance, const ofaIDBConnect *connect );
+static ofaHub  *ihubber_get_hub( const ofaIHubber *instance );
+static void     ihubber_clear_hub( ofaIHubber *instance );
 
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
@@ -148,6 +156,9 @@ static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer us
 static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_version( ofaApplication *application );
+
+G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IHUBBER, ihubber_iface_init ));
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
@@ -200,6 +211,7 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->hub );
 		g_clear_object( &priv->file_dir );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
@@ -240,6 +252,10 @@ application_get_property( GObject *object, guint property_id, GValue *value, GPa
 				g_value_set_string( value, priv->icon_name );
 				break;
 
+			case OFA_PROP_HUB_ID:
+				g_value_set_pointer( value, priv->hub );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
 				break;
@@ -276,6 +292,10 @@ application_set_property( GObject *object, guint property_id, const GValue *valu
 			case OFA_PROP_ICON_NAME_ID:
 				g_free( priv->icon_name );
 				priv->icon_name = g_value_dup_string( value );
+				break;
+
+			case OFA_PROP_HUB_ID:
+				priv->hub = g_value_get_pointer( value );
 				break;
 
 			default:
@@ -356,6 +376,15 @@ ofa_application_class_init( ofaApplicationClass *klass )
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_HUB_ID,
+			g_param_spec_pointer(
+					OFA_PROP_HUB,
+					"Icon name",
+					"The name of the icon of the application",
+					G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
 	/**
 	 * ofaApplication::main-window-created:
 	 *
@@ -408,6 +437,73 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_POINTER );
+}
+
+/*
+ * ofaIHubber interface management
+ */
+static void
+ihubber_iface_init( ofaIHubberInterface *iface )
+{
+	static const gchar *thisfn = "ofa_application_ihubber_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ihubber_get_interface_version;
+	iface->new_hub = ihubber_new_hub;
+	iface->get_hub = ihubber_get_hub;
+	iface->clear_hub = ihubber_clear_hub;
+}
+
+static guint
+ihubber_get_interface_version( const ofaIHubber *instance )
+{
+	return( 1 );
+}
+
+static ofaHub *
+ihubber_new_hub( ofaIHubber *instance, const ofaIDBConnect *connect )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = OFA_APPLICATION( instance )->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	g_clear_object( &priv->hub );
+	priv->hub = ofa_hub_new_with_connect( connect );
+
+	return( priv->hub );
+}
+
+static ofaHub *
+ihubber_get_hub( const ofaIHubber *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = OFA_APPLICATION( instance )->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	return( priv->hub );
+}
+
+static void
+ihubber_clear_hub( ofaIHubber *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = OFA_APPLICATION( instance )->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	g_clear_object( &priv->hub );
 }
 
 /**
@@ -808,8 +904,7 @@ application_activate( GApplication *application )
 		}
 		if( meta && period ){
 			ofa_dossier_open_run(
-					priv->main_window,
-					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
+					priv->main_window, meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
 		g_clear_object( &period );
 		g_clear_object( &meta );

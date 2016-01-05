@@ -26,6 +26,7 @@
 #endif
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -116,27 +117,51 @@ ofo_base_init_fields_list( const ofsBoxDef *defs )
 /**
  * ofo_base_load_dataset:
  * @defs: the #ofsBoxDefs list of field definitions for this object
- * @dossier: the currently opened dossier
- * @cnx: the #ofaIDBConnect connection object
  * @from: the 'from' part of the query
  * @type: the #GType of the #ofoBase -derived object to be allocated
+ * @hub: the #ofaHub object.
  *
  * Load the full dataset for the specified @type class.
  *
  * Returns: the ordered list of loaded objects.
  */
 GList *
-ofo_base_load_dataset( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar *from, GType type )
+ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofaHub *hub )
+{
+	const ofaIDBConnect *connect;
+	ofoBase *object;
+	GList *rows, *dataset, *it;
+
+	g_return_val_if_fail( defs, NULL );
+	g_return_val_if_fail( type, NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	dataset = NULL;
+	connect = ofa_hub_get_connect( hub );
+	rows = ofo_base_load_rows( defs, connect, from );
+
+	for( it=rows ; it ; it=it->next ){
+		object = g_object_new( type, NULL );
+		object->prot->hub = hub;
+		object->prot->fields = it->data;
+		dataset = g_list_prepend( dataset, object );
+	}
+	g_list_free( rows );
+
+	return( g_list_reverse( dataset ));
+}
+
+GList *
+ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs, const ofaIDBConnect *connect, const gchar *from, GType type )
 {
 	ofoBase *object;
 	GList *rows, *dataset, *it;
 
 	g_return_val_if_fail( defs, NULL );
-	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
 	g_return_val_if_fail( type, NULL );
 
 	dataset = NULL;
-	rows = ofo_base_load_rows( defs, cnx, from );
+	rows = ofo_base_load_rows( defs, connect, from );
 
 	for( it=rows ; it ; it=it->next ){
 		object = g_object_new( type, NULL );
@@ -183,4 +208,22 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
 	g_free( query );
 
 	return( g_list_reverse( rows ));
+}
+
+/**
+ * ofo_base_get_hub:
+ * @base: this #ofoBase object.
+ *
+ * Returns: the current #ofaHub object attach to @base.
+ */
+ofaHub *
+ofo_base_get_hub( const ofoBase *base )
+{
+	g_return_val_if_fail( base && OFO_IS_BASE( base ), NULL );
+
+	if( base->prot->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	return( base->prot->hub );
 }

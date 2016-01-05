@@ -50,6 +50,7 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -93,7 +94,7 @@ typedef struct {
 	 * @instance: the #ofaIImportable provider.
 	 * @lines: the lines of the imported file, as a #GSList list of
 	 *  lines, where line->data is a #GSList of fields values.
-	 * @dossier: the opened dossier.
+	 * @hub: the current #ofaHub object.
 	 *
 	 * Import the dataset from the provided content.
 	 *
@@ -102,6 +103,24 @@ typedef struct {
 	 * The recordset must be left unchanged if an error is found.
 	 */
 	gint     ( *import )               ( ofaIImportable *instance,
+												GSList *lines,
+												const ofaFileFormat *settings,
+												ofaHub *hub );
+
+	/**
+	 * import:
+	 * @instance: the #ofaIImportable provider.
+	 * @lines: the lines of the imported file, as a #GSList list of
+	 *  lines, where line->data is a #GSList of fields values.
+	 * @hub: the current #ofaHub object.
+	 *
+	 * Import the dataset from the provided content.
+	 *
+	 * Return: the count of found errors.
+	 *
+	 * The recordset must be left unchanged if an error is found.
+	 */
+	gint     ( *import_to_dossier ) ( ofaIImportable *instance,
 												GSList *lines,
 												const ofaFileFormat *settings,
 												ofoDossier *dossier );
@@ -174,7 +193,7 @@ ofaIImportable *ofa_iimportable_find_willing_to   ( const gchar *uri, const ofaF
 gint            ofa_iimportable_import            ( ofaIImportable *importable,
 															GSList *lines,
 															const ofaFileFormat *settings,
-															ofoDossier *dossier,
+															ofaHub *hub,
 															void *caller );
 
 guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,

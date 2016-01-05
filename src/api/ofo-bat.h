@@ -35,12 +35,15 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-bat-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofs-bat.h"
 
 G_BEGIN_DECLS
+
+void            ofo_bat_connect_signaling_system( const ofaHub *hub );
 
 ofoBat         *ofo_bat_new                ( void );
 

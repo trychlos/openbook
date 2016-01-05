@@ -35,6 +35,7 @@
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -59,6 +60,7 @@ struct _ofaGuidedInputBinPrivate {
 	/* input parameters at initialization time
 	 */
 	const ofaMainWindow  *main_window;
+	ofaHub               *hub;
 
 	/* from dossier
 	 */
@@ -427,9 +429,15 @@ setup_main_window( ofaGuidedInputBin *bin )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_setup_main_window";
 	ofaGuidedInputBinPrivate *priv;
+	GtkApplication *application;
 	gulong handler;
 
 	priv = bin->priv;
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* setup from dossier
 	 * datas which come from the dossier are read once
@@ -1046,7 +1054,7 @@ check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row  )
 	priv = bin->priv;
 
 	asked_account = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number( priv->dossier, asked_account );
+	account = ofo_account_get_by_number( priv->hub, asked_account );
 	if( !account || ofo_account_is_root( account )){
 		do_account_selection( bin, entry, row );
 	}
@@ -1220,7 +1228,7 @@ setup_account_label_in_comment( ofaGuidedInputBin *bin, gint row_id )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( acc_number ){
-		account = ofo_account_get_by_number( priv->dossier, acc_number );
+		account = ofo_account_get_by_number( priv->hub, acc_number );
 		if( account && OFO_IS_ACCOUNT( account )){
 			comment = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
 		} else {
@@ -1419,7 +1427,7 @@ display_currency( ofaGuidedInputBin *bin, gint row, ofsOpeDetail *detail )
 	display_cur = "";
 
 	if( detail->account ){
-		account = ofo_account_get_by_number( priv->dossier, detail->account );
+		account = ofo_account_get_by_number( priv->hub, detail->account );
 		if( account ){
 			currency = ofo_account_get_currency( account );
 			if( currency && g_utf8_collate( currency, priv->def_currency )){

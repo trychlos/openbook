@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -45,6 +46,7 @@ struct _ofaAccountFrameBinPrivate {
 
 	const ofaMainWindow *main_window;
 	ofoDossier          *dossier;
+	ofaHub              *hub;
 	gboolean             is_current;	/* whether the dossier is current */
 	GtkGrid             *grid;
 	gint                 buttons;
@@ -239,6 +241,7 @@ setup_bin( ofaAccountFrameBin *bin )
 	ofaAccountFrameBinPrivate *priv;
 	GtkWidget *grid;
 	ofoDossier *dossier;
+	GtkApplication *application;
 
 	priv = bin->priv;
 
@@ -246,6 +249,11 @@ setup_bin( ofaAccountFrameBin *bin )
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->dossier = dossier;
 	priv->is_current = ofo_dossier_is_current( dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	grid = gtk_grid_new();
 	gtk_container_add( GTK_CONTAINER( bin ), grid );
@@ -436,7 +444,7 @@ update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id )
 	has_account = FALSE;
 
 	if( account_id ){
-		account = ofo_account_get_by_number( priv->dossier, account_id );
+		account = ofo_account_get_by_number( priv->hub, account_id );
 		has_account = ( account && OFO_IS_ACCOUNT( account ));
 	}
 
@@ -444,7 +452,7 @@ update_buttons_sensitivity( ofaAccountFrameBin *bin, const gchar *account_id )
 			has_account );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && has_account && ofo_account_is_deletable( account, priv->dossier ));
+			priv->is_current && has_account && ofo_account_is_deletable( account ));
 
 	if( priv->view_entries_btn ){
 		gtk_widget_set_sensitive( priv->view_entries_btn,

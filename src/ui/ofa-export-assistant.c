@@ -35,6 +35,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
@@ -58,6 +59,8 @@
  * + one result page (page '5')
  */
 struct _ofaExportAssistantPrivate {
+
+	ofaHub           *hub;
 
 	/* p0: introduction
 	 */
@@ -165,6 +168,7 @@ static const gchar *st_pref_settings    = "ExportAssistant-settings";
 
 G_DEFINE_TYPE( ofaExportAssistant, ofa_export_assistant, MY_TYPE_ASSISTANT )
 
+static void      p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
 static void      p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  p1_is_complete( ofaExportAssistant *self );
@@ -193,7 +197,7 @@ static const ofsAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
 				NULL,
 				NULL,
-				NULL },
+				( myAssistantCb ) p0_do_forward },
 		{ ASSIST_PAGE_SELECT,
 				( myAssistantCb ) p1_do_init,
 				( myAssistantCb ) p1_do_display,
@@ -310,6 +314,27 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 	get_settings( self );
 	my_assistant_run( MY_ASSISTANT( self ));
+}
+
+/*
+ * get some dossier data
+ */
+static void
+p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
+{
+	static const gchar *thisfn = "ofa_export_assistant_p0_do_forward";
+	ofaExportAssistantPrivate *priv;
+	GtkApplication *application;
+
+	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
+
+	priv = self->priv;
+
+	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( self )));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 /*
@@ -856,22 +881,15 @@ static gboolean
 export_data( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	GtkWidget *label;
 	gchar *str, *text;
 	gboolean ok;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
-			priv->p5_base, priv->p3_furi, priv->p2_export_settings, dossier, self );
+			priv->p5_base, priv->p3_furi, priv->p2_export_settings, priv->hub, self );
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name(

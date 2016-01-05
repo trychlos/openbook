@@ -44,7 +44,7 @@
  * system to maintain itself up to date.
  */
 
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 #include "ui/ofa-tree-store.h"
 
@@ -110,7 +110,7 @@ enum {
 
 GType            ofa_account_store_get_type     ( void );
 
-ofaAccountStore *ofa_account_store_new          ( ofoDossier *dossier );
+ofaAccountStore *ofa_account_store_new          ( ofaHub *hub );
 
 gboolean         ofa_account_store_get_by_number( ofaAccountStore *store,
 															const gchar *number,

@@ -34,6 +34,7 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"
 
@@ -44,6 +45,8 @@ G_BEGIN_DECLS
  */
 #define UNKNOWN_LEDGER_MNEMO                 "__xx__"
 #define UNKNOWN_LEDGER_LABEL                 _( "Unclassed" )
+
+void            ofo_ledger_connect_signaling_system( const ofaHub *hub );
 
 void            ofo_ledger_connect_handlers  ( const ofoDossier *dossier );
 

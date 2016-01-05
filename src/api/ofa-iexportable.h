@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-file-format.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub.h"
 
 G_BEGIN_DECLS
 
@@ -74,16 +74,30 @@ typedef struct {
 	guint    ( *get_interface_version )( const ofaIExportable *instance );
 
 	/**
-	 * export_as_csv:
+	 * export:
 	 * @instance: the #ofaIExportable provider.
 	 * @settings: the current export settings for the operation.
-	 * @dossier: the opened dossier.
+	 * @hub: the current #ofaHub object.
 	 *
 	 * Export the dataset to the named file.
 	 *
 	 * Return: %TRUE if the dataset has been successfully exported.
 	 */
 	gboolean ( *export )               ( ofaIExportable *instance,
+												const ofaFileFormat *settings,
+												ofaHub *hub );
+
+	/**
+	 * export:
+	 * @instance: the #ofaIExportable provider.
+	 * @settings: the current export settings for the operation.
+	 * @hub: the current #ofaHub object.
+	 *
+	 * Export the dataset to the named file.
+	 *
+	 * Return: %TRUE if the dataset has been successfully exported.
+	 */
+	gboolean ( *export_from_dossier ) ( ofaIExportable *instance,
 												const ofaFileFormat *settings,
 												ofoDossier *dossier );
 }
@@ -96,7 +110,7 @@ guint    ofa_iexportable_get_interface_last_version( void );
 gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
 															const gchar *uri,
 															const ofaFileFormat *settings,
-															ofoDossier *dossier,
+															ofaHub *hub,
 															const void *instance );
 
 gulong   ofa_iexportable_get_count                 ( ofaIExportable *exportable );

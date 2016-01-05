@@ -67,7 +67,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaFileFormat *settings, ofaHub *hub );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
 static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -189,7 +189,7 @@ ofa_iexportable_get_interface_last_version( void )
  * @fname: the output filename, will be overriden without requering
  *  any confirmation if already exists.
  * @settings: a #ofaFileFormat object.
- * @dossier: the current dossier.
+ * @hub: the current  #ofaHub object.
  * @fn_double: the callback to be triggered on progress with a double.
  * @fn_text: the callback to be triggered on progress with a text.
  * @instance: the instance to be set for calling the callbacks.
@@ -201,7 +201,7 @@ ofa_iexportable_get_interface_last_version( void )
 gboolean
 ofa_iexportable_export_to_path( ofaIExportable *exportable,
 									const gchar *uri, const ofaFileFormat *settings,
-									ofoDossier *dossier, const void *instance )
+									ofaHub *hub, const void *instance )
 {
 	GFile *output_file;
 	sIExportable *sdata;
@@ -221,7 +221,7 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );
 
-	ok = iexportable_export_to_stream( exportable, output_stream, settings, dossier );
+	ok = iexportable_export_to_stream( exportable, output_stream, settings, hub );
 
 	g_output_stream_close( output_stream, NULL, NULL );
 	g_object_unref( output_file );
@@ -232,7 +232,7 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 static gboolean
 iexportable_export_to_stream( ofaIExportable *exportable,
 									GOutputStream *stream, const ofaFileFormat *settings,
-									ofoDossier *dossier )
+									ofaHub *hub )
 {
 	sIExportable *sdata;
 
@@ -242,7 +242,7 @@ iexportable_export_to_stream( ofaIExportable *exportable,
 	sdata->stream = stream;
 
 	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, dossier ));
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, hub ));
 	}
 
 	return( FALSE );

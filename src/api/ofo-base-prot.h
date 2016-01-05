@@ -35,6 +35,8 @@
  * This header is supposed to be included only by the child classes.
  */
 
+#include "api/ofa-hub.h"
+
 G_BEGIN_DECLS
 
 /* protected instance data
@@ -42,6 +44,11 @@ G_BEGIN_DECLS
  */
 struct _ofoBaseProtected {
 	gboolean dispose_has_run;
+
+	/* the #ofaHub object this object comes from
+	 * it may be %NULL when the object has just been instanciated
+	 */
+	ofaHub  *hub;
 
 	/* the fields loaded from the ofaBox definitions
 	 */

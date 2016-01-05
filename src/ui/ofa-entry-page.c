@@ -33,8 +33,9 @@
 #include "api/my-double.h"
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-idate-filter.h"
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-idate-filter.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -94,6 +95,7 @@ struct _ofaEntryPagePrivate {
 
 	/* internals
 	 */
+	ofaHub              *hub;
 	ofoDossier          *dossier;		/* dossier */
 	const GDate         *dossier_opening;
 	GList               *handlers;
@@ -467,6 +469,7 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_entry_page_v_setup_view";
 	ofaEntryPagePrivate *priv;
 	GtkWidget *frame;
+	GtkApplication *application;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -474,6 +477,12 @@ v_setup_view( ofaPage *page )
 
 	priv->dossier = ofa_page_get_dossier( page );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -1501,7 +1510,7 @@ on_account_changed( GtkEntry *entry, ofaEntryPage *self )
 	g_free( priv->acc_number );
 	priv->acc_number = g_strdup( gtk_entry_get_text( entry ));
 
-	account = ofo_account_get_by_number( priv->dossier, priv->acc_number );
+	account = ofo_account_get_by_number( priv->hub, priv->acc_number );
 
 	if( account && !ofo_account_is_root( account )){
 		str = g_strdup_printf( "%s: %s", _( "Account" ), ofo_account_get_label( account ));
@@ -1687,7 +1696,7 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 	g_free( sdeff );
 	g_free( sdope );
 
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), ofa_page_get_dossier( OFA_PAGE( self )));
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
 		display_entry_concil( self, concil, iter );
 	}
@@ -2469,7 +2478,7 @@ check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 			ENT_COL_ACCOUNT, &acc_number, ENT_COL_CURRENCY, &cur_code, -1 );
 
 	if( my_strlen( acc_number )){
-		account = ofo_account_get_by_number( priv->dossier, acc_number );
+		account = ofo_account_get_by_number( priv->hub, acc_number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
 				is_valid = TRUE;
@@ -2711,7 +2720,7 @@ check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ACCOUNT, &number, ENT_COL_CURRENCY, &code, -1 );
 
 	g_return_val_if_fail( my_strlen( number ), FALSE );
-	account = ofo_account_get_by_number( priv->dossier, number );
+	account = ofo_account_get_by_number( priv->hub, number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
@@ -2941,10 +2950,10 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
 
 		remediate = TRUE;
-		account_new = ofo_account_get_by_number( priv->dossier, account );
+		account_new = ofo_account_get_by_number( priv->hub, account );
 		g_return_if_fail( account_new && OFO_IS_ACCOUNT( account_new ));
 		if( cmp != 0 ){
-			account_prev = ofo_account_get_by_number( priv->dossier, prev_account );
+			account_prev = ofo_account_get_by_number( priv->hub, prev_account );
 			g_return_if_fail( account_prev && OFO_IS_ACCOUNT( account_prev ));
 		} else {
 			account_prev = account_new;
@@ -2978,9 +2987,9 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 
 		if( remediate ){
 			if( cmp != 0 ){
-				ofo_account_update_amounts( account_prev, priv->dossier );
+				ofo_account_update_amounts( account_prev );
 			}
-			ofo_account_update_amounts( account_new, priv->dossier );
+			ofo_account_update_amounts( account_new );
 		}
 	}
 }
@@ -3313,9 +3322,9 @@ do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 	}
 
 	/* if entry was conciliated, then remove all conciliation group */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
-		ofa_iconcil_remove_concil( concil, priv->dossier );
+		ofa_iconcil_remove_concil( concil );
 	}
 }
 
@@ -3421,7 +3430,7 @@ insert_new_row( ofaEntryPage *self )
 	} else {
 		if( my_strlen( priv->acc_number )){
 			ofo_entry_set_account( entry, priv->acc_number );
-			account_object = ofo_account_get_by_number( priv->dossier, priv->acc_number );
+			account_object = ofo_account_get_by_number( priv->hub, priv->acc_number );
 			ofo_entry_set_currency( entry, ofo_account_get_currency( account_object ));
 		}
 	}
@@ -3488,11 +3497,9 @@ delete_row( ofaEntryPage *self )
 static gboolean
 ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
 {
-	ofaEntryPagePrivate *priv;
 	GString *msg;
 	gboolean ok;
 
-	priv = page->priv;
 	msg = g_string_new( "" );;
 
 	/* first ask for the standard confirmation */
@@ -3510,7 +3517,7 @@ ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
 					_( "The entry has been settled. "
 						"Deleting it will also automatically delete all the settlement group."));
 		}
-		if( ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier )){
+		if( ofa_iconcil_get_concil( OFA_ICONCIL( entry ))){
 			if( my_strlen( msg->str )){
 				msg = g_string_append( msg, "\n" );
 			}

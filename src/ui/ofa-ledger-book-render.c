@@ -786,7 +786,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	}
 
 	/* reconciliation ? */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
 		ofa_irenderable_set_text( instance,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );

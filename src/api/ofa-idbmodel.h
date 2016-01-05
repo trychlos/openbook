@@ -38,8 +38,8 @@
  */
 
 #include "my-dialog.h"
+#include "ofa-hub-def.h"
 #include "ofa-idbconnect.h"
-#include "ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -55,12 +55,11 @@ typedef struct _ofaIDBModel                    ofaIDBModel;
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_current_version: [should]: return the current version of the DB model.
  * @get_last_version: [should]: return the last version of the DB model.
- *
- * @get_name: [should]: returns the name of the customer.
- * @needs_ddl_update: [should]: returns whether the DB model needs an update.
+ * @connect_handlers: [may]: let connect to the hub signaling system.
+ * @needs_update: [should]: returns whether the DB model needs an update.
  * @ddl_update: [should]: returns whether the DB model has been successfully updated.
  *
- * This defines the interface that an #ofaIDBModel should implement.
+ * This defines the interface that an #ofaIDBModel may/should implement.
  */
 typedef struct {
 	/*< private >*/
@@ -90,7 +89,7 @@ typedef struct {
 	/**
 	 * get_current_version:
 	 * @instance: the #ofaIDBModel provider.
-	 * @dossier: the #ofoDossier instance.
+	 * @connect: the #ofaIDBConnect connection object.
 	 *
 	 * Returns: the current version of the DB model.
 	 *
@@ -100,12 +99,12 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint    ( *get_current_version )  ( const ofaIDBModel *instance,
-											const ofoDossier *dossier );
+											const ofaIDBConnect *connect );
 
 	/**
 	 * get_last_version:
 	 * @instance: the #ofaIDBModel provider.
-	 * @dossier: the #ofoDossier instance.
+	 * @connect: the #ofaIDBConnect connection object.
 	 *
 	 * Returns: the last available version of the DB model.
 	 *
@@ -115,12 +114,24 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint    ( *get_last_version )     ( const ofaIDBModel *instance,
-											const ofoDossier *dossier );
+											const ofaIDBConnect *connect );
+
+	/**
+	 * connect_handlers:
+	 * @instance: the #ofaIDBModel provider.
+	 * @hub: the #ofaHub object.
+	 *
+	 * Let the implementation connect to the hub signaling system.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *connect_handlers )     ( const ofaIDBModel *instance,
+											const ofaHub *hub );
 
 	/**
 	 * needs_update:
 	 * @instance: the #ofaIDBModel provider.
-	 * @dossier: the #ofoDossier instance.
+	 * @connect: the #ofaIDBConnect connection object.
 	 *
 	 * Returns: %TRUE if the DB model needs an update, %FALSE else.
 	 *
@@ -129,12 +140,13 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *needs_update )         ( const ofaIDBModel *instance,
-											const ofoDossier *dossier );
+											const ofaIDBConnect *connect );
 
 	/**
 	 * ddl_update:
 	 * @instance: the #ofaIDBModel provider.
-	 * @dossier: the #ofoDossier instance.
+	 * @hub: the #ofaHub instance which manages the connection
+	 *  (required to be able to import files to collections).
 	 * @dialog: the #myDialog which displays the update.
 	 *
 	 * Returns: %TRUE if the DB model has been successfully updated,
@@ -145,7 +157,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *ddl_update )           ( const ofaIDBModel *instance,
-											ofoDossier *dossier,
+											ofaHub *hub,
 											myDialog *dialog );
 }
 	ofaIDBModelInterface;
@@ -156,13 +168,15 @@ guint    ofa_idbmodel_get_interface_last_version( void );
 
 guint    ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instance );
 
-gboolean ofa_idbmodel_run                       ( ofoDossier *dossier );
+gboolean ofa_idbmodel_update                    ( ofaHub *hub );
+
+void     ofa_idbmodel_init_hub_signaling_system ( const ofaHub *hub );
 
 guint    ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,
-														const ofoDossier *dossier );
+														const ofaIDBConnect *connect );
 
 guint    ofa_idbmodel_get_last_version          ( const ofaIDBModel *instance,
-														const ofoDossier *dossier );
+														const ofaIDBConnect *connect );
 
 void     ofa_idbmodel_add_row_widget            ( const ofaIDBModel *instance,
 														myDialog *dialog,

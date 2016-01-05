@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -50,6 +51,7 @@ struct _ofaClosingParmsBinPrivate {
 	 */
 	GtkWidget      *forward;
 	ofaMainWindow  *main_window;
+	ofaHub         *hub;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
 
@@ -204,18 +206,22 @@ ofaClosingParmsBin *
 ofa_closing_parms_bin_new( ofaMainWindow *main_window )
 {
 	ofaClosingParmsBin *bin;
+	GtkApplication *application;
 
 	bin = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
 	bin->priv->main_window = main_window;
 	bin->priv->dossier = ofa_main_window_get_dossier( main_window );
 
-	setup_bin( bin );
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
 
-	if( bin->priv->dossier ){
-		setup_closing_opes( bin );
-		setup_currency_accounts( bin );
-	}
+	bin->priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( bin->priv->hub && OFA_IS_HUB( bin->priv->hub ), NULL );
+
+	setup_bin( bin );
+	setup_closing_opes( bin );
+	setup_currency_accounts( bin );
 
 	return( bin );
 }
@@ -736,7 +742,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 				break;
 			}
 
-			account = ofo_account_get_by_number( priv->dossier, acc_number );
+			account = ofo_account_get_by_number( priv->hub, acc_number );
 			if( !account ){
 				if( msg ){
 					*msg = g_strdup_printf(

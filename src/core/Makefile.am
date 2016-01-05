@@ -76,22 +76,20 @@ libofa_core_la_SOURCES = \
 	ofa-collection.c									\
 	ofa-collection.h									\
 	ofa-collection-prot.h								\
-	ofa-concil-collection.c								\
-	ofa-concil-collection.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
-	ofa-dossier-misc.c									\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
+	ofa-hub.c											\
 	ofa-iabout.c										\
+	ofa-icollectionable.c								\
 	ofa-icollector.c									\
-	ofa-icollector.h									\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idataset.c										\
@@ -103,6 +101,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
 	ofa-iexportable.c									\
+	ofa-ihubber.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\

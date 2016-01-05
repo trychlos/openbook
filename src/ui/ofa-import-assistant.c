@@ -33,8 +33,8 @@
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
-#include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
@@ -893,18 +893,20 @@ static guint
 p5_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
+	GtkApplication *application;
+	ofaHub *hub;
 	guint count;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( self )));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), 0 );
 
-	count = ofa_dossier_misc_import_csv(
-			dossier, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
+	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+
+	count = ofa_hub_import_csv(
+					hub, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
 
 	return( count );
 }

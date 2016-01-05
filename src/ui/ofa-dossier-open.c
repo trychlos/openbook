@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -504,15 +505,23 @@ static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
+	GtkApplication *application;
+	ofaHub *hub;
+	gboolean ok;
 
 	priv = self->priv;
+	ok = FALSE;
 
-	ofa_main_window_open_dossier(
-			OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( self ))),
-			priv->connect,
-			TRUE );
+	application = my_window_get_application( MY_WINDOW( self ));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
 
-	return( TRUE );
+	hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), priv->connect );
+	if( hub ){
+		ofa_hub_remediate_settings( hub );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static void

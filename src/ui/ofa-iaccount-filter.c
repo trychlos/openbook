@@ -30,6 +30,7 @@
 #include <gtk/gtk.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -44,6 +45,7 @@
 typedef struct {
 	gchar               *xml_name;
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	gchar               *prefs_key;
 	GtkSizeGroup        *group0;
@@ -215,6 +217,7 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name,
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_setup_bin";
 	sIAccountFilter *sdata;
+	GtkApplication *application;
 
 	g_debug( "%s: filter=%p, xml_name=%s, main_window=%p",
 			thisfn, ( void * ) filter, xml_name, ( void * ) main_window );
@@ -226,6 +229,11 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name,
 	sdata->xml_name = g_strdup( xml_name );
 	sdata->main_window = main_window;
 	sdata->dossier = ofa_main_window_get_dossier( main_window );
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	sdata->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( sdata->hub && OFA_IS_HUB( sdata->hub ));
 
 	setup_composite( filter, sdata );
 }
@@ -628,7 +636,7 @@ is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidge
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
 		*account = g_strdup( cstr );
-		account_obj = ofo_account_get_by_number( sdata->dossier, cstr );
+		account_obj = ofo_account_get_by_number( sdata->hub, cstr );
 		if( account_obj && OFO_IS_ACCOUNT( account_obj )){
 			gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account_obj ));
 			valid = TRUE;

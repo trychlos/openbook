@@ -374,7 +374,7 @@ tva_record_load_dataset( ofoDossier *dossier )
 	ofoTVARecord *record;
 	gchar *from, *send;
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					"TVA_T_RECORDS ORDER BY TFO_MNEMO ASC,TFO_END DESC",

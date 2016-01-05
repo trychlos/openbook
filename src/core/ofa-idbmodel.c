@@ -31,10 +31,10 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
-#include "api/ofo-dossier.h"
 
 #define IDBMODEL_LAST_VERSION           1
 
@@ -71,7 +71,7 @@ struct _ofaDBModelDlgPrivate {
 	/* runtime
 	 */
 	GList         *plugins_list;
-	ofoDossier    *dossier;
+	ofaHub        *hub;
 
 	/* UI
 	 */
@@ -99,8 +99,8 @@ static const gchar      *st_settings    = "DBModelDlg-settings";
 static GType    register_type( void );
 static void     interface_base_init( ofaIDBModelInterface *klass );
 static void     interface_base_finalize( ofaIDBModelInterface *klass );
-static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofoDossier *dossier );
-static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog );
+static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
 
 /* dialog management */
 static GType    ofa_dbmodel_dlg_get_type( void ) G_GNUC_CONST;
@@ -222,31 +222,33 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
 }
 
 /**
- * ofa_idbmodel_run:
- * @dossier: the #ofoDossier instance being opened.
+ * ofa_idbmodel_update:
+ * @hub: the #ofaHub object.
  *
  * Ask all ofaIDBModel implentations whether they need to update their
- * current DB model. A modal dialog box is displayed if any DDL update
- * has to be run.
+ * current DB model, and run them.
+ * A modal dialog box is displayed if any DDL update has to be run.
  *
  * Returns: %TRUE if the DDL updates are all OK (or not needed), %FALSE
  * else.
  */
 gboolean
-ofa_idbmodel_run( ofoDossier *dossier )
+ofa_idbmodel_update( ofaHub *hub )
 {
 	GList *plugins_list, *it;
 	gboolean need_update, ok;
 	ofaDBModelDlg *dialog;
+	const ofaIDBConnect *connect;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	ok = TRUE;
 	need_update = FALSE;
 	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	connect = ofa_hub_get_connect( hub );
 
 	for( it=plugins_list ; it && !need_update ; it=it->next ){
-		need_update = idbmodel_get_needs_update( OFA_IDBMODEL( it->data ), dossier );
+		need_update = idbmodel_get_needs_update( OFA_IDBMODEL( it->data ), connect );
 		if( need_update ){
 			break;
 		}
@@ -260,7 +262,7 @@ ofa_idbmodel_run( ofoDossier *dossier )
 					NULL );
 
 		dialog->priv->plugins_list = plugins_list;
-		dialog->priv->dossier = dossier;
+		dialog->priv->hub = hub;
 
 		load_settings( dialog );
 		my_dialog_run_dialog( MY_DIALOG( dialog ));
@@ -276,22 +278,53 @@ ofa_idbmodel_run( ofoDossier *dossier )
 }
 
 /**
+ * ofa_idbmodel_init_hub_signaling_system:
+ * @hub: the #ofaHub object.
+ *
+ * Propose to all ofaIDBModel implentations to connect themselves to
+ * the hub signaling system.
+ */
+void
+ofa_idbmodel_init_hub_signaling_system( const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_idbmodel_init_hub_signaling_system";
+	GList *plugins_list, *it;
+	ofaIDBModel *instance;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+
+	for( it=plugins_list ; it ; it=it->next ){
+		instance = OFA_IDBMODEL( it->data );
+		if( OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers ){
+			OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers( instance, hub );
+		} else {
+			g_info( "%s: ofaIDBModel instance %p does not provide 'connect_handlers()' method",
+					thisfn, ( void * ) instance );
+		}
+	}
+
+	ofa_plugin_free_extensions( plugins_list );
+}
+
+/**
  * ofa_idbmodel_get_current_version:
  * @instance:
- * @dossier:
+ * @connect:
  *
  * Returns: the current version of the DB model.
  */
 guint
-ofa_idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+ofa_idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	static const gchar *thisfn = "ofa_idbmodel_get_current_version";
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMODEL( instance ), G_MAXUINT );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_MAXUINT );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), G_MAXUINT );
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_current_version ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_current_version( instance, dossier ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_current_version( instance, connect ));
 	}
 
 	g_info( "%s: ofaIDBModel instance %p does not provide 'get_current_version()' method",
@@ -307,15 +340,15 @@ ofa_idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier 
  * Returns: the last version available for this DB model.
  */
 guint
-ofa_idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+ofa_idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	static const gchar *thisfn = "ofa_idbmodel_get_last_version";
 
 	g_return_val_if_fail( instance && OFA_IS_IDBMODEL( instance ), G_MAXUINT );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_MAXUINT );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), G_MAXUINT );
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_last_version ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_last_version( instance, dossier ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_last_version( instance, connect ));
 	}
 
 	g_info( "%s: ofaIDBModel instance %p does not provide 'get_last_version()' method",
@@ -324,27 +357,27 @@ ofa_idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *do
 }
 
 static gboolean
-idbmodel_get_needs_update( const ofaIDBModel *instance, const ofoDossier *dossier )
+idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	guint cur_version, last_version;
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->needs_update ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->needs_update( instance, dossier ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->needs_update( instance, connect ));
 	}
 
-	cur_version = ofa_idbmodel_get_current_version( instance, dossier );
-	last_version = ofa_idbmodel_get_last_version( instance, dossier );
+	cur_version = ofa_idbmodel_get_current_version( instance, connect );
+	last_version = ofa_idbmodel_get_last_version( instance, connect );
 
 	return( cur_version < last_version );
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_idbmodel_ddl_update";
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, dossier, dialog ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, hub, dialog ));
 	}
 
 	g_info( "%s: ofaIDBModel instance %p does not provide 'ddl_update()' method",
@@ -467,7 +500,7 @@ do_run( ofaDBModelDlg *dialog )
 	priv = dialog->priv;
 
 	for( it=priv->plugins_list ; it && ok ; it=it->next ){
-		ok = idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->dossier, MY_DIALOG( dialog ));
+		ok = idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_DIALOG( dialog ));
 	}
 
 	priv->updated = ok;

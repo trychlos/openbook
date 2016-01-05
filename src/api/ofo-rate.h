@@ -51,6 +51,8 @@ typedef struct {
 }
 	ofsRateValidity;
 
+	void            ofo_rate_connect_signaling_system( const ofaHub *hub );
+
 GList          *ofo_rate_get_dataset     ( ofoDossier *dossier );
 ofoRate        *ofo_rate_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );
 

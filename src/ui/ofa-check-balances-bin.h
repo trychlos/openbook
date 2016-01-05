@@ -47,7 +47,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -75,14 +75,14 @@ typedef struct {
 }
 	ofaCheckBalancesBinClass;
 
-GType                ofa_check_balances_bin_get_type   ( void ) G_GNUC_CONST;
+GType                ofa_check_balances_bin_get_type  ( void ) G_GNUC_CONST;
 
-ofaCheckBalancesBin *ofa_check_balances_bin_new        ( void );
+ofaCheckBalancesBin *ofa_check_balances_bin_new       ( void );
 
-void                 ofa_check_balances_bin_set_dossier( ofaCheckBalancesBin *bin,
-																	ofoDossier *dossier );
+void                 ofa_check_balances_bin_set_hub   ( ofaCheckBalancesBin *bin,
+															ofaHub *hub );
 
-gboolean             ofa_check_balances_bin_get_status ( const ofaCheckBalancesBin *bin );
+gboolean             ofa_check_balances_bin_get_status( const ofaCheckBalancesBin *bin );
 
 G_END_DECLS
 

@@ -29,13 +29,14 @@
  * SECTION: istore
  * @title: ofaIStore
  * @short_description: The IStore Interface
- * @include: api/ofa-istore.h
+ * @include: openbook/ofa-istore.h
  *
  * The #ofaIStore interface is implemented by #ofaListStore and
  * #ofaTreeStore. It lets us implement some common behavior between
  * all our stores.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -82,10 +83,11 @@ GType        ofa_istore_get_type             ( void );
 guint        ofa_istore_get_interface_last_version
                                              ( const ofaIStore *istore );
 
-void         ofa_istore_init                 ( ofaIStore *istore,
+void         ofa_istore_init_with_dossier    ( ofaIStore *istore,
 														ofoDossier *dossier );
 
-ofoDossier  *ofa_istore_get_dossier          ( const ofaIStore *istore );
+void         ofa_istore_init                 ( ofaIStore *istore,
+														ofaHub *hub );
 
 void         ofa_istore_simulate_dataset_load( const ofaIStore *istore );
 

@@ -89,6 +89,8 @@ typedef struct {
 
 GType                 my_window_get_type          ( void ) G_GNUC_CONST;
 
+GtkApplication       *my_window_get_application   ( const myWindow *window );
+
 GtkApplicationWindow *my_window_get_main_window   ( const myWindow *window );
 
 const gchar          *my_window_get_name          ( const myWindow *window );

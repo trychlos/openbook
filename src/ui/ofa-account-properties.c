@@ -32,6 +32,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -50,6 +51,7 @@ struct _ofaAccountPropertiesPrivate {
 	/* initialization
 	 */
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoAccount          *account;
 
 	/* runtime data
@@ -238,12 +240,19 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkWindow *toplevel;
+	GtkApplication *application;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
+	application = gtk_window_get_application( toplevel );
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* dialog title */
 	acc_number = ofo_account_get_number( priv->account );
@@ -620,7 +629,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !priv->number_ok ){
 
-		exists = ofo_account_get_by_number( priv->dossier, priv->number );
+		exists = ofo_account_get_by_number( priv->hub, priv->number );
 		if( exists ){
 			prev = ofo_account_get_number( priv->account );
 			priv->number_ok = prev && g_utf8_collate( prev, priv->number ) == 0;
@@ -665,11 +674,9 @@ do_update( ofaAccountProperties *self )
 	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), account );
 
 	if( priv->is_new ){
-		priv->updated =
-				ofo_account_insert( priv->account, priv->dossier );
+		priv->updated = ofo_account_insert( priv->account, priv->hub );
 	} else {
-		priv->updated =
-				ofo_account_update( priv->account, priv->dossier, prev_number );
+		priv->updated = ofo_account_update( priv->account, prev_number );
 	}
 
 	g_free( prev_number );

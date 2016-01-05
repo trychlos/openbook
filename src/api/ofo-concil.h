@@ -26,8 +26,8 @@
 #define __OPENBOOK_API_OFO_CONCIL_H__
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-concil-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -37,48 +37,48 @@ G_BEGIN_DECLS
 #define CONCIL_TYPE_BAT                 "B"
 #define CONCIL_TYPE_ENTRY               "E"
 
-ofoConcil      *ofo_concil_get_by_id      ( const ofoDossier *dossier,
-													ofxCounter rec_id );
+void            ofo_concil_connect_signaling_system( const ofaHub *hub );
 
-ofoConcil      *ofo_concil_get_by_other_id( const ofoDossier *dossier,
-													const gchar *type,
-													ofxCounter other_id );
+ofoConcil      *ofo_concil_get_by_id               ( ofaHub *hub,
+														ofxCounter rec_id );
 
-ofoConcil      *ofo_concil_new            ( void );
+ofoConcil      *ofo_concil_get_by_other_id         ( ofaHub *hub,
+														const gchar *type,
+														ofxCounter other_id );
 
-ofxCounter      ofo_concil_get_id         ( const ofoConcil *concil );
+ofoConcil      *ofo_concil_new                     ( void );
 
-const GDate    *ofo_concil_get_dval       ( const ofoConcil *concil );
+ofxCounter      ofo_concil_get_id                  ( const ofoConcil *concil );
 
-const gchar    *ofo_concil_get_user       ( const ofoConcil *concil );
+const GDate    *ofo_concil_get_dval                ( const ofoConcil *concil );
 
-const GTimeVal *ofo_concil_get_stamp      ( const ofoConcil *concil );
+const gchar    *ofo_concil_get_user                ( const ofoConcil *concil );
 
-GList          *ofo_concil_get_ids        ( const ofoConcil *concil );
+const GTimeVal *ofo_concil_get_stamp               ( const ofoConcil *concil );
 
-gboolean        ofo_concil_has_member     ( const ofoConcil *concil,
-													const gchar *type,
-													ofxCounter id );
+GList          *ofo_concil_get_ids                 ( const ofoConcil *concil );
 
-void            ofo_concil_set_dval       ( ofoConcil *concil,
-													const GDate *dval );
+gboolean        ofo_concil_has_member              ( const ofoConcil *concil,
+														const gchar *type,
+														ofxCounter id );
 
-void            ofo_concil_set_user       ( ofoConcil *concil,
-													const gchar *user );
+void            ofo_concil_set_dval                ( ofoConcil *concil,
+														const GDate *dval );
 
-void            ofo_concil_set_stamp       ( ofoConcil *concil,
-													const GTimeVal *stamp );
+void            ofo_concil_set_user                ( ofoConcil *concil,
+														const gchar *user );
 
-gboolean        ofo_concil_insert         ( ofoConcil *concil,
-													ofoDossier *dossier );
+void            ofo_concil_set_stamp               ( ofoConcil *concil,
+														const GTimeVal *stamp );
 
-gboolean        ofo_concil_add_id         ( ofoConcil *concil,
-													const gchar *type,
-													ofxCounter id,
-													ofoDossier *dossier );
+gboolean        ofo_concil_insert                  ( ofoConcil *concil,
+														ofaHub *hub );
 
-gboolean        ofo_concil_delete         ( ofoConcil *concil,
-													ofoDossier *dossier );
+gboolean        ofo_concil_add_id                  ( ofoConcil *concil,
+														const gchar *type,
+														ofxCounter id );
+
+gboolean        ofo_concil_delete                  ( ofoConcil *concil );
 
 G_END_DECLS
 

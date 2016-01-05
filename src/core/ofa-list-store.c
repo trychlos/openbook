@@ -26,9 +26,8 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-istore.h"
 #include "api/ofa-list-store.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-istore.h"				/* does not know why istore.h must be included after */
 
 /* private instance data
  */
@@ -161,7 +160,7 @@ list_store_constructed( GObject *instance )
 	priv = OFA_LIST_STORE( instance )->priv;
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
-	ofa_istore_init( OFA_ISTORE( instance ), priv->dossier );
+	ofa_istore_init_with_dossier( OFA_ISTORE( instance ), priv->dossier );
 }
 
 static void

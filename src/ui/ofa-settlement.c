@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -64,7 +65,8 @@ struct _ofaSettlementPrivate {
 
 	/* internals
 	 */
-	ofoDossier        *dossier;			/* dossier */
+	ofaHub            *hub;
+	ofoDossier        *dossier;
 	gchar             *account_number;
 	const gchar       *account_currency;
 	ofaEntrySettlement settlement;
@@ -384,6 +386,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_settlement_v_setup_view";
 	ofaSettlementPrivate *priv;
+	GtkApplication *application;
 	GtkWidget *frame;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -392,6 +395,11 @@ v_setup_view( ofaPage *page )
 
 	priv->dossier = ofa_page_get_dossier( page );
 	get_settings( OFA_SETTLEMENT( page ));
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -816,7 +824,7 @@ on_account_changed( GtkEntry *entry, ofaSettlement *self )
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( gtk_entry_get_text( entry ));
 
-	account = ofo_account_get_by_number( priv->dossier, priv->account_number );
+	account = ofo_account_get_by_number( priv->hub, priv->account_number );
 
 	if( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account )){
 		priv->account_currency = ofo_account_get_currency( account );

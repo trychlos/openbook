@@ -27,9 +27,12 @@ api_include_HEADERS = \
 	\
 	my-igridlist.h										\
 	my-isettings.h										\
-	ofa-dossier-misc.h									\
 	ofa-file-format.h									\
+	ofa-hub.h											\
+	ofa-hub-def.h										\
 	ofa-iabout.h										\
+	ofa-icollectionable.h								\
+	ofa-icollector.h									\
 	ofa-idataset.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
@@ -41,6 +44,7 @@ api_include_HEADERS = \
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexportable.h									\
+	ofa-ihubber.h										\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-iprefs-page.h									\

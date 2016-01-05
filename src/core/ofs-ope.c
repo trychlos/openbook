@@ -35,6 +35,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
+#include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -635,13 +636,15 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 static const gchar *
 get_account_label( sHelper *helper, const gchar *content )
 {
+	ofaHub *hub;
 	ofoAccount *account;
 	const gchar *label;
 
 	label = NULL;
 
 	if( content ){
-		account = ofo_account_get_by_number( helper->dossier, content );
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
 		if( account ){
 			label = ofo_account_get_label( account );
 		}
@@ -653,13 +656,15 @@ get_account_label( sHelper *helper, const gchar *content )
 static const gchar *
 get_account_currency( sHelper *helper, const gchar *content )
 {
+	ofaHub *hub;
 	ofoAccount *account;
 	const gchar *currency;
 
 	currency = NULL;
 
 	if( content ){
-		account = ofo_account_get_by_number( helper->dossier, content );
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
 		if( account ){
 			currency = ofo_account_get_currency( account );
 		}
@@ -788,6 +793,7 @@ rate( sHelper *helper, const gchar *content )
 static gchar *
 get_closing_account( sHelper *helper, const gchar *content )
 {
+	ofaHub *hub;
 	ofoAccount *account;
 	const gchar *currency;
 	gchar *str;
@@ -795,7 +801,8 @@ get_closing_account( sHelper *helper, const gchar *content )
 	str = NULL;
 
 	if( content ){
-		account = ofo_account_get_by_number( helper->dossier, content );
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
 		if( account && !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
 			str = g_strdup( ofo_dossier_get_sld_account( helper->dossier, currency ));
@@ -1000,6 +1007,7 @@ check_for_all_entries( sChecker *checker )
 static gboolean
 check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 {
+	ofaHub *hub;
 	ofoAccount *account;
 	const gchar *currency;
 	gboolean ok;
@@ -1010,13 +1018,14 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	detail->account_is_valid = FALSE;
 	detail->label_is_valid = FALSE;
 	detail->amounts_are_valid = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( checker->ope->ope_template ));
 
 	if( my_strlen( detail->label )){
 		detail->label_is_valid = TRUE;
 	}
 
 	if( my_strlen( detail->account )){
-		account = ofo_account_get_by_number( checker->dossier, detail->account );
+		account = ofo_account_get_by_number( hub, detail->account );
 		if( !account || !OFO_IS_ACCOUNT( account )){
 			g_free( checker->message );
 			checker->message = g_strdup_printf(
@@ -1113,6 +1122,7 @@ GList *
 ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofs_ope_generate_entries";
+	ofaHub *hub;
 	GList *entries;
 	ofsOpeDetail *detail;
 	gint i, count;
@@ -1128,6 +1138,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 
 	entries = NULL;
 	count = g_list_length( ope->detail );
+	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
 
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
@@ -1135,7 +1146,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 				detail->label_is_valid &&
 				detail->amounts_are_valid ){
 
-			account = ofo_account_get_by_number( dossier, detail->account );
+			account = ofo_account_get_by_number( hub, detail->account );
 			g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 			currency = ofo_account_get_currency( account );

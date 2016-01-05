@@ -26,24 +26,40 @@
 #include <config.h>
 #endif
 
-#include "core/ofa-icollector.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 
 #define ICOLLECTOR_LAST_VERSION           1
+
 #define ICOLLECTOR_DATA                   "ofa-icollector-data"
 
-/* a data structure attached to the GObject implementation
+/* a data structure attached to the implementation
+ * @collections: the collections of #ofaICollectionable objects.
  */
 typedef struct {
-	GList *objects;
+	GList *collections;
 }
 	sICollector;
 
+/* the data structure which defined the collection
+ */
+typedef struct {
+	GType  type;
+	GList *list;
+}
+	sCollection;
+
 static guint st_initializations = 0;	/* interface initialization count */
 
-static GType    register_type( void );
-static void     interface_base_init( ofaICollectorInterface *klass );
-static void     interface_base_finalize( ofaICollectorInterface *klass );
-static GObject *icollector_get_object_by_type( ofaICollector *collector, GType type );
+static GType        register_type( void );
+static void         interface_base_init( ofaICollectorInterface *klass );
+static void         interface_base_finalize( ofaICollectorInterface *klass );
+static sICollector *get_collector_data( ofaICollector *instance );
+static sCollection *get_collection( ofaICollector *instance, ofaHub *hub, GType type, sICollector *data );
+static sCollection *load_collection( ofaICollector *instance, ofaHub *hub, GType type );
+static void         on_instance_finalized( sICollector *data, GObject *finalized_collector );
+static void         free_collection( sCollection *collection );
+//static GObject *icollector_get_object_by_type( ofaICollector *collector, GType type );
 
 /**
  * ofa_icollector_get_type:
@@ -99,12 +115,9 @@ interface_base_init( ofaICollectorInterface *klass )
 {
 	static const gchar *thisfn = "ofa_icollector_interface_base_init";
 
-	if( !st_initializations ){
+	if( st_initializations == 0 ){
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
-	}
-
-	if( st_initializations == 0 ){
 
 		/* declare here the default implementations */
 	}
@@ -139,7 +152,7 @@ ofa_icollector_get_interface_last_version( void )
 
 /**
  * ofa_icollector_get_interface_version:
- * @collector:
+ * @instance: this #ofaICollector instance.
  *
  * Returns: the version number of this interface implemented by the
  * @collector instance.
@@ -147,105 +160,234 @@ ofa_icollector_get_interface_last_version( void )
  * Defaults to 1.
  */
 guint
-ofa_icollector_get_interface_version( const ofaICollector *collector )
+ofa_icollector_get_interface_version( const ofaICollector *instance )
 {
-	guint version;
+	static const gchar *thisfn = "ofa_icollector_get_interface_version";
 
-	version = 1;
+	g_return_val_if_fail( instance && OFA_IS_ICOLLECTOR( instance ), 1 );
 
-	if( OFA_ICOLLECTOR_GET_INTERFACE( collector )->get_interface_version ){
-		version = OFA_ICOLLECTOR_GET_INTERFACE( collector )->get_interface_version( collector );
+	if( OFA_ICOLLECTOR_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_ICOLLECTOR_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	return( version );
+	g_info( "%s: ofaIDBModel instance %p does not provide 'get_last_version()' method",
+			thisfn, ( void * ) instance );
+	return( 1 );
 }
 
 /**
- * ofa_icollector_get_object:
- * @collector:
- * @type:
+ * ofa_icollector_get_collection:
+ * @instance: this #ofaICollector instance.
+ * @hub: the #ofaHub object.
+ * @type: the desired GType type.
  *
- * Returns: the object attached to the @collector for this @type,
- * creating a new one if none exists yet.
+ * Returns: a #GList of #ofaICollectionable objects, or %NULL.
+ *
+ * The returned list is owned by the @instance, and should not be
+ * released by the caller.
  */
-GObject *
-ofa_icollector_get_object( ofaICollector *collector, GType type )
+GList *
+ofa_icollector_get_collection( ofaICollector *instance, ofaHub *hub, GType type )
 {
-	GObject *object;
+	sICollector *data;
+	sCollection *collection;
 
-	g_return_val_if_fail( collector && OFA_IS_ICOLLECTOR( collector ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_ICOLLECTOR( instance ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	object = icollector_get_object_by_type( collector, type );
+	data = get_collector_data( instance );
+	collection = get_collection( instance, hub, type, data );
 
-	return( object );
+	return( collection->list );
 }
 
-/**
- * ofa_icollector_init:
- * @collector:
- *
- * Initialize the internal data structures of the interface.
- *
- * This should be called by the implementation at instance
- * initialization time.
+/*
+ * @hub: may be %NULL: do not load the collection if not found
  */
-void
-ofa_icollector_init( ofaICollector *collector )
+static sCollection *
+get_collection( ofaICollector *instance, ofaHub *hub, GType type, sICollector *data )
 {
-	g_return_if_fail( collector && OFA_IS_ICOLLECTOR( collector ));
-}
-
-/**
- * ofa_icollector_dispose:
- * @collector:
- *
- * Free the internal data structures of the interface.
- *
- * This should be called by the implementation at instance (first)
- * dispose time.
- */
-void
-ofa_icollector_dispose( ofaICollector *collector )
-{
-	sICollector *sdata;
-
-	g_return_if_fail( collector && OFA_IS_ICOLLECTOR( collector ));
-
-	sdata = ( sICollector * ) g_object_get_data( G_OBJECT( collector ), ICOLLECTOR_DATA );
-
-	if( sdata ){
-		g_list_free_full( sdata->objects, ( GDestroyNotify ) g_object_unref );
-		g_free( sdata );
-		g_object_set_data( G_OBJECT( collector ), ICOLLECTOR_DATA, NULL );
-	}
-}
-
-static GObject *
-icollector_get_object_by_type( ofaICollector *collector, GType type )
-{
-	sICollector *sdata;
 	GList *it;
-	GObject *found;
+	sCollection *collection;
 
-	sdata = ( sICollector * ) g_object_get_data( G_OBJECT( collector ), ICOLLECTOR_DATA );
-	if( !sdata ){
-		sdata = g_new0( sICollector, 1 );
-		g_object_set_data( G_OBJECT( collector ), ICOLLECTOR_DATA, sdata );
-	}
-
-	found = NULL;
-
-	for( it=sdata->objects ; it ; it=it->next ){
-		if( G_OBJECT_TYPE( it->data ) == type ){
-			found = it->data;
-			break;
+	for( it=data->collections ; it ; it=it->next ){
+		collection = ( sCollection * ) it->data;
+		if( collection->type == type ){
+			return( collection );
 		}
 	}
 
-	if( !found ){
-		found = g_object_new( type, NULL );
-		sdata->objects = g_list_prepend( sdata->objects, found );
+	collection = NULL;
+
+	if( hub ){
+		collection = load_collection( instance, hub, type );
+		if( collection ){
+			data->collections = g_list_prepend( data->collections, collection );
+		}
 	}
 
-	return( found );
+	return( collection );
+}
+
+static sCollection *
+load_collection( ofaICollector *instance, ofaHub *hub, GType type )
+{
+	sCollection *collection;
+	GObject *fake;
+	GList *dataset;
+
+	collection = NULL;
+	fake = g_object_new( type, NULL );
+
+	if( OFA_IS_ICOLLECTIONABLE( fake )){
+		dataset = ofa_icollectionable_load_collection( OFA_ICOLLECTIONABLE( fake ), hub );
+
+		if( dataset && g_list_length( dataset )){
+			collection = g_new0( sCollection, 1 );
+			collection->type = type;
+			collection->list = dataset;
+		}
+	}
+	g_object_unref( fake );
+
+	return( collection );
+}
+
+/**
+ * ofa_icollector_add_object:
+ * @instance: this #ofaICollector instance.
+ * @hub: the #ofaHub object.
+ * @object: the #ofaICollactionable object to be added.
+ * @func: [allow-none]: a #GCompareFunc to make sure the object is
+ *  added in a sorted list.
+ *
+ * Adds the @object to the collection of objects of the same type.
+ * The collection is maintained sorted with @func function.
+ */
+void
+ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, ofaICollectionable *object, GCompareFunc func )
+{
+	sICollector *data;
+	sCollection *collection;
+
+	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( object && OFA_IS_ICOLLECTIONABLE( object ));
+
+	data = get_collector_data( instance );
+	collection = get_collection( instance, hub, G_OBJECT_TYPE( object ), data );
+	g_return_if_fail( collection );
+
+	if( func ){
+		collection->list = g_list_insert_sorted( collection->list, object, func );
+	} else {
+		collection->list = g_list_prepend( collection->list, object );
+	}
+}
+
+/**
+ * ofa_icollector_remove_object:
+ * @instance: this #ofaICollector instance.
+ * @object: the #ofaICollactionable object to be removed.
+ *
+ * Removes the @object from the collection of objects of the same type.
+ */
+void
+ofa_icollector_remove_object( ofaICollector *instance, const ofaICollectionable *object )
+{
+	sICollector *data;
+	sCollection *collection;
+
+	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
+	g_return_if_fail( object && OFA_IS_ICOLLECTIONABLE( object ));
+
+	data = get_collector_data( instance );
+	collection = get_collection( instance, NULL, G_OBJECT_TYPE( object ), data );
+	if( collection ){
+		collection->list = g_list_remove( collection->list, object );
+	}
+}
+
+/**
+ * ofa_icollector_sort_collection:
+ * @instance: this #ofaICollector instance.
+ * @type: the GType of the collection to be re-sorted.
+ * @func: a #GCompareFunc to sort the list.
+ *
+ * Re-sort the collection of objects.
+ *
+ * This is of mainly used after an update of an object of the collection,
+ * when the identifier (the sort key) may have been modified.
+ */
+void
+ofa_icollector_sort_collection( ofaICollector *instance, GType type, GCompareFunc func )
+{
+	sICollector *data;
+	sCollection *collection;
+
+	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
+
+	data = get_collector_data( instance );
+	collection = get_collection( instance, NULL, type, data );
+	if( collection ){
+		collection->list = g_list_sort( collection->list, func );
+	}
+}
+
+/**
+ * ofa_icollector_free_collection:
+ * @instance: this #ofaICollector instance.
+ * @type: the GType of the collection to be re-sorted.
+ *
+ * Free the collection of objects.
+ */
+void
+ofa_icollector_free_collection( ofaICollector *instance, GType type )
+{
+	sICollector *data;
+	sCollection *collection;
+
+	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
+
+	data = get_collector_data( instance );
+	collection = get_collection( instance, NULL, type, data );
+	if( collection ){
+		data->collections = g_list_remove( data->collections, collection );
+		free_collection( collection );
+	}
+}
+
+static sICollector *
+get_collector_data( ofaICollector *instance )
+{
+	sICollector *data;
+
+	data = ( sICollector * ) g_object_get_data( G_OBJECT( instance ), ICOLLECTOR_DATA );
+
+	if( !data ){
+		data = g_new0( sICollector, 1 );
+		g_object_set_data( G_OBJECT( instance ), ICOLLECTOR_DATA, data );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, data );
+	}
+
+	return( data );
+}
+
+static void
+on_instance_finalized( sICollector *data, GObject *finalized_collector )
+{
+	static const gchar *thisfn = "ofa_icollector_on_instance_finalized";
+
+	g_debug( "%s: data=%p, finalized_collector=%p",
+			thisfn, ( void * ) data, ( void * ) finalized_collector );
+
+	g_list_free_full( data->collections, ( GDestroyNotify ) free_collection );
+	g_free( data );
+}
+
+static void
+free_collection( sCollection *collection )
+{
+	g_list_free_full( collection->list, ( GDestroyNotify ) g_object_unref );
+	g_free( collection );
 }

@@ -42,18 +42,14 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"
 
 G_BEGIN_DECLS
 
-/* the identifier of the dossier row
- */
-#define THIS_DOS_ID                     1
-
-ofoDossier          *ofo_dossier_new                       ( ofaIDBConnect *cnx,
-																	gboolean remediation );
+ofoDossier          *ofo_dossier_new_with_hub              ( ofaHub *hub );
 
 gboolean             ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
 

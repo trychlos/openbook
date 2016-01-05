@@ -324,6 +324,29 @@ ofo_ledger_get_type( void )
 }
 
 /**
+ * ofo_ledger_connect_signaling_system:
+ * @hub: the #ofaHub object.
+ *
+ * Connect to the @hub signaling system.
+ */
+void
+ofo_ledger_connect_signaling_system( const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_ledger_connect_signaling_system";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect(
+			G_OBJECT( hub ), SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), NULL );
+	g_signal_connect(
+			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
+	g_signal_connect(
+			G_OBJECT( hub ), SIGNAL_HUB_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
+}
+
+/**
  * ofo_ledger_connect_handlers:
  *
  * This function is called once, when opening the dossier.
@@ -513,7 +536,7 @@ ledger_load_dataset( ofoDossier *dossier )
 	ofoLedger *ledger;
 	gchar *from;
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					"OFA_T_LEDGERS ORDER BY LED_MNEMO ASC",
@@ -1733,7 +1756,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	iface->export_from_dossier = iexportable_export;
 }
 
 static guint
@@ -1833,7 +1856,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import = iimportable_import;
+	iface->import_to_dossier = iimportable_import;
 }
 
 static guint

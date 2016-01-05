@@ -422,7 +422,7 @@ tva_form_load_dataset( ofoDossier *dossier )
 	ofoTVAForm *form;
 	gchar *from;
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					"TVA_T_FORMS ORDER BY TFO_MNEMO ASC",

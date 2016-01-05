@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -53,6 +54,7 @@ struct _ofaAccountChartBinPrivate {
 	gboolean             dispose_has_run;
 
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	GList               *dos_handlers;
 
@@ -170,12 +172,14 @@ accounts_chart_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		/*
 		if( priv->dossier &&
 				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
 			for( it=priv->dos_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
 			}
 		}
+		*/
 		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
 			for( it=priv->sto_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
@@ -339,10 +343,17 @@ setup_main_window( ofaAccountChartBin *bin )
 {
 	ofaAccountChartBinPrivate *priv;
 	gulong handler;
+	GtkApplication *application;
 
 	priv = bin->priv;
 	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	priv->store = ofa_account_store_new( priv->dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->store = ofa_account_store_new( priv->hub );
 
 	handler = g_signal_connect(
 			priv->store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), bin );
@@ -912,10 +923,10 @@ on_tview_delete( ofaAccountChartBin *self )
 	priv = self->priv;
 
 	account_number = ofa_account_chart_bin_get_selected( self );
-	account_obj = ofo_account_get_by_number( priv->dossier, account_number );
+	account_obj = ofo_account_get_by_number( priv->hub, account_number );
 	g_free( account_number );
 
-	if( ofo_account_is_deletable( account_obj, priv->dossier )){
+	if( ofo_account_is_deletable( account_obj )){
 		do_delete_account( self );
 	}
 }
@@ -1075,7 +1086,7 @@ do_update_account( ofaAccountChartBin *self )
 
 	number = ofa_account_chart_bin_get_selected( self );
 	if( number ){
-		account = ofo_account_get_by_number( priv->dossier, number );
+		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 		ofa_account_properties_run( priv->main_window, account );
@@ -1100,13 +1111,13 @@ do_delete_account( ofaAccountChartBin *self )
 
 	number = ofa_account_chart_bin_get_selected( self );
 	if( number ){
-		account = ofo_account_get_by_number( priv->dossier, number );
+		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_if_fail( account &&
 				OFO_IS_ACCOUNT( account ) &&
-				ofo_account_is_deletable( account, priv->dossier ));
+				ofo_account_is_deletable( account ));
 
 		if( delete_confirmed( self, account ) &&
-				ofo_account_delete( account, priv->dossier )){
+				ofo_account_delete( account )){
 
 			/* nothing to do here, all being managed by signal dos_handlers
 			 * just reset the selection as this is not managed by the
@@ -1135,14 +1146,11 @@ do_delete_account( ofaAccountChartBin *self )
 static gboolean
 delete_confirmed( ofaAccountChartBin *self, ofoAccount *account )
 {
-	ofaAccountChartBinPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
 
-	priv = self->priv;
-
 	if( ofo_account_is_root( account )){
-		if( ofo_account_has_children( account, priv->dossier ) &&
+		if( ofo_account_has_children( account ) &&
 				ofa_prefs_account_delete_root_with_children()){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"

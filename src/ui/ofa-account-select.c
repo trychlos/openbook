@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 
 #include "core/ofa-main-window.h"
@@ -46,6 +47,7 @@ struct _ofaAccountSelectPrivate {
 	/* input data
 	 */
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	gint                 allowed;
 
@@ -169,6 +171,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
 	ofaAccountChartBin *book;
+	GtkApplication *application;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -188,6 +191,8 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 		st_this->priv->main_window = main_window;
 		st_this->priv->dossier = ofa_main_window_get_dossier( main_window );
 		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
@@ -322,7 +327,7 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	set_message( self, "" );
 
 	if( my_strlen( number )){
-		account = ofo_account_get_by_number( priv->dossier, number );
+		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		ok = ofo_account_is_allowed( account, priv->allowed );

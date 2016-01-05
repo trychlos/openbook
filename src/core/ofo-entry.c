@@ -178,16 +178,16 @@ static sStatus st_status[] = {
 
 static ofoBaseClass *ofo_entry_parent_class = NULL;
 
-static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
-static void         on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number );
-static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void         on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
-static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
-static void         on_exe_dates_changed( ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void         on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
+static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofoDossier *dossier, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofoDossier *dossier, const GDate *prev_end, const GDate *new_end, gboolean remediate );
 static gint         remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
-static void         on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         on_entry_status_changed( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order );
 static gint         entry_count_for_account( const ofaIDBConnect *cnx, const gchar *account );
@@ -344,27 +344,28 @@ ofo_entry_get_type( void )
 }
 
 /**
- * ofo_entry_connect_handlers:
+ * ofo_entry_connect_signaling_system:
+ * @hub: the #ofaHub object.
  *
- * This function is called once, when opening the dossier.
+ * Connect to the @hub signaling system.
  */
 void
-ofo_entry_connect_handlers( const ofoDossier *dossier )
+ofo_entry_connect_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_entry_connect_handlers";
+	static const gchar *thisfn = "ofo_entry_connect_signaling_system";
 
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+	g_signal_connect( G_OBJECT( hub ),
+			SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
 
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_EXE_DATE_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
+	g_signal_connect( G_OBJECT( hub ),
+			SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
 
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
+	g_signal_connect( G_OBJECT( hub ),
+			SIGNAL_HUB_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
 }
 
 /*
@@ -377,25 +378,25 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
  * attention
  */
 static void
-on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_on_updated_object";
 	const gchar *number;
 	const gchar *code;
 	const gchar *mnemo;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) user_data );
+			( void * ) empty );
 
 	if( OFO_IS_ACCOUNT( object )){
 		if( my_strlen( prev_id )){
 			number = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( g_utf8_collate( number, prev_id )){
-				on_updated_object_account_number( dossier, prev_id, number );
+				on_updated_object_account_number( hub, prev_id, number );
 			}
 		}
 
@@ -403,7 +404,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( dossier, prev_id, code );
+				on_updated_object_currency_code( hub, prev_id, code );
 			}
 		}
 
@@ -411,7 +412,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_ledger_mnemo( dossier, prev_id, mnemo );
+				on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
 			}
 		}
 
@@ -419,7 +420,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_model_mnemo( dossier, prev_id, mnemo );
+				on_updated_object_model_mnemo( hub, prev_id, mnemo );
 			}
 		}
 	}
@@ -431,7 +432,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
  * from a previous exercice)
  */
 static void
-on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number )
+on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
 {
 	gchar *query;
 
@@ -439,7 +440,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
 }
 
@@ -449,7 +450,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
  * from a previous exercice)
  */
 static void
-on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -457,7 +458,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
 }
 
@@ -467,7 +468,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
  * from a previous exercice)
  */
 static void
-on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
+on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 
@@ -475,7 +476,7 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
 }
 
@@ -485,7 +486,7 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
  * from a previous exercice)
  */
 static void
-on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
+on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 
@@ -493,7 +494,7 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
 }
 
@@ -548,9 +549,12 @@ on_deleted_object( const ofoDossier *dossier, ofoBase *object, void *empty )
  * 6/ entries were considered in the future, but are now set in the past
  */
 static void
-on_exe_dates_changed( ofoDossier *dossier, const GDate *prev_begin, const GDate *prev_end, void *empty )
+on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
+	ofoDossier *dossier;
 	const GDate *new_begin, *new_end;
+
+	dossier = ofa_hub_get_dossier( hub );
 
 	new_begin = ofo_dossier_get_exe_begin( dossier );
 	new_end = ofo_dossier_get_exe_end( dossier );
@@ -722,13 +726,13 @@ remediate_status( ofoDossier *dossier, gboolean remediate, const gchar *where, o
 }
 
 static void
-on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+on_entry_status_changed( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_on_entry_status_changed";
 	gchar *query;
 
-	g_debug( "%s: dossier=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
 	entry_set_status( entry, new_status );
 
@@ -737,9 +741,9 @@ on_entry_status_changed( const ofoDossier *dossier, ofoEntry *entry, ofaEntrySta
 						new_status,
 						ofo_entry_get_number( entry ));
 
-	if( ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE )){
+	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
 		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+				G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
 	}
 
 	g_free( query );
@@ -1193,7 +1197,7 @@ entry_load_dataset( ofoDossier *dossier, const gchar *where, const gchar *order 
 
 	query = g_string_append( query, real_order );
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					query->str,
@@ -2020,11 +2024,13 @@ ofo_entry_is_valid( ofoDossier *dossier,
 							const gchar *model, ofxAmount debit, ofxAmount credit )
 {
 	ofoAccount *account_obj;
+	ofaHub *hub;
 	gboolean ok;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	ok = TRUE;
+	hub = OFO_BASE( dossier )->prot->hub;
 
 	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
 		error_ledger( ledger );
@@ -2042,7 +2048,7 @@ ofo_entry_is_valid( ofoDossier *dossier,
 		error_acc_number();
 		ok &= FALSE;
 	} else {
-		account_obj = ofo_account_get_by_number( dossier, account );
+		account_obj = ofo_account_get_by_number( hub, account );
 		if( !account_obj ){
 			error_account( account );
 			ok &= FALSE;
@@ -2571,7 +2577,7 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 					mnemo, ENT_STATUS_ROUGH, sdate );
 	g_free( sdate );
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					query,
@@ -2650,7 +2656,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	iface->export_from_dossier = iexportable_export;
 }
 
 static guint
@@ -2714,7 +2720,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	for( it=result ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
-		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ), dossier );
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
 		sstamp = concil ? my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
@@ -2748,7 +2754,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import = iimportable_import;
+	iface->import_to_dossier = iimportable_import;
 }
 
 static guint
@@ -2829,7 +2835,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GTimeVal stamp;
 	ofoConcil *concil;
 	myDateFormat date_format;
+	ofaHub *hub;
 
+	hub = NULL;
 	dataset = NULL;
 	line = 0;
 	errors = 0;
@@ -2936,7 +2944,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			errors += 1;
 			continue;
 		}
-		account = ofo_account_get_by_number( dossier, cstr );
+		account = ofo_account_get_by_number( hub, cstr );
 		if( !account ){
 			msg = g_strdup_printf( _( "entry account not found: %s" ), cstr );
 			ofa_iimportable_set_message(
@@ -3162,8 +3170,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				}
 				concil = ( ofoConcil * ) g_object_get_data( G_OBJECT( entry ), "entry-concil" );
 				if( concil ){
-					/* gives the ownership to the ConcilCollection */
-					ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil, dossier );
+					/* gives the ownership to the collection */
+					ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil );
 				}
 			} else {
 				errors -= 1;

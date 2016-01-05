@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -49,6 +50,7 @@ struct _ofaReconcilBinPrivate {
 	/* initialization
 	 */
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 
 	/* UI
@@ -181,11 +183,17 @@ ofaReconcilBin *
 ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 {
 	ofaReconcilBin *self;
+	GtkApplication *application;
 
 	self = g_object_new( OFA_TYPE_RECONCIL_BIN, NULL );
 
 	self->priv->main_window = main_window;
 	self->priv->dossier = ofa_main_window_get_dossier( main_window );
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+	self->priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( self->priv->hub && OFA_IS_HUB( self->priv->hub ), NULL );
 
 	setup_bin( self );
 	setup_account_selection( self );
@@ -284,7 +292,7 @@ on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
 
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
-		priv->account = ofo_account_get_by_number( priv->dossier, cstr );
+		priv->account = ofo_account_get_by_number( priv->hub, cstr );
 		if( priv->account ){
 			gtk_label_set_text(
 					GTK_LABEL( priv->account_label ), ofo_account_get_label( priv->account ));

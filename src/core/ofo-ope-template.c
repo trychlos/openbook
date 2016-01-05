@@ -340,6 +340,25 @@ ofo_ope_template_get_type( void )
 }
 
 /**
+ * ofo_ope_template_connect_signaling_system:
+ * @hub: the #ofaHub object.
+ *
+ * Connect to the @hub signaling system.
+ */
+void
+ofo_ope_template_connect_signaling_system( const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_ope_template_connect_signaling_system";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect(
+			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
+}
+
+/**
  * ofo_ope_template_connect_handlers:
  *
  * As the signal connection is protected by a static variable, there is
@@ -483,7 +502,7 @@ ope_template_load_dataset( ofoDossier *dossier )
 	ofoOpeTemplate *template;
 	gchar *from;
 
-	dataset = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset_from_dossier(
 					st_boxed_defs,
 					ofo_dossier_get_connect( dossier ),
 					"OFA_T_OPE_TEMPLATES ORDER BY OTE_MNEMO ASC",
@@ -1592,7 +1611,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	iface->export_from_dossier = iexportable_export;
 }
 
 static guint
@@ -1718,7 +1737,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import = iimportable_import;
+	iface->import_to_dossier = iimportable_import;
 }
 
 static guint

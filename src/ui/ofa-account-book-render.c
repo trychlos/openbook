@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -55,6 +56,7 @@
  */
 struct _ofaAccountBookRenderPrivate {
 
+	ofaHub            *hub;
 	ofoDossier        *dossier;
 	ofaAccountBookBin *args_bin;
 
@@ -303,6 +305,7 @@ page_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_book_render_page_init_view";
 	ofaAccountBookRenderPrivate *priv;
+	GtkApplication *application;
 
 	OFA_PAGE_CLASS( ofa_account_book_render_parent_class )->init_view( page );
 
@@ -312,6 +315,11 @@ page_init_view( ofaPage *page )
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 
 	priv->dossier = ofa_page_get_dossier( page );
+
+	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -691,7 +699,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	priv->account_debit = 0;
 	priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number( priv->dossier, priv->account_number );
+	priv->account_object = ofo_account_get_by_number( priv->hub, priv->account_number );
 	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
@@ -864,7 +872,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	}
 
 	/* reconciliation */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ), priv->dossier );
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
 		ofa_irenderable_set_text( instance,
 				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );

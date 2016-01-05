@@ -32,15 +32,15 @@
 #include "api/my-dialog.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
-#include "api/ofa-dossier-misc.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
-#include "api/ofo-dossier.h"
+#include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
@@ -55,7 +55,7 @@ typedef struct {
 	/* initialization
 	 */
 	const ofaIDBModel   *instance;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 	const ofaIDBConnect *connect;
 	myDialog            *dialog;
 
@@ -140,9 +140,9 @@ static sImport st_imports[] = {
 #define MARGIN_LEFT                     20
 
 static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
-static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier );
-static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog );
+static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
 static void       set_bar_progression( sUpdate *update_data );
@@ -175,17 +175,19 @@ idbmodel_get_interface_version( const ofaIDBModel *instance )
 }
 
 static guint
-idbmodel_get_current_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
-	guint cur_version;
+	gint cur_version;
 
-	cur_version = ofo_dossier_get_database_version( dossier );
+	ofa_idbconnect_query_int(
+			connect,
+			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", &cur_version, FALSE );
 
-	return( cur_version );
+	return( abs( cur_version ));
 }
 
 static guint
-idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossier )
+idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
 	guint last_version, i;
 
@@ -201,7 +203,7 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofoDossier *dossie
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog )
 {
 	sUpdate *update_data;
 	guint i, cur_version, last_version;
@@ -212,12 +214,12 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofoDossier *dossier, myDialog 
 	ok = TRUE;
 	update_data = g_new0( sUpdate, 1 );
 	update_data->instance = instance;
-	update_data->dossier = dossier;
-	update_data->connect = ofo_dossier_get_connect( dossier );
+	update_data->hub = hub;
+	update_data->connect = ofa_hub_get_connect( hub );
 	update_data->dialog = dialog;
 
-	cur_version = idbmodel_get_current_version( instance, dossier );
-	last_version = idbmodel_get_last_version( instance, dossier );
+	cur_version = idbmodel_get_current_version( instance, update_data->connect );
+	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
 	label = gtk_label_new( _( "Updating DBMS model" ));
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
@@ -581,7 +583,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
-			dossier_name, DOS_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
+			dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
 	ok = exec_query( update_data, query );
 	g_free( query );
 	g_free( dossier_name );
@@ -1025,7 +1027,7 @@ dbmodel_v25( sUpdate *update_data, gint version )
 
 	/* n° 4 */
 	query = g_strdup_printf(
-			"UPDATE OFA_T_DOSSIER SET DOS_LAST_CONCIL=%ld WHERE DOS_ID=%u", last_concil, THIS_DOS_ID );
+			"UPDATE OFA_T_DOSSIER SET DOS_LAST_CONCIL=%ld WHERE DOS_ID=%u", last_concil, DOSSIER_ROW_ID );
 	ok = exec_query( update_data, query );
 	g_free( query );
 	if( !ok ){
@@ -1390,8 +1392,8 @@ import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import )
 		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );
 		g_free( fname );
-		count = ofa_dossier_misc_import_csv(
-						update_data->dossier, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
+		count = ofa_hub_import_csv(
+						update_data->hub, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
 		ok = ( count > 0 );
 		g_free( uri );
 		g_object_unref( object );

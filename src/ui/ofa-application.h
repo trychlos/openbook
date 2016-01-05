@@ -94,6 +94,11 @@
  * choose where to add their items. The corresponding menu models are
  * set as data against the GtkApplication (resp. the GtkApplicationWindow),
  * and may thus be retrieved by the plugins via g_object_get_data().
+ *
+ * The #ofaApplication class implements the #ofaIHubber interface.
+ * As long as the code have an access to the application, it may have
+ * an access to the main #ofaHub that the application maintains (and
+ * so the currently opened dossier).
  */
 
 #include "core/ofa-file-dir.h"
@@ -109,11 +114,13 @@ G_BEGIN_DECLS
  * @OFA_PROP_APPLICATION_NAME: application name.
  * @OFA_PROP_DESCRIPTION:      short description.
  * @OFA_PROP_ICON_NAME:        icon name.
+ * @OFA_PROP_HUB:              the main #ofaHub object.
  */
-#define OFA_PROP_OPTIONS			"ofa-application-prop-options"
-#define OFA_PROP_APPLICATION_NAME	"ofa-application-prop-name"
-#define OFA_PROP_DESCRIPTION		"ofa-application-prop-description"
-#define OFA_PROP_ICON_NAME			"ofa-application-prop-icon-name"
+#define OFA_PROP_OPTIONS                "ofa-application-prop-options"
+#define OFA_PROP_APPLICATION_NAME       "ofa-application-prop-name"
+#define OFA_PROP_DESCRIPTION            "ofa-application-prop-description"
+#define OFA_PROP_ICON_NAME              "ofa-application-prop-icon-name"
+#define OFA_PROP_HUB                    "ofa-application-prop-hub"
 
 /**
  * ofaExitCode:

@@ -116,6 +116,8 @@
 
 G_BEGIN_DECLS
 
+void            ofo_ope_template_connect_signaling_system( const ofaHub *hub );
+
 void            ofo_ope_template_connect_handlers  ( const ofoDossier *dossier );
 
 GList          *ofo_ope_template_get_dataset       ( ofoDossier *dossier );

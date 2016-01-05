@@ -201,6 +201,22 @@ ofo_currency_get_type( void )
 	return( type );
 }
 
+/**
+ * ofo_currency_connect_signaling_system:
+ * @hub: the #ofaHub object.
+ *
+ * Connect to the @hub signaling system.
+ */
+void
+ofo_currency_connect_signaling_system( const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_currency_connect_signaling_system";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+}
+
 static GList *
 currency_load_dataset( ofoDossier *dossier )
 {
@@ -442,26 +458,26 @@ ofo_currency_get_precision( const ofoCurrency *currency )
 gboolean
 ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 {
+	ofaHub *hub;
 	const gchar *dev_code;
 	gboolean is_current;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
-
-		dev_code = ofo_currency_get_code( currency );
-		is_current = ofo_dossier_is_current( dossier );
-
-		return( is_current &&
-				!ofo_dossier_use_currency( dossier, dev_code ) &&
-				!ofo_entry_use_currency( dossier, dev_code ) &&
-				!ofo_ledger_use_currency( dossier, dev_code ) &&
-				!ofo_account_use_currency( dossier, dev_code ));
+	if( OFO_BASE( currency )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_assert_not_reached();
-	return( FALSE );
+	hub = OFO_BASE( currency )->prot->hub;
+	dev_code = ofo_currency_get_code( currency );
+	is_current = ofo_dossier_is_current( dossier );
+
+	return( is_current &&
+			!ofo_dossier_use_currency( dossier, dev_code ) &&
+			!ofo_entry_use_currency( dossier, dev_code ) &&
+			!ofo_ledger_use_currency( dossier, dev_code ) &&
+			!ofo_account_use_currency( hub, dev_code ));
 }
 
 /**
@@ -820,7 +836,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	iface->export_from_dossier = iexportable_export;
 }
 
 static guint
@@ -908,7 +924,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import = iimportable_import;
+	iface->import_to_dossier = iimportable_import;
 }
 
 static guint

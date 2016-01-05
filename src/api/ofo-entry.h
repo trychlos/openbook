@@ -91,7 +91,9 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType           ofo_entry_get_type             ( void ) G_GNUC_CONST;
+GType           ofo_entry_get_type                ( void ) G_GNUC_CONST;
+
+void            ofo_entry_connect_signaling_system( const ofaHub *hub );
 
 ofoEntry       *ofo_entry_new                  ( void );
 

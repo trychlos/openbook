@@ -324,6 +324,34 @@ my_window_class_init( myWindowClass *klass )
 }
 
 /**
+ * my_window_get_application:
+ * @window: this #myWindow instance.
+ *
+ * Returns: the #GtkApplication to which this @window is attached.
+ */
+GtkApplication *
+my_window_get_application( const myWindow *self )
+{
+	myWindowPrivate *priv;
+	GtkApplication *application;
+
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
+
+	if( self->prot->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	application = NULL;
+	priv = self->priv;
+
+	if( priv->main_window ){
+		application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	}
+
+	return( application );
+}
+
+/**
  * my_window_get_main_window:
  */
 GtkApplicationWindow *

@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
@@ -459,4 +460,34 @@ ofa_page_get_top_focusable_widget( const ofaPage *page )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_page_get_hub:
+ * @page: this #ofaPage page.
+ *
+ * Returns: the current #ofaHub object.
+ */
+ofaHub *
+ofa_page_get_hub( const ofaPage *page )
+{
+	ofaPagePrivate *priv;
+	GtkApplication *application;
+	ofaHub *hub;
+
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+
+	if( page->prot->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	priv = page->priv;
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+
+	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	return( hub );
 }
