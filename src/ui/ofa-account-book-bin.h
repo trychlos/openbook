@@ -30,8 +30,29 @@
  * @short_description: #ofaAccountBookBin class definition.
  * @include: ui/ofa-account-book-bin.h
  *
- * Display a frame with let the user select the parameters needed to
- * print the entries books between two effect dates.
+ * Display three frames with let the user select the parameters needed
+ * to print the entries books between two effect dates:
+ *
+ *       +- Account selection -------------------------+
+ *       |                                             |
+ *       |  < ofaAccountFilterVVBin >                  |
+ *       |        From account: [........]             |
+ *       |        To account  : [........]             |
+ *       |    [X] All accounts                         |
+ *       |                                             |
+ *       +---------------------------------------------+
+ *       +- Effect date selection ---------------------+
+ *       |                                             |
+ *       |  < ofaDateFilterHVBin >                     |
+ *       |        From date: [........]                |
+ *       |        To date  : [........]                |
+ *       |                                             |
+ *       +---------------------------------------------+
+ *       +- Pagination --------------------------------+
+ *       |                                             |
+ *       |    [X] Have a new page per account          |
+ *       |                                             |
+ *       +---------------------------------------------+
  *
  * Development rules:
  * - type:       bin (parent='top')

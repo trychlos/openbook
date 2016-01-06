@@ -33,9 +33,6 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
-#include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
@@ -44,18 +41,21 @@
 /* private instance data
  */
 struct _ofaAccountBookBinPrivate {
-	gboolean                dispose_has_run;
-	const ofaMainWindow    *main_window;
+	gboolean               dispose_has_run;
+
+	/* initialization
+	 */
+	const ofaMainWindow   *main_window;
 
 	/* UI
 	 */
 	ofaAccountFilterVVBin *account_filter;
-	GtkWidget              *new_page_btn;
 	ofaDateFilterHVBin    *date_filter;
+	GtkWidget             *new_page_btn;
 
 	/* internals
 	 */
-	gboolean                new_page;
+	gboolean               new_page;
 };
 
 /* signals defined here
