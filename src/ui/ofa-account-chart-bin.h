@@ -37,9 +37,8 @@
  * mnemonic for each class at the GtkWindow parent level. These
  * mnemonics are removed when disposing.
  *
- * This convenience class also manages the update buttons (new, update,
- * delete and view entries). So that all the AccountPage features are
- * also available in AccountSelect dialog.
+ * At time, #ofaAccountChartBin composite widget is only used by
+ * #ofaAccountFrameBin (composite widget itself).
  */
 
 #include "api/ofa-main-window-def.h"
