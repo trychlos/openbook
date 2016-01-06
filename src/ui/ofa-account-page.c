@@ -34,9 +34,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-account-frame-bin.h"
