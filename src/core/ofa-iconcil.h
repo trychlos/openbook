@@ -39,7 +39,7 @@
  * object).
  */
 
-#include "api/ofo-dossier-def.h"
+#include "api/ofo-concil-def.h"
 
 G_BEGIN_DECLS
 
