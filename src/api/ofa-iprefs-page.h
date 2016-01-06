@@ -44,6 +44,7 @@
 #include <gtk/gtk.h>
 
 #include "my-isettings.h"
+#include "ofa-iprefs-page-def.h"
 #include "ofa-iprefs-provider-def.h"
 
 G_BEGIN_DECLS
@@ -53,7 +54,10 @@ G_BEGIN_DECLS
 #define OFA_IS_IPREFS_PAGE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPREFS_PAGE ))
 #define OFA_IPREFS_PAGE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPREFS_PAGE, ofaIPrefsPageInterface ))
 
+#if 0
 typedef struct _ofaIPrefsPage                     ofaIPrefsPage;
+typedef struct _ofaIPrefsPageInterface            ofaIPrefsPageInterface;
+#endif
 
 /**
  * ofaIPrefsPageInterface:
@@ -65,7 +69,7 @@ typedef struct _ofaIPrefsPage                     ofaIPrefsPage;
  *
  * This defines the interface that an #ofaIPrefsPage should implement.
  */
-typedef struct {
+struct _ofaIPrefsPageInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -129,8 +133,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void     ( *apply )                ( const ofaIPrefsPage *instance );
-}
-	ofaIPrefsPageInterface;
+};
 
 GType              ofa_iprefs_page_get_type                  ( void );
 

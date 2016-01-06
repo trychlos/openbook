@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"

@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
 
 #define IPREFS_PROVIDER_LAST_VERSION    1

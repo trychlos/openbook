@@ -68,6 +68,32 @@
 
 G_BEGIN_DECLS
 
+#define OFA_TYPE_MAIN_WINDOW                ( ofa_main_window_get_type())
+#define OFA_MAIN_WINDOW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MAIN_WINDOW, ofaMainWindow ))
+#define OFA_MAIN_WINDOW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MAIN_WINDOW, ofaMainWindowClass ))
+#define OFA_IS_MAIN_WINDOW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MAIN_WINDOW ))
+#define OFA_IS_MAIN_WINDOW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MAIN_WINDOW ))
+#define OFA_MAIN_WINDOW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MAIN_WINDOW, ofaMainWindowClass ))
+
+#if 0
+typedef struct _ofaMainWindow               ofaMainWindow;
+typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
+#endif
+
+struct _ofaMainWindow {
+	/*< public members >*/
+	GtkApplicationWindow      parent;
+
+	/*< private members >*/
+	ofaMainWindowPrivate     *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	GtkApplicationWindowClass parent;
+}
+	ofaMainWindowClass;
+
 /**
  * The theme identifiers of the pages of the main notebook
  * sorted in alphabetical order
@@ -90,6 +116,27 @@ enum {
 	THM_SETTLEMENT,
 	THM_LAST_THEME
 };
+
+/**
+ * OFA_SIGNAL_DOSSIER_PROPERTIES:
+ *  Action signal to be sent to the main window in order to update the
+ *  properties of the currently opened dossier.
+ *  Args: none.
+ *  Use case: DossierNew: display the properties right after having
+ *  opened the new dossier.
+ */
+#define OFA_SIGNAL_DOSSIER_PROPERTIES   "ofa-dossier-properties"
+
+/**
+ * OFA_SIGNAL_DOSSIER_OPENED:
+ *  Information signal sent on the main window when a dossier has been.
+ *  opened.
+ *  Args:
+ *  - the #ofoDossier.
+ */
+#define OFA_SIGNAL_DOSSIER_OPENED       "ofa-dossier-opened"
+
+GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 

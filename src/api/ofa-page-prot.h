@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_page
  * @short_description: #ofaPage class definition.
- * @include: openbook/ofa-page.h
+ * @include: openbook/ofa-page-prot.h
  */
 
 G_BEGIN_DECLS

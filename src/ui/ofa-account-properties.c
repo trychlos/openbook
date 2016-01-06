@@ -32,6 +32,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"

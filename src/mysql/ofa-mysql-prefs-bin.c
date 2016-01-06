@@ -32,6 +32,8 @@
 
 #include "api/my-isettings.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-iprefs-page.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbprovider.h"

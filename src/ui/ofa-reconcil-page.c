@@ -35,6 +35,7 @@
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"

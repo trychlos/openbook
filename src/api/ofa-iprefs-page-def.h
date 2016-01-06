@@ -22,22 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_IPREFS_PROVIDER_H__
-#define __OFA_MYSQL_IPREFS_PROVIDER_H__
+#ifndef __OPENBOOK_API_OFA_IPREFS_PAGE_DEF_H__
+#define __OPENBOOK_API_OFA_IPREFS_PAGE_DEF_H__
 
 /**
- * SECTION: ofa_mysql_iprefs_provider
- * @short_description: #ofaMysql class definition.
- *
- * #ofaIPrefsProvider interface management.
+ * SECTION: iprefs
+ * @include: openbook/ofa-iprefs-page-def.h
  */
-
-#include "api/ofa-iprefs-provider-def.h"
 
 G_BEGIN_DECLS
 
-void   ofa_mysql_iprefs_provider_iface_init         ( ofaIPrefsProviderInterface *iface );
+typedef struct _ofaIPrefsPage                     ofaIPrefsPage;
+typedef struct _ofaIPrefsPageInterface            ofaIPrefsPageInterface;
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_IPREFS_PROVIDER_H__ */
+#endif /* __OPENBOOK_API_OFA_IPREFS_PAGE_DEF_H__ */

@@ -25,6 +25,16 @@
 #ifndef __OPENBOOK_API_OFA_IDBPROVIDER_DEF_H__
 #define __OPENBOOK_API_OFA_IDBPROVIDER_DEF_H__
 
+/**
+ * SECTION: idbprovider
+ * @include: openbook/ofa-idbprovider-def.h
+ */
+
+G_BEGIN_DECLS
+
 typedef struct _ofaIDBProvider                    ofaIDBProvider;
+typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
+
+G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IDBPROVIDER_DEF_H__ */

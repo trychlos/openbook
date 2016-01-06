@@ -38,7 +38,9 @@
  * - current:    no
  */
 
-#include "api/ofa-iprefs-provider.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-iprefs-provider-def.h"
 
 G_BEGIN_DECLS
 

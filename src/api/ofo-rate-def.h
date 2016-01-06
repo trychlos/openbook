@@ -26,42 +26,14 @@
 #define __OPENBOOK_API_OFO_RATE_DEF_H__
 
 /**
- * SECTION: ofo_rate
- * @short_description: #ofoRate class definition.
- * @include: openbook/ofo-rate.h
- *
- * This file implements the #ofoRate class behavior.
+ * SECTION: oforate
+ * @include: openbook/ofo-rate-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_RATE                ( ofo_rate_get_type())
-#define OFO_RATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_RATE, ofoRate ))
-#define OFO_RATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_RATE, ofoRateClass ))
-#define OFO_IS_RATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_RATE ))
-#define OFO_IS_RATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_RATE ))
-#define OFO_RATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_RATE, ofoRateClass ))
-
+typedef struct _ofoRate              ofoRate;
 typedef struct _ofoRatePrivate       ofoRatePrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase         parent;
-
-	/*< private members >*/
-	ofoRatePrivate *priv;
-}
-	ofoRate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass    parent;
-}
-	ofoRateClass;
-
-GType ofo_rate_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

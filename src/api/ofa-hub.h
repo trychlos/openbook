@@ -25,7 +25,9 @@
 #ifndef __OPENBOOK_API_OFA_HUB_H__
 #define __OPENBOOK_API_OFA_HUB_H__
 
-/* @title: ofaHub
+/**
+ * SECTION: ofahub
+ * @title: ofaHub
  * @short_description: The #ofaHub Class Definition
  * @include: openbook/ofa-hub.h
  *
@@ -57,6 +59,25 @@ G_BEGIN_DECLS
 #define OFA_IS_HUB( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_HUB ))
 #define OFA_IS_HUB_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_HUB ))
 #define OFA_HUB_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_HUB, ofaHubClass ))
+
+#if 0
+typedef struct _ofaHub              ofaHub;
+typedef struct _ofaHubPrivate       ofaHubPrivate;
+#endif
+
+struct _ofaHub {
+	/*< public members >*/
+	GObject        parent;
+
+	/*< private members >*/
+	ofaHubPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	GObjectClass   parent;
+}
+	ofaHubClass;
 
 /**
  * Signals defined here:

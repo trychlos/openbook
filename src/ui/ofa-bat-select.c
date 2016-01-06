@@ -33,6 +33,7 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
+#include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 

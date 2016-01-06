@@ -46,6 +46,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-iprefs-provider.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"

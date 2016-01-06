@@ -26,45 +26,14 @@
 #define __OPENBOOK_API_OFO_CONCIL_DEF_H__
 
 /**
- * SECTION: ofo_concil
- * @short_description: #ofoConcil class definition.
- * @include: openbook/ofo-concil.h
- *
- * This file defines the #ofoConcil public API.
- *
- * The #ofoConcil class maintains the conciliations between BAT
- * lines and entries.
+ * SECTION: ofoconcil
+ * @include: openbook/ofo-concil-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_CONCIL                ( ofo_concil_get_type())
-#define OFO_CONCIL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_CONCIL, ofoConcil ))
-#define OFO_CONCIL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_CONCIL, ofoConcilClass ))
-#define OFO_IS_CONCIL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_CONCIL ))
-#define OFO_IS_CONCIL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CONCIL ))
-#define OFO_CONCIL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CONCIL, ofoConcilClass ))
-
+typedef struct _ofoConcil              ofoConcil;
 typedef struct _ofoConcilPrivate       ofoConcilPrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase           parent;
-
-	/*< private members >*/
-	ofoConcilPrivate *priv;
-}
-	ofoConcil;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass      parent;
-}
-	ofoConcilClass;
-
-GType ofo_concil_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

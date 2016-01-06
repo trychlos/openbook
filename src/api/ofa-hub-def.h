@@ -25,29 +25,15 @@
 #ifndef __OPENBOOK_API_OFA_HUB_DEF_H__
 #define __OPENBOOK_API_OFA_HUB_DEF_H__
 
-/* @title: ofaHub
- * @short_description: The #ofaHub Class Definition
+/**
+ * SECTION: ofahub
  * @include: openbook/ofa-hub-def.h
  */
 
 G_BEGIN_DECLS
 
+typedef struct _ofaHub              ofaHub;
 typedef struct _ofaHubPrivate       ofaHubPrivate;
-
-typedef struct {
-	/*< public members >*/
-	GObject        parent;
-
-	/*< private members >*/
-	ofaHubPrivate *priv;
-}
-	ofaHub;
-
-typedef struct {
-	/*< public members >*/
-	GObjectClass   parent;
-}
-	ofaHubClass;
 
 G_END_DECLS
 

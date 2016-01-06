@@ -26,8 +26,7 @@
 #define __OPENBOOK_API_OFO_BASE_DEF_H__
 
 /**
- * SECTION: ofo_base
- * @short_description: #ofoBase class definition.
+ * SECTION: ofobase
  * @include: openbook/ofo-base-def.h
  */
 

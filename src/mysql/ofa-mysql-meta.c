@@ -29,6 +29,7 @@
 #include "api/my-isettings.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-idbprovider.h"
 
 #include "ofa-mysql-editor-enter.h"
 #include "ofa-mysql-idbprovider.h"

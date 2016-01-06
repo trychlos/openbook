@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-idbprovider.h"
 
 /* some data attached to each IDBMeta instance
  * we store here the data provided by the application

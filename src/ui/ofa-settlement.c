@@ -32,6 +32,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"

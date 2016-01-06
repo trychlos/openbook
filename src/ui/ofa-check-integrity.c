@@ -31,6 +31,8 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 
+#include "core/ofa-main-window.h"
+
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-check-integrity-bin.h"
 

@@ -26,42 +26,14 @@
 #define __OPENBOOK_API_OFO_LEDGER_DEF_H__
 
 /**
- * SECTION: ofo_ledger
- * @short_description: #ofoLedger class definition.
- * @include: openbook/ofo-ledger.h
- *
- * This file defines the #ofoLedger class behavior.
+ * SECTION: ofoledger
+ * @include: openbook/ofo-ledger-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_LEDGER                ( ofo_ledger_get_type())
-#define OFO_LEDGER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_LEDGER, ofoLedger ))
-#define OFO_LEDGER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_LEDGER, ofoLedgerClass ))
-#define OFO_IS_LEDGER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_LEDGER ))
-#define OFO_IS_LEDGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_LEDGER ))
-#define OFO_LEDGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_LEDGER, ofoLedgerClass ))
-
+typedef struct _ofoLedger              ofoLedger;
 typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase           parent;
-
-	/*< private members >*/
-	ofoLedgerPrivate *priv;
-}
-	ofoLedger;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass      parent;
-}
-	ofoLedgerClass;
-
-GType ofo_ledger_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

@@ -36,7 +36,7 @@
  * a collection of their objects.
  */
 
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 

@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFA_PAGE_H__
 
 /**
- * SECTION: ofa_page
+ * SECTION: ofapage
+ * @title: ofaPage
  * @short_description: #ofaPage class definition.
  * @include: openbook/ofa-page.h
  *
@@ -88,21 +89,37 @@
 
 G_BEGIN_DECLS
 
+#define OFA_TYPE_PAGE                ( ofa_page_get_type())
+#define OFA_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PAGE, ofaPage ))
+#define OFA_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PAGE, ofaPageClass ))
+#define OFA_IS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PAGE ))
+#define OFA_IS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PAGE ))
+#define OFA_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PAGE, ofaPageClass ))
+
+#if 0
+typedef struct                        ofaPage;
+typedef struct                        ofaPageClass;
+typedef struct _ofaPagePrivate        ofaPagePrivate;
+typedef struct _ofaPageProtected      ofaPageProtected;
+#endif
+
 /**
  * Properties set against this base class at instanciation time
  */
 #define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
 #define PAGE_PROP_THEME                 "page-prop-theme"
 
-const ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
+GType                ofa_page_get_type                ( void ) G_GNUC_CONST;
 
-gint                 ofa_page_get_theme                 ( const ofaPage *page );
+const ofaMainWindow *ofa_page_get_main_window         ( const ofaPage *page );
+
+gint                 ofa_page_get_theme               ( const ofaPage *page );
 
 #define              ofa_page_get_dossier(P)            ofa_main_window_get_dossier( ofa_page_get_main_window( P ))
 
-GtkWidget           *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
+GtkWidget           *ofa_page_get_top_focusable_widget( const ofaPage *page );
 
-ofaHub              *ofa_page_get_hub                   ( const ofaPage *page );
+ofaHub              *ofa_page_get_hub                 ( const ofaPage *page );
 
 G_END_DECLS
 

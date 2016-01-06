@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"

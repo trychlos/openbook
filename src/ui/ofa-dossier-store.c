@@ -30,6 +30,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-idbprovider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 

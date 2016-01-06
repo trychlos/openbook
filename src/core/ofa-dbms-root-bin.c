@@ -31,6 +31,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-idbprovider.h"
 
 #include "core/ofa-dbms-root-bin.h"
 

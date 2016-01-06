@@ -43,6 +43,7 @@
 #include "ofa-idbconnect.h"
 #include "ofa-idbeditor.h"
 #include "ofa-idbmeta-def.h"
+#include "ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,6 +51,11 @@ G_BEGIN_DECLS
 #define OFA_IDBPROVIDER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IDBPROVIDER, ofaIDBProvider ))
 #define OFA_IS_IDBPROVIDER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBPROVIDER ))
 #define OFA_IDBPROVIDER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBPROVIDER, ofaIDBProviderInterface ))
+
+#if 0
+typedef struct _ofaIDBProvider                    ofaIDBProvider;
+typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
+#endif
 
 /**
  * ofaIDBProviderInterface:
@@ -61,7 +67,7 @@ G_BEGIN_DECLS
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
-typedef struct {
+struct _ofaIDBProviderInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -135,8 +141,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	ofaIDBEditor *  ( *new_editor )           ( gboolean editable );
-}
-	ofaIDBProviderInterface;
+};
 
 GType           ofa_idbprovider_get_type                  ( void );
 

@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_BAT_H__
 
 /**
- * SECTION: ofo_bat
+ * SECTION: ofobat
+ * @title: ofoBat
  * @short_description: #ofoBat class definition.
  * @include: openbook/ofo-bat.h
  *
@@ -35,13 +36,42 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-bat-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofs-bat.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_BAT                ( ofo_bat_get_type())
+#define OFO_BAT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_BAT, ofoBat ))
+#define OFO_BAT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_BAT, ofoBatClass ))
+#define OFO_IS_BAT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_BAT ))
+#define OFO_IS_BAT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BAT ))
+#define OFO_BAT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BAT, ofoBatClass ))
+
+#if 0
+typedef struct _ofoBat              ofoBat;
+typedef struct _ofoBatPrivate       ofoBatPrivate;
+#endif
+
+struct _ofoBat {
+	/*< public members >*/
+	ofoBase        parent;
+
+	/*< private members >*/
+	ofoBatPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass   parent;
+}
+	ofoBatClass;
+
+GType           ofo_bat_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_bat_connect_signaling_system( const ofaHub *hub );
 

@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"

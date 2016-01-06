@@ -32,6 +32,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofo-dossier.h"
 
 /* data set against the exported object
  */

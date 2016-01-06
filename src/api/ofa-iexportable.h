@@ -35,7 +35,8 @@
  */
 
 #include "api/ofa-file-format.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

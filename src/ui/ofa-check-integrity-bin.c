@@ -31,6 +31,7 @@
 
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"

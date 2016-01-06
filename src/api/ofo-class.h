@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_CLASS_H__
 
 /**
- * SECTION: ofo_class
+ * SECTION: ofoclass
+ * @title: ofoClass
  * @short_description: #ofoClass class definition.
  * @include: openbook/ofo-class.h
  *
@@ -38,11 +39,40 @@
  * any class.
  */
 
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-class-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_CLASS                ( ofo_class_get_type())
+#define OFO_CLASS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_CLASS, ofoClass ))
+#define OFO_CLASS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_CLASS, ofoClassClass ))
+#define OFO_IS_CLASS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_CLASS ))
+#define OFO_IS_CLASS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CLASS ))
+#define OFO_CLASS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CLASS, ofoClassClass ))
+
+#if 0
+typedef struct _ofoClass              ofoClass;
+typedef struct _ofoClassPrivate       ofoClassPrivate;
+#endif
+
+struct _ofoClass {
+	/*< public members >*/
+	ofoBase          parent;
+
+	/*< private members >*/
+	ofoClassPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass     parent;
+}
+	ofoClassClass;
+
+GType           ofo_class_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_class_connect_signaling_system( const ofaHub *hub );
 

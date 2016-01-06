@@ -31,6 +31,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"

@@ -25,6 +25,16 @@
 #ifndef __OPENBOOK_API_OFA_IDBMETA_DEF_H__
 #define __OPENBOOK_API_OFA_IDBMETA_DEF_H__
 
+/**
+ * SECTION: idbmeta
+ * @include: openbook/ofa-idbmeta-def.h
+ */
+
+G_BEGIN_DECLS
+
 typedef struct _ofaIDBMeta                     ofaIDBMeta;
+typedef struct _ofaIDBMetaInterface            ofaIDBMetaInterface;
+
+G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IDBMETA_DEF_H__ */

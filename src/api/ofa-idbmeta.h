@@ -46,9 +46,9 @@
 
 #include "api/my-isettings.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -56,6 +56,11 @@ G_BEGIN_DECLS
 #define OFA_IDBMETA( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IDBMETA, ofaIDBMeta ))
 #define OFA_IS_IDBMETA( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBMETA ))
 #define OFA_IDBMETA_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBMETA, ofaIDBMetaInterface ))
+
+#if 0
+typedef struct _ofaIDBMeta                     ofaIDBMeta;
+typedef struct _ofaIDBMetaInterface            ofaIDBMetaInterface;
+#endif
 
 /**
  * ofaIDBMetaInterface:
@@ -70,7 +75,7 @@ G_BEGIN_DECLS
  * This defines the interface that an #ofaIDBMeta should/must
  * implement.
  */
-typedef struct {
+struct _ofaIDBMetaInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -164,8 +169,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void             ( *dump )                 ( const ofaIDBMeta *instance );
-}
-	ofaIDBMetaInterface;
+};
 
 GType           ofa_idbmeta_get_type                  ( void );
 

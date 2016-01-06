@@ -26,60 +26,14 @@
 #define __OFA_APPLICATION_DEF_H__
 
 /**
- * SECTION: ofa_application
- * @title: ofaApplication
- * @short_description: The ofaApplication application class definition
- * @include: ui/ofa-application.h
- *
- * #ofaApplication is the main class for the main openbook application.
- *
- * As of v 0.1 (svn commit #3356), the application is not supposed to be
- * unique. Running several instances of the program from the command-line
- * juste create several instances of the application, each one believing
- * it is the primary instance of a new application. Each ofaApplication
- * is considered as a primary instance, thus creating its own ofaMainWindow.
- *
- * [Gtk+3.8]
- * The menubar GtkWidget is handled by GtkApplicationWindow, and is able
- * to rebuid itself, which is fine. But it rebuilds from a
- * menubar_section GMenu, which itself is only built at initialization
- * time. So it appears that it is impossible to replace the menubar with
- * the given API.
- *
- * To display debug messages, run the command:
- *   $ G_MESSAGES_DEBUG=OFA _install/bin/openbook
+ * SECTION: ofaapplication
+ * @include: ui/ofa-application-def.h
  */
-
-#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_APPLICATION                ( ofa_application_get_type())
-#define OFA_APPLICATION( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_APPLICATION, ofaApplication ))
-#define OFA_APPLICATION_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_APPLICATION, ofaApplicationClass ))
-#define OFA_IS_APPLICATION( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_APPLICATION ))
-#define OFA_IS_APPLICATION_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_APPLICATION ))
-#define OFA_APPLICATION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_APPLICATION, ofaApplicationClass ))
-
+typedef struct _ofaApplication              ofaApplication;
 typedef struct _ofaApplicationPrivate       ofaApplicationPrivate;
-
-typedef struct {
-	/*< public members >*/
-	GtkApplication         parent;
-
-	/*< private members >*/
-	ofaApplicationPrivate *priv;
-}
-	ofaApplication;
-
-/**
- * ofaApplicationClass:
- */
-typedef struct {
-	/*< public members >*/
-	GtkApplicationClass parent;
-}
-	ofaApplicationClass;
 
 G_END_DECLS
 

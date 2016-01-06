@@ -26,43 +26,14 @@
 #define __OPENBOOK_API_OFO_ACCOUNT_DEF_H__
 
 /**
- * SECTION: ofo_account
- * @short_description: #ofoAccount class definition.
- * @include: openbook/ofo-account.h
- *
- * This class implements the Account behavior, including the general
- * DB definition.
+ * SECTION: ofoaccount
+ * @include: openbook/ofo-account-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_ACCOUNT                ( ofo_account_get_type())
-#define OFO_ACCOUNT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_ACCOUNT, ofoAccount ))
-#define OFO_ACCOUNT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_ACCOUNT, ofoAccountClass ))
-#define OFO_IS_ACCOUNT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_ACCOUNT ))
-#define OFO_IS_ACCOUNT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ACCOUNT ))
-#define OFO_ACCOUNT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ACCOUNT, ofoAccountClass ))
-
+typedef struct _ofoAccount              ofoAccount;
 typedef struct _ofoAccountPrivate       ofoAccountPrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase            parent;
-
-	/*< private members >*/
-	ofoAccountPrivate *priv;
-}
-	ofoAccount;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass       parent;
-}
-	ofoAccountClass;
-
-GType ofo_account_get_type ( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

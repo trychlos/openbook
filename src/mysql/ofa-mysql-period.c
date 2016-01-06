@@ -29,6 +29,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-idbprovider.h"
 
 #include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-period.h"

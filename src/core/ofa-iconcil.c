@@ -27,6 +27,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-icollector.h"
 #include "api/ofo-base.h"
 #include "api/ofo-concil.h"

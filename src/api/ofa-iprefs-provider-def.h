@@ -25,6 +25,16 @@
 #ifndef __OPENBOOK_API_OFA_IPREFS_PROVIDER_DEF_H__
 #define __OPENBOOK_API_OFA_IPREFS_PROVIDER_DEF_H__
 
+/**
+ * SECTION: iprefs
+ * @include: openbook/ofa-iprefs-provider-def.h
+ */
+
+G_BEGIN_DECLS
+
 typedef struct _ofaIPrefsProvider                     ofaIPrefsProvider;
+typedef struct _ofaIPrefsProviderInterface            ofaIPrefsProviderInterface;
+
+G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IPREFS_PROVIDER_DEF_H__ */

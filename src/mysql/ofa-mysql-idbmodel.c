@@ -40,7 +40,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"

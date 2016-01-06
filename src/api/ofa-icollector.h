@@ -43,7 +43,7 @@
  * accounts, classes, currencies, and so on.
  */
 
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofa-icollectionable.h"
 
 G_BEGIN_DECLS

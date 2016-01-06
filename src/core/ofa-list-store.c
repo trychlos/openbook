@@ -28,6 +28,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
+#include "api/ofo-dossier.h"
 
 #include "api/ofa-list-store.h"
 

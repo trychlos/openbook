@@ -35,6 +35,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idataset.h"

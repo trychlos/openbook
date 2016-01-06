@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_ACCOUNT_H__
 
 /**
- * SECTION: ofo_account
+ * SECTION: ofoaccount
+ * @title: ofoAccount
  * @short_description: #ofoAccount class definition.
  * @include: openbook/ofo-account.h
  *
@@ -34,11 +35,38 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_ACCOUNT                ( ofo_account_get_type())
+#define OFO_ACCOUNT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_ACCOUNT, ofoAccount ))
+#define OFO_ACCOUNT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_ACCOUNT, ofoAccountClass ))
+#define OFO_IS_ACCOUNT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_ACCOUNT ))
+#define OFO_IS_ACCOUNT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ACCOUNT ))
+#define OFO_ACCOUNT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ACCOUNT, ofoAccountClass ))
+
+#if 0
+typedef struct _ofoAccount              ofoAccount;
+typedef struct _ofoAccountPrivate       ofoAccountPrivate;
+#endif
+
+struct _ofoAccount {
+	/*< public members >*/
+	ofoBase            parent;
+
+	/*< private members >*/
+	ofoAccountPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass       parent;
+}
+	ofoAccountClass;
 
 /* This is needed by ofoEntry
  */
@@ -62,6 +90,8 @@ enum {
 	ACCOUNT_ALLOW_CLOSED        = 1 << 4,
 	ACCOUNT_ALLOW_ALL = ACCOUNT_ALLOW_ROOT | ACCOUNT_ALLOW_DETAIL
 };
+
+GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_account_connect_signaling_system( const ofaHub *hub );
 

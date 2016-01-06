@@ -26,6 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-iprefs-page.h"
+#include "api/ofa-iprefs-provider.h"
+
 #include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
 

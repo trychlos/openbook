@@ -26,43 +26,14 @@
 #define __OPENBOOK_API_OFO_BAT_DEF_H__
 
 /**
- * SECTION: ofo_bat
- * @short_description: #ofoBat class definition.
- * @include: openbook/ofo-bat.h
- *
- * This class implements the Bat behavior: these are the tables
- * which contain the imported bank account transaction lines.
+ * SECTION: ofobat
+ * @include: openbook/ofo-bat-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_BAT                ( ofo_bat_get_type())
-#define OFO_BAT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_BAT, ofoBat ))
-#define OFO_BAT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_BAT, ofoBatClass ))
-#define OFO_IS_BAT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_BAT ))
-#define OFO_IS_BAT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BAT ))
-#define OFO_BAT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BAT, ofoBatClass ))
-
+typedef struct _ofoBat              ofoBat;
 typedef struct _ofoBatPrivate       ofoBatPrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase        parent;
-
-	/*< private members >*/
-	ofoBatPrivate *priv;
-}
-	ofoBat;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass   parent;
-}
-	ofoBatClass;
-
-GType ofo_bat_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

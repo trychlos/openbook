@@ -527,9 +527,13 @@
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
 
- 954 2016- 1- 6 review all -def includes
+ 955 2016- 1- 6 obsolete ofa_page_get_main_window()
+                obsolete ofa_page_get_dossier()
 
- 955
+ 956 2016- 1- 6 add to make distcheck a script which checks that -def
+                includes are always used in headers (and only)
+
+ 957
 
 -----------------------------------------------------------------------
  DONE
@@ -543,6 +547,14 @@
      2016- 1- 2 done
 
  953 2016- 1- 6 move ofoBase->prot->hub to priv
+     2016- 1- 6 done
+
+ 954 2016- 1- 6 review all -def includes
+                -def must have a SECTION comment + minimal code
+                main must include -def
+                main must never be included in other headers
+                (-def must always been used when it exists)
+                -def should not be included in .c files
      2016- 1- 6 done
 
 -----------------------------------------------------------------------

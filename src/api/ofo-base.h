@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_BASE_H__
 
 /**
- * SECTION: ofo_base
+ * SECTION: ofobase
+ * @title: ofoBase
  * @short_description: #ofoBase class definition.
  * @include: openbook/ofo-base.h
  *
@@ -47,6 +48,13 @@ G_BEGIN_DECLS
 #define OFO_IS_BASE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_BASE ))
 #define OFO_IS_BASE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BASE ))
 #define OFO_BASE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BASE, ofoBaseClass ))
+
+#if 0
+typedef struct                       ofoBase;
+typedef struct                       ofoBaseClass;
+typedef struct _ofoBasePrivate       ofoBasePrivate;
+typedef struct _ofoBaseProtected     ofoBaseProtected;
+#endif
 
 /**
  * ofo_base_getter:

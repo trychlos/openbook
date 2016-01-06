@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_LEDGER_H__
 
 /**
- * SECTION: ofo_ledger
+ * SECTION: ofoledger
+ * @title: ofoLedger
  * @short_description: #ofoLedger class definition.
  * @include: openbook/ofo-ledger.h
  *
@@ -35,16 +36,45 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_LEDGER                ( ofo_ledger_get_type())
+#define OFO_LEDGER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_LEDGER, ofoLedger ))
+#define OFO_LEDGER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_LEDGER, ofoLedgerClass ))
+#define OFO_IS_LEDGER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_LEDGER ))
+#define OFO_IS_LEDGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_LEDGER ))
+#define OFO_LEDGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_LEDGER, ofoLedgerClass ))
+
+#if 0
+typedef struct _ofoLedger              ofoLedger;
+typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
+#endif
+
+struct _ofoLedger {
+	/*< public members >*/
+	ofoBase           parent;
+
+	/*< private members >*/
+	ofoLedgerPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass      parent;
+}
+	ofoLedgerClass;
 
 /* a fake ledger under which we reclass the entry models which are
  * attached to an unfound ledger
  */
 #define UNKNOWN_LEDGER_MNEMO                 "__xx__"
 #define UNKNOWN_LEDGER_LABEL                 _( "Unclassed" )
+
+GType           ofo_ledger_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_ledger_connect_signaling_system( const ofaHub *hub );
 

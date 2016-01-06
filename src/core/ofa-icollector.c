@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 

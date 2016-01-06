@@ -34,6 +34,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"

@@ -26,21 +26,13 @@
 #define __OPENBOOK_API_OFA_PAGE_DEF_H__
 
 /**
- * SECTION: ofa_page
- * @short_description: #ofaPage class definition.
- * @include: openbook/ofa-page.h
+ * SECTION: ofapage
+ * @include: openbook/ofa-page-def.h
  */
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
-
-#define OFA_TYPE_PAGE                ( ofa_page_get_type())
-#define OFA_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PAGE, ofaPage ))
-#define OFA_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PAGE, ofaPageClass ))
-#define OFA_IS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PAGE ))
-#define OFA_IS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PAGE ))
-#define OFA_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PAGE, ofaPageClass ))
 
 typedef struct _ofaPageProtected      ofaPageProtected;
 typedef struct _ofaPagePrivate        ofaPagePrivate;
@@ -119,8 +111,6 @@ typedef struct {
 	GtkWidget * ( *get_top_focusable_widget )( const ofaPage *page );
 }
 	ofaPageClass;
-
-GType ofa_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

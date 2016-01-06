@@ -28,6 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 

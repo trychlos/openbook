@@ -26,18 +26,54 @@
 #define __OPENBOOK_API_OFO_CURRENCY_H__
 
 /**
- * SECTION: ofo_currency
+ * SECTION: ofocurrency
+ * @title: ofoCurrency
  * @short_description: #ofoCurrency class definition.
  * @include: openbook/ofo-currency.h
  *
  * This file defines the #ofoCurrency public API.
  */
 
-#include "api/ofa-hub.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-currency-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_CURRENCY                ( ofo_currency_get_type())
+#define OFO_CURRENCY( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_CURRENCY, ofoCurrency ))
+#define OFO_CURRENCY_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_CURRENCY, ofoCurrencyClass ))
+#define OFO_IS_CURRENCY( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_CURRENCY ))
+#define OFO_IS_CURRENCY_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CURRENCY ))
+#define OFO_CURRENCY_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CURRENCY, ofoCurrencyClass ))
+
+#if 0
+typedef struct _ofoCurrency              ofoCurrency;
+typedef struct _ofoCurrencyPrivate       ofoCurrencyPrivate;
+#endif
+
+struct _ofoCurrency {
+	/*< public members >*/
+	ofoBase             parent;
+
+	/*< private members >*/
+	ofoCurrencyPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass        parent;
+}
+	ofoCurrencyClass;
+
+/**
+ * CUR_DEFAULT_DIGITS:
+ * Default count of digits when displaying a currency
+ */
+#define CUR_DEFAULT_DIGITS              2
+
+GType           ofo_currency_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_currency_connect_signaling_system( const ofaHub *hub );
 

@@ -35,6 +35,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"

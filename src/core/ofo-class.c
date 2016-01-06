@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"

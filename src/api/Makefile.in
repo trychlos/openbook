@@ -403,6 +403,7 @@ api_include_HEADERS = \
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-iprefs-page.h									\
+	ofa-iprefs-page-def.h								\
 	ofa-iprefs-provider.h								\
 	ofa-iprefs-provider-def.h							\
 	ofa-istore.h										\

@@ -25,11 +25,51 @@
 #ifndef __OPENBOOK_API_OFO_CONCIL_H__
 #define __OPENBOOK_API_OFO_CONCIL_H__
 
+/**
+ * SECTION: ofoconcil
+ * @title: ofoConcil
+ * @short_description: #ofoConcil class definition.
+ * @include: openbook/ofo-concil.h
+ *
+ * This file defines the #ofoConcil public API.
+ *
+ * A #ofoConcil object is actually a conciliation group. Under a
+ * dossier-wide unique identifier, it maintains a list of all lines,
+ * entries or BAT, which belong and share this same conciliation group.
+ */
+
 #include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofo-base-def.h"
 #include "api/ofo-concil-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_CONCIL                ( ofo_concil_get_type())
+#define OFO_CONCIL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_CONCIL, ofoConcil ))
+#define OFO_CONCIL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_CONCIL, ofoConcilClass ))
+#define OFO_IS_CONCIL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_CONCIL ))
+#define OFO_IS_CONCIL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CONCIL ))
+#define OFO_CONCIL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CONCIL, ofoConcilClass ))
+
+#if 0
+typedef struct _ofoConcil              ofoConcil;
+typedef struct _ofoConcilPrivate       ofoConcilPrivate;
+#endif
+
+struct _ofoConcil {
+	/*< public members >*/
+	ofoBase           parent;
+
+	/*< private members >*/
+	ofoConcilPrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass      parent;
+}
+	ofoConcilClass;
 
 /**
  * ofoConcilType:
@@ -37,47 +77,28 @@ G_BEGIN_DECLS
 #define CONCIL_TYPE_BAT                 "B"
 #define CONCIL_TYPE_ENTRY               "E"
 
+GType           ofo_concil_get_type                ( void ) G_GNUC_CONST;
+
 void            ofo_concil_connect_signaling_system( const ofaHub *hub );
 
-ofoConcil      *ofo_concil_get_by_id               ( ofaHub *hub,
-														ofxCounter rec_id );
-
-ofoConcil      *ofo_concil_get_by_other_id         ( ofaHub *hub,
-														const gchar *type,
-														ofxCounter other_id );
+ofoConcil      *ofo_concil_get_by_id               ( ofaHub *hub, ofxCounter rec_id );
+ofoConcil      *ofo_concil_get_by_other_id         ( ofaHub *hub, const gchar *type, ofxCounter other_id );
 
 ofoConcil      *ofo_concil_new                     ( void );
 
 ofxCounter      ofo_concil_get_id                  ( const ofoConcil *concil );
-
 const GDate    *ofo_concil_get_dval                ( const ofoConcil *concil );
-
 const gchar    *ofo_concil_get_user                ( const ofoConcil *concil );
-
 const GTimeVal *ofo_concil_get_stamp               ( const ofoConcil *concil );
-
 GList          *ofo_concil_get_ids                 ( const ofoConcil *concil );
+gboolean        ofo_concil_has_member              ( const ofoConcil *concil, const gchar *type, ofxCounter id );
 
-gboolean        ofo_concil_has_member              ( const ofoConcil *concil,
-														const gchar *type,
-														ofxCounter id );
+void            ofo_concil_set_dval                ( ofoConcil *concil, const GDate *dval );
+void            ofo_concil_set_user                ( ofoConcil *concil, const gchar *user );
+void            ofo_concil_set_stamp               ( ofoConcil *concil, const GTimeVal *stamp );
 
-void            ofo_concil_set_dval                ( ofoConcil *concil,
-														const GDate *dval );
-
-void            ofo_concil_set_user                ( ofoConcil *concil,
-														const gchar *user );
-
-void            ofo_concil_set_stamp               ( ofoConcil *concil,
-														const GTimeVal *stamp );
-
-gboolean        ofo_concil_insert                  ( ofoConcil *concil,
-														ofaHub *hub );
-
-gboolean        ofo_concil_add_id                  ( ofoConcil *concil,
-														const gchar *type,
-														ofxCounter id );
-
+gboolean        ofo_concil_insert                  ( ofoConcil *concil, ofaHub *hub );
+gboolean        ofo_concil_add_id                  ( ofoConcil *concil, const gchar *type, ofxCounter id );
 gboolean        ofo_concil_delete                  ( ofoConcil *concil );
 
 G_END_DECLS

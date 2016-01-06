@@ -42,9 +42,9 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 

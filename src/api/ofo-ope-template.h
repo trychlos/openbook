@@ -26,7 +26,8 @@
 #define __OPENBOOK_API_OFO_OPE_TEMPLATE_H__
 
 /**
- * SECTION: ofo_ope_template
+ * SECTION: ofoopetemplate
+ * @title: ofoOpeTemplate
  * @short_description: #ofoOpeTemplate class definition.
  * @include: openbook/ofo-ope-template.h
  *
@@ -111,10 +112,39 @@
  *    - the '%RATE( TVAN )' is the same that '%TVAN'
  */
 
+#include "api/ofo-base-def.h"
 #include "api/ofo-ope-template-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+#define OFO_TYPE_OPE_TEMPLATE                ( ofo_ope_template_get_type())
+#define OFO_OPE_TEMPLATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_OPE_TEMPLATE, ofoOpeTemplate ))
+#define OFO_OPE_TEMPLATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_OPE_TEMPLATE, ofoOpeTemplateClass ))
+#define OFO_IS_OPE_TEMPLATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_OPE_TEMPLATE ))
+#define OFO_IS_OPE_TEMPLATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_OPE_TEMPLATE ))
+#define OFO_OPE_TEMPLATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_OPE_TEMPLATE, ofoOpeTemplateClass ))
+
+#if 0
+typedef struct _ofoOpeTemplate               ofoOpeTemplate;
+typedef struct _ofoOpeTemplatePrivate        ofoOpeTemplatePrivate;
+#endif
+
+struct _ofoOpeTemplate {
+	/*< public members >*/
+	ofoBase                parent;
+
+	/*< private members >*/
+	ofoOpeTemplatePrivate *priv;
+};
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass           parent;
+}
+	ofoOpeTemplateClass;
+
+GType           ofo_ope_template_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_ope_template_connect_signaling_system( const ofaHub *hub );
 

@@ -26,16 +26,13 @@
 #define __OPENBOOK_API_OFO_BASE_PROT_H__
 
 /**
- * SECTION: ofo_base
- * @short_description: #ofoBase class definition.
+ * SECTION: ofobase
  * @include: openbook/ofo-base-prot.h
- *
- * The ofoBase class is the class base for application objects.
  *
  * This header is supposed to be included only by the child classes.
  */
 
-#include "api/ofa-hub.h"
+#include <glib.h>
 
 G_BEGIN_DECLS
 

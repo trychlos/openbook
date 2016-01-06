@@ -26,43 +26,14 @@
 #define __OPENBOOK_API_OFO_CLASS_DEF_H__
 
 /**
- * SECTION: ofo_class
- * @short_description: #ofoClass class definition.
- * @include: openbook/ofo-class.h
- *
- * This class implements the ofoClass behavior, including the general
- * DB definition.
+ * SECTION: ofoclass
+ * @include: openbook/ofo-class-def.h
  */
-
-#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_CLASS                ( ofo_class_get_type())
-#define OFO_CLASS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_CLASS, ofoClass ))
-#define OFO_CLASS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_CLASS, ofoClassClass ))
-#define OFO_IS_CLASS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_CLASS ))
-#define OFO_IS_CLASS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CLASS ))
-#define OFO_CLASS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CLASS, ofoClassClass ))
-
+typedef struct _ofoClass              ofoClass;
 typedef struct _ofoClassPrivate       ofoClassPrivate;
-
-typedef struct {
-	/*< public members >*/
-	ofoBase          parent;
-
-	/*< private members >*/
-	ofoClassPrivate *priv;
-}
-	ofoClass;
-
-typedef struct {
-	/*< public members >*/
-	ofoBaseClass     parent;
-}
-	ofoClassClass;
-
-GType ofo_class_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

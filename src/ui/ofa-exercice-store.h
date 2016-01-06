@@ -34,7 +34,7 @@
  * exercices available on a dossier.
  */
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 

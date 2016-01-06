@@ -37,6 +37,8 @@
  * a #GList of all objects of the class, loaded at once on demand.
  */
 
+#include <glib-object.h>
+
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS

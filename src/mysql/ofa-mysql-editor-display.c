@@ -28,6 +28,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbeditor.h"
+#include "api/ofa-idbprovider.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-editor-display.h"

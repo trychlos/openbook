@@ -37,7 +37,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
 
 G_BEGIN_DECLS
