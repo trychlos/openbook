@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -219,7 +220,7 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
 			is_bat );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && is_bat && ofo_bat_is_deletable( bat, priv->dossier ));
+			priv->is_current && is_bat && ofo_bat_is_deletable( bat ));
 }
 
 static GtkWidget *
@@ -261,7 +262,7 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
 	priv = page->priv;
 	bat = ofa_bat_treeview_get_selected( priv->tview );
 	if( bat ){
-		g_return_if_fail( ofo_bat_is_deletable( bat, ofa_page_get_dossier( OFA_PAGE( page ))));
+		g_return_if_fail( ofo_bat_is_deletable( bat ));
 		ofa_bat_treeview_delete_bat( priv->tview, bat );
 	}
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));

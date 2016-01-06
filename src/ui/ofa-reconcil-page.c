@@ -1532,7 +1532,7 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 		}
 	}
 
-	bat = ofo_bat_get_by_id( priv->dossier, bat_id );
+	bat = ofo_bat_get_by_id( priv->hub, bat_id );
 	if( bat ){
 		priv->bats = g_list_prepend( priv->bats, bat );
 		display_bat_file( self, bat );
@@ -1547,7 +1547,7 @@ display_bat_file( ofaReconcilPage *self, ofoBat *bat )
 
 	priv = self->priv;
 
-	batlines = ofo_bat_line_get_dataset( priv->dossier, ofo_bat_get_id( bat ));
+	batlines = ofo_bat_line_get_dataset( priv->hub, ofo_bat_get_id( bat ));
 	for( it=batlines ; it ; it=it->next ){
 		insert_batline( self, OFO_BAT_LINE( it->data ));
 	}
@@ -1684,8 +1684,8 @@ display_bat_counts( ofaReconcilPage *self )
 	total = 0;
 	used = 0;
 	for( it=priv->bats ; it ; it=it->next ){
-		total += ofo_bat_get_lines_count( OFO_BAT( it->data ), priv->dossier );
-		used += ofo_bat_get_used_count( OFO_BAT( it->data ), priv->dossier );
+		total += ofo_bat_get_lines_count( OFO_BAT( it->data ));
+		used += ofo_bat_get_used_count( OFO_BAT( it->data ));
 	}
 	unused = total-used;
 

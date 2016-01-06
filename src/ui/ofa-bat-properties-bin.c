@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -67,6 +68,7 @@ struct _ofaBatPropertiesBinPrivate {
 	/* just to make the my_utils_init_..._ex macros happy
 	 */
 	ofoBat       *bat;
+	ofaHub       *hub;
 	gboolean      is_new;
 };
 
@@ -92,9 +94,9 @@ G_DEFINE_TYPE( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN )
 
 static void  setup_bin( ofaBatPropertiesBin *bin );
 static void  setup_treeview( ofaBatPropertiesBin *bin );
-static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
-static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier );
-static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, ofoDossier *dossier );
+static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat );
+static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat );
+static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line );
 
 static void
 bat_properties_bin_finalize( GObject *instance )
@@ -340,13 +342,14 @@ setup_treeview( ofaBatPropertiesBin *bin )
 }
 
 static void
-display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
+display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	ofxCounter bat_id;
 	const gchar *cstr;
 	gchar *str;
 	gint total, used;
+	ofoDossier *dossier;
 
 	priv = bin->priv;
 
@@ -362,12 +365,12 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_format ), "" );
 	}
 
-	total = ofo_bat_get_lines_count( bat, dossier );
+	total = ofo_bat_get_lines_count( bat );
 	str = g_strdup_printf( "%u", total );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_count ), str );
 	g_free( str );
 
-	used = ofo_bat_get_used_count( bat, dossier );
+	used = ofo_bat_get_used_count( bat );
 	str = g_strdup_printf( "%u", total-used );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
@@ -418,7 +421,8 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}
 
-	priv->bat = bat;
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	my_utils_container_notes_setup_full(
 				GTK_CONTAINER( bin ),
 				"pn-notes", ofo_bat_get_notes( bat ), ofo_dossier_is_current( dossier ));
@@ -426,7 +430,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossi
 }
 
 static void
-display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
+display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GList *dataset, *it;
@@ -437,15 +441,15 @@ display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
 	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	dataset = ofo_bat_line_get_dataset( dossier, ofo_bat_get_id( bat ));
+	dataset = ofo_bat_line_get_dataset( priv->hub, ofo_bat_get_id( bat ));
 	for( it=dataset ; it ; it=it->next ){
-		display_line( bin, tmodel, OFO_BAT_LINE( it->data ), dossier );
+		display_line( bin, tmodel, OFO_BAT_LINE( it->data ));
 	}
 	ofo_bat_line_free_dataset( dataset );
 }
 
 static void
-display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, ofoDossier *dossier )
+display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
 {
 	gchar *sid, *sdope, *sdeffect, *samount;
 	ofxCounter bat_id;
@@ -510,13 +514,12 @@ display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line, 
  * ofa_bat_properties_bin_set_bat:
  */
 void
-ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossier *dossier )
+ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_properties_bin_set_bat";
 	ofaBatPropertiesBinPrivate *priv;
 
-	g_debug( "%s: bin=%p, bat=%p, dossier=%p",
-			thisfn, ( void * ) bin, ( void * ) bat, ( void * ) dossier );
+	g_debug( "%s: bin=%p, bat=%p", thisfn, ( void * ) bin, ( void * ) bat );
 
 	g_return_if_fail( OFA_IS_BAT_PROPERTIES_BIN( bin ));
 	g_return_if_fail( OFO_IS_BAT( bat ));
@@ -525,7 +528,9 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat, ofoDossie
 
 	if( !priv->dispose_has_run ){
 
-		display_bat_properties( bin, bat, dossier );
-		display_bat_lines( bin, bat, dossier );
+		priv->bat = bat;
+		priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
+		display_bat_properties( bin, bat );
+		display_bat_lines( bin, bat );
 	}
 }

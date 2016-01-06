@@ -81,6 +81,7 @@ struct _ofaImportAssistantPrivate {
 
 	/* p0: introduction
 	 */
+	ofaHub           *hub;
 
 	/* p1: select file to be imported
 	 */
@@ -165,6 +166,7 @@ static const gchar *st_ui_id            = "ImportAssistant";
 
 static void     iimporter_iface_init( ofaIImporterInterface *iface );
 static guint    iimporter_get_interface_version( const ofaIImporter *instance );
+static void     p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p1_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p1_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p1_on_selection_changed( GtkFileChooser *chooser, ofaImportAssistant *self );
@@ -200,7 +202,7 @@ static const ofsAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
 				NULL,
 				NULL,
-				NULL },
+				( myAssistantCb ) p0_do_forward },
 		{ ASSIST_PAGE_SELECT,
 				( myAssistantCb ) p1_do_init,
 				( myAssistantCb ) p1_do_display,
@@ -348,6 +350,24 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 
 	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 	my_assistant_run( MY_ASSISTANT( self ));
+}
+
+static void
+p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_import_assistant_p0_do_forward";
+	ofaImportAssistantPrivate *priv;
+	GtkApplication *application;
+
+	priv = self->priv;
+
+	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( self )));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) priv->hub );
 }
 
 /*
@@ -894,20 +914,12 @@ static guint
 p5_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
-	GtkApplication *application;
-	ofaHub *hub;
 	guint count;
 
 	priv = self->priv;
 
-	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( self )));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), 0 );
-
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
-
 	count = ofa_hub_import_csv(
-					hub, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
+					priv->hub, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
 
 	return( count );
 }
@@ -916,17 +928,11 @@ static guint
 p5_do_import_other( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	guint count;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-
-	*errors = ofa_iimportable_import_uri( priv->p5_plugin, dossier, self, NULL );
+	*errors = ofa_iimportable_import_uri( priv->p5_plugin, priv->hub, self, NULL );
 	count = ofa_iimportable_get_count( priv->p5_plugin );
 
 	return( count );

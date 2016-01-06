@@ -30,6 +30,8 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
@@ -52,7 +54,7 @@ struct _ofaBatTreeviewPrivate {
 	 */
 	gboolean             delete_authorized;
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 };
 
 /* signals defined here
@@ -404,6 +406,7 @@ void
 ofa_bat_treeview_set_main_window( ofaBatTreeview *view, const ofaMainWindow *main_window )
 {
 	ofaBatTreeviewPrivate *priv;
+	GtkApplication *application;
 
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -413,8 +416,14 @@ ofa_bat_treeview_set_main_window( ofaBatTreeview *view, const ofaMainWindow *mai
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->store = ofa_bat_store_new( priv->dossier );
+
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+		priv->store = ofa_bat_store_new( priv->hub );
 		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 	}
 }
@@ -476,7 +485,7 @@ try_to_delete_current_row( ofaBatTreeview *self )
 
 	if( priv->delete_authorized ){
 		bat = ofa_bat_treeview_get_selected( self );
-		if( bat && ofo_bat_is_deletable( bat, priv->dossier )){
+		if( bat && ofo_bat_is_deletable( bat )){
 			ofa_bat_treeview_delete_bat( self, bat );
 		}
 	}
@@ -498,7 +507,7 @@ ofa_bat_treeview_delete_bat( ofaBatTreeview *view, ofoBat *bat )
 	if( !priv->dispose_has_run ){
 
 		if( delete_confirmed( view, bat )){
-			ofo_bat_delete( bat, priv->dossier );
+			ofo_bat_delete( bat );
 		}
 	}
 }

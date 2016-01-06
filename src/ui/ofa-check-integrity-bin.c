@@ -405,7 +405,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->bat_lines_errs = 0;
-	bats = ofo_bat_get_dataset( dossier );
+	bats = ofo_bat_get_dataset( priv->hub );
 	count = g_list_length( bats );
 
 	if( count == 0 ){
@@ -429,7 +429,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 			}
 		}
 
-		lines = ofo_bat_line_get_dataset( dossier, id );
+		lines = ofo_bat_line_get_dataset( priv->hub, id );
 
 		for( itl=lines ; itl ; itl=itl->next ){
 			line = OFO_BAT_LINE( itl->data );

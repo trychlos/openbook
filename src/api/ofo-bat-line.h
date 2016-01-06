@@ -35,9 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-iimporter.h"
-#include "api/ofo-concil-def.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -67,10 +65,10 @@ typedef struct {
 
 GType        ofo_bat_line_get_type         ( void ) G_GNUC_CONST;
 
-ofoBatLine  *ofo_bat_line_new              ( gint bat_id );
-
-GList       *ofo_bat_line_get_dataset      ( ofoDossier *dossier, gint bat_id );
+GList       *ofo_bat_line_get_dataset      ( ofaHub *hub, ofxCounter bat_id );
 #define      ofo_bat_line_free_dataset(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+
+ofoBatLine  *ofo_bat_line_new              ( gint bat_id );
 
 ofxCounter   ofo_bat_line_get_bat_id       ( const ofoBatLine *batline );
 ofxCounter   ofo_bat_line_get_line_id      ( const ofoBatLine *batline );
@@ -88,7 +86,7 @@ void         ofo_bat_line_set_label        ( ofoBatLine *batline, const gchar *l
 void         ofo_bat_line_set_currency     ( ofoBatLine *batline, const gchar *currency );
 void         ofo_bat_line_set_amount       ( ofoBatLine *batline, ofxAmount montant );
 
-gboolean     ofo_bat_line_insert           ( ofoBatLine *batline, ofoDossier *dossier );
+gboolean     ofo_bat_line_insert           ( ofoBatLine *batline, ofaHub *hub );
 
 G_END_DECLS
 

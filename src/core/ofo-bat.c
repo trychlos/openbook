@@ -34,7 +34,8 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idataset.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -66,22 +67,23 @@ struct _ofoBatPrivate {
 	GTimeVal   upd_stamp;
 };
 
-G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
-
-static GList      *bat_load_dataset( ofoDossier *dossier );
 static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_do_insert( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean    bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx );
-static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *cnx );
+static gboolean    bat_do_insert( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
 static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
+static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
+static guint       icollectionable_get_interface_version( const ofaICollectionable *instance );
+static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
-OFA_IDATASET_LOAD( BAT, bat );
+G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ));
 
 static void
 bat_finalize( GObject *instance )
@@ -153,7 +155,7 @@ ofo_bat_class_init( ofoBatClass *klass )
 
 /**
  * ofo_bat_connect_signaling_system:
- * @hub: the #ofaHub object.
+ * @hub: the current #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
@@ -168,104 +170,25 @@ ofo_bat_connect_signaling_system( const ofaHub *hub )
 }
 
 /**
- * ofo_bat_new:
+ * ofo_bat_get_dataset:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the full #ofoBat dataset.
+ *
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
  */
-ofoBat *
-ofo_bat_new( void )
+GList *
+ofo_bat_get_dataset( ofaHub *hub )
 {
-	ofoBat *bat;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	bat = g_object_new( OFO_TYPE_BAT, NULL );
-
-	return( bat );
-}
-
-static GList *
-bat_load_dataset( ofoDossier *dossier )
-{
-	const ofaIDBConnect *cnx;
-	GSList *result, *irow, *icol;
-	ofoBat *bat;
-	GList *dataset;
-	GTimeVal timeval;
-
-	dataset = NULL;
-	cnx = ofo_dossier_get_connect( dossier );
-
-	if( ofa_idbconnect_query_ex( cnx,
-			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
-			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
-			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
-			"	FROM OFA_T_BAT "
-			"	ORDER BY BAT_UPD_STAMP ASC", &result, TRUE )){
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			bat = ofo_bat_new();
-			bat_set_id( bat, atol(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_format( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_account( bat, ( const gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				my_date_set_from_sql( &bat->priv->begin, ( const gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				my_date_set_from_sql( &bat->priv->end, ( const gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_rib( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_currency( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_solde_begin( bat,
-						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_solde_begin_set( bat, TRUE );
-			} else {
-				ofo_bat_set_solde_begin_set( bat, FALSE );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_solde_end( bat,
-						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_solde_end_set( bat, TRUE );
-			} else {
-				ofo_bat_set_solde_end_set( bat, FALSE );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_notes( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			bat_set_upd_user( bat, ( gchar * ) icol->data );
-			icol = icol->next;
-			bat_set_upd_stamp( bat,
-					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-			dataset = g_list_prepend( dataset, bat );
-		}
-
-		ofa_idbconnect_free_results( result );
-	}
-
-	return( g_list_reverse( dataset ));
+	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_BAT ));
 }
 
 /**
  * ofo_bat_get_by_id:
+ * @hub: the current #ofaHub object.
  *
  * Returns: the searched BAT object, or %NULL.
  *
@@ -273,14 +196,16 @@ bat_load_dataset( ofoDossier *dossier )
  * not be unreffed by the caller.
  */
 ofoBat *
-ofo_bat_get_by_id( ofoDossier *dossier, ofxCounter id )
+ofo_bat_get_by_id( ofaHub *hub, ofxCounter id )
 {
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	GList *dataset;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( id > 0, NULL );
 
-	OFA_IDATASET_GET( dossier, BAT, bat );
+	dataset = ofo_bat_get_dataset( hub );
 
-	return( bat_find_by_id( bat_dataset, id ));
+	return( bat_find_by_id( dataset, id ));
 }
 
 static ofoBat *
@@ -294,6 +219,19 @@ bat_find_by_id( GList *set, ofxCounter id )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_bat_new:
+ */
+ofoBat *
+ofo_bat_new( void )
+{
+	ofoBat *bat;
+
+	bat = g_object_new( OFO_TYPE_BAT, NULL );
+
+	return( bat );
 }
 
 /**
@@ -553,16 +491,16 @@ ofo_bat_get_upd_stamp( const ofoBat *bat )
 
 /**
  * ofo_bat_exists:
- * @dossier:
+ * @hub: the current #ofaHub object.
  * @rib:
  * @begin:
  * @end:
  *
  * Returns %TRUE if the Bank Account Transaction file has already been
- * imported,.
+ * imported, and display a message dialog box in this case.
  */
 gboolean
-ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin, const GDate *end )
+ofo_bat_exists( const ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end )
 {
 	gboolean exists;
 	gchar *sbegin, *send;
@@ -571,7 +509,7 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 	gchar *primary, *secondary;
 	GtkWidget *dialog;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	exists = FALSE;
 
@@ -594,7 +532,7 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 		g_string_append_printf( query, "AND BAT_END IS NULL" );
 	}
 
-	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query->str, &count, TRUE );
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query->str, &count, TRUE );
 
 	if( count > 0 ){
 		exists = TRUE;
@@ -629,83 +567,85 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
  * ofo_bat_is_deletable:
  *
  * An imported BAT file may be removed from the database if none of its
- * lines has been yet reconciliated (and the dossier is current).
+ * lines has been yet reconciliated.
  */
 gboolean
-ofo_bat_is_deletable( const ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_is_deletable( const ofoBat *bat )
 {
 	gint count;
-	gboolean is_current;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		count = ofo_bat_get_used_count( bat, dossier );
-		is_current = ofo_dossier_is_current( dossier );
-		return( is_current && count == 0 );
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	count = ofo_bat_get_used_count( bat );
+
+	return( count == 0 );
 }
 
 /**
  * ofo_bat_get_lines_count:
+ * @bat: this #ofoBat instance.
+ *
+ * Returns: the count of lines in this BAT.
  */
 gint
-ofo_bat_get_lines_count( const ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_get_lines_count( const ofoBat *bat )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
 
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), -1 );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		query = g_strdup_printf(
-						"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld",
-						ofo_bat_get_id( bat ));
-		ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
-		g_free( query );
-
-		return( count );
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( 0 );
 	}
 
-	g_assert_not_reached();
-	return( -1 );
+	query = g_strdup_printf(
+					"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld",
+					ofo_bat_get_id( bat ));
+
+	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+	g_free( query );
+
+	return( count );
 }
 
 /**
  * ofo_bat_get_used_count:
+ * @bat: this #ofoBat instance.
  *
- * Returns the count of used lines from this BAT file.
+ * Returns the count of used lines from this BAT file, i.e. the count
+ * of lines which belong to a conciliation group.
  */
 gint
-ofo_bat_get_used_count( const ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_get_used_count( const ofoBat *bat )
 {
 	gchar *query;
+	ofaHub *hub;
 	gint count;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), -1 );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_CONCIL_IDS WHERE "
-				"	REC_IDS_TYPE='%s' AND REC_IDS_OTHER IN "
-				"		(SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld)",
-				CONCIL_TYPE_BAT, ofo_bat_get_id( bat ));
-		ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
-		g_free( query );
-
-		return( count );
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( 0 );
 	}
 
-	g_assert_not_reached();
-	return( -1 );
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_CONCIL_IDS WHERE "
+			"	REC_IDS_TYPE='%s' AND REC_IDS_OTHER IN "
+			"		(SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld)",
+			CONCIL_TYPE_BAT, ofo_bat_get_id( bat ));
+
+	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+	g_free( query );
+
+	return( count );
 }
 
 /*
@@ -927,44 +867,57 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 
 /**
  * ofo_bat_insert:
+ * @bat: a new #ofoBat instance to be added to the database.
+ * @hub: the current #ofaHub object.
  *
+ * Insert the new object in the database, updating simultaneously the
+ * global dataset.
  *
+ * Returns: %TRUE if insertion is successful, %FALSE else.
  */
 gboolean
-ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
+ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
+	ofoDossier *dossier;
+	gboolean ok;
+
+	g_debug( "%s: bat=%p, hub=%p",
+			thisfn, ( void * ) bat, ( void * ) hub );
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		g_debug( "%s: bat=%p, dossier=%p",
-				thisfn, ( void * ) bat, ( void * ) dossier );
-
-		bat->priv->id = ofo_dossier_get_next_bat( dossier );
-
-		return( bat_do_insert(
-					bat,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier )));
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	dossier = ofa_hub_get_dossier( hub );
+	bat->priv->id = ofo_dossier_get_next_bat( dossier );
+
+	if( bat_do_insert( bat, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( bat ), hub );
+		ofa_icollector_add_object(
+				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-bat_do_insert( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
+bat_do_insert( ofoBat *bat, const ofaIDBConnect *connect )
 {
-	return( bat_insert_main( bat, cnx, user ));
+	return( bat_insert_main( bat, connect ));
 }
 
 static gboolean
-bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
+bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *suri, *str;
+	gchar *suri, *str, *userid;
 	const GDate *begin, *end;
 	gboolean ok;
 	gchar *stamp_str;
@@ -974,6 +927,7 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 	my_utils_stamp_set_now( &stamp );
 	suri = my_utils_quote( ofo_bat_get_uri( bat ));
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
 
@@ -1050,14 +1004,15 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 	}
 	g_free( str );
 
-	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
+	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
-		bat_set_upd_user( bat, user );
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		bat_set_upd_user( bat, userid );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
 	}
 
+	g_free( userid );
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
 
@@ -1068,40 +1023,41 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
  * ofo_bat_update:
  */
 gboolean
-ofo_bat_update( ofoBat *bat, ofoDossier *dossier )
+ofo_bat_update( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_update";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		g_debug( "%s: bat=%p, dossier=%p",
-				thisfn, ( void * ) bat, ( void * ) dossier );
-
-		if( bat_do_update(
-					bat,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_UPDATE( dossier, BAT, bat, NULL );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( bat ));
+
+	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_BAT, ( GCompareFunc ) bat_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 /*
  * only notes may be updated
  */
 static gboolean
-bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
+bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *notes;
+	gchar *notes, *userid;
 	gboolean ok;
 	GTimeVal stamp;
 	gchar *stamp_str;
@@ -1111,6 +1067,7 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 	notes = my_utils_quote( ofo_bat_get_notes( bat ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
 
@@ -1129,14 +1086,15 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
 
 	g_string_append_printf( query,
 			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
-			"	WHERE BAT_ID=%ld", user, stamp_str, ofo_bat_get_id( bat ));
+			"	WHERE BAT_ID=%ld", userid, stamp_str, ofo_bat_get_id( bat ));
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
-		bat_set_upd_user( bat, user );
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		bat_set_upd_user( bat, userid );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
 	}
 
+	g_free( userid );
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
@@ -1148,34 +1106,39 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *cnx, const gchar *user )
  * ofo_bat_delete:
  */
 gboolean
-ofo_bat_delete( ofoBat *bat, ofoDossier *dossier )
+ofo_bat_delete( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_delete";
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	gboolean ok;
+
+	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_bat_is_deletable( bat, dossier ), FALSE );
+	g_return_val_if_fail( ofo_bat_is_deletable( bat ), FALSE );
 
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		g_debug( "%s: bat=%p, dossier=%p",
-				thisfn, ( void * ) bat, ( void * ) dossier );
-
-		if( bat_do_delete_main( bat, ofo_dossier_get_connect( dossier ))){
-
-			bat_do_delete_lines( bat, ofo_dossier_get_connect( dossier ));
-
-			OFA_IDATASET_REMOVE( dossier, BAT, bat );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( bat )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	connect = ofa_hub_get_connect( hub );
+
+	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
+		g_object_ref( bat );
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( bat ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, bat );
+		g_object_unref( bat );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx )
+bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -1185,7 +1148,7 @@ bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1193,7 +1156,7 @@ bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *cnx )
 }
 
 static gboolean
-bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *cnx )
+bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -1203,7 +1166,7 @@ bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *cnx )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1235,25 +1198,22 @@ bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
  * ofo_bat_import:
  * @importable:
  * @sbat:
- * @dossier:
+ * @hub: the current #ofaHub object.
  *
  * Import the provided #ofsBat structure.
  */
 gboolean
-ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, ofxCounter *id )
+ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounter *id )
 {
 	gboolean ok;
 	ofoBat *bat;
 	ofoBatLine *bline;
 	ofsBatDetail *sdet;
 	GList *it;
-	guint count;
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
 	g_return_val_if_fail( sbat, FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	count = g_list_length( ofo_bat_get_dataset( dossier ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	bat = ofo_bat_new();
 
@@ -1268,7 +1228,7 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 	ofo_bat_set_solde_end( bat, sbat->end_solde );
 	ofo_bat_set_solde_end_set( bat, sbat->end_solde_set );
 
-	ok = ofo_bat_insert( bat, dossier );
+	ok = ofo_bat_insert( bat, hub );
 	if( ok ){
 		for( it=sbat->details ; it ; it=it->next ){
 			sdet = ( ofsBatDetail * ) it->data;
@@ -1281,21 +1241,15 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 			ofo_bat_line_set_currency( bline, sdet->currency );
 			ofo_bat_line_set_amount( bline, sdet->amount );
 
-			ok &= ofo_bat_line_insert( bline, dossier );
+			ok &= ofo_bat_line_insert( bline, hub );
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 			g_object_unref( bline );
 		}
 	}
 
 	if( ok ){
-		if( count > 0 ){
-			OFA_IDATASET_ADD( dossier, BAT, bat );
-		} else {
-			OFA_IDATASET_GET( dossier, BAT, bat );
-			if( ofa_idataset_is_signal_new_allowed( dossier, OFO_TYPE_BAT )){
-				g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( bat ));
-			}
-		}
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_BAT );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
 		if( id ){
 			*id = ofo_bat_get_id( bat );
 		}
@@ -1305,4 +1259,108 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier, o
 	 * has been given to the global dataset */
 
 	return( ok );
+}
+
+/*
+ * ofaICollectionable interface management
+ */
+static void
+icollectionable_iface_init( ofaICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( const ofaICollectionable *instance )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+{
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	ofoBat *bat;
+	GList *dataset;
+	GTimeVal timeval;
+
+	dataset = NULL;
+	connect = ofa_hub_get_connect( hub );
+
+	if( ofa_idbconnect_query_ex( connect,
+			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
+			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
+			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
+			"	FROM OFA_T_BAT "
+			"	ORDER BY BAT_UPD_STAMP ASC", &result, TRUE )){
+
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			bat = ofo_bat_new();
+			bat_set_id( bat, atol(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_format( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_account( bat, ( const gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				my_date_set_from_sql( &bat->priv->begin, ( const gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				my_date_set_from_sql( &bat->priv->end, ( const gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_rib( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_currency( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_solde_begin( bat,
+						my_double_set_from_sql(( const gchar * ) icol->data ));
+				ofo_bat_set_solde_begin_set( bat, TRUE );
+			} else {
+				ofo_bat_set_solde_begin_set( bat, FALSE );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_solde_end( bat,
+						my_double_set_from_sql(( const gchar * ) icol->data ));
+				ofo_bat_set_solde_end_set( bat, TRUE );
+			} else {
+				ofo_bat_set_solde_end_set( bat, FALSE );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_notes( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			bat_set_upd_user( bat, ( gchar * ) icol->data );
+			icol = icol->next;
+			bat_set_upd_stamp( bat,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+
+			dataset = g_list_prepend( dataset, bat );
+		}
+
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( g_list_reverse( dataset ));
 }

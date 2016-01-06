@@ -32,12 +32,13 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
+#include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-bat-line.h"
 
 #include "core/ofa-iconcil.h"
 
@@ -59,10 +60,10 @@ struct _ofoBatLinePrivate {
 
 static ofoBaseClass *ofo_bat_line_parent_class = NULL;
 
-static GList       *bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *cnx );
+static GList       *bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *connect );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
-static gboolean     bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean     bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *cnx, const gchar *user );
+static gboolean     bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect );
+static gboolean     bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -181,43 +182,29 @@ ofo_bat_line_get_type( void )
 }
 
 /**
- * ofo_bat_line_new:
- */
-ofoBatLine *
-ofo_bat_line_new( gint bat_id )
-{
-	ofoBatLine *bat;
-
-	bat = g_object_new( OFO_TYPE_BAT_LINE, NULL );
-	bat->priv->bat_id = bat_id;
-
-	return( bat );
-}
-
-/**
  * ofo_bat_line_get_dataset:
- * @dossier: the currently dopened #ofoDossier dossier.
+ * @hub: the current #ofaHub object.
  *
  * Returns: the list of lines imported in the specified bank account
  * transaction list.
  */
 GList *
-ofo_bat_line_get_dataset( ofoDossier *dossier, gint bat_id )
+ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
 {
 	static const gchar *thisfn = "ofo_bat_line_get_dataset";
 	GList *dataset;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_debug( "%s: hub=%p, bat_id=%lu", thisfn, ( void * ) hub, bat_id );
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = bat_line_load_dataset( bat_id, ofo_dossier_get_connect( dossier ));
+	dataset = bat_line_load_dataset( bat_id, ofa_hub_get_connect( hub ));
 
 	return( dataset );
 }
 
 static GList *
-bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *cnx )
+bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *connect )
 {
 	GString *query;
 	GSList *result, *irow, *icol;
@@ -236,7 +223,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *cnx )
 
 	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
 
-	if( ofa_idbconnect_query_ex( cnx, query->str, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( connect, query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			line = ofo_bat_line_new( bat_id );
@@ -268,6 +255,20 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *cnx )
 	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_bat_line_new:
+ */
+ofoBatLine *
+ofo_bat_line_new( gint bat_id )
+{
+	ofoBatLine *bat;
+
+	bat = g_object_new( OFO_TYPE_BAT_LINE, NULL );
+	bat->priv->bat_id = bat_id;
+
+	return( bat );
 }
 
 /**
@@ -515,40 +516,41 @@ ofo_bat_line_set_amount( ofoBatLine *bat, ofxAmount amount )
  *  these fields
  */
 gboolean
-ofo_bat_line_insert( ofoBatLine *bat_line, ofoDossier *dossier )
+ofo_bat_line_insert( ofoBatLine *bat_line, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_bat_line_insert";
+	ofoDossier *dossier;
+	gboolean ok;
+
+	g_debug( "%s: bat=%p, hub=%p",
+			thisfn, ( void * ) bat_line, ( void * ) hub );
 
 	g_return_val_if_fail( bat_line && OFO_IS_BAT_LINE( bat_line ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( bat_line )->prot->dispose_has_run ){
-
-		g_debug( "%s: bat=%p, dossier=%p",
-				thisfn, ( void * ) bat_line, ( void * ) dossier );
-
-		bat_line->priv->line_id = ofo_dossier_get_next_batline( dossier );
-
-		if( bat_line_do_insert(
-					bat_line,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			return( TRUE );
-		}
+	if( OFO_BASE( bat_line )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	dossier = ofa_hub_get_dossier( hub );
+	bat_line->priv->line_id = ofo_dossier_get_next_batline( dossier );
+
+	if( bat_line_do_insert( bat_line, ofa_hub_get_connect( hub ))){
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *cnx, const gchar *user )
+bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect )
 {
-	return( bat_line_insert_main( bat, cnx, user ));
+	return( bat_line_insert_main( bat, connect ));
 }
 
 static gboolean
-bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *cnx, const gchar *user )
+bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *str;
@@ -606,7 +608,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *cnx, const gchar *us
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 

@@ -145,7 +145,7 @@ typedef struct {
 	 * import_uri:
 	 * @instance: the #ofaIImportable provider.
 	 * @ref: the internal ref of the provider as returned from #is_willing_to().
-	 * @dossier: the #ofoDossier
+	 * @hub: the current #ofaHub object.
 	 * @imported_id: [allow-none][out]: if non %NULL, then must point to an
 	 *  #ofxCounter which will be set to the identifier of the newly
 	 *  allocated #ofoBat object.
@@ -158,7 +158,7 @@ typedef struct {
 												void *ref,
 												const gchar *uri,
 												const ofaFileFormat *settings,
-												ofoDossier *dossier,
+												ofaHub *hub,
 												ofxCounter *imported_id );
 }
 	ofaIImportableInterface;
@@ -197,7 +197,7 @@ gint            ofa_iimportable_import            ( ofaIImportable *importable,
 															void *caller );
 
 guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,
-															ofoDossier *dossier,
+															ofaHub *hub,
 															void *caller,
 															ofxCounter *imported_id );
 

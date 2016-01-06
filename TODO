@@ -522,6 +522,7 @@
                 + obsolete ofa_main_window_get_dossier
                 + cleanup userid+connect from dossier private
                   (when all classes will be migrated to hub)
+     2016- 1- 6 + remove DOSSIER properties from ofaListStore
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier
@@ -530,6 +531,7 @@
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
      2015- 1- 6 ofoAccount: up to the caller
+                ofoBat: up to the caller
 
  955 2016- 1- 6 obsolete ofa_page_get_main_window()
                 obsolete ofa_page_get_dossier()

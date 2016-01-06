@@ -76,8 +76,7 @@ GType                ofa_bat_properties_bin_get_type( void ) G_GNUC_CONST;
 ofaBatPropertiesBin *ofa_bat_properties_bin_new     ( void );
 
 void                 ofa_bat_properties_bin_set_bat ( ofaBatPropertiesBin *bin,
-																ofoBat *bat,
-																ofoDossier *dossier );
+															ofoBat *bat );
 
 G_END_DECLS
 

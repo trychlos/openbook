@@ -39,6 +39,7 @@ struct _ofaListStorePrivate {
 
 	/* properties
 	 */
+	ofaHub     *hub;
 	ofoDossier *dossier;
 	gboolean    dataset_loaded;
 };
@@ -47,6 +48,7 @@ struct _ofaListStorePrivate {
  */
 enum {
 	OFA_PROP_DOSSIER_ID = 1,
+	OFA_PROP_HUB_ID,
 };
 
 /* signals defined here
@@ -116,6 +118,10 @@ list_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 				g_value_set_object( value, priv->dossier );
 				break;
 
+			case OFA_PROP_HUB_ID:
+				g_value_set_object( value, priv->hub );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
 				break;
@@ -137,6 +143,10 @@ list_store_set_property( GObject *object, guint property_id, const GValue *value
 		switch( property_id ){
 			case OFA_PROP_DOSSIER_ID:
 				priv->dossier = g_value_get_object( value );
+				break;
+
+			case OFA_PROP_HUB_ID:
+				priv->hub = g_value_get_object( value );
 				break;
 
 			default:
@@ -202,6 +212,16 @@ ofa_list_store_class_init( ofaListStoreClass *klass )
 					"Dossier",
 					"The currently opened dossier",
 					OFO_TYPE_DOSSIER,
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_HUB_ID,
+			g_param_spec_object(
+					OFA_PROP_HUB,
+					"Hub",
+					"The current ofaHub object",
+					OFA_TYPE_HUB,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	/**

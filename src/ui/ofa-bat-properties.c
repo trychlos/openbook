@@ -30,6 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
@@ -49,10 +51,10 @@ struct _ofaBatPropertiesPrivate {
 	/* internals
 	 */
 	ofoBat              *bat;
+	ofaHub              *hub;
 	gboolean             is_new;		/* always FALSE here */
 	gboolean             updated;
 	ofaBatPropertiesBin *bat_bin;
-	ofoDossier          *dossier;
 
 	/* UI
 	 */
@@ -174,6 +176,8 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
+	GtkApplication *application;
+	ofoDossier *dossier;
 	gchar *title;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
@@ -182,9 +186,15 @@ v_init_dialog( myDialog *dialog )
 	self = OFA_BAT_PROPERTIES( dialog );
 	priv = self->priv;
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	is_current = ofo_dossier_is_current( priv->dossier );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	is_current = ofo_dossier_is_current( dossier );
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
@@ -195,7 +205,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
-	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat, priv->dossier );
+	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
 	priv->btn_ok = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
 	g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
@@ -238,7 +248,7 @@ do_update( ofaBatProperties *self )
 
 	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), bat );
 
-	priv->updated = ofo_bat_update( priv->bat, priv->dossier );
+	priv->updated = ofo_bat_update( priv->bat );
 
 	return( priv->updated );
 }

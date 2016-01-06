@@ -40,7 +40,6 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-bat-def.h"
-#include "api/ofo-dossier-def.h"
 #include "api/ofs-bat.h"
 
 G_BEGIN_DECLS
@@ -75,60 +74,51 @@ GType           ofo_bat_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_bat_connect_signaling_system( const ofaHub *hub );
 
-ofoBat         *ofo_bat_new                ( void );
+GList          *ofo_bat_get_dataset             ( ofaHub *hub );
 
-GList          *ofo_bat_get_dataset        ( ofoDossier *dossier );
+ofoBat         *ofo_bat_get_by_id               ( ofaHub *hub, ofxCounter id );
 
-ofoBat         *ofo_bat_get_by_id          ( ofoDossier *dossier, ofxCounter id );
+ofoBat         *ofo_bat_new                     ( void );
 
-ofxCounter      ofo_bat_get_id             ( const ofoBat *bat );
-const gchar    *ofo_bat_get_uri            ( const ofoBat *bat );
-const gchar    *ofo_bat_get_format         ( const ofoBat *bat );
-const GDate    *ofo_bat_get_begin          ( const ofoBat *bat );
-const GDate    *ofo_bat_get_end            ( const ofoBat *bat );
-const gchar    *ofo_bat_get_rib            ( const ofoBat *bat );
-const gchar    *ofo_bat_get_currency       ( const ofoBat *bat );
-ofxAmount       ofo_bat_get_solde_begin    ( const ofoBat *bat );
-gboolean        ofo_bat_get_solde_begin_set( const ofoBat *bat );
-ofxAmount       ofo_bat_get_solde_end      ( const ofoBat *bat );
-gboolean        ofo_bat_get_solde_end_set  ( const ofoBat *bat );
-const gchar    *ofo_bat_get_notes          ( const ofoBat *bat );
-const gchar    *ofo_bat_get_account        ( const ofoBat *bat );
-const gchar    *ofo_bat_get_upd_user       ( const ofoBat *bat );
-const GTimeVal *ofo_bat_get_upd_stamp      ( const ofoBat *bat );
+ofxCounter      ofo_bat_get_id                  ( const ofoBat *bat );
+const gchar    *ofo_bat_get_uri                 ( const ofoBat *bat );
+const gchar    *ofo_bat_get_format              ( const ofoBat *bat );
+const GDate    *ofo_bat_get_begin               ( const ofoBat *bat );
+const GDate    *ofo_bat_get_end                 ( const ofoBat *bat );
+const gchar    *ofo_bat_get_rib                 ( const ofoBat *bat );
+const gchar    *ofo_bat_get_currency            ( const ofoBat *bat );
+ofxAmount       ofo_bat_get_solde_begin         ( const ofoBat *bat );
+gboolean        ofo_bat_get_solde_begin_set     ( const ofoBat *bat );
+ofxAmount       ofo_bat_get_solde_end           ( const ofoBat *bat );
+gboolean        ofo_bat_get_solde_end_set       ( const ofoBat *bat );
+const gchar    *ofo_bat_get_notes               ( const ofoBat *bat );
+const gchar    *ofo_bat_get_account             ( const ofoBat *bat );
+const gchar    *ofo_bat_get_upd_user            ( const ofoBat *bat );
+const GTimeVal *ofo_bat_get_upd_stamp           ( const ofoBat *bat );
 
-gboolean        ofo_bat_exists             ( const ofoDossier *dossier,
-													const gchar *rib,
-													const GDate *begin,
-													const GDate *end );
-gboolean        ofo_bat_is_deletable       ( const ofoBat *bat,
-													const ofoDossier *dossier );
-gint            ofo_bat_get_lines_count    ( const ofoBat *bat,
-													const ofoDossier *dossier );
-gint            ofo_bat_get_used_count     ( const ofoBat *bat,
-													const ofoDossier *dossier );
+gboolean        ofo_bat_exists                  ( const ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end );
+gboolean        ofo_bat_is_deletable            ( const ofoBat *bat );
+gint            ofo_bat_get_lines_count         ( const ofoBat *bat );
+gint            ofo_bat_get_used_count          ( const ofoBat *bat );
 
-void            ofo_bat_set_uri            ( ofoBat *bat, const gchar *uri );
-void            ofo_bat_set_format         ( ofoBat *bat, const gchar *format );
-void            ofo_bat_set_begin          ( ofoBat *bat, const GDate *date );
-void            ofo_bat_set_end            ( ofoBat *bat, const GDate *date );
-void            ofo_bat_set_rib            ( ofoBat *bat, const gchar *rib );
-void            ofo_bat_set_currency       ( ofoBat *bat, const gchar *currency );
-void            ofo_bat_set_solde_begin    ( ofoBat *bat, ofxAmount solde );
-void            ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set );
-void            ofo_bat_set_solde_end      ( ofoBat *bat, ofxAmount solde );
-void            ofo_bat_set_solde_end_set  ( ofoBat *bat, gboolean set );
-void            ofo_bat_set_notes          ( ofoBat *bat, const gchar *notes );
-void            ofo_bat_set_account        ( ofoBat *bat, const gchar *account );
+void            ofo_bat_set_uri                 ( ofoBat *bat, const gchar *uri );
+void            ofo_bat_set_format              ( ofoBat *bat, const gchar *format );
+void            ofo_bat_set_begin               ( ofoBat *bat, const GDate *date );
+void            ofo_bat_set_end                 ( ofoBat *bat, const GDate *date );
+void            ofo_bat_set_rib                 ( ofoBat *bat, const gchar *rib );
+void            ofo_bat_set_currency            ( ofoBat *bat, const gchar *currency );
+void            ofo_bat_set_solde_begin         ( ofoBat *bat, ofxAmount solde );
+void            ofo_bat_set_solde_begin_set     ( ofoBat *bat, gboolean set );
+void            ofo_bat_set_solde_end           ( ofoBat *bat, ofxAmount solde );
+void            ofo_bat_set_solde_end_set       ( ofoBat *bat, gboolean set );
+void            ofo_bat_set_notes               ( ofoBat *bat, const gchar *notes );
+void            ofo_bat_set_account             ( ofoBat *bat, const gchar *account );
 
-gboolean        ofo_bat_insert             ( ofoBat *bat, ofoDossier *dossier );
-gboolean        ofo_bat_update             ( ofoBat *bat, ofoDossier *dossier );
-gboolean        ofo_bat_delete             ( ofoBat *bat, ofoDossier *dossier );
+gboolean        ofo_bat_insert                  ( ofoBat *bat, ofaHub *hub );
+gboolean        ofo_bat_update                  ( ofoBat *bat );
+gboolean        ofo_bat_delete                  ( ofoBat *bat );
 
-gboolean        ofo_bat_import             ( ofaIImportable *importable,
-													ofsBat *sbat,
-													ofoDossier *dossier,
-													ofxCounter *id );
+gboolean        ofo_bat_import                  ( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounter *id );
 
 G_END_DECLS
 

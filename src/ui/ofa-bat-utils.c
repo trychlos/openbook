@@ -30,6 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 
@@ -55,7 +57,8 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 	GtkWidget *file_chooser;
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
-	ofoDossier *dossier;
+	GtkApplication *application;
+	ofaHub *hub;
 	gchar *uri, *str;
 
 	imported_id = 0;
@@ -80,8 +83,13 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 		importable = ofa_iimportable_find_willing_to( uri, settings );
 
 		if( importable ){
-			dossier = ofa_main_window_get_dossier( main_window );
-			if( ofa_iimportable_import_uri( importable, dossier, NULL, &imported_id ) > 0 ){
+			application = gtk_window_get_application( GTK_WINDOW( main_window ));
+			g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), 0 );
+
+			hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+
+			if( ofa_iimportable_import_uri( importable, hub, NULL, &imported_id ) > 0 ){
 				imported_id = 0;
 			}
 

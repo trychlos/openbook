@@ -466,17 +466,17 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  */
 guint
 ofa_iimportable_import_uri( ofaIImportable *importable,
-								ofoDossier *dossier, void *caller, ofxCounter *imported_id )
+								ofaHub *hub, void *caller, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_iimportable_import_uri";
 	sIImportable *sdata;
 	gint errors;
 
 	g_debug( "%s: importable=%p, hub=%p, caller=%p",
-			thisfn, ( void * ) importable, ( void * ) dossier, ( void * ) caller );
+			thisfn, ( void * ) importable, ( void * ) hub, ( void * ) caller );
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
-	//g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
@@ -488,7 +488,7 @@ ofa_iimportable_import_uri( ofaIImportable *importable,
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri ){
 		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri(
-						importable, sdata->ref, sdata->uri, sdata->settings, dossier, imported_id );
+						importable, sdata->ref, sdata->uri, sdata->settings, hub, imported_id );
 	}
 
 	return( errors );

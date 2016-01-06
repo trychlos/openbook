@@ -260,21 +260,13 @@ static void
 on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
 	priv->bat_id = -1;
 
 	if( bat ){
 		priv->bat_id = ofo_bat_get_id( bat );
-		ofa_bat_properties_bin_set_bat( priv->bat_bin, bat, dossier );
+		ofa_bat_properties_bin_set_bat( priv->bat_bin, bat );
 	}
 }
 

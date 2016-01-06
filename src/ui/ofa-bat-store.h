@@ -44,8 +44,8 @@
  * maintain itself up to date.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -101,7 +101,7 @@ enum {
 
 GType        ofa_bat_store_get_type( void );
 
-ofaBatStore *ofa_bat_store_new     ( ofoDossier *dossier );
+ofaBatStore *ofa_bat_store_new     ( ofaHub *hub );
 
 G_END_DECLS
 

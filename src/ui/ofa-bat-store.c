@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
@@ -62,14 +63,14 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 #define STORE_DATA_DOSSIER                   "ofa-bat-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store );
-static void     load_dataset( ofaBatStore *store, ofoDossier *dossier );
-static void     insert_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat );
-static void     set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaBatStore *store, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store );
+static void     load_dataset( ofaBatStore *store, ofaHub *hub );
+static void     insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat );
+static void     set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaBatStore *store, ofaHub *hub );
+static void     on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
 static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaBatStore *store );
+static void     on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
 
 G_DEFINE_TYPE( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE )
 
@@ -137,7 +138,7 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
 
 /**
  * ofa_bat_store_new:
- * @dossier: the currently opened #ofoDossier.
+ * @hub: the current #ofaHub object.
  *
  * Instanciates a new #ofaBatStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaBatStore
@@ -147,13 +148,13 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
  * instance will be unreffed when the @dossier will be destroyed.
  */
 ofaBatStore *
-ofa_bat_store_new( ofoDossier *dossier )
+ofa_bat_store_new( ofaHub *hub )
 {
 	ofaBatStore *store;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaBatStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
+	store = ( ofaBatStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_BAT_STORE( store ), NULL );
@@ -161,7 +162,7 @@ ofa_bat_store_new( ofoDossier *dossier )
 	} else {
 		store = g_object_new(
 						OFA_TYPE_BAT_STORE,
-						OFA_PROP_DOSSIER, dossier,
+						OFA_PROP_HUB,       hub,
 						NULL );
 
 		gtk_list_store_set_column_types(
@@ -173,10 +174,10 @@ ofa_bat_store_new( ofoDossier *dossier )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
+		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
 
-		load_dataset( store, dossier );
-		setup_signaling_connect( store, dossier );
+		load_dataset( store, hub );
+		setup_signaling_connect( store, hub );
 	}
 
 	return( store );
@@ -207,30 +208,30 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore
 }
 
 static void
-load_dataset( ofaBatStore *store, ofoDossier *dossier )
+load_dataset( ofaBatStore *store, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoBat *bat;
 
-	dataset = ofo_bat_get_dataset( dossier );
+	dataset = ofo_bat_get_dataset( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		bat = OFO_BAT( it->data );
-		insert_row( store, dossier, bat );
+		insert_row( store, hub, bat );
 	}
 }
 
 static void
-insert_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat )
+insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, dossier, bat, &iter );
+	set_row( store, hub, bat, &iter );
 }
 
 static void
-set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter *iter )
+set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 {
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp;
 	const GDate *date;
@@ -263,7 +264,7 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
 	if( !cscurrency ){
 		cscurrency = "";
 	}
-	scount = g_strdup_printf( "%u", ofo_bat_get_lines_count( bat, dossier ));
+	scount = g_strdup_printf( "%u", ofo_bat_get_lines_count( bat ));
 	stamp  = my_utils_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
 	gtk_list_store_set(
@@ -302,48 +303,39 @@ set_row( ofaBatStore *store, ofoDossier *dossier, const ofoBat *bat, GtkTreeIter
  * of this store is equal to those of the dossier
  */
 static void
-setup_signaling_connect( ofaBatStore *store, ofoDossier *dossier )
+setup_signaling_connect( ofaBatStore *store, ofaHub *hub )
 {
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), store );
-
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
 	/* a BAT file is never updated */
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store )
+on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
 	static const gchar *thisfn = "ofa_bat_store_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), instance=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
 	if( OFO_IS_BAT( object )){
-		insert_row( store, dossier, OFO_BAT( object ));
+		insert_row( store, hub, OFO_BAT( object ));
 	}
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaBatStore *store )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
 	static const gchar *thisfn = "ofa_bat_store_on_deleted_object";
 	GtkTreeIter iter;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
@@ -380,15 +372,15 @@ find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
 }
 
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaBatStore *store )
+on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
 {
 	static const gchar *thisfn = "ofa_bat_store_on_reload_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, store=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) store );
+	g_debug( "%s: hub=%p, type=%lu, store=%p",
+			thisfn, ( void * ) hub, type, ( void * ) store );
 
 	if( type == OFO_TYPE_BAT ){
 		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store, dossier );
+		load_dataset( store, hub );
 	}
 }
