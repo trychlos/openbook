@@ -41,7 +41,12 @@
 
 G_BEGIN_DECLS
 
-#define OFO_BASE_UNSET_ID               -1
+#define OFO_TYPE_BASE                ( ofo_base_get_type())
+#define OFO_BASE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_BASE, ofoBase ))
+#define OFO_BASE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_BASE, ofoBaseClass ))
+#define OFO_IS_BASE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_BASE ))
+#define OFO_IS_BASE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BASE ))
+#define OFO_BASE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BASE, ofoBaseClass ))
 
 /**
  * ofo_base_getter:
@@ -75,12 +80,19 @@ G_BEGIN_DECLS
 		g_return_if_fail( !OFO_BASE(V)->prot->dispose_has_run ); \
 		ofa_box_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
+/**
+ * Identifier unset value
+ */
+#define OFO_BASE_UNSET_ID               -1
+
+GType   ofo_base_get_type        ( void ) G_GNUC_CONST;
+
 GList  *ofo_base_init_fields_list( const ofsBoxDef *defs );
 
 GList  *ofo_base_load_dataset    ( const ofsBoxDef *defs,
-											const gchar *from,
-											GType type,
-											ofaHub *hub );
+										const gchar *from,
+										GType type,
+										ofaHub *hub );
 
 GList  *ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs,
 											const ofaIDBConnect *connect,
@@ -88,10 +100,13 @@ GList  *ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs,
 											GType type );
 
 GList  *ofo_base_load_rows       ( const ofsBoxDef *defs,
-											const ofaIDBConnect *connect,
-											const gchar *from );
+										const ofaIDBConnect *connect,
+										const gchar *from );
 
 ofaHub *ofo_base_get_hub         ( const ofoBase *base );
+
+void    ofo_base_set_hub         ( ofoBase *base,
+										ofaHub *hub );
 
 G_END_DECLS
 

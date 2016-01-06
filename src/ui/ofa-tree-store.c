@@ -26,9 +26,10 @@
 #include <config.h>
 #endif
 
-#include "ui/ofa-tree-store.h"
-
+#include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
+
+#include "ui/ofa-tree-store.h"
 
 /* private instance data
  */

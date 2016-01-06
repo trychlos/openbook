@@ -51,6 +51,13 @@
 
 G_BEGIN_DECLS
 
+#define OFA_TYPE_HUB                ( ofa_hub_get_type())
+#define OFA_HUB( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_HUB, ofaHub ))
+#define OFA_HUB_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_HUB, ofaHubClass ))
+#define OFA_IS_HUB( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_HUB ))
+#define OFA_IS_HUB_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_HUB ))
+#define OFA_HUB_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_HUB, ofaHubClass ))
+
 /**
  * Signals defined here:
  */
@@ -60,6 +67,8 @@ G_BEGIN_DECLS
 #define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
 #define SIGNAL_HUB_ENTRY_STATUS_CHANGED "hub-entry-status-changed"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
+
+GType                ofa_hub_get_type          ( void ) G_GNUC_CONST;
 
 ofaHub              *ofa_hub_new_with_connect  ( const ofaIDBConnect *connect );
 

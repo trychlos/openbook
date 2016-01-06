@@ -314,7 +314,7 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
 
-	OFO_BASE( dossier )->prot->hub = hub;
+	ofo_base_set_hub( OFO_BASE( dossier ), hub );
 	dossier->priv->cnx = ofa_hub_get_connect( hub );
 
 	if( dossier_do_read( dossier )){
@@ -1851,7 +1851,7 @@ dossier_read_properties( ofoDossier *dossier )
 	GDate date;
 
 	ok = FALSE;
-	connect = ofa_hub_get_connect( OFO_BASE( dossier )->prot->hub );
+	connect = ofa_hub_get_connect( ofo_base_get_hub( OFO_BASE( dossier )));
 
 	query = g_strdup_printf(
 			"SELECT DOS_DEF_CURRENCY,"
@@ -1994,7 +1994,7 @@ dossier_read_currencies( ofoDossier *dossier )
 	sCurrency *sdet;
 
 	ok = FALSE;
-	connect = ofa_hub_get_connect( OFO_BASE( dossier )->prot->hub );
+	connect = ofa_hub_get_connect( ofo_base_get_hub( OFO_BASE( dossier )));
 
 	query = g_strdup_printf(
 			"SELECT DOS_CURRENCY,DOS_SLD_ACCOUNT "

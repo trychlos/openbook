@@ -31,10 +31,11 @@
 #include <string.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-plugin.h"
-#include "api/ofo-base-def.h"
+#include "api/ofo-base.h"
 
 /* data set against the imported object
  */

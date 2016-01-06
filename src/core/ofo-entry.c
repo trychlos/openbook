@@ -2030,7 +2030,7 @@ ofo_entry_is_valid( ofoDossier *dossier,
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	ok = TRUE;
-	hub = OFO_BASE( dossier )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
 
 	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
 		error_ledger( ledger );

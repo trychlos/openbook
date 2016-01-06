@@ -28,6 +28,7 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 
 #include "ui/ofa-check-balances.h"

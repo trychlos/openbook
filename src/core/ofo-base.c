@@ -33,7 +33,12 @@
 /* private instance data
  */
 struct _ofoBasePrivate {
-	void *empty;						/* so that gcc -pedantic is empty */
+
+	/* the current #ofaHub object which handles the connection this
+	 * #ofoBase -derived object comes from; it may be %NULL when the
+	 * object has just been instanciated.
+	 */
+	ofaHub  *hub;
 };
 
 G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
@@ -142,7 +147,7 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 
 	for( it=rows ; it ; it=it->next ){
 		object = g_object_new( type, NULL );
-		object->prot->hub = hub;
+		object->priv->hub = hub;
 		object->prot->fields = it->data;
 		dataset = g_list_prepend( dataset, object );
 	}
@@ -215,15 +220,48 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
  * @base: this #ofoBase object.
  *
  * Returns: the current #ofaHub object attach to @base.
+ *
+ * The current #ofaHub is expected to be attached to the #ofoBase
+ * object when this later is loaded from the database.
  */
 ofaHub *
 ofo_base_get_hub( const ofoBase *base )
 {
+	ofoBasePrivate *priv;
+
 	g_return_val_if_fail( base && OFO_IS_BASE( base ), NULL );
 
 	if( base->prot->dispose_has_run ){
 		g_return_val_if_reached( NULL );
 	}
 
-	return( base->prot->hub );
+	priv = base->priv;
+
+	return( priv->hub );
+}
+
+/**
+ * ofo_base_set_hub:
+ * @base: this #ofoBase object.
+ * @hub: [allow-none]: the current #ofaHub object to be set.
+ *
+ * Attach the @hub object to the @base one.
+ *
+ * The current #ofaHub is expected to be attached to the #ofoBase
+ * object when this later is loaded from the database.
+ */
+void
+ofo_base_set_hub( ofoBase *base, ofaHub *hub )
+{
+	ofoBasePrivate *priv;
+
+	g_return_if_fail( base && OFO_IS_BASE( base ));
+	g_return_if_fail( !hub || OFA_IS_HUB( hub ));
+
+	if( base->prot->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	priv = base->priv;
+	priv->hub = hub;
 }

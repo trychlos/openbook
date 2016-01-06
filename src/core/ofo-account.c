@@ -991,7 +991,7 @@ ofo_account_is_deletable( const ofoAccount *account )
 		g_return_val_if_reached( FALSE );
 	}
 
-	dossier = ofa_hub_get_dossier( OFO_BASE( account )->prot->hub );
+	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
 	number = ofo_account_get_number( account );
 	deletable = !ofo_entry_use_account( dossier, number ) &&
 				!ofo_dossier_use_account( dossier, number );
@@ -1198,7 +1198,7 @@ ofo_account_get_global_deffect( const ofoAccount *account, GDate *date )
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
-	dossier = ofa_hub_get_dossier( OFO_BASE( account )->prot->hub );
+	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
 
 	ofo_entry_get_max_val_deffect( dossier, ofo_account_get_number( account ), &max_val );
 	ofo_entry_get_max_rough_deffect( dossier, ofo_account_get_number( account ), &max_rough );
@@ -1316,7 +1316,7 @@ account_get_children( const ofoAccount *account, sChildren *child_str )
 	child_str->children_count = 0;
 	child_str->children_list = NULL;
 
-	dataset = ofo_account_get_dataset( OFO_BASE( account )->prot->hub );
+	dataset = ofo_account_get_dataset( ofo_base_get_hub( OFO_BASE( account )));
 
 	g_list_foreach( dataset, ( GFunc ) account_iter_children, child_str );
 }
@@ -1732,7 +1732,7 @@ ofo_account_insert( ofoAccount *account, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	if( account_do_insert( account, connect )){
-		OFO_BASE( account )->prot->hub = hub;
+		ofo_base_set_hub( OFO_BASE( account ), hub );
 		ofa_icollector_add_object(
 				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, account );
@@ -1832,7 +1832,7 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 	}
 
 	ok = FALSE;
-	hub = OFO_BASE( account )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number )){
 		ofa_icollector_sort_collection(
@@ -1942,7 +1942,7 @@ ofo_account_update_amounts( ofoAccount *account )
 	}
 
 	ok = FALSE;
-	hub = OFO_BASE( account )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 
 	if( account_do_update_amounts( account, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, NULL );
@@ -2052,7 +2052,7 @@ ofo_account_delete( ofoAccount *account )
 	}
 
 	ok = FALSE;
-	hub = OFO_BASE( account )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 
 	if( account_do_delete( account, ofa_hub_get_connect( hub ))){
 		g_object_ref( account );

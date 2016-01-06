@@ -469,7 +469,7 @@ ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 		g_return_val_if_reached( FALSE );
 	}
 
-	hub = OFO_BASE( currency )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( currency ));
 	dev_code = ofo_currency_get_code( currency );
 	is_current = ofo_dossier_is_current( dossier );
 

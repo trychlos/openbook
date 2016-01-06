@@ -513,9 +513,6 @@
                 + remove dossier signaling system
                 + remove exportable_from_dossier
                 + remove importable_to_dossier
-                + ofa-tree-store.c/ofa-list-store.c: compilation
-                + ofo_base_get/set_hub
-                + remediate ofa-hub-def
                 + remediate ofa_page_get_hub
                 + remediate dialog/assistant get_hub
                 + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
@@ -530,7 +527,9 @@
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
 
- 953
+ 954 2016- 1- 6 review all -def includes
+
+ 955
 
 -----------------------------------------------------------------------
  DONE
@@ -542,6 +541,9 @@
 
  952 2016- 1- 1 gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
      2016- 1- 2 done
+
+ 953 2016- 1- 6 move ofoBase->prot->hub to priv
+     2016- 1- 6 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

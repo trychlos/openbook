@@ -240,7 +240,7 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 			icol = icol->next;
 			ofo_concil_set_stamp( concil,
 					my_utils_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
-			OFO_BASE( concil )->prot->hub = hub;
+			ofo_base_set_hub( OFO_BASE( concil ), hub );
 		}
 		ofa_idbconnect_free_results( result );
 	}

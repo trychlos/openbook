@@ -26,8 +26,10 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-hub.h"
+#include "api/ofa-istore.h"
+
 #include "api/ofa-list-store.h"
-#include "api/ofa-istore.h"				/* does not know why istore.h must be included after */
 
 /* private instance data
  */

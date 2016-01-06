@@ -403,7 +403,7 @@ ofo_class_is_deletable( const ofoClass *class )
 		g_return_val_if_reached( FALSE );
 	}
 
-	hub = OFO_BASE( class )->prot->hub;
+	hub = ofo_base_get_hub( OFO_BASE( class ));
 	dossier = ofa_hub_get_dossier( hub );
 	used_by_accounts = ofo_account_use_class( hub, ofo_class_get_number( class ));
 	is_current = ofo_dossier_is_current( dossier );

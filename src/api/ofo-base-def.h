@@ -28,21 +28,12 @@
 /**
  * SECTION: ofo_base
  * @short_description: #ofoBase class definition.
- * @include: openbook/ofo-base.h
- *
- * The ofoBase class is the class base for application objects.
+ * @include: openbook/ofo-base-def.h
  */
 
 #include <glib-object.h>
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_BASE                ( ofo_base_get_type())
-#define OFO_BASE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_BASE, ofoBase ))
-#define OFO_BASE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_BASE, ofoBaseClass ))
-#define OFO_IS_BASE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_BASE ))
-#define OFO_IS_BASE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BASE ))
-#define OFO_BASE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BASE, ofoBaseClass ))
 
 typedef struct _ofoBaseProtected     ofoBaseProtected;
 typedef struct _ofoBasePrivate       ofoBasePrivate;
@@ -64,8 +55,6 @@ typedef struct {
 	GObjectClass      parent;
 }
 	ofoBaseClass;
-
-GType ofo_base_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
