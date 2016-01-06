@@ -48,7 +48,6 @@ struct _ofaAccountSelectPrivate {
 	 */
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
-	ofoDossier          *dossier;
 	gint                 allowed;
 
 	/* UI
@@ -144,12 +143,12 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 }
 
 static void
-on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
+on_hub_finalized( gpointer is_null, gpointer finalized_hub )
 {
-	static const gchar *thisfn = "ofa_account_select_on_dossier_finalized";
+	static const gchar *thisfn = "ofa_account_select_on_hub_finalized";
 
-	g_debug( "%s: empty=%p, finalized_dossier=%p",
-			thisfn, ( void * ) is_null, ( void * ) finalized_dossier );
+	g_debug( "%s: empty=%p, finalized_hub=%p",
+			thisfn, ( void * ) is_null, ( void * ) finalized_hub );
 
 	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
 
@@ -189,7 +188,6 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 				NULL );
 
 		st_this->priv->main_window = main_window;
-		st_this->priv->dossier = ofa_main_window_get_dossier( main_window );
 		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
 		application = gtk_window_get_application( GTK_WINDOW( main_window ));
 		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
@@ -198,7 +196,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 		/* setup a weak reference on the dossier to auto-unref */
 		g_object_weak_ref(
-				G_OBJECT( st_this->priv->dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
+				G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
 	priv = st_this->priv;
