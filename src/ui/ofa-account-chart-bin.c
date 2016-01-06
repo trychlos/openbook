@@ -55,11 +55,11 @@ struct _ofaAccountChartBinPrivate {
 
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
+	GList               *hub_handlers;
 	ofoDossier          *dossier;
-	GList               *dos_handlers;
 
 	ofaAccountStore     *store;
-	GList               *sto_handlers;
+	GList               *store_handlers;
 	GtkNotebook         *book;
 	GtkTreeCellDataFunc  cell_fn;
 	void                *cell_data;
@@ -128,13 +128,13 @@ static gboolean   delete_confirmed( ofaAccountChartBin *bin, ofoAccount *account
 static void       do_view_entries( ofaAccountChartBin *bin );
 static void       do_settlement( ofaAccountChartBin *bin );
 static void       do_reconciliation( ofaAccountChartBin *bin );
-static void       dossier_signals_connect( ofaAccountChartBin *bin );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *bin );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
+static void       connect_to_hub_signaling_system( ofaAccountChartBin *bin );
+static void       on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
 static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_deleted_class_label( ofaAccountChartBin *bin, ofoClass *class );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountChartBin *bin );
+static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaAccountChartBin *bin );
 static GtkWidget *get_current_tree_view( const ofaAccountChartBin *bin );
 static void       select_row_by_number( ofaAccountChartBin *bin, const gchar *number );
 static void       select_row_by_iter( ofaAccountChartBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
@@ -160,8 +160,11 @@ accounts_chart_finalize( GObject *instance )
 static void
 accounts_chart_dispose( GObject *instance )
 {
+	static const gchar *thisfn = "ofa_account_chart_bin_dispose";
 	ofaAccountChartBinPrivate *priv;
 	GList *it;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_CHART_BIN( instance ));
 
@@ -175,13 +178,13 @@ accounts_chart_dispose( GObject *instance )
 		/*
 		if( priv->dossier &&
 				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
-			for( it=priv->dos_handlers ; it ; it=it->next ){
+			for( it=priv->hub_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
 			}
 		}
 		*/
 		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
-			for( it=priv->sto_handlers ; it ; it=it->next ){
+			for( it=priv->store_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
 			}
 		}
@@ -346,22 +349,25 @@ setup_main_window( ofaAccountChartBin *bin )
 	GtkApplication *application;
 
 	priv = bin->priv;
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
 	priv->store = ofa_account_store_new( priv->hub );
 
 	handler = g_signal_connect(
 			priv->store, "ofa-row-inserted", G_CALLBACK( on_row_inserted ), bin );
-	priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
 	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
 
-	dossier_signals_connect( bin );
+	connect_to_hub_signaling_system( bin );
 
 	gtk_notebook_set_current_page( priv->book, 0 );
 }
@@ -386,7 +392,7 @@ on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAcco
 
 /*
  * Returns :
- * TRUE to stop other dos_handlers from being invoked for the event.
+ * TRUE to stop other hub_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
@@ -832,7 +838,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
 
 /*
  * Returns :
- * TRUE to stop other dos_handlers from being invoked for the event.
+ * TRUE to stop other hub_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
@@ -1119,7 +1125,7 @@ do_delete_account( ofaAccountChartBin *self )
 		if( delete_confirmed( self, account ) &&
 				ofo_account_delete( account )){
 
-			/* nothing to do here, all being managed by signal dos_handlers
+			/* nothing to do here, all being managed by signal hub_handlers
 			 * just reset the selection as this is not managed by the
 			 * account notebook (and doesn't have to)
 			 * asking for selection of the just deleted account makes
@@ -1233,45 +1239,38 @@ do_reconciliation( ofaAccountChartBin *self )
 }
 
 static void
-dossier_signals_connect( ofaAccountChartBin *book )
+connect_to_hub_signaling_system( ofaAccountChartBin *book )
 {
 	ofaAccountChartBinPrivate *priv;
 	gulong handler;
 
 	priv = book->priv;
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), book );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), book );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), book );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), book );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), book );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), book );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), book );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), book );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_DOSSIER_NEW_OBJECT signal handler
+ * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *book )
+on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), book=%p",
-			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) book );
+	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
+			thisfn, ( void * ) hub,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ),
+					( void * ) book );
 
 	if( OFO_IS_CLASS( object )){
 		on_updated_class_label( book, OFO_CLASS( object ));
@@ -1279,16 +1278,17 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *book )
 }
 
 /*
- * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *book )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *book )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, book=%p",
-			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) book );
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, book=%p",
+			thisfn, ( void * ) hub,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id,
+					( void * ) book );
 
 	if( OFO_IS_CLASS( object )){
 		on_updated_class_label( book, OFO_CLASS( object ));
@@ -1316,16 +1316,17 @@ on_updated_class_label( ofaAccountChartBin *book, ofoClass *class )
 }
 
 /*
- * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountChartBin *book )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), book=%p",
-			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) book );
+	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
+			thisfn, ( void * ) hub,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ),
+					( void * ) book );
 
 	if( OFO_IS_CLASS( object )){
 		on_deleted_class_label( book, OFO_CLASS( object ));
@@ -1350,15 +1351,15 @@ on_deleted_class_label( ofaAccountChartBin *book, ofoClass *class )
 }
 
 /*
- * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
+ * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountChartBin *book )
+on_reloaded_dataset( ofaHub *hub, GType type, ofaAccountChartBin *book )
 {
 	static const gchar *thisfn = "ofa_account_chart_bin_on_reloaded_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, book=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) book );
+	g_debug( "%s: hub=%p, type=%lu, book=%p",
+			thisfn, ( void * ) hub, type, ( void * ) book );
 
 	ofa_account_chart_bin_expand_all( book );
 }

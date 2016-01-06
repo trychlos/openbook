@@ -520,6 +520,9 @@
                 + remediate dialog/assistant get_hub
                 + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
                 + ofa_dossier_properties_run: w/o dossier
+                + obsolete ofa_main_window_get_dossier
+                + cleanup userid+connect from dossier private
+                  (when all classes will be migrated to hub)
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier

@@ -34,8 +34,6 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-account-frame-bin.h"
 
@@ -45,7 +43,6 @@ struct _ofaAccountFrameBinPrivate {
 	gboolean             dispose_has_run;
 
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
 	ofaHub              *hub;
 	gboolean             is_current;	/* whether the dossier is current */
 	GtkGrid             *grid;
@@ -245,15 +242,16 @@ setup_bin( ofaAccountFrameBin *bin )
 
 	priv = bin->priv;
 
-	dossier = ofa_main_window_get_dossier( priv->main_window );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->dossier = dossier;
-	priv->is_current = ofo_dossier_is_current( dossier );
-
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
 	gtk_container_add( GTK_CONTAINER( bin ), grid );

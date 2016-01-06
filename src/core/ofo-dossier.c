@@ -51,7 +51,7 @@ struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	ofaIDBConnect *cnx;
+	const ofaIDBConnect *cnx;
 	gchar         *userid;
 
 	/* row id 1
@@ -242,7 +242,6 @@ dossier_dispose( GObject *instance )
 
 		free_cur_details( priv->cur_details );
 		free_datasets( priv->datasets );
-		g_clear_object( &priv->cnx );
 	}
 
 	/* chain up to the parent class */
@@ -316,12 +315,13 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
 
 	OFO_BASE( dossier )->prot->hub = hub;
+	dossier->priv->cnx = ofa_hub_get_connect( hub );
 
 	if( dossier_do_read( dossier )){
-		g_signal_connect( hub,
-				SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
-		g_signal_connect( hub,
-				SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
+		g_signal_connect(
+				hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
+		g_signal_connect(
+				hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
 
 	} else {
 		g_clear_object( &dossier );
