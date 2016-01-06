@@ -31,13 +31,16 @@
  * @include: ui/ofa-account-frame-bin.h
  *
  * This is a convenience class which manages both the accounts notebook
- * and the buttons box on the right.
+ * (#ofaAccountChartBin class) and the buttons box on the right.
  *
  * The class also acts as a proxy for "changed" and "activated" messages
  * sent by the underlying ofaAccountStore class. It relays these
  * messages as:
  * - 'ofa-changed' when the selection changes
  * - 'ofa-activated' when the selection is activated.
+ *
+ * At time, #ofaAccountFrameBin composite widget is used by
+ * #ofaAccountPage page and by #ofaAccountSelect selection dialog box.
  */
 
 #include "api/ofa-main-window-def.h"
