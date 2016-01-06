@@ -38,7 +38,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
-#include "api/ofa-idataset.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
@@ -194,8 +193,8 @@ static ofoBaseClass *ofo_account_parent_class = NULL;
 
 static void         on_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
-static void         on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void         on_entry_status_changed( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
@@ -447,7 +446,7 @@ on_new_object_entry( ofaHub *hub, ofoEntry *entry )
 }
 
 static void
-on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_account_on_updated_object";
 	const gchar *code;
@@ -474,9 +473,10 @@ on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, voi
  * use it
  */
 static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
+	GList *collection;
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
@@ -486,7 +486,8 @@ on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const 
 
 	g_free( query );
 
-	if( ofa_idataset_get_dataset( ofa_hub_get_dossier( hub ), OFO_TYPE_ACCOUNT )){
+	collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_ACCOUNT );
+	if( collection && g_list_length( collection )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 	}
 }
@@ -558,11 +559,12 @@ on_entry_status_changed( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_statu
 
 /**
  * ofo_account_get_dataset:
- * @hub: the #ofaHub object.
+ * @hub: the current #ofaHub object.
  *
  * Returns: the full #ofoAccount dataset.
  *
- * The returned list should be #ofo_account_free_dataset() by the caller.
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
  */
 GList *
 ofo_account_get_dataset( ofaHub *hub )
