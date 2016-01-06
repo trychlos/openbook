@@ -164,14 +164,14 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 
 /**
  * ofa_account_store_new:
- * @dossier: the currently opened #ofoDossier.
+ * @hub: the current #ofaHub object.
  *
  * Instanciates a new #ofaAccountStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaAccountStore
  * from the @dossier.
  *
- * A weak notify reference is put on this same @dossier, so that the
- * instance will be unreffed when the @dossier will be destroyed.
+ * A weak notify reference is put on this same @hub, so that the
+ * instance will be unreffed when the @hub is finalized.
  */
 ofaAccountStore *
 ofa_account_store_new( ofaHub *hub )
@@ -592,15 +592,6 @@ realign_children_move( sChild *child_str, ofaAccountStore *store )
 	}
 }
 
-/**
- * ofa_account_store_set_dossier:
- * @instance: this #ofaAccountStore instance.
- * @dossier: the opened #ofoDossier.
- *
- * Set the dossier and load the corresponding dataset.
- * Connect to the dossier signaling system in order to maintain the
- * dataset up to date.
- */
 static void
 child_free( sChild *child_str )
 {
@@ -620,24 +611,17 @@ remove_row_by_number( ofaAccountStore *store, const gchar *number )
 }
 
 /*
- * connect to the dossier signaling system
+ * connect to the hub signaling system
  * there is no need to keep trace of the signal handlers, as the lifetime
  * of this store is equal to those of the dossier
  */
 static void
 setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
 {
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
 }
 
 static void
