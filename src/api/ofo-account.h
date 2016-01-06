@@ -38,7 +38,6 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -138,8 +137,8 @@ GList          *ofo_account_get_children            ( const ofoAccount *account 
 gboolean        ofo_account_is_child_of             ( const ofoAccount *account, const ofoAccount *candidate );
 gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowables );
 
-gboolean        ofo_account_has_open_balance        ( const ofoDossier *dossier );
-gboolean        ofo_account_archive_open_balance    ( ofoAccount *account, ofoDossier *dossier );
+gboolean        ofo_account_has_open_balance        ( const ofaHub *hub );
+gboolean        ofo_account_archive_open_balances   ( ofoAccount *account );
 
 void            ofo_account_set_number              ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label               ( ofoAccount *account, const gchar *label );

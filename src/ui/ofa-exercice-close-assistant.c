@@ -1449,7 +1449,7 @@ p6_open( ofaExerciceCloseAssistant *self )
 	for( i=1, it=accounts ; it ; ++i, it=it->next ){
 		account = OFO_ACCOUNT( it->data );
 
-		ofo_account_archive_open_balance( account, priv->dossier );
+		ofo_account_archive_open_balances( account );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );

@@ -198,13 +198,13 @@ static void         on_updated_object( const ofaHub *hub, ofoBase *object, const
 static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void         on_entry_status_changed( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
-static gint         account_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency );
-static gint         account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo );
-static gint         account_count_for_like( const ofaIDBConnect *cnx, const gchar *field, gint number );
+static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
+static gint         account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
+static gint         account_count_for_like( const ofaIDBConnect *connect, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_archive_open_balance( ofoAccount *account, const ofaIDBConnect *cnx );
+static gboolean     do_archive_open_balances( ofoAccount *account, const ofaIDBConnect *connect );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
@@ -224,7 +224,7 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFil
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
-static gboolean     account_do_drop_content( const ofaIDBConnect *cnx );
+static gboolean     account_do_drop_content( const ofaIDBConnect *connect );
 
 static void
 account_finalize( GObject *instance )
@@ -684,13 +684,13 @@ ofo_account_use_currency( ofaHub *hub, const gchar *currency )
 }
 
 static gint
-account_count_for_currency( const ofaIDBConnect *cnx, const gchar *currency )
+account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency )
 {
-	return( account_count_for( cnx, "ACC_CURRENCY", currency ));
+	return( account_count_for( connect, "ACC_CURRENCY", currency ));
 }
 
 static gint
-account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mnemo )
+account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -698,7 +698,7 @@ account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mn
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s='%s'", field, mnemo );
 
-	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
+	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 
 	g_free( query );
 
@@ -706,7 +706,7 @@ account_count_for( const ofaIDBConnect *cnx, const gchar *field, const gchar *mn
 }
 
 static gint
-account_count_for_like( const ofaIDBConnect *cnx, const gchar *field, gint number )
+account_count_for_like( const ofaIDBConnect *connect, const gchar *field, gint number )
 {
 	gint count;
 	gchar *query;
@@ -715,7 +715,7 @@ account_count_for_like( const ofaIDBConnect *cnx, const gchar *field, gint numbe
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s LIKE '%d%%'", field, number );
 
-	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
+	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 
 	g_free( query );
 
@@ -1417,22 +1417,22 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowables )
 
 /**
  * ofo_account_has_open_balances:
- * @dossier: the currently opened dossier.
+ * @hub: the current #ofaHub object.
  *
  * Returns: %TRUE if at least one account has an opening balance.
  * This means that there has been an archived exercice before this one,
  * and thus that the beginning date of the exercice cannot be modified.
  */
 gboolean
-ofo_account_has_open_balance( const ofoDossier *dossier )
+ofo_account_has_open_balance( const ofaHub *hub )
 {
 	gint count;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	ofa_idbconnect_query_int(
-			ofo_dossier_get_connect( dossier ),
-			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_FUT_DEBIT>0 OR ACC_FUT_CREDIT>0",
+			ofa_hub_get_connect( hub ),
+			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_OPEN_DEBIT>0 OR ACC_OPEN_CREDIT>0",
 			&count, TRUE );
 
 	return( count > 0 );
@@ -1440,8 +1440,8 @@ ofo_account_has_open_balance( const ofoDossier *dossier )
 
 /**
  * ofo_account_archive_open_balances:
- * @account:
- * @dossier: the currently opened dossier.
+ * @account: this #ofoAccount object.
+ * @hub: the current #ofaHub object.
  *
  * As part of the closing of the exercice N, we archive the balances
  * of the accounts at the beginning of the exercice N+1. These balances
@@ -1452,30 +1452,32 @@ ofo_account_has_open_balance( const ofoDossier *dossier )
  * no entries should have been recorded in ledgers for exercice N+1.
  */
 gboolean
-ofo_account_archive_open_balance( ofoAccount *account, ofoDossier *dossier )
+ofo_account_archive_open_balances( ofoAccount *account )
 {
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	ok = FALSE;
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	if( OFO_BASE( account )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
+	}
 
-		if( ofo_account_is_root( account )){
-			ok = TRUE;
+	if( ofo_account_is_root( account )){
+		ok = TRUE;
 
-		} else {
-			ok = do_archive_open_balance( account, ofo_dossier_get_connect( dossier ));
-		}
+	} else {
+		hub = ofo_base_get_hub( OFO_BASE( account ));
+		ok = do_archive_open_balances( account, ofa_hub_get_connect( hub ));
 	}
 
 	return( ok );
 }
 
 static gboolean
-do_archive_open_balance( ofoAccount *account, const ofaIDBConnect *cnx )
+do_archive_open_balances( ofoAccount *account, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *samount;
@@ -1499,7 +1501,7 @@ do_archive_open_balance( ofoAccount *account, const ofaIDBConnect *cnx )
 	g_string_append_printf( query,
 			"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
