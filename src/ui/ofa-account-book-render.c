@@ -535,7 +535,7 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	gchar *dossier_name;
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
-	connect = ofo_dossier_get_connect( priv->dossier );
+	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
