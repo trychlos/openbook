@@ -32,6 +32,18 @@
  *
  * Display a frame with a starting and an ending accounts to be used
  * as filters.
+ *
+ *       +- Account selection -------------------------+
+ *       |                                             |
+ *       |  < ofaAccountFilterVVBin >                  |
+ *       |        From account: [........]             |
+ *       |                      <from_label>           |
+ *       |        To account  : [........]             |
+ *       |                      <to_label>             |
+ *       |    [X] All accounts                         |
+ *       |                                             |
+ *       +---------------------------------------------+
+ *
  * Each entry comes with a control label which displays the label of
  * the entered account. This label may come either besides the entry,
  * or below it.
