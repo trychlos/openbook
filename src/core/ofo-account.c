@@ -973,10 +973,16 @@ ofo_account_get_futur_credit( const ofoAccount *account )
  * ofo_account_is_deletable:
  * @account: the #ofoAccount account
  *
- * A account is considered to be deletable if no entry is referencing it.
+ * A account is considered to be deletable if no entry is referencing
+ * it.
  *
- * Whether a root account with children is deletable is a user preference.
+ * Whether a root account with children is deletable is a user
+ * preference.
+ *
  * To be deletable, all children must also be deletable.
+ *
+ * It is up to the caller to decide if the account may be deleted,
+ * regarding if the currently opened dossier is current or an archive.
  */
 gboolean
 ofo_account_is_deletable( const ofoAccount *account )

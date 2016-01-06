@@ -500,6 +500,8 @@
      2015-12-28 + idem for my_window_get_main_window()
 
  947 2015-12-29 shouldn't all xxx_set_main_window() be xxx_set_dossier() ?
+     2016- 1- 6 note that all GtkBin-derived classes and more generally
+                all user interface objects require to have the main window
 
  948 2015-12-31 review the ofoDossier class
                 which is actually a pivot class with dossier props + connect
@@ -523,9 +525,11 @@
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier
+     2015- 1- 6 ofoAccount: done
 
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
+     2015- 1- 6 ofoAccount: up to the caller
 
  955 2016- 1- 6 obsolete ofa_page_get_main_window()
                 obsolete ofa_page_get_dossier()

@@ -32,6 +32,7 @@
 
  Other changes:
 
+   - ofaAccountSelectorBin: removed unused class.
    - ofaCollection: removed class.
    - ofaConcilCollection: removed class.
    - ofa_dossier_misc_import_csv(): removed function.
