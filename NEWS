@@ -32,6 +32,8 @@
 
  Other changes:
 
+   - ofaCollection: removed class.
+   - ofaConcilCollection: removed class.
    - ofa_dossier_misc_import_csv(): removed function.
    - ofo_dossier_new(): removed method.
    - ofaICollectionable: new interface for classes which have in-memory datasets.

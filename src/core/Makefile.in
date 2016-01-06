@@ -170,7 +170,7 @@ am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-file-monitor.lo my-igridlist.lo my-isettings.lo \
 	my-progress-bar.lo my-settings.lo my-timeout.lo my-utils.lo \
 	my-window.lo ofa-admin-credentials-bin.lo ofa-box.lo \
-	ofa-buttons-box.lo ofa-collection.lo ofa-date-filter-hv-bin.lo \
+	ofa-buttons-box.lo ofa-date-filter-hv-bin.lo \
 	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
 	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
 	ofa-hub.lo ofa-iabout.lo ofa-icollectionable.lo \
@@ -474,9 +474,6 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
-	ofa-collection.c									\
-	ofa-collection.h									\
-	ofa-collection-prot.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
@@ -666,7 +663,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@

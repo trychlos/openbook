@@ -73,9 +73,6 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
-	ofa-collection.c									\
-	ofa-collection.h									\
-	ofa-collection-prot.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
