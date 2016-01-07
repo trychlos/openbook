@@ -31,6 +31,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
@@ -45,13 +47,13 @@ struct _ofaClassPropertiesPrivate {
 	/* initialization
 	 */
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 
 	/* internals
 	 */
 	ofoClass            *class;
 	gboolean             is_new;
 	gboolean             updated;
-	ofoDossier          *dossier;
 
 	/* data
 	 */
@@ -183,6 +185,8 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaClassPropertiesPrivate *priv;
+	GtkApplication *application;
+	ofoDossier *dossier;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
@@ -192,11 +196,18 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *label;
 
 	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	is_current = ofo_dossier_is_current( priv->dossier );
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	is_current = ofo_dossier_is_current( dossier );
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -280,21 +291,14 @@ static gboolean
 is_dialog_validable( ofaClassProperties *self )
 {
 	ofaClassPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gboolean ok;
 	ofoClass *exists;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
 	ok = ofo_class_is_valid( priv->number, priv->label );
 	if( ok ){
-		exists = ofo_class_get_by_number( dossier, priv->number );
+		exists = ofo_class_get_by_number( priv->hub, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
 	}
@@ -312,17 +316,10 @@ static gboolean
 do_update( ofaClassProperties *self )
 {
 	ofaClassPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gint prev_id;
 	GtkWindow *toplevel;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
@@ -335,9 +332,9 @@ do_update( ofaClassProperties *self )
 	my_utils_container_notes_get( toplevel, class );
 
 	if( priv->is_new ){
-		priv->updated = ofo_class_insert( priv->class, dossier );
+		priv->updated = ofo_class_insert( priv->class, priv->hub );
 	} else {
-		priv->updated = ofo_class_update( priv->class, dossier, prev_id );
+		priv->updated = ofo_class_update( priv->class, prev_id );
 	}
 
 	return( priv->updated );

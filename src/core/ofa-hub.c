@@ -671,3 +671,34 @@ free_lines( GSList *lines )
 {
 	g_slist_free_full( lines, ( GDestroyNotify ) free_fields );
 }
+
+/**
+ * ofa_hub_disconnect_handlers:
+ * @hub: this #ofaHub object.
+ * @handlers: a #GList of the handler identifiers got when connecting
+ *  to the hub signaling system
+ *
+ * Disconnect the specified @handlers from the signaling system.
+ *
+ * Rationale: an object should disconnect its signals when it disappears
+ * while the signal emitter is still alive, i.e. to prevent the signal
+ * emitter to keep sending signals to a now-disappeared object.
+ */
+void
+ofa_hub_disconnect_handlers( ofaHub *hub, GList *handlers )
+{
+	static const gchar *thisfn = "ofa_hub_disconnect_handlers";
+	ofaHubPrivate *priv;
+	GList *it;
+
+	g_debug( "%s: hub=%p, handlers=%p (count=%d)",
+			thisfn, ( void * ) hub, ( void * ) handlers, g_list_length( handlers ));
+
+	priv = hub->priv;
+
+	if( !priv->dispose_has_run ){
+		for( it=handlers ; it ; it=it->next ){
+			g_signal_handler_disconnect( hub, ( gulong ) it->data );
+		}
+	}
+}

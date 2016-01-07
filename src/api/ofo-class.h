@@ -42,7 +42,6 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-class-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -76,8 +75,10 @@ GType           ofo_class_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_class_connect_signaling_system( const ofaHub *hub );
 
-GList          *ofo_class_get_dataset             ( ofoDossier *dossier );
-ofoClass       *ofo_class_get_by_number           ( ofoDossier *dossier, gint number );
+GList          *ofo_class_get_dataset             ( ofaHub *hub );
+#define         ofo_class_free_dataset( L )       g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
+
+ofoClass       *ofo_class_get_by_number           ( ofaHub *hub, gint number );
 
 ofoClass       *ofo_class_new                     ( void );
 
@@ -96,9 +97,9 @@ void            ofo_class_set_number              ( ofoClass *class, gint number
 void            ofo_class_set_label               ( ofoClass *class, const gchar *label );
 void            ofo_class_set_notes               ( ofoClass *class, const gchar *notes );
 
-gboolean        ofo_class_insert                  ( ofoClass *class, ofoDossier *dossier );
-gboolean        ofo_class_update                  ( ofoClass *class, ofoDossier *dossier, gint prev_id );
-gboolean        ofo_class_delete                  ( ofoClass *class, ofoDossier *dossier );
+gboolean        ofo_class_insert                  ( ofoClass *class, ofaHub *hub );
+gboolean        ofo_class_update                  ( ofoClass *class, gint prev_id );
+gboolean        ofo_class_delete                  ( ofoClass *class );
 
 G_END_DECLS
 

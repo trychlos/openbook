@@ -34,7 +34,8 @@
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idataset.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
@@ -42,7 +43,6 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
-#include "api/ofo-dossier.h"
 
 /* priv instance data
  */
@@ -94,24 +94,24 @@ struct _ofoClassPrivate {
 
 static ofoBaseClass *ofo_class_parent_class = NULL;
 
-static GList     *class_load_dataset( ofoDossier *dossier );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
-static gboolean   class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean   class_do_delete( ofoClass *class, const ofaIDBConnect *cnx );
+static gboolean   class_do_insert( ofoClass *class, const ofaIDBConnect *connect );
+static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect );
+static gboolean   class_do_delete( ofoClass *class, const ofaIDBConnect *connect );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
+static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
+static guint      icollectionable_get_interface_version( const ofaICollectionable *instance );
+static GList     *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
-static gboolean   class_do_drop_content( const ofaIDBConnect *cnx );
-
-OFA_IDATASET_LOAD( CLASS, class );
+static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean   class_do_drop_content( const ofaIDBConnect *connect );
 
 static void
 class_finalize( GObject *instance )
@@ -189,6 +189,12 @@ register_type( void )
 		( GInstanceInitFunc ) ofo_class_init
 	};
 
+	static const GInterfaceInfo icollectionable_iface_info = {
+		( GInterfaceInitFunc ) icollectionable_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iexportable_iface_info = {
 		( GInterfaceInitFunc ) iexportable_iface_init,
 		NULL,
@@ -204,6 +210,8 @@ register_type( void )
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoClass", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
@@ -241,32 +249,25 @@ ofo_class_connect_signaling_system( const ofaHub *hub )
 }
 
 /**
- * ofo_class_new:
+ * ofo_class_get_dataset:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the full #ofoClass dataset.
+ *
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
  */
-ofoClass *
-ofo_class_new( void )
+GList *
+ofo_class_get_dataset( ofaHub *hub )
 {
-	ofoClass *class;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	class = g_object_new( OFO_TYPE_CLASS, NULL );
-	OFO_BASE( class )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
-
-	return( class );
-}
-
-static GList *
-class_load_dataset( ofoDossier *dossier )
-{
-	return(
-			ofo_base_load_dataset_from_dossier(
-					st_boxed_defs,
-					ofo_dossier_get_connect( dossier ),
-					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
-					OFO_TYPE_CLASS ));
+	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CLASS ));
 }
 
 /**
  * ofo_class_get_by_number:
+ * @hub: the current #ofaHub object.
  *
  * Returns: the searched class, or %NULL.
  *
@@ -274,13 +275,15 @@ class_load_dataset( ofoDossier *dossier )
  * not be unreffed by the caller.
  */
 ofoClass *
-ofo_class_get_by_number( ofoDossier *dossier, gint number )
+ofo_class_get_by_number( ofaHub *hub, gint number )
 {
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	GList *list;
 
-	OFA_IDATASET_GET( dossier, CLASS, class );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( class_find_by_number( class_dataset, number ));
+	list = ofo_class_get_dataset( hub );
+
+	return( class_find_by_number( list, number ));
 }
 
 static ofoClass *
@@ -295,6 +298,20 @@ class_find_by_number( GList *set, gint number )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_class_new:
+ */
+ofoClass *
+ofo_class_new( void )
+{
+	ofoClass *class;
+
+	class = g_object_new( OFO_TYPE_CLASS, NULL );
+	OFO_BASE( class )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+
+	return( class );
 }
 
 /**
@@ -385,7 +402,7 @@ ofo_class_is_valid_label( const gchar *label )
  * Returns: %TRUE if the provided object may be safely deleted.
  *
  * Though the class in only used as tabs title in the accounts notebook,
- * and though we are providing default values, a class stay a reference
+ * and though we are providing default values, a class stays a reference
  * table. A row is only deletable if it is not referenced by any other
  * object (and the dossier is current).
  */
@@ -393,10 +410,8 @@ gboolean
 ofo_class_is_deletable( const ofoClass *class )
 {
 	ofaHub *hub;
-	ofoDossier *dossier;
 	gboolean used_by_accounts;
 	gboolean deletable;
-	gboolean is_current;
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 
@@ -405,10 +420,8 @@ ofo_class_is_deletable( const ofoClass *class )
 	}
 
 	hub = ofo_base_get_hub( OFO_BASE( class ));
-	dossier = ofa_hub_get_dossier( hub );
 	used_by_accounts = ofo_account_use_class( hub, ofo_class_get_number( class ));
-	is_current = ofo_dossier_is_current( dossier );
-	deletable = is_current && !used_by_accounts;
+	deletable = !used_by_accounts;
 
 	return( deletable );
 }
@@ -468,45 +481,51 @@ class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 
 /**
  * ofo_class_insert:
+ * @class:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: %TRUE if the insertion has been successful, %FALSE else.
  */
 gboolean
-ofo_class_insert( ofoClass *class, ofoDossier *dossier )
+ofo_class_insert( ofoClass *class, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_class_insert";
+	gboolean ok;
+
+	g_debug( "%s: class=%p, hub=%p",
+			thisfn, ( void * ) class, ( void * ) hub );
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		g_debug( "%s: class=%p, dossier=%p",
-				thisfn, ( void * ) class, ( void * ) dossier );
-
-		if( class_do_insert(
-					class,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_ADD( dossier, CLASS, class );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( class )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( class ), hub );
+		ofa_icollector_add_object(
+				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( class ), ( GCompareFunc ) class_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, class );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user )
+class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes;
+	gchar *label, *notes, *userid;
 	gboolean ok;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_class_get_label( class ));
 	notes = my_utils_quote( ofo_class_get_notes( class ));
 
@@ -525,17 +544,18 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user )
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
+	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	if( ok ){
-		class_set_upd_user( class, user );
+		class_set_upd_user( class, userid );
 		class_set_upd_stamp( class, &stamp );
 	}
 
 	g_free( label );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
@@ -544,45 +564,46 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *cnx, const gchar *user )
  * ofo_class_update:
  */
 gboolean
-ofo_class_update( ofoClass *class, ofoDossier *dossier, gint prev_id )
+ofo_class_update( ofoClass *class, gint prev_id )
 {
 	static const gchar *thisfn = "ofo_class_update";
 	gchar *str;
+	gboolean ok;
+	ofaHub *hub;
+
+	g_debug( "%s: class=%p, prev_id=%d", thisfn, ( void * ) class, prev_id );
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		g_debug( "%s: class=%p, dossier=%p, prev_id=%d",
-				thisfn, ( void * ) class, ( void * ) dossier, prev_id );
-
-		if( class_do_update(
-					class,
-					prev_id,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			str = g_strdup_printf( "%d", prev_id );
-			OFA_IDATASET_UPDATE( dossier, CLASS, class, str );
-			g_free( str );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( class )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( class ));
+
+	if( class_do_update( class, prev_id, ofa_hub_get_connect( hub ))){
+		str = g_strdup_printf( "%d", prev_id );
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_CLASS, ( GCompareFunc ) class_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, class, str );
+		g_free( str );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const gchar *user )
+class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str;
+	gchar *label, *notes, *stamp_str, *userid;
 	GTimeVal stamp;
 	gboolean ok;
 
 	ok = FALSE;
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_class_get_label( class ));
 	notes = my_utils_quote( ofo_class_get_notes( class ));
 	my_utils_stamp_set_now( &stamp );
@@ -601,10 +622,10 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const 
 
 	g_string_append_printf( query,
 			"	CLA_UPD_USER='%s',CLA_UPD_STAMP='%s'"
-			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
+			"	WHERE CLA_NUMBER=%d", userid, stamp_str, prev_id );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
-		class_set_upd_user( class, user );
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		class_set_upd_user( class, userid );
 		class_set_upd_stamp( class, &stamp );
 		ok = TRUE;
 	}
@@ -613,6 +634,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const 
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
@@ -621,34 +643,37 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *cnx, const 
  * ofo_class_delete:
  */
 gboolean
-ofo_class_delete( ofoClass *class, ofoDossier *dossier )
+ofo_class_delete( ofoClass *class )
 {
 	static const gchar *thisfn = "ofo_class_delete";
+	gboolean ok;
+	ofaHub *hub;
+
+	g_debug( "%s: class=%p", thisfn, ( void * ) class );
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_class_is_deletable( class ), FALSE );
 
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		g_debug( "%s: class=%p, dossier=%p",
-				thisfn, ( void * ) class, ( void * ) dossier );
-
-		if( class_do_delete(
-					class,
-					ofo_dossier_get_connect( dossier ))){
-
-			OFA_IDATASET_REMOVE( dossier, CLASS, class );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( class )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( class ));
+
+	if( class_do_delete( class, ofa_hub_get_connect( hub ))){
+		g_object_ref( class );
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( class ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, class );
+		g_object_unref( class );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-class_do_delete( ofoClass *class, const ofaIDBConnect *cnx )
+class_do_delete( ofoClass *class, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -658,7 +683,7 @@ class_do_delete( ofoClass *class, const ofaIDBConnect *cnx )
 			"	WHERE CLA_NUMBER=%d",
 					ofo_class_get_number( class ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -692,6 +717,40 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
 }
 
 /*
+ * ofaICollectionable interface management
+ */
+static void
+icollectionable_iface_init( ofaICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( const ofaICollectionable *instance )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+{
+	GList *list;
+
+	list = ofo_base_load_dataset(
+					st_boxed_defs,
+					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
+					OFO_TYPE_CLASS,
+					hub );
+
+	return( list );
+}
+
+/*
  * ofaIExportable interface management
  */
 static void
@@ -702,7 +761,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export_from_dossier = iexportable_export;
+	iface->export = iexportable_export;
 }
 
 static guint
@@ -719,21 +778,21 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
-	GList *it;
+	GList *dataset, *it;
 	GSList *lines;
 	gchar *str;
 	gboolean with_headers, ok;
 	gulong count;
 	gchar field_sep;
 
-	OFA_IDATASET_GET( dossier, CLASS, class );
+	dataset = ofo_class_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
 
-	count = ( gulong ) g_list_length( class_dataset );
+	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
 		count += 1;
 	}
@@ -749,7 +808,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 	}
 
-	for( it=class_dataset ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -773,7 +832,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import_to_dossier = iimportable_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -802,7 +861,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -810,6 +869,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GList *dataset, *it;
 	guint errors, number, line;
 	gchar *msg, *splitted;
+	const ofaIDBConnect *connect;
 
 	line = 0;
 	errors = 0;
@@ -859,34 +919,26 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	}
 
 	if( !errors ){
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, FALSE );
-
-		class_do_drop_content( ofo_dossier_get_connect( dossier ));
+		connect = ofa_hub_get_connect( hub );
+		class_do_drop_content( connect );
 
 		for( it=dataset ; it ; it=it->next ){
-			if( !class_do_insert(
-					OFO_CLASS( it->data ),
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
+			if( !class_do_insert( OFO_CLASS( it->data ), connect )){
 				errors -= 1;
 			}
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
-		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
-		ofa_idataset_free_dataset( dossier, OFO_TYPE_CLASS );
-
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
-
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, TRUE );
+		ofo_class_free_dataset( dataset );
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_CLASS );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CLASS );
 	}
 
 	return( errors );
 }
 
 static gboolean
-class_do_drop_content( const ofaIDBConnect *cnx )
+class_do_drop_content( const ofaIDBConnect *connect )
 {
-	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_CLASSES", TRUE ));
+	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_CLASSES", TRUE ));
 }

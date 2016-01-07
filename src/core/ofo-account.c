@@ -2296,7 +2296,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			continue;
 		}
 		class_num = ofo_account_get_class_from_number( str );
-		class_obj = ofo_class_get_by_number( dossier, class_num );
+		class_obj = ofo_class_get_by_number( hub, class_num );
 		if( !class_obj && !OFO_IS_CLASS( class_obj )){
 			msg = g_strdup_printf( _( "invalid account class number: %s" ), str );
 			ofa_iimportable_set_message(

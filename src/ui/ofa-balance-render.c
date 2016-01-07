@@ -764,7 +764,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	sbal = ( ofsAccountBalance * ) current->data;
 	priv->class_num = ofo_account_get_class_from_number( sbal->account );
 
-	priv->class_object = ofo_class_get_by_number( priv->dossier, priv->class_num );
+	priv->class_object = ofo_class_get_by_number( priv->hub, priv->class_num );
 
 	g_list_free_full( priv->subtotals, ( GDestroyNotify ) free_currency );
 	priv->subtotals = NULL;

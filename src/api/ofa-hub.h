@@ -89,22 +89,25 @@ typedef struct {
 #define SIGNAL_HUB_ENTRY_STATUS_CHANGED "hub-entry-status-changed"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
-GType                ofa_hub_get_type          ( void ) G_GNUC_CONST;
+GType                ofa_hub_get_type           ( void ) G_GNUC_CONST;
 
-ofaHub              *ofa_hub_new_with_connect  ( const ofaIDBConnect *connect );
+ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect );
 
-const ofaIDBConnect *ofa_hub_get_connect       ( const ofaHub *hub );
+const ofaIDBConnect *ofa_hub_get_connect        ( const ofaHub *hub );
 
-ofoDossier          *ofa_hub_get_dossier       ( const ofaHub *hub );
+ofoDossier          *ofa_hub_get_dossier        ( const ofaHub *hub );
 
-void                 ofa_hub_remediate_settings( const ofaHub *hub );
+void                 ofa_hub_remediate_settings ( const ofaHub *hub );
 
-guint                ofa_hub_import_csv        ( ofaHub *hub,
+guint                ofa_hub_import_csv         ( ofaHub *hub,
 														ofaIImportable *object,
 														const gchar *uri,
 														const ofaFileFormat *settings,
 														void *caller,
 														guint *errors );
+
+void                 ofa_hub_disconnect_handlers( ofaHub *hub,
+														GList *handlers );
 
 G_END_DECLS
 

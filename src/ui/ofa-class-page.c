@@ -31,6 +31,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-class.h"
@@ -47,8 +48,8 @@ struct _ofaClassPagePrivate {
 
 	/* internals
 	 */
-	GList       *handlers;
-	ofoDossier  *dossier;
+	ofaHub      *hub;
+	GList       *hub_handlers;
 	gboolean     is_current;
 
 	/* UI
@@ -88,10 +89,10 @@ static void       on_delete_clicked( GtkButton *button, ofaClassPage *page );
 static void       try_to_delete_current_row( ofaClassPage *self );
 static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
 static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassPage *self );
+static void       on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
+static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
+static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
+static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaClassPage *self );
 static gboolean   find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 static void
@@ -114,9 +115,6 @@ static void
 classes_page_dispose( GObject *instance )
 {
 	ofaClassPagePrivate *priv;
-	gulong handler_id;
-	GList *iha;
-	ofoDossier *dossier;
 
 	g_return_if_fail( instance && OFA_IS_CLASS_PAGE( instance ));
 
@@ -125,16 +123,7 @@ classes_page_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ( OFA_CLASS_PAGE( instance ))->priv;
 
-		/* note when deconnecting the handlers that the dossier may
-		 * have been already finalized (e.g. when the application
-		 * terminates) */
-		dossier = ofa_page_get_dossier( OFA_PAGE( instance ));
-		if( OFO_IS_DOSSIER( dossier )){
-			for( iha=priv->handlers ; iha ; iha=iha->next ){
-				handler_id = ( gulong ) iha->data;
-				g_signal_handler_disconnect( dossier, handler_id );
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -152,7 +141,7 @@ ofa_class_page_init( ofaClassPage *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLASS_PAGE, ofaClassPagePrivate );
-	self->priv->handlers = NULL;
+	self->priv->hub_handlers = NULL;
 }
 
 static void
@@ -184,30 +173,26 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_CLASS_PAGE( page )->priv;
-	dossier = ofa_page_get_dossier( page );
+
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
+
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	tview = setup_tree_view( page );
 
@@ -366,14 +351,14 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 insert_dataset( ofaClassPage *self )
 {
+	ofaClassPagePrivate *priv;
 	GList *dataset, *iset;
 	ofoClass *class;
 
-	dataset = ofo_class_get_dataset(
-						ofa_page_get_dossier( OFA_PAGE( self )));
+	priv = self->priv;
+	dataset = ofo_class_get_dataset( priv->hub );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
-
 		class = OFO_CLASS( iset->data );
 		insert_new_row( self, class, FALSE );
 	}
@@ -563,15 +548,13 @@ delete_confirmed( ofaClassPage *self, ofoClass *class )
 static void
 do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaClassPagePrivate *priv;
 	gboolean deletable;
 
-	priv = page->priv;
 	deletable = ofo_class_is_deletable( class );
 	g_return_if_fail( deletable );
 
 	if( delete_confirmed( page, class )){
-		ofo_class_delete( class, priv->dossier );
+		ofo_class_delete( class );
 
 		/* remove the row from the tmodel
 		 * this will cause an automatic new selection */
@@ -580,13 +563,13 @@ do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIte
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self )
+on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -599,16 +582,16 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self )
  * modifying the class number is forbidden
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint prev_num, class_num;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -634,30 +617,30 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassPage *self )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 }
 
 /*
- * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
+ * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassPage *self )
+on_reloaded_dataset( ofaHub *hub, GType type, ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_on_reloaded_dataset";
 	ofaClassPagePrivate *priv;
 	GtkTreeModel *tmodel;
 
-	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			type,
 			( void * ) self );
 

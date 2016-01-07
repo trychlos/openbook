@@ -493,7 +493,7 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 		acc_num = ofo_account_get_number( account );
 
 		cla_num = ofo_account_get_class( account );
-		cla_obj = ofo_class_get_by_number( dossier, cla_num );
+		cla_obj = ofo_class_get_by_number( priv->hub, cla_num );
 		if( !cla_obj || !OFO_IS_CLASS( cla_obj )){
 			str = g_strdup_printf(
 					_( "Class %d doesn't exist for account %s" ), cla_num, acc_num );

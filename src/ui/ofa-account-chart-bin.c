@@ -57,7 +57,6 @@ struct _ofaAccountChartBinPrivate {
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	ofoDossier          *dossier;
 
 	ofaAccountStore     *store;
 	GList               *store_handlers;
@@ -176,14 +175,8 @@ accounts_chart_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		/*
-		if( priv->dossier &&
-				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
-			for( it=priv->hub_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-		}
-		*/
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+
 		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
 			for( it=priv->store_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
@@ -356,9 +349,6 @@ setup_main_window( ofaAccountChartBin *bin )
 
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
 	priv->store = ofa_account_store_new( priv->hub );
 
@@ -597,7 +587,7 @@ book_create_page( ofaAccountChartBin *book, gint class_num )
 	page_add_columns( book, GTK_TREE_VIEW( tview ));
 
 	/* last add the page to the notebook */
-	class_obj = ofo_class_get_by_number( priv->dossier, class_num );
+	class_obj = ofo_class_get_by_number( priv->hub, class_num );
 	if( class_obj && OFO_IS_CLASS( class_obj )){
 		class_label = ofo_class_get_label( class_obj );
 	} else {
@@ -984,10 +974,13 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 	GdkRectangle rc;
 	GtkTreeView *tview;*/
 	gboolean is_root, is_error;
+	ofoDossier *dossier;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
 
 	priv = self->priv;
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 
 	gtk_tree_model_get( tmodel, iter,
 			ACCOUNT_COL_NUMBER, &account_num, ACCOUNT_COL_OBJECT, &account_obj, -1 );
@@ -1001,7 +994,7 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	is_error = FALSE;
 	if( !is_root ){
-		currency = ofo_currency_get_by_code( priv->dossier, ofo_account_get_currency( account_obj ));
+		currency = ofo_currency_get_by_code( dossier, ofo_account_get_currency( account_obj ));
 		is_error |= !currency;
 	}
 
