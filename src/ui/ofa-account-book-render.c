@@ -34,7 +34,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -58,7 +57,6 @@
 struct _ofaAccountBookRenderPrivate {
 
 	ofaHub            *hub;
-	ofoDossier        *dossier;
 	ofaAccountBookBin *args_bin;
 
 	/* internals
@@ -306,7 +304,6 @@ page_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_book_render_page_init_view";
 	ofaAccountBookRenderPrivate *priv;
-	GtkApplication *application;
 
 	OFA_PAGE_CLASS( ofa_account_book_render_parent_class )->init_view( page );
 
@@ -315,11 +312,7 @@ page_init_view( ofaPage *page )
 	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 
-	priv->dossier = ofa_page_get_dossier( page );
-
-	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_page_get_hub( page );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
@@ -387,6 +380,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
+	ofoDossier *dossier;
 
 	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
 
@@ -401,8 +395,10 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
+	dossier = ofa_hub_get_dossier( priv->hub );
+
 	dataset = ofo_entry_get_dataset_for_print_general_books(
-						priv->dossier,
+						dossier,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,

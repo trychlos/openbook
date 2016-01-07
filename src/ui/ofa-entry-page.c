@@ -36,7 +36,6 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -470,7 +469,6 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_entry_page_v_setup_view";
 	ofaEntryPagePrivate *priv;
 	GtkWidget *frame;
-	GtkApplication *application;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -479,10 +477,7 @@ v_setup_view( ofaPage *page )
 	priv->dossier = ofa_page_get_dossier( page );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
 
-	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	frame = gtk_frame_new( NULL );

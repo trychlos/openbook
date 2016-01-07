@@ -30,10 +30,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
+
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-account-frame-bin.h"
@@ -153,20 +154,17 @@ on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccount
 {
 	ofoAccount *account;
 	const ofaMainWindow *main_window;
-	GtkApplication *application;
 	ofaHub *hub;
 
 	if( number ){
-		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
-
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		hub = ofa_page_get_hub( OFA_PAGE( self ));
 		g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 		account = ofo_account_get_by_number( hub, number );
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
+		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 		ofa_account_properties_run( main_window, account );
 	}
