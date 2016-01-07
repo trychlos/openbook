@@ -98,18 +98,13 @@ GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST
 ofoDossier          *ofo_dossier_new_with_hub              ( ofaHub *hub );
 
 gboolean             ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
-
 const gchar         *ofo_dossier_get_user                  ( const ofoDossier *dossier );
 const ofaIDBConnect *ofo_dossier_get_connect               ( const ofoDossier *dossier );
 
-gboolean             ofo_dossier_use_account               ( const ofoDossier *dossier,
-																	const gchar *account );
-gboolean             ofo_dossier_use_currency              ( const ofoDossier *dossier,
-																	const gchar *currency );
-gboolean             ofo_dossier_use_ledger                ( const ofoDossier *dossier,
-																	const gchar *ledger );
-gboolean             ofo_dossier_use_ope_template          ( const ofoDossier *dossier,
-																	const gchar *ope_template );
+gboolean             ofo_dossier_use_account               ( const ofoDossier *dossier, const gchar *account );
+gboolean             ofo_dossier_use_currency              ( const ofoDossier *dossier, const gchar *currency );
+gboolean             ofo_dossier_use_ledger                ( const ofoDossier *dossier, const gchar *ledger );
+gboolean             ofo_dossier_use_ope_template          ( const ofoDossier *dossier, const gchar *ope_template );
 
 gint                 ofo_dossier_get_database_version      ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
@@ -153,6 +148,7 @@ const gchar         *ofo_dossier_get_sld_account           ( ofoDossier *dossier
 																	const gchar *currency );
 
 gboolean             ofo_dossier_is_current                ( const ofoDossier *dossier );
+
 gboolean             ofo_dossier_is_valid                  ( const gchar *label,
 																	gint nb_months,
 																	const gchar *currency,

@@ -498,6 +498,7 @@
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)
      2015-12-28 + idem for my_window_get_main_window()
+     2016- 1- 4 this is ofaIHubber interface associated to ofaHub class
 
  947 2015-12-29 shouldn't all xxx_set_main_window() be xxx_set_dossier() ?
      2016- 1- 6 note that all GtkBin-derived classes and more generally
@@ -523,10 +524,15 @@
                 + cleanup userid+connect from dossier private
                   (when all classes will be migrated to hub)
      2016- 1- 6 + remove DOSSIER properties from ofaListStore
+     2016- 1- 7 obsolete ofo_dossier_has_dispose_run()
+                + ofo_dossier_get_user()
+                + ofo_dossier_get_connect()
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
                 ofoDossier
      2015- 1- 6 ofoAccount: done
+                ofoBat: done
+     2015- 1- 7 ofoCurrency: done
 
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
@@ -540,7 +546,11 @@
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
- 957
+ 957 2016- 1- 7 obsolete ofaIDataset interface
+
+ 958 2016- 1- 7 move ENTRY_STATUS_COUNT signal to hub system
+
+ 959
 
 -----------------------------------------------------------------------
  DONE

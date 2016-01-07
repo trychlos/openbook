@@ -32,7 +32,6 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idataset.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -52,7 +51,7 @@ struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	const ofaIDBConnect *cnx;
+	const ofaIDBConnect *connect;
 	gchar         *userid;
 
 	/* row id 1
@@ -105,8 +104,6 @@ static ofoBaseClass *ofo_dossier_parent_class = NULL;
 static GType       register_type( void );
 static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
-//static gboolean    do_open( ofoDossier *dossier, gboolean remediation );
-//static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void        on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
@@ -123,25 +120,16 @@ static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter count
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
-//static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
-//static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
-//static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
-//static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
-static gboolean    dossier_do_read( ofoDossier *dossier );
-static gboolean    dossier_read_properties( ofoDossier *dossier );
-static gboolean    dossier_read_currencies( ofoDossier *dossier );
+static gboolean    dossier_do_read( ofoDossier *dossier, const ofaIDBConnect *connect );
+static gboolean    dossier_read_properties( ofoDossier *dossier, const ofaIDBConnect *connect );
+static gboolean    dossier_read_currencies( ofoDossier *dossier, const ofaIDBConnect *connect );
 static gboolean    dossier_do_update( ofoDossier *dossier );
 static gboolean    do_update_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
 static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
-static void        idataset_iface_init( ofaIDatasetInterface *iface );
-static guint       idataset_get_interface_version( const ofaIDataset *instance );
-static GList      *idataset_get_datasets( const ofaIDataset *instance );
-static void        idataset_set_datasets( ofaIDataset *instance, GList *list );
-static void        free_datasets( GList *datasets );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static void        free_cur_detail( sCurrency *details );
 static void        free_cur_details( GList *details );
 
@@ -181,19 +169,11 @@ register_type( void )
 		NULL
 	};
 
-	static const GInterfaceInfo idataset_iface_info = {
-		( GInterfaceInitFunc ) idataset_iface_init,
-		NULL,
-		NULL
-	};
-
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
 
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IDATASET, &idataset_iface_info );
 
 	return( type );
 }
@@ -242,7 +222,6 @@ dossier_dispose( GObject *instance )
 		priv = OFO_DOSSIER( instance )->priv;
 
 		free_cur_details( priv->cur_details );
-		free_datasets( priv->datasets );
 	}
 
 	/* chain up to the parent class */
@@ -303,6 +282,9 @@ dossier_class_init( ofoDossierClass *klass )
  * ofo_dossier_new_with_hub:
  * @hub: the #ofaHub object which will manage this dossier.
  *
+ * Instanciates a new object, and initializes it with data read from
+ * database.
+ *
  * Returns: a newly allocated #ofoDossier object, or %NULL if an error
  * has occured.
  */
@@ -315,14 +297,13 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
 
-	ofo_base_set_hub( OFO_BASE( dossier ), hub );
-	dossier->priv->cnx = ofa_hub_get_connect( hub );
+	dossier->priv->connect = ofa_hub_get_connect( hub );
 
-	if( dossier_do_read( dossier )){
-		g_signal_connect(
-				hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
-		g_signal_connect(
-				hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
+	if( dossier_do_read( dossier, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( dossier ), hub );
+
+		g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
+		g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
 
 	} else {
 		g_clear_object( &dossier );
@@ -434,7 +415,7 @@ ofo_dossier_get_connect( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const ofaIDBConnect * ) dossier->priv->cnx );
+		return(( const ofaIDBConnect * ) dossier->priv->connect );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -453,13 +434,12 @@ ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
-		return( count > 0 );
+	if( OFO_BASE( dossier )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
+	return( count > 0 );
 }
 
 /**
@@ -476,20 +456,19 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		default_dev = ofo_dossier_get_default_currency( dossier );
-
-		if( my_strlen( default_dev ) &&
-				!g_utf8_collate( default_dev, currency )){
-			return( TRUE );
-		}
-
-		count = dossier_cur_count_uses( dossier, "DOS_CURRENCY", currency );
-		return( count > 0 );
+	if( OFO_BASE( dossier )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	default_dev = ofo_dossier_get_default_currency( dossier );
+
+	if( my_strlen( default_dev ) &&
+			!g_utf8_collate( default_dev, currency )){
+		return( TRUE );
+	}
+
+	count = dossier_cur_count_uses( dossier, "DOS_CURRENCY", currency );
+	return( count > 0 );
 }
 
 /**
@@ -506,13 +485,14 @@ ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	if( OFO_BASE( dossier )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
+	}
 
-		import_ledger = ofo_dossier_get_import_ledger( dossier );
-		if( my_strlen( import_ledger )){
-			cmp = g_utf8_collate( ledger, import_ledger );
-			return( cmp == 0 );
-		}
+	import_ledger = ofo_dossier_get_import_ledger( dossier );
+	if( my_strlen( import_ledger )){
+		cmp = g_utf8_collate( ledger, import_ledger );
+		return( cmp == 0 );
 	}
 
 	return( FALSE );
@@ -531,26 +511,28 @@ ofo_dossier_use_ope_template( const ofoDossier *dossier, const gchar *ope_templa
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
-		solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
-		return( forward+solde > 0 );
+	if( OFO_BASE( dossier )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
+	solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
+	return( forward+solde > 0 );
 }
 
 static gint
 dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
 					field, mnemo, DOSSIER_ROW_ID );
 
-	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
 	g_free( query );
 
@@ -560,13 +542,16 @@ dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *
 static gint
 dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
 					field, mnemo, DOSSIER_ROW_ID );
 
-	ofa_idbconnect_query_int( ofo_dossier_get_connect( dossier ), query, &count, TRUE );
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
 	g_free( query );
 
@@ -1082,7 +1067,10 @@ ofo_dossier_get_next_concil( ofoDossier *dossier )
 static void
 dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
 {
+	ofaHub *hub;
 	gchar *query;
+
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
 
 	query = g_strdup_printf(
 			"UPDATE OFA_T_DOSSIER "
@@ -1090,7 +1078,8 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 			"	WHERE DOS_ID=%d",
 					field, next_number, DOSSIER_ROW_ID );
 
-	ofa_idbconnect_query( ofo_dossier_get_connect( dossier ), query, TRUE );
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
 	g_free( query );
 }
 
@@ -1147,6 +1136,10 @@ ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
  * Computes the minimal effect date valid for the considered dossier and
  * ledger.
  *
+ * This minimal effect date is:
+ * - at least the begin of the exercice (if set)
+ * - or the last ledger closing date (if set, and greater than the previous) + 1
+ *
  * Returns: the @date #GDate pointer.
  */
 GDate *
@@ -1160,7 +1153,6 @@ ofo_dossier_get_min_deffect( GDate *date, const ofoDossier *dossier, ofoLedger *
 	if( ledger ){
 		if( !OFO_IS_LEDGER( ledger )){
 			g_return_val_if_reached( NULL );
-			return( NULL );
 		}
 	}
 
@@ -1783,67 +1775,16 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 	}
 }
 
-#if 0
-static void
-on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
-{
-	static const gchar *thisfn = "ofo_dossier_on_new_object_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, object=%p (%s)",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	g_object_unref( object );
-}
-
-static void
-on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id )
-{
-	static const gchar *thisfn = "ofo_dossier_on_updated_object_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id );
-
-	g_object_unref( object );
-}
-
-static void
-on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
-{
-	static const gchar *thisfn = "ofo_dossier_on_deleted_object_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, object=%p (%s)",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	g_object_unref( object );
-}
-
-static void
-on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type )
-{
-	static const gchar *thisfn = "ofo_dossier_on_reloaded_dataset_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, type=%lu", thisfn, ( void * ) dossier, type );
-}
-#endif
-
 static gboolean
-dossier_do_read( ofoDossier *dossier )
+dossier_do_read( ofoDossier *dossier, const ofaIDBConnect *connect )
 {
-	return( dossier_read_properties( dossier ) &&
-			dossier_read_currencies( dossier ));
+	return( dossier_read_properties( dossier, connect ) &&
+			dossier_read_currencies( dossier, connect ));
 }
 
 static gboolean
-dossier_read_properties( ofoDossier *dossier )
+dossier_read_properties( ofoDossier *dossier, const ofaIDBConnect *connect )
 {
-	const ofaIDBConnect *connect;
 	gchar *query;
 	GSList *result, *icol;
 	gboolean ok;
@@ -1852,7 +1793,6 @@ dossier_read_properties( ofoDossier *dossier )
 	GDate date;
 
 	ok = FALSE;
-	connect = ofa_hub_get_connect( ofo_base_get_hub( OFO_BASE( dossier )));
 
 	query = g_strdup_printf(
 			"SELECT DOS_DEF_CURRENCY,"
@@ -1985,9 +1925,8 @@ dossier_read_properties( ofoDossier *dossier )
 }
 
 static gboolean
-dossier_read_currencies( ofoDossier *dossier )
+dossier_read_currencies( ofoDossier *dossier, const ofaIDBConnect *connect )
 {
-	const ofaIDBConnect *connect;
 	gchar *query;
 	GSList *result, *irow, *icol;
 	gboolean ok;
@@ -1995,7 +1934,6 @@ dossier_read_currencies( ofoDossier *dossier )
 	sCurrency *sdet;
 
 	ok = FALSE;
-	connect = ofa_hub_get_connect( ofo_base_get_hub( OFO_BASE( dossier )));
 
 	query = g_strdup_printf(
 			"SELECT DOS_CURRENCY,DOS_SLD_ACCOUNT "
@@ -2056,18 +1994,21 @@ dossier_do_update( ofoDossier *dossier )
 static gboolean
 do_update_properties( ofoDossier *dossier )
 {
-	const ofaIDBConnect *cnx;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *label, *notes, *stamp_str, *sdate;
+	gchar *label, *notes, *stamp_str, *sdate, *userid;
 	GTimeVal stamp;
 	gboolean ok, current;
-	const gchar *cstr, *userid;
+	const gchar *cstr;
 	const GDate *date;
 	ofxCounter number;
 
 	ok = FALSE;
-	cnx = ofo_dossier_get_connect( dossier );
-	userid = ofo_dossier_get_user( dossier );
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
+	connect = ofa_hub_get_connect( hub );
+	userid = ofa_idbconnect_get_account( connect );
+
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	cstr = ofo_dossier_get_default_currency( dossier );
@@ -2184,13 +2125,15 @@ do_update_properties( ofoDossier *dossier )
 
 	g_string_append_printf( query, "WHERE DOS_ID=%d", DOSSIER_ROW_ID );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		dossier_set_upd_user( dossier, userid );
 		dossier_set_upd_stamp( dossier, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
+	g_free( userid );
+
 	return( ok );
 }
 
@@ -2204,17 +2147,15 @@ ofo_dossier_update_currencies( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_update_currencies";
 
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-		return( dossier_do_update_currencies( dossier ));
+	if( OFO_BASE( dossier )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_assert_not_reached();
-	return( FALSE );
+	return( dossier_do_update_currencies( dossier ));
 }
 
 static gboolean
@@ -2227,28 +2168,31 @@ static gboolean
 do_update_currency_properties( ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
-	gchar *query;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	gchar *query, *userid;
 	sCurrency *sdet;
 	gboolean ok;
 	GList *it;
 	GTimeVal stamp;
 	gchar *stamp_str;
 	gint count;
-	const gchar *userid;
 
 	priv = dossier->priv;
-	ok = ofa_idbconnect_query( priv->cnx, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
+	hub = ofo_base_get_hub( OFO_BASE( dossier ));
+	connect = ofa_hub_get_connect( hub );
+	userid = ofa_idbconnect_get_account( connect );
+
+	ok = ofa_idbconnect_query( connect, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
 	count = 0;
 
 	if( ok ){
-		userid = ofo_dossier_get_user( dossier );
-
 		for( it=priv->cur_details ; it && ok ; it=it->next ){
 			sdet = ( sCurrency * ) it->data;
 			query = g_strdup_printf(
 					"INSERT INTO OFA_T_DOSSIER_CUR (DOS_ID,DOS_CURRENCY,DOS_SLD_ACCOUNT) VALUES "
 					"	(%d,'%s','%s')", DOSSIER_ROW_ID, sdet->currency, sdet->sld_account );
-			ok &= ofa_idbconnect_query( priv->cnx, query, TRUE );
+			ok &= ofa_idbconnect_query( connect, query, TRUE );
 			g_free( query );
 			count += 1;
 		}
@@ -2262,7 +2206,7 @@ do_update_currency_properties( ofoDossier *dossier )
 					"	WHERE DOS_ID=%d", userid, stamp_str, DOSSIER_ROW_ID );
 			g_free( stamp_str );
 
-			if( !ofa_idbconnect_query( priv->cnx, query, TRUE )){
+			if( !ofa_idbconnect_query( connect, query, TRUE )){
 				ok = FALSE;
 			} else {
 				dossier_set_upd_user( dossier, userid );
@@ -2270,6 +2214,8 @@ do_update_currency_properties( ofoDossier *dossier )
 			}
 		}
 	}
+
+	g_free( userid );
 
 	return( ok );
 }
@@ -2285,7 +2231,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export_from_dossier = iexportable_export;
+	iface->export = iexportable_export;
 }
 
 static guint
@@ -2302,8 +2248,9 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
+	ofoDossier *dossier;
 	GSList *lines;
 	gchar *str, *stamp;
 	const gchar *currency, *muser, *siren, *siret;
@@ -2313,6 +2260,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gboolean ok, with_headers;
 	gulong count;
 
+	dossier = ofa_hub_get_dossier( hub );
 	with_headers = ofa_file_format_has_headers( settings );
 
 	count = ( gulong ) 1;
@@ -2385,59 +2333,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	return( TRUE );
-}
-
-/*
- * ofaIDataset interface management
- */
-static void
-idataset_iface_init( ofaIDatasetInterface *iface )
-{
-	static const gchar *thisfn = "ofo_dossier_idataset_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idataset_get_interface_version;
-	iface->get_datasets = idataset_get_datasets;
-	iface->set_datasets = idataset_set_datasets;
-}
-
-static guint
-idataset_get_interface_version( const ofaIDataset *instance )
-{
-	return( 1 );
-}
-
-static GList *
-idataset_get_datasets( const ofaIDataset *instance )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_val_if_fail( instance && OFO_IS_DOSSIER( instance ), NULL );
-
-	priv = OFO_DOSSIER( instance )->priv;
-
-	return( priv->datasets );
-}
-
-static void
-idataset_set_datasets( ofaIDataset *instance, GList *list )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_if_fail( instance && OFO_IS_DOSSIER( instance ));
-
-	priv = OFO_DOSSIER( instance )->priv;
-
-	priv->datasets = list;
-}
-
-static void
-free_datasets( GList *datasets )
-{
-	if( datasets ){
-		g_list_free_full( datasets, ( GDestroyNotify ) ofa_idataset_free_full );
-	}
 }
 
 static void
