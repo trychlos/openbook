@@ -27,6 +27,8 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -42,8 +44,6 @@ struct _ofaCurrencyComboPrivate {
 	gboolean             dispose_has_run;
 
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
-	GList               *handlers;
 	ofaCurrencyColumns   columns;
 	ofaCurrencyStore    *store;
 };
@@ -232,6 +232,8 @@ void
 ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo, const ofaMainWindow *main_window )
 {
 	ofaCurrencyComboPrivate *priv;
+	GtkApplication *application;
+	ofaHub *hub;
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -241,9 +243,14 @@ ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo, const ofaMainWindow
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
 
-		priv->store = ofa_currency_store_new( priv->dossier );
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+		priv->store = ofa_currency_store_new( hub );
 		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	}
 }

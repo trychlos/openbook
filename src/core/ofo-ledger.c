@@ -325,15 +325,15 @@ ofo_ledger_get_type( void )
 }
 
 /**
- * ofo_ledger_connect_signaling_system:
+ * ofo_ledger_connect_to_hub_signaling_system:
  * @hub: the #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
 void
-ofo_ledger_connect_signaling_system( const ofaHub *hub )
+ofo_ledger_connect_to_hub_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_ledger_connect_signaling_system";
+	static const gchar *thisfn = "ofo_ledger_connect_to_hub_signaling_system";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 

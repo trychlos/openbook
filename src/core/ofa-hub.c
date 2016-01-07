@@ -372,15 +372,15 @@ init_signaling_system( const ofaHub *hub )
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
-	ofo_account_connect_signaling_system( hub );
-	ofo_bat_connect_signaling_system( hub );
-	ofo_class_connect_signaling_system( hub );
-	ofo_concil_connect_signaling_system( hub );
-	ofo_currency_connect_signaling_system( hub );
-	ofo_entry_connect_signaling_system( hub );
-	ofo_ledger_connect_signaling_system( hub );
-	ofo_ope_template_connect_signaling_system( hub );
-	ofo_rate_connect_signaling_system( hub );
+	ofo_account_connect_to_hub_signaling_system( hub );
+	ofo_bat_connect_to_hub_signaling_system( hub );
+	ofo_class_connect_to_hub_signaling_system( hub );
+	ofo_concil_connect_to_hub_signaling_system( hub );
+	ofo_currency_connect_to_hub_signaling_system( hub );
+	ofo_entry_connect_to_hub_signaling_system( hub );
+	ofo_ledger_connect_to_hub_signaling_system( hub );
+	ofo_ope_template_connect_to_hub_signaling_system( hub );
+	ofo_rate_connect_to_hub_signaling_system( hub );
 
 	ofa_idbmodel_init_hub_signaling_system( hub );
 }

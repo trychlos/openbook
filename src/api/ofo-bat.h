@@ -72,7 +72,8 @@ typedef struct {
 
 GType           ofo_bat_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_bat_connect_signaling_system( const ofaHub *hub );
+void            ofo_bat_connect_to_hub_signaling_system
+                                                ( const ofaHub *hub );
 
 GList          *ofo_bat_get_dataset             ( ofaHub *hub );
 

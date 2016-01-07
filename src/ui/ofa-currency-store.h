@@ -44,8 +44,8 @@
  * system to maintain itself up to date.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -108,7 +108,7 @@ typedef enum {
 
 GType             ofa_currency_store_get_type( void );
 
-ofaCurrencyStore *ofa_currency_store_new     ( ofoDossier *dossier );
+ofaCurrencyStore *ofa_currency_store_new     ( ofaHub *hub );
 
 G_END_DECLS
 

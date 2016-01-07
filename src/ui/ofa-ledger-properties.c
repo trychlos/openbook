@@ -32,6 +32,8 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -48,6 +50,7 @@ struct _ofaLedgerPropertiesPrivate {
 	/* internals
 	 */
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	ofoLedger           *ledger;
 	gboolean             is_new;
@@ -199,6 +202,7 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaLedgerPropertiesPrivate *priv;
+	GtkApplication *application;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkContainer *container;
@@ -207,8 +211,15 @@ v_init_dialog( myDialog *dialog )
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
 	is_current = ofo_dossier_is_current( priv->dossier );
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -282,8 +293,6 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	GtkWindow *container;
 	GtkWidget *grid, *label;
 	GList *currencies, *it;
@@ -293,11 +302,6 @@ init_balances_page( ofaLedgerProperties *self )
 	gchar *str;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	container = my_window_get_toplevel( MY_WINDOW( self ));
 
@@ -311,7 +315,7 @@ init_balances_page( ofaLedgerProperties *self )
 
 	for( i=0, it=currencies ; it ; ++i, it=it->next ){
 		code = ( const gchar * ) it->data;
-		currency = ofo_currency_get_by_code( dossier, code );
+		currency = ofo_currency_get_by_code( priv->hub, code );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 		symbol = ofo_currency_get_symbol( currency );

@@ -81,7 +81,7 @@ typedef struct {
 
 GType           ofo_rate_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_rate_connect_signaling_system( const ofaHub *hub );
+void            ofo_rate_connect_to_hub_signaling_system( const ofaHub *hub );
 
 GList          *ofo_rate_get_dataset     ( ofoDossier *dossier );
 ofoRate        *ofo_rate_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );

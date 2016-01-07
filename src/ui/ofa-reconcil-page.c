@@ -1162,7 +1162,7 @@ get_reconciliable_account( ofaReconcilPage *self )
 		/* init account precision depending of the currency */
 		cur_code = ofo_account_get_currency( account );
 		g_return_val_if_fail( my_strlen( cur_code ), NULL );
-		currency = ofo_currency_get_by_code( priv->dossier, cur_code );
+		currency = ofo_currency_get_by_code( priv->hub, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 		priv->acc_precision = ofo_currency_get_precision( currency );
 

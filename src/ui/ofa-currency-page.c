@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-currency.h"
@@ -48,8 +49,8 @@ struct _ofaCurrencyPagePrivate {
 
 	/* internals
 	 */
-	GList            *handlers;
-	ofoDossier       *dossier;
+	ofaHub           *hub;
+	GList            *hub_handlers;
 	gboolean          is_current;
 
 	/* UI
@@ -79,11 +80,11 @@ static void         on_delete_clicked( GtkButton *button, ofaCurrencyPage *page 
 static void         try_to_delete_current_row( ofaCurrencyPage *page );
 static gboolean     delete_confirmed( ofaCurrencyPage *self, ofoCurrency *currency );
 static void         do_delete( ofaCurrencyPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void         on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self );
-static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
+static void         on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self );
+static void         on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
 static void         do_on_updated_account( ofaCurrencyPage *self, ofoAccount *account );
-static void         on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self );
-static void         on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrencyPage *self );
+static void         on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self );
+static void         on_reloaded_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self );
 
 static void
 currencies_page_finalize( GObject *instance )
@@ -105,9 +106,6 @@ static void
 currencies_page_dispose( GObject *instance )
 {
 	ofaCurrencyPagePrivate *priv;
-	gulong handler_id;
-	GList *iha;
-	ofoDossier *dossier;
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PAGE( instance ));
 
@@ -119,13 +117,7 @@ currencies_page_dispose( GObject *instance )
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
-		dossier = ofa_page_get_dossier( OFA_PAGE( instance ));
-		if( OFO_IS_DOSSIER( dossier )){
-			for( iha=priv->handlers ; iha ; iha=iha->next ){
-				handler_id = ( gulong ) iha->data;
-				g_signal_handler_disconnect( dossier, handler_id );
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -144,7 +136,7 @@ ofa_currency_page_init( ofaCurrencyPage *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
 						self, OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPagePrivate );
-	self->priv->handlers = NULL;
+	self->priv->hub_handlers = NULL;
 }
 
 static void
@@ -176,30 +168,25 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_CURRENCY_PAGE( page )->priv;
+
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
 	dossier = ofa_page_get_dossier( page );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	tview = setup_tree_view( OFA_CURRENCY_PAGE( page ));
 	setup_first_selection( OFA_CURRENCY_PAGE( page ));
@@ -240,7 +227,7 @@ setup_tree_view( ofaCurrencyPage *self )
 			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 	priv->tview = tview;
 
-	priv->store = ofa_currency_store_new( priv->dossier );
+	priv->store = ofa_currency_store_new( priv->hub );
 	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -408,7 +395,7 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_currency && ofo_currency_is_deletable( currency, priv->dossier ));
+				priv->is_current && is_currency && ofo_currency_is_deletable( currency ));
 	}
 }
 
@@ -522,8 +509,7 @@ try_to_delete_current_row( ofaCurrencyPage *page )
 	ofoCurrency *currency;
 
 	currency = tview_get_selected( page, &tmodel, &iter );
-	if( currency &&
-			ofo_currency_is_deletable( currency, ofa_page_get_dossier( OFA_PAGE( page )))){
+	if( currency && ofo_currency_is_deletable( currency )){
 		do_delete( page, currency, tmodel, &iter );
 	}
 }
@@ -548,31 +534,33 @@ delete_confirmed( ofaCurrencyPage *self, ofoCurrency *currency )
 static void
 do_delete( ofaCurrencyPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
+	ofaCurrencyPagePrivate *priv;
 	gboolean deletable;
-	ofoDossier *dossier;
 
-	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
-	deletable = ofo_currency_is_deletable( currency, dossier );
+	priv = page->priv;
+
+	deletable = ofo_currency_is_deletable( currency );
 	g_return_if_fail( deletable );
+	g_return_if_fail( !priv->is_current );
 
 	if( delete_confirmed( page, currency ) &&
-			ofo_currency_delete( currency, dossier )){
+			ofo_currency_delete( currency )){
 
 		/* take into account by dossier signaling system */
 	}
 }
 
 /*
- * SIGNAL_DOSSIER_NEW_OBJECT signal handler
+ * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self )
+on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self )
 {
 	static const gchar *thisfn = "ofa_currency_page_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -581,16 +569,17 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self )
 }
 
 /*
- * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ * SIGNAL_HUB_UPDATE signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
 {
 	static const gchar *thisfn = "ofa_currency_page_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn, ( void * ) dossier,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id, ( void * ) self );
 
 	/* make sure the buttons reflect the new currency of the account */
 	if( OFO_IS_ACCOUNT( object )){
@@ -613,15 +602,15 @@ do_on_updated_account( ofaCurrencyPage *self, ofoAccount *account )
 }
 
 /*
- * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self )
 {
 	static const gchar *thisfn = "ofa_currency_page_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
-			thisfn, ( void * ) dossier,
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) hub,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
 
 	if( OFO_IS_CURRENCY( object )){
@@ -629,15 +618,15 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyPage *self )
 }
 
 /*
- * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
+ * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrencyPage *self )
+on_reloaded_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self )
 {
 	static const gchar *thisfn = "ofa_currency_page_on_reloaded_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, self=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) self );
+	g_debug( "%s: hub=%p, type=%lu, self=%p",
+			thisfn, ( void * ) hub, type, ( void * ) self );
 
 	if( type == OFO_TYPE_CURRENCY ){
 	}

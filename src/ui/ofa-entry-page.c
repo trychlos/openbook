@@ -2546,7 +2546,7 @@ check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_CURRENCY, &code, -1 );
 
 	if( my_strlen( code )){
-		if( ofo_currency_get_by_code( priv->dossier, code )){
+		if( ofo_currency_get_by_code( priv->hub, code )){
 			is_valid = TRUE;
 
 		} else {

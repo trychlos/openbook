@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-page.h"
@@ -56,6 +57,7 @@
  */
 struct _ofaLedgerBookRenderPrivate {
 
+	ofaHub              *hub;
 	ofoDossier          *dossier;
 	ofaLedgerBookBin    *args_bin;
 
@@ -300,6 +302,7 @@ page_init_view( ofaPage *page )
 	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
 
+	priv->hub = ofa_page_get_hub( page );
 	priv->dossier = ofa_page_get_dossier( page );
 }
 
@@ -739,7 +742,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	/* get currency properties */
 	code = ofo_entry_get_currency( entry );
-	currency = ofo_currency_get_by_code( priv->dossier, code );
+	currency = ofo_currency_get_by_code( priv->hub, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	digits = ofo_currency_get_digits( currency );
 
@@ -895,7 +898,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->report_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 
@@ -949,7 +952,7 @@ draw_ledger_totals( ofaIRenderable *instance )
 
 	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

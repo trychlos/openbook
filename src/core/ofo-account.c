@@ -345,15 +345,15 @@ ofo_account_get_type( void )
 }
 
 /**
- * ofo_account_connect_signaling_system:
+ * ofo_account_connect_to_hub_signaling_system:
  * @hub: the #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
 void
-ofo_account_connect_signaling_system( const ofaHub *hub )
+ofo_account_connect_to_hub_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_account_connect_signaling_system";
+	static const gchar *thisfn = "ofo_account_connect_to_hub_signaling_system";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
@@ -2327,7 +2327,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			dev_code = g_strdup( def_dev_code );
 		}
 		g_free( str );
-		currency = ofo_currency_get_by_code( dossier, dev_code );
+		currency = ofo_currency_get_by_code( hub, dev_code );
 		if( !currency ){
 			msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
 			ofa_iimportable_set_message(

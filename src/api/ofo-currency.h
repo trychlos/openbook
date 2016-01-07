@@ -37,7 +37,6 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-currency-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -73,36 +72,39 @@ typedef struct {
  */
 #define CUR_DEFAULT_DIGITS              2
 
-GType           ofo_currency_get_type                ( void ) G_GNUC_CONST;
+GType           ofo_currency_get_type          ( void ) G_GNUC_CONST;
 
-void            ofo_currency_connect_signaling_system( const ofaHub *hub );
+void            ofo_currency_connect_to_hub_signaling_system
+                                               ( const ofaHub *hub );
 
-GList          *ofo_currency_get_dataset  ( ofoDossier *dossier );
-ofoCurrency    *ofo_currency_get_by_code  ( ofoDossier *dossier, const gchar *code );
+GList          *ofo_currency_get_dataset       ( ofaHub *hub );
+#define         ofo_currency_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoCurrency    *ofo_currency_new          ( void );
+ofoCurrency    *ofo_currency_get_by_code       ( ofaHub *hub, const gchar *code );
 
-const gchar    *ofo_currency_get_code     ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_label    ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_symbol   ( const ofoCurrency *currency );
-gint            ofo_currency_get_digits   ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_notes    ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_upd_user ( const ofoCurrency *currency );
-const GTimeVal *ofo_currency_get_upd_stamp( const ofoCurrency *currency );
-const gdouble   ofo_currency_get_precision( const ofoCurrency *currency );
+ofoCurrency    *ofo_currency_new               ( void );
 
-gboolean        ofo_currency_is_deletable ( const ofoCurrency *currency, ofoDossier *dossier );
-gboolean        ofo_currency_is_valid     ( const gchar *code, const gchar *label, const gchar *symbol, gint digits );
+const gchar    *ofo_currency_get_code          ( const ofoCurrency *currency );
+const gchar    *ofo_currency_get_label         ( const ofoCurrency *currency );
+const gchar    *ofo_currency_get_symbol        ( const ofoCurrency *currency );
+gint            ofo_currency_get_digits        ( const ofoCurrency *currency );
+const gchar    *ofo_currency_get_notes         ( const ofoCurrency *currency );
+const gchar    *ofo_currency_get_upd_user      ( const ofoCurrency *currency );
+const GTimeVal *ofo_currency_get_upd_stamp     ( const ofoCurrency *currency );
+const gdouble   ofo_currency_get_precision     ( const ofoCurrency *currency );
 
-void            ofo_currency_set_code     ( ofoCurrency *currency, const gchar *code );
-void            ofo_currency_set_label    ( ofoCurrency *currency, const gchar *label );
-void            ofo_currency_set_symbol   ( ofoCurrency *currency, const gchar *symbol );
-void            ofo_currency_set_digits   ( ofoCurrency *currency, gint digits );
-void            ofo_currency_set_notes    ( ofoCurrency *currency, const gchar *notes );
+gboolean        ofo_currency_is_deletable      ( const ofoCurrency *currency );
+gboolean        ofo_currency_is_valid          ( const gchar *code, const gchar *label, const gchar *symbol, gint digits );
 
-gboolean        ofo_currency_insert       ( ofoCurrency *currency, ofoDossier *dossier );
-gboolean        ofo_currency_update       ( ofoCurrency *currency, ofoDossier *dossier, const gchar *prev_code );
-gboolean        ofo_currency_delete       ( ofoCurrency *currency, ofoDossier *dossier );
+void            ofo_currency_set_code          ( ofoCurrency *currency, const gchar *code );
+void            ofo_currency_set_label         ( ofoCurrency *currency, const gchar *label );
+void            ofo_currency_set_symbol        ( ofoCurrency *currency, const gchar *symbol );
+void            ofo_currency_set_digits        ( ofoCurrency *currency, gint digits );
+void            ofo_currency_set_notes         ( ofoCurrency *currency, const gchar *notes );
+
+gboolean        ofo_currency_insert            ( ofoCurrency *currency, ofaHub *hub );
+gboolean        ofo_currency_update            ( ofoCurrency *currency, const gchar *prev_code );
+gboolean        ofo_currency_delete            ( ofoCurrency *currency );
 
 G_END_DECLS
 

@@ -530,8 +530,9 @@
 
  950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
                 intrinsic or take into account dossier_is_current
-     2015- 1- 6 ofoAccount: up to the caller
-                ofoBat: up to the caller
+     2015- 1- 6 ofoAccount: intrinsic (up to the caller)
+                ofoBat: id.
+     2015- 1- 7 ofoCurrency: id.
 
  955 2016- 1- 6 obsolete ofa_page_get_main_window()
                 obsolete ofa_page_get_dossier()

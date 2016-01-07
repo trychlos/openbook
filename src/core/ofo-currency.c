@@ -35,7 +35,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idataset.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
@@ -64,26 +65,26 @@ struct _ofoCurrencyPrivate {
 
 static ofoBaseClass *ofo_currency_parent_class = NULL;
 
-static GList       *currency_load_dataset( ofoDossier *dossier );
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
 static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
-static gboolean     currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean     currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *cnx );
+static gboolean     currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *connect );
+static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect );
+static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *connect );
+static gboolean     currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
+static void         icollectionable_iface_init( ofaICollectionableInterface *iface );
+static guint        icollectionable_get_interface_version( const ofaICollectionable *instance );
+static GList       *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
-static gboolean     currency_do_drop_content( const ofaIDBConnect *cnx );
-
-OFA_IDATASET_LOAD( CURRENCY, currency );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean     currency_do_drop_content( const ofaIDBConnect *connect );
 
 static void
 currency_finalize( GObject *instance )
@@ -167,6 +168,12 @@ register_type( void )
 		( GInstanceInitFunc ) ofo_currency_init
 	};
 
+	static const GInterfaceInfo icollectionable_iface_info = {
+		( GInterfaceInitFunc ) icollectionable_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iexportable_iface_info = {
 		( GInterfaceInitFunc ) iexportable_iface_init,
 		NULL,
@@ -182,6 +189,8 @@ register_type( void )
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoCurrency", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
@@ -203,67 +212,41 @@ ofo_currency_get_type( void )
 }
 
 /**
- * ofo_currency_connect_signaling_system:
+ * ofo_currency_connect_to_hub_signaling_system:
  * @hub: the #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
 void
-ofo_currency_connect_signaling_system( const ofaHub *hub )
+ofo_currency_connect_to_hub_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_currency_connect_signaling_system";
+	static const gchar *thisfn = "ofo_currency_connect_to_hub_signaling_system";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 }
 
-static GList *
-currency_load_dataset( ofoDossier *dossier )
+/**
+ * ofo_currency_get_dataset:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the full #ofoCurrency dataset.
+ *
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
+ */
+GList *
+ofo_currency_get_dataset( ofaHub *hub )
 {
-	GSList *result, *irow, *icol;
-	ofoCurrency *currency;
-	GList *dataset;
-	const ofaIDBConnect *cnx;
-	GTimeVal timeval;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = NULL;
-	cnx = ofo_dossier_get_connect( dossier );
-
-	if( ofa_idbconnect_query_ex( cnx,
-			"SELECT CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
-			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP "
-			"	FROM OFA_T_CURRENCIES", &result, TRUE )){
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			currency = ofo_currency_new();
-			ofo_currency_set_code( currency, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_currency_set_label( currency, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_currency_set_symbol( currency, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_currency_set_digits( currency, icol->data ? atoi(( gchar * ) icol->data ) : CUR_DEFAULT_DIGITS );
-			icol = icol->next;
-			ofo_currency_set_notes( currency, ( gchar * ) icol->data );
-			icol = icol->next;
-			currency_set_upd_user( currency, ( gchar * ) icol->data );
-			icol = icol->next;
-			currency_set_upd_stamp( currency,
-					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-			dataset = g_list_prepend( dataset, currency );
-		}
-
-		ofa_idbconnect_free_results( result );
-	}
-
-	return( g_list_reverse( dataset ));
+	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CURRENCY ));
 }
 
 /**
  * ofo_currency_get_by_code:
+ * @hub: the current #ofaHub object.
  *
  * Returns: the searched currency, or %NULL.
  *
@@ -271,14 +254,16 @@ currency_load_dataset( ofoDossier *dossier )
  * not be unreffed by the caller.
  */
 ofoCurrency *
-ofo_currency_get_by_code( ofoDossier *dossier, const gchar *code )
+ofo_currency_get_by_code( ofaHub *hub, const gchar *code )
 {
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	GList *dataset;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( code ), NULL );
 
-	OFA_IDATASET_GET( dossier, CURRENCY, currency );
+	dataset = ofo_currency_get_dataset( hub );
 
-	return( currency_find_by_code( currency_dataset, code ));
+	return( currency_find_by_code( dataset, code ));
 }
 
 static ofoCurrency *
@@ -457,25 +442,23 @@ ofo_currency_get_precision( const ofoCurrency *currency )
  * account, a journal, an entry (or the dossier is an archive).
  */
 gboolean
-ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
+ofo_currency_is_deletable( const ofoCurrency *currency )
 {
 	ofaHub *hub;
 	const gchar *dev_code;
-	gboolean is_current;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( OFO_BASE( currency )->prot->dispose_has_run ){
 		g_return_val_if_reached( FALSE );
 	}
 
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
+	dossier = ofa_hub_get_dossier( hub );
 	dev_code = ofo_currency_get_code( currency );
-	is_current = ofo_dossier_is_current( dossier );
 
-	return( is_current &&
-			!ofo_dossier_use_currency( dossier, dev_code ) &&
+	return( !ofo_dossier_use_currency( dossier, dev_code ) &&
 			!ofo_entry_use_currency( dossier, dev_code ) &&
 			!ofo_ledger_use_currency( dossier, dev_code ) &&
 			!ofo_account_use_currency( hub, dev_code ));
@@ -603,50 +586,53 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 
 /**
  * ofo_currency_insert:
+ * @currency:
+ * @hub: the current #ofaHub object.
  */
 gboolean
-ofo_currency_insert( ofoCurrency *currency, ofoDossier *dossier )
+ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_currency_insert";
+	gboolean ok;
+
+	g_debug( "%s: currency=%p, hub=%p",
+			thisfn, ( void * ) currency, ( void * ) hub );
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
-
-		g_debug( "%s: currency=%p, dossier=%p",
-				thisfn, ( void * ) currency, ( void * ) dossier );
-
-		if( currency_do_insert(
-					currency,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_ADD( dossier, CURRENCY, currency );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( currency )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( currency ), hub );
+		ofa_icollector_add_object(
+				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, currency );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user )
+currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *connect )
 {
-	return( currency_insert_main( currency, cnx, user ));
+	return( currency_insert_main( currency, connect ));
 }
 
 static gboolean
-currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gchar *user )
+currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str;
+	gchar *label, *notes, *stamp_str, *userid;
 	GTimeVal stamp;
 	const gchar *symbol;
 	gboolean ok;
 
 	ok = FALSE;
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_currency_get_label( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 	notes = my_utils_quote( ofo_currency_get_notes( currency ));
@@ -672,10 +658,10 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gch
 
 	g_string_append_printf( query,
 			"'%s','%s')",
-			user, stamp_str );
+			userid, stamp_str );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
-		currency_set_upd_user( currency, user );
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		currency_set_upd_user( currency, userid );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
 	}
@@ -684,6 +670,7 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gch
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
@@ -692,42 +679,44 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *cnx, const gch
  * ofo_currency_update:
  */
 gboolean
-ofo_currency_update( ofoCurrency *currency, ofoDossier *dossier, const gchar *prev_code )
+ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 {
 	static const gchar *thisfn = "ofo_currency_update";
+	gboolean ok;
+	ofaHub *hub;
+
+	g_debug( "%s: currency=%p, prev_code=%s",
+			thisfn, ( void * ) currency, prev_code );
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
-
-		g_debug( "%s: currency=%p, dossier=%p, prev_code=%s",
-				thisfn, ( void * ) currency, ( void * ) dossier, prev_code );
-
-		if( currency_do_update(
-					currency,
-					prev_code,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_UPDATE( dossier, CURRENCY, currency, prev_code );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( currency )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( currency ));
+
+	if( currency_do_update( currency, prev_code, ofa_hub_get_connect( hub ))){
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY, ( GCompareFunc ) currency_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, currency, prev_code );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *cnx, const gchar *user )
+currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str;
+	gchar *label, *notes, *stamp_str, *userid;
 	GTimeVal stamp;
 	gboolean ok;
 
 	ok = FALSE;
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_currency_get_label( currency ));
 	notes = my_utils_quote( ofo_currency_get_notes( currency ));
 	my_utils_stamp_set_now( &stamp );
@@ -750,10 +739,10 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 
 	g_string_append_printf( query,
 			"	CUR_UPD_USER='%s',CUR_UPD_STAMP='%s'"
-			"	WHERE CUR_CODE='%s'", user, stamp_str, prev_code );
+			"	WHERE CUR_CODE='%s'", userid, stamp_str, prev_code );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
-		currency_set_upd_user( currency, user );
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		currency_set_upd_user( currency, userid );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
 	}
@@ -762,6 +751,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
@@ -770,34 +760,37 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
  * ofo_currency_delete:
  */
 gboolean
-ofo_currency_delete( ofoCurrency *currency, ofoDossier *dossier )
+ofo_currency_delete( ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofo_currency_delete";
+	gboolean ok;
+	ofaHub *hub;
+
+	g_debug( "%s: currency=%p", thisfn, ( void * ) currency );
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_currency_is_deletable( currency, dossier ), FALSE );
+	g_return_val_if_fail( ofo_currency_is_deletable( currency ), FALSE );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
-
-		g_debug( "%s: currency=%p, dossier=%p",
-				thisfn, ( void * ) currency, ( void * ) dossier );
-
-		if( currency_do_delete(
-					currency,
-					ofo_dossier_get_connect( dossier ))){
-
-			OFA_IDATASET_REMOVE( dossier, CURRENCY, currency );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( currency )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( currency ));
+
+	if( currency_do_delete( currency, ofa_hub_get_connect( hub ))){
+		g_object_ref( currency );
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( currency ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, currency );
+		g_object_unref( currency );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *cnx )
+currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -807,7 +800,7 @@ currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *cnx )
 			"	WHERE CUR_CODE='%s'",
 					ofo_currency_get_code( currency ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -827,6 +820,71 @@ currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
 }
 
 /*
+ * ofaICollectionable interface management
+ */
+static void
+icollectionable_iface_init( ofaICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( const ofaICollectionable *instance )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+{
+	GSList *result, *irow, *icol;
+	ofoCurrency *currency;
+	GList *dataset;
+	const ofaIDBConnect *connect;
+	GTimeVal timeval;
+
+	dataset = NULL;
+	connect = ofa_hub_get_connect( hub );
+
+	if( ofa_idbconnect_query_ex( connect,
+			"SELECT CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
+			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP "
+			"	FROM OFA_T_CURRENCIES", &result, TRUE )){
+
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			currency = ofo_currency_new();
+			ofo_currency_set_code( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_label( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_symbol( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_digits( currency, icol->data ? atoi(( gchar * ) icol->data ) : CUR_DEFAULT_DIGITS );
+			icol = icol->next;
+			ofo_currency_set_notes( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			currency_set_upd_user( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			currency_set_upd_stamp( currency,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+
+			dataset = g_list_prepend( dataset, currency );
+			ofo_base_set_hub( OFO_BASE( currency ), hub );
+		}
+
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( g_list_reverse( dataset ));
+}
+
+/*
  * ofaIExportable interface management
  */
 static void
@@ -837,7 +895,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export_from_dossier = iexportable_export;
+	iface->export = iexportable_export;
 }
 
 static guint
@@ -854,9 +912,9 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
-	GList *it;
+	GList *dataset, *it;
 	GSList *lines;
 	gchar *str, *stamp, *notes;
 	ofoCurrency *currency;
@@ -864,11 +922,11 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gboolean ok, with_headers;
 	gulong count;
 
-	OFA_IDATASET_GET( dossier, CURRENCY, currency );
+	dataset = ofo_currency_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
 
-	count = ( gulong ) g_list_length( currency_dataset );
+	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
 		count += 1;
 	}
@@ -884,7 +942,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 	}
 
-	for( it=currency_dataset ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		currency = OFO_CURRENCY( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_currency_get_notes( currency ));
@@ -925,7 +983,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import_to_dossier = iimportable_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -935,7 +993,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
 }
 
 /**
- * ofo_currency_iimportable_importv:
+ * ofo_currency_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -956,7 +1014,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -964,6 +1022,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GList *dataset, *it;
 	guint errors, line;
 	gchar *splitted;
+	const ofaIDBConnect *connect;
 
 	line = 0;
 	errors = 0;
@@ -1027,34 +1086,26 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	}
 
 	if( !errors ){
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CURRENCY, FALSE );
-
-		currency_do_drop_content( ofo_dossier_get_connect( dossier ));
+		connect = ofa_hub_get_connect( hub );
+		currency_do_drop_content( connect );
 
 		for( it=dataset ; it ; it=it->next ){
-			if( !currency_do_insert(
-					OFO_CURRENCY( it->data ),
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
+			if( !currency_do_insert( OFO_CURRENCY( it->data ), connect )){
 				errors -= 1;
 			}
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
-		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
-		ofa_idataset_free_dataset( dossier, OFO_TYPE_CURRENCY );
-
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CURRENCY );
-
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CURRENCY, TRUE );
+		ofo_currency_free_dataset( dataset );
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
 	}
 
 	return( errors );
 }
 
 static gboolean
-currency_do_drop_content( const ofaIDBConnect *cnx )
+currency_do_drop_content( const ofaIDBConnect *connect )
 {
-	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
+	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
 }

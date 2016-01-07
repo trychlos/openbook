@@ -79,7 +79,8 @@ typedef struct {
 
 GType           ofo_concil_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_concil_connect_signaling_system( const ofaHub *hub );
+void            ofo_concil_connect_to_hub_signaling_system
+                                                   ( const ofaHub *hub );
 
 ofoConcil      *ofo_concil_get_by_id               ( ofaHub *hub, ofxCounter rec_id );
 ofoConcil      *ofo_concil_get_by_other_id         ( ofaHub *hub, const gchar *type, ofxCounter other_id );

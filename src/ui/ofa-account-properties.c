@@ -535,11 +535,11 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
 
-	cur_obj = ofo_currency_get_by_code( priv->dossier, code );
+	cur_obj = ofo_currency_get_by_code( priv->hub, code );
 
 	if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 		iso3a = ofo_dossier_get_default_currency( priv->dossier );
-		cur_obj = ofo_currency_get_by_code( priv->dossier, iso3a );
+		cur_obj = ofo_currency_get_by_code( priv->hub, iso3a );
 	}
 	priv->cur_digits = 2;
 	priv->cur_symbol = NULL;

@@ -34,7 +34,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -274,7 +273,6 @@ page_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_page_init_view";
 	ofaReconcilRenderPrivate *priv;
-	GtkApplication *application;
 
 	OFA_PAGE_CLASS( ofa_reconcil_render_parent_class )->init_view( page );
 
@@ -283,12 +281,10 @@ page_init_view( ofaPage *page )
 	priv = OFA_RECONCIL_RENDER( page )->priv;
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
 
-	priv->dossier = ofa_page_get_dossier( page );
-
-	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_page_get_hub( page );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -352,7 +348,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
 
 	priv->currency = ofo_account_get_currency( priv->account );
-	currency = ofo_currency_get_by_code( priv->dossier, priv->currency );
+	currency = ofo_currency_get_by_code( priv->hub, priv->currency );
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
 
 	priv->digits = ofo_currency_get_digits( currency );

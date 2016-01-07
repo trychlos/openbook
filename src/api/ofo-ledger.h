@@ -76,7 +76,7 @@ typedef struct {
 
 GType           ofo_ledger_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_ledger_connect_signaling_system( const ofaHub *hub );
+void            ofo_ledger_connect_to_hub_signaling_system( const ofaHub *hub );
 
 void            ofo_ledger_connect_handlers  ( const ofoDossier *dossier );
 

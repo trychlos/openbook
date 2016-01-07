@@ -293,7 +293,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 		add_message( bin, _( "Dossier has no default currency" ));
 		priv->dossier_errs += 1;
 	} else {
-		cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+		cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 		if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 			str = g_strdup_printf(
 					_( "Dossier default currency '%s' doesn't exist" ), cur_code );
@@ -345,7 +345,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 			add_message( bin, _( "Dossier solde account has no currency" ));
 			priv->dossier_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Dossier solde account currency '%s' doesn't exist" ), cur_code );
@@ -387,7 +387,6 @@ static void
 check_bat_lines_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	gulong count, i;
 	GList *bats, *it, *lines, *itl;
@@ -402,7 +401,6 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->bat_lines_errs = 0;
 	bats = ofo_bat_get_dataset( priv->hub );
@@ -419,7 +417,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 		/* it is ok for a BAT file to not have a currency set */
 		cur_code = ofo_bat_get_currency( bat );
 		if( my_strlen( cur_code )){
-			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
@@ -438,7 +436,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 			/* it is ok for a BAT line to not have a currency */
 			cur_code = ofo_bat_line_get_currency( line );
 			if( my_strlen( cur_code )){
-				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
@@ -467,7 +465,6 @@ static void
 check_accounts_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *accounts, *it;
 	gulong count, i;
@@ -482,7 +479,6 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->accounts_errs = 0;
 	accounts = ofo_account_get_dataset( priv->hub );
@@ -510,7 +506,7 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->accounts_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Account %s currency '%s' doesn't exist" ), acc_num, cur_code );
@@ -586,7 +582,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has currency '%s' which doesn't exist" ), number, cur_code );
@@ -670,7 +666,7 @@ check_ledgers_run( ofaCheckIntegrityBin *bin )
 				g_free( str );
 				priv->ledgers_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( dossier, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Ledger %s has currency '%s' which doesn't exist" ), mnemo, cur_code );

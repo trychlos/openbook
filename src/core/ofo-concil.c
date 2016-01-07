@@ -135,15 +135,15 @@ ofo_concil_class_init( ofoConcilClass *klass )
 }
 
 /**
- * ofo_concil_connect_signaling_system:
+ * ofo_concil_connect_to_hub_signaling_system:
  * @hub: the #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
 void
-ofo_concil_connect_signaling_system( const ofaHub *hub )
+ofo_concil_connect_to_hub_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_concil_connect_signaling_system";
+	static const gchar *thisfn = "ofo_concil_connect_to_hub_signaling_system";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 

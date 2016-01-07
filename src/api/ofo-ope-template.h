@@ -146,7 +146,7 @@ typedef struct {
 
 GType           ofo_ope_template_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_ope_template_connect_signaling_system( const ofaHub *hub );
+void            ofo_ope_template_connect_to_hub_signaling_system( const ofaHub *hub );
 
 void            ofo_ope_template_connect_handlers  ( const ofoDossier *dossier );
 

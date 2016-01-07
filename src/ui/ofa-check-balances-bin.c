@@ -428,7 +428,6 @@ static ofsCurrency *
 get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *currency )
 {
 	ofaCheckBalancesBinPrivate *priv;
-	ofoDossier *dossier;
 	GList *it;
 	ofsCurrency *sbal;
 	ofoCurrency *cur_object;
@@ -436,7 +435,6 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 
 	priv = bin->priv;
 	found = FALSE;
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	for( it=*list ; it ; it=it->next ){
 		sbal = ( ofsCurrency * ) it->data;
@@ -449,7 +447,7 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 	if( !found ){
 		sbal = g_new0( ofsCurrency, 1 );
 		sbal->currency = g_strdup( currency );
-		cur_object = ofo_currency_get_by_code( dossier, currency );
+		cur_object = ofo_currency_get_by_code( priv->hub, currency );
 		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
 		sbal->digits = ofo_currency_get_digits( cur_object );
 		*list = g_list_prepend( *list, sbal );

@@ -705,7 +705,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	currency = ofo_currency_get_by_code( priv->dossier, priv->currency_code );
+	currency = ofo_currency_get_by_code( priv->hub, priv->currency_code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	priv->currency_digits = ofo_currency_get_digits( currency );
@@ -1007,7 +1007,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->dossier, scur->currency );
+		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 		digits = ofo_currency_get_digits( currency );
 

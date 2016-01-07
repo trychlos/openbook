@@ -970,17 +970,11 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gint level;
 	gint column;
 	ofoCurrency *currency;
-	/*GtkTreePath *path;
-	GdkRectangle rc;
-	GtkTreeView *tview;*/
 	gboolean is_root, is_error;
-	ofoDossier *dossier;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
 
 	priv = self->priv;
-
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	gtk_tree_model_get( tmodel, iter,
 			ACCOUNT_COL_NUMBER, &account_num, ACCOUNT_COL_OBJECT, &account_obj, -1 );
@@ -994,7 +988,7 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	is_error = FALSE;
 	if( !is_root ){
-		currency = ofo_currency_get_by_code( dossier, ofo_account_get_currency( account_obj ));
+		currency = ofo_currency_get_by_code( priv->hub, ofo_account_get_currency( account_obj ));
 		is_error |= !currency;
 	}
 

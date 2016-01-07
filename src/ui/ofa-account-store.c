@@ -284,12 +284,10 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	ofxAmount val_debit, val_credit, rough_debit, rough_credit, exe_solde;
 	GdkPixbuf *notes_png;
 	GError *error;
-	ofoDossier *dossier;
 
 	currency_code = ofo_account_get_currency( account );
 	if( !ofo_account_is_root( account )){
-		dossier = ofa_hub_get_dossier( hub );
-		currency_obj = ofo_currency_get_by_code( dossier, currency_code );
+		currency_obj = ofo_currency_get_by_code( hub, currency_code );
 		if( currency_obj && OFO_IS_CURRENCY( currency_obj )){
 			digits = ofo_currency_get_digits( currency_obj );
 		} else {

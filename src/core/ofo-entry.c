@@ -212,7 +212,7 @@ static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
 static void         error_acc_number( void );
 static void         error_account( const gchar *number );
-static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
+static void         error_acc_currency( ofaHub *hub, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, const ofaIDBConnect *cnx, const gchar *user );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaIDBConnect *cnx, ofxCounter number );
@@ -345,15 +345,15 @@ ofo_entry_get_type( void )
 }
 
 /**
- * ofo_entry_connect_signaling_system:
+ * ofo_entry_connect_to_hub_signaling_system:
  * @hub: the #ofaHub object.
  *
  * Connect to the @hub signaling system.
  */
 void
-ofo_entry_connect_signaling_system( const ofaHub *hub )
+ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_entry_connect_signaling_system";
+	static const gchar *thisfn = "ofo_entry_connect_to_hub_signaling_system";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
@@ -2041,7 +2041,7 @@ ofo_entry_is_valid( ofoDossier *dossier,
 		error_ope_template( model );
 		ok &= FALSE;
 	}
-	if( !my_strlen( currency ) || !ofo_currency_get_by_code( dossier, currency )){
+	if( !my_strlen( currency ) || !ofo_currency_get_by_code( hub, currency )){
 		error_currency( currency );
 		ok &= FALSE;
 	}
@@ -2055,7 +2055,7 @@ ofo_entry_is_valid( ofoDossier *dossier,
 			ok &= FALSE;
 
 		} else if( g_utf8_collate( currency, ofo_account_get_currency( account_obj ))){
-			error_acc_currency( dossier, currency, account_obj );
+			error_acc_currency( hub, currency, account_obj );
 			ok &= FALSE;
 		}
 	}
@@ -2289,15 +2289,15 @@ error_account( const gchar *number )
 }
 
 static void
-error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account )
+error_acc_currency( ofaHub *hub, const gchar *currency, ofoAccount *account )
 {
 	gchar *str;
 	const gchar *acc_currency;
 	ofoCurrency *acc_dev, *ent_dev;
 
 	acc_currency = ofo_account_get_currency( account );
-	acc_dev = ofo_currency_get_by_code( dossier, acc_currency );
-	ent_dev = ofo_currency_get_by_code( dossier, currency );
+	acc_dev = ofo_currency_get_by_code( hub, acc_currency );
+	ent_dev = ofo_currency_get_by_code( hub, currency );
 
 	if( !acc_dev ){
 		str = g_strdup_printf( "Invalid currency '%s' for the account '%s'",
@@ -2986,7 +2986,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			errors += 1;
 			continue;
 		}
-		cur_object = ofo_currency_get_by_code( dossier, currency );
+		cur_object = ofo_currency_get_by_code( hub, currency );
 		if( !cur_object ){
 			msg = g_strdup_printf( _( "unregistered currency: %s" ), currency );
 			ofa_iimportable_set_message(

@@ -72,15 +72,15 @@ GType             ofa_currency_combo_get_type       ( void ) G_GNUC_CONST;
 ofaCurrencyCombo *ofa_currency_combo_new            ( void );
 
 void              ofa_currency_combo_set_columns    ( ofaCurrencyCombo *combo,
-																ofaCurrencyColumns columns );
+															ofaCurrencyColumns columns );
 
 void              ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo,
-																const ofaMainWindow *main_window );
+															const ofaMainWindow *main_window );
 
 gchar            *ofa_currency_combo_get_selected   ( ofaCurrencyCombo *combo );
 
 void              ofa_currency_combo_set_selected   ( ofaCurrencyCombo *combo,
-																const gchar *code );
+															const gchar *code );
 
 G_END_DECLS
 
