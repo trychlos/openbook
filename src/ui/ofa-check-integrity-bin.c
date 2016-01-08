@@ -550,7 +550,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->entries_errs = 0;
-	entries = ofo_entry_get_dataset_by_account( dossier, NULL );
+	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
 	count = g_list_length( entries );
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){

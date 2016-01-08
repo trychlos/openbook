@@ -33,7 +33,6 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -67,11 +66,10 @@ struct _ofaSettlementPrivate {
 	/* internals
 	 */
 	ofaHub            *hub;
-	ofoDossier        *dossier;
+	GList             *hub_handlers;
 	gchar             *account_number;
 	const gchar       *account_currency;
 	ofaEntrySettlement settlement;
-	GList             *handlers;
 
 	/* sorting the view
 	 */
@@ -262,7 +260,6 @@ static void
 settlement_dispose( GObject *instance )
 {
 	ofaSettlementPrivate *priv;
-	GList *it;
 
 	g_return_if_fail( OFA_IS_SETTLEMENT( instance ));
 
@@ -270,13 +267,7 @@ settlement_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = OFA_SETTLEMENT( instance )->priv;
-
-		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-			priv->handlers = NULL;
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -387,19 +378,15 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_settlement_v_setup_view";
 	ofaSettlementPrivate *priv;
-	GtkApplication *application;
 	GtkWidget *frame;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_SETTLEMENT( page )->priv;
 
-	priv->dossier = ofa_page_get_dossier( page );
 	get_settings( OFA_SETTLEMENT( page ));
 
-	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	frame = gtk_frame_new( NULL );
@@ -803,14 +790,12 @@ setup_signaling_connect( ofaSettlement *self )
 	priv = self->priv;
 
 	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+			priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_dossier_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+			priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_dossier_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 static void
@@ -1189,7 +1174,7 @@ try_display_entries( ofaSettlement *self )
 			settlement_status_is_valid( self ) &&
 			priv->tview && GTK_IS_TREE_VIEW( priv->tview )){
 
-		entries = ofo_entry_get_dataset_by_account( priv->dossier, priv->account_number );
+		entries = ofo_entry_get_dataset_by_account( priv->hub, priv->account_number );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 	}
@@ -1377,13 +1362,15 @@ update_selection( ofaSettlement *self, gboolean settle )
 	gchar *path_str;
 	GtkTreeIter sort_iter, filter_iter, *store_iter;
 	GList *list_iters, *it;
+	ofoDossier *dossier;
 
 	priv = self->priv;
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
 	if( settle ){
-		ses.set_number = ofo_dossier_get_next_settlement( priv->dossier );
+		dossier = ofa_hub_get_dossier( priv->hub );
+		ses.set_number = ofo_dossier_get_next_settlement( dossier );
 	} else {
 		ses.set_number = -1;
 	}
@@ -1433,19 +1420,15 @@ update_selection( ofaSettlement *self, gboolean settle )
 static void
 update_row( GtkTreeModel *tstore, GtkTreeIter *iter, sEnumSelected *ses )
 {
-	ofaSettlementPrivate *priv;
 	ofoEntry *entry;
 	gint number;
 	gchar *snum;
 
-	priv = ses->self->priv;
-
 	/* get the object and update it, according to the clicked button */
-
 	gtk_tree_model_get( tstore, iter, ENT_COL_OBJECT, &entry, -1 );
 	g_object_unref( entry );
 
-	ofo_entry_update_settlement( entry, priv->dossier, ses->set_number );
+	ofo_entry_update_settlement( entry, ses->set_number );
 
 	number = ofo_entry_get_settlement_number( entry );
 	if( number > 0 ){

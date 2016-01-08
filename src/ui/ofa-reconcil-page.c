@@ -1222,7 +1222,7 @@ do_display_entries( ofaReconcilPage *self )
 	priv = self->priv;
 
 	entries = ofo_entry_get_dataset_by_account(
-					priv->dossier, ofo_account_get_number( priv->account ));
+					priv->hub, ofo_account_get_number( priv->account ));
 
 	for( it=entries ; it ; it=it->next ){
 		insert_entry( self, OFO_ENTRY( it->data ));

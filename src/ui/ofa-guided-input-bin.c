@@ -1716,7 +1716,7 @@ do_validate( ofaGuidedInputBin *bin )
 	entries = ofs_ope_generate_entries( priv->ope, priv->dossier );
 
 	for( it=entries ; it ; it=it->next ){
-		ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->dossier );
+		ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->hub );
 		/* TODO:
 		 * in case of an error, remove the already recorded entries
 		 * of the list, decrementing the ledgers and the accounts

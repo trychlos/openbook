@@ -744,7 +744,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->dossier, ENT_STATUS_ROUGH );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
 	my_utils_stamp_set_now( &stamp_start );
 
@@ -752,7 +752,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	gtk_widget_show_all( priv->p6_page );
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){
-		ofo_entry_validate( OFO_ENTRY( it->data ), priv->dossier );
+		ofo_entry_validate( OFO_ENTRY( it->data ));
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );
@@ -945,12 +945,12 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			 */
 			for( ite=sld_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
-				ofo_entry_insert( entry, priv->dossier );
+				ofo_entry_insert( entry, priv->hub );
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
 					counter = ofo_dossier_get_next_settlement( priv->dossier );
-					ofo_entry_update_settlement( entry, priv->dossier, counter );
+					ofo_entry_update_settlement( entry, counter );
 					p6_set_forward_settlement_number( for_entries, acc_number, counter );
 				}
 				if( ofo_account_is_reconciliable( account ) &&
@@ -1383,11 +1383,11 @@ p6_forward( ofaExerciceCloseAssistant *self )
 
 	for( i=1, it=priv->p6_forwards ; it ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		ofo_entry_insert( entry, priv->dossier );
+		ofo_entry_insert( entry, priv->hub );
 
 		counter = ofo_entry_get_settlement_number( entry );
 		if( counter ){
-			ofo_entry_update_settlement( entry, priv->dossier, counter );
+			ofo_entry_update_settlement( entry, counter );
 		}
 
 		/* set reconciliation on reconciliable account */
@@ -1490,7 +1490,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 
 	dos_dend = ofo_dossier_get_exe_end( priv->dossier );
 
-	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->dossier, ENT_STATUS_FUTURE );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
 
 	bar = get_new_bar( self, "p6-future" );

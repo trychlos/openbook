@@ -272,7 +272,7 @@ v_init_dialog( myDialog *dialog )
 	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 	/* account */
-	priv->has_entries = ofo_entry_use_account( priv->dossier, acc_number );
+	priv->has_entries = ofo_entry_use_account( priv->hub, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 	priv->number = g_strdup( acc_number );
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));

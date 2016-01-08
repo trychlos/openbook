@@ -1063,20 +1063,21 @@ ofo_ledger_get_max_last_close( GDate *date, const ofoDossier *dossier )
 gboolean
 ofo_ledger_has_entries( const ofoLedger *ledger, ofoDossier *dossier )
 {
+	ofaHub *hub;
 	gboolean ok;
 	const gchar *mnemo;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		mnemo = ofo_ledger_get_mnemo( ledger );
-		ok = ofo_entry_use_ledger( dossier, mnemo );
-		return( ok );
+	if( OFO_BASE( ledger )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	hub = ofo_base_get_hub( OFO_BASE( ledger ));
+	mnemo = ofo_ledger_get_mnemo( ledger );
+	ok = ofo_entry_use_ledger( hub, mnemo );
+	return( ok );
 }
 
 /**
@@ -1097,6 +1098,7 @@ ofo_ledger_has_entries( const ofoLedger *ledger, ofoDossier *dossier )
 gboolean
 ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 {
+	ofaHub *hub;
 	gboolean ok;
 	const gchar *mnemo;
 	gboolean is_current;
@@ -1104,21 +1106,21 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		ok = TRUE;
-		mnemo = ofo_ledger_get_mnemo( ledger );
-		is_current = ofo_dossier_is_current( dossier );
-
-		ok &= is_current &&
-				!ofo_dossier_use_ledger( dossier, mnemo ) &&
-				!ofo_entry_use_ledger( dossier, mnemo ) &&
-				!ofo_ope_template_use_ledger( dossier, mnemo );
-
-		return( ok );
+	if( OFO_BASE( ledger )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = TRUE;
+	hub = ofo_base_get_hub( OFO_BASE( ledger ));
+	mnemo = ofo_ledger_get_mnemo( ledger );
+	is_current = ofo_dossier_is_current( dossier );
+
+	ok &= is_current &&
+			!ofo_dossier_use_ledger( dossier, mnemo ) &&
+			!ofo_entry_use_ledger( hub, mnemo ) &&
+			!ofo_ope_template_use_ledger( dossier, mnemo );
+
+	return( ok );
 }
 
 /**
@@ -1366,33 +1368,33 @@ gboolean
 ofo_ledger_close( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing )
 {
 	static const gchar *thisfn = "ofo_ledger_close";
+	ofaHub *hub;
 	gboolean ok;
+
+	g_debug( "%s: ledger=%p, closing=%p", thisfn, ( void * ) ledger, ( void * ) closing );
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( closing && my_date_is_valid( closing ), FALSE );
 
-	g_debug( "%s: ledger=%p, closing=%p", thisfn, ( void * ) ledger, ( void * ) closing );
+	if( OFO_BASE( ledger )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
+	}
 
 	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	if( ofo_entry_validate_by_ledger( hub, ofo_ledger_get_mnemo( ledger ), closing )){
 
-		if( ofo_entry_validate_by_ledger(
-						dossier,
-						ofo_ledger_get_mnemo( ledger ),
-						closing )){
+		ledger_set_last_clo( ledger, closing );
 
-			ledger_set_last_clo( ledger, closing );
+		if( ofo_ledger_update( ledger, dossier, ofo_ledger_get_mnemo( ledger ))){
 
-			if( ofo_ledger_update( ledger, dossier, ofo_ledger_get_mnemo( ledger ))){
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 
-				g_signal_emit_by_name(
-						G_OBJECT( dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
-
-				ok = TRUE;
-			}
+			ok = TRUE;
 		}
 	}
 

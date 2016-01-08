@@ -322,7 +322,7 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 
 	/* display all used currencies (from entries)
 	 * then display the corresponding account number (if set) */
-	priv->currencies = ofo_entry_get_currencies( priv->dossier );
+	priv->currencies = ofo_entry_get_currencies( priv->hub );
 	for( i=1, it=priv->currencies ; it ; ++i, it=it->next ){
 		add_empty_row( bin );
 		set_currency( bin, i, ( const gchar * ) it->data );

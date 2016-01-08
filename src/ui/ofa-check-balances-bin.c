@@ -287,7 +287,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
 	dend = ofo_dossier_get_exe_end( dossier );
-	entries = ofo_entry_get_dataset_for_print_general_books( dossier, NULL, NULL, dbegin, dend );
+	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, dend );
 	count = g_list_length( entries );
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){

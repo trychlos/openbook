@@ -35,6 +35,8 @@
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -55,6 +57,7 @@ struct _ofaDossierPropertiesPrivate {
 	/* internals
 	 */
 	ofaMainWindow      *main_window;
+	ofaHub             *hub;
 	ofoDossier         *dossier;
 	gboolean            is_new;
 	gboolean            updated;
@@ -252,11 +255,18 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierProperties *self;
 	ofaDossierPropertiesPrivate *priv;
+	GtkApplication *application;
 	GtkContainer *container;
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
 	priv = self->priv;
 	priv->is_current = ofo_dossier_is_current( priv->dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
@@ -754,7 +764,7 @@ do_update( ofaDossierProperties *self )
 
 	if( date_has_changed ){
 		count = ofo_entry_get_exe_changed_count(
-				priv->dossier, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
+				priv->hub, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
 		if( count > 0 && !confirm_remediation( self, count )){
 			return( FALSE );
 		}

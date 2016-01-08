@@ -839,6 +839,7 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier )
 {
+	ofaHub *hub;
 	const gchar *mnemo;
 	gboolean is_current;
 
@@ -847,11 +848,12 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier 
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
+		hub = ofo_base_get_hub( OFO_BASE( model ));
 		mnemo = ofo_ope_template_get_mnemo( model );
 		is_current = ofo_dossier_is_current( dossier );
 
 		return( is_current &&
-				!ofo_entry_use_ope_template( dossier, mnemo ) &&
+				!ofo_entry_use_ope_template( hub, mnemo ) &&
 				!ofo_dossier_use_ope_template( dossier, mnemo ));
 	}
 

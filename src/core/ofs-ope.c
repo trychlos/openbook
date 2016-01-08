@@ -1154,7 +1154,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 
 			entries = g_list_append( entries,
 					ofo_entry_new_with_data(
-							dossier,
+							hub,
 							&ope->deffect, &ope->dope, detail->label,
 							ope->ref, detail->account,
 							currency,

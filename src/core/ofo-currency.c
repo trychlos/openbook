@@ -458,10 +458,10 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	dossier = ofa_hub_get_dossier( hub );
 	dev_code = ofo_currency_get_code( currency );
 
-	return( !ofo_dossier_use_currency( dossier, dev_code ) &&
-			!ofo_entry_use_currency( dossier, dev_code ) &&
-			!ofo_ledger_use_currency( dossier, dev_code ) &&
-			!ofo_account_use_currency( hub, dev_code ));
+	return( !ofo_account_use_currency( hub, dev_code ) &&
+			!ofo_dossier_use_currency( dossier, dev_code ) &&
+			!ofo_entry_use_currency( hub, dev_code ) &&
+			!ofo_ledger_use_currency( dossier, dev_code ));
 }
 
 /**

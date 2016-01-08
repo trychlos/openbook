@@ -1483,7 +1483,7 @@ display_entries_from_ledger( ofaEntryPage *self )
 
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
 
-		entries = ofo_entry_get_dataset_by_ledger( priv->dossier, priv->jou_mnemo );
+		entries = ofo_entry_get_dataset_by_ledger( priv->hub, priv->jou_mnemo );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 
@@ -1578,7 +1578,7 @@ display_entries_from_account( ofaEntryPage *self )
 
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
 
-		entries = ofo_entry_get_dataset_by_account( priv->dossier, priv->acc_number );
+		entries = ofo_entry_get_dataset_by_account( priv->hub, priv->acc_number );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 
@@ -2888,9 +2888,9 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofo_entry_set_currency( entry, currency );
 
 	if( is_new ){
-		ok = ofo_entry_insert( entry, priv->dossier );
+		ok = ofo_entry_insert( entry, priv->hub );
 	} else {
-		ok = ofo_entry_update( entry, priv->dossier );
+		ok = ofo_entry_update( entry );
 		remediate_entry_account( self, entry, prev_account, prev_debit, prev_credit );
 		remediate_entry_ledger( self, entry, prev_ledger, prev_debit, prev_credit );
 	}
@@ -3314,7 +3314,7 @@ do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 	/* if entry was settled, then cancel all settlement group */
 	id = ofo_entry_get_settlement_number( entry );
 	if( id > 0 ){
-		ofo_entry_unsettle_by_number( priv->dossier, id );
+		ofo_entry_unsettle_by_number( priv->hub, id );
 	}
 
 	/* if entry was conciliated, then remove all conciliation group */
@@ -3473,7 +3473,6 @@ delete_row( ofaEntryPage *self )
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
 		if( get_row_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
-
 			if( ask_for_delete_confirmed( self, entry )){
 
 				gtk_tree_model_sort_convert_iter_to_child_iter(
@@ -3482,7 +3481,7 @@ delete_row( ofaEntryPage *self )
 						GTK_TREE_MODEL_FILTER( priv->tfilter ), &iter, &filter_iter );
 				tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-				ofo_entry_delete( entry, priv->dossier );
+				ofo_entry_delete( entry );
 				compute_balances( self );
 			}
 		}

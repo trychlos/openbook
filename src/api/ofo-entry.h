@@ -34,9 +34,9 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-concil-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoBaseClass     parent;
 }
 	ofoEntryClass;
 
@@ -91,116 +91,112 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType           ofo_entry_get_type                ( void ) G_GNUC_CONST;
+GType           ofo_entry_get_type               ( void ) G_GNUC_CONST;
 
-void            ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub );
+void            ofo_entry_connect_to_hub_signaling_system
+                                                 ( const ofaHub *hub );
 
-ofoEntry       *ofo_entry_new                  ( void );
+ofoEntry       *ofo_entry_new                    ( void );
 
-void            ofo_entry_dump                 ( const ofoEntry *entry );
+void            ofo_entry_dump                   ( const ofoEntry *entry );
 
-void            ofo_entry_connect_handlers     ( const ofoDossier *dossier );
+GList          *ofo_entry_get_dataset_by_account ( ofaHub *hub,
+														const gchar *account );
+GList          *ofo_entry_get_dataset_by_ledger  ( ofaHub *hub,
+														const gchar *ledger );
+GList          *ofo_entry_get_dataset_for_print_balance
+                                                 ( ofaHub *hub,
+                                                		const gchar *from_account, const gchar *to_account,
+														const GDate *from_date, const GDate *to_date );
+GList          *ofo_entry_get_dataset_for_print_general_books
+                                                 ( ofaHub *hub,
+                                                		const gchar *from_account, const gchar *to_account,
+														const GDate *from_date, const GDate *to_date );
+GList          *ofo_entry_get_dataset_for_print_ledgers
+                                                 ( ofaHub *hub,
+                                                		const GSList *mnemos,
+														const GDate *from_date, const GDate *to_date );
+GList          *ofo_entry_get_dataset_for_print_reconcil
+                                                 ( ofaHub *hub,
+                                                		const gchar *account, const GDate *date );
+GList          *ofo_entry_get_dataset_for_exercice_by_status
+                                                 ( ofaHub *hub, ofaEntryStatus status );
 
-GList          *ofo_entry_get_dataset_by_account             ( ofoDossier *dossier,
-																	const gchar *account );
-GList          *ofo_entry_get_dataset_by_ledger              ( ofoDossier *dossier,
-																	const gchar *ledger );
-GList          *ofo_entry_get_dataset_for_print_balance      ( ofoDossier *dossier,
-																	const gchar *from_account,
-																	const gchar *to_account,
-																	const GDate *from_date,
-																	const GDate *to_date );
-GList          *ofo_entry_get_dataset_for_print_general_books( ofoDossier *dossier,
-																	const gchar *from_account,
-																	const gchar *to_account,
-																	const GDate *from_date,
-																	const GDate *to_date );
-GList          *ofo_entry_get_dataset_for_print_ledgers      ( ofoDossier *dossier,
-																	const GSList *mnemos,
-																	const GDate *from_date,
-																	const GDate *to_date );
-GList          *ofo_entry_get_dataset_for_print_reconcil     ( ofoDossier *dossier,
-																	const gchar *account,
-																	const GDate *date );
-GList          *ofo_entry_get_dataset_for_exercice_by_status ( ofoDossier *dossier,
-																	ofaEntryStatus status );
+#define         ofo_entry_free_dataset( L )      g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-void            ofo_entry_free_dataset         ( GList *dataset );
+gboolean        ofo_entry_use_account            ( const ofaHub *hub, const gchar *account );
+gboolean        ofo_entry_use_currency           ( const ofaHub *hub, const gchar *currency );
+gboolean        ofo_entry_use_ledger             ( const ofaHub *hub, const gchar *journal );
+gboolean        ofo_entry_use_ope_template       ( const ofaHub *hub, const gchar *model );
 
-gboolean        ofo_entry_use_account          ( const ofoDossier *dossier, const gchar *account );
-gboolean        ofo_entry_use_currency         ( const ofoDossier *dossier, const gchar *currency );
-gboolean        ofo_entry_use_ledger           ( const ofoDossier *dossier, const gchar *journal );
-gboolean        ofo_entry_use_ope_template     ( const ofoDossier *dossier, const gchar *model );
+ofxCounter      ofo_entry_get_number             ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_label              ( const ofoEntry *entry );
+const GDate    *ofo_entry_get_deffect            ( const ofoEntry *entry );
+const GDate    *ofo_entry_get_dope               ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_ref                ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_account            ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_currency           ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_ledger             ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_ope_template       ( const ofoEntry *entry );
+ofxAmount       ofo_entry_get_debit              ( const ofoEntry *entry );
+ofxAmount       ofo_entry_get_credit             ( const ofoEntry *entry );
+ofaEntryStatus  ofo_entry_get_status             ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_abr_status         ( const ofoEntry *entry );
+ofaEntryStatus  ofo_entry_get_status_from_abr    ( const gchar *abr_status );
+ofxCounter      ofo_entry_get_settlement_number  ( const ofoEntry *entry );
+const GTimeVal *ofo_entry_get_settlement_stamp   ( const ofoEntry *entry );
 
-ofxCounter      ofo_entry_get_number           ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_label            ( const ofoEntry *entry );
-const GDate    *ofo_entry_get_deffect          ( const ofoEntry *entry );
-const GDate    *ofo_entry_get_dope             ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_ref              ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_account          ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_currency         ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_ledger           ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_ope_template     ( const ofoEntry *entry );
-ofxAmount       ofo_entry_get_debit            ( const ofoEntry *entry );
-ofxAmount       ofo_entry_get_credit           ( const ofoEntry *entry );
-ofaEntryStatus  ofo_entry_get_status           ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_abr_status       ( const ofoEntry *entry );
-ofaEntryStatus  ofo_entry_get_status_from_abr  ( const gchar *abr_status );
-ofxCounter      ofo_entry_get_settlement_number( const ofoEntry *entry );
-const GTimeVal *ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
+gint            ofo_entry_get_exe_changed_count  ( ofaHub *hub,
+														const GDate *prev_begin, const GDate *prev_end,
+														const GDate *new_begin, const GDate *new_end );
 
-gint            ofo_entry_get_exe_changed_count( ofoDossier *dossier,
-													const GDate *prev_begin,
-													const GDate *prev_end,
-													const GDate *new_begin,
-													const GDate *new_end );
+GDate          *ofo_entry_get_max_val_deffect    ( const ofaHub *hub, const gchar *account, GDate *date );
+GDate          *ofo_entry_get_max_rough_deffect  ( const ofaHub *hub, const gchar *account, GDate *date );
+GDate          *ofo_entry_get_max_futur_deffect  ( const ofaHub *hub, const gchar *account, GDate *date );
 
-GDate          *ofo_entry_get_max_val_deffect  ( ofoDossier *dossier, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
+GSList         *ofo_entry_get_currencies         ( const ofaHub *hub );
+#define         ofo_entry_free_currencies  ( L ) g_slist_free_full  (  ( L ),   ( GDestroyNotify ) g_free )
 
-GSList         *ofo_entry_get_currencies       ( const ofoDossier *dossier );
-#define         ofo_entry_free_currencies( L ) g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+gboolean        ofo_entry_is_editable            ( const ofoEntry *entry );
 
-gboolean        ofo_entry_is_editable          ( const ofoEntry *entry );
+void            ofo_entry_set_label              ( ofoEntry *entry, const gchar *label );
+void            ofo_entry_set_deffect            ( ofoEntry *entry, const GDate *date );
+void            ofo_entry_set_dope               ( ofoEntry *entry, const GDate *date );
+void            ofo_entry_set_ref                ( ofoEntry *entry, const gchar *ref );
+void            ofo_entry_set_account            ( ofoEntry *entry, const gchar *number );
+void            ofo_entry_set_currency           ( ofoEntry *entry, const gchar *currency );
+void            ofo_entry_set_ledger             ( ofoEntry *entry, const gchar *journal );
+void            ofo_entry_set_ope_template       ( ofoEntry *entry, const gchar *model );
+void            ofo_entry_set_debit              ( ofoEntry *entry, ofxAmount amount );
+void            ofo_entry_set_credit             ( ofoEntry *entry, ofxAmount amount );
+void            ofo_entry_set_settlement_number  ( ofoEntry *entry, ofxCounter counter );
 
-void            ofo_entry_set_label            ( ofoEntry *entry, const gchar *label );
-void            ofo_entry_set_deffect          ( ofoEntry *entry, const GDate *date );
-void            ofo_entry_set_dope             ( ofoEntry *entry, const GDate *date );
-void            ofo_entry_set_ref              ( ofoEntry *entry, const gchar *ref );
-void            ofo_entry_set_account          ( ofoEntry *entry, const gchar *number );
-void            ofo_entry_set_currency         ( ofoEntry *entry, const gchar *currency );
-void            ofo_entry_set_ledger           ( ofoEntry *entry, const gchar *journal );
-void            ofo_entry_set_ope_template     ( ofoEntry *entry, const gchar *model );
-void            ofo_entry_set_debit            ( ofoEntry *entry, ofxAmount amount );
-void            ofo_entry_set_credit           ( ofoEntry *entry, ofxAmount amount );
-void            ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter counter );
+gboolean        ofo_entry_is_valid               ( ofaHub *hub,
+														const GDate *deffect, const GDate *dope,
+														const gchar *label,
+														const gchar *account, const gchar *currency,
+														const gchar *ledger, const gchar *model,
+														ofxAmount debit, ofxAmount credit );
 
-gboolean        ofo_entry_is_valid             ( ofoDossier *dossier,
-													const GDate *deffect, const GDate *dope,
-													const gchar *label,
-													const gchar *account, const gchar *currency,
-													const gchar *ledger, const gchar *model,
-													ofxAmount debit, ofxAmount credit );
+ofoEntry       *ofo_entry_new_with_data          ( ofaHub *hub,
+														const GDate *deffect, const GDate *dope,
+														const gchar *label, const gchar *ref,
+														const gchar *account, const gchar *currency,
+														const gchar *ledger, const gchar *model,
+														ofxAmount debit, ofxAmount credit );
 
-ofoEntry       *ofo_entry_new_with_data        ( ofoDossier *dossier,
-													const GDate *deffect, const GDate *dope,
-													const gchar *label, const gchar *ref,
-													const gchar *account, const gchar *currency,
-													const gchar *ledger, const gchar *model,
-													ofxAmount debit, ofxAmount credit );
+gboolean        ofo_entry_insert                 ( ofoEntry *entry, ofaHub *hub );
+gboolean        ofo_entry_update                 ( ofoEntry *entry );
+gboolean        ofo_entry_update_settlement      ( ofoEntry *entry, ofxCounter number );
+gboolean        ofo_entry_validate               ( ofoEntry *entry );
 
-gboolean        ofo_entry_insert               ( ofoEntry *entry, ofoDossier *dossier );
-gboolean        ofo_entry_update               ( ofoEntry *entry, const ofoDossier *dossier );
-gboolean        ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
-gboolean        ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean        ofo_entry_validate_by_ledger     ( ofaHub *hub,
+														const gchar *mnemo, const GDate *deffect );
 
-gboolean        ofo_entry_validate_by_ledger   ( ofoDossier *dossier,
-													const gchar *mnemo, const GDate *deffect );
+void            ofo_entry_unsettle_by_number     ( ofaHub *hub,
+														ofxCounter number );
 
-void            ofo_entry_unsettle_by_number   ( ofoDossier *dossier, ofxCounter number );
-
-gboolean        ofo_entry_delete               ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean        ofo_entry_delete                 ( ofoEntry *entry );
 
 G_END_DECLS
 

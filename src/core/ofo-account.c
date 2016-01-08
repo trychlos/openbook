@@ -989,6 +989,7 @@ ofo_account_get_futur_credit( const ofoAccount *account )
 gboolean
 ofo_account_is_deletable( const ofoAccount *account )
 {
+	ofaHub *hub;
 	gboolean deletable;
 	GList *children, *it;
 	const gchar *number;
@@ -1000,9 +1001,10 @@ ofo_account_is_deletable( const ofoAccount *account )
 		g_return_val_if_reached( FALSE );
 	}
 
-	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
+	hub = ofo_base_get_hub( OFO_BASE( account ));
+	dossier = ofa_hub_get_dossier( hub );
 	number = ofo_account_get_number( account );
-	deletable = !ofo_entry_use_account( dossier, number ) &&
+	deletable = !ofo_entry_use_account( hub, number ) &&
 				!ofo_dossier_use_account( dossier, number );
 
 	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
@@ -1202,16 +1204,16 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 GDate *
 ofo_account_get_global_deffect( const ofoAccount *account, GDate *date )
 {
-	ofoDossier *dossier;
+	ofaHub *hub;
 	GDate max_val, max_rough, max_futur;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
-	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 
-	ofo_entry_get_max_val_deffect( dossier, ofo_account_get_number( account ), &max_val );
-	ofo_entry_get_max_rough_deffect( dossier, ofo_account_get_number( account ), &max_rough );
-	ofo_entry_get_max_futur_deffect( dossier, ofo_account_get_number( account ), &max_futur );
+	ofo_entry_get_max_val_deffect( hub, ofo_account_get_number( account ), &max_val );
+	ofo_entry_get_max_rough_deffect( hub, ofo_account_get_number( account ), &max_rough );
+	ofo_entry_get_max_futur_deffect( hub, ofo_account_get_number( account ), &max_futur );
 
 	my_date_clear( date );
 

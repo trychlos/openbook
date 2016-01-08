@@ -54,7 +54,6 @@
 struct _ofaReconcilRenderPrivate {
 
 	ofaHub         *hub;
-	ofoDossier     *dossier;
 	ofaReconcilBin *args_bin;
 
 	/* internals
@@ -283,8 +282,6 @@ page_init_view( ofaPage *page )
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->dossier = ofa_page_get_dossier( page );
 }
 
 static GtkWidget *
@@ -356,7 +353,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
-					priv->dossier,
+					priv->hub,
 					ofo_account_get_number( priv->account ),
 					&priv->date );
 
@@ -514,7 +511,7 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	gchar *dossier_name;
 
 	priv = OFA_RECONCIL_RENDER( instance )->priv;
-	connect = ofo_dossier_get_connect( priv->dossier );
+	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
