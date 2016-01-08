@@ -30,8 +30,10 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -51,9 +53,10 @@ struct _ofaOpeTemplateBookBinPrivate {
 	gboolean             dispose_has_run;
 
 	const ofaMainWindow *main_window;
+	ofaHub              *hub;
+	GList               *hub_handlers;
 	ofoDossier          *dossier;
 	ofaIDBMeta          *meta;
-	GList               *dos_handlers;
 
 	ofaOpeTemplateStore *ope_store;
 	GList               *ope_handlers;
@@ -63,7 +66,7 @@ struct _ofaOpeTemplateBookBinPrivate {
 /* this piece of data is attached to each page of the notebook
  */
 typedef struct {
-	ofoDossier *dossier;
+	ofaHub     *hub;
 	gchar      *ledger;
 }
 	sPageData;
@@ -160,13 +163,8 @@ ope_templates_book_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->meta );
 
-		/* disconnect from ofoDossier */
-		if( priv->dossier &&
-				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
-			for( it=priv->dos_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-		}
+		/* disconnect from ofaHub signaling system */
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 
 		/* disconnect from ofaOpeTemplateStore */
 		if( priv->ope_store && OFA_IS_OPE_TEMPLATE_STORE( priv->ope_store )){
@@ -337,15 +335,23 @@ static void
 setup_main_window( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
+	GtkApplication *application;
 	gulong handler;
 	GList *strlist, *it;
 	const ofaIDBConnect *connect;
 
 	priv = bin->priv;
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	priv->ope_store = ofa_ope_template_store_new( priv->dossier );
-	connect = ofo_dossier_get_connect( priv->dossier );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( priv->hub ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	ofoDossier *dossier = NULL;
+	priv->ope_store = ofa_ope_template_store_new( dossier );
+
+	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( connect );
 
 	/* create one page per ledger
@@ -476,7 +482,7 @@ book_create_page( ofaOpeTemplateBookBin *bin, const gchar *ledger )
 		ledger_label = UNKNOWN_LEDGER_LABEL;
 
 	} else {
-		ledger_obj = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
+		ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger );
 		if( ledger_obj ){
 			g_return_val_if_fail( OFO_IS_LEDGER( ledger_obj ), NULL );
 			ledger_label = ofo_ledger_get_label( ledger_obj );
@@ -492,7 +498,7 @@ book_create_page( ofaOpeTemplateBookBin *bin, const gchar *ledger )
 
 	/* attach data to the notebook page */
 	sdata = g_new0( sPageData, 1 );
-	sdata->dossier = priv->dossier;
+	sdata->hub = priv->hub;
 	sdata->ledger = g_strdup( ledger );
 	g_object_set_data( G_OBJECT( frame ), DATA_PAGE_LEDGER, sdata );
 	g_object_weak_ref( G_OBJECT( frame ), ( GWeakNotify ) on_finalized_page, sdata );
@@ -639,7 +645,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page )
 		is_visible = TRUE;
 
 	} else if( !g_utf8_collate( sdata->ledger, UNKNOWN_LEDGER_MNEMO )){
-		ledger_obj = ofo_ledger_get_by_mnemo( sdata->dossier, ope_ledger );
+		ledger_obj = ofo_ledger_get_by_mnemo( sdata->hub, ope_ledger );
 		if( !ledger_obj ){
 			is_visible = TRUE;
 		}
@@ -689,7 +695,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
 
 /*
  * Returns :
- * TRUE to stop other dos_handlers from being invoked for the event.
+ * TRUE to stop other hub_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
@@ -862,7 +868,7 @@ do_delete_ope_template( ofaOpeTemplateBookBin *bin )
 		if( delete_confirmed( bin, ope ) &&
 				ofo_ope_template_delete( ope, priv->dossier )){
 
-			/* nothing to do here, all being managed by signal dos_handlers
+			/* nothing to do here, all being managed by signal hub_handlers
 			 * just reset the selection as this is not managed by the
 			 * ope notebook (and doesn't have to)
 			 * asking for selection of the just deleted ope makes
@@ -930,25 +936,17 @@ dossier_signals_connect( ofaOpeTemplateBookBin *bin )
 
 	priv = bin->priv;
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), bin );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), bin );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), bin );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), bin );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), bin );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*

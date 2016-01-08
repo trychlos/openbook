@@ -599,7 +599,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			led_obj = ofo_ledger_get_by_mnemo( dossier, led_mnemo );
+			led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has ledger '%s' which doesn't exist" ), number, led_mnemo );
@@ -635,7 +635,6 @@ static void
 check_ledgers_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *ledgers, *it;
 	GList *currencies, *itc;
@@ -649,9 +648,8 @@ check_ledgers_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
 	priv->ledgers_errs = 0;
-	ledgers = ofo_ledger_get_dataset( dossier );
+	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
@@ -718,7 +716,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *bin )
 		/* ledger is optional here */
 		led_mnemo = ofo_ope_template_get_ledger( ope_template );
 		if( my_strlen( led_mnemo )){
-			led_obj = ofo_ledger_get_by_mnemo( dossier, led_mnemo );
+			led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );

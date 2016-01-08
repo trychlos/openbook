@@ -439,22 +439,15 @@ static gboolean
 is_dialog_validable( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	ofoLedger *exists;
 	gboolean ok;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
 	ok = ofo_ledger_is_valid( priv->mnemo, priv->label );
 
 	if( ok ){
-		exists = ofo_ledger_get_by_mnemo( dossier, priv->mnemo );
+		exists = ofo_ledger_get_by_mnemo( priv->hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 	}
@@ -479,16 +472,9 @@ static gboolean
 do_update( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	priv = self->priv;
 	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
@@ -502,10 +488,10 @@ do_update( ofaLedgerProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_ledger_insert( priv->ledger, dossier );
+				ofo_ledger_insert( priv->ledger, priv->hub );
 	} else {
 		priv->updated =
-				ofo_ledger_update( priv->ledger, dossier, prev_mnemo );
+				ofo_ledger_update( priv->ledger, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

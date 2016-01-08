@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"
@@ -48,7 +49,7 @@ struct _ofaLedgerPagePrivate {
 
 	/* internals
 	 */
-	ofoDossier         *dossier;
+	ofaHub             *hub;
 	gboolean            is_current;
 	gint                exe_id;			/* internal identifier of the current exercice */
 
@@ -159,9 +160,11 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_LEDGER_PAGE( page )->priv;
 
-	dossier = ofa_page_get_dossier( page );
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	frame = setup_tree_view( page );
@@ -251,7 +254,7 @@ on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self 
 	priv = self->priv;
 
 	if( selected ){
-		ledger = ofo_ledger_get_by_mnemo( priv->dossier, ( const gchar * ) selected->data );
+		ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 		do_update( self, ledger );
@@ -272,7 +275,7 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 	ledger = NULL;
 
 	if( selected ){
-		ledger = ofo_ledger_get_by_mnemo( priv->dossier, ( const gchar * ) selected->data );
+		ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	}
 
@@ -282,10 +285,10 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 			is_ledger );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && is_ledger && ofo_ledger_is_deletable( ledger, priv->dossier ));
+			priv->is_current && is_ledger && ofo_ledger_is_deletable( ledger ));
 
 	gtk_widget_set_sensitive( priv->entries_btn,
-			is_ledger && ofo_ledger_has_entries( ledger, priv->dossier ));
+			is_ledger && ofo_ledger_has_entries( ledger ));
 }
 
 static void
@@ -331,16 +334,13 @@ static void
 on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 {
 	ofaLedgerPagePrivate *priv;
-	ofoDossier *dossier;
 	GList *selected;
 	ofoLedger *ledger;
 
 	priv = page->priv;
 
-	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
-
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
-	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	ofa_ledger_treeview_free_selected( selected );
 
@@ -379,24 +379,22 @@ static void
 on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
 {
 	ofaLedgerPagePrivate *priv;
-	ofoDossier *dossier;
 	ofoLedger *ledger;
 	GList *selected;
 	const gchar *mnemo;
 
 	priv = page->priv;
-	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
 
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	mnemo = selected->data;
-	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	ofa_ledger_treeview_free_selected( selected );
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( ofo_ledger_is_deletable( ledger, dossier ));
+	g_return_if_fail( ofo_ledger_is_deletable( ledger ));
 
 	if( delete_confirmed( page, ledger ) &&
-			ofo_ledger_delete( ledger, ofa_page_get_dossier( OFA_PAGE( page )))){
+			ofo_ledger_delete( ledger )){
 
 		/* this is managed by the ofaLedgerTreeview convenience
 		 * class, graceful to the dossier signaling system */
@@ -437,7 +435,7 @@ on_entry_page( GtkButton *button, ofaLedgerPage *self )
 
 	list = ofa_ledger_treeview_get_selected( priv->tview );
 	mnemo = ( const gchar * ) list->data;
-	ledger = ofo_ledger_get_by_mnemo( ofa_page_get_dossier( OFA_PAGE( self )), mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	ofa_ledger_treeview_free_selected( list );
 
 	if( ledger ){

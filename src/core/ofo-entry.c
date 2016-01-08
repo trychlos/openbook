@@ -708,7 +708,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 			/* new status actually depends of the last closing date of
 			 * the ledger of the entry */
 			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
-				ledger = ofo_ledger_get_by_mnemo( dossier, ofo_entry_get_ledger( entry ));
+				ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
 				if( !ledger || !OFO_IS_LEDGER( ledger )){
 					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
 					return( -1 );
@@ -1534,7 +1534,7 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
 	dossier = ofa_hub_get_dossier( hub );
 	mnemo = ofo_entry_get_ledger( entry );
 	if( my_strlen( mnemo )){
-		ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+		ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 		ofo_dossier_get_min_deffect( date, dossier, ledger );
 	}
@@ -2036,7 +2036,7 @@ ofo_entry_is_valid( ofaHub *hub,
 	ok = TRUE;
 	dossier = ofa_hub_get_dossier( hub );
 
-	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
+	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( hub, ledger )){
 		error_ledger( ledger );
 		ok &= FALSE;
 	}
@@ -2933,7 +2933,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				continue;
 			}
 		}
-		ledger = ofo_ledger_get_by_mnemo( dossier, cstr );
+		ledger = ofo_ledger_get_by_mnemo( hub, cstr );
 		if( !ledger ){
 			msg = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
 			ofa_iimportable_set_message(

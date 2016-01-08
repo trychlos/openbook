@@ -62,12 +62,12 @@ struct _ofaGuidedInputBinPrivate {
 	 */
 	const ofaMainWindow  *main_window;
 	ofaHub               *hub;
+	GList                *hub_handlers;
 
 	/* from dossier
 	 */
 	ofoDossier           *dossier;
 	const gchar          *def_currency;
-	GList                *handlers;
 
 	/* when selecting an operation template
 	 */
@@ -289,10 +289,7 @@ guided_input_bin_finalize( GObject *instance )
 static void
 guided_input_bin_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_dispose";
 	ofaGuidedInputBinPrivate *priv;
-	GList *iha;
-	gulong handler_id;
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
@@ -302,23 +299,7 @@ guided_input_bin_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		/* note when deconnecting the handlers that the dossier may
-		 * have been already finalized (e.g. when the application
-		 * terminates)
-		 * Note: it seems that Gtk automagically disconnect the handlers
-		 * from the dossier - don't understand why nor how ? */
-		if( priv->dossier &&
-				OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
-			for( iha=priv->handlers ; iha ; iha=iha->next ){
-				handler_id = ( gulong ) iha->data;
-				if( g_signal_handler_is_connected( priv->dossier, handler_id )){
-					g_signal_handler_disconnect( priv->dossier, handler_id );
-				} else {
-					g_debug( "%s: handler %lu is no longer connected to dossier=%p",
-							thisfn, handler_id, ( void * ) priv->dossier );
-				}
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -450,13 +431,13 @@ setup_main_window( ofaGuidedInputBin *bin )
 					G_OBJECT( priv->dossier ),
 					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
 	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					G_OBJECT( priv->dossier ),
 					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
 	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 static void
@@ -849,7 +830,7 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 	priv = bin->priv;
 	ope = priv->ope;
 
-	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	g_free( ope->ledger );
@@ -1322,54 +1303,48 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	priv = bin->priv;
-	ok = FALSE;
 
-	if( priv->dossier &&
-			OFO_IS_DOSSIER( priv->dossier ) &&
-			!ofo_dossier_has_dispose_run( priv->dossier )){
+	ope = priv->ope;
+	ofs_currency_list_free( &priv->currency_list );
+	ofs_ope_apply_template( ope );
 
-		ope = priv->ope;
-		ofs_currency_list_free( &priv->currency_list );
-		ofs_ope_apply_template( ope, priv->dossier );
-
-		/* update the bin dialog with the new content of operation */
-		for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
-			detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-			if( !detail->account_user_set ){
-				set_ope_to_ui( bin, i+1, OPE_COL_ACCOUNT, detail->account );
-			}
-			if( !detail->label_user_set ){
-				set_ope_to_ui( bin, i+1, OPE_COL_LABEL, detail->label );
-			}
-			if( !detail->debit_user_set ){
-				amount = my_double_to_str( detail->debit );
-				set_ope_to_ui( bin, i+1, OPE_COL_DEBIT, amount );
-				g_free( amount );
-			}
-			if( !detail->credit_user_set ){
-				amount = my_double_to_str( detail->credit );
-				set_ope_to_ui( bin, i+1, OPE_COL_CREDIT, amount );
-				g_free( amount );
-			}
+	/* update the bin dialog with the new content of operation */
+	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
+		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+		if( !detail->account_user_set ){
+			set_ope_to_ui( bin, i+1, OPE_COL_ACCOUNT, detail->account );
 		}
-
-		ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
-		g_debug( "%s: ofs_ope_is_valid() returns ok=%s", thisfn, ok ? "True":"False" );
-
-		/* update the bin dialog with the new content of operation */
-		for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
-			detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-			display_currency( bin, i+1,
-					detail );
-			draw_valid_coche( bin, i+1,
-					detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid );
+		if( !detail->label_user_set ){
+			set_ope_to_ui( bin, i+1, OPE_COL_LABEL, detail->label );
 		}
-
-		update_totals( bin );
-		set_message( bin, message );
-
-		g_free( message );
+		if( !detail->debit_user_set ){
+			amount = my_double_to_str( detail->debit );
+			set_ope_to_ui( bin, i+1, OPE_COL_DEBIT, amount );
+			g_free( amount );
+		}
+		if( !detail->credit_user_set ){
+			amount = my_double_to_str( detail->credit );
+			set_ope_to_ui( bin, i+1, OPE_COL_CREDIT, amount );
+			g_free( amount );
+		}
 	}
+
+	ok = ofs_ope_is_valid( ope, &message, &priv->currency_list );
+	g_debug( "%s: ofs_ope_is_valid() returns ok=%s", thisfn, ok ? "True":"False" );
+
+	/* update the bin dialog with the new content of operation */
+	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
+		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+		display_currency( bin, i+1,
+				detail );
+		draw_valid_coche( bin, i+1,
+				detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid );
+	}
+
+	update_totals( bin );
+	set_message( bin, message );
+
+	g_free( message );
 
 	return( ok );
 }
@@ -1713,7 +1688,7 @@ do_validate( ofaGuidedInputBin *bin )
 
 	priv = bin->priv;
 	ok = TRUE;
-	entries = ofs_ope_generate_entries( priv->ope, priv->dossier );
+	entries = ofs_ope_generate_entries( priv->ope );
 
 	for( it=entries ; it ; it=it->next ){
 		ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->hub );

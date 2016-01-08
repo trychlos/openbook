@@ -28,6 +28,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -56,15 +57,15 @@ static GType st_col_types[LEDGER_N_COLUMNS] = {
 #define STORE_DATA_DOSSIER                   "ofa-ledger-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *store );
-static void     load_dataset( ofaLedgerStore *store, ofoDossier *dossier );
-static void     insert_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger );
-static void     set_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaLedgerStore *store, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerStore *store );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store );
+static void     load_dataset( ofaLedgerStore *store, ofaHub *hub );
+static void     insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger );
+static void     set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub );
+static void     on_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
+static void     on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store );
 static gboolean find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *iter );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerStore *store );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaLedgerStore *store );
+static void     on_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
+static void     on_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store );
 
 G_DEFINE_TYPE( ofaLedgerStore, ofa_ledger_store, OFA_TYPE_LIST_STORE )
 
@@ -132,23 +133,23 @@ ofa_ledger_store_class_init( ofaLedgerStoreClass *klass )
 
 /**
  * ofa_ledger_store_new:
- * @dossier: the currently opened #ofoDossier.
+ * @hub: the current #ofaHub object.
  *
  * Instanciates a new #ofaLedgerStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaLedgerStore
- * from the @dossier.
+ * from the #ofoDossier attached to the @hub.
  *
- * A weak notify reference is put on this same @dossier, so that the
- * instance will be unreffed when the @dossier will be destroyed.
+ * A weak notify reference is put on this same @hub, so that the
+ * instance will be unreffed when the @hub will be destroyed.
  */
 ofaLedgerStore *
-ofa_ledger_store_new( ofoDossier *dossier )
+ofa_ledger_store_new( ofaHub *hub )
 {
 	ofaLedgerStore *store;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaLedgerStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
+	store = ( ofaLedgerStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_LEDGER_STORE( store ), NULL );
@@ -156,7 +157,7 @@ ofa_ledger_store_new( ofoDossier *dossier )
 	} else {
 		store = g_object_new(
 						OFA_TYPE_LEDGER_STORE,
-						OFA_PROP_DOSSIER, dossier,
+						OFA_PROP_HUB,          hub,
 						NULL );
 
 		gtk_list_store_set_column_types(
@@ -168,10 +169,10 @@ ofa_ledger_store_new( ofoDossier *dossier )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
+		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
 
-		load_dataset( store, dossier );
-		setup_signaling_connect( store, dossier );
+		load_dataset( store, hub );
+		setup_signaling_connect( store, hub );
 	}
 
 	return( store );
@@ -198,35 +199,35 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerSt
 }
 
 static void
-load_dataset( ofaLedgerStore *store, ofoDossier *dossier )
+load_dataset( ofaLedgerStore *store, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoLedger *ledger;
 
-	dataset = ofo_ledger_get_dataset( dossier );
+	dataset = ofo_ledger_get_dataset( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-		insert_row( store, dossier, ledger );
+		insert_row( store, hub, ledger );
 	}
 }
 
 static void
-insert_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger )
+insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, dossier, ledger, &iter );
+	set_row( store, hub, ledger, &iter );
 }
 
 static void
-set_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger, GtkTreeIter *iter )
+set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter )
 {
 	gchar *sdentry, *sdclose, *stamp;
 	const GDate *dclose, *dentry;
 
-	dentry = ofo_ledger_get_last_entry( ledger, dossier );
+	dentry = ofo_ledger_get_last_entry( ledger );
 	sdentry = my_date_to_str( dentry, ofa_prefs_date_display());
 	dclose = ofo_ledger_get_last_close( ledger );
 	sdclose = my_date_to_str( dclose, ofa_prefs_date_display());
@@ -256,51 +257,40 @@ set_row( ofaLedgerStore *store, ofoDossier *dossier, const ofoLedger *ledger, Gt
  * of this store is equal to those of the dossier
  */
 static void
-setup_signaling_connect( ofaLedgerStore *store, ofoDossier *dossier )
+setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub )
 {
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerStore *store )
+on_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), instance=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
 	if( OFO_IS_LEDGER( object )){
-		insert_row( store, dossier, OFO_LEDGER( object ));
+		insert_row( store, hub, OFO_LEDGER( object ));
 	}
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo, *new_mnemo;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) store );
@@ -309,7 +299,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 		new_mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 		mnemo = prev_id ? prev_id : new_mnemo;
 		if( find_ledger_by_mnemo( store, mnemo, &iter )){
-			set_row( store, dossier, OFO_LEDGER( object ), &iter);
+			set_row( store, hub, OFO_LEDGER( object ), &iter);
 		}
 	}
 }
@@ -338,14 +328,14 @@ find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *it
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerStore *store )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_deleted_object";
 	GtkTreeIter iter;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
@@ -359,15 +349,15 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerStore *store )
 }
 
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaLedgerStore *store )
+on_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_reload_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, store=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) store );
+	g_debug( "%s: hub=%p, type=%lu, store=%p",
+			thisfn, ( void * ) hub, type, ( void * ) store );
 
 	if( type == OFO_TYPE_LEDGER ){
 		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store, dossier );
+		load_dataset( store, hub );
 	}
 }

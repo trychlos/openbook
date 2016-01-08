@@ -357,21 +357,19 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofoLedger *ledger;
 	GList *dataset;
 	ofaIDateFilter *date_filter;
-	ofoDossier *dossier;
 
 	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
 
 	priv->all_ledgers = ofa_ledger_book_bin_get_all_ledgers( priv->args_bin );
 	tview = ofa_ledger_book_bin_get_treeview( priv->args_bin );
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	if( priv->all_ledgers ){
-		priv->selected = ofo_ledger_get_dataset( dossier );
+		priv->selected = ofo_ledger_get_dataset( priv->hub );
 	} else {
 		list = ofa_ledger_treeview_get_selected( tview );
 		priv->selected = NULL;
 		for( it=list ; it ; it=it->next ){
-			ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) it->data );
+			ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) it->data );
 			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 			priv->selected = g_list_append( priv->selected, ledger );
 		}
@@ -685,7 +683,6 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
-	ofoDossier *dossier;
 
 	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
 
@@ -695,8 +692,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
 
-	dossier = ofa_hub_get_dossier( priv->hub );
-	priv->ledger_object = ofo_ledger_get_by_mnemo( dossier, priv->ledger_mnemo );
+	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->hub, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
 
 	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );

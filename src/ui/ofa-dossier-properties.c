@@ -421,7 +421,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 
 	/* the end of the exercice cannot be rewinded back before the last
 	 * close of the ledgers or the last closed period */
-	ofo_ledger_get_max_last_close( &priv->min_end, priv->dossier );
+	ofo_ledger_get_max_last_close( &priv->min_end, priv->hub );
 	if( my_date_is_valid( last_closed ) && my_date_compare( last_closed, &priv->min_end ) > 0 ){
 		my_date_set_from_date( &priv->min_end, last_closed );
 	}

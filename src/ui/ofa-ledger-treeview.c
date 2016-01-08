@@ -30,8 +30,9 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-ledger.h"
-#include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
@@ -45,7 +46,7 @@ struct _ofaLedgerTreeviewPrivate {
 	/* runtime datas
 	 */
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 
 	/* UI
 	 */
@@ -367,6 +368,7 @@ void
 ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindow *main_window )
 {
 	ofaLedgerTreeviewPrivate *priv;
+	GtkApplication *application;
 
 	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -379,8 +381,14 @@ ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindo
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
 		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->store = ofa_ledger_store_new( priv->dossier );
+
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( priv->hub ));
+		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+		priv->store = ofa_ledger_store_new( priv->hub );
 
 		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 

@@ -461,7 +461,7 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	return( !ofo_account_use_currency( hub, dev_code ) &&
 			!ofo_dossier_use_currency( dossier, dev_code ) &&
 			!ofo_entry_use_currency( hub, dev_code ) &&
-			!ofo_ledger_use_currency( dossier, dev_code ));
+			!ofo_ledger_use_currency( hub, dev_code ));
 }
 
 /**

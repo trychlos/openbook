@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -47,8 +48,8 @@ struct _ofaGuidedExPrivate {
 
 	/* internals
 	 */
-	ofoDossier           *dossier;			/* dossier */
-	GList                *dos_handlers;
+	ofaHub               *hub;
+	GList                *hub_handlers;
 	const ofoOpeTemplate *model;			/* model */
 	ofaGuidedInputBin    *input_bin;
 
@@ -115,7 +116,6 @@ static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *o
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
-static void       dossier_disconnect_handlers( ofaGuidedEx *page );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -136,11 +136,16 @@ guided_ex_finalize( GObject *instance )
 static void
 guided_ex_dispose( GObject *instance )
 {
+	ofaGuidedExPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_GUIDED_EX( instance )->priv;
+
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -187,7 +192,7 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_GUIDED_EX( page )->priv;
-	priv->dossier = ofa_page_get_dossier( page );
+	priv->hub = ofa_page_get_hub( page );
 
 	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
 	child = setup_view_left( OFA_GUIDED_EX( page ));
@@ -198,28 +203,19 @@ v_setup_view( ofaPage *page )
 	priv->pane = pane;
 	pane_restore_position( pane );
 
-	handler = g_signal_connect(
-			G_OBJECT( priv->dossier ),
-			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-			G_OBJECT( priv->dossier ),
-			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-			G_OBJECT( priv->dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-			G_OBJECT( priv->dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), page );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
+	g_signal_connect( page, "page-removed", G_CALLBACK( on_page_removed ), NULL );
 
 	init_left_view( OFA_GUIDED_EX( page ),
 						gtk_paned_get_child1( GTK_PANED( OFA_GUIDED_EX( page )->priv->pane )));
@@ -459,14 +455,18 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 init_left_view( ofaGuidedEx *self, GtkWidget *child )
 {
+	ofaGuidedExPrivate *priv;
 	GList *dataset, *ise;
 
-	dataset = ofo_ledger_get_dataset( self->priv->dossier );
+	priv = self->priv;
+
+	dataset = ofo_ledger_get_dataset( priv->hub );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_ledger_row( self, OFO_LEDGER( ise->data ));
 	}
 
-	dataset = ofo_ope_template_get_dataset( self->priv->dossier );
+	ofoDossier *dossier = NULL;
+	dataset = ofo_ope_template_get_dataset( dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_model_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}
@@ -1019,7 +1019,6 @@ on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty
 	if( priv->pane ){
 		pane_save_position( priv->pane );
 	}
-	dossier_disconnect_handlers( page );
 }
 
 static void
@@ -1030,20 +1029,4 @@ pane_save_position( GtkWidget *pane )
 	pos = gtk_paned_get_position( GTK_PANED( pane ));
 	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
 	ofa_settings_user_set_uint( "GuidedInputExDlg-pane", pos );
-}
-
-static void
-dossier_disconnect_handlers( ofaGuidedEx *page )
-{
-	ofaGuidedExPrivate *priv;
-	GList *it;
-
-	priv = page->priv;
-
-	if( priv->dossier &&
-			OFO_IS_DOSSIER( priv->dossier ) && !ofo_dossier_has_dispose_run( priv->dossier )){
-		for( it=priv->dos_handlers ; it ; it=it->next ){
-			g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-		}
-	}
 }

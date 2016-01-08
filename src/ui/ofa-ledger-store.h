@@ -44,8 +44,8 @@
  * system to maintain itself up to date.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -108,7 +108,7 @@ typedef enum {
 
 GType           ofa_ledger_store_get_type( void );
 
-ofaLedgerStore *ofa_ledger_store_new     ( ofoDossier *dossier );
+ofaLedgerStore *ofa_ledger_store_new     ( ofaHub *hub );
 
 G_END_DECLS
 

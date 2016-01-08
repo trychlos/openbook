@@ -27,8 +27,9 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-ledger.h"
-#include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
@@ -42,7 +43,7 @@ struct _ofaLedgerComboPrivate {
 	/* runtime data
 	 */
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 	ofaLedgerColumns     columns;
 	ofaLedgerStore      *store;
 };
@@ -241,6 +242,7 @@ void
 ofa_ledger_combo_set_main_window( ofaLedgerCombo *combo, const ofaMainWindow *main_window )
 {
 	ofaLedgerComboPrivate *priv;
+	GtkApplication *application;
 
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -250,9 +252,14 @@ ofa_ledger_combo_set_main_window( ofaLedgerCombo *combo, const ofaMainWindow *ma
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
-		priv->dossier = ofa_main_window_get_dossier( main_window );
 
-		priv->store = ofa_ledger_store_new( priv->dossier );
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+		priv->store = ofa_ledger_store_new( priv->hub );
 		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	}
 }

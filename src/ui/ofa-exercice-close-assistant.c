@@ -890,10 +890,10 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				detail->debit_user_set = TRUE;
 			}
 
-			ofs_ope_apply_template( ope, priv->dossier );
+			ofs_ope_apply_template( ope );
 
-			if( ofs_ope_is_valid( ope, priv->dossier, &msg, &currencies )){
-				sld_entries = ofs_ope_generate_entries( ope, priv->dossier );
+			if( ofs_ope_is_valid( ope, &msg, &currencies )){
+				sld_entries = ofs_ope_generate_entries( ope );
 
 			} else {
 				g_warning( "%s: %s", thisfn, msg );
@@ -923,10 +923,10 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 					detail->credit_user_set = TRUE;
 				}
 
-				ofs_ope_apply_template( ope, priv->dossier );
+				ofs_ope_apply_template( ope );
 
-				if( ofs_ope_is_valid( ope, priv->dossier, NULL, NULL )){
-					for_entries = ofs_ope_generate_entries( ope, priv->dossier );
+				if( ofs_ope_is_valid( ope, NULL, NULL )){
+					for_entries = ofs_ope_generate_entries( ope );
 				}
 
 				ofs_ope_free( ope );
@@ -1035,7 +1035,7 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	ledgers = ofo_ledger_get_dataset( priv->dossier );
+	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
 	bar = get_new_bar( self, "p6-ledgers" );
 	gtk_widget_show_all( priv->p6_page );
@@ -1044,7 +1044,7 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 
 	for( i=1, it=ledgers ; it ; ++i, it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-		ofo_ledger_close( ledger, priv->dossier, end_cur );
+		ofo_ledger_close( ledger, end_cur );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );

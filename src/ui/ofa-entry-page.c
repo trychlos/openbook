@@ -2442,7 +2442,7 @@ check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_LEDGER, &str, -1 );
 
 	if( my_strlen( str )){
-		if( ofo_ledger_get_by_mnemo( priv->dossier, str )){
+		if( ofo_ledger_get_by_mnemo( priv->hub, str )){
 			is_valid = TRUE;
 
 		} else {
@@ -2617,7 +2617,7 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	g_return_if_fail( my_date_is_valid( &deff ));
 
 	g_return_if_fail( my_strlen( mnemo ));
-	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	ofo_dossier_get_min_deffect( &deff_min, priv->dossier, ledger );
@@ -2677,7 +2677,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
 		g_return_val_if_fail( my_strlen( mnemo ), FALSE );
-		ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
+		ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
 		ofo_dossier_get_min_deffect( &deff_min, priv->dossier, ledger );
@@ -3018,10 +3018,10 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 	/* if ledger has changed or debit has changed or credit has changed */
 	if( ledger_has_changed || debit != prev_debit || credit != prev_credit ){
 
-		ledger_new = ofo_ledger_get_by_mnemo( priv->dossier, ledger );
+		ledger_new = ofo_ledger_get_by_mnemo( priv->hub, ledger );
 		g_return_if_fail( ledger_new && OFO_IS_LEDGER( ledger_new ));
 		if( ledger_has_changed ){
-			ledger_prev = ofo_ledger_get_by_mnemo( priv->dossier, prev_ledger );
+			ledger_prev = ofo_ledger_get_by_mnemo( priv->hub, prev_ledger );
 			g_return_if_fail( ledger_prev && OFO_IS_LEDGER( ledger_prev ));
 		} else {
 			ledger_prev = ledger_new;
@@ -3054,9 +3054,9 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 		}
 
 		if( ledger_has_changed ){
-			ofo_ledger_update_balance( ledger_prev, priv->dossier, currency );
+			ofo_ledger_update_balance( ledger_prev, currency );
 		}
-		ofo_ledger_update_balance( ledger_new, priv->dossier, currency );
+		ofo_ledger_update_balance( ledger_new, currency );
 	}
 }
 

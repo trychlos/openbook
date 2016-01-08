@@ -324,7 +324,6 @@ static void
 check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *ledgers, *it;
@@ -339,10 +338,9 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->ledgers_list = NULL;
-	ledgers = ofo_ledger_get_dataset( dossier );
+	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){

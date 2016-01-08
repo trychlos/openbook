@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -48,7 +49,6 @@
  */
 typedef struct {
 	ofsOpe     *ope;
-	ofoDossier *dossier;
 	gint        comp_row;				/* counted from zero */
 	gint        comp_column;
 }
@@ -58,7 +58,6 @@ typedef struct {
  */
 typedef struct {
 	const ofsOpe *ope;
-	ofoDossier   *dossier;
 	ofoLedger    *ledger;
 	gchar        *message;
 	GList        *currencies;
@@ -133,7 +132,7 @@ ofs_ope_new( const ofoOpeTemplate *template )
  * Have to scan all the fields of the operation template
  */
 void
-ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier )
+ofs_ope_apply_template( ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_apply_template";
 	sHelper *helper;
@@ -143,7 +142,6 @@ ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier )
 
 	helper = g_new0( sHelper, 1 );
 	helper->ope = ope;
-	helper->dossier = dossier;
 
 	alloc_regex();
 	compute_simple_formulas( helper );
@@ -244,6 +242,8 @@ static void
 compute_dates( sHelper *helper )
 {
 	ofsOpe *ope;
+	ofaHub *hub;
+	ofoDossier *dossier;
 	GDate date;
 	ofoLedger *ledger;
 
@@ -253,9 +253,11 @@ compute_dates( sHelper *helper )
 	 * set minimal deffect depending of dossier and ledger
 	 */
 	if( ope->dope_user_set && !ope->deffect_user_set ){
-		ledger = ofo_ledger_get_by_mnemo( helper->dossier, ope->ledger );
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		dossier = ofa_hub_get_dossier( hub );
+		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
 		if( ledger ){
-			ofo_dossier_get_min_deffect( &date, helper->dossier, ledger );
+			ofo_dossier_get_min_deffect( &date, dossier, ledger );
 			if( my_date_compare( &date, &ope->dope ) < 0 ){
 				my_date_set_from_date( &ope->deffect, &ope->dope );
 			} else {
@@ -467,7 +469,8 @@ is_rate( const gchar *token, sHelper *helper, gchar **str )
 	ofxAmount amount;
 
 	ok = FALSE;
-	rate = ofo_rate_get_by_mnemo( helper->dossier, token+1 );
+	ofoDossier *dossier = NULL;
+	rate = ofo_rate_get_by_mnemo( dossier, token+1 );
 	if( rate ){
 		ok = TRUE;
 		if( my_date_is_valid( &helper->ope->dope )){
@@ -484,12 +487,14 @@ is_rate( const gchar *token, sHelper *helper, gchar **str )
 static const gchar *
 get_ledger_label( sHelper *helper )
 {
+	ofaHub *hub;
 	ofoLedger *ledger;
 	const gchar *label;
 
 	label = NULL;
 
-	ledger = ofo_ledger_get_by_mnemo( helper->dossier, helper->ope->ledger );
+	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+	ledger = ofo_ledger_get_by_mnemo( hub, helper->ope->ledger );
 	if( ledger ){
 		label = ofo_ledger_get_label( ledger );
 	}
@@ -781,7 +786,8 @@ rate( sHelper *helper, const gchar *content )
 
 	amount = 0;
 	if( my_date_is_valid( &helper->ope->dope )){
-		rate = ofo_rate_get_by_mnemo( helper->dossier, content );
+		ofoDossier *dossier = NULL;
+		rate = ofo_rate_get_by_mnemo( dossier, content );
 		if( rate ){
 			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
 		}
@@ -805,7 +811,8 @@ get_closing_account( sHelper *helper, const gchar *content )
 		account = ofo_account_get_by_number( hub, content );
 		if( account && !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-			str = g_strdup( ofo_dossier_get_sld_account( helper->dossier, currency ));
+			ofoDossier *dossier = NULL;
+			str = g_strdup( ofo_dossier_get_sld_account( dossier, currency ));
 		}
 	}
 
@@ -828,14 +835,13 @@ get_closing_account( sHelper *helper, const gchar *content )
  * dates.
  */
 gboolean
-ofs_ope_is_valid( const ofsOpe *ope, ofoDossier *dossier, gchar **message, GList **currencies )
+ofs_ope_is_valid( const ofsOpe *ope, gchar **message, GList **currencies )
 {
 	sChecker *checker;
 	gboolean ok, oki;
 
 	checker = g_new0( sChecker, 1 );
 	checker->ope = ope;
-	checker->dossier = dossier;
 	ok = TRUE;
 
 	/* check for non empty accounts and labels, updating the currencies */
@@ -876,6 +882,7 @@ check_for_ledger( sChecker *checker )
 {
 	const ofsOpe *ope;
 	gboolean ok;
+	ofaHub *hub;
 	ofoLedger *ledger;
 
 	ok = FALSE;
@@ -886,7 +893,8 @@ check_for_ledger( sChecker *checker )
 		checker->message = g_strdup( _( "Ledger is empty" ));
 
 	} else {
-		ledger = ofo_ledger_get_by_mnemo( checker->dossier, ope->ledger );
+		hub = ofo_base_get_hub( OFO_BASE( checker->ope->ope_template ));
+		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
 		if( !ledger || !OFO_IS_LEDGER( ledger )){
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Unknown ledger: %s" ), ope->ledger );
@@ -928,7 +936,8 @@ check_for_dates( sChecker *checker )
 		checker->message = g_strdup( _( "Invalid effect date" ));
 
 	} else if( checker->ledger ){
-		ofo_dossier_get_min_deffect( &dmin, checker->dossier, checker->ledger );
+		ofoDossier *dossier = NULL;
+		ofo_dossier_get_min_deffect( &dmin, dossier, checker->ledger );
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
@@ -1119,7 +1128,7 @@ check_for_currencies( sChecker *checker )
  *  before this one by the caller).
  */
 GList *
-ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
+ofs_ope_generate_entries( const ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_generate_entries";
 	ofaHub *hub;
@@ -1130,7 +1139,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 	const gchar *currency;
 	gchar *message;
 
-	if( !ofs_ope_is_valid( ope, dossier, &message, NULL )){
+	if( !ofs_ope_is_valid( ope, &message, NULL )){
 		g_warning( "%s: %s", thisfn, message );
 		g_free( message );
 		return( NULL );
