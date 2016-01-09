@@ -144,10 +144,6 @@ ofaPage       *ofa_main_window_activate_theme    ( const ofaMainWindow *window, 
 
 gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
 
-void           ofa_main_window_open_dossier      ( ofaMainWindow *window,
-														ofaIDBConnect *connect,
-														gboolean remediate );
-
 ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
 
 void           ofa_main_window_update_title      ( const ofaMainWindow *window );

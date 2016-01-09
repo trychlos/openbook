@@ -525,9 +525,6 @@
                 + ofo_dossier_get_user()
                 + ofo_dossier_get_connect()
 
- 955 2016- 1- 6 obsolete ofa_page_get_main_window()
-                obsolete ofa_page_get_dossier()
-
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
@@ -537,7 +534,9 @@
 
  959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
 
- 961 2016- 1- 9 obsolete ofa_main_window_get_dossier()
+ 961 2016- 1- 9 ofaMainWindow:
+                - obsolete ofa_main_window_open_dossier() - done
+                - obsolete ofa_main_window_get_dossier()
 
  962
 
@@ -581,6 +580,11 @@
                 (-def must always been used when it exists)
                 -def should not be included in .c files
      2016- 1- 6 done
+
+ 955 2016- 1- 6 ofaPage: 
+                - obsolete ofa_page_get_main_window(): impossible
+                - obsolete ofa_page_get_dossier(): ok
+     2016- 1- 9 done
 
  960 2016- 1- 8 ofo_dossier_get_min_deffect: review the api
                 dossier should be first

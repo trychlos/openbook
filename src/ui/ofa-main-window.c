@@ -871,41 +871,6 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
 }
 
-/**
- * ofa_main_window_open_dossier:
- * @main_window: this #ofaMainWindow instance.
- * @connect: the #ofaIDBConnect object which handles the opened
- *  connection.
- * @remediate: whether remediate the dossier settings regarding
- *  the actual content of the dossier database.
- *
- * Open the dossier in the user interface.
- *
- * The opened dossier takes a reference on the @connect object, so that
- * the caller may then release its own ref.
- */
-void
-ofa_main_window_open_dossier( ofaMainWindow *main_window, ofaIDBConnect *connect, gboolean remediate )
-{
-	static const gchar *thisfn = "ofa_main_window_open_dossier";
-	ofaMainWindowPrivate *priv;
-
-	g_debug( "%s: main_window=%p, connect=%p", thisfn, ( void * ) main_window, ( void * ) connect );
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	priv = main_window->priv;
-
-	if( !priv->dispose_has_run ){
-
-		if( priv->dossier ){
-			g_return_if_fail( OFO_IS_DOSSIER( priv->dossier ));
-			do_close_dossier( main_window );
-		}
-	}
-}
-
 static void
 set_menubar( ofaMainWindow *window, GMenuModel *model )
 {

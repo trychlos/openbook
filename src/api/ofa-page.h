@@ -115,8 +115,6 @@ const ofaMainWindow *ofa_page_get_main_window         ( const ofaPage *page );
 
 gint                 ofa_page_get_theme               ( const ofaPage *page );
 
-#define              ofa_page_get_dossier(P)            ofa_main_window_get_dossier( ofa_page_get_main_window( P ))
-
 GtkWidget           *ofa_page_get_top_focusable_widget( const ofaPage *page );
 
 ofaHub              *ofa_page_get_hub                 ( const ofaPage *page );

@@ -36,6 +36,8 @@
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -51,7 +53,7 @@ struct _ofaTVARecordPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoDossier    *dossier;
+	ofaHub        *hub;
 	gboolean       is_current;
 	ofoTVARecord  *tva_record;
 	gboolean       updated;
@@ -203,6 +205,8 @@ v_init_dialog( myDialog *dialog )
 	ofaTVARecordProperties *self;
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
+	GtkApplication *application;
+	ofoDossier *dossier;
 	gchar *title, *send;
 	const gchar *mnemo;
 	GtkContainer *container;
@@ -213,9 +217,17 @@ v_init_dialog( myDialog *dialog )
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	priv->dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 	send = my_date_to_str( ofo_tva_record_get_end( priv->tva_record ), MY_DATE_SQL );
@@ -577,7 +589,7 @@ do_update( ofaTVARecordProperties *self )
 		}
 	}
 
-	priv->updated = ofo_tva_record_update( priv->tva_record, priv->dossier );
+	priv->updated = ofo_tva_record_update( priv->tva_record );
 
 	return( priv->updated );
 }

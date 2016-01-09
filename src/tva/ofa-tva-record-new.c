@@ -32,6 +32,8 @@
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
@@ -46,7 +48,7 @@ struct _ofaTVARecordNewPrivate {
 
 	/* internals
 	 */
-	ofoDossier    *dossier;
+	ofaHub        *hub;
 	ofoTVARecord  *tva_record;
 	gboolean       updated;
 
@@ -177,6 +179,7 @@ v_init_dialog( myDialog *dialog )
 	ofaTVARecordNew *self;
 	ofaTVARecordNewPrivate *priv;
 	GtkApplicationWindow *main_window;
+	GtkApplication *application;
 	gchar *title;
 	const gchar *mnemo;
 	GtkContainer *container;
@@ -187,8 +190,12 @@ v_init_dialog( myDialog *dialog )
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	priv->dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 	title = g_strdup_printf( _( "New declaration from « %s » TVA form" ), mnemo );
@@ -286,7 +293,7 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 		msgerr = g_strdup( _( "End date is not valid" ));
 	} else {
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( priv->dossier, mnemo, dend ) != NULL );
+		exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
 		if( exists ){
 			msgerr = g_strdup( _( "Same declaration is already defined" ));
 		} else {
@@ -322,7 +329,7 @@ do_update( ofaTVARecordNew *self )
 
 	priv = self->priv;
 
-	priv->updated = ofo_tva_record_insert( priv->tva_record, priv->dossier );
+	priv->updated = ofo_tva_record_insert( priv->tva_record, priv->hub );
 
 	return( priv->updated );
 }

@@ -96,9 +96,9 @@ struct _ofaEntryPagePrivate {
 	/* internals
 	 */
 	ofaHub              *hub;
+	GList               *hub_handlers;
 	ofoDossier          *dossier;		/* dossier */
 	const GDate         *dossier_opening;
-	GList               *handlers;
 	gboolean             initializing;
 
 	/* UI
@@ -305,15 +305,15 @@ static gboolean        save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, Gtk
 static void            remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
 static void            remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
 static gboolean        find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter );
-static void            on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
+static void            on_hub_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 static void            do_new_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
+static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
 static void            do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number );
 static void            do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo );
 static void            do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code );
 static void            do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted );
 static void            do_update_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self );
+static void            on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 static void            do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil );
 static void            do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry );
 static gboolean        on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self );
@@ -354,7 +354,6 @@ static void
 entry_page_dispose( GObject *instance )
 {
 	ofaEntryPagePrivate *priv;
-	GList *it;
 
 	g_return_if_fail( OFA_IS_ENTRY_PAGE( instance ));
 
@@ -363,12 +362,7 @@ entry_page_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFA_ENTRY_PAGE( instance )->priv;
 
-		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-			priv->handlers = NULL;
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -474,11 +468,11 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_ENTRY_PAGE( page )->priv;
 
-	priv->dossier = ofa_page_get_dossier( page );
-	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
-
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -1375,20 +1369,14 @@ setup_signaling_connect( ofaEntryPage *self )
 
 	priv = self->priv;
 
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 static GtkWidget *
@@ -3085,14 +3073,17 @@ find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter )
 	return( FALSE );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_dossier_new_object";
+	static const gchar *thisfn = "ofa_entry_page_on_hub_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -3127,16 +3118,16 @@ do_new_entry( ofaEntryPage *self, ofoEntry *entry )
 }
 
 /*
- * a ledger mnemo, an account number, a currency code may has changed
+ * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_entry_page_on_hub_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -3271,17 +3262,16 @@ do_update_entry( ofaEntryPage *self, ofoEntry *entry )
 }
 
 /*
- * a ledger mnemo, an account number, a currency code or an entry may
- *  have been deleted
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaEntryPage *self )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_dossier_deleted_object";
+	static const gchar *thisfn = "ofa_entry_page_on_hub_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), user_data=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), user_data=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 

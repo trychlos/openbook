@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -49,8 +50,8 @@ struct _ofaTVADeclarePagePrivate {
 
 	/* internals
 	 */
-	ofoDossier   *dossier;
-	gboolean      editable;
+	ofaHub       *hub;
+	gboolean      is_current;
 
 	/* UI
 	 */
@@ -150,10 +151,14 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_TVA_DECLARE_PAGE( page )->priv;
-	dossier = ofa_page_get_dossier( page );
+
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
-	priv->editable = ofo_dossier_is_current( dossier );
+
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
 
@@ -193,7 +198,7 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
 	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
-	store = ofa_tva_record_store_new( priv->dossier );
+	store = ofa_tva_record_store_new( priv->hub );
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), GTK_TREE_MODEL( store ));
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -332,7 +337,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->editable && is_record && ofo_tva_record_is_deletable( record, priv->dossier ));
+				priv->is_current && is_record && ofo_tva_record_is_deletable( record ));
 	}
 }
 
@@ -394,16 +399,14 @@ on_delete_clicked( GtkButton *button, ofaTVADeclarePage *page )
 static void
 try_to_delete_current_row( ofaTVADeclarePage *page )
 {
-	ofaTVADeclarePagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVARecord *record;
 
-	priv = page->priv;
 	record = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-	if( ofo_tva_record_is_deletable( record, priv->dossier )){
+	if( ofo_tva_record_is_deletable( record )){
 		do_delete( page, record, tmodel, &iter );
 	}
 }
@@ -411,14 +414,10 @@ try_to_delete_current_row( ofaTVADeclarePage *page )
 static void
 do_delete( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaTVADeclarePagePrivate *priv;
-
-	priv = page->priv;
-
-	g_return_if_fail( ofo_tva_record_is_deletable( record, priv->dossier ));
+	g_return_if_fail( ofo_tva_record_is_deletable( record ));
 
 	if( delete_confirmed( page, record )){
-		ofo_tva_record_delete( record, priv->dossier );
+		ofo_tva_record_delete( record );
 		/* taken into account by dossier signaling system */
 	}
 }

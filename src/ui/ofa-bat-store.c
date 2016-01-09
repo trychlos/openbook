@@ -66,11 +66,11 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaBatStore *store, ofaHub *hub );
 static void     insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat );
 static void     set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaBatStore *store, ofaHub *hub );
-static void     on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
-static void     on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub );
+static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
 static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
-static void     on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
+static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
 
 G_DEFINE_TYPE( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE )
 
@@ -177,7 +177,7 @@ ofa_bat_store_new( ofaHub *hub )
 		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
 
 		load_dataset( store, hub );
-		setup_signaling_connect( store, hub );
+		connect_to_hub_signaling_system( store, hub );
 	}
 
 	return( store );
@@ -303,18 +303,18 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
  * of this store is equal to those of the dossier
  */
 static void
-setup_signaling_connect( ofaBatStore *store, ofaHub *hub )
+connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	/* a BAT file is never updated */
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
 
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_new_object";
+	static const gchar *thisfn = "ofa_bat_store_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
@@ -328,9 +328,9 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 }
 
 static void
-on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_deleted_object";
+	static const gchar *thisfn = "ofa_bat_store_on_hub_deleted_object";
 	GtkTreeIter iter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
@@ -372,9 +372,9 @@ find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
 }
 
 static void
-on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_reload_dataset";
+	static const gchar *thisfn = "ofa_bat_store_on_hub_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, store=%p",
 			thisfn, ( void * ) hub, type, ( void * ) store );

@@ -37,8 +37,8 @@
  * deleted since that.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
-#include "api/ofo-dossier-def.h"
 
 #include "tva/ofo-tva-form.h"
 
@@ -70,8 +70,8 @@ typedef struct {
 
 GType           ofo_tva_record_get_type              ( void ) G_GNUC_CONST;
 
-GList          *ofo_tva_record_get_dataset           ( ofoDossier *dossier );
-ofoTVARecord   *ofo_tva_record_get_by_key            ( ofoDossier *dossier, const gchar *mnemo, const GDate *end );
+GList          *ofo_tva_record_get_dataset           ( ofaHub *hub );
+ofoTVARecord   *ofo_tva_record_get_by_key            ( ofaHub *hub, const gchar *mnemo, const GDate *end );
 
 ofoTVARecord   *ofo_tva_record_new                   ( void );
 ofoTVARecord   *ofo_tva_record_new_from_form         ( const ofoTVAForm *form );
@@ -88,7 +88,7 @@ const GDate    *ofo_tva_record_get_end               ( const ofoTVARecord *recor
 const gchar    *ofo_tva_record_get_upd_user          ( const ofoTVARecord *record );
 const GTimeVal *ofo_tva_record_get_upd_stamp         ( const ofoTVARecord *record );
 
-gboolean        ofo_tva_record_is_deletable          ( const ofoTVARecord *record, const ofoDossier *dossier );
+gboolean        ofo_tva_record_is_deletable          ( const ofoTVARecord *record );
 gboolean        ofo_tva_record_is_validable          ( const ofoTVARecord *record );
 
 gint            ofo_tva_record_compare_by_key        ( const ofoTVARecord *record,
@@ -140,9 +140,9 @@ guint           ofo_tva_record_boolean_get_count     ( const ofoTVARecord *recor
 const gchar    *ofo_tva_record_boolean_get_label     ( const ofoTVARecord *record, guint idx );
 gboolean        ofo_tva_record_boolean_get_is_true   ( const ofoTVARecord *record, guint idx );
 
-gboolean        ofo_tva_record_insert                ( ofoTVARecord *record, ofoDossier *dossier );
-gboolean        ofo_tva_record_update                ( ofoTVARecord *record, ofoDossier *dossier );
-gboolean        ofo_tva_record_delete                ( ofoTVARecord *record, ofoDossier *dossier );
+gboolean        ofo_tva_record_insert                ( ofoTVARecord *record, ofaHub *hub );
+gboolean        ofo_tva_record_update                ( ofoTVARecord *record );
+gboolean        ofo_tva_record_delete                ( ofoTVARecord *record );
 
 G_END_DECLS
 

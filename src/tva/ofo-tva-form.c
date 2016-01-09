@@ -32,12 +32,13 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
-#include "api/ofa-idataset.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
-#include "api/ofo-dossier.h"
 
 #include "tva/ofo-tva-form.h"
 
@@ -166,27 +167,27 @@ struct _ofoTVAFormPrivate {
 
 static ofoBaseClass *ofo_tva_form_parent_class = NULL;
 
-static void            on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
-static gboolean        do_update_account_identifier( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static GList          *tva_form_load_dataset( ofoDossier *dossier );
-static ofoTVAForm     *form_find_by_mnemo( GList *set, const gchar *mnemo );
-static guint           form_count_for_account( const ofaIDBConnect *cnx, const gchar *account );
-static void            tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
-static void            tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp );
-static gboolean        form_do_insert( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean        form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean        form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx );
-static gboolean        form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx );
-static gboolean        form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx );
-static gboolean        form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *details );
-static gboolean        form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *details );
-static gboolean        form_do_update( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
-static gboolean        form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo );
-static gboolean        form_do_delete( ofoTVAForm *form, const ofaIDBConnect *cnx );
-static gint            form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
-static gint            tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b );
-
-OFA_IDATASET_LOAD( TVA_FORM, tva_form );
+static void        on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean    do_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
+static guint       form_count_for_account( const ofaIDBConnect *connect, const gchar *account );
+static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
+static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp );
+static gboolean    form_do_insert( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean    form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean    form_do_update( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
+static gboolean    form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
+static gboolean    form_do_delete( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
+static gint        tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b );
+static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
+static guint       icollectionable_get_interface_version( const ofaICollectionable *instance );
+static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
 static void
 details_list_free_detail( GList *fields )
@@ -298,9 +299,17 @@ register_type( void )
 		( GInstanceInitFunc ) ofo_tva_form_init
 	};
 
+	static const GInterfaceInfo icollectionable_iface_info = {
+		( GInterfaceInitFunc ) icollectionable_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoTVAForm", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
 
 	return( type );
 }
@@ -324,63 +333,63 @@ ofo_tva_form_get_type( void )
  * no need here to handle signal disconnection
  */
 void
-ofo_tva_form_connect_handlers( const ofoDossier *dossier )
+ofo_tva_form_connect_handlers( const ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_tva_form_connect_handlers";
 
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
-	g_signal_connect( G_OBJECT( dossier ),
-				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+	g_signal_connect( G_OBJECT( hub ),
+				SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_tva_form_on_updated_object";
+	static const gchar *thisfn = "ofo_tva_form_on_hub_updated_object";
 	const gchar *mnemo;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) user_data );
+			( void * ) empty );
 
 	if( OFO_IS_ACCOUNT( object )){
 		if( my_strlen( prev_id )){
 			mnemo = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				do_update_account_identifier( dossier, mnemo, prev_id );
+				do_update_account_identifier( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-do_update_account_identifier( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+do_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_tva_form_do_update_account_identifier";
 	gchar *query;
-	const ofaIDBConnect *cnx;
+	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
 	gchar *etp_mnemo, *det_amount;
 	gint det_row;
 	gboolean ok;
 
-	g_debug( "%s: dossier=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) dossier, mnemo, prev_id );
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
 
-	cnx = ofo_dossier_get_connect( dossier );
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
 					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_AMOUNT "
 					"	FROM TVA_T_FORMS_DET "
 					"	WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", prev_id );
 
-	ok = ofa_idbconnect_query_ex( cnx, query, &result, TRUE );
+	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
 	g_free( query );
 
 	if( ok ){
@@ -398,67 +407,40 @@ do_update_account_identifier( ofoDossier *dossier, const gchar *mnemo, const gch
 							"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
 									det_amount, etp_mnemo, det_row );
 
-			ofa_idbconnect_query( cnx, query, TRUE );
+			ofa_idbconnect_query( connect, query, TRUE );
 
 			g_free( query );
 			g_free( det_amount );
 			g_free( etp_mnemo );
 		}
 
-		ofa_idataset_free_dataset( dossier, OFO_TYPE_TVA_FORM );
-
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_TVA_FORM );
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
 	}
 
 	return( ok );
 }
 
-static GList *
-tva_form_load_dataset( ofoDossier *dossier )
+/**
+ * ofo_tva_form_get_dataset:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the full #ofoTVAForm dataset.
+ *
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
+ */
+GList *
+ofo_tva_form_get_dataset( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_tva_form_load_dataset";
-	GList *dataset, *it, *ir;
-	ofoTVAForm *form;
-	gchar *from;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = ofo_base_load_dataset_from_dossier(
-					st_boxed_defs,
-					ofo_dossier_get_connect( dossier ),
-					"TVA_T_FORMS ORDER BY TFO_MNEMO ASC",
-					OFO_TYPE_TVA_FORM );
-
-	for( it=dataset ; it ; it=it->next ){
-		form = OFO_TVA_FORM( it->data );
-
-		from = g_strdup_printf(
-				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s' ORDER BY TFO_DET_ROW ASC",
-				ofo_tva_form_get_mnemo( form ));
-		form->priv->details =
-				ofo_base_load_rows( st_details_defs, ofo_dossier_get_connect( dossier ), from );
-		g_free( from );
-
-		/* dump the detail rows */
-		if( 0 ){
-			for( ir=form->priv->details ; ir ; ir=ir->next ){
-				ofa_box_dump_fields_list( thisfn, ir->data );
-			}
-		}
-
-		from = g_strdup_printf(
-				"TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s' ORDER BY TFO_BOOL_ROW ASC",
-				ofo_tva_form_get_mnemo( form ));
-		form->priv->bools =
-				ofo_base_load_rows( st_bools_defs, ofo_dossier_get_connect( dossier ), from );
-		g_free( from );
-	}
-
-	return( dataset );
+	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_TVA_FORM ));
 }
 
 /**
  * ofo_tva_form_get_by_mnemo:
- * @dossier:
+ * @hub:
  * @mnemo:
  *
  * Returns: the searched tva form, or %NULL.
@@ -467,18 +449,18 @@ tva_form_load_dataset( ofoDossier *dossier )
  * not be unreffed by the caller.
  */
 ofoTVAForm *
-ofo_tva_form_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+ofo_tva_form_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
 {
-	/*static const gchar *thisfn = "ofo_tva_form_get_by_mnemo";*/
+	GList *dataset;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
-	OFA_IDATASET_GET( dossier, TVA_FORM, tva_form );
+	dataset = ofo_tva_form_get_dataset( hub );
 
-	return( form_find_by_mnemo( tva_form_dataset, mnemo ));
+	return( form_find_by_mnemo( dataset, mnemo ));
 }
 
 static ofoTVAForm *
@@ -497,24 +479,22 @@ form_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_tva_form_use_account:
- * @dossier:
+ * @hub:
  * @account:
  *
  * Returns: %TRUE if a recorded entry makes use of the specified currency.
  */
 gboolean
-ofo_tva_form_use_account( ofoDossier *dossier, const gchar *account )
+ofo_tva_form_use_account( ofaHub *hub, const gchar *account )
 {
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( my_strlen( account ), FALSE );
 
-	OFA_IDATASET_GET( dossier, TVA_FORM, tva_form );
-
-	return( form_count_for_account( ofo_dossier_get_connect( dossier ), account ) > 0 );
+	return( form_count_for_account( ofa_hub_get_connect( hub ), account ) > 0 );
 }
 
 static guint
-form_count_for_account( const ofaIDBConnect *cnx, const gchar *account )
+form_count_for_account( const ofaIDBConnect *connect, const gchar *account )
 {
 	gint count;
 	gchar *query;
@@ -522,7 +502,7 @@ form_count_for_account( const ofaIDBConnect *cnx, const gchar *account )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM TVA_T_FORMS_DET WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", account );
 
-	ofa_idbconnect_query_int( cnx, query, &count, TRUE );
+	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 
 	g_free( query );
 
@@ -602,51 +582,6 @@ ofo_tva_form_get_mnemo( const ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_get_mnemo_new_from:
- * @form:
- * @dossier:
- *
- * Returns a new mnemo derived from the given one, as a newly allocated
- * string which should be g_free() by the caller.
- */
-gchar *
-ofo_tva_form_get_mnemo_new_from( const ofoTVAForm *form, ofoDossier *dossier )
-{
-	const gchar *mnemo;
-	gint len_mnemo;
-	gchar *str;
-	gint i, maxlen;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	str = NULL;
-
-	if( !OFO_BASE( form )->prot->dispose_has_run ){
-
-		mnemo = ofo_tva_form_get_mnemo( form );
-		len_mnemo = my_strlen( mnemo );
-		for( i=2 ; ; ++i ){
-			/* if we are greater than 9999, there is a problem... */
-			maxlen = ( i < 10 ? MNEMO_LENGTH-1 :
-						( i < 100 ? MNEMO_LENGTH-2 :
-						( i < 1000 ? MNEMO_LENGTH-3 : MNEMO_LENGTH-4 )));
-			if( maxlen < len_mnemo ){
-				str = g_strdup_printf( "%*.*s%d", maxlen, maxlen, mnemo, i );
-			} else {
-				str = g_strdup_printf( "%s%d", mnemo, i );
-			}
-			if( !ofo_tva_form_get_by_mnemo( dossier, str )){
-				break;
-			}
-			g_free( str );
-		}
-	}
-
-	return( str );
-}
-
-/**
  * ofo_tva_form_get_label:
  */
 const gchar *
@@ -704,31 +639,27 @@ ofo_tva_form_get_upd_stamp( const ofoTVAForm *form )
 /**
  * ofo_tva_form_is_deletable:
  * @form: the tva formular.
- * @dossier: the dossier.
  *
- * Returns: %TRUE if the tva formular is deletable.
+ * Returns: %TRUE if the TVA form is deletable.
+ *
+ * A TVA form is always deletable, as all its previous uses have been
+ * recorded as TVA Record which do not more keep any link with the
+ * origin form.
  */
 gboolean
-ofo_tva_form_is_deletable( const ofoTVAForm *form, ofoDossier *dossier )
+ofo_tva_form_is_deletable( const ofoTVAForm *form )
 {
-	gboolean is_current;
-
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( form )->prot->dispose_has_run ){
-
-		is_current = ofo_dossier_is_current( dossier );
-
-		return( is_current );
+	if( OFO_BASE( form )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
+	return( TRUE );
 }
 
 /**
  * ofo_tva_form_is_valid:
- * @dossier:
  * @mnemo:
  * @msgerr: [allow-none][out]:
  *
@@ -736,11 +667,9 @@ ofo_tva_form_is_deletable( const ofoTVAForm *form, ofoDossier *dossier )
  * #ofoTVAForm valid, %FALSE else.
  */
 gboolean
-ofo_tva_form_is_valid( ofoDossier *dossier, const gchar *mnemo, gchar **msgerr )
+ofo_tva_form_is_valid( const gchar *mnemo, gchar **msgerr )
 {
 	gboolean ok;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	ok = TRUE;
 	if( msgerr ){
@@ -1133,48 +1062,51 @@ ofo_tva_form_boolean_get_label( const ofoTVAForm *form, guint idx )
  * ofo_tva_form_insert:
  */
 gboolean
-ofo_tva_form_insert( ofoTVAForm *tva_form, ofoDossier *dossier )
+ofo_tva_form_insert( ofoTVAForm *tva_form, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_tva_form_insert";
+	gboolean ok;
+
+	g_debug( "%s: form=%p, hub=%p",
+			thisfn, ( void * ) tva_form, ( void * ) hub );
 
 	g_return_val_if_fail( tva_form && OFO_IS_TVA_FORM( tva_form ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( tva_form )->prot->dispose_has_run ){
-
-		g_debug( "%s: form=%p, dossier=%p",
-				thisfn, ( void * ) tva_form, ( void * ) dossier );
-
-		if( form_do_insert(
-				tva_form,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_ADD( dossier, TVA_FORM, tva_form );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( tva_form )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
+	ok = FALSE;
+
+	if( form_do_insert( tva_form, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( tva_form ), hub );
+		ofa_icollector_add_object(
+				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_form );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-form_do_insert( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user )
+form_do_insert( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
-	return( form_insert_main( form, cnx, user ) &&
-			form_insert_details_ex( form, cnx ));
+	return( form_insert_main( form, connect ) &&
+			form_insert_details_ex( form, connect ));
 }
 
 static gboolean
-form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user )
+form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes;
+	gchar *label, *notes, *userid;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote( ofo_tva_form_get_notes( form ));
 	my_utils_stamp_set_now( &stamp );
@@ -1202,23 +1134,24 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user 
 	}
 
 	g_string_append_printf( query,
-			"'%s','%s')", user, stamp_str );
+			"'%s','%s')", userid, stamp_str );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	tva_form_set_upd_user( form, user );
+	tva_form_set_upd_user( form, userid );
 	tva_form_set_upd_stamp( form, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
 
 static gboolean
-form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx )
+form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -1227,7 +1160,7 @@ form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx )
 			"DELETE FROM TVA_T_FORMS_DET WHERE TFO_MNEMO='%s'",
 			ofo_tva_form_get_mnemo( form ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1235,7 +1168,7 @@ form_delete_details( ofoTVAForm *form, const ofaIDBConnect *cnx )
 }
 
 static gboolean
-form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx )
+form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -1244,7 +1177,7 @@ form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx )
 			"DELETE FROM TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s'",
 			ofo_tva_form_get_mnemo( form ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1252,7 +1185,7 @@ form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *cnx )
 }
 
 static gboolean
-form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx )
+form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GList *idet;
@@ -1260,16 +1193,16 @@ form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx )
 
 	ok = FALSE;
 
-	if( form_delete_details( form, cnx ) && form_delete_bools( form, cnx )){
+	if( form_delete_details( form, connect ) && form_delete_bools( form, connect )){
 		ok = TRUE;
 		for( idet=form->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !form_insert_details( form, cnx, rang, idet->data )){
+			if( !form_insert_details( form, connect, rang, idet->data )){
 				ok = FALSE;
 				break;
 			}
 		}
 		for( idet=form->priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !form_insert_bools( form, cnx, rang, idet->data )){
+			if( !form_insert_bools( form, connect, rang, idet->data )){
 				ok = FALSE;
 				break;
 			}
@@ -1280,7 +1213,7 @@ form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *cnx )
 }
 
 static gboolean
-form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *details )
+form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details )
 {
 	GString *query;
 	gboolean ok;
@@ -1339,7 +1272,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1347,7 +1280,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GLi
 }
 
 static gboolean
-form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList *fields )
+form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *fields )
 {
 	GString *query;
 	gboolean ok;
@@ -1367,7 +1300,7 @@ form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1377,55 +1310,56 @@ form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *cnx, guint rang, GList
 /**
  * ofo_tva_form_update:
  * @form:
- * @dossier:
  * @prev_mnemo:
  */
 gboolean
-ofo_tva_form_update( ofoTVAForm *tva_form, ofoDossier *dossier, const gchar *prev_mnemo )
+ofo_tva_form_update( ofoTVAForm *tva_form, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_tva_form_update";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: form=%p, prev_mnemo=%s",
+			thisfn, ( void * ) tva_form, prev_mnemo );
 
 	g_return_val_if_fail( tva_form && OFO_IS_TVA_FORM( tva_form ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 
-	if( !OFO_BASE( tva_form )->prot->dispose_has_run ){
-
-		g_debug( "%s: form=%p, dossier=%p, prev_mnemo=%s",
-				thisfn, ( void * ) tva_form, ( void * ) dossier, prev_mnemo );
-
-		if( form_do_update(
-				tva_form,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ),
-					prev_mnemo )){
-
-			OFA_IDATASET_UPDATE( dossier, TVA_FORM, tva_form, prev_mnemo );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( tva_form )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( tva_form ));
+
+	if( form_do_update( tva_form, ofa_hub_get_connect( hub ), prev_mnemo )){
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM, ( GCompareFunc ) tva_form_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_form, prev_mnemo );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-form_do_update( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo )
+form_do_update( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo )
 {
-	return( form_update_main( form, cnx, user, prev_mnemo ) &&
-			form_insert_details_ex( form, cnx ));
+	return( form_update_main( form, connect, prev_mnemo ) &&
+			form_insert_details_ex( form, connect ));
 }
 
 static gboolean
-form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user, const gchar *prev_mnemo )
+form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes;
+	gchar *label, *notes, *userid;
 	const gchar *new_mnemo;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote( ofo_tva_form_get_notes( form ));
 	new_mnemo = ofo_tva_form_get_mnemo( form );
@@ -1457,19 +1391,20 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user,
 	g_string_append_printf( query,
 			"	TFO_UPD_USER='%s',TFO_UPD_STAMP='%s'"
 			"	WHERE TFO_MNEMO='%s'",
-					user,
+					userid,
 					stamp_str,
 					prev_mnemo );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	tva_form_set_upd_user( form, user );
+	tva_form_set_upd_user( form, userid );
 	tva_form_set_upd_stamp( form, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( label );
+	g_free( userid );
 
 	return( ok );
 }
@@ -1478,34 +1413,37 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *cnx, const gchar *user,
  * ofo_tva_form_delete:
  */
 gboolean
-ofo_tva_form_delete( ofoTVAForm *tva_form, ofoDossier *dossier )
+ofo_tva_form_delete( ofoTVAForm *tva_form )
 {
 	static const gchar *thisfn = "ofo_tva_form_delete";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: form=%p", thisfn, ( void * ) tva_form );
 
 	g_return_val_if_fail( tva_form && OFO_IS_TVA_FORM( tva_form ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_tva_form_is_deletable( tva_form, dossier ), FALSE );
+	g_return_val_if_fail( ofo_tva_form_is_deletable( tva_form ), FALSE );
 
-	if( !OFO_BASE( tva_form )->prot->dispose_has_run ){
-
-		g_debug( "%s: form=%p, dossier=%p",
-				thisfn, ( void * ) tva_form, ( void * ) dossier );
-
-		if( form_do_delete(
-					tva_form,
-					ofo_dossier_get_connect( dossier ))){
-
-			OFA_IDATASET_REMOVE( dossier, TVA_FORM, tva_form );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( tva_form )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( tva_form ));
+
+	if( form_do_delete( tva_form, ofa_hub_get_connect( hub ))){
+		g_object_ref( tva_form );
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( tva_form ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_form );
+		g_object_unref( tva_form );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-form_do_delete( ofoTVAForm *form, const ofaIDBConnect *cnx )
+form_do_delete( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gchar *query;
 	gboolean ok;
@@ -1515,12 +1453,12 @@ form_do_delete( ofoTVAForm *form, const ofaIDBConnect *cnx )
 			"	WHERE TFO_MNEMO='%s'",
 					ofo_tva_form_get_mnemo( form ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
 	if( ok ){
-		ok = form_delete_details( form, cnx ) && form_delete_bools( form, cnx );
+		ok = form_delete_details( form, connect ) && form_delete_bools( form, connect );
 	}
 
 	return( ok );
@@ -1536,4 +1474,69 @@ static gint
 tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b )
 {
 	return( form_cmp_by_mnemo( a, ofo_tva_form_get_mnemo( b )));
+}
+
+/*
+ * ofaICollectionable interface management
+ */
+static void
+icollectionable_iface_init( ofaICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( const ofaICollectionable *instance )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_tva_form_load_dataset";
+	GList *dataset, *it, *ir;
+	ofoTVAForm *form;
+	gchar *from;
+	const ofaIDBConnect *connect;
+
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					"TVA_T_FORMS ORDER BY TFO_MNEMO ASC",
+					OFO_TYPE_TVA_FORM,
+					hub );
+
+	connect = ofa_hub_get_connect( hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		form = OFO_TVA_FORM( it->data );
+
+		from = g_strdup_printf(
+				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s' ORDER BY TFO_DET_ROW ASC",
+				ofo_tva_form_get_mnemo( form ));
+		form->priv->details =
+				ofo_base_load_rows( st_details_defs, connect, from );
+		g_free( from );
+
+		/* dump the detail rows */
+		if( 0 ){
+			for( ir=form->priv->details ; ir ; ir=ir->next ){
+				ofa_box_dump_fields_list( thisfn, ir->data );
+			}
+		}
+
+		from = g_strdup_printf(
+				"TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s' ORDER BY TFO_BOOL_ROW ASC",
+				ofo_tva_form_get_mnemo( form ));
+		form->priv->bools =
+				ofo_base_load_rows( st_bools_defs, connect, from );
+		g_free( from );
+	}
+
+	return( dataset );
 }

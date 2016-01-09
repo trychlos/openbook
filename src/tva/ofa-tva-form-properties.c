@@ -35,6 +35,8 @@
 #include "api/my-igridlist.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -50,7 +52,7 @@ struct _ofaTVAFormPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoDossier    *dossier;
+	ofaHub        *hub;
 	gboolean       is_current;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
@@ -455,6 +457,8 @@ v_init_dialog( myDialog *dialog )
 	ofaTVAFormProperties *self;
 	ofaTVAFormPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
+	GtkApplication *application;
+	ofoDossier *dossier;
 	guint count, idx;
 	gchar *title;
 	const gchar *mnemo;
@@ -468,10 +472,17 @@ v_init_dialog( myDialog *dialog )
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	priv->dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
 	if( !mnemo ){
@@ -667,11 +678,11 @@ is_dialog_validable( ofaTVAFormProperties *self )
 
 	priv = self->priv;
 	msgerr = NULL;
-	ok = ofo_tva_form_is_valid( priv->dossier, priv->mnemo, &msgerr );
+	ok = ofo_tva_form_is_valid( priv->mnemo, &msgerr );
 	//g_debug( "is_dialog_validable: is_valid=%s", ok ? "True":"False" );
 
 	if( ok ){
-		exists = ( ofo_tva_form_get_by_mnemo( priv->dossier, priv->mnemo ) != NULL );
+		exists = ( ofo_tva_form_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
 		ok = !exists || subok;
@@ -764,10 +775,10 @@ do_update( ofaTVAFormProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_tva_form_insert( priv->tva_form, priv->dossier );
+				ofo_tva_form_insert( priv->tva_form, priv->hub );
 	} else {
 		priv->updated =
-				ofo_tva_form_update( priv->tva_form, priv->dossier, prev_mnemo );
+				ofo_tva_form_update( priv->tva_form, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

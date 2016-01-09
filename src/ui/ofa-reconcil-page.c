@@ -133,8 +133,7 @@ struct _ofaReconcilPagePrivate {
 	/* internals
 	 */
 	ofaHub              *hub;
-	ofoDossier          *dossier;
-	GList               *handlers;
+	GList               *hub_handlers;
 	GList               *bats;			/* loaded ofoBat objects */
 };
 
@@ -319,12 +318,12 @@ static gboolean     search_for_parent_by_amount( ofaReconcilPage *self, ofoBase 
 static gboolean     search_for_parent_by_concil( ofaReconcilPage *self, ofoBase *object, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void         get_settings( ofaReconcilPage *self );
 static void         set_settings( ofaReconcilPage *self );
-static void         dossier_signaling_connect( ofaReconcilPage *self );
-static void         on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconcilPage *self );
+static void         connect_to_hub_signaling_system( ofaReconcilPage *self );
+static void         on_hub_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void         on_new_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         insert_new_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter );
-static void         on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
+static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
 static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 
@@ -361,14 +360,8 @@ reconciliation_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ( OFA_RECONCIL_PAGE( instance ))->priv;
 
-		/*
-		if( priv->handlers && priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-			priv->handlers = NULL;
-		}
-		*/
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+
 		if( priv->bats ){
 			g_list_free( priv->bats );
 			priv->bats = NULL;
@@ -474,18 +467,14 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
 	ofaReconcilPagePrivate *priv;
-	GtkApplication *application;
 	GtkWidget *widget, *page_widget;
 	GtkTreeSelection *select;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = OFA_RECONCIL_PAGE( page )->priv;
-	priv->dossier = ofa_page_get_dossier( page );
 
-	application = gtk_window_get_application( GTK_WINDOW( ofa_page_get_main_window( page )));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
@@ -504,7 +493,7 @@ v_setup_view( ofaPage *page )
 	setup_auto_rappro( page, GTK_CONTAINER( widget ));
 	setup_action_buttons( page, GTK_CONTAINER( widget ));
 
-	dossier_signaling_connect( OFA_RECONCIL_PAGE( page ));
+	connect_to_hub_signaling_system( OFA_RECONCIL_PAGE( page ));
 
 	get_settings( OFA_RECONCIL_PAGE( page ));
 
@@ -1901,7 +1890,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
 	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &object, -1 );
 	/* as we insert the row before populating it, it may happen that
 	 * the object be not set */
-	if( !object || ofo_dossier_has_dispose_run( priv->dossier )){
+	if( !object ){
 		return( FALSE );
 	}
 	g_return_val_if_fail( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object ), FALSE );
@@ -2356,7 +2345,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 
 /*
  * Returns :
- * TRUE to stop other handlers from being invoked for the event.
+ * TRUE to stop other hub_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  *
  * Handles left and right arrows to expand/collapse nodes
@@ -3361,30 +3350,33 @@ set_settings( ofaReconcilPage *self )
 }
 
 static void
-dossier_signaling_connect( ofaReconcilPage *self )
+connect_to_hub_signaling_system( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gulong handler;
 
 	priv = self->priv;
 
-	handler = g_signal_connect( priv->dossier,
-					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect(
+					priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->dossier,
-					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect(
+					priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaReconcilPage *self )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_dossier_new_object";
+	static const gchar *thisfn = "ofa_reconcil_page_on_hub_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -3488,16 +3480,16 @@ remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entr
 }
 
 /*
- * a ledger mnemo, an account number, a currency code may has changed
+ * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_dossier_updated_object";
+	static const gchar *thisfn = "ofa_reconcil_page_on_hub_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));

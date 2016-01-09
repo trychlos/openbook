@@ -54,7 +54,7 @@ struct _ofaBatPagePrivate {
 
 	/* runtime data
 	 */
-	ofoDossier     *dossier;
+	ofaHub         *hub;
 	gboolean        is_current;			/* whether the dossier is current */
 
 	/* UI
@@ -152,9 +152,12 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_BAT_PAGE( page )->priv;
 
-	dossier = ofa_page_get_dossier( page );
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
+
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	priv->tview = ofa_bat_treeview_new();

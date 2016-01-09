@@ -31,7 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-preferences.h"
-#include "api/ofo-dossier.h"
+#include "api/ofa-hub.h"
 
 #include "tva/ofa-tva-record-store.h"
 #include "tva/ofo-tva-record.h"
@@ -60,16 +60,15 @@ static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 #define STORE_DATA_DOSSIER              "ofa-tva-record-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *store );
-static void     load_dataset( ofaTVARecordStore *store, ofoDossier *dossier );
-static void     insert_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *record );
-static void     set_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *record, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaTVARecordStore *store, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store );
+static void     load_dataset( ofaTVARecordStore *store, ofaHub *hub );
+static void     insert_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record );
+static void     set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkTreeIter *iter );
+static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store );
+static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store );
 static gboolean find_record_by_key( ofaTVARecordStore *store, const gchar *mnemo, const GDate *end, GtkTreeIter *iter );
 static gboolean find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTreeIter *iter );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaTVARecordStore *store );
+static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store );
+static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaTVARecordStore *store );
 
 G_DEFINE_TYPE( ofaTVARecordStore, ofa_tva_record_store, OFA_TYPE_LIST_STORE )
 
@@ -147,13 +146,13 @@ ofa_tva_record_store_class_init( ofaTVARecordStoreClass *klass )
  * instance will be unreffed when the @dossier will be destroyed.
  */
 ofaTVARecordStore *
-ofa_tva_record_store_new( ofoDossier *dossier )
+ofa_tva_record_store_new( ofaHub *hub )
 {
 	ofaTVARecordStore *store;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaTVARecordStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
+	store = ( ofaTVARecordStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_TVA_RECORD_STORE( store ), NULL );
@@ -161,7 +160,7 @@ ofa_tva_record_store_new( ofoDossier *dossier )
 	} else {
 		store = g_object_new(
 						OFA_TYPE_TVA_RECORD_STORE,
-						OFA_PROP_DOSSIER, dossier,
+						OFA_PROP_HUB,              hub,
 						NULL );
 
 		gtk_list_store_set_column_types(
@@ -173,10 +172,17 @@ ofa_tva_record_store_new( ofoDossier *dossier )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
+		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
 
-		load_dataset( store, dossier );
-		setup_signaling_connect( store, dossier );
+		load_dataset( store, hub );
+
+		/* connect to the hub signaling system
+		 * there is no need to keep trace of the signal handlers, as
+		 * this store will only be finalized after the hub finalization */
+		g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
+		g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
+		g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+		g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 	}
 
 	return( store );
@@ -213,30 +219,30 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecor
 }
 
 static void
-load_dataset( ofaTVARecordStore *store, ofoDossier *dossier )
+load_dataset( ofaTVARecordStore *store, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoTVARecord *record;
 
-	dataset = ofo_tva_record_get_dataset( dossier );
+	dataset = ofo_tva_record_get_dataset( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
-		insert_row( store, dossier, record );
+		insert_row( store, hub, record );
 	}
 }
 
 static void
-insert_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *record )
+insert_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, dossier, record, &iter );
+	set_row( store, hub, record, &iter );
 }
 
 static void
-set_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *record, GtkTreeIter *iter )
+set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkTreeIter *iter )
 {
 	const gchar *cvalidated;
 	gchar *sbegin, *send;
@@ -260,58 +266,33 @@ set_row( ofaTVARecordStore *store, ofoDossier *dossier, const ofoTVARecord *reco
 	g_free( send );
 }
 
-/*
- * connect to the dossier signaling system
- * there is no need to keep trace of the signal handlers, as the lifetime
- * of this store is equal to those of the dossier
- */
 static void
-setup_signaling_connect( ofaTVARecordStore *store, ofoDossier *dossier )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store )
 {
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), store );
+	static const gchar *thisfn = "ofa_tva_record_store_on_hub_new_object";
 
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), store );
-}
-
-static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store )
-{
-	static const gchar *thisfn = "ofa_tva_record_store_on_new_object";
-
-	g_debug( "%s: dossier=%p, object=%p (%s), instance=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
 	if( OFO_IS_TVA_RECORD( object )){
-		insert_row( store, dossier, OFO_TVA_RECORD( object ));
+		insert_row( store, hub, OFO_TVA_RECORD( object ));
 	}
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store )
 {
-	static const gchar *thisfn = "ofa_tva_record_store_on_updated_object";
+	static const gchar *thisfn = "ofa_tva_record_store_on_hub_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo;
 	const GDate *dend;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) store );
@@ -320,7 +301,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 		mnemo = ofo_tva_record_get_mnemo( OFO_TVA_RECORD( object ));
 		dend = ofo_tva_record_get_end( OFO_TVA_RECORD( object ));
 		if( find_record_by_key( store, mnemo, dend, &iter )){
-			set_row( store, dossier, OFO_TVA_RECORD( object ), &iter);
+			set_row( store, hub, OFO_TVA_RECORD( object ), &iter);
 		}
 	}
 }
@@ -376,14 +357,14 @@ find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTre
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *store )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store )
 {
-	static const gchar *thisfn = "ofa_tva_record_store_on_deleted_object";
+	static const gchar *thisfn = "ofa_tva_record_store_on_hub_deleted_object";
 	GtkTreeIter iter;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
@@ -395,15 +376,15 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTVARecordStore *stor
 }
 
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaTVARecordStore *store )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaTVARecordStore *store )
 {
-	static const gchar *thisfn = "ofa_tva_record_store_on_reload_dataset";
+	static const gchar *thisfn = "ofa_tva_record_store_on_hub_reload_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, store=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) store );
+	g_debug( "%s: hub=%p, type=%lu, store=%p",
+			thisfn, ( void * ) hub, type, ( void * ) store );
 
 	if( type == OFO_TYPE_TVA_RECORD ){
 		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store, dossier );
+		load_dataset( store, hub );
 	}
 }
