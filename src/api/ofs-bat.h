@@ -28,14 +28,13 @@
 /**
  * SECTION: ofs_ope
  * @short_description: #ofsOpe structure definition.
- * @include: openbook/ofs-ope.h
+ * @include: openbook/ofs-bat.h
  *
  * This is used as an entry for operation templates work:
  * an ope + an ope template = n entries (if %TRUE)
  */
 
-#include "api/ofo-dossier-def.h"
-#include "api/ofo-ope-template-def.h"
+#include <glib.h>
 
 G_BEGIN_DECLS
 
