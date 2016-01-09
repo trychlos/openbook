@@ -514,6 +514,7 @@
                 + remove dossier signaling system
                 + remove exportable_from_dossier
                 + remove importable_to_dossier
+                + remove ofo_base_load_dataset()
                 + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
                 + ofa_dossier_properties_run: w/o dossier
                 + obsolete ofa_main_window_get_dossier
@@ -523,21 +524,6 @@
      2016- 1- 7 obsolete ofo_dossier_has_dispose_run()
                 + ofo_dossier_get_user()
                 + ofo_dossier_get_connect()
-
- 949 2015-12-31 review all ofoBase API: shouldn't need to always have 
-                ofoDossier
-     2015- 1- 6 ofoAccount: done
-                ofoBat: done
-     2015- 1- 7 ofoCurrency: done
-     2015- 1- 8 ofoEntry: done
-                ofoLedger: done
-
- 950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
-                intrinsic or take into account dossier_is_current
-     2015- 1- 6 ofoAccount: intrinsic (up to the caller)
-                ofoBat: id.
-     2015- 1- 7 ofoCurrency: id.
-     2015- 1- 8 ofoLedger: id.
 
  955 2016- 1- 6 obsolete ofa_page_get_main_window()
                 obsolete ofa_page_get_dossier()
@@ -559,6 +545,25 @@
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 949 2015-12-31 review all ofoBase API: shouldn't need to always have 
+                ofoDossier
+     2015- 1- 6 ofoAccount: done
+                ofoBat: done
+     2015- 1- 7 ofoCurrency: done
+     2015- 1- 8 ofoEntry: done
+                ofoLedger: done
+     2015- 1- 9 ofoOpeTemplate: done
+                ofoRate: done
+
+ 950 2015-12-31 ofo_xxx_is_deletable: should decide whether this is
+                intrinsic or take into account dossier_is_current
+     2015- 1- 6 ofoAccount: intrinsic (up to the caller)
+                ofoBat: id.
+     2015- 1- 7 ofoCurrency: id.
+     2015- 1- 8 ofoLedger: id.
+     2015- 1- 9 ofoOpeTemplate: id.
+                ofoRate: id.
 
  951 2015-12-31 review the DB model upgrade to be more explicit on
                 plugins DB model updates

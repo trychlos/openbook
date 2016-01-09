@@ -35,8 +35,8 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
-#include "api/ofo-dossier-def.h"
 #include "api/ofo-rate-def.h"
 
 G_BEGIN_DECLS
@@ -79,40 +79,43 @@ typedef struct {
 }
 	ofsRateValidity;
 
-GType           ofo_rate_get_type                ( void ) G_GNUC_CONST;
+GType           ofo_rate_get_type          ( void ) G_GNUC_CONST;
 
-void            ofo_rate_connect_to_hub_signaling_system( const ofaHub *hub );
+void            ofo_rate_connect_to_hub_signaling_system
+                                           ( const ofaHub *hub );
 
-GList          *ofo_rate_get_dataset     ( ofoDossier *dossier );
-ofoRate        *ofo_rate_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );
+GList          *ofo_rate_get_dataset       ( ofaHub *hub );
+#define         ofo_rate_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoRate        *ofo_rate_new             ( void );
+ofoRate        *ofo_rate_get_by_mnemo      ( ofaHub *hub, const gchar *mnemo );
 
-const gchar    *ofo_rate_get_mnemo       ( const ofoRate *rate );
-const gchar    *ofo_rate_get_label       ( const ofoRate *rate );
-const gchar    *ofo_rate_get_notes       ( const ofoRate *rate );
-const gchar    *ofo_rate_get_upd_user    ( const ofoRate *rate );
-const GTimeVal *ofo_rate_get_upd_stamp   ( const ofoRate *rate );
-const GDate    *ofo_rate_get_min_valid   ( const ofoRate *rate );
-const GDate    *ofo_rate_get_max_valid   ( const ofoRate *rate );
-gint            ofo_rate_get_val_count   ( const ofoRate *rate );
-const GDate    *ofo_rate_get_val_begin   ( const ofoRate *rate, gint idx );
-const GDate    *ofo_rate_get_val_end     ( const ofoRate *rate, gint idx );
-ofxAmount       ofo_rate_get_val_rate    ( const ofoRate *rate, gint idx );
-ofxAmount       ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date );
+ofoRate        *ofo_rate_new               ( void );
 
-gboolean        ofo_rate_is_deletable    ( const ofoRate *rate, ofoDossier *dossier );
-gboolean        ofo_rate_is_valid        ( const gchar *mnemo, const gchar *label, GList *validities );
+const gchar    *ofo_rate_get_mnemo         ( const ofoRate *rate );
+const gchar    *ofo_rate_get_label         ( const ofoRate *rate );
+const gchar    *ofo_rate_get_notes         ( const ofoRate *rate );
+const gchar    *ofo_rate_get_upd_user      ( const ofoRate *rate );
+const GTimeVal *ofo_rate_get_upd_stamp     ( const ofoRate *rate );
+const GDate    *ofo_rate_get_min_valid     ( const ofoRate *rate );
+const GDate    *ofo_rate_get_max_valid     ( const ofoRate *rate );
+gint            ofo_rate_get_val_count     ( const ofoRate *rate );
+const GDate    *ofo_rate_get_val_begin     ( const ofoRate *rate, gint idx );
+const GDate    *ofo_rate_get_val_end       ( const ofoRate *rate, gint idx );
+ofxAmount       ofo_rate_get_val_rate      ( const ofoRate *rate, gint idx );
+ofxAmount       ofo_rate_get_rate_at_date  ( const ofoRate *rate, const GDate *date );
 
-void            ofo_rate_set_mnemo       ( ofoRate *rate, const gchar *number );
-void            ofo_rate_set_label       ( ofoRate *rate, const gchar *label );
-void            ofo_rate_set_notes       ( ofoRate *rate, const gchar *notes );
-void            ofo_rate_free_all_val    ( ofoRate *rate );
-void            ofo_rate_add_val         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
+gboolean        ofo_rate_is_deletable      ( const ofoRate *rate );
+gboolean        ofo_rate_is_valid          ( const gchar *mnemo, const gchar *label, GList *validities );
 
-gboolean        ofo_rate_insert          ( ofoRate *rate, ofoDossier *dossier );
-gboolean        ofo_rate_update          ( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_rate_delete          ( ofoRate *rate, ofoDossier *dossier );
+void            ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
+void            ofo_rate_set_label         ( ofoRate *rate, const gchar *label );
+void            ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes );
+void            ofo_rate_free_all_val      ( ofoRate *rate );
+void            ofo_rate_add_val           ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
+
+gboolean        ofo_rate_insert            ( ofoRate *rate, ofaHub *hub );
+gboolean        ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );
+gboolean        ofo_rate_delete            ( ofoRate *rate );
 
 G_END_DECLS
 

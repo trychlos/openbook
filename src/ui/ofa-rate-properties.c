@@ -36,6 +36,8 @@
 #include "api/my-igridlist.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -51,6 +53,7 @@ struct _ofaRatePropertiesPrivate {
 
 	/* internals
 	 */
+	ofaHub        *hub;
 	gboolean       is_current;
 	ofoRate       *rate;
 	gboolean       is_new;
@@ -331,6 +334,7 @@ v_init_dialog( myDialog *dialog )
 	ofaRateProperties *self;
 	ofaRatePropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
+	GtkApplication *application;
 	ofoDossier *dossier;
 	gint count, idx;
 	gchar *title;
@@ -345,7 +349,14 @@ v_init_dialog( myDialog *dialog )
 
 	main_window = my_window_get_main_window( MY_WINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -497,8 +508,6 @@ static gboolean
 is_dialog_validable( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	GList *valids;
 	ofsRateValidity *validity;
 	gint i;
@@ -510,11 +519,6 @@ is_dialog_validable( ofaRateProperties *self )
 	guint count;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 	for( i=1, valids=NULL ; i<=count ; ++i ){
@@ -540,7 +544,7 @@ is_dialog_validable( ofaRateProperties *self )
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
 	if( ok ){
-		exists = ofo_rate_get_by_mnemo( dossier, priv->mnemo );
+		exists = ofo_rate_get_by_mnemo( priv->hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_rate_get_mnemo( priv->rate )));
@@ -567,8 +571,6 @@ static gboolean
 do_update( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	guint i, count;
 	GtkEntry *entry;
 	const GDate *dbegin, *dend;
@@ -578,11 +580,6 @@ do_update( ofaRateProperties *self )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	prev_mnemo = g_strdup( ofo_rate_get_mnemo( priv->rate ));
 
@@ -612,10 +609,10 @@ do_update( ofaRateProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_rate_insert( priv->rate, dossier );
+				ofo_rate_insert( priv->rate, priv->hub );
 	} else {
 		priv->updated =
-				ofo_rate_update( priv->rate, dossier, prev_mnemo );
+				ofo_rate_update( priv->rate, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

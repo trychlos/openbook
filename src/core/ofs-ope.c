@@ -464,13 +464,14 @@ static gboolean
 is_rate( const gchar *token, sHelper *helper, gchar **str )
 {
 	static const gchar *thisfn = "ofs_ope_is_rate";
+	ofaHub *hub;
 	gboolean ok;
 	ofoRate *rate;
 	ofxAmount amount;
 
 	ok = FALSE;
-	ofoDossier *dossier = NULL;
-	rate = ofo_rate_get_by_mnemo( dossier, token+1 );
+	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+	rate = ofo_rate_get_by_mnemo( hub, token+1 );
 	if( rate ){
 		ok = TRUE;
 		if( my_date_is_valid( &helper->ope->dope )){
@@ -781,13 +782,14 @@ eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
 static gdouble
 rate( sHelper *helper, const gchar *content )
 {
+	ofaHub *hub;
 	ofoRate *rate;
 	gdouble amount;
 
 	amount = 0;
 	if( my_date_is_valid( &helper->ope->dope )){
-		ofoDossier *dossier = NULL;
-		rate = ofo_rate_get_by_mnemo( dossier, content );
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		rate = ofo_rate_get_by_mnemo( hub, content );
 		if( rate ){
 			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
 		}

@@ -36,7 +36,8 @@
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idataset.h"
+#include "api/ofa-icollectionable.h"
+#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
@@ -135,34 +136,34 @@ struct _ofoRatePrivate {
 
 static ofoBaseClass *ofo_rate_parent_class = NULL;
 
-static GList    *rate_load_dataset( ofoDossier *dossier );
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
 static GList    *rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 static void      rate_val_add_detail( ofoRate *rate, GList *detail );
-static gboolean  rate_do_insert( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean  rate_insert_main( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean  rate_delete_validities( ofoRate *rate, const ofaIDBConnect *cnx );
-static gboolean  rate_insert_validities( ofoRate *rate, const ofaIDBConnect *cnx );
-static gboolean  rate_insert_validity( ofoRate *rate, GList *detail, gint count, const ofaIDBConnect *cnx );
-static gboolean  rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean  rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *cnx, const gchar *user );
-static gboolean  rate_do_delete( ofoRate *rate, const ofaIDBConnect *cnx );
+static gboolean  rate_do_insert( ofoRate *rate, const ofaIDBConnect *connect );
+static gboolean  rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect );
+static gboolean  rate_delete_validities( ofoRate *rate, const ofaIDBConnect *connect );
+static gboolean  rate_insert_validities( ofoRate *rate, const ofaIDBConnect *connect );
+static gboolean  rate_insert_validity( ofoRate *rate, GList *detail, gint count, const ofaIDBConnect *connect );
+static gboolean  rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect );
+static gboolean  rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect );
+static gboolean  rate_do_delete( ofoRate *rate, const ofaIDBConnect *connect );
 static gint      rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint      rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint      rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent );
+static void      icollectionable_iface_init( ofaICollectionableInterface *iface );
+static guint     icollectionable_get_interface_version( const ofaICollectionable *instance );
+static GList    *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean  iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean  iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier );
+static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors );
 static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
-static gboolean  rate_do_drop_content( const ofaIDBConnect *cnx );
-
-OFA_IDATASET_LOAD( RATE, rate );
+static gboolean  rate_do_drop_content( const ofaIDBConnect *connect );
 
 static void
 rate_free_validity( GList *fields )
@@ -255,6 +256,12 @@ register_type( void )
 		( GInstanceInitFunc ) ofo_rate_init
 	};
 
+	static const GInterfaceInfo icollectionable_iface_info = {
+		( GInterfaceInitFunc ) icollectionable_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iexportable_iface_info = {
 		( GInterfaceInitFunc ) iexportable_iface_init,
 		NULL,
@@ -270,6 +277,8 @@ register_type( void )
 	g_debug( "%s", thisfn );
 
 	type = g_type_register_static( OFO_TYPE_BASE, "ofoRate", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
 
 	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
 
@@ -306,30 +315,21 @@ ofo_rate_connect_to_hub_signaling_system( const ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 }
 
-static GList *
-rate_load_dataset( ofoDossier *dossier )
+/**
+ * ofo_rate_get_dataset:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the full #ofoRate dataset.
+ *
+ * The returned list is owned by the @hub collector, and should not
+ * be released by the caller.
+ */
+GList *
+ofo_rate_get_dataset( ofaHub *hub )
 {
-	GList *dataset, *it;
-	ofoRate *rate;
-	gchar *from;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = ofo_base_load_dataset_from_dossier(
-					st_boxed_defs,
-					ofo_dossier_get_connect( dossier ),
-					"OFA_T_RATES ORDER BY RAT_MNEMO ASC",
-					OFO_TYPE_RATE );
-
-	for( it=dataset ; it ; it=it->next ){
-		rate = OFO_RATE( it->data );
-		from = g_strdup_printf(
-				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
-				ofo_rate_get_mnemo( rate ));
-		rate->priv->validities =
-				ofo_base_load_rows( st_validities_defs, ofo_dossier_get_connect( dossier ), from );
-		g_free( from );
-	}
-
-	return( dataset );
+	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_RATE ));
 }
 
 /**
@@ -341,14 +341,16 @@ rate_load_dataset( ofoDossier *dossier )
  * not be unreffed by the caller.
  */
 ofoRate *
-ofo_rate_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+ofo_rate_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
 {
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	GList *dataset;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
-	OFA_IDATASET_GET( dossier, RATE, rate );
+	dataset = ofo_rate_get_dataset( hub );
 
-	return( rate_find_by_mnemo( rate_dataset, mnemo ));
+	return( rate_find_by_mnemo( dataset, mnemo ));
 }
 
 static ofoRate *
@@ -624,7 +626,6 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 /**
  * ofo_rate_is_deletable:
  * @rate: the rate
- * @dossier: the dossier
  *
  * A rate cannot be deleted if it is referenced in the debit or the
  * credit formulas of a model detail line.
@@ -632,24 +633,19 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
  * Returns: %TRUE if the rate is deletable.
  */
 gboolean
-ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
+ofo_rate_is_deletable( const ofoRate *rate )
 {
 	ofaHub *hub;
-	gboolean is_current;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		hub = ofo_base_get_hub( OFO_BASE( rate ));
-		is_current = ofo_dossier_is_current( dossier );
-		return( is_current &&
-				!ofo_ope_template_use_rate( hub, ofo_rate_get_mnemo( rate )));
+	if( OFO_BASE( rate )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	g_assert_not_reached();
-	return( FALSE );
+	hub = ofo_base_get_hub( OFO_BASE( rate ));
+
+	return( !ofo_ope_template_use_rate( hub, ofo_rate_get_mnemo( rate )));
 }
 
 /**
@@ -797,53 +793,56 @@ rate_val_add_detail( ofoRate *rate, GList *detail )
  * previously existing old validity rows.
  */
 gboolean
-ofo_rate_insert( ofoRate *rate, ofoDossier *dossier )
+ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_rate_insert";
+	gboolean ok;
+
+	g_debug( "%s: rate=%p, hub=%p",
+			thisfn, ( void * ) rate, ( void * ) hub );
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_debug( "%s: rate=%p, dossier=%p",
-				thisfn, ( void * ) rate, ( void * ) dossier );
-
-		if( rate_do_insert(
-					rate,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_ADD( dossier, RATE, rate );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( rate )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	ok = FALSE;
+
+	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( rate ), hub );
+		ofa_icollector_add_object(
+				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-rate_do_insert( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user )
+rate_do_insert( ofoRate *rate, const ofaIDBConnect *connect )
 {
-	return( rate_insert_main( rate, cnx, user ) &&
-			rate_delete_validities( rate, cnx ) &&
-			rate_insert_validities( rate, cnx ));
+	return( rate_insert_main( rate, connect ) &&
+			rate_delete_validities( rate, connect ) &&
+			rate_insert_validities( rate, connect ));
 }
 
 static gboolean
-rate_insert_main( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user )
+rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes;
+	gchar *label, *notes, *userid;
 	gboolean ok;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	ok = FALSE;
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_rate_get_label( rate ));
 	notes = my_utils_quote( ofo_rate_get_notes( rate ));
 	my_utils_stamp_set_now( &stamp );
@@ -863,11 +862,11 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
+	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		rate_set_upd_user( rate, user );
+		rate_set_upd_user( rate, userid );
 		rate_set_upd_stamp( rate, &stamp );
 		ok = TRUE;
 	}
@@ -876,12 +875,13 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *cnx, const gchar *user )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
 
 static gboolean
-rate_delete_validities( ofoRate *rate, const ofaIDBConnect *cnx )
+rate_delete_validities( ofoRate *rate, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	gchar *query;
@@ -890,7 +890,7 @@ rate_delete_validities( ofoRate *rate, const ofaIDBConnect *cnx )
 			"DELETE FROM OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -898,7 +898,7 @@ rate_delete_validities( ofoRate *rate, const ofaIDBConnect *cnx )
 }
 
 static gboolean
-rate_insert_validities( ofoRate *rate, const ofaIDBConnect *cnx )
+rate_insert_validities( ofoRate *rate, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GList *it;
@@ -908,14 +908,14 @@ rate_insert_validities( ofoRate *rate, const ofaIDBConnect *cnx )
 	count = 0;
 
 	for( it=rate->priv->validities ; it ; it=it->next ){
-		ok &= rate_insert_validity( rate, it->data, ++count, cnx );
+		ok &= rate_insert_validity( rate, it->data, ++count, connect );
 	}
 
 	return( ok );
 }
 
 static gboolean
-rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaIDBConnect *cnx )
+rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
@@ -955,7 +955,7 @@ rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaIDBConn
 
 	g_string_append_printf( query, "%s)", samount );
 
-	ok = ofa_idbconnect_query( cnx, query->str, TRUE );
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( sdbegin );
@@ -971,55 +971,57 @@ rate_insert_validity( ofoRate *rate, GList *fields, gint count, const ofaIDBConn
  * Only update here the main properties.
  */
 gboolean
-ofo_rate_update( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo )
+ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_rate_update";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: rate=%p, prev_mnemo=%s",
+			thisfn, ( void * ) rate, prev_mnemo );
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_debug( "%s: rate=%p, dossier=%p, prev_mnemo=%s",
-				thisfn, ( void * ) rate, ( void * ) dossier, prev_mnemo );
-
-		if( rate_do_update(
-					rate,
-					prev_mnemo,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
-
-			OFA_IDATASET_UPDATE( dossier, RATE, rate, prev_mnemo );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( rate )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	hub = ofo_base_get_hub( OFO_BASE( rate ));
+	ok = FALSE;
+
+	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_RATE, ( GCompareFunc ) rate_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *cnx, const gchar *user )
+rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect )
 {
-	return( rate_update_main( rate, prev_mnemo, cnx, user ) &&
-			rate_delete_validities( rate, cnx ) &&
-			rate_insert_validities( rate, cnx ));
+	return( rate_update_main( rate, prev_mnemo, connect ) &&
+			rate_delete_validities( rate, connect ) &&
+			rate_insert_validities( rate, connect ));
 }
 
 static gboolean
-rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *cnx, const gchar *user )
+rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes;
+	gchar *label, *notes, *userid;
 	gboolean ok;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	ok = FALSE;
+	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote( ofo_rate_get_label( rate ));
 	notes = my_utils_quote( ofo_rate_get_notes( rate ));
 	my_utils_stamp_set_now( &stamp );
@@ -1039,11 +1041,11 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	g_string_append_printf( query,
 			"	RAT_UPD_USER='%s',RAT_UPD_STAMP='%s'"
 			"	WHERE RAT_MNEMO='%s'",
-					user, stamp_str, prev_mnemo );
+					userid, stamp_str, prev_mnemo );
 
-	if( ofa_idbconnect_query( cnx, query->str, TRUE )){
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		rate_set_upd_user( rate, user );
+		rate_set_upd_user( rate, userid );
 		rate_set_upd_stamp( rate, &stamp );
 		ok = TRUE;
 	}
@@ -1052,6 +1054,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	g_free( userid );
 
 	return( ok );
 }
@@ -1060,34 +1063,36 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
  * ofo_rate_delete:
  */
 gboolean
-ofo_rate_delete( ofoRate *rate, ofoDossier *dossier )
+ofo_rate_delete( ofoRate *rate )
 {
 	static const gchar *thisfn = "ofo_rate_delete";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_rate_is_deletable( rate, dossier ), FALSE );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_debug( "%s: rate=%p, dossier=%p",
-				thisfn, ( void * ) rate, ( void * ) dossier );
-
-		if( rate_do_delete(
-					rate,
-					ofo_dossier_get_connect( dossier ))){
-
-			OFA_IDATASET_REMOVE( dossier, RATE, rate );
-
-			return( TRUE );
-		}
+	if( OFO_BASE( rate )->prot->dispose_has_run ){
+		g_return_val_if_reached( FALSE );
 	}
 
-	return( FALSE );
+	hub = ofo_base_get_hub( OFO_BASE( rate ));
+	ok = FALSE;
+
+	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
+		g_object_ref( rate );
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( rate ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
+		g_object_unref( rate );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 static gboolean
-rate_do_delete( ofoRate *rate, const ofaIDBConnect *cnx )
+rate_do_delete( ofoRate *rate, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	gchar *query;
@@ -1096,7 +1101,7 @@ rate_do_delete( ofoRate *rate, const ofaIDBConnect *cnx )
 			"DELETE FROM OFA_T_RATES WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok = ofa_idbconnect_query( cnx, query, TRUE );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1104,7 +1109,7 @@ rate_do_delete( ofoRate *rate, const ofaIDBConnect *cnx )
 			"DELETE FROM OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok &= ofa_idbconnect_query( cnx, query, TRUE );
+	ok &= ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
@@ -1218,6 +1223,52 @@ rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboole
 }
 
 /*
+ * ofaICollectionable interface management
+ */
+static void
+icollectionable_iface_init( ofaICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( const ofaICollectionable *instance )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+{
+	GList *dataset, *it;
+	ofoRate *rate;
+	gchar *from;
+
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					"OFA_T_RATES ORDER BY RAT_MNEMO ASC",
+					OFO_TYPE_RATE,
+					hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		rate = OFO_RATE( it->data );
+		from = g_strdup_printf(
+				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
+				ofo_rate_get_mnemo( rate ));
+		rate->priv->validities =
+				ofo_base_load_rows( st_validities_defs, ofa_hub_get_connect( hub ), from );
+		g_free( from );
+	}
+
+	return( dataset );
+}
+
+/*
  * ofaIExportable interface management
  */
 static void
@@ -1228,7 +1279,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export_from_dossier = iexportable_export;
+	iface->export = iexportable_export;
 }
 
 static guint
@@ -1245,9 +1296,9 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
-	GList *it, *det;
+	GList *dataset, *it, *det;
 	GSList *lines;
 	ofoRate *rate;
 	gchar *str;
@@ -1255,17 +1306,17 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gulong count;
 	gchar field_sep, decimal_sep;
 
-	OFA_IDATASET_GET( dossier, RATE, rate );
+	dataset = ofo_rate_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
 	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
-	count = ( gulong ) g_list_length( rate_dataset );
+	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
 		count += 2;
 	}
-	for( it=rate_dataset ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
 		count += g_list_length( rate->priv->validities );
 	}
@@ -1291,7 +1342,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 	}
 
-	for( it=rate_dataset ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
@@ -1328,7 +1379,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
-	iface->import_to_dossier = iimportable_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -1370,7 +1421,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1380,6 +1431,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	gchar *msg, *mnemo;
 	gint type;
 	GList *detail;
+	const ofaIDBConnect *connect;
 
 	line = 0;
 	errors = 0;
@@ -1424,29 +1476,21 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	}
 
 	if( !errors ){
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_RATE, FALSE );
-
-		rate_do_drop_content( ofo_dossier_get_connect( dossier ));
+		connect = ofa_hub_get_connect( hub );
+		rate_do_drop_content( connect );
 
 		for( it=dataset ; it ; it=it->next ){
 			rate = OFO_RATE( it->data );
-			if( !rate_do_insert(
-					rate,
-					ofo_dossier_get_connect( dossier ),
-					ofo_dossier_get_user( dossier ))){
+			if( !rate_do_insert( rate, connect )){
 				errors -= 1;
 			}
 			ofa_iimportable_increment_progress(
 					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_rate_get_val_count( rate ));
 		}
 
-		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
-		ofa_idataset_free_dataset( dossier, OFO_TYPE_RATE );
-
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_RATE );
-
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_RATE, TRUE );
+		ofo_rate_free_dataset( dataset );
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_RATE );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
 	}
 
 	return( errors );
@@ -1546,8 +1590,8 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 }
 
 static gboolean
-rate_do_drop_content( const ofaIDBConnect *cnx )
+rate_do_drop_content( const ofaIDBConnect *connect )
 {
-	return( ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_RATES", TRUE ) &&
-			ofa_idbconnect_query( cnx, "DELETE FROM OFA_T_RATES_VAL", TRUE ));
+	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES", TRUE ) &&
+			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES_VAL", TRUE ));
 }

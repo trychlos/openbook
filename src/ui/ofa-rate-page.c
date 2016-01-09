@@ -31,6 +31,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -48,8 +49,8 @@ struct _ofaRatePagePrivate {
 
 	/* internals
 	 */
-	GList        *handlers;
-	ofoDossier   *dossier;
+	ofaHub       *hub;
+	GList        *hub_handlers;
 	gboolean      is_current;
 
 	/* UI
@@ -75,7 +76,7 @@ enum {
 G_DEFINE_TYPE( ofaRatePage, ofa_rate_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static void       setup_dossier_signaling( ofaRatePage *self );
+static void       connect_to_hub_signaling_system( ofaRatePage *self );
 static GtkWidget *setup_tree_view( ofaRatePage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
@@ -91,13 +92,13 @@ static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, o
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRatePage *self );
 static void       on_new_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatePage *self );
+static void       on_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
 static void       on_update_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
+static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
 static void       on_delete_clicked( GtkButton *button, ofaRatePage *page );
 static gboolean   delete_confirmed( ofaRatePage *self, ofoRate *rate );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatePage *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatePage *self );
+static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
+static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaRatePage *self );
 
 static void
 rates_page_finalize( GObject *instance )
@@ -119,9 +120,6 @@ static void
 rates_page_dispose( GObject *instance )
 {
 	ofaRatePagePrivate *priv;
-	gulong handler_id;
-	GList *iha;
-	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_RATE_PAGE( instance ));
 
@@ -133,13 +131,7 @@ rates_page_dispose( GObject *instance )
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
-		dossier = ofa_page_get_dossier( OFA_PAGE( instance ));
-		if( OFO_IS_DOSSIER( dossier )){
-			for( iha=priv->handlers ; iha ; iha=iha->next ){
-				handler_id = ( gulong ) iha->data;
-				g_signal_handler_disconnect( dossier, handler_id );
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -157,8 +149,6 @@ ofa_rate_page_init( ofaRatePage *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RATE_PAGE, ofaRatePagePrivate );
-
-	self->priv->handlers = NULL;
 }
 
 static void
@@ -190,12 +180,15 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_RATE_PAGE( page )->priv;
 
-	dossier = ofa_page_get_dossier( page );
+	priv->hub = ofa_page_get_hub( page );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->dossier = dossier;
+
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	setup_dossier_signaling( OFA_RATE_PAGE( page ));
+	connect_to_hub_signaling_system( OFA_RATE_PAGE( page ));
 	tview = setup_tree_view( OFA_RATE_PAGE( page ));
 	insert_dataset( OFA_RATE_PAGE( page ));
 
@@ -203,32 +196,24 @@ v_setup_view( ofaPage *page )
 }
 
 static void
-setup_dossier_signaling( ofaRatePage *self )
+connect_to_hub_signaling_system( ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
 	gulong handler;
 
 	priv = self->priv;
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 static GtkWidget *
@@ -355,10 +340,12 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 insert_dataset( ofaRatePage *self )
 {
+	ofaRatePagePrivate *priv;
 	GList *dataset, *it;
 	ofoRate *rate;
 
-	dataset = ofo_rate_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )));
+	priv = self->priv;
+	dataset = ofo_rate_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 
@@ -591,7 +578,7 @@ on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_rate && ofo_rate_is_deletable( rate, priv->dossier ));
+				priv->is_current && is_rate && ofo_rate_is_deletable( rate ));
 	}
 }
 
@@ -615,14 +602,17 @@ on_new_clicked( GtkButton *button, ofaRatePage *page )
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatePage *self )
+on_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -659,16 +649,19 @@ on_update_clicked( GtkButton *button, ofaRatePage *page )
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatePage *self )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -700,7 +693,7 @@ on_delete_clicked( GtkButton *button, ofaRatePage *page )
 		g_object_unref( rate );
 
 		if( delete_confirmed( page, rate ) &&
-				ofo_rate_delete( rate, ofa_page_get_dossier( OFA_PAGE( page )))){
+				ofo_rate_delete( rate )){
 
 			/* nothing to do here as all is managed by dossier signaling
 			 * system */
@@ -727,17 +720,20 @@ delete_confirmed( ofaRatePage *self, ofoRate *rate )
 	return( delete_ok );
 }
 
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatePage *self )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_on_deleted_object";
 	static const gchar *mnemo;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -751,14 +747,17 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatePage *self )
 	}
 }
 
+/*
+ * SIGNAL_HUB_RELOAD signal handler
+ */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatePage *self )
+on_reloaded_dataset( ofaHub *hub, GType type, ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_on_reloaded_dataset";
 	GtkTreeModel *tmodel;
 
-	g_debug( "%s: dossier=%p, type=%lu, self=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) self );
+	g_debug( "%s: hub=%p, type=%lu, self=%p",
+			thisfn, ( void * ) hub, type, ( void * ) self );
 
 	if( type == OFO_TYPE_RATE ){
 		tmodel = gtk_tree_view_get_model( self->priv->tview );
