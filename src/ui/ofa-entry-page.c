@@ -2620,7 +2620,7 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
-	ofo_dossier_get_min_deffect( &deff_min, priv->dossier, ledger );
+	ofo_dossier_get_min_deffect( priv->dossier, ledger, &deff_min );
 	if( !my_date_is_valid( &deff_min )){
 		my_date_set_from_date( &deff_min, &dope );
 	}
@@ -2680,7 +2680,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 		ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
-		ofo_dossier_get_min_deffect( &deff_min, priv->dossier, ledger );
+		ofo_dossier_get_min_deffect( priv->dossier, ledger, &deff_min );
 		if( !my_date_is_valid( &deff_min ) || my_date_compare( &deff_min, &dope ) < 0 ){
 			my_date_set_from_date( &deff_min, &dope );
 		}

@@ -517,7 +517,7 @@
                 + remove ofo_base_load_dataset()
                 + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
                 + ofa_dossier_properties_run: w/o dossier
-                + obsolete ofa_main_window_get_dossier
+                + 
                 + cleanup userid+connect from dossier private
                   (when all classes will be migrated to hub)
      2016- 1- 6 + remove DOSSIER properties from ofaListStore
@@ -537,10 +537,9 @@
 
  959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
 
- 960 2016- 1- 8 ofo_dossier_get_min_deffect: review the api
-                dossier should be first
+ 961 2016- 1- 9 obsolete ofa_main_window_get_dossier()
 
- 961
+ 962
 
 -----------------------------------------------------------------------
  DONE
@@ -582,6 +581,10 @@
                 (-def must always been used when it exists)
                 -def should not be included in .c files
      2016- 1- 6 done
+
+ 960 2016- 1- 8 ofo_dossier_get_min_deffect: review the api
+                dossier should be first
+     2016- 1- 9 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

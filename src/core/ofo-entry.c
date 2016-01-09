@@ -1536,7 +1536,7 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
 	if( my_strlen( mnemo )){
 		ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
-		ofo_dossier_get_min_deffect( date, dossier, ledger );
+		ofo_dossier_get_min_deffect( dossier, ledger, date );
 	}
 
 	return( date );

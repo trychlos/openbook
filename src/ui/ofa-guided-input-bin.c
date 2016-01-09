@@ -66,7 +66,6 @@ struct _ofaGuidedInputBinPrivate {
 
 	/* from dossier
 	 */
-	ofoDossier           *dossier;
 	const gchar          *def_currency;
 
 	/* when selecting an operation template
@@ -261,8 +260,8 @@ static void              total_display_diff( ofaGuidedInputBin *bin, const gchar
 static gboolean          do_validate( ofaGuidedInputBin *bin );
 static void              display_ok_message( ofaGuidedInputBin *bin, gint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *bin );
-static void              on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
-static void              on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputBin *self );
+static void              on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
+static void              on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
 static void
 guided_input_bin_finalize( GObject *instance )
@@ -409,34 +408,30 @@ setup_bin( ofaGuidedInputBin *bin )
 static void
 setup_main_window( ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_setup_main_window";
 	ofaGuidedInputBinPrivate *priv;
 	GtkApplication *application;
+	ofoDossier *dossier;
 	gulong handler;
 
 	priv = bin->priv;
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* setup from dossier
 	 * datas which come from the dossier are read once
 	 * they are supposed to stay unchanged while the window is alive */
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	priv->def_currency = ofo_dossier_get_default_currency( priv->dossier );
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->def_currency = ofo_dossier_get_default_currency( dossier );
 
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
-	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-					G_OBJECT( priv->dossier ),
-					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
-	g_debug( "%s: connecting handler=%lu to dossier=%p", thisfn, handler, ( void * ) priv->dossier );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -826,9 +821,11 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 	ofoLedger *ledger;
+	ofoDossier *dossier;
 
 	priv = bin->priv;
 	ope = priv->ope;
+	dossier = ofa_hub_get_dossier( priv->hub );
 
 	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
@@ -836,7 +833,7 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 	g_free( ope->ledger );
 	ope->ledger = g_strdup( mnemo );
 
-	ofo_dossier_get_min_deffect( &priv->deffect_min, priv->dossier, ledger );
+	ofo_dossier_get_min_deffect( dossier, ledger, &priv->deffect_min );
 
 	check_for_enable_dlg( bin );
 }
@@ -1782,16 +1779,16 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
 }
 
 /*
- * SIGNAL_DOSSIER_UPDATED_OBJECT signal handler
+ * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
+on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -1804,18 +1801,18 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 }
 
 /*
- * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputBin *self )
+on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_on_deleted_object";
 	ofaGuidedInputBinPrivate *priv;
 	gint i;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 

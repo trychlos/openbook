@@ -257,7 +257,7 @@ compute_dates( sHelper *helper )
 		dossier = ofa_hub_get_dossier( hub );
 		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
 		if( ledger ){
-			ofo_dossier_get_min_deffect( &date, dossier, ledger );
+			ofo_dossier_get_min_deffect( dossier, ledger, &date );
 			if( my_date_compare( &date, &ope->dope ) < 0 ){
 				my_date_set_from_date( &ope->deffect, &ope->dope );
 			} else {
@@ -921,12 +921,16 @@ static gboolean
 check_for_dates( sChecker *checker )
 {
 	const ofsOpe *ope;
+	ofaHub *hub;
+	ofoDossier *dossier;
 	gboolean ok;
 	GDate dmin;
 	gint cmp;
 	gchar *str;
 
 	ope = checker->ope;
+	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
+	dossier = ofa_hub_get_dossier( hub );
 	ok = FALSE;
 
 	if( !my_date_is_valid( &ope->dope )){
@@ -938,8 +942,7 @@ check_for_dates( sChecker *checker )
 		checker->message = g_strdup( _( "Invalid effect date" ));
 
 	} else if( checker->ledger ){
-		ofoDossier *dossier = NULL;
-		ofo_dossier_get_min_deffect( &dmin, dossier, checker->ledger );
+		ofo_dossier_get_min_deffect( dossier, checker->ledger, &dmin );
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
