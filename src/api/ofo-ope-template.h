@@ -112,9 +112,9 @@
  *    - the '%RATE( TVAN )' is the same that '%TVAN'
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-ope-template-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -144,53 +144,51 @@ typedef struct {
 }
 	ofoOpeTemplateClass;
 
-GType           ofo_ope_template_get_type                ( void ) G_GNUC_CONST;
+GType           ofo_ope_template_get_type                 ( void ) G_GNUC_CONST;
 
-void            ofo_ope_template_connect_to_hub_signaling_system( const ofaHub *hub );
+void            ofo_ope_template_connect_to_hub_signaling_system
+                                                          ( const ofaHub *hub );
 
-void            ofo_ope_template_connect_handlers  ( const ofoDossier *dossier );
+GList          *ofo_ope_template_get_dataset              ( ofaHub *hub );
+#define         ofo_ope_template_free_dataset( L )        g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-GList          *ofo_ope_template_get_dataset       ( ofoDossier *dossier );
-ofoOpeTemplate *ofo_ope_template_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_ope_template_use_ledger        ( ofoDossier *dossier, const gchar *ledger );
-gboolean        ofo_ope_template_use_rate          ( ofoDossier *dossier, const gchar *mnemo );
+ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaHub *hub, const gchar *mnemo );
+gboolean        ofo_ope_template_use_ledger               ( ofaHub *hub, const gchar *ledger );
+gboolean        ofo_ope_template_use_rate                 ( ofaHub *hub, const gchar *mnemo );
 
-ofoOpeTemplate *ofo_ope_template_new               ( void );
-ofoOpeTemplate *ofo_ope_template_new_from_template ( const ofoOpeTemplate *model );
+ofoOpeTemplate *ofo_ope_template_new                      ( void );
+ofoOpeTemplate *ofo_ope_template_new_from_template        ( const ofoOpeTemplate *model );
 
-const gchar    *ofo_ope_template_get_mnemo         ( const ofoOpeTemplate *model );
-gchar          *ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model, ofoDossier *dossier );
-const gchar    *ofo_ope_template_get_label         ( const ofoOpeTemplate *model );
-const gchar    *ofo_ope_template_get_ledger        ( const ofoOpeTemplate *model );
-gboolean        ofo_ope_template_get_ledger_locked ( const ofoOpeTemplate *model );
-const gchar    *ofo_ope_template_get_ref           ( const ofoOpeTemplate *model );
-gboolean        ofo_ope_template_get_ref_locked    ( const ofoOpeTemplate *model );
-const gchar    *ofo_ope_template_get_notes         ( const ofoOpeTemplate *model );
-const gchar    *ofo_ope_template_get_upd_user      ( const ofoOpeTemplate *model );
-const GTimeVal *ofo_ope_template_get_upd_stamp     ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_mnemo                ( const ofoOpeTemplate *model );
+gchar          *ofo_ope_template_get_mnemo_new_from       ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_label                ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_ledger               ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_ledger_locked        ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_ref                  ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_ref_locked           ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_notes                ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_upd_user             ( const ofoOpeTemplate *model );
+const GTimeVal *ofo_ope_template_get_upd_stamp            ( const ofoOpeTemplate *model );
 
-gboolean        ofo_ope_template_is_deletable      ( const ofoOpeTemplate *model, ofoDossier *dossier );
-gboolean        ofo_ope_template_is_valid          ( ofoDossier *dossier,
-															const gchar *mnemo,
-															const gchar *label,
-															const gchar *ledger );
+gboolean        ofo_ope_template_is_deletable             ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_is_valid                 ( const gchar *mnemo, const gchar *label, const gchar *ledger );
 
-void            ofo_ope_template_set_mnemo         ( ofoOpeTemplate *model, const gchar *mnemo );
-void            ofo_ope_template_set_label         ( ofoOpeTemplate *model, const gchar *label );
-void            ofo_ope_template_set_ledger        ( ofoOpeTemplate *model, const gchar *ledger );
-void            ofo_ope_template_set_ledger_locked ( ofoOpeTemplate *model, gboolean ledger_locked );
-void            ofo_ope_template_set_ref           ( ofoOpeTemplate *model, const gchar *ref );
-void            ofo_ope_template_set_ref_locked    ( ofoOpeTemplate *model, gboolean ref_locked );
-void            ofo_ope_template_set_notes         ( ofoOpeTemplate *model, const gchar *notes );
+void            ofo_ope_template_set_mnemo                ( ofoOpeTemplate *model, const gchar *mnemo );
+void            ofo_ope_template_set_label                ( ofoOpeTemplate *model, const gchar *label );
+void            ofo_ope_template_set_ledger               ( ofoOpeTemplate *model, const gchar *ledger );
+void            ofo_ope_template_set_ledger_locked        ( ofoOpeTemplate *model, gboolean ledger_locked );
+void            ofo_ope_template_set_ref                  ( ofoOpeTemplate *model, const gchar *ref );
+void            ofo_ope_template_set_ref_locked           ( ofoOpeTemplate *model, gboolean ref_locked );
+void            ofo_ope_template_set_notes                ( ofoOpeTemplate *model, const gchar *notes );
 
-void            ofo_ope_template_add_detail        ( ofoOpeTemplate *model,
-															const gchar *comment,
-															const gchar *account, gboolean account_locked,
-															const gchar *label, gboolean label_locked,
-															const gchar *debit, gboolean debit_locked,
-															const gchar *credit, gboolean credit_locked );
+void            ofo_ope_template_add_detail               ( ofoOpeTemplate *model,
+																const gchar *comment,
+																const gchar *account, gboolean account_locked,
+																const gchar *label, gboolean label_locked,
+																const gchar *debit, gboolean debit_locked,
+																const gchar *credit, gboolean credit_locked );
 
-void            ofo_ope_template_free_detail_all   ( ofoOpeTemplate *model );
+void            ofo_ope_template_free_detail_all          ( ofoOpeTemplate *model );
 
 gint            ofo_ope_template_get_detail_count         ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_detail_comment       ( const ofoOpeTemplate *model, gint idx );
@@ -203,9 +201,9 @@ gboolean        ofo_ope_template_get_detail_debit_locked  ( const ofoOpeTemplate
 const gchar    *ofo_ope_template_get_detail_credit        ( const ofoOpeTemplate *model, gint idx );
 gboolean        ofo_ope_template_get_detail_credit_locked ( const ofoOpeTemplate *model, gint idx );
 
-gboolean        ofo_ope_template_insert            ( ofoOpeTemplate *model, ofoDossier *dossier );
-gboolean        ofo_ope_template_update            ( ofoOpeTemplate *model, ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_ope_template_delete            ( ofoOpeTemplate *model, ofoDossier *dossier );
+gboolean        ofo_ope_template_insert                   ( ofoOpeTemplate *model, ofaHub *hub );
+gboolean        ofo_ope_template_update                   ( ofoOpeTemplate *model, const gchar *prev_mnemo );
+gboolean        ofo_ope_template_delete                   ( ofoOpeTemplate *model );
 
 G_END_DECLS
 

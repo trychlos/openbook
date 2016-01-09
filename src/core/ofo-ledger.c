@@ -1099,7 +1099,7 @@ ofo_ledger_is_deletable( const ofoLedger *ledger )
 
 	ok = !ofo_dossier_use_ledger( dossier, mnemo ) &&
 			!ofo_entry_use_ledger( hub, mnemo ) &&
-			!ofo_ope_template_use_ledger( dossier, mnemo );
+			!ofo_ope_template_use_ledger( hub, mnemo );
 
 	return( ok );
 }

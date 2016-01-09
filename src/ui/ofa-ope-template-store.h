@@ -46,8 +46,8 @@
  * See api/ofo-ope-template.h for a full description of the model language.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -94,7 +94,7 @@ enum {
 
 GType                ofa_ope_template_store_get_type    ( void );
 
-ofaOpeTemplateStore *ofa_ope_template_store_new         ( ofoDossier *dossier );
+ofaOpeTemplateStore *ofa_ope_template_store_new         ( ofaHub *hub );
 
 gboolean             ofa_ope_template_store_get_by_mnemo( ofaOpeTemplateStore *store,
 																	const gchar *mnemo,

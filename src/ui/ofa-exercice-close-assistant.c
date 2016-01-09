@@ -855,11 +855,11 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 
 	sld_ope = ofo_dossier_get_sld_ope( priv->dossier );
-	sld_template = ofo_ope_template_get_by_mnemo( priv->dossier, sld_ope );
+	sld_template = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
 	g_return_val_if_fail( sld_template && OFO_IS_OPE_TEMPLATE( sld_template ), 1 );
 
 	for_ope = ofo_dossier_get_forward_ope( priv->dossier );
-	for_template = ofo_ope_template_get_by_mnemo( priv->dossier, for_ope );
+	for_template = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
 	g_return_val_if_fail( for_template && OFO_IS_OPE_TEMPLATE( for_template ), 1 );
 
 	for( i=1, it=accounts ; it ; ++i, it=it->next ){

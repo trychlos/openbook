@@ -163,9 +163,11 @@ static void
 on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *page )
 {
 	ofoOpeTemplate *ope;
+	ofaHub *hub;
 
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( ofa_page_get_dossier( OFA_PAGE( page )), mnemo );
+		hub = ofa_page_get_hub( OFA_PAGE( page ));
+		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
 		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ope, NULL );

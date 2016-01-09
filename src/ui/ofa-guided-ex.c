@@ -465,8 +465,7 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 		insert_left_ledger_row( self, OFO_LEDGER( ise->data ));
 	}
 
-	ofoDossier *dossier = NULL;
-	dataset = ofo_ope_template_get_dataset( dossier );
+	dataset = ofo_ope_template_get_dataset( priv->hub );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_model_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}

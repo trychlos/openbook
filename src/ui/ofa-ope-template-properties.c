@@ -31,6 +31,8 @@
 #include "api/my-igridlist.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-account.h"
 #include "api/ofo-ope-template.h"
@@ -65,7 +67,7 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	/* internals
 	 */
 	const ofaMainWindow *main_window;
-	ofoDossier          *dossier;
+	ofaHub              *hub;
 	gboolean             is_current;
 	ofoOpeTemplate      *ope_template;
 	ofaLedgerCombo      *ledger_combo;
@@ -428,6 +430,8 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkApplication *application;
+	ofoDossier *dossier;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
 	GtkWidget *button, *label;
@@ -436,9 +440,15 @@ v_init_dialog( myDialog *dialog )
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	init_dialog_title( self );
 	init_dialog_mnemo( self );
@@ -750,22 +760,15 @@ static gboolean
 is_dialog_validable( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	ofoOpeTemplate *exists;
 	gboolean ok;
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	ok = ofo_ope_template_is_valid( dossier, priv->mnemo, priv->label, priv->ledger );
+	ok = ofo_ope_template_is_valid( priv->mnemo, priv->label, priv->ledger );
 
 	if( ok ){
-		exists = ofo_ope_template_get_by_mnemo( dossier, priv->mnemo );
+		exists = ofo_ope_template_get_by_mnemo( priv->hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ope_template_get_mnemo( priv->ope_template )));
 	}
@@ -786,18 +789,11 @@ static gboolean
 do_update( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
 	gchar *prev_mnemo;
 	guint i, count;
 
 	prev_mnemo = g_strdup( ofo_ope_template_get_mnemo( self->priv->ope_template ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	priv = self->priv;
 
@@ -820,10 +816,10 @@ do_update( ofaOpeTemplateProperties *self )
 
 	if( !prev_mnemo ){
 		priv->updated =
-				ofo_ope_template_insert( priv->ope_template, dossier );
+				ofo_ope_template_insert( priv->ope_template, priv->hub );
 	} else {
 		priv->updated =
-				ofo_ope_template_update( priv->ope_template, dossier, prev_mnemo );
+				ofo_ope_template_update( priv->ope_template, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

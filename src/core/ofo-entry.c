@@ -2029,18 +2029,16 @@ ofo_entry_is_valid( ofaHub *hub,
 {
 	ofoAccount *account_obj;
 	gboolean ok;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	ok = TRUE;
-	dossier = ofa_hub_get_dossier( hub );
 
 	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( hub, ledger )){
 		error_ledger( ledger );
 		ok &= FALSE;
 	}
-	if( !my_strlen( model ) || !ofo_ope_template_get_by_mnemo( dossier, model )){
+	if( !my_strlen( model ) || !ofo_ope_template_get_by_mnemo( hub, model )){
 		error_ope_template( model );
 		ok &= FALSE;
 	}

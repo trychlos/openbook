@@ -30,6 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -43,7 +45,7 @@ struct _ofaOpeTemplateFrameBinPrivate {
 	gboolean               dispose_has_run;
 
 	const ofaMainWindow   *main_window;
-	ofoDossier            *dossier;
+	ofaHub                *hub;
 	gboolean               is_current;
 	GtkGrid               *grid;
 	gint                   buttons;
@@ -260,14 +262,21 @@ static void
 setup_bin( ofaOpeTemplateFrameBin *bin )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	GtkApplication *application;
 	ofoDossier *dossier;
 	GtkWidget *grid;
 
 	priv = bin->priv;
 
-	dossier = ofa_main_window_get_dossier( priv->main_window );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->dossier = dossier;
+
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
@@ -426,7 +435,7 @@ update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
 	has_ope = FALSE;
 
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		has_ope = ( ope && OFO_IS_OPE_TEMPLATE( ope ));
 	}
 
@@ -437,7 +446,7 @@ update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
 			priv->is_current && has_ope );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && has_ope && ofo_ope_template_is_deletable( ope, priv->dossier ));
+			priv->is_current && has_ope && ofo_ope_template_is_deletable( ope ));
 
 	if( priv->guided_input_btn ){
 		gtk_widget_set_sensitive( priv->guided_input_btn,

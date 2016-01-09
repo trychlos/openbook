@@ -634,6 +634,7 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 gboolean
 ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
 {
+	ofaHub *hub;
 	gboolean is_current;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
@@ -641,9 +642,10 @@ ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
+		hub = ofo_base_get_hub( OFO_BASE( rate ));
 		is_current = ofo_dossier_is_current( dossier );
 		return( is_current &&
-				!ofo_ope_template_use_rate( dossier, ofo_rate_get_mnemo( rate )));
+				!ofo_ope_template_use_rate( hub, ofo_rate_get_mnemo( rate )));
 	}
 
 	g_assert_not_reached();

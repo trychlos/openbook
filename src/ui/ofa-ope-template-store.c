@@ -27,6 +27,7 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -54,15 +55,15 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *store );
 static void     list_store_load_dataset( ofaListStore *store );
-static void     insert_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope );
-static void     set_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope, GtkTreeIter *iter );
+static void     insert_row( ofaOpeTemplateStore *store, ofaHub *hub, const ofoOpeTemplate *ope );
+static void     set_row( ofaOpeTemplateStore *store, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mnemo );
-static void     setup_signaling_connect( ofaOpeTemplateStore *store, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateStore *store );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateStore *store );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateStore *store );
+static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub );
+static void     on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
+static void     on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store );
+static void     on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
+static void     on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *store );
 
 G_DEFINE_TYPE( ofaOpeTemplateStore, ofa_ope_template_store, OFA_TYPE_LIST_STORE )
 
@@ -142,14 +143,14 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
  * instance will be unreffed when the @dossier will be destroyed.
  */
 ofaOpeTemplateStore *
-ofa_ope_template_store_new( ofoDossier *dossier )
+ofa_ope_template_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
 
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
+	store = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_OPE_TEMPLATE_STORE( store ), NULL );
@@ -158,7 +159,7 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 	} else {
 		store = g_object_new(
 						OFA_TYPE_OPE_TEMPLATE_STORE,
-						OFA_PROP_DOSSIER, dossier,
+						OFA_PROP_HUB,                hub,
 						NULL );
 
 		gtk_list_store_set_column_types(
@@ -170,8 +171,8 @@ ofa_ope_template_store_new( ofoDossier *dossier )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
-		setup_signaling_connect( store, dossier );
+		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
+		connect_to_hub_signaling_system( store, hub );
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 	}
 
@@ -206,21 +207,23 @@ list_store_load_dataset( ofaListStore *store )
 {
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
-	ofoDossier *dossier;
+	ofaHub *hub;
 
-	g_object_get( G_OBJECT( store ), OFA_PROP_DOSSIER, &dossier, NULL );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	dataset = ofo_ope_template_get_dataset( dossier );
-	g_object_unref( dossier );
+	g_object_get( G_OBJECT( store ), OFA_PROP_HUB, &hub, NULL );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	dataset = ofo_ope_template_get_dataset( hub );
+
+	g_object_unref( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
-		insert_row( OFA_OPE_TEMPLATE_STORE( store ), dossier, ope );
+		insert_row( OFA_OPE_TEMPLATE_STORE( store ), hub, ope );
 	}
 }
 
 static void
-insert_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope )
+insert_row( ofaOpeTemplateStore *store, ofaHub *hub, const ofoOpeTemplate *ope )
 {
 	GtkTreeIter iter;
 
@@ -232,11 +235,11 @@ insert_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplat
 			OPE_TEMPLATE_COL_OBJECT, ope,
 			-1 );
 
-	set_row( store, dossier, ope, &iter );
+	set_row( store, hub, ope, &iter );
 }
 
 static void
-set_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *ope, GtkTreeIter *iter )
+set_row( ofaOpeTemplateStore *store, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter )
 {
 	gchar *stamp;
 
@@ -326,51 +329,46 @@ remove_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *number )
  * of this store is equal to those of the dossier
  */
 static void
-setup_signaling_connect( ofaOpeTemplateStore *store, ofoDossier *dossier )
+connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub )
 {
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), store );
-
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), store );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateStore *store )
+on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		insert_row( store, dossier, OFO_OPE_TEMPLATE( object ));
+		insert_row( store, hub, OFO_OPE_TEMPLATE( object ));
 	}
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_on_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo;
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) store );
@@ -380,10 +378,10 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 
 		if( prev_id && g_utf8_collate( prev_id, mnemo )){
 			remove_row_by_mnemo( store, prev_id );
-			insert_row( store, dossier, OFO_OPE_TEMPLATE( object ));
+			insert_row( store, hub, OFO_OPE_TEMPLATE( object ));
 
 		} else if( find_row_by_mnemo( store, mnemo, &iter, NULL )){
-			set_row( store, dossier, OFO_OPE_TEMPLATE( object ), &iter);
+			set_row( store, hub, OFO_OPE_TEMPLATE( object ), &iter);
 
 		} else {
 			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
@@ -391,14 +389,17 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 	}
 }
 
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateStore *store )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) store );
 
@@ -407,13 +408,16 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateStore *st
 	}
 }
 
+/*
+ * SIGNAL_HUB_RELOAD signal handler
+ */
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateStore *store )
+on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *store )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_on_reload_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, store=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) store );
+	g_debug( "%s: hub=%p, type=%lu, store=%p",
+			thisfn, ( void * ) hub, type, ( void * ) store );
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( store ));

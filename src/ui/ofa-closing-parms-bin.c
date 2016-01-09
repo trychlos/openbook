@@ -207,18 +207,22 @@ ofaClosingParmsBin *
 ofa_closing_parms_bin_new( ofaMainWindow *main_window )
 {
 	ofaClosingParmsBin *bin;
+	ofaClosingParmsBinPrivate *priv;;
 	GtkApplication *application;
 
 	bin = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
+	priv = bin->priv;
 
-	bin->priv->main_window = main_window;
-	bin->priv->dossier = ofa_main_window_get_dossier( main_window );
+	priv->main_window = main_window;
 
 	application = gtk_window_get_application( GTK_WINDOW( main_window ));
 	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
 
-	bin->priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-	g_return_val_if_fail( bin->priv->hub && OFA_IS_HUB( bin->priv->hub ), NULL );
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_val_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ), NULL );
 
 	setup_bin( bin );
 	setup_closing_opes( bin );
@@ -694,7 +698,7 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 		}
 		return( FALSE );
 	}
-	ope = ofo_ope_template_get_by_mnemo( priv->dossier, cstr );
+	ope = ofo_ope_template_get_by_mnemo( priv->hub, cstr );
 	if( !ope ){
 		if( msg ){
 			*msg = g_strdup_printf( _( "Operation template not found: %s" ), cstr );

@@ -55,7 +55,6 @@ struct _ofaOpeTemplateBookBinPrivate {
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	ofoDossier          *dossier;
 	ofaIDBMeta          *meta;
 
 	ofaOpeTemplateStore *ope_store;
@@ -114,14 +113,14 @@ static void       do_duplicate_ope_template( ofaOpeTemplateBookBin *bin );
 static void       do_delete_ope_template( ofaOpeTemplateBookBin *bin );
 static gboolean   delete_confirmed( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *ope );
 static void       do_guided_input( ofaOpeTemplateBookBin *bin );
-static void       dossier_signals_connect( ofaOpeTemplateBookBin *bin );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
+static void       connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin );
+static void       on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
+static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
 static void       on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
 static void       on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin );
+static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
 static void       on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *bin );
+static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin );
 static GtkWidget *get_current_tree_view( const ofaOpeTemplateBookBin *bin );
 static void       select_row_by_mnemo( ofaOpeTemplateBookBin *bin, const gchar *mnemo );
 static void       select_row_by_iter( ofaOpeTemplateBookBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
@@ -348,8 +347,7 @@ setup_main_window( ofaOpeTemplateBookBin *bin )
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( priv->hub ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	ofoDossier *dossier = NULL;
-	priv->ope_store = ofa_ope_template_store_new( dossier );
+	priv->ope_store = ofa_ope_template_store_new( priv->hub );
 
 	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( connect );
@@ -370,7 +368,7 @@ setup_main_window( ofaOpeTemplateBookBin *bin )
 
 	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->ope_store ));
 
-	dossier_signals_connect( bin );
+	connect_to_hub_signaling_system( bin );
 
 	gtk_notebook_set_current_page( priv->book, 0 );
 }
@@ -733,10 +731,10 @@ on_tview_delete( ofaOpeTemplateBookBin *bin )
 	priv = bin->priv;
 
 	mnemo = ofa_ope_template_book_bin_get_selected( bin );
-	ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_free( mnemo );
 
-	if( ofo_ope_template_is_deletable( ope, priv->dossier )){
+	if( ofo_ope_template_is_deletable( ope )){
 		do_delete_ope_template( bin );
 	}
 }
@@ -796,7 +794,7 @@ do_update_ope_template( ofaOpeTemplateBookBin *bin )
 
 	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
 		ofa_ope_template_properties_run( priv->main_window, ope, NULL );
@@ -827,18 +825,18 @@ do_duplicate_ope_template( ofaOpeTemplateBookBin *bin )
 
 	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
 		duplicate = ofo_ope_template_new_from_template( ope );
-		new_mnemo = ofo_ope_template_get_mnemo_new_from( ope, priv->dossier );
+		new_mnemo = ofo_ope_template_get_mnemo_new_from( ope );
 		ofo_ope_template_set_mnemo( duplicate, new_mnemo );
 
 		str = g_strdup_printf( "%s (%s)", ofo_ope_template_get_label( ope ), _( "Duplicate" ));
 		ofo_ope_template_set_label( duplicate, str );
 		g_free( str );
 
-		if( !ofo_ope_template_insert( duplicate, priv->dossier )){
+		if( !ofo_ope_template_insert( duplicate, priv->hub )){
 			g_object_unref( duplicate );
 		} else {
 			select_row_by_mnemo( bin, new_mnemo );
@@ -860,13 +858,13 @@ do_delete_ope_template( ofaOpeTemplateBookBin *bin )
 
 	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope &&
 				OFO_IS_OPE_TEMPLATE( ope ) &&
-				ofo_ope_template_is_deletable( ope, priv->dossier ));
+				ofo_ope_template_is_deletable( ope ));
 
 		if( delete_confirmed( bin, ope ) &&
-				ofo_ope_template_delete( ope, priv->dossier )){
+				ofo_ope_template_delete( ope )){
 
 			/* nothing to do here, all being managed by signal hub_handlers
 			 * just reset the selection as this is not managed by the
@@ -920,7 +918,7 @@ do_guided_input( ofaOpeTemplateBookBin *bin )
 
 	mnemo = ofa_ope_template_book_bin_get_selected( bin );
 	if( mnemo ){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
 		ofa_guided_input_run( priv->main_window, ope );
@@ -929,7 +927,7 @@ do_guided_input( ofaOpeTemplateBookBin *bin )
 }
 
 static void
-dossier_signals_connect( ofaOpeTemplateBookBin *bin )
+connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin )
 {
 	ofaOpeTemplateBookBinPrivate *priv;
 	gulong handler;
@@ -950,28 +948,28 @@ dossier_signals_connect( ofaOpeTemplateBookBin *bin )
 }
 
 /*
- * SIGNAL_DOSSIER_NEW_OBJECT signal handler
+ * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin )
+on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), bin=%p",
-			thisfn, ( void * ) dossier,
+	g_debug( "%s: hub=%p, object=%p (%s), bin=%p",
+			thisfn, ( void * ) hub,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) bin );
 }
 
 /*
- * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin )
+on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, bin=%p",
-			thisfn, ( void * ) dossier,
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, bin=%p",
+			thisfn, ( void * ) hub,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) bin );
 
 	if( OFO_IS_LEDGER( object )){
@@ -1027,15 +1025,15 @@ on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template )
 }
 
 /*
- * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplateBookBin *bin )
+on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), bin=%p",
-			thisfn, ( void * ) dossier,
+	g_debug( "%s: hub=%p, object=%p (%s), bin=%p",
+			thisfn, ( void * ) hub,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) bin );
 
 	if( OFO_IS_LEDGER( object )){
@@ -1064,15 +1062,15 @@ on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger )
 }
 
 /*
- * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
+ * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplateBookBin *bin )
+on_reloaded_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_book_bin_on_reloaded_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, bin=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) bin );
+	g_debug( "%s: hub=%p, type=%lu, bin=%p",
+			thisfn, ( void * ) hub, type, ( void * ) bin );
 }
 
 static GtkWidget *
@@ -1177,7 +1175,7 @@ select_row_by_mnemo( ofaOpeTemplateBookBin *bin, const gchar *mnemo )
 	priv = bin->priv;
 
 	if( my_strlen( mnemo )){
-		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		if( ope ){
 			g_return_if_fail( OFO_IS_OPE_TEMPLATE( ope ));
 			ledger = ofo_ope_template_get_ledger( ope );

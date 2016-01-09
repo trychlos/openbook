@@ -310,7 +310,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 		add_message( bin, _( "Dossier has no forward operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( dossier, for_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf(
 					_( "Dossier forward operation template '%s' doesn't exist" ), for_ope );
@@ -326,7 +326,7 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 		add_message( bin, _( "Dossier has no solde operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( dossier, sld_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf(
 					_( "Dossier solde operation template '%s' doesn't exist" ), sld_ope );
@@ -530,7 +530,6 @@ static void
 check_entries_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *entries, *it;
 	gulong count, i;
@@ -547,8 +546,6 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
-
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
 	count = g_list_length( entries );
@@ -612,7 +609,7 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 		/* ope template is not mandatory */
 		ope_mnemo = ofo_entry_get_ope_template( entry );
 		if( my_strlen( ope_mnemo )){
-			ope_obj = ofo_ope_template_get_by_mnemo( dossier, ope_mnemo );
+			ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, ope_mnemo );
 			if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has operation template '%s' which doesn't exist" ), number, ope_mnemo );
@@ -689,7 +686,6 @@ static void
 check_ope_templates_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	ofoDossier *dossier;
 	myProgressBar *bar;
 	GList *ope_templates, *it;
 	gulong count, i;
@@ -703,10 +699,8 @@ check_ope_templates_run( ofaCheckIntegrityBin *bin )
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
 	priv = bin->priv;
-	dossier = ofa_hub_get_dossier( priv->hub );
-
 	priv->ope_templates_errs = 0;
-	ope_templates = ofo_ope_template_get_dataset( dossier );
+	ope_templates = ofo_ope_template_get_dataset( priv->hub );
 	count = g_list_length( ope_templates );
 
 	for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
