@@ -34,7 +34,6 @@
  * an ope + an ope template = n entries (if %TRUE)
  */
 
-#include "api/ofo-dossier-def.h"
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
