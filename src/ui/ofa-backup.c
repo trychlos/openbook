@@ -32,9 +32,11 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -57,7 +59,7 @@ struct _ofaBackupPrivate {
 
 	/* runtime
 	 */
-	ofoDossier          *dossier;		/* the currently opened dossier */
+	ofaHub              *hub;
 	const ofaIDBConnect *connect;		/* its user connection */
 	ofaIDBMeta          *meta;			/* its meta datas */
 };
@@ -172,12 +174,18 @@ static void
 init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
+	GtkApplication *application;
 	gchar *last_folder, *def_name;
 
 	priv = self->priv;
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-	priv->connect = ofo_dossier_get_connect( priv->dossier );
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( priv->connect );
 
 	priv->dialog = gtk_file_chooser_dialog_new(

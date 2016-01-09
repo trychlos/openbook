@@ -31,8 +31,10 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -305,6 +307,8 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
+	GtkApplication *application;
+	ofaHub *hub;
 	const ofaIDBConnect *dossier_connect;
 	ofaIDBMeta *meta, *dossier_meta;
 	ofaIDBPeriod *period, *dossier_period;
@@ -319,10 +323,17 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 
 		/* close the currently opened dossier/exercice if we are about
 		 * to delete it */
-		dossier = ofa_main_window_get_dossier( priv->main_window );
-		if( dossier ){
-			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
-			dossier_connect = ofo_dossier_get_connect( dossier );
+		application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		if( hub ){
+			g_return_if_fail( OFA_IS_HUB( hub ));
+
+			dossier = ofa_hub_get_dossier( hub );
+			g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+			dossier_connect = ofa_hub_get_connect( hub );
 			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
 			dossier_meta = ofa_idbconnect_get_meta( dossier_connect );
 			g_return_if_fail( dossier_meta && OFA_IS_IDBMETA( dossier_meta ));

@@ -30,6 +30,7 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 
@@ -194,9 +195,8 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
-		/* setup a weak reference on the dossier to auto-unref */
-		g_object_weak_ref(
-				G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
+		/* setup a weak reference on the hub to auto-unref */
+		g_object_weak_ref( G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
 	priv = st_this->priv;

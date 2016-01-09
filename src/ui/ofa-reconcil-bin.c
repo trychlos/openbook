@@ -52,7 +52,6 @@ struct _ofaReconcilBinPrivate {
 	 */
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
-	ofoDossier          *dossier;
 
 	/* UI
 	 */
@@ -189,10 +188,10 @@ ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 	self = g_object_new( OFA_TYPE_RECONCIL_BIN, NULL );
 
 	self->priv->main_window = main_window;
-	self->priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	application = gtk_window_get_application( GTK_WINDOW( main_window ));
 	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
+
 	self->priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_val_if_fail( self->priv->hub && OFA_IS_HUB( self->priv->hub ), NULL );
 

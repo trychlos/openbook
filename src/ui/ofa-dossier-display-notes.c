@@ -28,6 +28,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
@@ -151,6 +153,9 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierDisplayNotesPrivate *priv;
 	GtkWindow *toplevel;
+	GtkApplication *application;
+	ofaHub *hub;
+	ofoDossier *dossier;
 
 	priv = OFA_DOSSIER_DISPLAY_NOTES( dialog )->priv;
 
@@ -160,9 +165,16 @@ v_init_dialog( myDialog *dialog )
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "main-label", "main-text", priv->main_notes );
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "exe-label", "exe-text", priv->exe_notes );
 
-	my_utils_container_set_editable(
-			GTK_CONTAINER( toplevel ),
-			ofo_dossier_is_current( ofa_main_window_get_dossier( priv->main_window )));
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	dossier = ofa_hub_get_dossier( hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), ofo_dossier_is_current( dossier ));
 }
 
 static void

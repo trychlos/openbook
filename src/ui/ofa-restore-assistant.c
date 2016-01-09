@@ -32,11 +32,13 @@
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -1107,17 +1109,13 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
+	GtkApplication *application;
+	ofaHub *hub;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	/* may be NULL */
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
 
 	priv = self->priv;
 
@@ -1130,9 +1128,18 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
+		main_window = my_window_get_main_window( MY_WINDOW( self ));
+		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+		/* may be NULL */
+		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+
 		/* first close the currently opened dossier */
-		if( dossier ){
-			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
+		if( hub ){
+			g_return_if_fail( OFA_IS_HUB( hub ));
 			ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
 		}
 

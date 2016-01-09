@@ -1652,26 +1652,6 @@ on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_da
 }
 
 /**
- * ofa_main_window_get_dossier:
- */
-ofoDossier *
-ofa_main_window_get_dossier( const ofaMainWindow *window )
-{
-	ofaMainWindowPrivate *priv;
-
-	g_return_val_if_fail( window && OFA_IS_MAIN_WINDOW( window ), NULL );
-
-	priv = window->priv;
-
-	if( !priv->dispose_has_run ){
-
-		return( priv->dossier );
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_main_window_activate_theme:
  * @main_window: the #ofaMainWindow main window.
  * @theme: the theme identifier as defined in ofa-main-window.h.

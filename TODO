@@ -534,10 +534,6 @@
 
  959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
 
- 961 2016- 1- 9 ofaMainWindow:
-                - obsolete ofa_main_window_open_dossier() - done
-                - obsolete ofa_main_window_get_dossier()
-
  962
 
 -----------------------------------------------------------------------
@@ -588,6 +584,11 @@
 
  960 2016- 1- 8 ofo_dossier_get_min_deffect: review the api
                 dossier should be first
+     2016- 1- 9 done
+
+ 961 2016- 1- 9 ofaMainWindow:
+                - obsolete ofa_main_window_open_dossier(): ok
+                - obsolete ofa_main_window_get_dossier(): ok
      2016- 1- 9 done
 
 -----------------------------------------------------------------------

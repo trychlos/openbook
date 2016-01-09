@@ -31,6 +31,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -49,6 +51,7 @@ struct _ofaBalanceBinPrivate {
 	/* initialization
 	 */
 	const ofaMainWindow    *main_window;
+	ofaHub                 *hub;
 
 	/* UI
 	 */
@@ -81,6 +84,7 @@ static const gchar *st_settings         = "RenderBalances";
 
 G_DEFINE_TYPE( ofaBalanceBin, ofa_balance_bin, GTK_TYPE_BIN )
 
+static void setup_hub( ofaBalanceBin *bin );
 static void setup_bin( ofaBalanceBin *bin );
 static void setup_account_selection( ofaBalanceBin *bin );
 static void setup_date_selection( ofaBalanceBin *bin );
@@ -192,6 +196,7 @@ ofa_balance_bin_new( const ofaMainWindow *main_window )
 
 	self->priv->main_window = main_window;
 
+	setup_hub( self );
 	setup_bin( self );
 	setup_account_selection( self );
 	setup_date_selection( self );
@@ -200,6 +205,21 @@ ofa_balance_bin_new( const ofaMainWindow *main_window )
 	load_settings( self );
 
 	return( self );
+}
+
+static void
+setup_hub( ofaBalanceBin *bin )
+{
+	ofaBalanceBinPrivate *priv;
+	GtkApplication *application;
+
+	priv = bin->priv;
+
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static void
@@ -343,7 +363,7 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 
 	active = gtk_toggle_button_get_active( button );
 	if( active ){
-		dossier = ofa_main_window_get_dossier( priv->main_window );
+		dossier = ofa_hub_get_dossier( priv->hub );
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );

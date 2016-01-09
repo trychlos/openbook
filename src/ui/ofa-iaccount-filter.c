@@ -229,12 +229,15 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name,
 	sdata = get_iaccount_filter_data( filter );
 	sdata->xml_name = g_strdup( xml_name );
 	sdata->main_window = main_window;
-	sdata->dossier = ofa_main_window_get_dossier( main_window );
 
 	application = gtk_window_get_application( GTK_WINDOW( main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
 	sdata->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( sdata->hub && OFA_IS_HUB( sdata->hub ));
+
+	sdata->dossier = ofa_hub_get_dossier( sdata->hub );
+	g_return_if_fail( sdata->dossier && OFO_IS_DOSSIER( sdata->dossier ));
 
 	setup_composite( filter, sdata );
 }

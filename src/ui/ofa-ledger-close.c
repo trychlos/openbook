@@ -51,6 +51,7 @@
 struct _ofaLedgerClosePrivate {
 
 	ofaHub             *hub;
+	GList              *hub_handlers;
 	gboolean            done;			/* whether we have actually done something */
 	GDate               closing;
 
@@ -67,7 +68,6 @@ struct _ofaLedgerClosePrivate {
 	gboolean            all_ledgers;
 	gint                count;			/* count of ledgers */
 	gint                uncloseable;
-	GList              *handlers;
 	guint               entries_count;	/* count of validated entries for the ledger */
 	guint               entries_num;
 	myProgressBar      *bar;
@@ -121,9 +121,6 @@ static void
 ledger_close_dispose( GObject *instance )
 {
 	ofaLedgerClosePrivate *priv;
-	GtkApplicationWindow *main_window;
-	ofoDossier *dossier;
-	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_CLOSE( instance ));
 
@@ -132,16 +129,7 @@ ledger_close_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFA_LEDGER_CLOSE( instance )->priv;
 
-		main_window = my_window_get_main_window( MY_WINDOW( instance ));
-		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-		dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-		if( dossier && OFO_IS_DOSSIER( dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( dossier, ( gulong ) it->data );
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -315,26 +303,23 @@ static void
 connect_to_dossier( ofaLedgerClose *dialog )
 {
 	ofaLedgerClosePrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gulong handler;
 
 	priv = dialog->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( dialog ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	handler = g_signal_connect(
 					G_OBJECT( dossier ),
 					SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_dossier_entry_status_count ), dialog );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					G_OBJECT( dossier ),
 					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_dossier_entry_status_changed ), dialog );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -413,7 +398,6 @@ static gboolean
 is_dialog_validable( ofaLedgerClose *self, GList *selected )
 {
 	ofaLedgerClosePrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GList *it;
 	gboolean ok;
@@ -422,13 +406,9 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 
 	priv = self->priv;
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	dossier = ofa_main_window_get_dossier( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	gtk_label_set_text( GTK_LABEL( priv->message_label ), "" );
 	ok = FALSE;
+	gtk_label_set_text( GTK_LABEL( priv->message_label ), "" );
+	dossier = ofa_hub_get_dossier( priv->hub );
 
 	/* do we have a intrinsically valid proposed closing date
 	 * + compare it to the limits of the exercice */

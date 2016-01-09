@@ -144,8 +144,6 @@ ofaPage       *ofa_main_window_activate_theme    ( const ofaMainWindow *window, 
 
 gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
 
-ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
-
 void           ofa_main_window_update_title      ( const ofaMainWindow *window );
 
 void           ofa_main_window_close_dossier     ( ofaMainWindow *window );

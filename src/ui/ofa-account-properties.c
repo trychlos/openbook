@@ -267,7 +267,7 @@ v_init_dialog( myDialog *dialog )
 	gtk_window_set_title( toplevel, title );
 
 	/* dossier */
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 	priv->is_current = ofo_dossier_is_current( priv->dossier );
 

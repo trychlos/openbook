@@ -305,16 +305,17 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv = self->priv;
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
-
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( priv->connect );
 	priv->dos_name = ofa_idbmeta_get_dossier_name( priv->meta );
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
 }
 
 static void

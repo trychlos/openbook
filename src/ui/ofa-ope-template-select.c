@@ -28,6 +28,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 
 #include "core/ofa-main-window.h"
@@ -42,6 +44,7 @@ struct _ofaOpeTemplateSelectPrivate {
 	/* initialization
 	 */
 	ofaMainWindow          *main_window;
+	ofaHub                 *hub;
 
 	/* UI
 	 */
@@ -131,12 +134,12 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
 }
 
 static void
-on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
+on_hub_finalized( gpointer is_null, gpointer finalized_hub )
 {
-	static const gchar *thisfn = "ofa_ope_template_select_on_dossier_finalized";
+	static const gchar *thisfn = "ofa_ope_template_select_on_hub_finalized";
 
-	g_debug( "%s: empty=%p, finalized_dossier=%p",
-			thisfn, ( void * ) is_null, ( void * ) finalized_dossier );
+	g_debug( "%s: empty=%p, finalized_hub=%p",
+			thisfn, ( void * ) is_null, ( void * ) finalized_hub );
 
 	g_return_if_fail( st_this && OFA_IS_OPE_TEMPLATE_SELECT( st_this ));
 
@@ -155,7 +158,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
 	ofaOpeTemplateBookBin *book;
-	ofoDossier *dossier;
+	GtkApplication *application;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -173,12 +176,13 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 
 		st_this->priv->main_window = main_window;
 		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
-		/* setup a weak reference on the dossier to auto-unref */
-		dossier = ofa_main_window_get_dossier( main_window );
-		g_object_weak_ref( G_OBJECT( dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
+		/* setup a weak reference on the hub to auto-unref */
+		g_object_weak_ref( G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
 	priv = st_this->priv;
