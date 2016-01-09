@@ -225,10 +225,11 @@ static void
 set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter )
 {
 	gchar *sdentry, *sdclose, *stamp;
-	const GDate *dclose, *dentry;
+	const GDate *dclose;
+	GDate dentry;
 
-	dentry = ofo_ledger_get_last_entry( ledger );
-	sdentry = my_date_to_str( dentry, ofa_prefs_date_display());
+	ofo_ledger_get_last_entry( ledger, &dentry );
+	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display());
 	dclose = ofo_ledger_get_last_close( ledger );
 	sdclose = my_date_to_str( dclose, ofa_prefs_date_display());
 	stamp  = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );

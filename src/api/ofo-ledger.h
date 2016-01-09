@@ -92,7 +92,7 @@ const gchar    *ofo_ledger_get_notes           ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_upd_user        ( const ofoLedger *ledger );
 const GTimeVal *ofo_ledger_get_upd_stamp       ( const ofoLedger *ledger );
 const GDate    *ofo_ledger_get_last_close      ( const ofoLedger *ledger );
-GDate          *ofo_ledger_get_last_entry      ( const ofoLedger *ledger );
+GDate          *ofo_ledger_get_last_entry      ( const ofoLedger *ledger, GDate *date );
 
 GList          *ofo_ledger_get_currencies      ( const ofoLedger *ledger );
 

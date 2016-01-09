@@ -532,8 +532,6 @@
 
  958 2016- 1- 7 move ENTRY_STATUS_COUNT signal to hub system
 
- 959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
-
  962
 
 -----------------------------------------------------------------------
@@ -580,6 +578,9 @@
  955 2016- 1- 6 ofaPage: 
                 - obsolete ofa_page_get_main_window(): impossible
                 - obsolete ofa_page_get_dossier(): ok
+     2016- 1- 9 done
+
+ 959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
      2016- 1- 9 done
 
  960 2016- 1- 8 ofo_dossier_get_min_deffect: review the api

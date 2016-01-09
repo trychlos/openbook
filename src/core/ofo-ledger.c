@@ -683,17 +683,18 @@ ofo_ledger_get_last_close( const ofoLedger *ledger )
 
 /**
  * ofo_ledger_get_last_entry:
+ * @ledger: this #ofoLedger object.
+ * @date: [out]: a #GDate to receive the output date.
  *
- * Returns the effect date of the most recent entry written in this
- * ledger as a newly allocated #GDate structure which should be
- * g_free() by the caller,
+ * Set @date to the most recent effect date on this ledger,
  * or %NULL if no entry has been found for this ledger.
+ *
+ * Returns: a pointer to @date.
  */
 GDate *
-ofo_ledger_get_last_entry( const ofoLedger *ledger )
+ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
 {
 	ofaHub *hub;
-	GDate *deffect;
 	gchar *query;
 	GSList *result, *icol;
 
@@ -703,7 +704,6 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 		g_return_val_if_reached( NULL );
 	}
 
-	deffect = NULL;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 
 	query = g_strdup_printf(
@@ -712,13 +712,12 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query, &result, TRUE )){
 		icol = ( GSList * ) result->data;
-		deffect = g_new0( GDate, 1 );
-		my_date_set_from_sql( deffect, ( const gchar * ) icol->data );
+		my_date_set_from_sql( date, ( const gchar * ) icol->data );
 		ofa_idbconnect_free_results( result );
 	}
 	g_free( query );
 
-	return( deffect );
+	return( date );
 }
 
 /**
