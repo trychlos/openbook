@@ -49,11 +49,6 @@
  */
 struct _ofoDossierPrivate {
 
-	/* internals
-	 */
-	const ofaIDBConnect *connect;
-	gchar         *userid;
-
 	/* row id 1
 	 */
 	gchar         *currency;
@@ -183,7 +178,6 @@ dossier_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFO_DOSSIER( instance )->priv;
 
-	g_free( priv->userid );
 	g_free( priv->currency );
 	g_free( priv->label );
 	g_free( priv->forward_ope );
@@ -264,8 +258,6 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
 
-	dossier->priv->connect = ofa_hub_get_connect( hub );
-
 	if( dossier_do_read( dossier, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( dossier ), hub );
 
@@ -342,28 +334,6 @@ on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDat
 
 	g_object_unref( period );
 	g_object_unref( meta );
-}
-
-/**
- * ofo_dossier_get_connect:
- * @dossier: this #ofoDossier object.
- *
- * Returns: the handle on the current DBMS connection.
- *
- * The returned reference is owned by the #ofoDossier object, and
- * should not be released by the caller.
- */
-const ofaIDBConnect *
-ofo_dossier_get_connect( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const ofaIDBConnect * ) dossier->priv->connect );
-	}
-
-	g_return_val_if_reached( NULL );
 }
 
 /**

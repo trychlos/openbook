@@ -89,8 +89,6 @@ GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST
 
 ofoDossier          *ofo_dossier_new_with_hub              ( ofaHub *hub );
 
-const ofaIDBConnect *ofo_dossier_get_connect               ( const ofoDossier *dossier );
-
 gboolean             ofo_dossier_use_account               ( const ofoDossier *dossier, const gchar *account );
 gboolean             ofo_dossier_use_currency              ( const ofoDossier *dossier, const gchar *currency );
 gboolean             ofo_dossier_use_ledger                ( const ofoDossier *dossier, const gchar *ledger );
