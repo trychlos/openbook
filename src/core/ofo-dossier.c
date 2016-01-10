@@ -97,7 +97,7 @@ static void        dossier_instance_init( ofoDossier *self );
 static void        dossier_class_init( ofoDossierClass *klass );
 static void        on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void        on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
+static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
 static gint        dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
@@ -270,7 +270,7 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 		ofo_base_set_hub( OFO_BASE( dossier ), hub );
 
 		g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), dossier );
-		g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), dossier );
+		g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), dossier );
 
 	} else {
 		g_clear_object( &dossier );
@@ -327,11 +327,13 @@ on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const 
 }
 
 /*
- * changing beginning or ending date is only possible for current
- *  exercice
+ * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
+ *
+ * Changing beginning or ending exercice dates is only possible for
+ * the current exercice.
  */
 static void
-on_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier )
+on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier )
 {
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;

@@ -310,6 +310,9 @@ ofa_hub_class_init( ofaHubClass *klass )
 	/**
 	 * ofaHub::hub-exe-dates-changed:
 	 *
+	 * Beginning and or ending exercice dates of the dossier have been
+	 * modified.
+	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub       *hub
 	 * 							const GDate *prev_begin,
