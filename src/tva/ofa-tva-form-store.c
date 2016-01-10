@@ -305,6 +305,9 @@ find_form_by_mnemo( ofaTVAFormStore *store, const gchar *code, GtkTreeIter *iter
 	return( FALSE );
 }
 
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
 static void
 on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *store )
 {

@@ -112,7 +112,7 @@ static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
 static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
-static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
+static void       on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
@@ -209,7 +209,7 @@ v_setup_view( ofaPage *page )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
@@ -964,12 +964,12 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 }
 
 /*
- * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_deleted_object";
+	static const gchar *thisfn = "ofa_guided_ex_on_hub_deleted_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,

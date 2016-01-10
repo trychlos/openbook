@@ -132,7 +132,7 @@ static void       connect_to_hub_signaling_system( ofaAccountChartBin *bin );
 static void       on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
 static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
-static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_deleted_class_label( ofaAccountChartBin *bin, ofoClass *class );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountChartBin *bin );
 static GtkWidget *get_current_tree_view( const ofaAccountChartBin *bin );
@@ -1240,7 +1240,7 @@ connect_to_hub_signaling_system( ofaAccountChartBin *book )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), book );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), book );
@@ -1307,9 +1307,9 @@ on_updated_class_label( ofaAccountChartBin *book, ofoClass *class )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_deleted_object";
+	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
 			thisfn, ( void * ) hub,

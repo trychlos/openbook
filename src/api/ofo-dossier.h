@@ -79,7 +79,6 @@ typedef struct {
 
 #define SIGNAL_DOSSIER_NEW_OBJECT           "ofa-signal-dossier-new-object"
 #define SIGNAL_DOSSIER_UPDATED_OBJECT       "ofa-signal-dossier-updated-object"
-#define SIGNAL_DOSSIER_DELETED_OBJECT       "ofa-signal-dossier-deleted-object"
 
 /* default length of exercice in months
  */

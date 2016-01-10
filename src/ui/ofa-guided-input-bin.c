@@ -261,7 +261,7 @@ static gboolean          do_validate( ofaGuidedInputBin *bin );
 static void              display_ok_message( ofaGuidedInputBin *bin, gint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *bin );
 static void              on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
-static void              on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
+static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
 static void
 guided_input_bin_finalize( GObject *instance )
@@ -431,7 +431,7 @@ setup_main_window( ofaGuidedInputBin *bin )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), bin );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -1804,9 +1804,9 @@ on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_i
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self )
+on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_on_deleted_object";
+	static const gchar *thisfn = "ofa_guided_input_bin_on_hub_deleted_object";
 	ofaGuidedInputBinPrivate *priv;
 	gint i;
 

@@ -356,6 +356,9 @@ find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord *record, GtkTre
 	return( FALSE );
 }
 
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
 static void
 on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store )
 {

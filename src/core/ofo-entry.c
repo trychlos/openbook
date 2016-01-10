@@ -504,7 +504,7 @@ on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gc
 }
 
 /*
- * Track deleted objects:
+ * SIGNAL_HUB_DELETED signal handler
  */
 static void
 on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )

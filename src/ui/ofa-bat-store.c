@@ -327,6 +327,9 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 	}
 }
 
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
 static void
 on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {

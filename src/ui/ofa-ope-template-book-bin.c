@@ -118,7 +118,7 @@ static void       on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBoo
 static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
 static void       on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
 static void       on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template );
-static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
+static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
 static void       on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin );
 static GtkWidget *get_current_tree_view( const ofaOpeTemplateBookBin *bin );
@@ -940,7 +940,7 @@ connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), bin );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), bin );
@@ -1028,9 +1028,9 @@ on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_book_bin_on_deleted_object";
+	static const gchar *thisfn = "ofa_ope_template_book_bin_on_hub_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), bin=%p",
 			thisfn, ( void * ) hub,

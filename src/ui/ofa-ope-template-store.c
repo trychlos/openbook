@@ -62,7 +62,7 @@ static void     remove_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mn
 static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub );
 static void     on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
 static void     on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store );
-static void     on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
+static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *store );
 
 G_DEFINE_TYPE( ofaOpeTemplateStore, ofa_ope_template_store, OFA_TYPE_LIST_STORE )
@@ -333,7 +333,7 @@ connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub )
 {
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
 
@@ -393,9 +393,9 @@ on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTem
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_deleted_object";
+	static const gchar *thisfn = "ofa_ope_template_store_on_hub_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
