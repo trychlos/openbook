@@ -465,7 +465,7 @@ v_init_dialog( myDialog *dialog )
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
+	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), self );

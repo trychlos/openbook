@@ -36,8 +36,7 @@
  * selected currency changes.
  */
 
-#include "api/ofa-main-window-def.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 #include "ui/ofa-currency-store.h"
 
@@ -67,20 +66,20 @@ typedef struct {
 }
 	ofaCurrencyComboClass;
 
-GType             ofa_currency_combo_get_type       ( void ) G_GNUC_CONST;
+GType             ofa_currency_combo_get_type    ( void ) G_GNUC_CONST;
 
-ofaCurrencyCombo *ofa_currency_combo_new            ( void );
+ofaCurrencyCombo *ofa_currency_combo_new         ( void );
 
-void              ofa_currency_combo_set_columns    ( ofaCurrencyCombo *combo,
-															ofaCurrencyColumns columns );
+void              ofa_currency_combo_set_columns ( ofaCurrencyCombo *combo,
+														ofaCurrencyColumns columns );
 
-void              ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo,
-															const ofaMainWindow *main_window );
+void              ofa_currency_combo_set_hub     ( ofaCurrencyCombo *combo,
+														ofaHub *hub );
 
-gchar            *ofa_currency_combo_get_selected   ( ofaCurrencyCombo *combo );
+gchar            *ofa_currency_combo_get_selected( ofaCurrencyCombo *combo );
 
-void              ofa_currency_combo_set_selected   ( ofaCurrencyCombo *combo,
-															const gchar *code );
+void              ofa_currency_combo_set_selected( ofaCurrencyCombo *combo,
+														const gchar *code );
 
 G_END_DECLS
 

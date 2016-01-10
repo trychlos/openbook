@@ -411,7 +411,7 @@ init_ui( ofaAccountProperties *dialog, GtkContainer *container )
 	g_return_if_fail( priv->currency_parent && GTK_IS_CONTAINER( priv->currency_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->currency_parent ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_main_window( combo, priv->main_window );
+	ofa_currency_combo_set_hub( combo, priv->hub );
 	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-currency-label" );
 	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));

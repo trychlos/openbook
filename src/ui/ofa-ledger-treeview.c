@@ -41,18 +41,13 @@
 /* private instance data
  */
 struct _ofaLedgerTreeviewPrivate {
-	gboolean             dispose_has_run;
-
-	/* runtime datas
-	 */
-	const ofaMainWindow *main_window;
-	ofaHub              *hub;
+	gboolean          dispose_has_run;
 
 	/* UI
 	 */
-	GtkTreeView         *tview;
-	ofaLedgerColumns     columns;
-	ofaLedgerStore      *store;
+	GtkTreeView      *tview;
+	ofaLedgerColumns  columns;
+	ofaLedgerStore   *store;
 };
 
 /* signals defined here
@@ -357,7 +352,7 @@ create_treeview_columns( ofaLedgerTreeview *view )
 }
 
 /**
- * ofa_ledger_treeview_set_main_window:
+ * ofa_ledger_treeview_set_hub:
  * @view: this #ofaLedgerTreeview instance.
  * @main_window: the #ofaMainWindow main window of the application.
  *
@@ -365,13 +360,12 @@ create_treeview_columns( ofaLedgerTreeview *view )
  * create the underlying tree store.
  */
 void
-ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindow *main_window )
+ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 {
 	ofaLedgerTreeviewPrivate *priv;
-	GtkApplication *application;
 
 	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = view->priv;
 
@@ -380,15 +374,7 @@ ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindo
 		/* the treeviewbox must have been created first */
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
-		priv->main_window = main_window;
-
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-		priv->store = ofa_ledger_store_new( priv->hub );
+		priv->store = ofa_ledger_store_new( hub );
 
 		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 
@@ -398,8 +384,6 @@ ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindo
 		gtk_tree_sortable_set_sort_column_id(
 				GTK_TREE_SORTABLE( priv->store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
-
-		/*dossier_signals_connect( treeview );*/
 	}
 }
 

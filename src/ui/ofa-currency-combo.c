@@ -28,12 +28,9 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-currency-store.h"
@@ -41,11 +38,12 @@
 /* private instance data
  */
 struct _ofaCurrencyComboPrivate {
-	gboolean             dispose_has_run;
+	gboolean            dispose_has_run;
 
-	const ofaMainWindow *main_window;
-	ofaCurrencyColumns   columns;
-	ofaCurrencyStore    *store;
+	/* runtime
+	 */
+	ofaCurrencyColumns  columns;
+	ofaCurrencyStore   *store;
 };
 
 /* signals defined here
@@ -223,32 +221,22 @@ create_combo_columns( ofaCurrencyCombo *combo )
 }
 
 /**
- * ofa_currency_combo_set_main_window:
+ * ofa_currency_combo_set_hub:
  *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.
  */
 void
-ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo, const ofaMainWindow *main_window )
+ofa_currency_combo_set_hub( ofaCurrencyCombo *combo, ofaHub *hub )
 {
 	ofaCurrencyComboPrivate *priv;
-	GtkApplication *application;
-	ofaHub *hub;
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
-
-		priv->main_window = main_window;
-
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-		g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 		priv->store = ofa_currency_store_new( hub );
 		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));

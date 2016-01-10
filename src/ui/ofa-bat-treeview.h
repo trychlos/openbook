@@ -34,7 +34,7 @@
  * dossier.
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofo-bat-def.h"
 
 #include "ui/ofa-bat-store.h"
@@ -88,28 +88,28 @@ typedef enum {
 }
 	ofaBatColumns;
 
-GType           ofa_bat_treeview_get_type       ( void ) G_GNUC_CONST;
+GType           ofa_bat_treeview_get_type    ( void ) G_GNUC_CONST;
 
-ofaBatTreeview *ofa_bat_treeview_new            ( void );
+ofaBatTreeview *ofa_bat_treeview_new         ( void );
 
-void            ofa_bat_treeview_set_columns    ( ofaBatTreeview *view,
-														ofaBatColumns *columns );
+void            ofa_bat_treeview_set_columns ( ofaBatTreeview *view,
+													ofaBatColumns *columns );
 
-void            ofa_bat_treeview_set_delete     ( ofaBatTreeview *view,
-														gboolean authorize );
+void            ofa_bat_treeview_set_delete  ( ofaBatTreeview *view,
+													gboolean authorize );
 
-void            ofa_bat_treeview_set_main_window( ofaBatTreeview *view,
-														const ofaMainWindow *main_window );
+void            ofa_bat_treeview_set_hub     ( ofaBatTreeview *view,
+													ofaHub *hub );
 
-ofoBat         *ofa_bat_treeview_get_selected   ( const ofaBatTreeview *view );
+ofoBat         *ofa_bat_treeview_get_selected( const ofaBatTreeview *view );
 
-void            ofa_bat_treeview_set_selected   ( ofaBatTreeview *view,
-														ofxCounter id );
+void            ofa_bat_treeview_set_selected( ofaBatTreeview *view,
+													ofxCounter id );
 
-GtkWidget      *ofa_bat_treeview_get_treeview   ( const ofaBatTreeview *view );
+GtkWidget      *ofa_bat_treeview_get_treeview( const ofaBatTreeview *view );
 
-void            ofa_bat_treeview_delete_bat     ( ofaBatTreeview *view,
-														ofoBat *bat );
+void            ofa_bat_treeview_delete_bat  ( ofaBatTreeview *view,
+													ofoBat *bat );
 
 G_END_DECLS
 

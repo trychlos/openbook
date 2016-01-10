@@ -28,24 +28,19 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-ledger.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-ledger-combo.h"
 
 /* private instance data
  */
 struct _ofaLedgerComboPrivate {
-	gboolean             dispose_has_run;
+	gboolean          dispose_has_run;
 
 	/* runtime data
 	 */
-	const ofaMainWindow *main_window;
-	ofaHub              *hub;
-	ofaLedgerColumns     columns;
-	ofaLedgerStore      *store;
+	ofaLedgerColumns  columns;
+	ofaLedgerStore   *store;
 };
 
 /* signals defined here
@@ -233,33 +228,24 @@ create_combo_columns( ofaLedgerCombo *combo )
 }
 
 /**
- * ofa_ledger_combo_set_main_window:
+ * ofa_ledger_combo_set_hub:
  *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.
  */
 void
-ofa_ledger_combo_set_main_window( ofaLedgerCombo *combo, const ofaMainWindow *main_window )
+ofa_ledger_combo_set_hub( ofaLedgerCombo *combo, ofaHub *hub )
 {
 	ofaLedgerComboPrivate *priv;
-	GtkApplication *application;
 
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = combo->priv;
 
 	if( !priv->dispose_has_run ){
 
-		priv->main_window = main_window;
-
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-		priv->store = ofa_ledger_store_new( priv->hub );
+		priv->store = ofa_ledger_store_new( hub );
 		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	}
 }

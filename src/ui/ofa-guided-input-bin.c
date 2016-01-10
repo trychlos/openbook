@@ -449,7 +449,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
+	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
 	gtk_widget_set_sensitive( priv->ledger_parent, FALSE );
 
 	g_signal_connect(

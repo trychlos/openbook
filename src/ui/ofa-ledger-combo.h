@@ -33,8 +33,7 @@
  * A #GtkComboBox -derived class which manages ledgers.
  */
 
-#include "api/ofa-main-window-def.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 #include "ui/ofa-ledger-store.h"
 
@@ -64,20 +63,20 @@ typedef struct {
 }
 	ofaLedgerComboClass;
 
-GType           ofa_ledger_combo_get_type       ( void );
+GType           ofa_ledger_combo_get_type    ( void );
 
-ofaLedgerCombo *ofa_ledger_combo_new            ( void );
+ofaLedgerCombo *ofa_ledger_combo_new         ( void );
 
-void            ofa_ledger_combo_set_columns    ( ofaLedgerCombo *instance,
-															ofaLedgerColumns columns );
+void            ofa_ledger_combo_set_columns ( ofaLedgerCombo *instance,
+													ofaLedgerColumns columns );
 
-void            ofa_ledger_combo_set_main_window( ofaLedgerCombo *instance,
-															const ofaMainWindow *main_window );
+void            ofa_ledger_combo_set_hub     ( ofaLedgerCombo *instance,
+													ofaHub *hub );
 
-gchar          *ofa_ledger_combo_get_selected   ( ofaLedgerCombo *combo );
+gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );
 
-void            ofa_ledger_combo_set_selected   ( ofaLedgerCombo *combo,
-															const gchar *mnemo );
+void            ofa_ledger_combo_set_selected( ofaLedgerCombo *combo,
+													const gchar *mnemo );
 
 G_END_DECLS
 

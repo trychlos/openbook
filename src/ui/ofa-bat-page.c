@@ -162,7 +162,7 @@ v_setup_view( ofaPage *page )
 
 	priv->tview = ofa_bat_treeview_new();
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
-	ofa_bat_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
+	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), page );

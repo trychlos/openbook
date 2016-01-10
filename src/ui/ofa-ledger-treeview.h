@@ -73,16 +73,16 @@ GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_C
 ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
 
 void               ofa_ledger_treeview_set_columns             ( ofaLedgerTreeview *view,
-																			ofaLedgerColumns columns );
+																	ofaLedgerColumns columns );
 
-void               ofa_ledger_treeview_set_main_window         ( ofaLedgerTreeview *view,
-																			const ofaMainWindow *main_window );
+void               ofa_ledger_treeview_set_hub                 ( ofaLedgerTreeview *view,
+																	ofaHub *hub );
 
 void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
-																			GtkSelectionMode mode );
+																	GtkSelectionMode mode );
 
 void               ofa_ledger_treeview_set_hexpand             ( ofaLedgerTreeview *view,
-																			gboolean hexpand );
+																	gboolean hexpand );
 
 GtkTreeSelection  *ofa_ledger_treeview_get_selection           ( ofaLedgerTreeview *view );
 
@@ -91,7 +91,7 @@ GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreevi
 #define            ofa_ledger_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
 void               ofa_ledger_treeview_set_selected            ( ofaLedgerTreeview *view,
-																			const gchar *ledger );
+																	const gchar *ledger );
 
 GtkWidget         *ofa_ledger_treeview_get_treeview            ( const ofaLedgerTreeview *view );
 

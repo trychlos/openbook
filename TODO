@@ -495,10 +495,6 @@
 
  940 2015-12-21 tva/ofoTVAForm: make it exportable
 
- 947 2015-12-29 shouldn't all xxx_set_main_window() be xxx_set_dossier() ?
-     2016- 1- 6 note that all GtkBin-derived classes and more generally
-                all user interface objects require to have the main window
-
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
@@ -514,6 +510,15 @@
                  (and idem for ofa_page_get_dossier)
      2015-12-28 + idem for my_window_get_main_window()
      2016- 1- 4 this is ofaIHubber interface associated to ofaHub class
+     2016- 1-10 done
+
+ 947 2015-12-29 shouldn't all xxx_set_main_window() be xxx_set_dossier() ?
+     2016- 1- 6 note that all GtkBin-derived classes and more generally
+                all user interface objects require to have the main window
+     2016- 1-10 ofa_bat_treeview_set_main_window()   : ok: _set_hub()
+                ofa_currency_combo_set_main_window() : ok: _set_hub()
+                ofa_ledger_combo_set_main_window()   : ok: _set_hub()
+                ofa_ledger_treeview_set_main_window(): ok: _set_hub()
      2016- 1-10 done
 
  948 2015-12-31 review the ofoDossier class

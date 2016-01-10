@@ -187,7 +187,7 @@ setup_tree_view( ofaPage *page )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
+	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_row_selected ), page );

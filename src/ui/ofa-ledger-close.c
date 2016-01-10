@@ -243,12 +243,8 @@ setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *tview_parent, *label;
-	GtkApplicationWindow *main_window;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	tview_parent = my_utils_container_get_child_by_name( parent, "p1-treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
@@ -257,7 +253,7 @@ setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent )
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
+	ofa_ledger_treeview_set_hub( priv->tview, priv->hub);
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 
 	label = my_utils_container_get_child_by_name( parent, "p1-frame-label" );

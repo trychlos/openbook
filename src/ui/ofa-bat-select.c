@@ -31,6 +31,8 @@
 
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
@@ -218,14 +220,13 @@ static void
 setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 {
 	ofaBatSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
 	static ofaBatColumns st_columns[] = { BAT_DISP_URI, 0 };
+	GtkApplicationWindow *main_window;
+	GtkApplication *application;
+	ofaHub *hub;
 	GtkWidget *widget;
 
 	priv = self->priv;
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	widget = my_utils_container_get_child_by_name( parent, "treeview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -237,7 +238,16 @@ setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 
-	ofa_bat_treeview_set_main_window( priv->tview, OFA_MAIN_WINDOW( main_window ));
+	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	g_return_if_fail( main_window && GTK_IS_WINDOW( main_window ));
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	ofa_bat_treeview_set_hub( priv->tview, hub );
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 }
 

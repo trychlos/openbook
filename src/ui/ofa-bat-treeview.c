@@ -31,30 +31,25 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-bat-treeview.h"
 
 /* private instance data
  */
 struct _ofaBatTreeviewPrivate {
-	gboolean             dispose_has_run;
-
-	/* UI
-	 */
-	GtkTreeView         *tview;
-	ofaBatStore         *store;
+	gboolean     dispose_has_run;
 
 	/* runtime data
 	 */
-	gboolean             delete_authorized;
-	const ofaMainWindow *main_window;
-	ofaHub              *hub;
+	gboolean     delete_authorized;
+
+	/* UI
+	 */
+	GtkTreeView *tview;
+	ofaBatStore *store;
 };
 
 /* signals defined here
@@ -395,35 +390,26 @@ ofa_bat_treeview_set_delete( ofaBatTreeview *view, gboolean authorized )
 }
 
 /**
- * ofa_bat_treeview_set_main_window:
+ * ofa_bat_treeview_set_hub:
  * @view: this #ofaBatTreeview instance.
- * @main_window: the #ofaMainWindow main window of the application.
+ * @hub: the current #ofaHub object.
  *
- * Setup the main window, and thus the dossier.
+ * Setup the current hub.
  * Initialize the underlying store.
  */
 void
-ofa_bat_treeview_set_main_window( ofaBatTreeview *view, const ofaMainWindow *main_window )
+ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
 {
 	ofaBatTreeviewPrivate *priv;
-	GtkApplication *application;
 
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = view->priv;
 
 	if( !priv->dispose_has_run ){
 
-		priv->main_window = main_window;
-
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-		priv->store = ofa_bat_store_new( priv->hub );
+		priv->store = ofa_bat_store_new( hub );
 		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 	}
 }

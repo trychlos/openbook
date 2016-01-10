@@ -31,6 +31,8 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -220,6 +222,8 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	GtkWidget *widget, *toggle, *label;
+	GtkApplication *application;
+	ofaHub *hub;
 
 	priv = bin->priv;
 
@@ -227,12 +231,18 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
+	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
+	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+
+	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
 	priv->ledgers_tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ledgers_tview ));
 	ofa_ledger_treeview_set_hexpand( priv->ledgers_tview, FALSE );
 	ofa_ledger_treeview_set_columns( priv->ledgers_tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, priv->main_window );
+	ofa_ledger_treeview_set_hub( priv->ledgers_tview, hub );
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-frame-label" );
