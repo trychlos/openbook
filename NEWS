@@ -24,6 +24,7 @@
  New features and improvements:
 
    - ofaHub: new hub management class (todo #948).
+   - ofaICollectionable, ofaICollector: new interfaces.
    - ofaIHubber: new interface for ofaHub management (todo #941).
 
  Bug fixes:
@@ -35,6 +36,7 @@
    - ofaAccountSelectorBin: removed unused class.
    - ofaCollection: removed class.
    - ofaConcilCollection: removed class.
+   - ofaIDataset: removed obsolete interface.
    - ofa_dossier_misc_import_csv(): removed function.
    - ofo_base_get_hub(), ofo_base_set_hub(): new methods.
    - ofo_dossier_new(): removed method.

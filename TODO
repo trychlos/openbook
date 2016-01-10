@@ -499,32 +499,14 @@
      2016- 1- 6 note that all GtkBin-derived classes and more generally
                 all user interface objects require to have the main window
 
- 948 2015-12-31 review the ofoDossier class
-                which is actually a pivot class with dossier props + connect
-     2016- 1- 4 ofa_dossier_misc_xxx should then move to this new class
-                > remove ofa_dossier_misc (replaced by ofa_hub)
-                > review ofa_hub_import_csv api
-     2016- 1- 5 obsolete ofa_main_window_open_dossier()      : ok
-                + remove exportable_from_dossier             : ok
-                + remove importable_to_dossier               : ok
-                + remove ofo_base_load_dataset()             : ok
-                + obsolete OFA_SIGNAL_DOSSIER_OPENED ?       :
-                + ofa_dossier_properties_run: w/o dossier    :
-                + cleanup userid+connect from dossier private: ok
-                  (when all classes will be migrated to hub)
-     2016- 1- 6 + remove DOSSIER properties from ofaListStore: ok
-     2016- 1- 7 obsolete ofo_dossier_has_dispose_run()       : ok
-                + ofo_dossier_get_user()                     : ok
-                + ofo_dossier_get_connect()                  : ok
-
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
- 957 2016- 1- 7 obsolete ofaIDataset interface
-
  962 2016- 1-10 obsolete core/ofo-marshal
 
- 963
+ 963 2016- 1-10 obsolete OFA_SIGNAL_DOSSIER_OPENED ?
+
+ 964
 
 -----------------------------------------------------------------------
  DONE
@@ -534,6 +516,24 @@
                  (and idem for ofa_page_get_dossier)
      2015-12-28 + idem for my_window_get_main_window()
      2016- 1- 4 this is ofaIHubber interface associated to ofaHub class
+     2016- 1-10 done
+
+ 948 2015-12-31 review the ofoDossier class
+                which is actually a pivot class with dossier props + connect
+     2016- 1- 4 ofa_dossier_misc_xxx should then move to this new class
+                > remove ofa_dossier_misc (replaced by ofa_hub): ok
+                > review ofa_hub_import_csv api
+     2016- 1- 5 obsolete ofa_main_window_open_dossier()      : ok
+                + remove exportable_from_dossier             : ok
+                + remove importable_to_dossier               : ok
+                + remove ofo_base_load_dataset()             : ok
+                + ofa_dossier_properties_run: w/o dossier    : -
+                + cleanup userid+connect from dossier private: ok
+                  (when all classes will be migrated to hub)
+     2016- 1- 6 + remove DOSSIER properties from ofaListStore: ok
+     2016- 1- 7 obsolete ofo_dossier_has_dispose_run()       : ok
+                + ofo_dossier_get_user()                     : ok
+                + ofo_dossier_get_connect()                  : ok
      2016- 1-10 done
 
  949 2015-12-31 review all ofoBase API: shouldn't need to always have 
@@ -577,6 +577,9 @@
                 - obsolete ofa_page_get_main_window(): impossible
                 - obsolete ofa_page_get_dossier(): ok
      2016- 1- 9 done
+
+ 957 2016- 1- 7 obsolete ofaIDataset interface
+     2016- 1-10 done
 
  958 2016- 1- 7 move ENTRY_STATUS_COUNT signal to hub system
      2016- 1-10 done

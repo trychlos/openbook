@@ -89,7 +89,6 @@ libofa_core_la_SOURCES = \
 	ofa-icollector.c									\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
-	ofa-idataset.c										\
 	ofa-idate-filter.c									\
 	ofa-idbconnect.c									\
 	ofa-idbeditor.c										\

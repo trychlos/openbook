@@ -33,7 +33,6 @@ api_include_HEADERS = \
 	ofa-iabout.h										\
 	ofa-icollectionable.h								\
 	ofa-icollector.h									\
-	ofa-idataset.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
 	ofa-idbeditor.h										\
