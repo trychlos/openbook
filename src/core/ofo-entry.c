@@ -179,17 +179,17 @@ static sStatus st_status[] = {
 
 static ofoBaseClass *ofo_entry_parent_class = NULL;
 
-static void         on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
-static void         on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void         on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
+static void         on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
 static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
-static void         on_entry_status_changed( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
 static gint         entry_count_for_account( const ofaIDBConnect *connect, const gchar *account );
@@ -361,16 +361,16 @@ ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
+			SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), NULL );
+			SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), NULL );
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
+			SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
+			SIGNAL_HUB_ENTRY_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
 }
 
 /*
@@ -383,9 +383,9 @@ ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
  * attention
  */
 static void
-on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_on_updated_object";
+	static const gchar *thisfn = "ofo_entry_on_hub_updated_object";
 	const gchar *number;
 	const gchar *code;
 	const gchar *mnemo;
@@ -507,9 +507,9 @@ on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gc
  * Track deleted objects:
  */
 static void
-on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
+on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_on_deleted_object";
+	static const gchar *thisfn = "ofo_entry_on_hub_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
 			thisfn,
@@ -523,6 +523,8 @@ on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
 }
 
 /*
+ * SIGNAL_HUB_EXE_DATES_CHANGED signal handler.
+ *
  * The cases of remediation:
  *
  * 1/ entries were considered in the past, but are now in the exercice
@@ -551,7 +553,7 @@ on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
  * 6/ entries were considered in the future, but are now set in the past
  */
 static void
-on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
 	ofoDossier *dossier;
 	const GDate *new_begin, *new_end;
@@ -691,15 +693,13 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 	ofaEntryStatus prev_status;
 	ofoLedger *ledger;
 	const GDate *last_close, *deffect;
-	ofoDossier *dossier;
 
 	count = 0;
 	dataset = entry_load_dataset( hub, where, NULL );
 	count = g_list_length( dataset );
 
 	if( remediate ){
-		dossier = ofa_hub_get_dossier( hub );
-		g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, new_status, count );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_ENTRY_STATUS_COUNT, new_status, count );
 
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
@@ -721,7 +721,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 			}
 
 			g_signal_emit_by_name(
-					G_OBJECT( hub ), SIGNAL_HUB_ENTRY_STATUS_CHANGED, entry, prev_status, new_status );
+					G_OBJECT( hub ), SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, prev_status, new_status );
 		}
 	}
 	ofo_entry_free_dataset( dataset );
@@ -729,10 +729,13 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 	return( count );
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ */
 static void
-on_entry_status_changed( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_on_entry_status_changed";
+	static const gchar *thisfn = "ofo_entry_on_hub_entry_status_change";
 	gchar *query;
 
 	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
@@ -2561,16 +2564,22 @@ ofo_entry_validate( ofoEntry *entry )
 
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
 	g_signal_emit_by_name( hub,
-			SIGNAL_HUB_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+			SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
 	return( TRUE );
 }
 
 /**
  * ofo_entry_validate_by_ledger:
+ * @hub: the current #ofaHub object.
+ * @mnemo: the #ofoLedger identifier.
+ * @deffect: the effect date.
  *
- * Must return TRUE even if there is no entries at all, while no error
- * is detected.
+ * Validate all rough entries which are imputed on the specified @mnemo
+ * ledger, until up an dincluding the @deffect effect date.
+ *
+ * Returns: TRUE if success, even if there is no entries at all, while
+ * no error is detected.
  */
 gboolean
 ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deffect )
@@ -2578,7 +2587,6 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 	gchar *query, *sdate;
 	ofoEntry *entry;
 	GList *dataset, *it;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
@@ -2596,14 +2604,12 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 
 	g_free( query );
 
-	dossier = ofa_hub_get_dossier( hub );
-	g_signal_emit_by_name( dossier,
-			SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
+	g_signal_emit_by_name( hub, SIGNAL_HUB_ENTRY_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		g_signal_emit_by_name( hub,
-				SIGNAL_HUB_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+				SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 	}
 
 	ofo_entry_free_dataset( dataset );
@@ -2633,7 +2639,7 @@ ofo_entry_delete( ofoEntry *entry )
 		g_signal_emit_by_name(
 				hub, SIGNAL_HUB_DELETED, entry );
 		g_signal_emit_by_name(
-				hub, SIGNAL_HUB_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
+				hub, SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
 		ok = TRUE;
 	}
 

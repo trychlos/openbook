@@ -93,7 +93,7 @@ struct _ofaDossierPropertiesPrivate {
 	myProgressBar      *bar;
 	gulong              total;
 	gulong              count;
-	GList              *dos_handlers;
+	GList              *hub_handlers;
 };
 
 #define MSG_NORMAL                      "labelnormal"
@@ -127,8 +127,8 @@ static gboolean  do_update( ofaDossierProperties *self );
 static gboolean  confirm_remediation( ofaDossierProperties *self, gint count );
 static void      display_progress_init( ofaDossierProperties *self );
 static void      display_progress_end( ofaDossierProperties *self );
-static void      on_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
-static void      on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
+static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
+static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
 
 static void
 dossier_properties_finalize( GObject *instance )
@@ -158,7 +158,6 @@ static void
 dossier_properties_dispose( GObject *instance )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
@@ -167,11 +166,7 @@ dossier_properties_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
 
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->dos_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-		}
+		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -194,7 +189,7 @@ ofa_dossier_properties_init( ofaDossierProperties *self )
 	self->priv->updated = FALSE;
 	my_date_clear( &self->priv->begin );
 	my_date_clear( &self->priv->end );
-	self->priv->dos_handlers = NULL;
+	self->priv->hub_handlers = NULL;
 }
 
 static void
@@ -814,11 +809,11 @@ display_progress_init( ofaDossierProperties *self )
 	priv = self->priv;
 
 	priv->dialog = gtk_dialog_new_with_buttons(
-					_( "Remediating entries" ),
-					my_window_get_toplevel( MY_WINDOW( self )),
-					GTK_DIALOG_MODAL,
-					_( "_Close" ), GTK_RESPONSE_OK,
-					NULL );
+							_( "Remediating entries" ),
+							my_window_get_toplevel( MY_WINDOW( self )),
+							GTK_DIALOG_MODAL,
+							_( "_Close" ), GTK_RESPONSE_OK,
+							NULL );
 
 	priv->button = gtk_dialog_get_widget_for_response( GTK_DIALOG( priv->dialog ), GTK_RESPONSE_OK );
 	g_return_if_fail( priv->button && GTK_IS_BUTTON( priv->button ));
@@ -839,13 +834,19 @@ display_progress_init( ofaDossierProperties *self )
 	priv->bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->bar ));
 
-	handler = g_signal_connect( priv->dossier,
-			SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_entry_status_count ), self );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect(
+					priv->hub,
+					SIGNAL_HUB_ENTRY_STATUS_COUNT,
+					G_CALLBACK( on_hub_entry_status_count ),
+					self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->dossier,
-			SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), self );
-	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
+	handler = g_signal_connect(
+					priv->hub,
+					SIGNAL_HUB_ENTRY_STATUS_CHANGE,
+					G_CALLBACK( on_hub_entry_status_change ),
+					self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	gtk_widget_show_all( priv->dialog );
 }
@@ -863,8 +864,11 @@ display_progress_end( ofaDossierProperties *self )
 	gtk_widget_destroy( priv->dialog );
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_COUNT signal handler
+ */
 static void
-on_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self )
+on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
@@ -874,8 +878,11 @@ on_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, gulong co
 	priv->count = 0;
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ */
 static void
-on_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self )
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	gdouble progress;

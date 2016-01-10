@@ -1398,8 +1398,8 @@ p6_forward( ofaExerciceCloseAssistant *self )
 			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
 		}
 
-		g_signal_emit_by_name( priv->dossier,
-				SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+		g_signal_emit_by_name( priv->hub,
+				SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
 		g_signal_emit_by_name( bar, "ofa-double", progress );
@@ -1502,8 +1502,8 @@ p6_future( ofaExerciceCloseAssistant *self )
 		ent_deffect = ofo_entry_get_deffect( entry );
 
 		if( my_date_compare( ent_deffect, dos_dend ) <= 0 ){
-			g_signal_emit_by_name( priv->dossier,
-					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
+			g_signal_emit_by_name( priv->hub,
+					SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
 		}
 
 		progress = ( gdouble ) i / ( gdouble ) count;

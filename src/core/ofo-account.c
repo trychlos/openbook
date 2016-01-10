@@ -195,7 +195,7 @@ static void         on_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
 static void         on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void         on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         on_entry_status_changed( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
 static gint         account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
@@ -366,7 +366,7 @@ ofo_account_connect_to_hub_signaling_system( const ofaHub *hub )
 			SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_ENTRY_STATUS_CHANGED, G_CALLBACK( on_entry_status_changed ), NULL );
+			SIGNAL_HUB_ENTRY_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
 }
 
 static void
@@ -492,10 +492,13 @@ on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar 
 	}
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ */
 static void
-on_entry_status_changed( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_on_entry_status_changed";
+	static const gchar *thisfn = "ofo_account_on_hub_entry_status_change";
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
 

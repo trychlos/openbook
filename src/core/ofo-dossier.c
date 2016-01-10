@@ -90,15 +90,6 @@ typedef struct {
 }
 	sCurrency;
 
-/* signals defined here
- */
-enum {
-	ENTRY_STATUS_COUNT = 0,
-	N_SIGNALS
-};
-
-static gint st_signals[ N_SIGNALS ] = { 0 };
-
 static ofoBaseClass *ofo_dossier_parent_class = NULL;
 
 static GType       register_type( void );
@@ -252,30 +243,6 @@ dossier_class_init( ofoDossierClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoDossierPrivate ));
-
-	/**
-	 * ofoDossier::ofa-signal-entry-status-count:
-	 *
-	 * This signal is sent on the dossier before each batch of status
-	 * changes.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofoDossier  *dossier,
-	 *								gint     new_status,
-	 *								gulong   count,
-	 * 								gpointer user_data );
-	 */
-	st_signals[ ENTRY_STATUS_COUNT ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_ENTRY_STATUS_COUNT,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_UINT, G_TYPE_ULONG );
 }
 
 /**

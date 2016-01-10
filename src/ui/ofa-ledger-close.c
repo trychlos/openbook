@@ -83,7 +83,6 @@ static void      v_init_dialog( myDialog *dialog );
 static void      setup_ledgers_treeview( ofaLedgerClose *self, GtkContainer *parent );
 static void      setup_date( ofaLedgerClose *self, GtkContainer *parent );
 static void      setup_others( ofaLedgerClose *self, GtkContainer *parent );
-static void      connect_to_dossier( ofaLedgerClose *dialog );
 static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
@@ -96,8 +95,8 @@ static gboolean  do_close( ofaLedgerClose *self );
 static void      prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
 static gboolean  close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
 static void      do_end_close( ofaLedgerClose *self );
-static void      on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, guint count, ofaLedgerClose *self );
-static void      on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self );
+static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, ofaLedgerClose *self );
+static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self );
 static void      load_settings( ofaLedgerClose *self );
 static void      set_settings( ofaLedgerClose *self );
 
@@ -206,6 +205,7 @@ v_init_dialog( myDialog *dialog )
 	ofaLedgerClosePrivate *priv;
 	GtkContainer *container;
 	GtkApplication *application;
+	gulong handler;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
@@ -219,7 +219,22 @@ v_init_dialog( myDialog *dialog )
 	setup_ledgers_treeview( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
 	setup_date( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
 	setup_others( OFA_LEDGER_CLOSE( dialog ), GTK_CONTAINER( container ));
-	connect_to_dossier( OFA_LEDGER_CLOSE( dialog ));
+
+	handler = g_signal_connect(
+					priv->hub,
+					SIGNAL_HUB_ENTRY_STATUS_COUNT,
+					G_CALLBACK( on_hub_entry_status_count ),
+					dialog );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+					priv->hub,
+					SIGNAL_HUB_ENTRY_STATUS_CHANGE,
+					G_CALLBACK( on_hub_entry_status_change ),
+					dialog );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+
 	load_settings( OFA_LEDGER_CLOSE( dialog ));
 }
 
@@ -297,29 +312,6 @@ setup_others( ofaLedgerClose *self, GtkContainer *parent )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 	my_utils_widget_set_style( label, "labelerror" );
-}
-
-static void
-connect_to_dossier( ofaLedgerClose *dialog )
-{
-	ofaLedgerClosePrivate *priv;
-	ofoDossier *dossier;
-	gulong handler;
-
-	priv = dialog->priv;
-
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	handler = g_signal_connect(
-					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_ENTRY_STATUS_COUNT, G_CALLBACK( on_dossier_entry_status_count ), dialog );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect(
-					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_ENTRY_STATUS_CHANGED, G_CALLBACK( on_dossier_entry_status_changed ), dialog );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -654,8 +646,11 @@ do_end_close( ofaLedgerClose *self )
 	gtk_widget_destroy( dialog );
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_COUNT signal handler
+ */
 static void
-on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, guint count, ofaLedgerClose *self )
+on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 
@@ -670,8 +665,11 @@ on_dossier_entry_status_count( ofoDossier *dossier, ofaEntryStatus new_status, g
 	priv->entries_num = 0;
 }
 
+/*
+ * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ */
 static void
-on_dossier_entry_status_changed( ofoDossier *dossier, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self )
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 	gdouble progress;

@@ -64,7 +64,8 @@ enum {
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
 	RELOAD_DATASET,
-	ENTRY_STATUS_CHANGED,
+	ENTRY_STATUS_COUNT,
+	ENTRY_STATUS_CHANGE,
 	EXE_DATES_CHANGED,
 	N_SIGNALS
 };
@@ -251,7 +252,41 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_GTYPE );
 
 	/**
-	 * ofaHub::hub-entry-status-changed:
+	 * ofaHub::hub-entry-status-count:
+	 *
+	 * This signal is sent on the hub before each batch of entry status
+	 * changes. A signal handler may so initialize e.g. a progression
+	 * bar about the status change.
+	 * The arguments may be read as: I am about to change the status of
+	 * '@count' entries to '@new_status' status.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler( ofaHub   *hub,
+	 *							gint     new_status,
+	 *							gulong   count,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ ENTRY_STATUS_COUNT ] = g_signal_new_class_handler(
+				SIGNAL_HUB_ENTRY_STATUS_COUNT,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_UINT, G_TYPE_ULONG );
+
+	/**
+	 * ofaHub::hub-entry-status-change:
+	 *
+	 * This signal is sent of the @hub to ask an antry to change its
+	 * status.
+	 * The #ofoEntry class signal handler will update the @entry with
+	 * its new @new_status status, and update the database accordingly.
+	 * Other signal handlers may, e.g. update balances, progression
+	 * bars, and so on.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub          *hub,
@@ -260,8 +295,8 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 *							gint            new_status,
 	 * 							gpointer        user_data );
 	 */
-	st_signals[ ENTRY_STATUS_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_HUB_ENTRY_STATUS_CHANGED,
+	st_signals[ ENTRY_STATUS_CHANGE ] = g_signal_new_class_handler(
+				SIGNAL_HUB_ENTRY_STATUS_CHANGE,
 				OFA_TYPE_HUB,
 				G_SIGNAL_RUN_LAST,
 				NULL,

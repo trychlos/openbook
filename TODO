@@ -530,8 +530,6 @@
 
  957 2016- 1- 7 obsolete ofaIDataset interface
 
- 958 2016- 1- 7 move ENTRY_STATUS_COUNT signal to hub system
-
  962
 
 -----------------------------------------------------------------------
@@ -579,6 +577,9 @@
                 - obsolete ofa_page_get_main_window(): impossible
                 - obsolete ofa_page_get_dossier(): ok
      2016- 1- 9 done
+
+ 958 2016- 1- 7 move ENTRY_STATUS_COUNT signal to hub system
+     2016- 1-10 done
 
  959 2016- 1- 8 ofo_ledger_get_last_entry(): have a GDate in the API
      2016- 1- 9 done
