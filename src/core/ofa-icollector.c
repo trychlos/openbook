@@ -264,6 +264,8 @@ load_collection( ofaICollector *instance, ofaHub *hub, GType type )
  *
  * Adds the @object to the collection of objects of the same type.
  * The collection is maintained sorted with @func function.
+ *
+ * A new collection is defined if it did not exist yet.
  */
 void
 ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, ofaICollectionable *object, GCompareFunc func )
@@ -277,7 +279,11 @@ ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, ofaICollectiona
 
 	data = get_collector_data( instance );
 	collection = get_collection( instance, hub, G_OBJECT_TYPE( object ), data );
-	g_return_if_fail( collection );
+	if( !collection ){
+		collection = g_new0( sCollection, 1 );
+		collection->type = G_OBJECT_TYPE( object );
+		collection->list = NULL;
+	}
 
 	if( func ){
 		collection->list = g_list_insert_sorted( collection->list, object, func );
