@@ -163,7 +163,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(core_datadir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = ofo-marshal.lo
+am__objects_1 =
 am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-dialog.lo my-double.lo \
 	my-editable-amount.lo my-editable-date.lo my-field-combo.lo \
@@ -442,8 +442,6 @@ core_datadir = $(pkgdatadir)/core
 css_datadir = $(pkgdatadir)/css
 init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
 BUILT_SOURCES = \
-	ofo-marshal.c										\
-	ofo-marshal.h										\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
@@ -559,7 +557,6 @@ CLEANFILES = \
 	$(NULL)
 
 EXTRA_DIST = \
-	ofo-marshal.def										\
 	$(core_data_DATA)									\
 	$(NULL)
 
@@ -701,7 +698,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-dossier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-entry.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-ledger.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-marshal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-ope-template.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-account-balance.Plo@am__quote@
@@ -972,13 +968,6 @@ uninstall-am: uninstall-core_dataDATA uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-ofo-marshal.h: ofo-marshal.def $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=ofo_cclosure_marshal > $@
-
-ofo-marshal.c: ofo-marshal.def $(GLIB_GENMARSHAL)
-	echo "#include \"ofo-marshal.h\"" > $@ && \
-	$(GLIB_GENMARSHAL) $< --body --prefix=ofo_cclosure_marshal >> $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

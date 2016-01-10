@@ -42,8 +42,6 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 BUILT_SOURCES = \
-	ofo-marshal.c										\
-	ofo-marshal.h										\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
@@ -130,13 +128,6 @@ libofa_core_la_SOURCES = \
 	ofs-ope.c											\
 	$(NULL)
 
-ofo-marshal.h: ofo-marshal.def $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=ofo_cclosure_marshal > $@
-
-ofo-marshal.c: ofo-marshal.def $(GLIB_GENMARSHAL)
-	echo "#include \"ofo-marshal.h\"" > $@ && \
-	$(GLIB_GENMARSHAL) $< --body --prefix=ofo_cclosure_marshal >> $@
-
 libofa_core_la_LIBADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
@@ -166,6 +157,5 @@ CLEANFILES = \
 	$(NULL)
 
 EXTRA_DIST = \
-	ofo-marshal.def										\
 	$(core_data_DATA)									\
 	$(NULL)

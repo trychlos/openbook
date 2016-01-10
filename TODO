@@ -502,8 +502,6 @@
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
- 962 2016- 1-10 obsolete core/ofo-marshal
-
  963 2016- 1-10 obsolete OFA_SIGNAL_DOSSIER_OPENED ?
 
  964
@@ -595,6 +593,9 @@
                 - obsolete ofa_main_window_open_dossier(): ok
                 - obsolete ofa_main_window_get_dossier(): ok
      2016- 1- 9 done
+
+ 962 2016- 1-10 obsolete core/ofo-marshal
+     2016- 1-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
