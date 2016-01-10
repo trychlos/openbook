@@ -56,9 +56,12 @@
  */
 struct _ofaDossierPropertiesPrivate {
 
-	/* internals
+	/* initialization
 	 */
 	ofaMainWindow      *main_window;
+
+	/* runtime
+	 */
 	ofaHub             *hub;
 	ofoDossier         *dossier;
 	gboolean            is_new;
@@ -212,12 +215,12 @@ ofa_dossier_properties_class_init( ofaDossierPropertiesClass *klass )
 
 /**
  * ofa_dossier_properties_run:
- * @main: the main window of the application.
+ * @main_window: the main window of the application.
  *
  * Update the properties of an dossier
  */
 gboolean
-ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
+ofa_dossier_properties_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_properties_run";
 	ofaDossierProperties *self;
@@ -225,8 +228,7 @@ ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	g_debug( "%s: main_window=%p, dossier=%p",
-			thisfn, ( void * ) main_window, ( void * ) dossier );
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_PROPERTIES,
@@ -236,7 +238,6 @@ ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
 				NULL );
 
 	self->priv->main_window = main_window;
-	self->priv->dossier = dossier;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -257,13 +258,17 @@ v_init_dialog( myDialog *dialog )
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
 	priv = self->priv;
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
 
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 

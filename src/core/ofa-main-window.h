@@ -60,6 +60,7 @@
  */
 
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofa-page-def.h"
 #include "api/ofo-dossier-def.h"
@@ -149,6 +150,8 @@ void           ofa_main_window_update_title      ( const ofaMainWindow *window )
 void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
+
+ofaHub        *ofa_main_window_get_hub           ( const ofaMainWindow *window );
 
 G_END_DECLS
 

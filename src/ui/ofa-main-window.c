@@ -340,6 +340,7 @@ static void             on_page_removed( GtkNotebook *book, GtkWidget *page, gui
 static void             close_all_pages( ofaMainWindow *main_window );
 static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
 static void             on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
+static void             do_dossier_properties( ofaMainWindow *main_window );
 
 static void
 main_window_finalize( GObject *instance )
@@ -1289,20 +1290,23 @@ enable_action_import( ofaMainWindow *window, gboolean enable )
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_import, "import", enable );
 }
 
+/*
+ * DOSSIER_PROPERTIES signal handler
+ */
 static void
-on_dossier_properties( ofaMainWindow *window, gpointer user_data )
+on_dossier_properties( ofaMainWindow *window, void *empty )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_properties";
 	ofaMainWindowPrivate *priv;
 
-	g_debug( "%s: window=%p, user_data=%p",
-			thisfn, ( void * ) window, ( void * ) user_data );
+	g_debug( "%s: window=%p, empty=%p",
+			thisfn, ( void * ) window, ( void * ) empty );
 
 	priv = window->priv;
 
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	ofa_dossier_properties_run( window, ofa_hub_get_dossier( priv->hub ));
+	do_dossier_properties( window );
 }
 
 static void
@@ -1367,15 +1371,13 @@ static void
 on_properties( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_properties";
-	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
-	priv = OFA_MAIN_WINDOW( user_data )->priv;
 
-	ofa_dossier_properties_run( OFA_MAIN_WINDOW( user_data ), priv->dossier );
+	do_dossier_properties( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
@@ -1870,4 +1872,32 @@ static void
 on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty )
 {
 	ofa_main_window_activate_theme( main_window, theme_id );
+}
+
+static void
+do_dossier_properties( ofaMainWindow *main_window )
+{
+	ofa_dossier_properties_run( main_window );
+}
+
+/**
+ * ofa_main_window_get_hub:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Returns: the current #ofaHub object, which may be %NULL.
+ */
+ofaHub *
+ofa_main_window_get_hub( const ofaMainWindow *main_window )
+{
+	ofaMainWindowPrivate *priv;
+
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+
+	priv = main_window->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	return( priv->hub );
 }
