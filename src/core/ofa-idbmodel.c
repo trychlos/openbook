@@ -77,6 +77,7 @@ struct _ofaDBModelDlgPrivate {
 	 */
 	GtkWidget     *close_btn;
 	GtkWidget     *paned;
+	GtkWidget     *upper_viewport;
 	GtkWidget     *grid;
 	guint          row;
 	GtkWidget     *textview;
@@ -106,6 +107,7 @@ static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, m
 static GType    ofa_dbmodel_dlg_get_type( void ) G_GNUC_CONST;
 static void     v_init_dialog( myDialog *dialog );
 static gboolean do_run( ofaDBModelDlg *dialog );
+static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelDlg *dialog );
 static void     load_settings( ofaDBModelDlg *dialog );
 static void     write_settings( ofaDBModelDlg *dialog );
 
@@ -515,9 +517,13 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( priv->paned && GTK_IS_PANED( priv->paned ));
 	gtk_paned_set_position( GTK_PANED( priv->paned ), priv->paned_pos );
 
+	priv->upper_viewport = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-upperviewport" );
+	g_return_if_fail( priv->upper_viewport && GTK_IS_VIEWPORT( priv->upper_viewport ));
+
 	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-grid" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 	priv->row = 0;
+	g_signal_connect( priv->grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), dialog );
 
 	priv->textview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-textview" );
 	g_return_if_fail( priv->textview && GTK_IS_TEXT_VIEW( priv->textview ));
@@ -622,6 +628,21 @@ ofa_idbmodel_add_text( const ofaIDBModel *instance, myDialog *dialog, const gcha
 		gtk_text_buffer_get_end_iter( priv->buffer, &iter );
 		gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
 	}
+}
+
+/*
+ * thanks to http://stackoverflow.com/questions/2683531/stuck-on-scrolling-gtkviewport-to-end
+ */
+static void
+on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelDlg *dialog )
+{
+	ofaDBModelDlgPrivate *priv;
+	GtkAdjustment* adjustment;
+
+	priv = dialog->priv;
+
+	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->upper_viewport ));
+	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
 }
 
 /*
