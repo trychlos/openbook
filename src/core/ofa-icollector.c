@@ -199,7 +199,7 @@ ofa_icollector_get_collection( ofaICollector *instance, ofaHub *hub, GType type 
 	data = get_collector_data( instance );
 	collection = get_collection( instance, hub, type, data );
 
-	return( collection->list );
+	return( collection ? collection->list : NULL );
 }
 
 /*
