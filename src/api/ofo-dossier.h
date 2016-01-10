@@ -89,7 +89,6 @@ GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST
 
 ofoDossier          *ofo_dossier_new_with_hub              ( ofaHub *hub );
 
-gboolean             ofo_dossier_has_dispose_run           ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_user                  ( const ofoDossier *dossier );
 const ofaIDBConnect *ofo_dossier_get_connect               ( const ofoDossier *dossier );
 

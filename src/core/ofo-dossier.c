@@ -280,15 +280,6 @@ ofo_dossier_new_with_hub( ofaHub *hub )
 	return( dossier );
 }
 
-/**
- * ofo_dossier_has_dispose_run:
- */
-gboolean
-ofo_dossier_has_dispose_run( const ofoDossier *dossier )
-{
-	return( OFO_BASE( dossier )->prot->dispose_has_run );
-}
-
 /*
  * SIGNAL_HUB_UPDATED signal handler
  */
