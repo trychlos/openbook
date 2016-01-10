@@ -40,15 +40,13 @@ struct _ofaListStorePrivate {
 	/* properties
 	 */
 	ofaHub     *hub;
-	ofoDossier *dossier;
 	gboolean    dataset_loaded;
 };
 
 /* class properties
  */
 enum {
-	OFA_PROP_DOSSIER_ID = 1,
-	OFA_PROP_HUB_ID,
+	OFA_PROP_HUB_ID = 1,
 };
 
 /* signals defined here
@@ -114,10 +112,6 @@ list_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_DOSSIER_ID:
-				g_value_set_object( value, priv->dossier );
-				break;
-
 			case OFA_PROP_HUB_ID:
 				g_value_set_object( value, priv->hub );
 				break;
@@ -141,10 +135,6 @@ list_store_set_property( GObject *object, guint property_id, const GValue *value
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_DOSSIER_ID:
-				priv->dossier = g_value_get_object( value );
-				break;
-
 			case OFA_PROP_HUB_ID:
 				priv->hub = g_value_get_object( value );
 				break;
@@ -171,9 +161,9 @@ list_store_constructed( GObject *instance )
 	 * dossier finalization
 	 */
 	priv = OFA_LIST_STORE( instance )->priv;
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	ofa_istore_init_with_dossier( OFA_ISTORE( instance ), priv->dossier );
+	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
 }
 
 static void
@@ -203,16 +193,6 @@ ofa_list_store_class_init( ofaListStoreClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = list_store_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaListStorePrivate ));
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			OFA_PROP_DOSSIER_ID,
-			g_param_spec_object(
-					OFA_PROP_DOSSIER,
-					"Dossier",
-					"The currently opened dossier",
-					OFO_TYPE_DOSSIER,
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),

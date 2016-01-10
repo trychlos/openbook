@@ -102,11 +102,6 @@ GList  *ofo_base_load_dataset    ( const ofsBoxDef *defs,
 										GType type,
 										ofaHub *hub );
 
-GList  *ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs,
-											const ofaIDBConnect *connect,
-											const gchar *from,
-											GType type );
-
 GList  *ofo_base_load_rows       ( const ofsBoxDef *defs,
 										const ofaIDBConnect *connect,
 										const gchar *from );

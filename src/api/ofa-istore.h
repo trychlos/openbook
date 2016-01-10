@@ -83,9 +83,6 @@ GType        ofa_istore_get_type             ( void );
 guint        ofa_istore_get_interface_last_version
                                              ( const ofaIStore *istore );
 
-void         ofa_istore_init_with_dossier    ( ofaIStore *istore,
-														ofoDossier *dossier );
-
 void         ofa_istore_init                 ( ofaIStore *istore,
 														ofaHub *hub );
 

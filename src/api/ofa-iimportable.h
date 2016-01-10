@@ -67,6 +67,8 @@ typedef struct _ofaIImportable                    ofaIImportable;
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @import:                [should] imports a dataset.
+ * @is_willing_to:         [should] is this instance willing to import the uri ?
+ * @import uri:            [should] tries to import a file.
  *
  * This defines the interface that an #ofaIImportable should implement.
  */
@@ -106,24 +108,6 @@ typedef struct {
 												GSList *lines,
 												const ofaFileFormat *settings,
 												ofaHub *hub );
-
-	/**
-	 * import:
-	 * @instance: the #ofaIImportable provider.
-	 * @lines: the lines of the imported file, as a #GSList list of
-	 *  lines, where line->data is a #GSList of fields values.
-	 * @hub: the current #ofaHub object.
-	 *
-	 * Import the dataset from the provided content.
-	 *
-	 * Return: the count of found errors.
-	 *
-	 * The recordset must be left unchanged if an error is found.
-	 */
-	gint     ( *import_to_dossier ) ( ofaIImportable *instance,
-												GSList *lines,
-												const ofaFileFormat *settings,
-												ofoDossier *dossier );
 
 	/**
 	 * is_willing_to:

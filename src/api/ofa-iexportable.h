@@ -87,20 +87,6 @@ typedef struct {
 	gboolean ( *export )               ( ofaIExportable *instance,
 												const ofaFileFormat *settings,
 												ofaHub *hub );
-
-	/**
-	 * export:
-	 * @instance: the #ofaIExportable provider.
-	 * @settings: the current export settings for the operation.
-	 * @hub: the current #ofaHub object.
-	 *
-	 * Export the dataset to the named file.
-	 *
-	 * Return: %TRUE if the dataset has been successfully exported.
-	 */
-	gboolean ( *export_from_dossier ) ( ofaIExportable *instance,
-												const ofaFileFormat *settings,
-												ofoDossier *dossier );
 }
 	ofaIExportableInterface;
 

@@ -156,28 +156,6 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 	return( g_list_reverse( dataset ));
 }
 
-GList *
-ofo_base_load_dataset_from_dossier( const ofsBoxDef *defs, const ofaIDBConnect *connect, const gchar *from, GType type )
-{
-	ofoBase *object;
-	GList *rows, *dataset, *it;
-
-	g_return_val_if_fail( defs, NULL );
-	g_return_val_if_fail( type, NULL );
-
-	dataset = NULL;
-	rows = ofo_base_load_rows( defs, connect, from );
-
-	for( it=rows ; it ; it=it->next ){
-		object = g_object_new( type, NULL );
-		object->prot->fields = it->data;
-		dataset = g_list_prepend( dataset, object );
-	}
-	g_list_free( rows );
-
-	return( g_list_reverse( dataset ));
-}
-
 /**
  * ofo_base_load_rows:
  * @defs: the #ofsBoxDefs list of field definitions for this object
