@@ -295,9 +295,9 @@ guided_input_bin_dispose( GObject *instance )
 	priv = OFA_GUIDED_INPUT_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
 		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
