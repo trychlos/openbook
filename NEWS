@@ -40,6 +40,7 @@
    - ofaConcilCollection: removed class.
    - ofaIDataset: removed obsolete interface (todo #957).
    - ofa_dossier_misc_import_csv(): removed function.
+   - ofa_ledger_treeview_get_top_focusable_widget(): removed method.
    - ofa_main_window_get_dossier: obsoleted method (todo #961).
    - ofa_main_window_open_dossier: obsoleted method (todo #961).
    - ofa_main_window_get_hub(): new method.

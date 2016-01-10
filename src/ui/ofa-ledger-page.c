@@ -239,7 +239,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	return( ofa_ledger_treeview_get_top_focusable_widget( OFA_LEDGER_PAGE( page )->priv->tview ));
+	return( ofa_ledger_treeview_get_treeview( OFA_LEDGER_PAGE( page )->priv->tview ));
 }
 
 /*
@@ -345,18 +345,11 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 	ofa_ledger_treeview_free_selected( selected );
 
 	do_update( page, ledger );
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void
 do_update( ofaLedgerPage *self, ofoLedger *ledger )
 {
-	ofaLedgerPagePrivate *priv;
-	GtkWidget *view;
-
-	priv = self->priv;
-
 	if( ledger &&
 			ofa_ledger_properties_run(
 					ofa_page_get_main_window( OFA_PAGE( self )), ledger )){
@@ -365,10 +358,7 @@ do_update( ofaLedgerPage *self, ofoLedger *ledger )
 			 * class, graceful to the dossier signaling system */
 	}
 
-	view = ofa_ledger_treeview_get_top_focusable_widget( priv->tview );
-	if( view ){
-		gtk_widget_grab_focus( view );
-	}
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*

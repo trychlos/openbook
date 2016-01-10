@@ -668,34 +668,11 @@ ofa_ledger_treeview_get_treeview( const ofaLedgerTreeview *view )
 
 	priv = view->priv;
 
-	if( !priv->dispose_has_run ){
-
-		g_return_val_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ), NULL );
-
-		return( GTK_WIDGET( priv->tview ));
+	if( priv->dispose_has_run ){
+		g_return_val_if_reached( NULL );
 	}
 
-	g_return_val_if_reached( NULL );
-}
+	g_return_val_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ), NULL );
 
-/**
- * ofa_ledger_treeview_get_top_focusable_widget:
- */
-GtkWidget *
-ofa_ledger_treeview_get_top_focusable_widget( const ofaLedgerTreeview *view )
-{
-	ofaLedgerTreeviewPrivate *priv;
-
-	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
-
-	priv = view->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_return_val_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ), NULL );
-
-		return( GTK_WIDGET( priv->tview ));
-	}
-
-	g_return_val_if_reached( NULL );
+	return( GTK_WIDGET( priv->tview ));
 }

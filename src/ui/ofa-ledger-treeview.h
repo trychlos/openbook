@@ -68,34 +68,32 @@ typedef struct {
 }
 	ofaLedgerTreeviewClass;
 
-GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
+GType              ofa_ledger_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
+ofaLedgerTreeview *ofa_ledger_treeview_new               ( void );
 
-void               ofa_ledger_treeview_set_columns             ( ofaLedgerTreeview *view,
-																	ofaLedgerColumns columns );
+void               ofa_ledger_treeview_set_columns       ( ofaLedgerTreeview *view,
+																ofaLedgerColumns columns );
 
-void               ofa_ledger_treeview_set_hub                 ( ofaLedgerTreeview *view,
-																	ofaHub *hub );
+void               ofa_ledger_treeview_set_hub           ( ofaLedgerTreeview *view,
+																ofaHub *hub );
 
-void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
-																	GtkSelectionMode mode );
+void               ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view,
+																GtkSelectionMode mode );
 
-void               ofa_ledger_treeview_set_hexpand             ( ofaLedgerTreeview *view,
-																	gboolean hexpand );
+void               ofa_ledger_treeview_set_hexpand       ( ofaLedgerTreeview *view,
+																gboolean hexpand );
 
-GtkTreeSelection  *ofa_ledger_treeview_get_selection           ( ofaLedgerTreeview *view );
+GtkTreeSelection  *ofa_ledger_treeview_get_selection     ( ofaLedgerTreeview *view );
 
-GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreeview *view );
+GList             *ofa_ledger_treeview_get_selected      ( ofaLedgerTreeview *view );
 
-#define            ofa_ledger_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+#define            ofa_ledger_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
-void               ofa_ledger_treeview_set_selected            ( ofaLedgerTreeview *view,
+void               ofa_ledger_treeview_set_selected      ( ofaLedgerTreeview *view,
 																	const gchar *ledger );
 
-GtkWidget         *ofa_ledger_treeview_get_treeview            ( const ofaLedgerTreeview *view );
-
-GtkWidget         *ofa_ledger_treeview_get_top_focusable_widget( const ofaLedgerTreeview *view );
+GtkWidget         *ofa_ledger_treeview_get_treeview      ( const ofaLedgerTreeview *view );
 
 G_END_DECLS
 
