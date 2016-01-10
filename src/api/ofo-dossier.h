@@ -94,7 +94,6 @@ gboolean             ofo_dossier_use_currency              ( const ofoDossier *d
 gboolean             ofo_dossier_use_ledger                ( const ofoDossier *dossier, const gchar *ledger );
 gboolean             ofo_dossier_use_ope_template          ( const ofoDossier *dossier, const gchar *ope_template );
 
-gint                 ofo_dossier_get_database_version      ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );

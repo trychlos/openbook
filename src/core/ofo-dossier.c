@@ -474,23 +474,6 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 }
 
 /**
- * ofo_dossier_get_database_version:
- * @dossier:
- *
- * Returns the last complete version
- * i.e. a version where the version date is set
- */
-gint
-ofo_dossier_get_database_version( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-
-	g_warning( "ofo_dossier_get_database_version: obsoleted" );
-
-	return( 0 );
-}
-
-/**
  * ofo_dossier_get_default_currency:
  *
  * Returns: the default currency of the dossier.

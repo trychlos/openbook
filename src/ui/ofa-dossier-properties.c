@@ -36,6 +36,7 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -506,9 +507,13 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 
 	label = my_utils_container_get_child_by_name( container, "p5-version" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%u", ( ofo_dossier_get_database_version( priv->dossier )));
+	/* need to identify the ofaIDBModel which handles the main database */
+	/*
+	connect = ofa_hub_get_connect( priv->hub );
+	str = g_strdup_printf( "%u", ( ofa_idbmodel_get_current_version( model, connect )));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
+	*/
 }
 
 static void
