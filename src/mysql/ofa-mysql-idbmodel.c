@@ -139,18 +139,19 @@ static sImport st_imports[] = {
 
 #define MARGIN_LEFT                     20
 
-static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
-static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
-static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
-static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
-static void       set_bar_progression( sUpdate *update_data );
-static gboolean   exec_query( sUpdate *update_data, const gchar *query );
-static gboolean   version_begin( sUpdate *update_data, gint version );
-static gboolean   version_end( sUpdate *update_data, gint version );
-static gboolean   import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import );
-static gint       count_rows( sUpdate *update_data, const gchar *table );
+static guint        idbmodel_get_interface_version( const ofaIDBModel *instance );
+static const gchar *idbmodel_get_name( const ofaIDBModel *instance );
+static guint        idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static guint        idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static gboolean     idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
+static gboolean     upgrade_to( sUpdate *update_data, sMigration *smig );
+static GtkWidget   *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
+static void         set_bar_progression( sUpdate *update_data );
+static gboolean     exec_query( sUpdate *update_data, const gchar *query );
+static gboolean     version_begin( sUpdate *update_data, gint version );
+static gboolean     version_end( sUpdate *update_data, gint version );
+static gboolean     import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import );
+static gint         count_rows( sUpdate *update_data, const gchar *table );
 
 /*
  * #ofaIDBModel interface setup
@@ -163,6 +164,7 @@ ofa_mysql_idbmodel_iface_init( ofaIDBModelInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbmodel_get_interface_version;
+	iface->get_name = idbmodel_get_name;
 	iface->get_current_version = idbmodel_get_current_version;
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
@@ -172,6 +174,12 @@ static guint
 idbmodel_get_interface_version( const ofaIDBModel *instance )
 {
 	return( 1 );
+}
+
+static const gchar *
+idbmodel_get_name( const ofaIDBModel *instance )
+{
+	return( "CORE" );
 }
 
 static guint

@@ -53,6 +53,7 @@ typedef struct _ofaIDBModel                    ofaIDBModel;
 /**
  * ofaIDBModelInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @get_name: [should]: return an identification name.
  * @get_current_version: [should]: return the current version of the DB model.
  * @get_last_version: [should]: return the last version of the DB model.
  * @connect_handlers: [may]: let connect to the hub signaling system.
@@ -84,7 +85,17 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_interface_version )( const ofaIDBModel *instance );
+	guint         ( *get_interface_version )( const ofaIDBModel *instance );
+
+	/**
+	 * get_name:
+	 * @instance: the #ofaIDBModel provider.
+	 *
+	 * Returns: the identification name of the @instance.
+	 *
+	 * Since: version 1
+	 */
+	const gchar * ( *get_name )             ( const ofaIDBModel *instance );
 
 	/**
 	 * get_current_version:
@@ -98,8 +109,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_current_version )  ( const ofaIDBModel *instance,
-											const ofaIDBConnect *connect );
+	guint         ( *get_current_version )  ( const ofaIDBModel *instance,
+													const ofaIDBConnect *connect );
 
 	/**
 	 * get_last_version:
@@ -113,8 +124,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_last_version )     ( const ofaIDBModel *instance,
-											const ofaIDBConnect *connect );
+	guint         ( *get_last_version )     ( const ofaIDBModel *instance,
+													const ofaIDBConnect *connect );
 
 	/**
 	 * connect_handlers:
@@ -125,8 +136,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void     ( *connect_handlers )     ( const ofaIDBModel *instance,
-											const ofaHub *hub );
+	void          ( *connect_handlers )     ( const ofaIDBModel *instance,
+													const ofaHub *hub );
 
 	/**
 	 * needs_update:
@@ -139,8 +150,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *needs_update )         ( const ofaIDBModel *instance,
-											const ofaIDBConnect *connect );
+	gboolean      ( *needs_update )         ( const ofaIDBModel *instance,
+													const ofaIDBConnect *connect );
 
 	/**
 	 * ddl_update:
@@ -156,35 +167,37 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *ddl_update )           ( const ofaIDBModel *instance,
-											ofaHub *hub,
-											myDialog *dialog );
+	gboolean      ( *ddl_update )           ( const ofaIDBModel *instance,
+													ofaHub *hub,
+													myDialog *dialog );
 }
 	ofaIDBModelInterface;
 
-GType    ofa_idbmodel_get_type                  ( void );
+GType        ofa_idbmodel_get_type                  ( void );
 
-guint    ofa_idbmodel_get_interface_last_version( void );
+guint        ofa_idbmodel_get_interface_last_version( void );
 
-guint    ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instance );
+guint        ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instance );
 
-gboolean ofa_idbmodel_update                    ( ofaHub *hub );
+gboolean     ofa_idbmodel_update                    ( ofaHub *hub );
 
-void     ofa_idbmodel_init_hub_signaling_system ( const ofaHub *hub );
+void         ofa_idbmodel_init_hub_signaling_system ( const ofaHub *hub );
 
-guint    ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,
-														const ofaIDBConnect *connect );
+ofaIDBModel *ofa_idbmodel_get_by_name               ( const gchar *name );
 
-guint    ofa_idbmodel_get_last_version          ( const ofaIDBModel *instance,
-														const ofaIDBConnect *connect );
+guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,
+															const ofaIDBConnect *connect );
 
-void     ofa_idbmodel_add_row_widget            ( const ofaIDBModel *instance,
-														myDialog *dialog,
-														GtkWidget *widget );
+guint        ofa_idbmodel_get_last_version          ( const ofaIDBModel *instance,
+															const ofaIDBConnect *connect );
 
-void     ofa_idbmodel_add_text                  ( const ofaIDBModel *instance,
-														myDialog *dialog,
-														const gchar *text );
+void         ofa_idbmodel_add_row_widget            ( const ofaIDBModel *instance,
+															myDialog *dialog,
+															GtkWidget *widget );
+
+void         ofa_idbmodel_add_text                  ( const ofaIDBModel *instance,
+															myDialog *dialog,
+															const gchar *text );
 
 G_END_DECLS
 

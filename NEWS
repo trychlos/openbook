@@ -33,13 +33,20 @@
 
  Other changes:
 
+   - core/ofo-marshal.def: remove obsoleted file (todo #962).
+   - ofa_idbmodel_get_by_name(): new method.
    - ofaAccountSelectorBin: removed unused class.
    - ofaCollection: removed class.
    - ofaConcilCollection: removed class.
-   - ofaIDataset: removed obsolete interface.
+   - ofaIDataset: removed obsolete interface (todo #957).
    - ofa_dossier_misc_import_csv(): removed function.
+   - ofa_main_window_get_dossier: obsoleted method (todo #961).
+   - ofa_main_window_open_dossier: obsoleted method (todo #961).
+   - ofa_page_get_dossier(): obsoleted method (todo #955).
    - ofo_base_get_hub(), ofo_base_set_hub(): new methods.
    - ofo_dossier_new(): removed method.
+   - ofo_dossier_get_min_deffect(): changed API (todo #960).
+   - ofo_ledger_get_last_entry(): changed API (todo #959).
    - ofaICollectionable: new interface for classes which have in-memory datasets.
 
 -----------------------------------------------------------------------

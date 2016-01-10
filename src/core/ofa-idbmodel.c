@@ -309,6 +309,47 @@ ofa_idbmodel_init_hub_signaling_system( const ofaHub *hub )
 }
 
 /**
+ * ofa_idbmodel_get_by_name:
+ * @name: the searched for identification name.
+ *
+ * Returns: a new reference to the #ofaIDBModel instance which delivers
+ * this @name, or %NULL.
+ *
+ * When non %NULL, the returned reference should be g_object_unref() by
+ * the caller.
+ */
+ofaIDBModel *
+ofa_idbmodel_get_by_name( const gchar *name )
+{
+	static const gchar *thisfn = "ofa_idbmodel_get_by_name";
+	GList *plugins_list, *it;
+	ofaIDBModel *instance, *found;
+	const gchar *cstr;
+
+	g_return_val_if_fail( my_strlen( name ), NULL );
+
+	found = NULL;
+	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+
+	for( it=plugins_list ; it ; it=it->next ){
+		instance = OFA_IDBMODEL( it->data );
+		if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_name ){
+			cstr = OFA_IDBMODEL_GET_INTERFACE( instance )->get_name( instance );
+			if( !g_utf8_collate( cstr, name )){
+				found = g_object_ref( instance );
+				break;
+			}
+		} else {
+			g_info( "%s: ofaIDBModel instance %p does not provide 'get_name()' method",
+					thisfn, ( void * ) instance );
+		}
+	}
+
+	ofa_plugin_free_extensions( plugins_list );
+	return( found );
+}
+
+/**
  * ofa_idbmodel_get_current_version:
  * @instance:
  * @connect:
