@@ -385,7 +385,7 @@ ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, const ofaMainWindo
 		application = gtk_window_get_application( GTK_WINDOW( main_window ));
 		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
 
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( priv->hub ));
+		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
 		g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 		priv->store = ofa_ledger_store_new( priv->hub );
