@@ -85,7 +85,6 @@ struct _ofaMainWindowPrivate {
 	GtkPaned      *pane;
 	GList         *themes;
 	guint          last_theme;
-	ofoDossier    *dossier;
 	ofaHub        *hub;
 
 	/* menu items enabled status
@@ -385,7 +384,6 @@ main_window_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->hub );
 		g_clear_object( &priv->menu );
-		g_clear_object( &priv->dossier );
 		theme_defs_free( priv->themes );
 	}
 
@@ -822,6 +820,11 @@ do_open_dossier( ofaMainWindow *main_window )
 	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPENED, dossier );
 }
 
+/*
+ * SIGNAL_HUBBER_CLOSED signal handler
+ *
+ * The signal is sent after hub finalization.
+ */
 static void
 on_hub_closed( ofaIHubber *hubber, ofaMainWindow *main_window )
 {
@@ -829,7 +832,7 @@ on_hub_closed( ofaIHubber *hubber, ofaMainWindow *main_window )
 	ofaMainWindowPrivate *priv;
 
 	priv = main_window->priv;
-	g_debug( "%s: hub=%p", thisfn, ( void * ) priv->hub );
+	g_debug( "%s: priv->hub=%p", thisfn, ( void * ) priv->hub );
 
 	do_close_dossier( main_window );
 }
@@ -853,6 +856,37 @@ do_close_dossier( ofaMainWindow *self )
 		appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( self )));
 		set_menubar( self, ofa_application_get_menu_model( appli ));
 		set_window_title( self );
+	}
+}
+
+/**
+ * ofa_main_window_close_dossier:
+ * main_window: this #ofaMainWindow instance.
+ *
+ * Clears both the IHubber and our private references on the #ofaHub
+ * object.
+ */
+void
+ofa_main_window_close_dossier( ofaMainWindow *main_window )
+{
+	static const gchar *thisfn = "ofa_main_window_close_dossier";
+	ofaMainWindowPrivate *priv;
+	GtkApplication *application;
+
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = main_window->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	if( priv->hub ){
+		g_clear_object( &priv->hub );
+		application = gtk_window_get_application( GTK_WINDOW( main_window ));
+		ofa_ihubber_clear_hub( OFA_IHUBBER( application ));
 	}
 }
 
@@ -1336,37 +1370,6 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	ofa_main_window_close_dossier( OFA_MAIN_WINDOW( user_data ));
 }
 
-/**
- * ofa_main_window_close_dossier:
- * main_window: this #ofaMainWindow instance.
- *
- * Clears both the IHubber and our private references on the #ofaHub
- * object.
- */
-void
-ofa_main_window_close_dossier( ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_main_window_close_dossier";
-	ofaMainWindowPrivate *priv;
-	GtkApplication *application;
-
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = main_window->priv;
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
-
-	if( priv->hub ){
-		g_clear_object( &priv->hub );
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		ofa_ihubber_clear_hub( OFA_IHUBBER( application ));
-	}
-}
-
 static void
 on_properties( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
@@ -1671,6 +1674,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	GtkNotebook *main_book;
 	ofaPage *page;
 	const sThemeDef *theme_def;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -1689,7 +1693,8 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 		g_return_val_if_fail( theme_def->fn_get_type, NULL );
 
 		if( theme_def->if_entries_allowed ){
-			if( !ofo_dossier_is_current( priv->dossier )){
+			dossier = ofa_hub_get_dossier( priv->hub );
+			if( !ofo_dossier_is_current( dossier )){
 				warning_archived_dossier( main_window );
 				return( NULL );
 			}
