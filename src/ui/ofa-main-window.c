@@ -1047,7 +1047,7 @@ warning_exercice_unset( const ofaMainWindow *window )
 			GTK_BUTTONS_CLOSE,
 			"%s", str );
 
-	gtk_dialog_add_button( GTK_DIALOG( dialog ), "Dossier properties...", 1 );
+	gtk_dialog_add_button( GTK_DIALOG( dialog ), "Dossier _properties...", 1 );
 
 	g_free( str );
 	resp = gtk_dialog_run( GTK_DIALOG( dialog ));
