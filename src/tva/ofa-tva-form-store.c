@@ -326,6 +326,9 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *store )
 	}
 }
 
+/*
+ * SIGNAL_HUB_RELOAD signal handler
+ */
 static void
 on_hub_reload_dataset( ofaHub *hub, GType type, ofaTVAFormStore *store )
 {

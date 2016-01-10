@@ -134,7 +134,7 @@ static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *
 static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
 static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_deleted_class_label( ofaAccountChartBin *bin, ofoClass *class );
-static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaAccountChartBin *bin );
+static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountChartBin *bin );
 static GtkWidget *get_current_tree_view( const ofaAccountChartBin *bin );
 static void       select_row_by_number( ofaAccountChartBin *bin, const gchar *number );
 static void       select_row_by_iter( ofaAccountChartBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
@@ -1243,7 +1243,7 @@ connect_to_hub_signaling_system( ofaAccountChartBin *book )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), book );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -1342,9 +1342,9 @@ on_deleted_class_label( ofaAccountChartBin *book, ofoClass *class )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofaHub *hub, GType type, ofaAccountChartBin *book )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountChartBin *book )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, book=%p",
 			thisfn, ( void * ) hub, type, ( void * ) book );

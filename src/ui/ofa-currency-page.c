@@ -84,7 +84,7 @@ static void         on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage
 static void         on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
 static void         do_on_updated_account( ofaCurrencyPage *self, ofoAccount *account );
 static void         on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self );
-static void         on_reloaded_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self );
+static void         on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self );
 
 static void
 currencies_page_finalize( GObject *instance )
@@ -186,7 +186,7 @@ v_setup_view( ofaPage *page )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	tview = setup_tree_view( OFA_CURRENCY_PAGE( page ));
@@ -622,9 +622,9 @@ on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self )
 {
-	static const gchar *thisfn = "ofa_currency_page_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_currency_page_on_hub_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn, ( void * ) hub, type, ( void * ) self );

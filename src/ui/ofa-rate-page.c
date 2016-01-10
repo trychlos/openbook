@@ -98,7 +98,7 @@ static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *
 static void       on_delete_clicked( GtkButton *button, ofaRatePage *page );
 static gboolean   delete_confirmed( ofaRatePage *self, ofoRate *rate );
 static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
-static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaRatePage *self );
+static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self );
 
 static void
 rates_page_finalize( GObject *instance )
@@ -212,7 +212,7 @@ connect_to_hub_signaling_system( ofaRatePage *self )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -751,9 +751,9 @@ on_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofaHub *hub, GType type, ofaRatePage *self )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self )
 {
-	static const gchar *thisfn = "ofa_rate_page_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_rate_page_on_hub_reload_dataset";
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",

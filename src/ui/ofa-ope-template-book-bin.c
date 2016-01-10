@@ -120,7 +120,7 @@ static void       on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger
 static void       on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template );
 static void       on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
 static void       on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
-static void       on_reloaded_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin );
+static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin );
 static GtkWidget *get_current_tree_view( const ofaOpeTemplateBookBin *bin );
 static void       select_row_by_mnemo( ofaOpeTemplateBookBin *bin, const gchar *mnemo );
 static void       select_row_by_iter( ofaOpeTemplateBookBin *bin, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
@@ -943,7 +943,7 @@ connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reloaded_dataset ), bin );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -1065,9 +1065,9 @@ on_deleted_ledger_object( ofaOpeTemplateBookBin *bin, ofoLedger *ledger )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reloaded_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateBookBin *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_book_bin_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_ope_template_book_bin_on_hub_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, bin=%p",
 			thisfn, ( void * ) hub, type, ( void * ) bin );

@@ -371,6 +371,9 @@ find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
 	return( FALSE );
 }
 
+/*
+ * SIGNAL_HUB_RELOAD signal handler
+ */
 static void
 on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
 {

@@ -113,7 +113,7 @@ static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
 static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
-static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
+static void       on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
 
@@ -212,7 +212,7 @@ v_setup_view( ofaPage *page )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_deleted_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_reload_dataset ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	g_signal_connect( page, "page-removed", G_CALLBACK( on_page_removed ), NULL );
@@ -986,12 +986,12 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx
 }
 
 /*
- * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
+ * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
+on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_reload_dataset";
+	static const gchar *thisfn = "ofa_guided_ex_on_hub_reload_dataset";
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
