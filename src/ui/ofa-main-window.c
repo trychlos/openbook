@@ -527,8 +527,15 @@ main_window_constructed( GObject *instance )
 }
 
 /*
- * stores against the @main_window GObject the data needed later by the
- * plugins to be able to update the menus
+ * @main_window:
+ * @builder:
+ * @placeholder: the name of an object inserted in the menu definition;
+ *  this same name will be set against @main_window GObject pointing to
+ *  the menu definition.
+ *
+ * Makes a new association between @placeholder and the object found in
+ * the @builder. This association may later be used by plugins and other
+ * add-ons to insert their own menu items at @placeholder places.
  */
 static void
 window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder )
@@ -705,7 +712,9 @@ ofa_main_window_new( const ofaApplication *application )
 
 	g_debug( "%s: application=%p", thisfn, application );
 
-	/* 'application' is a GtkWindow property */
+	/* 'application' is a GtkWindow property
+	 * because 'application' is not a construction property, it is only
+	 * available after g_object_new() has returned */
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
@@ -761,6 +770,9 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 	return( !ok_to_quit );
 }
 
+/*
+ * SIGNAL_HUBBER_NEW signal handler
+ */
 static void
 on_hub_new( ofaIHubber *hubber, ofaHub *hub, ofaMainWindow *main_window )
 {
