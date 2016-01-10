@@ -16,7 +16,6 @@ src/ui/ofa-account-book-bin.ui
 src/ui/ofa-account-filter-vv-bin.ui
 src/ui/ofa-account-properties.ui
 src/ui/ofa-account-select.ui
-src/ui/ofa-account-selector-bin.ui
 src/ui/ofa-app-menubar.ui
 src/ui/ofa-balance-bin.ui
 src/ui/ofa-bat-properties.ui
