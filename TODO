@@ -424,11 +424,6 @@
 
  826 2015- 9-22 use GResource
 
- 840 2015- 9-29 ofaAccountSelectorBin: is unused
-     2015-10- 1 but see ofaReconciliation and ofaSettlement which both
-                need a single account selection
-     2015-10- 7 see also (closed) #778
-
  843 2015- 9-30 account number should be renamed as account identifier
 
  853 2015-10- 1 review v_init_dialog's:
@@ -505,6 +500,12 @@
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 840 2015- 9-29 ofaAccountSelectorBin: is unused
+     2015-10- 1 but see ofaReconciliation and ofaSettlement which both
+                need a single account selection
+     2015-10- 7 see also (closed) #778
+     2016- 1-10 class has been removed
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)
