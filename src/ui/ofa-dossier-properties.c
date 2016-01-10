@@ -836,14 +836,14 @@ display_progress_init( ofaDossierProperties *self )
 
 	handler = g_signal_connect(
 					priv->hub,
-					SIGNAL_HUB_ENTRY_STATUS_COUNT,
+					SIGNAL_HUB_STATUS_COUNT,
 					G_CALLBACK( on_hub_entry_status_count ),
 					self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					priv->hub,
-					SIGNAL_HUB_ENTRY_STATUS_CHANGE,
+					SIGNAL_HUB_STATUS_CHANGE,
 					G_CALLBACK( on_hub_entry_status_change ),
 					self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -865,7 +865,7 @@ display_progress_end( ofaDossierProperties *self )
 }
 
 /*
- * SIGNAL_HUB_ENTRY_STATUS_COUNT signal handler
+ * SIGNAL_HUB_STATUS_COUNT signal handler
  */
 static void
 on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self )
@@ -879,7 +879,7 @@ on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count,
 }
 
 /*
- * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
 on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self )

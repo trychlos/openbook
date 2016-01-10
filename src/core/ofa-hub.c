@@ -252,7 +252,7 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_GTYPE );
 
 	/**
-	 * ofaHub::hub-entry-status-count:
+	 * ofaHub::hub-status-count:
 	 *
 	 * This signal is sent on the hub before each batch of entry status
 	 * changes. A signal handler may so initialize e.g. a progression
@@ -267,7 +267,7 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 * 							gpointer user_data );
 	 */
 	st_signals[ ENTRY_STATUS_COUNT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_ENTRY_STATUS_COUNT,
+				SIGNAL_HUB_STATUS_COUNT,
 				OFA_TYPE_HUB,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -279,7 +279,7 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_UINT, G_TYPE_ULONG );
 
 	/**
-	 * ofaHub::hub-entry-status-change:
+	 * ofaHub::hub-status-change:
 	 *
 	 * This signal is sent of the @hub to ask an antry to change its
 	 * status.
@@ -296,7 +296,7 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 * 							gpointer        user_data );
 	 */
 	st_signals[ ENTRY_STATUS_CHANGE ] = g_signal_new_class_handler(
-				SIGNAL_HUB_ENTRY_STATUS_CHANGE,
+				SIGNAL_HUB_STATUS_CHANGE,
 				OFA_TYPE_HUB,
 				G_SIGNAL_RUN_LAST,
 				NULL,

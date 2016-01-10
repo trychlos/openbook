@@ -86,8 +86,8 @@ typedef struct {
 #define SIGNAL_HUB_UPDATED              "hub-object-updated"
 #define SIGNAL_HUB_DELETED              "hub-object-deleted"
 #define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
-#define SIGNAL_HUB_ENTRY_STATUS_COUNT   "hub-entry-status-count"
-#define SIGNAL_HUB_ENTRY_STATUS_CHANGE  "hub-entry-status-change"
+#define SIGNAL_HUB_STATUS_COUNT         "hub-status-count"
+#define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
 GType                ofa_hub_get_type           ( void ) G_GNUC_CONST;

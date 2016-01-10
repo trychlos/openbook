@@ -370,7 +370,7 @@ ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
 			SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
 
 	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_ENTRY_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
+			SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
 }
 
 /*
@@ -699,7 +699,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 	count = g_list_length( dataset );
 
 	if( remediate ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_ENTRY_STATUS_COUNT, new_status, count );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, new_status, count );
 
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
@@ -721,7 +721,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 			}
 
 			g_signal_emit_by_name(
-					G_OBJECT( hub ), SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, prev_status, new_status );
+					G_OBJECT( hub ), SIGNAL_HUB_STATUS_CHANGE, entry, prev_status, new_status );
 		}
 	}
 	ofo_entry_free_dataset( dataset );
@@ -730,7 +730,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 }
 
 /*
- * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
 on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
@@ -2564,7 +2564,7 @@ ofo_entry_validate( ofoEntry *entry )
 
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
 	g_signal_emit_by_name( hub,
-			SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+			SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
 	return( TRUE );
 }
@@ -2604,12 +2604,12 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 
 	g_free( query );
 
-	g_signal_emit_by_name( hub, SIGNAL_HUB_ENTRY_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
+	g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		g_signal_emit_by_name( hub,
-				SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+				SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 	}
 
 	ofo_entry_free_dataset( dataset );
@@ -2639,7 +2639,7 @@ ofo_entry_delete( ofoEntry *entry )
 		g_signal_emit_by_name(
 				hub, SIGNAL_HUB_DELETED, entry );
 		g_signal_emit_by_name(
-				hub, SIGNAL_HUB_ENTRY_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
+				hub, SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
 		ok = TRUE;
 	}
 

@@ -222,14 +222,14 @@ v_init_dialog( myDialog *dialog )
 
 	handler = g_signal_connect(
 					priv->hub,
-					SIGNAL_HUB_ENTRY_STATUS_COUNT,
+					SIGNAL_HUB_STATUS_COUNT,
 					G_CALLBACK( on_hub_entry_status_count ),
 					dialog );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					priv->hub,
-					SIGNAL_HUB_ENTRY_STATUS_CHANGE,
+					SIGNAL_HUB_STATUS_CHANGE,
 					G_CALLBACK( on_hub_entry_status_change ),
 					dialog );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -647,7 +647,7 @@ do_end_close( ofaLedgerClose *self )
 }
 
 /*
- * SIGNAL_HUB_ENTRY_STATUS_COUNT signal handler
+ * SIGNAL_HUB_STATUS_COUNT signal handler
  */
 static void
 on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, ofaLedgerClose *self )
@@ -666,7 +666,7 @@ on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, 
 }
 
 /*
- * SIGNAL_HUB_ENTRY_STATUS_CHANGE signal handler
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
 on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self )
