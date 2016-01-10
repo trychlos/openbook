@@ -345,24 +345,6 @@ on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDat
 }
 
 /**
- * ofo_dossier_get_user:
- *
- * Returns: the currently connected user identifier.
- */
-const gchar *
-ofo_dossier_get_user( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const gchar * ) dossier->priv->userid );
-	}
-
-	g_return_val_if_reached( NULL );
-}
-
-/**
  * ofo_dossier_get_connect:
  * @dossier: this #ofoDossier object.
  *

@@ -2842,7 +2842,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GList *dataset, *it;
 	guint errors, line;
 	GDate date;
-	gchar *currency, *msg;
+	gchar *currency, *msg, *userid;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit, precision;
@@ -2864,6 +2864,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	exe = NULL;
 	fut = NULL;
 	date_format = ofa_file_format_get_date_format( settings );
+	connect = ofa_hub_get_connect( hub );
 	dossier = ofa_hub_get_dossier( hub );
 
 	for( itl=lines ; itl ; itl=itl->next ){
@@ -3086,12 +3087,13 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* exported reconciliation user (defaults to current user) */
 		itf = itf ? itf->next : NULL;
 		if( concil ){
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( !my_strlen( cstr )){
-				cstr = ofo_dossier_get_user( dossier );
+			userid = g_strdup( itf ? ( const gchar * ) itf->data : NULL );
+			if( !my_strlen( userid )){
+				userid = ofa_idbconnect_get_account( connect );
 			}
-			ofo_concil_set_user( concil, cstr );
-			g_debug( "concil user=%s", cstr );
+			ofo_concil_set_user( concil, userid );
+			g_debug( "concil user=%s", userid );
+			g_free( userid );
 		}
 
 		/* exported reconciliation timestamp (defaults to now) */
@@ -3181,9 +3183,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	}
 
 	if( !errors ){
-		connect = ofa_hub_get_connect( hub );
-		dossier = ofa_hub_get_dossier( hub );
-
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
 			if( entry_do_insert( entry, connect )){
