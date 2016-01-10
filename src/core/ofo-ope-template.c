@@ -178,7 +178,7 @@ struct _ofoOpeTemplatePrivate {
 
 static ofoBaseClass *ofo_ope_template_parent_class = NULL;
 
-static void            on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -365,13 +365,16 @@ ofo_ope_template_connect_to_hub_signaling_system( const ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), NULL );
+			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_ope_template_on_updated_object";
+	static const gchar *thisfn = "ofo_ope_template_on_hub_updated_object";
 	const gchar *mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",

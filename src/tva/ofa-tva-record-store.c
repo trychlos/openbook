@@ -282,6 +282,9 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store )
 	}
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
 on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *store )
 {

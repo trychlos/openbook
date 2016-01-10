@@ -130,7 +130,7 @@ static void       do_settlement( ofaAccountChartBin *bin );
 static void       do_reconciliation( ofaAccountChartBin *bin );
 static void       connect_to_hub_signaling_system( ofaAccountChartBin *bin );
 static void       on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
-static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
+static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
 static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_deleted_class_label( ofaAccountChartBin *bin, ofoClass *class );
@@ -1237,7 +1237,7 @@ connect_to_hub_signaling_system( ofaAccountChartBin *book )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), book );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), book );
@@ -1269,9 +1269,9 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *book )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *book )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_updated_object";
+	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, book=%p",
 			thisfn, ( void * ) hub,

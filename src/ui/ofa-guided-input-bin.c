@@ -260,7 +260,7 @@ static void              total_display_diff( ofaGuidedInputBin *bin, const gchar
 static gboolean          do_validate( ofaGuidedInputBin *bin );
 static void              display_ok_message( ofaGuidedInputBin *bin, gint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *bin );
-static void              on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
+static void              on_hub_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
 static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
 static void
@@ -428,7 +428,7 @@ setup_main_window( ofaGuidedInputBin *bin )
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->def_currency = ofo_dossier_get_default_currency( dossier );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), bin );
@@ -1782,9 +1782,9 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
+on_hub_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_on_updated_object";
+	static const gchar *thisfn = "ofa_guided_input_bin_on_hub_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,

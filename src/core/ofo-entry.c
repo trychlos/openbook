@@ -374,11 +374,13 @@ ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
 }
 
 /*
+ * SIGNAL_HUB_UPDATED signal handler
+ *
  * we try to report in recorded entries the modifications which may
  * happen on one of the externe identifiers - but only for the current
  * exercice
  *
- * nonetheless, this is never a good idea to modify an identifier which
+ * Nonetheless, this is never a good idea to modify an identifier which
  * is publicly known, and this always should be done with the greatest
  * attention
  */

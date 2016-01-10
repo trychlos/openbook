@@ -92,7 +92,7 @@ static void     child_free( sChild *child_str );
 static void     remove_row_by_number( ofaAccountStore *store, const gchar *number );
 static void     setup_signaling_connect( ofaAccountStore *store, ofaHub *hub );
 static void     on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
-static void     on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
+static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
 
@@ -617,7 +617,7 @@ static void
 setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
 {
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
@@ -638,10 +638,13 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
 	}
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_account_store_on_updated_object";
+	static const gchar *thisfn = "ofa_account_store_on_hub_updated_object";
 	GtkTreeIter iter;
 	const gchar *number;
 

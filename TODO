@@ -505,14 +505,11 @@
                 > remove ofa_dossier_misc (replaced by ofa_hub)
                 > review ofa_hub_import_csv api
      2016- 1- 5 obsolete ofa_main_window_open_dossier()
-                + obsolete core/ofo-marshal
-                + remove dossier signaling system
                 + remove exportable_from_dossier
                 + remove importable_to_dossier
                 + remove ofo_base_load_dataset()
                 + obsolete OFA_SIGNAL_DOSSIER_OPENED ?
                 + ofa_dossier_properties_run: w/o dossier
-                + 
                 + cleanup userid+connect from dossier private
                   (when all classes will be migrated to hub)
      2016- 1- 6 + remove DOSSIER properties from ofaListStore
@@ -525,7 +522,9 @@
 
  957 2016- 1- 7 obsolete ofaIDataset interface
 
- 962
+ 962 2016- 1-10 obsolete core/ofo-marshal
+
+ 963
 
 -----------------------------------------------------------------------
  DONE

@@ -115,7 +115,7 @@ static gboolean   delete_confirmed( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *
 static void       do_guided_input( ofaOpeTemplateBookBin *bin );
 static void       connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin );
 static void       on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
-static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
+static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin );
 static void       on_updated_ledger_label( ofaOpeTemplateBookBin *bin, ofoLedger *ledger );
 static void       on_updated_ope_template( ofaOpeTemplateBookBin *bin, ofoOpeTemplate *template );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin );
@@ -937,7 +937,7 @@ connect_to_hub_signaling_system( ofaOpeTemplateBookBin *bin )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), bin );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), bin );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), bin );
@@ -964,9 +964,9 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateBookBin *bin )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateBookBin *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_book_bin_on_updated_object";
+	static const gchar *thisfn = "ofa_ope_template_book_bin_on_hub_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, bin=%p",
 			thisfn, ( void * ) hub,

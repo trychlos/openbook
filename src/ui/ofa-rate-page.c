@@ -94,7 +94,7 @@ static void       on_row_selected( GtkTreeSelection *selection, ofaRatePage *sel
 static void       on_new_clicked( GtkButton *button, ofaRatePage *page );
 static void       on_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
 static void       on_update_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
+static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
 static void       on_delete_clicked( GtkButton *button, ofaRatePage *page );
 static gboolean   delete_confirmed( ofaRatePage *self, ofoRate *rate );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
@@ -206,7 +206,7 @@ connect_to_hub_signaling_system( ofaRatePage *self )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
@@ -653,9 +653,9 @@ on_update_clicked( GtkButton *button, ofaRatePage *page )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self )
 {
-	static const gchar *thisfn = "ofa_rate_page_on_updated_object";
+	static const gchar *thisfn = "ofa_rate_page_on_hub_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 

@@ -90,7 +90,7 @@ static void       try_to_delete_current_row( ofaClassPage *self );
 static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
 static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
-static void       on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
+static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self );
 static gboolean   find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
@@ -185,7 +185,7 @@ v_setup_view( ofaPage *page )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), page );
@@ -579,12 +579,14 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
 }
 
 /*
- * modifying the class number is forbidden
+ * SIGNAL_HUB_UPDATED signal handler
+ *
+ * Modifying the class number is forbidden
  */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_updated_object";
+	static const gchar *thisfn = "ofa_class_page_on_hub_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint prev_num, class_num;

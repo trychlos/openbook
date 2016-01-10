@@ -345,6 +345,9 @@ ofo_tva_form_connect_handlers( const ofaHub *hub )
 				SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 }
 
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
 static void
 on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {

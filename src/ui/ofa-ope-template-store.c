@@ -61,7 +61,7 @@ static gboolean find_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mnem
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *mnemo );
 static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub );
 static void     on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
-static void     on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store );
+static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *store );
 
@@ -332,7 +332,7 @@ static void
 connect_to_hub_signaling_system( ofaOpeTemplateStore *store, ofaHub *hub )
 {
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
@@ -360,9 +360,9 @@ on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *store )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *store )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_updated_object";
+	static const gchar *thisfn = "ofa_ope_template_store_on_hub_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo;
 
