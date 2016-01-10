@@ -89,7 +89,7 @@ static void       on_delete_clicked( GtkButton *button, ofaClassPage *page );
 static void       try_to_delete_current_row( ofaClassPage *self );
 static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
 static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
+static void       on_hub_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self );
@@ -182,7 +182,7 @@ v_setup_view( ofaPage *page )
 
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
@@ -562,10 +562,13 @@ do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIte
 	}
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_new_object";
+	static const gchar *thisfn = "ofa_class_page_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,

@@ -61,7 +61,7 @@ static void     load_dataset( ofaLedgerStore *store, ofaHub *hub );
 static void     insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger );
 static void     set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter );
 static void     setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub );
-static void     on_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
+static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
 static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store );
 static gboolean find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *iter );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
@@ -260,16 +260,19 @@ set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIte
 static void
 setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
 {
-	static const gchar *thisfn = "ofa_ledger_store_on_new_object";
+	static const gchar *thisfn = "ofa_ledger_store_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,

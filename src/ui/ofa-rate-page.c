@@ -92,7 +92,7 @@ static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, o
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRatePage *self );
 static void       on_new_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
+static void       on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
 static void       on_update_clicked( GtkButton *button, ofaRatePage *page );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
 static void       on_delete_clicked( GtkButton *button, ofaRatePage *page );
@@ -203,7 +203,7 @@ connect_to_hub_signaling_system( ofaRatePage *self )
 
 	priv = self->priv;
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
@@ -606,9 +606,9 @@ on_new_clicked( GtkButton *button, ofaRatePage *page )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
 {
-	static const gchar *thisfn = "ofa_rate_page_on_new_object";
+	static const gchar *thisfn = "ofa_rate_page_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,

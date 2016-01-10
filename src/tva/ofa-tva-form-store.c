@@ -243,6 +243,9 @@ set_row( ofaTVAFormStore *store, ofaHub *hub, const ofoTVAForm *form, GtkTreeIte
 	g_free( stamp );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
 on_hub_new_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *store )
 {

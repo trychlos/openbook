@@ -163,7 +163,7 @@ struct _ofoLedgerPrivate {
 
 static ofoBaseClass *ofo_ledger_parent_class = NULL;
 
-static void       on_new_object( ofaHub *hub, ofoBase *object, void *empty );
+static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void       on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
@@ -349,17 +349,20 @@ ofo_ledger_connect_to_hub_signaling_system( const ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), NULL );
+			G_OBJECT( hub ), SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
 	g_signal_connect(
 			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 	g_signal_connect(
 			G_OBJECT( hub ), SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, void *empty )
+on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_on_new_object";
+	static const gchar *thisfn = "ofo_ledger_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
 			thisfn, ( void * ) hub,

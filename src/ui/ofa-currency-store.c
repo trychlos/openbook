@@ -58,7 +58,7 @@ static void     load_dataset( ofaCurrencyStore *store, ofaHub *hub );
 static void     insert_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency );
 static void     set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkTreeIter *iter );
 static void     setup_signaling_connect( ofaCurrencyStore *store, ofaHub *hub );
-static void     on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store );
+static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store );
 static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *store );
 static gboolean find_currency_by_code( ofaCurrencyStore *store, const gchar *code, GtkTreeIter *iter );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store );
@@ -250,16 +250,19 @@ set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkT
 static void
 setup_signaling_connect( ofaCurrencyStore *store, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store )
 {
-	static const gchar *thisfn = "ofa_currency_store_on_new_object";
+	static const gchar *thisfn = "ofa_currency_store_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,

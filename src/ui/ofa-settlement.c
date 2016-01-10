@@ -1504,6 +1504,9 @@ set_settings( ofaSettlement *self )
 	g_free( str );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
 on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlement *self )
 {

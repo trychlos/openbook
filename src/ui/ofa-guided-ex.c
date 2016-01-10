@@ -110,7 +110,7 @@ static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnem
 static void       on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
 static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
-static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
+static void       on_hub_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_hub_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
@@ -203,7 +203,7 @@ v_setup_view( ofaPage *page )
 	priv->pane = pane;
 	pane_restore_position( pane );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), page );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
@@ -919,12 +919,12 @@ on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 }
 
 /*
- * SIGNAL_DOSSIER_NEW_OBJECT signal handler
+ * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+on_hub_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_new_object";
+	static const gchar *thisfn = "ofa_guided_ex_on_hub_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,

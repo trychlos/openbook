@@ -311,6 +311,9 @@ connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
 on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {

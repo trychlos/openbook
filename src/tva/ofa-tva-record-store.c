@@ -266,6 +266,9 @@ set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkT
 	g_free( send );
 }
 
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
 static void
 on_hub_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store )
 {

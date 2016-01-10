@@ -129,7 +129,7 @@ static void       do_view_entries( ofaAccountChartBin *bin );
 static void       do_settlement( ofaAccountChartBin *bin );
 static void       do_reconciliation( ofaAccountChartBin *bin );
 static void       connect_to_hub_signaling_system( ofaAccountChartBin *bin );
-static void       on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
+static void       on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountChartBin *bin );
 static void       on_updated_class_label( ofaAccountChartBin *bin, ofoClass *class );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *bin );
@@ -1234,7 +1234,7 @@ connect_to_hub_signaling_system( ofaAccountChartBin *book )
 
 	priv = book->priv;
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_new_object ), book );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), book );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), book );
@@ -1251,9 +1251,9 @@ connect_to_hub_signaling_system( ofaAccountChartBin *book )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountChartBin *book )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_new_object";
+	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
 			thisfn, ( void * ) hub,

@@ -77,8 +77,6 @@ typedef struct {
 }
 	ofoDossierClass;
 
-#define SIGNAL_DOSSIER_NEW_OBJECT           "ofa-signal-dossier-new-object"
-
 /* default length of exercice in months
  */
 #define DOSSIER_EXERCICE_DEFAULT_LENGTH 12
