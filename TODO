@@ -495,7 +495,10 @@
 
  963 2016- 1-10 obsolete OFA_SIGNAL_DOSSIER_OPENED ?
 
- 964
+ 964 2016- 1-10 menu-defined and main-window-created are same signal:
+                remove one of the two
+
+ 965
 
 -----------------------------------------------------------------------
  DONE

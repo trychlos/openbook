@@ -50,10 +50,11 @@
  * Tokens may be:
  *
  * 1/ a function, arguments being passed between parenthesis:
- *    - '%ROW()': returns the amount of the row whose code name is
+ *    - '%COD()': returns the amount of the row whose code name is
  *                identified by the argument
- *    - '%ACCOUNT()': returns the balance of the specified account at
- *                the date specified by declaration end_date.
+ *    - '%ACC()': returns the rough+validated balance of the
+ *                specified account at the effect date specified by
+ *                declaration end_date.
  *    The opening parenthesis must immediately follow the function name.
  */
 

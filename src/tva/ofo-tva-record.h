@@ -37,6 +37,7 @@
  * deleted since that.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 

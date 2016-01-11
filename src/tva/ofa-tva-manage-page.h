@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_tva_manage_page
  * @short_description: #ofaTVAManagePage class definition.
- * @include: tva/ofa-tva-define-page.h
+ * @include: tva/ofa-tva-manage-page.h
  *
  * Defines a new TVA form.
  * This is an ofaPage-derived page which shows the list of defined

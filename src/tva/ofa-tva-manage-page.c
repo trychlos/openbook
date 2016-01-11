@@ -41,8 +41,10 @@
 
 #include "core/ofa-main-window.h"
 
+#include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofa-tva-form-store.h"
+#include "tva/ofa-tva-main.h"
 #include "tva/ofa-tva-manage-page.h"
 #include "tva/ofa-tva-record-new.h"
 #include "tva/ofa-tva-record-properties.h"
@@ -511,11 +513,20 @@ do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 {
 	ofaTVAManagePagePrivate *priv;
 	ofoTVARecord *record;
+	guint theme;
+	const ofaMainWindow *main_window;
+	ofaPage *declare_page;
 
 	priv = page->priv;
 	record = ofo_tva_record_new_from_form( form );
-	if( ofa_tva_record_new_run( priv->main_window, record )){
-		ofa_tva_record_properties_run( priv->main_window, record );
+	if( ofa_tva_record_new_run( priv->main_window, record ) &&
+		ofa_tva_record_properties_run( priv->main_window, record )){
+
+		theme = ofa_tva_main_get_theme( "tvadeclare" );
+		main_window = ofa_page_get_main_window( OFA_PAGE( page ));
+		declare_page = ofa_main_window_activate_theme( main_window, theme );
+		ofa_tva_declare_page_set_selected( OFA_TVA_DECLARE_PAGE( declare_page ), record );
+
 	} else {
 		g_object_unref( record );
 	}

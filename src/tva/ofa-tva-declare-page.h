@@ -39,6 +39,8 @@
 
 #include "api/ofa-page-def.h"
 
+#include "tva/ofo-tva-record.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_TVA_DECLARE_PAGE                ( ofa_tva_declare_page_get_type())
@@ -65,7 +67,10 @@ typedef struct {
 }
 	ofaTVADeclarePageClass;
 
-GType ofa_tva_declare_page_get_type( void ) G_GNUC_CONST;
+GType ofa_tva_declare_page_get_type    ( void ) G_GNUC_CONST;
+
+void  ofa_tva_declare_page_set_selected( ofaTVADeclarePage *page,
+												ofoTVARecord *record );
 
 G_END_DECLS
 
