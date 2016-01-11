@@ -73,18 +73,20 @@ static const GActionEntry st_win_entries[] = {
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "tvadeclare", N_( "TVA _declaration..." ) },
+		{ "tvadeclare", N_( "VAT _declarations..." ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "tvamanage", N_( "TVA _form management" ) },
+		{ "tvamanage", N_( "VAT _forms management..." ) },
 		{ 0 }
 };
 
+/* the themes which also define the tab titles
+ */
 static sThemeDef st_theme_defs[] = {
-		{ "tvadeclare",  N_( "TVA _declaration" ),  ofa_tva_declare_page_get_type, FALSE, 0 },
-		{ "tvamanage",  N_( "TVA _form management" ),  ofa_tva_manage_page_get_type, FALSE, 0 },
+		{ "tvadeclare",  N_( "VAT _declarations" ),  ofa_tva_declare_page_get_type, FALSE, 0 },
+		{ "tvamanage",  N_( "VAT _forms management" ),  ofa_tva_manage_page_get_type, FALSE, 0 },
 		{ 0 }
 };
 
