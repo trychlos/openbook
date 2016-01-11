@@ -85,7 +85,7 @@ static void        try_to_delete_current_row( ofaTVAManagePage *page );
 static void        do_delete( ofaTVAManagePage *page, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean    delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form );
 static void        on_declare_clicked( GtkButton *button, ofaTVAManagePage *page );
-static void        do_declare( ofaTVAManagePage *page, ofoTVAForm *form );
+static gboolean    do_declare( ofaTVAManagePage *page, ofoTVAForm *form );
 
 G_DEFINE_TYPE( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE )
 
@@ -503,12 +503,16 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *page )
 
 	form = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
-	do_declare( page, form );
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	if( !do_declare( page, form )){
+		gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	}
 }
 
-static void
+/*
+ * Returns: %TRUE if we have actually created a new declaration
+ */
+static gboolean
 do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 {
 	ofaTVAManagePagePrivate *priv;
@@ -516,8 +520,11 @@ do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 	guint theme;
 	const ofaMainWindow *main_window;
 	ofaPage *declare_page;
+	gboolean ok;
 
 	priv = page->priv;
+	ok = FALSE;
+
 	record = ofo_tva_record_new_from_form( form );
 	if( ofa_tva_record_new_run( priv->main_window, record ) &&
 		ofa_tva_record_properties_run( priv->main_window, record )){
@@ -526,8 +533,11 @@ do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 		main_window = ofa_page_get_main_window( OFA_PAGE( page ));
 		declare_page = ofa_main_window_activate_theme( main_window, theme );
 		ofa_tva_declare_page_set_selected( OFA_TVA_DECLARE_PAGE( declare_page ), record );
+		ok = TRUE;
 
 	} else {
 		g_object_unref( record );
 	}
+
+	return( ok );
 }
