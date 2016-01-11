@@ -53,8 +53,9 @@
  *    - '%COD()': returns the amount of the row whose code name is
  *                identified by the argument
  *    - '%ACC()': returns the rough+validated balance of the
- *                specified account at the effect date specified by
- *                declaration end_date.
+ *                entries imputed on the specified account with an
+ *                effect date between the declaration begin and end
+ *                dates (included).
  *    The opening parenthesis must immediately follow the function name.
  */
 
