@@ -51,28 +51,38 @@
  */
 struct _ofaTVARecordPropertiesPrivate {
 
+	/* initialization
+	 */
+	const ofaMainWindow *main_window;
+	ofoTVARecord        *tva_record;
+
 	/* internals
 	 */
-	ofaHub        *hub;
-	gboolean       is_current;
-	ofoTVARecord  *tva_record;
-	gboolean       updated;
+	ofaHub              *hub;
+	gboolean             is_current;
+	gboolean             updated;
 
 	/* UI
 	 */
-	GtkWidget     *begin_date;
-	GtkWidget     *end_date;
-	GtkWidget     *boolean_grid;
-	GtkWidget     *detail_grid;
-	GtkWidget     *textview;
-	GtkWidget     *validate_btn;
-	GtkWidget     *ok_btn;
-	GtkWidget     *msg_label;
+	GtkWidget           *label_entry;
+	GtkWidget           *begin_editable;
+	GtkWidget           *end_editable;
+	GtkWidget           *boolean_grid;
+	GtkWidget           *detail_grid;
+	GtkWidget           *textview;
+	GtkWidget           *compute_btn;
+	GtkWidget           *validate_btn;
+	GtkWidget           *ok_btn;
+	GtkWidget           *msg_label;
 
 	/* runtime data
 	 */
-	gboolean       has_correspondence;
-	gboolean       is_validated;
+	GDate                init_end_date;
+	gchar               *mnemo;
+	GDate                begin_date;
+	GDate                end_date;
+	gboolean             has_correspondence;
+	gboolean             is_validated;
 };
 
 #define BOOL_COL_LABEL                  0
@@ -89,21 +99,26 @@ static void     init_properties( ofaTVARecordProperties *self, GtkContainer *con
 static void     init_booleans( ofaTVARecordProperties *self, GtkContainer *container );
 static void     init_taxes( ofaTVARecordProperties *self, GtkContainer *container );
 static void     init_correspondence( ofaTVARecordProperties *self, GtkContainer *container );
-static void     on_begin_changed( GtkEntry *entry, ofaTVARecordProperties *self );
-static void     on_end_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void     on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void     on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void     on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
 static void     on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void     on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void     check_for_enable_dlg( ofaTVARecordProperties *self );
+static void     set_dialog_title( ofaTVARecordProperties *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_update( ofaTVARecordProperties *self );
+static void     on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static void     on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static void     set_message( ofaTVARecordProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE( ofaTVARecordProperties, ofa_tva_record_properties, MY_TYPE_DIALOG )
 
 static void
 tva_record_properties_finalize( GObject *instance )
 {
+	ofaTVARecordPropertiesPrivate *priv;
+
 	static const gchar *thisfn = "ofa_tva_record_properties_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
@@ -112,6 +127,9 @@ tva_record_properties_finalize( GObject *instance )
 	g_return_if_fail( OFA_IS_TVA_RECORD_PROPERTIES( instance ));
 
 	/* free data members here */
+	priv = OFA_TVA_RECORD_PROPERTIES( instance )->priv;
+
+	g_free( priv->mnemo );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_tva_record_properties_parent_class )->finalize( instance );
@@ -188,6 +206,7 @@ ofa_tva_record_properties_run( const ofaMainWindow *main_window, ofoTVARecord *r
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
+	self->priv->main_window = main_window;
 	self->priv->tva_record = record;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -204,39 +223,28 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaTVARecordProperties *self;
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofoDossier *dossier;
-	gchar *title, *send;
-	const gchar *mnemo;
 	GtkContainer *container;
 
 	self = OFA_TVA_RECORD_PROPERTIES( dialog );
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( priv->main_window );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-	send = my_date_to_str( ofo_tva_record_get_end( priv->tva_record ), MY_DATE_SQL );
-	title = g_strdup_printf( _( "Updating « %s - %s » TVA declaration" ), mnemo, send );
-	gtk_window_set_title( GTK_WINDOW( container ), title );
-	g_free( send );
+	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( container, "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	priv->compute_btn = my_utils_container_get_child_by_name( container, "compute-btn" );
+	g_return_if_fail( priv->compute_btn && GTK_IS_BUTTON( priv->compute_btn ));
+	g_signal_connect( priv->compute_btn, "clicked", G_CALLBACK( on_compute_clicked ), self );
 
 	priv->validate_btn = my_utils_container_get_child_by_name( container, "validate-btn" );
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
@@ -252,6 +260,7 @@ v_init_dialog( myDialog *dialog )
 		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
 	}
 
+	set_dialog_title( self );
 	check_for_enable_dlg( self );
 }
 
@@ -261,35 +270,37 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *entry, *label, *button;
 	const gchar *cstr;
-	const GDate *dend;
 
 	priv = self->priv;
 
 	priv->is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
 
+	/* mnemonic: invariant */
 	entry = my_utils_container_get_child_by_name( container, "p1-mnemo-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	cstr = ofo_tva_record_get_mnemo( priv->tva_record );
-	g_return_if_fail( my_strlen( cstr ));
-	gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	priv->mnemo = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
+	g_return_if_fail( my_strlen( priv->mnemo ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), priv->mnemo );
 	my_utils_widget_set_editable( entry, FALSE );
 
 	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	/* label */
+	priv->label_entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
+	g_return_if_fail( priv->label_entry && GTK_IS_ENTRY( priv->label_entry ));
 	cstr = ofo_tva_record_get_label( priv->tva_record );
 	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), cstr );
 	}
-	my_utils_widget_set_editable( entry, FALSE );
+	my_utils_widget_set_editable( priv->label_entry, priv->is_current );
 
 	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
+	/* has correspondence: invariant */
 	button = my_utils_container_get_child_by_name( container, "p1-has-corresp" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	gtk_toggle_button_set_active(
@@ -297,45 +308,55 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 			ofo_tva_record_get_has_correspondence( priv->tva_record ));
 	my_utils_widget_set_editable( button, FALSE );
 
+	/* is validated: invariant */
 	button = my_utils_container_get_child_by_name( container, "p1-validated" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), priv->is_validated );
 	my_utils_widget_set_editable( button, FALSE );
 
+	/* begin date */
 	entry = my_utils_container_get_child_by_name( container, "p1-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), ofo_tva_record_get_begin( priv->tva_record ));
-	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
-	priv->begin_date = entry;
-
-	label = my_utils_container_get_child_by_name( container, "p1-begin-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	priv->begin_editable = entry;
 
 	label = my_utils_container_get_child_by_name( container, "p1-begin-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 
+	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
+	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
+
+	label = my_utils_container_get_child_by_name( container, "p1-begin-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	/* do not let the user edit the ending date of the declaration
+	 * because this is a key of the record
+	 * if the ending date has to be modified, then the user should
+	 * create a new declaration
+	 */
 	entry = my_utils_container_get_child_by_name( container, "p1-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	dend = ofo_tva_record_get_end( priv->tva_record );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), dend );
-	my_utils_widget_set_editable( entry, priv->is_current && !my_date_is_valid( dend ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
-	priv->end_date = entry;
-
-	label = my_utils_container_get_child_by_name( container, "p1-end-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	priv->end_editable = entry;
 
 	label = my_utils_container_get_child_by_name( container, "p1-end-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+
+	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
+	my_utils_widget_set_editable( entry, FALSE );
+
+	label = my_utils_container_get_child_by_name( container, "p1-end-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 }
 
 static void
@@ -468,28 +489,27 @@ init_correspondence( ofaTVARecordProperties *self, GtkContainer *container )
 }
 
 static void
-on_begin_changed( GtkEntry *entry, ofaTVARecordProperties *self )
+on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	const GDate *date;
 
 	priv = self->priv;
-	date = my_editable_date_get_date( GTK_EDITABLE( priv->begin_date ), NULL );
-	ofo_tva_record_set_begin( priv->tva_record, date );
+
+	my_date_set_from_date( &priv->begin_date, my_editable_date_get_date( entry, NULL ));
 
 	check_for_enable_dlg( self );
 }
 
 static void
-on_end_changed( GtkEntry *entry, ofaTVARecordProperties *self )
+on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	const GDate *date;
 
 	priv = self->priv;
-	date = my_editable_date_get_date( GTK_EDITABLE( priv->end_date ), NULL );
-	ofo_tva_record_set_end( priv->tva_record, date );
 
+	my_date_set_from_date( &priv->end_date, my_editable_date_get_date( entry, NULL ));
+
+	set_dialog_title( self );
 	check_for_enable_dlg( self );
 }
 
@@ -518,18 +538,69 @@ static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gboolean is_validated;
+	gboolean is_valid, is_validated, end_date_has_changed, exists, is_validable;
+	const gchar *mnemo;
+	const GDate *dend;
+	gchar *msgerr;
 
 	priv = self->priv;
 
+	is_valid = ofo_tva_record_is_valid( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+
+	if( is_valid ){
+		/* the ending date is no more modifiable */
+		if( 0 ){
+			dend = ofo_tva_record_get_end( priv->tva_record );
+			end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
+			if( end_date_has_changed ){
+				mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
+				exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
+				if( exists ){
+					set_message( self, _( "Same declaration is already defined" ));
+					is_valid = FALSE;
+				}
+			}
+		}
+	}
+
+	set_message( self, msgerr );
+	g_free( msgerr );
+
 	gtk_widget_set_sensitive(
 			priv->ok_btn,
-			TRUE );
+			is_valid );
 
 	is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
+	is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date );
+
+	gtk_widget_set_sensitive(
+			priv->compute_btn,
+			priv->is_current && is_valid && is_validable );
+
 	gtk_widget_set_sensitive(
 			priv->validate_btn,
-			!is_validated && ofo_tva_record_is_validable( priv->tva_record ));
+			priv->is_current && is_valid && !is_validated && is_validable );
+}
+
+/*
+ * Update dialog title each time the end date is changed
+ * (the mnemonic is an invariant)
+ */
+static void
+set_dialog_title( ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	GtkWindow *toplevel;
+	gchar *send, *title;
+
+	priv = self->priv;
+
+	send = my_date_to_str( &priv->end_date, MY_DATE_SQL );
+	title = g_strdup_printf( _( "Updating « %s - %s » TVA declaration" ), priv->mnemo, send );
+	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+	gtk_window_set_title( toplevel, title );
+	g_free( title );
+	g_free( send );
 }
 
 /*
@@ -543,9 +614,11 @@ v_quit_on_ok( myDialog *dialog )
 }
 
 /*
- * either creating a new tva_form (is_new is set)
- * or updating an existing one (mnemo is never modified here)
- * Please note that a record is uniquely identified by the mnemo + the date
+ * Recording the updates done to the declaration
+ * The record is uniquely identified by the mnemo + the end date
+ * Though the mnemo is an invariant, the end date may have been changed.
+ * If this is the case, then the original record must be deleted and the
+ * new one be re-inserted.
  */
 static gboolean
 do_update( ofaTVARecordProperties *self )
@@ -562,6 +635,15 @@ do_update( ofaTVARecordProperties *self )
 	if( priv->has_correspondence ){
 		my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->textview ), tva_record );
 	}
+
+	ofo_tva_record_set_label( priv->tva_record,
+			gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
+
+	ofo_tva_record_set_begin( priv->tva_record,
+			my_editable_date_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
+
+	ofo_tva_record_set_end( priv->tva_record,
+			my_editable_date_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	ofo_tva_record_boolean_free_all( priv->tva_record );
@@ -595,6 +677,14 @@ do_update( ofaTVARecordProperties *self )
 }
 
 /*
+ * Compute the declaration on demand
+ */
+static void
+on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
+{
+}
+
+/*
  * Validating is actually same than recording;
  * just the 'validated' flag is set
  */
@@ -602,12 +692,42 @@ static void
 on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
+	GtkWidget *dialog;
 
 	priv = self->priv;
 
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 	if( do_update( self )){
+		/* display an informational message */
+		dialog = gtk_message_dialog_new(
+						GTK_WINDOW( priv->main_window ),
+						GTK_DIALOG_MODAL,
+						GTK_MESSAGE_INFO,
+						GTK_BUTTONS_OK,
+						_( "The VAT declaration has been successfully validated." ));
+		gtk_dialog_run( GTK_DIALOG( dialog ));
+		gtk_widget_destroy( dialog );
+		/* close the Properties dialog box */
 		gtk_dialog_response(
-				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))), GTK_RESPONSE_OK );
+				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))), GTK_RESPONSE_CANCEL );
 	}
+}
+
+static void
+set_message( ofaTVARecordProperties *dialog, const gchar *msg )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+
+	priv = dialog->priv;
+
+	if( !priv->msg_label ){
+		priv->msg_label =
+				my_utils_container_get_child_by_name(
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
+						"px-msgerr" );
+		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+		my_utils_widget_set_style( priv->msg_label, "labelerror");
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }
