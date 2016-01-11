@@ -32,9 +32,14 @@
  *
  * This file defines the #ofoTVARecord class behavior.
  *
- * An #ofoTVARecord describes a TVA declaration, which happends to have
- * been based at its creation on a TVA form. This TVA form may have been
- * deleted since that.
+ * An #ofoTVARecord describes a TVA declaration.
+ * A TVA declaration is created from a form, and is assigned a begin
+ * and an end date for this declaration.
+ * The declaration end date is required in order the declaration be
+ * recordable.
+ * Both begin and end dates are needed for the declaration be able to
+ * be computed and validated.
+ * Once validated, the declaration is no more modifiable.
  */
 
 #include "api/ofa-box.h"
@@ -90,11 +95,13 @@ const gchar    *ofo_tva_record_get_upd_user          ( const ofoTVARecord *recor
 const GTimeVal *ofo_tva_record_get_upd_stamp         ( const ofoTVARecord *record );
 
 gboolean        ofo_tva_record_is_deletable          ( const ofoTVARecord *record );
-gboolean        ofo_tva_record_is_validable          ( const ofoTVARecord *record );
 
-gint            ofo_tva_record_compare_by_key        ( const ofoTVARecord *record,
-															const gchar *mnemo,
-															const GDate *end );
+gboolean        ofo_tva_record_is_valid              ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
+
+gboolean        ofo_tva_record_is_validable_by_record( const ofoTVARecord *record );
+gboolean        ofo_tva_record_is_validable_by_data  ( const gchar *mnemo, const GDate *begin, const GDate *end );
+
+gint            ofo_tva_record_compare_by_key        ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
 
 void            ofo_tva_record_set_mnemo             ( ofoTVARecord *record, const gchar *mnemo );
 void            ofo_tva_record_set_label             ( ofoTVARecord *record, const gchar *label );

@@ -635,7 +635,53 @@ ofo_tva_record_is_deletable( const ofoTVARecord *record )
 }
 
 /**
- * ofo_tva_record_is_validable:
+ * ofo_tva_record_is_valid:
+ * @mnemo: an identifier mnemonic.
+ * @begin: the begin date of the declaration.
+ * @end: the end date of the declaration.
+ * @msgerr: [out]: error message placeholder.
+ *
+ * Returns: %TRUE if the provided datas make a TVA record valid (which
+ * may be recorded).
+ *
+ * We accept here that the begin date be not set.
+ * However, if the begin date is set, then it must be less or equal to
+ * the end date.
+ */
+gboolean
+ofo_tva_record_is_valid( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
+{
+	gint cmp;
+
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( mnemo)){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty mnemonic identifier" ));
+		}
+		return( FALSE );
+	}
+	if( !my_date_is_valid( end )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Invalid ending date" ));
+		}
+		return( FALSE );
+	}
+	if( !my_date_is_valid( begin )){
+		return( TRUE );
+	}
+	cmp = my_date_compare( begin, end );
+	if( cmp > 0 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Beginning date is greater than ending date" ));
+		}
+	}
+	return( cmp <= 0 );
+}
+
+/**
+ * ofo_tva_record_is_validable_by_record:
  * @record:
  *
  * Returns: %TRUE if this TVA record may be validated.
@@ -644,9 +690,10 @@ ofo_tva_record_is_deletable( const ofoTVARecord *record )
  * to record the data).
  */
 gboolean
-ofo_tva_record_is_validable( const ofoTVARecord *record )
+ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
 {
 	const GDate *cbegin, *cend;
+	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
 
@@ -654,10 +701,37 @@ ofo_tva_record_is_validable( const ofoTVARecord *record )
 		g_return_val_if_reached( FALSE );
 	}
 
+	cstr = ofo_tva_record_get_mnemo( record );
 	cbegin = ofo_tva_record_get_begin( record );
 	cend = ofo_tva_record_get_end( record );
 
-	return( my_date_is_valid( cbegin ) && my_date_is_valid( cend ));
+	if( !ofo_tva_record_is_valid( cstr, cbegin, cend, NULL )){
+		return( FALSE );
+	}
+
+	return( my_date_is_valid( cbegin ) &&
+			my_date_compare( cbegin, cend ) <= 0 );
+}
+
+/**
+ * ofo_tva_record_is_validable_by_data:
+ * @mnemo: an identifier mnemonic.
+ * @begin: the begin date of the declaration.
+ * @end: the end date of the declaration.
+ *
+ * Returns: %TRUE if the provided datas make the TVA record validable.
+ *
+ * This is the case if both date are set (while only end date is needed
+ * to record the data).
+ */
+gboolean
+ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, const GDate *end )
+{
+	if( !ofo_tva_record_is_valid( mnemo, begin, end, NULL )){
+		return( FALSE );
+	}
+	return( my_date_is_valid( begin ) &&
+			my_date_compare( begin, end ) <= 0 );
 }
 
 /**
