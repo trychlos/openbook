@@ -50,6 +50,7 @@
    - ofo_dossier_get_min_deffect(): changed API (todo #960).
    - ofo_ledger_get_last_entry(): changed API (todo #959).
    - ofaICollectionable: new interface for classes which have in-memory datasets.
+   - ofa_tva_declare_page_set_selected(): new method.
 
 -----------------------------------------------------------------------
  Version 0.44

@@ -58,10 +58,6 @@ struct _ofaTVADeclarePagePrivate {
 	GtkWidget    *record_treeview;
 	GtkWidget    *update_btn;
 	GtkWidget    *delete_btn;
-
-	/* runtime
-	 */
-	ofoTVARecord *record;
 };
 
 static GtkWidget    *v_setup_view( ofaPage *page );
@@ -77,6 +73,7 @@ static void          on_delete_clicked( GtkButton *button, ofaTVADeclarePage *pa
 static void          try_to_delete_current_row( ofaTVADeclarePage *page );
 static void          do_delete( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean      delete_confirmed( ofaTVADeclarePage *self, ofoTVARecord *record );
+static gboolean      find_row_by_ptr( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE )
 
@@ -438,4 +435,68 @@ delete_confirmed( ofaTVADeclarePage *self, ofoTVARecord *record )
 	g_free( send );
 
 	return( delete_ok );
+}
+
+/**
+ * ofa_tva_declare_page_set_selected:
+ * @page: this #ofaTVADeclarePage instance.
+ * @record: the #ofoTVARecord to be selected.
+ *
+ * Select the specified @record.
+ */
+void
+ofa_tva_declare_page_set_selected( ofaTVADeclarePage *page, ofoTVARecord *record )
+{
+	ofaTVADeclarePagePrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+
+	g_return_if_fail( page && OFA_IS_TVA_DECLARE_PAGE( page ));
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+
+	if( OFA_PAGE( page )->prot->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	if( find_row_by_ptr( page, record, &tmodel, &iter )){
+		priv = page->priv;
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->record_treeview ));
+		path = gtk_tree_model_get_path( tmodel, &iter );
+		gtk_tree_selection_select_path( select, path );
+		gtk_tree_path_free( path );
+	}
+
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+}
+
+static gboolean
+find_row_by_ptr( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	ofaTVADeclarePagePrivate *priv;
+	ofoTVARecord *row_object;
+	const gchar *mnemo;
+	const GDate *dend;
+	gint cmp;
+
+	priv = page->priv;
+	*tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->record_treeview ));
+	mnemo = ofo_tva_record_get_mnemo( record );
+	dend = ofo_tva_record_get_end( record );
+	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
+		while( TRUE ){
+			gtk_tree_model_get( *tmodel, iter, TVA_RECORD_COL_OBJECT, &row_object, -1 );
+			cmp = ofo_tva_record_compare_by_key( row_object, mnemo, dend );
+			g_object_unref( row_object );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( *tmodel, iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
