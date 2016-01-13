@@ -789,7 +789,7 @@ my_editable_date_is_empty( GtkEditable *editable )
 	gchar *text;
 	gboolean empty;
 
-	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), NULL );
+	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), FALSE );
 
 	text = gtk_editable_get_chars( editable, 0, -1 );
 	empty = my_strlen( text ) == 0;
