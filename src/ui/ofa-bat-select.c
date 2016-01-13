@@ -158,7 +158,7 @@ ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 	ofaBatSelectPrivate *priv;
 	ofxCounter bat_id;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
 
 	g_debug( "%s: main_window=%p, id=%ld", thisfn, ( void * ) main_window, id );
 
