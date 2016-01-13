@@ -502,7 +502,7 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 			thisfn, ( void * ) concil, ( void * ) hub );
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	if( OFO_BASE( concil )->prot->dispose_has_run ){
 		g_return_val_if_reached( FALSE );
