@@ -456,7 +456,7 @@ bourso_tabulated_text_v1_import( ofaBoursoImporter *bourso_importer, const gchar
 	/* line 1: begin, end */
 	str = g_slist_nth( priv->lines, 0 )->data;
 	found = g_strstr_len( str, -1, "riode : " );
-	g_return_val_if_fail( found, -1 );
+	g_return_val_if_fail( found, NULL );
 	if( !scan_date_dmyy( &sbat->begin, found+8 )){
 		return( FALSE );
 	}
