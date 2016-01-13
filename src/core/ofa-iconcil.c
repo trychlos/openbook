@@ -293,7 +293,7 @@ iconcil_get_type( const ofaIConcil *instance )
 {
 	const gchar *type;
 
-	g_return_val_if_fail( OFA_ICONCIL_GET_INTERFACE( instance )->get_object_type, -1 );
+	g_return_val_if_fail( OFA_ICONCIL_GET_INTERFACE( instance )->get_object_type, NULL );
 
 	type = OFA_ICONCIL_GET_INTERFACE( instance )->get_object_type( instance );
 
