@@ -430,7 +430,7 @@ ofa_page_get_main_window( const ofaPage *page )
 gint
 ofa_page_get_theme( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), -1 );
 
 	if( !page->prot->dispose_has_run ){
 
