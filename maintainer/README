@@ -60,10 +60,12 @@
  ===
 
  Run with:
- $ G_DEBUG=fatal_warnings
-   G_MESSAGES_DEBUG=OFA
-   OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf
-     gdb ./_install/bin/openbook
+ $ G_DEBUG=fatal_warnings G_MESSAGES_DEBUG=OFA OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf gdb ./_install/bin/openbook
+ or
+ $ G_DEBUG=fatal_warnings \
+    G_MESSAGES_DEBUG=OFA \
+    OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf \
+      gdb ./_install/bin/openbook
 
  Total lines count:
  for f in $(find src -type f | grep -E 'c$|h$|ui$|am$'); do c=$(wc -l $f | awk '{ print $1 }'); let total+=$c; done; echo $total
