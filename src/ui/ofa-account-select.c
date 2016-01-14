@@ -31,7 +31,6 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 
 #include "core/ofa-main-window.h"
@@ -171,7 +170,6 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
 	ofaAccountChartBin *book;
-	GtkApplication *application;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -190,8 +188,8 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 		st_this->priv->main_window = main_window;
 		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		st_this->priv->hub = ofa_main_window_get_hub( main_window );
+		g_return_val_if_fail( st_this->priv->hub && OFA_IS_HUB( st_this->priv->hub ), NULL );
 		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
