@@ -124,7 +124,6 @@ ofs_ope_new( const ofoOpeTemplate *template )
 /**
  * ofs_ope_apply_template:
  * @ope: [in]: the input operation.
- * @dossier: the dossier
  *
  * Update fields from @ope from formulas from @template.
  *
