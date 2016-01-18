@@ -673,7 +673,7 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv = self->priv;
 
-	priv->p4_checks_bin = ofa_check_integrity_bin_new();
+	priv->p4_checks_bin = ofa_check_integrity_bin_new( st_ui_id );
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
 
 	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );

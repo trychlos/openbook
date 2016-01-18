@@ -28,10 +28,12 @@
 
 #include <glib/gi18n.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -52,6 +54,7 @@ struct _ofaCheckIntegrityBinPrivate {
 
 	/* runtime data
 	 */
+	gchar         *settings;
 	ofaHub        *hub;
 
 	gulong         dossier_errs;
@@ -65,6 +68,7 @@ struct _ofaCheckIntegrityBinPrivate {
 
 	/* UI
 	 */
+	GtkWidget     *paned;
 	GtkTextBuffer *text_buffer;
 };
 
@@ -78,10 +82,14 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-integrity-bin.ui";
+static const gchar *st_settings_sufix   = "bin";
 
 G_DEFINE_TYPE( ofaCheckIntegrityBin, ofa_check_integrity_bin, GTK_TYPE_BIN )
 
 static void           setup_bin( ofaCheckIntegrityBin *self );
+static void           setup_from_settings( ofaCheckIntegrityBin *bin );
+static void           write_to_settings( ofaCheckIntegrityBin *bin );
+static gchar         *get_settings_key( ofaCheckIntegrityBin *bin );
 static gboolean       do_run( ofaCheckIntegrityBin *bin );
 static void           check_dossier_run( ofaCheckIntegrityBin *bin );
 static void           check_bat_lines_run( ofaCheckIntegrityBin *bin );
@@ -99,6 +107,7 @@ static void
 check_integrity_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_check_integrity_bin_finalize";
+	ofaCheckIntegrityBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -106,6 +115,9 @@ check_integrity_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CHECK_INTEGRITY_BIN( instance ));
 
 	/* free data members here */
+	priv = OFA_CHECK_INTEGRITY_BIN( instance )->priv;
+
+	g_free( priv->settings );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_check_integrity_bin_parent_class )->finalize( instance );
@@ -123,6 +135,8 @@ check_integrity_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
+
+		write_to_settings( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 		/* unref object members here */
 	}
@@ -184,15 +198,19 @@ ofa_check_integrity_bin_class_init( ofaCheckIntegrityBinClass *klass )
 
 /**
  * ofa_check_integrity_bin_new:
+ * @settings: the prefix of the name where to save the settings.
  */
 ofaCheckIntegrityBin *
-ofa_check_integrity_bin_new( void )
+ofa_check_integrity_bin_new( const gchar *settings )
 {
 	ofaCheckIntegrityBin *self;
 
 	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
+	self->priv->settings = g_strdup( settings );
+
 	setup_bin( self );
+	setup_from_settings( self );
 
 	return( self );
 }
@@ -200,9 +218,12 @@ ofa_check_integrity_bin_new( void )
 static void
 setup_bin( ofaCheckIntegrityBin *bin )
 {
+	ofaCheckIntegrityBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel;
+
+	priv = bin->priv;
 
 	builder = gtk_builder_new_from_file( st_bin_xml );
 
@@ -212,8 +233,69 @@ setup_bin( ofaCheckIntegrityBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
+	priv->paned = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "paned" );
+	g_return_if_fail( priv->paned && GTK_IS_PANED( priv->paned ));
+
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
+}
+
+/*
+ * settings are a string list with:
+ * - paned pos
+ */
+static void
+setup_from_settings( ofaCheckIntegrityBin *bin )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	gchar *key;
+	GList *list, *it;
+	const gchar *cstr;
+	gint pos;
+
+	priv = bin->priv;
+
+	key = get_settings_key( bin );
+	list = ofa_settings_user_get_string_list( key );
+
+	it = list ? list : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 100;
+	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
+
+	ofa_settings_free_string_list( list );
+	g_free( key );
+}
+
+static void
+write_to_settings( ofaCheckIntegrityBin *bin )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	gchar *key, *str;
+	gint pos;
+
+	priv = bin->priv;
+
+	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
+
+	key = get_settings_key( bin );
+	str = g_strdup_printf( "%d;", pos );
+	ofa_settings_user_set_string( key, str );
+
+	g_free( str );
+	g_free( key );
+}
+
+static gchar *
+get_settings_key( ofaCheckIntegrityBin *bin )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	gchar *key;
+
+	priv = bin->priv;
+	key = g_strdup_printf( "%s-%s", priv->settings, st_settings_sufix );
+
+	return( key );
 }
 
 /**

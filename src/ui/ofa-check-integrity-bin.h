@@ -77,7 +77,7 @@ typedef struct {
 
 GType                ofa_check_integrity_bin_get_type  ( void ) G_GNUC_CONST;
 
-ofaCheckIntegrityBin *ofa_check_integrity_bin_new      ( void );
+ofaCheckIntegrityBin *ofa_check_integrity_bin_new      ( const gchar *settings );
 
 void                 ofa_check_integrity_bin_set_hub   ( ofaCheckIntegrityBin *bin,
 																ofaHub *hub );

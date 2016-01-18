@@ -165,7 +165,7 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->bin = ofa_check_integrity_bin_new();
+	priv->bin = ofa_check_integrity_bin_new( st_ui_id );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 
