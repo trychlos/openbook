@@ -227,7 +227,6 @@ exercice_close_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFA_EXERCICE_CLOSE_ASSISTANT( instance )->priv;
 
-		g_clear_object( &priv->connect );
 		g_clear_object( &priv->meta );
 	}
 
