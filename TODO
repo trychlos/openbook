@@ -107,13 +107,6 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 311 2014- 9-21 editing CA12 VAT declaration
-     2015-11-14 due to new VAT declaration rules, must also provide a
-                monthly CA3
-     2016- 1- 2 have a form and recordable declarations
-                -> have to interpret the rules to get the amounts
-                   + ofo_account_get_balance( account_id, date );
-
  312 2014- 9-22 myEditableAmount: should limit the count of decimals
 
  313 2014- 9-22 myEditableAmount: should have a format string to
@@ -510,11 +503,21 @@
                 main window and ihubber/application and why this is
                 relevant
 
- 969
+ 969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
+
+ 970
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 311 2014- 9-21 editing CA12 VAT declaration
+     2015-11-14 due to new VAT declaration rules, must also provide a
+                monthly CA3
+     2016- 1- 2 have a form and recordable declarations
+                -> have to interpret the rules to get the amounts
+                   + ofo_account_get_balance( account_id, date );
+     2016- 1-18 done
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
