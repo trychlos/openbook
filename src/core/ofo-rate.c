@@ -1228,7 +1228,7 @@ rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboole
 static void
 icollectionable_iface_init( ofaICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_rate_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
