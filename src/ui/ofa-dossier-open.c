@@ -207,6 +207,8 @@ ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 	g_return_val_if_fail( parent && GTK_IS_WINDOW( parent ), FALSE );
 
+	msg = NULL;
+
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
 				MY_PROP_MAIN_WINDOW, main_window,
