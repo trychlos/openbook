@@ -361,7 +361,7 @@ p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( self )));
+	application = my_window_get_application( MY_WINDOW( self ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
 
 	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
