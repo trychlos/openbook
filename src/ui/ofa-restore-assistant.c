@@ -219,6 +219,7 @@ static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
+static void     dump_open_data( sOpenData *data );
 static void     get_settings( ofaRestoreAssistant *self );
 static void     update_settings( ofaRestoreAssistant *self );
 
@@ -375,6 +376,9 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 	if( data->open ){
 		ofa_dossier_open_run(
 				data->main_window, data->meta, data->period, data->account, data->password );
+		if( 1 ){
+			dump_open_data( data );
+		}
 		g_free( data->password );
 		g_free( data->account );
 		g_clear_object( &data->period );
@@ -1242,6 +1246,23 @@ p6_do_open( ofaRestoreAssistant *self )
 	}
 
 	return( G_SOURCE_REMOVE );
+}
+
+static void
+dump_open_data( sOpenData *data )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_dump_open_data";
+
+	g_debug( "%s: data=%p", thisfn, ( void * ) data );
+	g_debug( "%s: data->open=%s", thisfn, data->open ? "True":"False" );
+	g_debug( "%s: data->main_window=%p (ref_count=%d)",
+			thisfn, ( void * ) data->main_window, G_OBJECT( data->main_window )->ref_count );
+	g_debug( "%s: data->meta=%p (ref_count=%d)",
+			thisfn, ( void * ) data->meta, G_OBJECT( data->meta )->ref_count );
+	g_debug( "%s: data->period=%p (ref_count=%d)",
+			thisfn, ( void * ) data->period, G_OBJECT( data->period )->ref_count );
+	g_debug( "%s: data->account=%s", thisfn, data->account );
+	g_debug( "%s: data->password=%s", thisfn, data->password );
 }
 
 /*
