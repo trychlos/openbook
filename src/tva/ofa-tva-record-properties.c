@@ -41,6 +41,8 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
+#include "api/ofs-account-balance.h"
 
 #include "core/ofa-main-window.h"
 
@@ -83,43 +85,60 @@ struct _ofaTVARecordPropertiesPrivate {
 	GDate                end_date;
 	gboolean             has_correspondence;
 	gboolean             is_validated;
+
+	/* computing the declaration
+	 */
+	GRegex              *regex_fn;
 };
 
-#define BOOL_COL_LABEL                  0
-#define DET_COL_CODE                    1
-#define DET_COL_LABEL                   (1+DET_COL_CODE)
-#define DET_COL_BASE                    (2+DET_COL_CODE)
-#define DET_COL_AMOUNT                  (3+DET_COL_CODE)
+static gboolean st_debug                = FALSE;
+#define DEBUG                           if( st_debug ) g_debug
+
+enum {
+	BOOL_COL_LABEL = 0,
+	DET_COL_CODE = 1,
+	DET_COL_LABEL,
+	DET_COL_BASE,
+	DET_COL_AMOUNT,
+	DET_COL_PADDING
+};
 
 static const gchar *st_ui_xml           = PLUGINUIDIR "/ofa-tva-record-properties.ui";
 static const gchar *st_ui_id            = "TVARecordPropertiesDlg";
 
-static void     v_init_dialog( myDialog *dialog );
-static void     init_properties( ofaTVARecordProperties *self, GtkContainer *container );
-static void     init_booleans( ofaTVARecordProperties *self, GtkContainer *container );
-static void     init_taxes( ofaTVARecordProperties *self, GtkContainer *container );
-static void     init_correspondence( ofaTVARecordProperties *self, GtkContainer *container );
-static void     on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
-static void     on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
-static void     on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
-static void     on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
-static void     on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
-static void     check_for_enable_dlg( ofaTVARecordProperties *self );
-static void     set_dialog_title( ofaTVARecordProperties *self );
-static gboolean v_quit_on_ok( myDialog *dialog );
-static gboolean do_update( ofaTVARecordProperties *self );
-static void     on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void     on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void     set_message( ofaTVARecordProperties *dialog, const gchar *msg );
+static void      v_init_dialog( myDialog *dialog );
+static void      init_properties( ofaTVARecordProperties *self, GtkContainer *container );
+static void      init_booleans( ofaTVARecordProperties *self, GtkContainer *container );
+static void      init_taxes( ofaTVARecordProperties *self, GtkContainer *container );
+static void      init_correspondence( ofaTVARecordProperties *self, GtkContainer *container );
+static void      on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void      on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void      on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
+static void      on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void      on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void      check_for_enable_dlg( ofaTVARecordProperties *self );
+static void      set_dialog_title( ofaTVARecordProperties *self );
+static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  do_update( ofaTVARecordProperties *self );
+static void      on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static void      alloc_regex( ofaTVARecordProperties *self );
+static gchar    *eval_rule( ofaTVARecordProperties *self, const gchar *rule );
+static gboolean  eval_function_cb( const GMatchInfo *match_info, GString *result, ofaTVARecordProperties *self );
+static gboolean  is_function( const gchar *token, ofaTVARecordProperties *self, gchar **str );
+static gchar    *get_code_amount( ofaTVARecordProperties *self, const gchar *content );
+static gchar    *get_account_balance( ofaTVARecordProperties *self, const gchar *content );
+static gdouble   eval_opes( ofaTVARecordProperties *self, const gchar *content );
+static gchar   **eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
+static void      on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static void      set_message( ofaTVARecordProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE( ofaTVARecordProperties, ofa_tva_record_properties, MY_TYPE_DIALOG )
 
 static void
 tva_record_properties_finalize( GObject *instance )
 {
-	ofaTVARecordPropertiesPrivate *priv;
-
 	static const gchar *thisfn = "ofa_tva_record_properties_finalize";
+	ofaTVARecordPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -138,11 +157,18 @@ tva_record_properties_finalize( GObject *instance )
 static void
 tva_record_properties_dispose( GObject *instance )
 {
+	ofaTVARecordPropertiesPrivate *priv;
+
 	g_return_if_fail( OFA_IS_TVA_RECORD_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_TVA_RECORD_PROPERTIES( instance )->priv;
+
+		if( priv->regex_fn ){
+			g_regex_unref( priv->regex_fn );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -443,6 +469,9 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_base_changed ), self );
 
+			gtk_widget_set_tooltip_text(
+					entry, ofo_tva_record_detail_get_base_rule( priv->tva_record, idx ));
+
 			amount = ofo_tva_record_detail_get_base( priv->tva_record, idx );
 			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
 		}
@@ -458,9 +487,17 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_amount_changed ), self );
 
+			gtk_widget_set_tooltip_text(
+					entry, ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx ));
+
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
 			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
 		}
+
+		/* padding on the right so that the scrollbar does not hide the
+		 * amount */
+		label = gtk_label_new( "   " );
+		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_PADDING, row, 1, 1 );
 	}
 }
 
@@ -682,6 +719,334 @@ do_update( ofaTVARecordProperties *self )
 static void
 on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
+	ofaTVARecordPropertiesPrivate *priv;
+	GtkWidget *dialog, *entry;
+	gint resp;
+	guint idx, row, count;
+	const gchar *rule;
+	gchar *result;
+
+	priv = self->priv;
+
+	dialog = gtk_message_dialog_new(
+					GTK_WINDOW( priv->main_window ),
+					GTK_DIALOG_MODAL,
+					GTK_MESSAGE_WARNING,
+					GTK_BUTTONS_NONE,
+					_( "Caution: computing the declaration will erase all possible"
+							"manual modifications you may have done.\n"
+							"Are your sure you want this ?" ));
+	gtk_dialog_add_buttons(
+			GTK_DIALOG( dialog ),
+			_( "Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "Compute" ), GTK_RESPONSE_OK,
+			NULL );
+	resp = gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
+
+	if( resp == GTK_RESPONSE_OK ){
+		alloc_regex( self );
+		count = ofo_tva_record_detail_get_count( priv->tva_record );
+
+		for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
+			if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
+				rule = ofo_tva_record_detail_get_base_rule( priv->tva_record, idx );
+				if( my_strlen( rule )){
+					result = eval_rule( self, rule );
+					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
+					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+					my_editable_amount_set_string( GTK_EDITABLE( entry ), result );
+					g_free( result );
+				}
+			}
+			if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
+				rule = ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx );
+				if( my_strlen( rule )){
+					result = eval_rule( self, rule );
+					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
+					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+					my_editable_amount_set_string( GTK_EDITABLE( entry ), result );
+					g_free( result );
+				}
+			}
+		}
+	}
+}
+
+static void
+alloc_regex( ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	static const gchar *st_functions = "%(COD|ACC)\\(\\s*([^()]+)\\s*\\)";
+
+	priv = self->priv;
+
+	if( !priv->regex_fn ){
+		/* a regex to identify functions */
+		priv->regex_fn = g_regex_new( st_functions, G_REGEX_EXTENDED, 0, NULL );
+	}
+}
+
+static gchar *
+eval_rule( ofaTVARecordProperties *self, const gchar *rule )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *str1, *str2;
+
+	priv = self->priv;
+	str1 = g_regex_replace_eval( priv->regex_fn,
+				rule, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, self, NULL );
+	str2 = my_double_to_str( eval_opes( self, str1 ));
+
+	g_free( str1 );
+	return( str2 );
+}
+
+static gboolean
+eval_function_cb( const GMatchInfo *match_info, GString *result, ofaTVARecordProperties *self )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_function_cb";
+	gchar *match;
+	gchar *str;
+
+	str = NULL;
+	match = g_match_info_fetch( match_info, 0 );
+	DEBUG( "%s: match=%s", thisfn, match );
+
+	if( is_function( match, self, &str )){
+		if( str ){
+			g_string_append( result, str );
+			g_free( str );
+		}
+
+	} else {
+		g_string_append( result, match );
+	}
+
+	g_free( match );
+
+	return( FALSE );
+}
+
+static gboolean
+is_function( const gchar *token, ofaTVARecordProperties *self, gchar **str )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_is_function";
+	ofaTVARecordPropertiesPrivate *priv;
+	gboolean ok;
+	GMatchInfo *info;
+	gchar *field, *content;
+
+	field = NULL;
+	priv = self->priv;
+
+	ok = g_regex_match( priv->regex_fn, token, 0, &info );
+	DEBUG( "%s: token=%s, g_regex_match=%s", thisfn, token, ok ? "True":"False" );
+	if( ok ){
+		ok = g_match_info_matches( info );
+		DEBUG( "%s: g_match_info_matches=%s", thisfn, ok ? "True":"False" );
+	}
+	if( ok ){
+		field = g_match_info_fetch( info, 1 );
+		content = g_match_info_fetch( info, 2 );
+		DEBUG( "%s: field=%s, content=%s", thisfn, field, content );
+
+		if( !g_utf8_collate( field, "COD" )){
+			*str = get_code_amount( self, content );
+
+		} else if( !g_utf8_collate( field, "ACC" )){
+			*str = get_account_balance( self, content );
+
+		} else {
+			ok = FALSE;
+		}
+	}
+
+	g_free( field );
+	g_match_info_free( info );
+
+	DEBUG( "%s: token=%s, str=%s, ok=%s", thisfn, token, *str, ok ? "True":"False" );
+	return( ok );
+}
+
+/*
+ * return the amount of the row whose the code is provided by @content
+ */
+static gchar *
+get_code_amount( ofaTVARecordProperties *self, const gchar *content )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_get_code_amount";
+	ofaTVARecordPropertiesPrivate *priv;
+	guint idx, row, count;
+	GtkWidget *entry;
+	const gchar *code, *ctext;
+
+	priv = self->priv;
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+
+	for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
+		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
+			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_CODE, row );
+			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
+			code = gtk_entry_get_text( GTK_ENTRY( entry ));
+			if( !g_utf8_collate( code, content )){
+				entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
+				g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
+				ctext = gtk_entry_get_text( GTK_ENTRY( entry ));
+				DEBUG( "%s: COD(%s)=%s", thisfn, content, ctext );
+				return( g_strdup( ctext ));
+			}
+		}
+	}
+
+	return( NULL );
+}
+
+/*
+ * returns the rough+validated balance of the account specified by
+ * @content, between beginning and ending dates
+ */
+static gchar *
+get_account_balance( ofaTVARecordProperties *self, const gchar *content )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_get_account_balance";
+	ofaTVARecordPropertiesPrivate *priv;
+	ofaHub *hub;
+	GList *list, *it;
+	ofsAccountBalance *sbal;
+	ofxAmount amount;
+	gchar *begin_id, *end_id;
+	gchar **array;
+
+	priv = self->priv;
+
+	array = g_strsplit( content, "-", 2 );
+	begin_id = g_strdup( *array );
+	end_id = g_strdup( *( array+1 ));
+	g_strfreev( array );
+	if( !my_strlen( end_id )){
+		g_free( end_id );
+		end_id = g_strdup( begin_id );
+	}
+	DEBUG( "%s: begin_id=%s, endid=%s", thisfn, begin_id, end_id );
+
+	hub = ofa_main_window_get_hub( priv->main_window );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	list = ofo_entry_get_dataset_balance_rough_validated(
+				hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
+	amount = 0;
+	for( it=list ; it ; it=it->next ){
+		sbal = ( ofsAccountBalance * ) it->data;
+		/* credit is -, debit is + */
+		amount -= sbal->credit;
+		amount += sbal->debit;
+	}
+
+	g_free( begin_id );
+	g_free( end_id );
+
+	DEBUG( "%s: ACC(%s)=%lf", thisfn, content, amount );
+	return( my_double_to_str( amount ));
+}
+
+/*
+ * %EVAL(...) recursively evaluates the (..) between parenthesis content
+ */
+static gdouble
+eval_opes( ofaTVARecordProperties *self, const gchar *content )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_opes";
+	gchar **tokens, **iter;
+	gdouble amount;
+
+	DEBUG( "%s: content=%s", thisfn, content );
+	if( g_str_has_prefix( content, "%EVAL(" )){
+		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content+5, 0, 0 );
+	} else {
+		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content, 0, 0 );
+	}
+	iter = tokens;
+	eval_opes_rec( content, iter, &amount, 1 );
+	g_strfreev( tokens );
+	DEBUG( "%s: amount=%lf", thisfn, amount );
+
+	return( amount );
+}
+
+/*
+ * this is used to evaluate the content between two parenthesis:
+ * the first time, we enter here even if not parenthesis is found (count=1)
+ * then, we re-enter for each opening parenthesis
+ *  and we return from here for each closing parenthesis, returning
+ *   the new iter position, with the computed amount
+ */
+static gchar **
+eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_opes_rec";
+	gdouble amount_iter;
+	gboolean first_iter, expect_operator;
+	const gchar *oper;
+
+	DEBUG( "%s: count=%d", thisfn, count );
+	*amount = 0;
+	first_iter = TRUE;
+	expect_operator = TRUE;
+	oper = NULL;
+
+	while( *iter ){
+		if( my_strlen( *iter )){
+			DEBUG( "%s: *iter=%s", thisfn, *iter );
+			if( expect_operator ){
+				if( !g_utf8_collate( *iter, "-" )){
+					oper = "-";
+				} else if( !g_utf8_collate( *iter, "+" )){
+					oper = "+";
+				} else if( !g_utf8_collate( *iter, "*" )){
+					oper = "*";
+				} else if( !g_utf8_collate( *iter, "/" )){
+					oper = "/";
+				} else if( first_iter ){
+					oper = "+";
+					expect_operator = FALSE;
+				} else if( !g_utf8_collate( *iter, ")" )){
+					iter++;
+					return( iter );
+				} else {
+					g_warning( "%s: formula='%s': found token='%s' while an operator was expected",
+							thisfn, content, *iter );
+					break;
+				}
+			}
+			if( !expect_operator ){
+				if( !g_utf8_collate( *iter, "(" )){
+					iter++;
+					iter = eval_opes_rec( content, iter, &amount_iter, 1+count );
+					DEBUG( "%s: count=%d, amount=%lf, oper=%s, amount_iter=%lf", thisfn, count, *amount, oper, amount_iter );
+				} else {
+					amount_iter = my_double_set_from_str( *iter );
+				}
+				if( !g_utf8_collate( oper, "-" )){
+					*amount -= amount_iter;
+				} else if( !g_utf8_collate( oper, "+" )){
+					*amount += amount_iter;
+				} else if( !g_utf8_collate( oper, "*" )){
+					*amount *= amount_iter;
+				} else if( !g_utf8_collate( oper, "/" )){
+					*amount /= amount_iter;
+				}
+				amount_iter = 0;
+				DEBUG( "%s: count=%d, amount=%lf", thisfn, count, *amount );
+			}
+			first_iter = FALSE;
+			expect_operator = !expect_operator;
+		}
+		if( *iter ){
+			iter++;
+		}
+	}
+
+	return( iter );
 }
 
 /*
@@ -707,7 +1072,8 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 						_( "The VAT declaration has been successfully validated." ));
 		gtk_dialog_run( GTK_DIALOG( dialog ));
 		gtk_widget_destroy( dialog );
-		/* close the Properties dialog box */
+		/* close the Properties dialog box
+		 * with Cancel to not trigger another update */
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))), GTK_RESPONSE_CANCEL );
 	}
