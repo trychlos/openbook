@@ -102,6 +102,8 @@ struct _ofaExerciceCloseAssistantPrivate {
 
 	/* p5 - confirmation page
 	 */
+	GtkWidget            *p5_backup_btn;
+	gboolean              p5_backuped;
 
 	/* p6 - close the exercice
 	 */
@@ -147,6 +149,10 @@ static void             p3_on_checks_done( ofaCheckBalancesBin *bin, gboolean ok
 static void             p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_on_checks_done( ofaCheckIntegrityBin *bin, gulong errors, ofaExerciceCloseAssistant *self );
+static void             p5_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
+static void             p5_do_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
+static void             p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self );
+static void             p5_check_for_complete( ofaExerciceCloseAssistant *self );
 static void             p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static gboolean         p6_validate_entries( ofaExerciceCloseAssistant *self );
 static gboolean         p6_solde_accounts( ofaExerciceCloseAssistant *self );
@@ -183,8 +189,8 @@ static const ofsAssistant st_pages_cb [] = {
 				( myAssistantCb ) p4_checks,
 				NULL },
 		{ PAGE_CONFIRM,
-				NULL,
-				NULL,
+				( myAssistantCb ) p5_do_init,
+				( myAssistantCb ) p5_do_display,
 				NULL },
 		{ PAGE_CLOSE,
 				NULL,
@@ -705,6 +711,51 @@ p4_on_checks_done( ofaCheckIntegrityBin *bin, gulong errors, ofaExerciceCloseAss
 	}
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->p4_done );
+}
+
+static void
+p5_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	GtkWidget *btn;
+
+	priv = self->priv;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p5-backup-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( p5_on_backup_clicked ), self );
+	priv->p5_backup_btn = btn;
+
+	p5_check_for_complete( self );
+}
+
+static void
+p5_do_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
+{
+	p5_check_for_complete( self );
+}
+
+static void
+p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_main_window_backup_dossier( priv->main_window );
+	priv->p5_backuped = TRUE;
+
+	p5_check_for_complete( self );
+}
+
+static void
+p5_check_for_complete( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+
+	priv = self->priv;
+
+	gtk_widget_set_sensitive( priv->p5_backup_btn, !priv->p5_backuped );
 }
 
 static void

@@ -364,6 +364,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       <object class="GtkGrid" id="grid5">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="row_spacing">20</property>
         <child>
           <object class="GtkLabel" id="label51">
             <property name="visible">True</property>
@@ -372,13 +373,40 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
 
 This is your last chance to backup the dossier before the close happens. After that, all the accounts will be balanced, all the ledgers will be closed, all the entries will be validated.
 
-The new exercice will be automatically opened after the operation.</property>
+Or just click on 'Apply' button.</property>
             <property name="wrap">True</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="p5-backup-btn">
+            <property name="label" translatable="yes">_Backup now...</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="halign">center</property>
+            <property name="use_underline">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label52">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">The new exercice will be automatically opened after the operation.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
           </packing>
         </child>
       </object>
