@@ -330,6 +330,7 @@ static void             enable_action_reconciliation( ofaMainWindow *window, gbo
 static void             enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
 static void             enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
 static void             enable_action_import( ofaMainWindow *window, gboolean enable );
+static void             do_backup( ofaMainWindow *main_window );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
 static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
@@ -1365,8 +1366,36 @@ on_backup( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	close_all_pages( OFA_MAIN_WINDOW( user_data ));
-	ofa_backup_run( OFA_MAIN_WINDOW( user_data ));
+	do_backup( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+do_backup( ofaMainWindow *main_window )
+{
+	close_all_pages( main_window );
+	ofa_backup_run( main_window );
+}
+
+/**
+ * ofa_main_window_backup_dossier:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Backup the currently opened dossier.
+ */
+void
+ofa_main_window_backup_dossier( ofaMainWindow *main_window )
+{
+	ofaMainWindowPrivate *priv;
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = main_window->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	do_backup( main_window );
 }
 
 static void
