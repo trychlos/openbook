@@ -600,7 +600,7 @@ ofo_account_get_dataset_for_solde( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	query = g_strdup_printf( "OFA_T_ACCOUNTS WHERE "
-			"	ACC_TYPE!='R' AND "
+			"	ACC_ROOT!='Y' AND "
 			"	ACC_NUMBER NOT IN (SELECT DOS_SLD_ACCOUNT FROM OFA_T_DOSSIER_CUR)" );
 
 	dataset = ofo_base_load_dataset(
