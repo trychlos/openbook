@@ -140,11 +140,9 @@
                 and the current width should be kept in settings
      2015- 1-22 no GtkTreeViewColumn primitive for setting a width ??
 
- 429 2014-11-11 implement print preview inside of Openbook
-
  442 2014-11-13 AccountsBook: add a notes indicator
      2014-12-19 started with svn #4348
-                bug left: no background of backgrounded rows...
+                bug left: no background on highlighted rows...
 
  445 2014-11-13 my_date: do not accept two successive '/'
      2014-11-23 done - svn #4145
@@ -189,10 +187,19 @@
  519 2014-12-11 ExportAssistant: the list of exportables should be
                 dynamically computed from the list of classes which
                 implement the ofaIExportable interface
+     2016- 1-18 this would imply that all candidate classes declare
+                themselves to a central hub (not the dossier, but the
+                application for example) - which would nonetheless be
+                close of the connect_to_hub_signaling_system() calls
 
  520 2014-12-11 ImportAssistant: the list of importables should be
                 dynamically computed from the list of classes which
                 implement the ofaIImportable interface
+     2016- 1-18 this would imply that all candidate classes declare
+                themselves to a central hub (not the dossier, but the
+                application for example)
+                application for example) - which would nonetheless be
+                close of the connect_to_hub_signaling_system() calls
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
@@ -237,11 +244,6 @@
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
 
- 607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
-                dossier_login in order to mutualize some code if possible
-                common behavior is: do not close current dossier if we
-                are not sure that credentials are ok
-
  621 2015- 2- 2 ope template: have an help dialog which lists the 
                 available macro and functions
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
@@ -275,11 +277,6 @@
      2015- 2-20 why ? to save them in backups and be able to restore 
                 them 
 
- 678 2015- 2-19 visual bug which seems to come from GTK+: updating a
-                list/tree store only update the display when moving the
-                mouse over the row (not necessarily the updated cell)
-                -> gtk_tree_model_filter_refilter doesn't help
-
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
@@ -298,9 +295,6 @@
 
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
-
- 717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
-     2015- 3-12 are we sure we want this ?
 
  719 2015- 3-13 Reconciliation: when new entries are added after having
                 already set a BAT file, new propositions are not 
@@ -339,20 +333,10 @@
  761 2015- 3-22 in the warning displayed when restoring to a database,
                 display the target database in bold (or red)
 
- 766 2015- 3-26 replace ofaIDataset interface by ofaICollector
-
  783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
                 will be reported after exercice closing
 
  790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
-
- 791 2015- 4- 6 after having entered new AVRLOY operation template:
-                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
-#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
-#3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
-    at ../../../src/ui/ofa-guided-ex.c:734
-#4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
-     2015- 4- 7 not reproduced
 
  792 2015- 4- 6 have a comment in the backup
 
@@ -518,6 +502,39 @@
                 -> have to interpret the rules to get the amounts
                    + ofo_account_get_balance( account_id, date );
      2016- 1-18 done
+
+ 429 2014-11-11 implement print preview inside of Openbook
+     2016- 1-16 done long ago with IRenderable interface
+
+ 607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
+                dossier_login in order to mutualize some code if possible
+                common behavior is: do not close current dossier if we
+                are not sure that credentials are ok
+     2016- 1-18 obsoleted by new meta/period architecture
+
+ 678 2015- 2-19 visual bug which seems to come from GTK+: updating a
+                list/tree store only update the display when moving the
+                mouse over the row (not necessarily the updated cell)
+                -> gtk_tree_model_filter_refilter doesn't help
+     2016- 1-18 this happens to be eventually a Gtk+ bug which has 
+                already been reported on some graphic cards
+
+ 717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
+     2015- 3-12 are we sure we want this ?
+     2016- 1-18 cancelled (at least for now)
+
+ 766 2015- 3-26 replace ofaIDataset interface by ofaICollector
+     2016- 1-18 ofaIDataset has been obsoleted by ofaICollector/
+                ofaICollectionable pair
+
+ 791 2015- 4- 6 after having entered new AVRLOY operation template:
+                gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed
+#2  0x00000037196c20b4 in gtk_tree_view_get_model () from /lib64/libgtk-3.so.0
+#3  0x0000000000448bf2 in find_left_ledger_by_mnemo (self=self@entry=0xd614e0, mnemo=0x898e80 "ACH", tmodel=tmodel@entry=0x7fffffffcac8, iter=iter@entry=0x7fffffffcad0)
+    at ../../../src/ui/ofa-guided-ex.c:734
+#4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
+     2015- 4- 7 not reproduced
+     2016- 1-18 cancelled (at least for now)
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
