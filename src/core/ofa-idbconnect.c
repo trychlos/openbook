@@ -1006,5 +1006,6 @@ on_connect_finalized( sIDBConnect *data, GObject *finalized_connect )
 	g_clear_object( &data->meta );
 	g_clear_object( &data->period );
 	g_free( data->account );
+	g_free( data->password );
 	g_free( data );
 }
