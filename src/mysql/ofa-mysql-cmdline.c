@@ -118,24 +118,28 @@ gboolean
 ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
+	ofaIDBPeriod *period;
 	gboolean ok;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
-	template = ofa_mysql_user_prefs_get_backup_command();
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
+
+	template = ofa_mysql_user_prefs_get_backup_command();
 	fname = g_filename_from_uri( uri, NULL, NULL );
+	period = ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
 
 	ok = do_execute_async(
 				template,
 				connect,
-				NULL,
+				OFA_MYSQL_PERIOD( period ),
 				fname,
 				_( "Openbook backup" ),
 				( GChildWatchFunc ) backup_exit_cb,
 				TRUE );
 
+	g_object_unref( period );
 	g_free( fname );
 	g_free( template );
 
