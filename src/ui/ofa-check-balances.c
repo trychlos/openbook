@@ -29,7 +29,6 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 
 #include "core/ofa-main-window.h"
 
@@ -40,6 +39,7 @@
  */
 struct _ofaCheckBalancesPrivate {
 
+	ofaMainWindow       *main_window;
 	ofaCheckBalancesBin *bin;
 
 	/* UI
@@ -135,6 +135,8 @@ ofa_check_balances_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	self->priv->main_window = main_window;
+
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	g_object_unref( self );
@@ -144,16 +146,13 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaCheckBalancesPrivate *priv;
-	GtkApplication *application;
 	ofaHub *hub;
 	GtkWindow *toplevel;
 	GtkWidget *parent;
 
 	priv = OFA_CHECK_BALANCES( dialog )->priv;
 
-	application = gtk_window_get_application( my_window_get_toplevel( MY_WINDOW( dialog )));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	hub = ofa_main_window_get_hub( priv->main_window );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
