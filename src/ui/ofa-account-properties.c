@@ -33,7 +33,6 @@
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -241,7 +240,6 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkWindow *toplevel;
-	GtkApplication *application;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
@@ -249,10 +247,7 @@ v_init_dialog( myDialog *dialog )
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	application = gtk_window_get_application( toplevel );
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( priv->main_window );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* dialog title */
