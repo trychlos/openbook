@@ -482,11 +482,6 @@
 
  967 2016- 1-10 change the prefix of archive tables
 
- 968 2016- 1-11 use ofa_main_window_get_hub()
-                and explain how is designed the hub dynamic between
-                main window and ihubber/application and why this is
-                relevant
-
  969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
 
  970
@@ -637,6 +632,12 @@
 
  962 2016- 1-10 obsolete core/ofo-marshal
      2016- 1-10 done
+
+ 968 2016- 1-11 use ofa_main_window_get_hub()
+                and explain how is designed the hub dynamic between
+                main window and ihubber/application and why this is
+                relevant
+     2016- 1-18 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

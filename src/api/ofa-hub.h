@@ -31,18 +31,81 @@
  * @short_description: The #ofaHub Class Definition
  * @include: openbook/ofa-hub.h
  *
- * The ofaHub class manages the currently opened dossier/exercice.
+ * The #ofaHub class manages the currently opened dossier/exercice.
  * Beginning with a valid connection, it points to the unique dossier
  * properties record, and maintains the different collections.
+ * When set, the #ofaHub object is unique inside of the running
+ * application.
  *
  * Instanciating a new hub with its valid connection is the same
  * than opening the dossier (though a graphical application may need
- * some more initializations).
+ * some more initializations). The process is as follow:
+ *
+ * - get a valid #ofaIDBConnect object instance;
+ *   here "valid" means that either #ofa_idbconnect_open_with_editor()
+ *   or #ofa_idbconnect_open_with_meta() has returned a %TRUE value.
+ *
+ * - ask the #ofaIHubber implementation for a new #ofaHub object;
+ *   the #ofaIHubber implementation is responsible for instanciating
+ *   the #ofaHub object, and maintaining this primary reference in its
+ *   private data space.
+ *
+ * - the #ofaHub instanciation takes a reference on the provided
+ *   #ofaIDBConnect instance, then taking care of opening the dossier
+ *   (which mainly means reading its internal properties) and
+ *   initializing its signaling system.
+ *
+ * - at last the #ofaIHubber interface emits the SIGNAL_HUBBER_NEW
+ *   signal to advertize about the new #ofaHub instanciation.
  *
  * At last, unreffing the hub is the same than closing the dossier.
+ * The process is as follow:
+ *
+ * - just call #ofa_ihubber_clear_hub() which will release the
+ *   #ofaIHubber reference on its #ofaHub object;
+ *   this reference is expected to be the only reference (or the last)
+ *   on the object, so that releasing it will trigger the object
+ *   finalization.
+ *
+ * - the #ofaHub object dispose code just releases its reference on
+ *   the initially provided #ofaIDBConnect connection, and on the
+ *   dossier.
+ *
+ * - the #ofaIHubber interface emits the SIGNAL_HUBBER_CLOSED signal
+ *   after #ofaHub finalization.
  *
  * The #ofaHub class defines a "hub signaling system" which emits
  * dedicated messages on new, updated or deleted objects.
+ *
+ * Getting the #ofaHub object
+ *
+ * Several paths are available to get the current #ofaHub object:
+ *
+ * - via the #ofaIHubber interface:
+ *   > get a pointer to the #ofaIHubber interface or its implementation
+ *   > ask it for its #ofaHub object (as the implementation is
+ *     responsible for maintaining the primary reference on the
+ *     #ofaHub object)
+ *   > see #ofa_ihubber_get_hub()
+ *
+ * - via the main window:
+ *   > the main window has a direct access to its #GtkApplication,
+ *     which happens to be our #ofaIHubber implementation
+ *   > the main window takes itself its own reference on the #ofaHub
+ *     object on dossier opening, releasing it on dossier closing.
+ *   > see #ofa_main_window_get_hub()
+ *
+ * - from a #ofaPage:
+ *   > because the #ofaPage has itself a direct access to the
+ *     #ofaMainWindow
+ *   > see #ofa_page_get_hub()
+ *
+ * - from a dialog box (a myDialog-derived object), or from an assistant
+ *   (a myAssistant-derived object):
+ *   > as soon as the #ofaMainWindow main window is provided at dialog
+ *     instanciation time, the #my_window_get_application() method is
+ *     able to return our #GtkApplication, which happens to actually be
+ *     the #GtkApplication to which the #ofaMainWindow is attached to.
  */
 
 #include "api/ofa-file-format.h"
