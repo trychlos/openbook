@@ -56,6 +56,9 @@
  *                entries imputed on the specified account with an
  *                effect date between the declaration begin and end
  *                dates (included).
+ *                The account may be specified as begin[-end] to indicate
+ *                that we must consider all acounts between 'begin' and
+ *                'end' (included) numbers.
  *    The opening parenthesis must immediately follow the function name.
  */
 
