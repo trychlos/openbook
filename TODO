@@ -480,8 +480,6 @@
 
  966 2016- 1-10 tva/ofoTVARecord: make it printable
 
- 967 2016- 1-10 change the prefix of archive tables
-
  969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
 
  970
@@ -632,6 +630,9 @@
 
  962 2016- 1-10 obsolete core/ofo-marshal
      2016- 1-10 done
+
+ 967 2016- 1-10 change the prefix of archive tables
+     2016- 1-19 prefix is ARCHIVE - done
 
  968 2016- 1-11 use ofa_main_window_get_hub()
                 and explain how is designed the hub dynamic between

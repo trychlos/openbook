@@ -1213,6 +1213,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
 			hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), cnx );
 			if( hub ){
+				priv->hub = hub;
 				priv->dossier = ofa_hub_get_dossier( hub );
 				priv->connect = ofa_hub_get_connect( hub );
 				ofo_dossier_set_current( priv->dossier, TRUE );
@@ -1263,12 +1264,12 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 * account, or are not settled, or are not reconciliated
 	 */
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_ENTRIES" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_ENTRIES" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup_printf( "CREATE TABLE OFA_T_KEEP_ENTRIES "
+		query = g_strdup_printf( "CREATE TABLE ARCHIVE_T_KEEP_ENTRIES "
 					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS "
 					"	WHERE ENT_ACCOUNT=ACC_NUMBER AND ("
 					"		(ACC_SETTLEABLE='S' AND ENT_STLMT_NUMBER IS NULL) OR "
@@ -1280,21 +1281,21 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_ENTRIES" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_ENTRIES" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_DELETED_ENTRIES "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_ENTRIES "
 					"SELECT * FROM OFA_T_ENTRIES WHERE "
-					"	ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
+					"	ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM ARCHIVE_T_KEEP_ENTRIES)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_ENTRIES "
-					"WHERE ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_KEEP_ENTRIES)" );
+					"WHERE ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM ARCHIVE_T_KEEP_ENTRIES)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1311,12 +1312,12 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 * and archived others
 	 */
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_BATS" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_BATS" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_KEEP_BATS "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_KEEP_BATS "
 					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES "
 					"	WHERE BAT_LINE_ID NOT IN "
 					"		(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
@@ -1325,40 +1326,40 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BATS" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BATS" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BATS "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_BATS "
 					"SELECT * FROM OFA_T_BAT "
-					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BAT_LINES" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BAT_LINES" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE OFA_T_DELETED_BAT_LINES "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_BAT_LINES "
 					"SELECT * FROM OFA_T_BAT_LINES "
-					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_BAT "
-					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_BAT_LINES "
-					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_KEEP_BATS)" );
+					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
