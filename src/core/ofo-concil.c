@@ -513,6 +513,7 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 	concil_set_id( concil, ofo_dossier_get_next_concil( dossier ));
 
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( concil ), hub );
 		ofa_icollector_add_object(
 				OFA_ICOLLECTOR( hub ),
 				hub, OFA_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
