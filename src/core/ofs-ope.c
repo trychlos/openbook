@@ -801,6 +801,7 @@ static gchar *
 get_closing_account( sHelper *helper, const gchar *content )
 {
 	ofaHub *hub;
+	ofoDossier *dossier;
 	ofoAccount *account;
 	const gchar *currency;
 	gchar *str;
@@ -812,7 +813,7 @@ get_closing_account( sHelper *helper, const gchar *content )
 		account = ofo_account_get_by_number( hub, content );
 		if( account && !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-			ofoDossier *dossier = NULL;
+			dossier = ofa_hub_get_dossier( hub );
 			str = g_strdup( ofo_dossier_get_sld_account( dossier, currency ));
 		}
 	}
