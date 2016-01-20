@@ -25,6 +25,7 @@
 
    - ofaHub: new hub management class (todo #948).
    - ofaICollectionable, ofaICollector: new interfaces.
+   - ofaIExeCloseClose: new interface for exercice closing in the plugins.
    - ofaIHubber: new interface for ofaHub management (todo #941).
    - TVA: compute the VAT rules (todo #311).
 
