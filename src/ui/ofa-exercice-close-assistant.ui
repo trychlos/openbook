@@ -423,7 +423,7 @@ Or just click on 'Apply' button.</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkLabel" id="label61">
+          <object class="GtkLabel" id="p6-validating-label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Validating remaining lines :</property>
@@ -537,7 +537,7 @@ Or just click on 'Apply' button.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">8</property>
+            <property name="top_attach">9</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -636,6 +636,12 @@ Or just click on 'Apply' button.</property>
             <property name="left_attach">1</property>
             <property name="top_attach">7</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
       <packing>
