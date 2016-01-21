@@ -190,22 +190,24 @@ ofa_iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype )
  *  exercice N+1.
  * @box: a #GtkBox in which the plugin may display a text, a progress
  *  bar, or whatever...
+ * @hub: the current #ofaHub object.
  *
  * Ask @instance to do its tasks.
  *
  * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
  */
 gboolean
-ofa_iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box )
+ofa_iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_iexeclose_close_do_task";
 
-	g_debug( "%s: instance=%p, rowtype=%u", thisfn, ( void * ) instance, rowtype );
+	g_debug( "%s: instance=%p, rowtype=%u, box=%p, hub=%p",
+			thisfn, ( void * ) instance, rowtype, ( void * ) box, ( void * ) hub );
 
 	g_return_val_if_fail( instance && OFA_IS_IEXECLOSE_CLOSE( instance ), FALSE );
 
 	if( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->do_task ){
-		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box ));
+		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, hub ));
 	}
 
 	g_info( "%s: ofaIExeCloseClose instance %p does not provide 'do_task()' method",

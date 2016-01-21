@@ -42,9 +42,23 @@
  * - provides a label that the assistant will take care of inserting
  *   in the ad-hoc page of the assistant,
  * - does its tasks, updating the provided GtkBox at its convenience.
+ *
+ * When closing the exercice N, the tasks are executed before the
+ * program does anything (validating lines, balancing accounts, closing
+ * ledgers), but possibly after other plugins.
+ *
+ * When opening the exercice N+1, the tasks are executed after the
+ * program has archived all its data, and set the future entries in
+ * the new exercice.
+ *
+ * Please note that the order in which plugins are called in not
+ * guaranteed to be consistent between several executions of the
+ * program.
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-hub.h"
 
 G_BEGIN_DECLS
 
@@ -59,6 +73,7 @@ typedef struct _ofaIExeCloseClose                     ofaIExeCloseClose;
  * ofaIExeCloseCloseInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @add_row: [should]: insert a row on the page when closing the exercice.
+ * @do_task: [should]: do the task.
  *
  * This defines the interface that an #ofaIExeCloseClose may/should implement.
  */
@@ -93,6 +108,12 @@ typedef struct {
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 *
+	 * Ask @instance the text to be inserted as the row label if it
+	 * wants do some tasks at the moment specified by @rowtype.
+	 *
+	 * If the plugin returns a %NULL or empty string, then it will not
+	 * be called later to do any task.
+	 *
 	 * Returns: a string which will be #g_free() by the caller.
 	 *
 	 * Since: version 1
@@ -106,6 +127,7 @@ typedef struct {
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 * @box: a #GtkBox available to the plugin.
+	 * @hub: the current #ofaHub object.
 	 *
 	 * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
 	 *
@@ -113,7 +135,8 @@ typedef struct {
 	 */
 	gboolean ( *do_task )              ( ofaIExeCloseClose *instance,
 											guint rowtype,
-											GtkWidget *box );
+											GtkWidget *box,
+											ofaHub *hub );
 }
 	ofaIExeCloseCloseInterface;
 
@@ -137,7 +160,8 @@ gchar   *ofa_iexeclose_close_add_row                   ( ofaIExeCloseClose *inst
 
 gboolean ofa_iexeclose_close_do_task                   ( ofaIExeCloseClose *instance,
 															guint rowtype,
-															GtkWidget *box );
+															GtkWidget *box,
+															ofaHub *hub );
 
 G_END_DECLS
 
