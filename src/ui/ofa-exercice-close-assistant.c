@@ -187,6 +187,7 @@ static gboolean         p6_open( ofaExerciceCloseAssistant *self );
 static gboolean         p6_future( ofaExerciceCloseAssistant *self );
 static gboolean         p6_opening_plugin( ofaExerciceCloseAssistant *self );
 static myProgressBar   *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
+static void             update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_name );
 static void             on_closing_instance_finalized( sClose *close_data, GObject *finalized_instance );
 static void             on_opening_instance_finalized( sClose *close_data, GObject *finalized_instance );
 
@@ -893,7 +894,12 @@ p6_closing_plugin( ofaExerciceCloseAssistant *self )
 		}
 	}
 
-	g_idle_add(( GSourceFunc ) p6_validate_entries, self );
+	/* weird code to make the test easier */
+	if( 1 ){
+		g_idle_add(( GSourceFunc ) p6_validate_entries, self );
+	} else {
+		g_idle_add(( GSourceFunc ) p6_open, self );
+	}
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -909,9 +915,8 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *entries, *it;
 	myProgressBar *bar;
-	gint count, i;
-	gdouble progress;
-	gchar *text, *sstart, *send;
+	guint count, i;
+	gchar *sstart, *send;
 	gulong udelay;
 	GTimeVal stamp_start, stamp_end;
 
@@ -921,26 +926,16 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 
 	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
+	i = 0;
 	my_utils_stamp_set_now( &stamp_start );
-
 	bar = get_new_bar( self, "p6-validating" );
 	gtk_widget_show_all( priv->p6_page );
 
-	for( i=1, it=entries ; it ; ++i, it=it->next ){
+	for( it=entries ; it ; it=it->next ){
 		ofo_entry_validate( OFO_ENTRY( it->data ));
-
-		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
-
-		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "ofa-text", text );
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-
-		g_free( text );
+		update_bar( bar, &i, count, thisfn );
 	}
-
-	if( !entries ){
+	if( count == 0 ){
 		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
 	}
 
@@ -954,6 +949,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",
 			thisfn, sstart, send, count, ( gdouble ) udelay / 1000000.0 / ( gdouble ) count );
 
+	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_solde_accounts, self );
 
 	/* do not continue and remove from idle callbacks list */
@@ -993,9 +989,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *accounts, *sld_entries, *for_entries, *it, *ite, *currencies;
 	myProgressBar *bar;
-	gint count, i;
-	gdouble progress;
-	gchar *text, *msg;
+	guint count, i;
+	gchar *msg;
 	ofoAccount *account;
 	ofoOpeTemplate *sld_template, *for_template;
 	const gchar *sld_ope, *for_ope, *acc_number;
@@ -1017,6 +1012,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	errors = 0;
 	accounts = ofo_account_get_dataset_for_solde( priv->hub );
 	count = g_list_length( accounts );
+	i = 0;
 	precision = 1/PRECISION;
 
 	if( with_ui ){
@@ -1037,7 +1033,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	for_template = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
 	g_return_val_if_fail( for_template && OFO_IS_OPE_TEMPLATE( for_template ), 1 );
 
-	for( i=1, it=accounts ; it ; ++i, it=it->next ){
+	for( it=accounts ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
 		debit = ofo_account_get_val_debit( account );
 		credit = ofo_account_get_val_credit( account );
@@ -1141,19 +1137,16 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			}
 		}
 
-		progress = ( gdouble ) i / ( gdouble ) count;
-		text = g_strdup_printf( "%u/%u", i, count );
-
 		if( with_ui ){
-			g_signal_emit_by_name( bar, "ofa-double", progress );
-			g_signal_emit_by_name( bar, "ofa-text", text );
+			update_bar( bar, &i, count, thisfn );
 		}
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-		g_free( text );
 	}
 
 	ofo_account_free_dataset( accounts );
+
+	if( with_ui ){
+		gtk_widget_show_all( GTK_WIDGET( bar ));
+	}
 
 	if( errors ){
 		msg = g_strdup_printf(
@@ -1200,9 +1193,7 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *ledgers, *it;
 	myProgressBar *bar;
-	gint count, i;
-	gdouble progress;
-	gchar *text;
+	guint count, i;
 	const GDate *end_cur;
 	ofoLedger *ledger;
 
@@ -1212,26 +1203,19 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
+	i = 0;
 	bar = get_new_bar( self, "p6-ledgers" );
 	gtk_widget_show_all( priv->p6_page );
 
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
 
-	for( i=1, it=ledgers ; it ; ++i, it=it->next ){
+	for( it=ledgers ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		ofo_ledger_close( ledger, end_cur );
-
-		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
-
-		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "ofa-text", text );
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-
-		g_free( text );
+		update_bar( bar, &i, count, thisfn );
 	}
 
+	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_archive_exercice, self );
 
 	/* do not continue and remove from idle callbacks list */
@@ -1539,13 +1523,11 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
 	myProgressBar *bar;
-	gint count, i;
+	guint count, i;
 	GList *it;
 	ofoEntry *entry;
 	ofoAccount *account;
 	ofxCounter counter;
-	gdouble progress;
-	gchar *text;
 	const GDate *dbegin;
 
 	priv = self->priv;
@@ -1556,8 +1538,9 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	gtk_widget_show_all( priv->p6_page );
 
 	count = g_list_length( priv->p6_forwards );
+	i = 0;
 
-	for( i=1, it=priv->p6_forwards ; it ; ++i, it=it->next ){
+	for( it=priv->p6_forwards ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_insert( entry, priv->hub );
 
@@ -1576,19 +1559,12 @@ p6_forward( ofaExerciceCloseAssistant *self )
 		g_signal_emit_by_name( priv->hub,
 				SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
-		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
-
-		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "ofa-text", text );
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-
-		g_free( text );
+		update_bar( bar, &i, count, thisfn );
 	}
 
 	ofo_entry_free_dataset( priv->p6_forwards );
 
+	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_open, self );
 
 	/* do not continue and remove from idle callbacks list */
@@ -1608,36 +1584,25 @@ p6_open( ofaExerciceCloseAssistant *self )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_open";
 	ofaExerciceCloseAssistantPrivate *priv;
 	myProgressBar *bar;
-	gint count, i;
+	guint count, i;
 	GList *accounts, *it;
 	ofoAccount *account;
-	gdouble progress;
-	gchar *text;
 
 	priv = self->priv;
 
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
-
+	i = 0;
 	bar = get_new_bar( self, "p6-open" );
 	gtk_widget_show_all( priv->p6_page );
 
-	for( i=1, it=accounts ; it ; ++i, it=it->next ){
+	for( it=accounts ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-
 		ofo_account_archive_open_balances( account );
-
-		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
-
-		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "ofa-text", text );
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-
-		g_free( text );
+		update_bar( bar, &i, count, thisfn );
 	}
 
+	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_future, self );
 
 	/* do not continue and remove from idle callbacks list */
@@ -1654,12 +1619,12 @@ p6_future( ofaExerciceCloseAssistant *self )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_future";
 	ofaExerciceCloseAssistantPrivate *priv;
 	myProgressBar *bar;
-	gint count, i;
+	guint count, i;
 	GList *entries, *it;
 	ofoEntry *entry;
-	gdouble progress;
-	gchar *text;
 	const GDate *dos_dend, *ent_deffect;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -1667,33 +1632,24 @@ p6_future( ofaExerciceCloseAssistant *self )
 
 	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
-
+	i = 0;
 	bar = get_new_bar( self, "p6-future" );
 	gtk_widget_show_all( priv->p6_page );
 
-	for( i=1, it=entries ; it ; ++i, it=it->next ){
+	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ent_deffect = ofo_entry_get_deffect( entry );
-
 		if( my_date_compare( ent_deffect, dos_dend ) <= 0 ){
 			g_signal_emit_by_name( priv->hub,
 					SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
 		}
-
-		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
-
-		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "ofa-text", text );
-
-		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
-
-		g_free( text );
+		update_bar( bar, &i, count, thisfn );
 	}
-	if( !count ){
+	if( count == 0 ){
 		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
 	}
 
+	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_opening_plugin, self );
 
 	/* do not continue and remove from idle callbacks list */
@@ -1706,7 +1662,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 static gboolean
 p6_opening_plugin( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_plugins";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_opening_plugin";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *it;
 	sClose *close_data;
@@ -1752,6 +1708,25 @@ get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
 
 	return( bar );
+}
+
+static void
+update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_name )
+{
+	gdouble progress;
+	gchar *text;
+
+	*count += 1;
+
+	progress = ( gdouble ) *count / ( gdouble ) total;
+	g_signal_emit_by_name( bar, "ofa-double", progress );
+
+	text = g_strdup_printf( "%u/%u", *count, total );
+	g_signal_emit_by_name( bar, "ofa-text", text );
+
+	g_debug( "%s: progress=%.5lf, text=%s", emitter_name, progress, text );
+
+	g_free( text );
 }
 
 /*
