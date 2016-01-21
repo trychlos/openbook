@@ -28,6 +28,7 @@
 
 #include "ofa-tva.h"
 #include "ofa-tva-dbmodel.h"
+#include "ofa-tva-execlose.h"
 
 /* private instance data
  */
@@ -72,12 +73,21 @@ ofa_tva_register_type( GTypeModule *module )
 		NULL
 	};
 
+	static const GInterfaceInfo iexeclose_iface_info = {
+		( GInterfaceInitFunc ) ofa_tva_execlose_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaTva", &info, 0 );
 
 	g_type_module_add_interface(
 			module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
+
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IEXECLOSE_CLOSE, &iexeclose_iface_info );
 }
 
 static void

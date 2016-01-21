@@ -165,10 +165,11 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo ofa-tva-dbmodel.lo \
-	ofa-tva-declare-page.lo ofa-tva-form-properties.lo \
-	ofa-tva-form-store.lo ofa-tva-main.lo ofa-tva-manage-page.lo \
-	ofa-tva-record-new.lo ofa-tva-record-properties.lo \
-	ofa-tva-record-store.lo ofo-tva-form.lo ofo-tva-record.lo
+	ofa-tva-declare-page.lo ofa-tva-execlose.lo \
+	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
+	ofa-tva-main.lo ofa-tva-manage-page.lo ofa-tva-record-new.lo \
+	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
+	ofo-tva-form.lo ofo-tva-record.lo
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -428,6 +429,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-dbmodel.h								\
 	ofa-tva-declare-page.c							\
 	ofa-tva-declare-page.h							\
+	ofa-tva-execlose.c								\
+	ofa-tva-execlose.h								\
 	ofa-tva-form-properties.c						\
 	ofa-tva-form-properties.h						\
 	ofa-tva-form-store.c							\
@@ -557,6 +560,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-declare-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-execlose.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-main.Plo@am__quote@
