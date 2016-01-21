@@ -475,9 +475,6 @@
  964 2016- 1-10 menu-defined and main-window-created are same signal:
                 remove one of the two
 
- 965 2016- 1-10 have a closing exercice signal to let the plugin archive
-                their data
-
  966 2016- 1-10 tva/ofoTVARecord: make it printable
 
  969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
@@ -630,6 +627,10 @@
 
  962 2016- 1-10 obsolete core/ofo-marshal
      2016- 1-10 done
+
+ 965 2016- 1-10 have a closing exercice signal to let the plugin archive
+                their data
+     2016- 1-21 done through ofaIExeCloseClose interface
 
  967 2016- 1-10 change the prefix of archive tables
      2016- 1-19 prefix is ARCHIVE - done

@@ -28,6 +28,7 @@
    - ofaIExeCloseClose: new interface for exercice closing in the plugins.
    - ofaIHubber: new interface for ofaHub management (todo #941).
    - TVA: compute the VAT rules (todo #311).
+   - ExerciceClosing: let the plugins do their tasks (todo #965).
 
  Bug fixes:
 
