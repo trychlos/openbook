@@ -57,6 +57,7 @@ static gchar   *iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowt
 static gboolean iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
 static gboolean do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub );
 static gboolean do_task_opening( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub );
+static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
  * #ofaIExeCloseClose interface setup
@@ -93,7 +94,7 @@ iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype )
 			text = NULL;
 			break;
 		case EXECLOSE_OPENING:
-			text = g_strdup( _( "VAT tasks on opening exercice N+1 :" ));
+			text = g_strdup( _( "VAT tasks on N+1 period opening :" ));
 			break;
 		default:
 			g_return_val_if_reached( NULL );
@@ -139,17 +140,79 @@ do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub )
 }
 
 /*
- * archive the validated forms
+ * archive the validated VAT declaration records
+ * the identifier of the deleted records are stored in
+ * ARCHTVA_T_DELETED_RECORDS table
  */
 static gboolean
 do_task_opening( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub )
 {
-	GtkWidget *label;
+	gboolean ok;
+	const ofaIDBConnect *connect;
+	gchar *query;
+	myProgressBar *bar;
+	guint count, total;
 
-	label = gtk_label_new( _( "DO SOMETHING HERE" ));
-	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	gtk_container_add( GTK_CONTAINER( box ), label );
+	bar = my_progress_bar_new();
+	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
 	gtk_widget_show_all( box );
 
-	return( TRUE );
+	total = 5;							/* queries count */
+	count = 0;
+	ok = TRUE;
+	connect = ofa_hub_get_connect( hub );
+
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHTVA_T_DELETED_RECORDS" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+	if( ok ){
+		query = g_strdup( "CREATE TABLE ARCHTVA_T_DELETED_RECORDS "
+					"SELECT TFO_MNEMO,TFO_LABEL,TFO_NOTES,TFO_BEGIN,"
+					"TFO_END,TFO_VALIDATED FROM TVA_T_RECORDS "
+					"	WHERE TFO_VALIDATED='Y'" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM TVA_T_RECORDS "
+					"	WHERE TFO_VALIDATED='Y'" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM TVA_T_RECORDS_BOOL "
+				"WHERE EXISTS( SELECT 1 FROM ARCHTVA_T_DELETED_RECORDS "
+				"	WHERE TVA_T_RECORDS_BOOL.TFO_MNEMO=ARCHTVA_T_DELETED_RECORDS.TFO_MNEMO "
+				"	AND TVA_T_RECORDS_BOOL.TFO_END=ARCHTVA_T_DELETED_RECORDS.TFO_END)" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM TVA_T_RECORDS_DET "
+				"WHERE EXISTS( SELECT 1 FROM ARCHTVA_T_DELETED_RECORDS "
+				"	WHERE TVA_T_RECORDS_DET.TFO_MNEMO=ARCHTVA_T_DELETED_RECORDS.TFO_MNEMO "
+				"	AND TVA_T_RECORDS_DET.TFO_END=ARCHTVA_T_DELETED_RECORDS.TFO_END)" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+
+	return( ok );
+}
+
+static void
+update_bar( myProgressBar *bar, guint *count, guint total )
+{
+	gdouble progress;
+
+	*count += 1;
+	progress = ( gdouble ) *count / ( gdouble ) total;
+	g_signal_emit_by_name( bar, "ofa-double", progress );
+	g_signal_emit_by_name( bar, "ofa-text", NULL );			/* shows a percentage */
 }
