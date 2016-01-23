@@ -103,7 +103,7 @@ struct _ofaMainWindowPrivate {
  */
 enum {
 	DOSSIER_PROPERTIES = 0,
-	OPENED_DOSSIER,
+	DOSSIER_CHANGED,
 	DIALOG_INIT,
 	ADD_THEME,
 	ACTIVATE_THEME,
@@ -323,7 +323,8 @@ static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void             on_dossier_opened( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void             on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void             do_update_menubar_items( ofaMainWindow *main_window );
 static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
 static void             enable_action_settlement( ofaMainWindow *window, gboolean enable );
 static void             enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
@@ -506,7 +507,7 @@ main_window_constructed( GObject *instance )
 		/* connect the action signals
 		 */
 		g_signal_connect( instance,
-				OFA_SIGNAL_DOSSIER_OPENED, G_CALLBACK( on_dossier_opened ), NULL );
+				OFA_SIGNAL_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
 		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
 
@@ -603,18 +604,20 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				0 );
 
 	/**
-	 * ofaMainWindow::ofa-dossier-opened:
+	 * ofaMainWindow::ofa-dossier-changed:
 	 *
-	 * This signal is sent on the main window when a dossier has been
-	 * opened.
+	 * This signal is sent on the main window when the dossier is opened
+	 * and when dossier properties have changed.
+	 * The #ofaMainWindow handler takes advantage of it to update the
+	 * window title and the menubar items sensitivity.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaMainWindow *window,
 	 *                      ofoDossier  *dossier,
 	 * 						gpointer     user_data );
 	 */
-	st_signals[ OPENED_DOSSIER ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_OPENED,
+	st_signals[ DOSSIER_CHANGED ] = g_signal_new_class_handler(
+				OFA_SIGNAL_DOSSIER_CHANGED,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -804,7 +807,6 @@ do_open_dossier( ofaMainWindow *main_window )
 	add_empty_notebook_to_pane_right( main_window );
 
 	set_menubar( main_window, priv->menu );
-	set_window_title( main_window );
 
 	/* warns if begin or end of exercice is not set */
 	dossier = ofa_hub_get_dossier( priv->hub );
@@ -813,6 +815,8 @@ do_open_dossier( ofaMainWindow *main_window )
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
 		warning_exercice_unset( main_window );
 	}
+
+	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, dossier );
 
 	/* display dossier notes */
 	if( ofa_prefs_dossier_open_notes()){
@@ -829,8 +833,6 @@ do_open_dossier( ofaMainWindow *main_window )
 	if( ofa_prefs_dossier_open_properties()){
 		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
 	}
-
-	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_OPENED, dossier );
 }
 
 /*
@@ -1260,21 +1262,33 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 }
 
 /*
- * signal sent after the dossier has been successfully opened
+ * signal sent after the dossier properties have changed
+ * this may be used to update the window title and the menubar items
  */
 static void
-on_dossier_opened( ofaMainWindow *window, ofoDossier *dossier, void *empty )
+on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 {
+	set_window_title( window );
+	do_update_menubar_items( window );
+}
+
+static void
+do_update_menubar_items( ofaMainWindow *main_window )
+{
+	ofaMainWindowPrivate *priv;
 	gboolean is_current;
+	ofoDossier *dossier;
 
-	is_current = ofo_dossier_is_current( dossier );
+	priv = main_window->priv;
+	dossier = priv->hub ? ofa_hub_get_dossier( priv->hub ) : NULL;
+	is_current = dossier ? ofo_dossier_is_current( dossier ) : FALSE;
 
-	enable_action_guided_input( window, is_current );
-	enable_action_settlement( window, is_current );
-	enable_action_reconciliation( window, is_current );
-	enable_action_close_ledger( window, is_current );
-	enable_action_close_exercice( window, is_current );
-	enable_action_import( window, is_current );
+	enable_action_guided_input( main_window, is_current );
+	enable_action_settlement( main_window, is_current );
+	enable_action_reconciliation( main_window, is_current );
+	enable_action_close_ledger( main_window, is_current );
+	enable_action_close_exercice( main_window, is_current );
+	enable_action_import( main_window, is_current );
 }
 
 static void

@@ -129,13 +129,14 @@ enum {
 #define OFA_SIGNAL_DOSSIER_PROPERTIES   "ofa-dossier-properties"
 
 /**
- * OFA_SIGNAL_DOSSIER_OPENED:
- *  Information signal sent on the main window when a dossier has been.
- *  opened.
+ * OFA_SIGNAL_DOSSIER_CHANGED:
+ *  Information signal sent on the main window when properties of a
+ *  dossier have changed. This signal may be used to update the window
+ *  title and the menubar items.
  *  Args:
  *  - the #ofoDossier.
  */
-#define OFA_SIGNAL_DOSSIER_OPENED       "ofa-dossier-opened"
+#define OFA_SIGNAL_DOSSIER_CHANGED      "ofa-dossier-changed"
 
 GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 

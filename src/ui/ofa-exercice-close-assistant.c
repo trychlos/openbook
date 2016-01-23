@@ -541,7 +541,7 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	ofo_dossier_set_exe_begin( priv->dossier, begin_cur );
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_EXE_DATES_CHANGED, begin_cur, end_cur );
-	ofa_main_window_update_title( priv->main_window );
+	g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	ofa_closing_parms_bin_apply( priv->p1_closing_parms );
 
@@ -1273,7 +1273,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
-	ofa_main_window_update_title( priv->main_window );
 
 	period = ofa_idbconnect_get_period( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
@@ -1328,15 +1327,14 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
 				ofo_dossier_update( priv->dossier );
-
-				/* re-emit the opened signal after changes */
-				g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPENED, priv->dossier );
-				ofa_main_window_update_title( priv->main_window );
 			}
 		}
 
 		g_object_unref( cnx );
 	}
+
+	/* re-emit the changed signal after changes */
+	g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	return( ok );
 }

@@ -470,11 +470,6 @@
  956 2016- 1- 6 add to make distcheck a script which checks that -def
                 includes are always used in headers (and only)
 
- 963 2016- 1-10 obsolete OFA_SIGNAL_DOSSIER_OPENED ?
-
- 964 2016- 1-10 menu-defined and main-window-created are same signal:
-                remove one of the two
-
  966 2016- 1-10 tva/ofoTVARecord: make it printable
 
  969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
@@ -627,6 +622,19 @@
 
  962 2016- 1-10 obsolete core/ofo-marshal
      2016- 1-10 done
+
+ 963 2016- 1-10 obsolete OFA_SIGNAL_DOSSIER_OPENED ?
+     2016- 1-22 the signal is used to change the title of the main window
+                and the sensitivity of the menubar items, so should be 
+                used not only on dossier opening, but also each time one
+                of the relevant properties changes -> better rename it
+                to ofa-dossier-changed
+     2016- 1-23 done
+
+ 964 2016- 1-10 menu-defined and main-window-created are same signal:
+                remove one of the two
+     2016- 1-22 these are not the same as menu-defined is sent twice
+                -> cancelled
 
  965 2016- 1-10 have a closing exercice signal to let the plugin archive
                 their data

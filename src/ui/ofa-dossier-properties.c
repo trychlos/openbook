@@ -783,12 +783,13 @@ do_update( ofaDossierProperties *self )
 	priv->updated = ofo_dossier_update( priv->dossier );
 
 	if( count > 0 ){
-		ofa_main_window_update_title( priv->main_window );
 		display_progress_init( self );
 		g_signal_emit_by_name(
 				priv->hub, SIGNAL_HUB_EXE_DATES_CHANGED, &priv->begin_init, &priv->end_init );
 		display_progress_end( self );
 	}
+
+	g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	return( priv->updated );
 }
