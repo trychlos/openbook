@@ -1015,24 +1015,6 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
 	}
 }
 
-/**
- * ofa_main_window_update_title:
- */
-void
-ofa_main_window_update_title( const ofaMainWindow *window )
-{
-	ofaMainWindowPrivate *priv;
-
-	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
-
-	priv = window->priv;
-
-	if( !priv->dispose_has_run ){
-
-		set_window_title( window );
-	}
-}
-
 static void
 set_window_title( const ofaMainWindow *window )
 {

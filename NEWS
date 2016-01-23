@@ -47,6 +47,7 @@
    - ofa_main_window_get_dossier: obsoleted method (todo #961).
    - ofa_main_window_open_dossier: obsoleted method (todo #961).
    - ofa_main_window_get_hub(): new method.
+   - ofa_main_window_update_title(): removed method.
    - ofa_page_get_dossier(): obsoleted method (todo #955).
    - ofo_base_get_hub(), ofo_base_set_hub(): new methods.
    - ofo_dossier_new(): removed method.
