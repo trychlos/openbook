@@ -456,6 +456,8 @@
                 contain the actual public API, and thus remove from
                 api/ some files which were only pulled up for compilation
                 reasons
+     2016- 1-24 this would pull up ofaApplication, ofaFileDir and ofaMainWindow
+                 to src/core/, which itself would pull up almost all pages..
 
  938 2015-12-21 distinguish a core api with core objects (eg. for
                 command-line only tools) and a ui api which contains
