@@ -60,7 +60,7 @@ struct _ofoBatLinePrivate {
 
 static ofoBaseClass *ofo_bat_line_parent_class = NULL;
 
-static GList       *bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *connect );
+static GList       *bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static gboolean     bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect );
 static gboolean     bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect );
@@ -198,20 +198,22 @@ ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = bat_line_load_dataset( bat_id, ofa_hub_get_connect( hub ));
+	dataset = bat_line_load_dataset( bat_id, hub );
 
 	return( dataset );
 }
 
 static GList *
-bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *connect )
+bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub )
 {
+	const ofaIDBConnect *connect;
 	GString *query;
 	GSList *result, *irow, *icol;
 	GList *dataset;
 	ofoBatLine *line;
 
 	dataset = NULL;
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new(
 					"SELECT BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,"
@@ -248,6 +250,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaIDBConnect *connect )
 			ofo_bat_line_set_amount( line,
 					my_double_set_from_sql(( const gchar * ) icol->data ));
 
+			ofo_base_set_hub( OFO_BASE( line ), hub );
 			dataset = g_list_prepend( dataset, line );
 		}
 		ofa_idbconnect_free_results( result );
