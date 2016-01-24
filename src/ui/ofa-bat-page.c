@@ -143,12 +143,14 @@ v_setup_view( ofaPage *page )
 	ofaBatPagePrivate *priv;
 	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
-			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END, BAT_DISP_COUNT,
+			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END,
+			BAT_DISP_COUNT, BAT_DISP_UNUSED,
 			BAT_DISP_FORMAT, BAT_DISP_RIB,
 			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
 			0 };
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
 
 	priv = OFA_BAT_PAGE( page )->priv;
 

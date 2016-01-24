@@ -325,8 +325,6 @@
                 those which are associated with the current account
                 number (if any) - of those which are not yet associated
 
- 754 2015- 3-21 add unused count to bat page treeview
-
  758 2015- 3-21 warns when deleting a settled or reconciliated entry
                 +unsettle/unreconciliate
 
@@ -509,6 +507,9 @@
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?
      2016- 1-18 cancelled (at least for now)
+
+ 754 2015- 3-21 add unused count to bat page treeview
+     2016- 1-24 done
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
      2016- 1-18 ofaIDataset has been obsoleted by ofaICollector/
