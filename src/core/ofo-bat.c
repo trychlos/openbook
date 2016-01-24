@@ -1356,6 +1356,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 			bat_set_upd_stamp( bat,
 					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
+			ofo_base_set_hub( OFO_BASE( bat ), hub );
 			dataset = g_list_prepend( dataset, bat );
 		}
 
