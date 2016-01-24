@@ -52,8 +52,8 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, rib */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
 		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, count, upd_user */
-		G_TYPE_STRING,									/* upd_stamp */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, count, unused */
+		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoBat itself */
 };
 
@@ -233,9 +233,10 @@ insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
 static void
 set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 {
-	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp;
+	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
 	const gchar *cscurrency;
+	gint count, used;
 
 	sid = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
 	date = ofo_bat_get_begin( bat );
@@ -264,7 +265,10 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 	if( !cscurrency ){
 		cscurrency = "";
 	}
-	scount = g_strdup_printf( "%u", ofo_bat_get_lines_count( bat ));
+	count = ofo_bat_get_lines_count( bat );
+	scount = g_strdup_printf( "%u", count );
+	used = ofo_bat_get_used_count( bat );
+	sunused = g_strdup_printf( "%u", count-used );
 	stamp  = my_utils_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
 	gtk_list_store_set(
@@ -283,6 +287,7 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 			BAT_COL_END_SOLDE_SET,   ofo_bat_get_solde_end_set( bat ),
 			BAT_COL_NOTES,           ofo_bat_get_notes( bat ),
 			BAT_COL_COUNT,           scount,
+			BAT_COL_UNUSED,          sunused,
 			BAT_COL_UPD_USER,        ofo_bat_get_upd_user( bat ),
 			BAT_COL_UPD_STAMP,       stamp,
 			BAT_COL_OBJECT,          bat,
@@ -290,6 +295,7 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 
 	g_free( stamp );
 	g_free( scount );
+	g_free( sunused );
 	g_free( sbeginsolde );
 	g_free( sendsolde );
 	g_free( send );
