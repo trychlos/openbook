@@ -56,7 +56,7 @@ struct _ofaLedgerBookBinPrivate {
 	ofaLedgerTreeview   *ledgers_tview;
 	GtkWidget           *all_ledgers_btn;
 	GtkWidget           *new_page_btn;
-	ofaDateFilterHVBin *date_filter;
+	ofaDateFilterHVBin  *date_filter;
 
 	/* internals
 	 */
