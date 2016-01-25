@@ -114,7 +114,7 @@ struct _ofaLedgerBookRenderPrivate {
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_LANDSCAPE
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
-static const gchar *st_page_header_title = N_( "General Ledgers Summary" );
+static const gchar *st_page_header_title = N_( "General Ledgers Book" );
 
 static const gchar *st_print_settings    = "RenderLedgersBookPrint";
 
@@ -652,7 +652,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 }
 
 /*
- * just test if the current entry is on the same account than the
+ * just test if the current entry is on the same ledger than the
  * previous one
  */
 static gboolean
@@ -688,7 +688,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 
 	y = ofa_irenderable_get_last_y( instance );
 
-	/* setup the account properties */
+	/* setup the ledger properties */
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
 
