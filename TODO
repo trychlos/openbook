@@ -198,8 +198,8 @@
      2016- 1-18 this would imply that all candidate classes declare
                 themselves to a central hub (not the dossier, but the
                 application for example)
-                application for example) - which would nonetheless be
-                close of the connect_to_hub_signaling_system() calls
+                which would nonetheless be close of the
+                connect_to_hub_signaling_system() calls
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
@@ -249,10 +249,9 @@
      2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
                 while keeping to react to user interactions
 
- 628 2015- 2- 3 FATAL: OpeTemplateProperties: segfault when saving
-
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
+     2016- 1-25 icon is installed in $(datadir)
 
  652 2015- 2-15 let the user configure colors
      2015- 3-13 (branch colors) doesn't know how to go back from custom 
@@ -271,11 +270,6 @@
 
  669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
                 color, a logo, etc.)
-
- 677 2015- 2-19 preferences for the dossier should be set in the dbms
-                (e.g. order of ope_templates pages)
-     2015- 2-20 why ? to save them in backups and be able to restore 
-                them 
 
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
@@ -500,6 +494,16 @@
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
      2016- 1-18 obsoleted by new meta/period architecture
+
+ 628 2015- 2- 3 FATAL: OpeTemplateProperties: segfault when saving
+     2016- 1-25 cancelled as not reproducible
+
+ 677 2015- 2-19 preferences for the dossier should be set in the dbms
+                (e.g. order of ope_templates pages)
+     2015- 2-20 why ? to save them in backups and be able to restore 
+                them
+     2016- 1-25 cancelled (user preferences are not backuped with the 
+                dossier) 
 
  678 2015- 2-19 visual bug which seems to come from GTK+: updating a
                 list/tree store only update the display when moving the
