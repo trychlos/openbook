@@ -64,6 +64,7 @@
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
+#include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
@@ -110,56 +111,58 @@ enum {
 	N_SIGNALS
 };
 
-static void on_properties          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_backup              ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_close               ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_guided          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_entry_page      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_concil          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_settlement      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_ledger_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_exercice_close  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_balances     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_accounts_book( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_ledgers_book ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_reconcil     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_ope_templates   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_currencies      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_rates           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_classes         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_batfiles        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_check_balances      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_check_integrity     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_properties            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_backup                ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_close                 ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_guided            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_entry_page        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_concil            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_settlement        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_ledger_close      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_exercice_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_import            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_export            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_balances       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_accounts_book  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_ledgers_book   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_reconcil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_accounts          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ledgers           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ope_templates     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_currencies        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_rates             ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_classes           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_batfiles          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_check_balances        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_check_integrity       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
-		{ "properties",       on_properties,           NULL, NULL, NULL },
-		{ "backup",           on_backup,               NULL, NULL, NULL },
-		{ "close",            on_close,                NULL, NULL, NULL },
-		{ "guided",           on_ope_guided,           NULL, NULL, NULL },
-		{ "entries",          on_ope_entry_page,       NULL, NULL, NULL },
-		{ "concil",           on_ope_concil,           NULL, NULL, NULL },
-		{ "settlement",       on_ope_settlement,       NULL, NULL, NULL },
-		{ "ledclosing",       on_ope_ledger_close,     NULL, NULL, NULL },
-		{ "execlosing",       on_ope_exercice_close,   NULL, NULL, NULL },
-		{ "import",           on_ope_import,           NULL, NULL, NULL },
-		{ "export",           on_ope_export,           NULL, NULL, NULL },
-		{ "render-balances",  on_render_balances,      NULL, NULL, NULL },
-		{ "render-books",     on_render_accounts_book, NULL, NULL, NULL },
-		{ "render-ledgers",   on_render_ledgers_book,  NULL, NULL, NULL },
-		{ "render-reconcil",  on_render_reconcil,      NULL, NULL, NULL },
-		{ "accounts",         on_ref_accounts,         NULL, NULL, NULL },
-		{ "ledgers",          on_ref_ledgers,          NULL, NULL, NULL },
-		{ "ope-templates",    on_ref_ope_templates,    NULL, NULL, NULL },
-		{ "currencies",       on_ref_currencies,       NULL, NULL, NULL },
-		{ "rates",            on_ref_rates,            NULL, NULL, NULL },
-		{ "classes",          on_ref_classes,          NULL, NULL, NULL },
-		{ "batfiles",         on_ref_batfiles,         NULL, NULL, NULL },
-		{ "chkbal",           on_check_balances,       NULL, NULL, NULL },
-		{ "integrity",        on_check_integrity,      NULL, NULL, NULL },
+		{ "properties",             on_properties,             NULL, NULL, NULL },
+		{ "backup",                 on_backup,                 NULL, NULL, NULL },
+		{ "close",                  on_close,                  NULL, NULL, NULL },
+		{ "guided",                 on_ope_guided,             NULL, NULL, NULL },
+		{ "entries",                on_ope_entry_page,         NULL, NULL, NULL },
+		{ "concil",                 on_ope_concil,             NULL, NULL, NULL },
+		{ "settlement",             on_ope_settlement,         NULL, NULL, NULL },
+		{ "ledclosing",             on_ope_ledger_close,       NULL, NULL, NULL },
+		{ "execlosing",             on_ope_exercice_close,     NULL, NULL, NULL },
+		{ "import",                 on_ope_import,             NULL, NULL, NULL },
+		{ "export",                 on_ope_export,             NULL, NULL, NULL },
+		{ "render-balances",        on_render_balances,        NULL, NULL, NULL },
+		{ "render-books",           on_render_accounts_book,   NULL, NULL, NULL },
+		{ "render-ledgers-book",    on_render_ledgers_book,    NULL, NULL, NULL },
+		{ "render-ledgers-summary", on_render_ledgers_summary, NULL, NULL, NULL },
+		{ "render-reconcil",        on_render_reconcil,        NULL, NULL, NULL },
+		{ "accounts",               on_ref_accounts,           NULL, NULL, NULL },
+		{ "ledgers",                on_ref_ledgers,            NULL, NULL, NULL },
+		{ "ope-templates",          on_ref_ope_templates,      NULL, NULL, NULL },
+		{ "currencies",             on_ref_currencies,         NULL, NULL, NULL },
+		{ "rates",                  on_ref_rates,              NULL, NULL, NULL },
+		{ "classes",                on_ref_classes,            NULL, NULL, NULL },
+		{ "batfiles",               on_ref_batfiles,           NULL, NULL, NULL },
+		{ "chkbal",                 on_check_balances,         NULL, NULL, NULL },
+		{ "integrity",              on_check_integrity,        NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -244,6 +247,11 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_RENDER_LEDGERS_BOOK,
 				N_( "Ledgers book" ),
 				ofa_ledger_book_render_get_type,
+				FALSE
+		},
+		{ THM_RENDER_LEDGERS_SUMMARY,
+				N_( "Ledgers summary" ),
+				ofa_ledger_summary_render_get_type,
 				FALSE
 		},
 		{ THM_RENDER_RECONCIL,
@@ -1561,6 +1569,19 @@ on_render_ledgers_book( GSimpleAction *action, GVariant *parameter, gpointer use
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS_BOOK );
+}
+
+static void
+on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_render_ledgers_summary";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS_SUMMARY );
 }
 
 static void

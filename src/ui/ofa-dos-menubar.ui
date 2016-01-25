@@ -124,7 +124,11 @@
         </item>
         <item>
           <attribute name="label" translatable="yes">_Ledgers book...</attribute>
-          <attribute name="action">win.render-ledgers</attribute>
+          <attribute name="action">win.render-ledgers-book</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Ledgers summary...</attribute>
+          <attribute name="action">win.render-ledgers-summary</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
