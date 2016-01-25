@@ -42,12 +42,14 @@ struct _ofaOpeTemplateHelpPrivate {
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-ope-template-help.ui";
-static const gchar *st_ui_id            = "OpeTemplateHelpDialog";
+static const gchar *st_ui_id            = "OpeTemplateHelpWindow";
 
-static void init_window( ofaOpeTemplateHelp *help );
-static void on_response( GtkDialog *dialog, gint response_id, ofaOpeTemplateHelp *help );
+static void     init_window( ofaOpeTemplateHelp *help );
+static gboolean on_delete_event( GtkWidget *widget, GdkEvent *event, ofaOpeTemplateHelp *help );
+static void     on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help );
+static void     do_close( ofaOpeTemplateHelp *help );
 
-G_DEFINE_TYPE( ofaOpeTemplateHelp, ofa_ope_template_help, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaOpeTemplateHelp, ofa_ope_template_help, MY_TYPE_WINDOW )
 
 static void
 ope_template_help_finalize( GObject *instance )
@@ -133,11 +135,14 @@ init_window( ofaOpeTemplateHelp *help )
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( help ));
 
+	g_signal_connect( toplevel, "delete-event", G_CALLBACK( on_delete_event ), help );
+
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-close" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( toplevel, "response", G_CALLBACK( on_response ), help );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), help );
 
 	gtk_widget_show_all( GTK_WIDGET( toplevel ));
+	gtk_window_present( toplevel );
 
 	/*g_main_loop_new( NULL, TRUE );*/
 	/*
@@ -145,20 +150,37 @@ init_window( ofaOpeTemplateHelp *help )
 	gboolean grabbed = gtk_widget_has_grab( GTK_WIDGET( toplevel ));
 	g_debug( "ofa_ope_template_help_init_window: grabbed=%s", grabbed ? "True":"False" );
 	*/
+	/*
 	gtk_main();
+	*/
+	/*
+	gtk_widget_grab_focus( button );
+	*/
+	/*
+	GMainLoop *loop = g_main_loop_new( NULL, FALSE );
+	g_main_loop_run (loop);
+	*/
+}
+
+static gboolean
+on_delete_event( GtkWidget *widget, GdkEvent *event, ofaOpeTemplateHelp *help )
+{
+	do_close( help );
+	return( TRUE );
 }
 
 /*
  * response codes available in /usr/include/gtk-3.0/gtk/gtkdialog.h
  */
 static void
-on_response( GtkDialog *dialog, gint response_id, ofaOpeTemplateHelp *help )
+on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help )
 {
-	g_object_unref( help );
+	g_debug( "ofa_ope_template_on_close_clicked" );
+	do_close( help );
 }
 
 /**
- * ofa_ope_template_help_run:
+ * ofa_ope_template_help_close:
  */
 void
 ofa_ope_template_help_close( ofaOpeTemplateHelp *help )
@@ -167,6 +189,12 @@ ofa_ope_template_help_close( ofaOpeTemplateHelp *help )
 
 	if( !MY_WINDOW( help )->prot->dispose_has_run ){
 
-		on_response( NULL, 0, help );
+		do_close( help );
 	}
+}
+
+static void
+do_close( ofaOpeTemplateHelp *help )
+{
+	g_object_unref( help );
 }

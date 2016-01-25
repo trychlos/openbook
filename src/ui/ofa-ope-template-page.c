@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
@@ -165,12 +166,15 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 	ofoOpeTemplate *ope;
 	ofaHub *hub;
 
-	if( mnemo ){
+	if( my_strlen( mnemo )){
+
 		hub = ofa_page_get_hub( OFA_PAGE( page ));
+		g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
 		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ope, NULL );
+		ofa_ope_template_properties_new( ofa_page_get_main_window( OFA_PAGE( page )), ope );
 	}
 }
 

@@ -51,7 +51,7 @@ typedef struct _ofaOpeTemplateHelpPrivate         ofaOpeTemplateHelpPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                   parent;
+	myWindow                   parent;
 
 	/*< private members >*/
 	ofaOpeTemplateHelpPrivate *priv;
@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass              parent;
+	myWindowClass              parent;
 }
 	ofaOpeTemplateHelpClass;
 

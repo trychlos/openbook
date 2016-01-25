@@ -35,12 +35,13 @@
  * See api/ofo-ope-template.h for a full description of the model language.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
+#include <gtk/gtk.h>
+
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
@@ -56,7 +57,7 @@ typedef struct _ofaOpeTemplatePropertiesPrivate         ofaOpeTemplateProperties
 
 typedef struct {
 	/*< public members >*/
-	myDialog                         parent;
+	GtkDialog                        parent;
 
 	/*< private members >*/
 	ofaOpeTemplatePropertiesPrivate *priv;
@@ -65,15 +66,18 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	GtkDialogClass                   parent;
 }
 	ofaOpeTemplatePropertiesClass;
 
 GType    ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_ope_template_properties_run     ( const ofaMainWindow *parent,
-														ofoOpeTemplate *model,
-														const gchar *ledger );
+													ofoOpeTemplate *template,
+													const gchar *ledger );
+
+void     ofa_ope_template_properties_new     ( const ofaMainWindow *parent,
+													ofoOpeTemplate *template );
 
 G_END_DECLS
 
