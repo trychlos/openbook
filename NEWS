@@ -24,7 +24,7 @@
 
  New features and improvements:
 
-   - 
+   - LedgerSummaryRender: have a summary per ledger (todo #729).
 
  Bug fixes:
 

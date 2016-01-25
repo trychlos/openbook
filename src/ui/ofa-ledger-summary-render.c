@@ -61,10 +61,9 @@ struct _ofaLedgerSummaryRenderPrivate {
 
 	/* internals
 	 */
-	GList               *ledgers;
 	GDate                from_date;
 	GDate                to_date;
-	gint                 count;					/* count of returned entries */
+	gulong               count;					/* total count of entries */
 
 	/* print datas
 	 */
@@ -72,7 +71,7 @@ struct _ofaLedgerSummaryRenderPrivate {
 	gdouble              render_height;
 	gdouble              page_margin;
 
-	/* layout for ledger header line
+	/* layout for ledger line
 	 */
 	gdouble              body_ledcode_ltab;
 	gdouble              body_ledlabel_ltab;
@@ -80,12 +79,6 @@ struct _ofaLedgerSummaryRenderPrivate {
 	gdouble              body_debit_rtab;
 	gdouble              body_credit_rtab;
 	gdouble              body_currency_rtab;
-
-	/* for each ledger
-	 */
-	gchar               *ledger_mnemo;
-	ofoLedger           *ledger_object;
-	GList               *ledger_totals;		/* totals per currency for the ledger */
 
 	/* total general
 	 */
@@ -124,23 +117,16 @@ static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
 static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_get_dataset( ofaRenderPage *page );
-static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaLedgerSummaryBin *bin, ofaLedgerSummaryRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
-static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
 static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
 static gchar             *irenderable_get_dossier_name( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
-static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, GList *current );
 static void               irenderable_draw_line( ofaIRenderable *instance, GList *current );
-static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
-static void               draw_ledger_totals( ofaIRenderable *instance );
-static void               free_currency( ofsCurrency *total_per_currency );
 
 GType
 ofa_ledger_summary_render_get_type( void )
@@ -201,7 +187,6 @@ ledgers_book_render_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
 
-	ofs_currency_list_free( &priv->ledger_totals );
 	ofs_currency_list_free( &priv->report_totals );
 
 	/* chain up to the parent class */
@@ -255,7 +240,6 @@ ledgers_book_render_class_init( ofaLedgerSummaryRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_get_page_orientation;
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
-	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
 
 	g_type_class_add_private( klass, sizeof( ofaLedgerSummaryRenderPrivate ));
 }
@@ -323,38 +307,18 @@ static GList *
 render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaLedgerSummaryRenderPrivate *priv;
-	GList *it;
-	GSList *mnemos;
 	GList *dataset;
 	ofaIDateFilter *date_filter;
 
 	priv = OFA_LEDGER_SUMMARY_RENDER( page )->priv;
 
-	priv->ledgers = ofo_ledger_get_dataset( priv->hub );
-
-	for( mnemos=NULL, it=priv->ledgers ; it ; it=it->next ){
-		mnemos = g_slist_prepend( mnemos, g_strdup( ofo_ledger_get_mnemo( OFO_LEDGER( it->data ))));
-	}
-
 	date_filter = ofa_ledger_summary_bin_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	dataset = ofo_entry_get_dataset_for_print_ledgers(
-						priv->hub, mnemos,
-						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
-						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
-
-	priv->count = g_list_length( dataset );
-	g_slist_free_full( mnemos, ( GDestroyNotify ) g_free );
+	dataset = ofo_ledger_get_dataset( priv->hub );
 
 	return( dataset );
-}
-
-static void
-render_page_free_dataset( ofaRenderPage *page, GList *dataset )
-{
-	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 }
 
 /*
@@ -381,14 +345,10 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->get_interface_version = irenderable_get_interface_version;
 	iface->begin_render = irenderable_begin_render;
 	iface->reset_runtime = irenderable_reset_runtime;
-	iface->want_groups = irenderable_want_groups;
 	iface->get_dossier_name = irenderable_get_dossier_name;
 	iface->get_page_header_title = irenderable_get_page_header_title;
 	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
-	iface->is_new_group = irenderable_is_new_group;
-	iface->draw_group_header = irenderable_draw_group_header;
 	iface->draw_line = irenderable_draw_line;
-	iface->draw_group_footer = irenderable_draw_group_footer;
 	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
 }
 
@@ -405,21 +365,8 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 
 	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
 
+	priv->count = 0;
 	ofs_currency_list_free( &priv->report_totals );
-
-	g_free( priv->ledger_mnemo );
-	priv->ledger_mnemo = NULL;
-}
-
-/*
- * yes we want group entries per ledger
- * but we won't print anything as part of group header, because we are
- * only interested here by group footer (ledger summary)
- */
-static gboolean
-irenderable_want_groups( const ofaIRenderable *instance )
-{
-	return( TRUE );
 }
 
 /*
@@ -514,111 +461,118 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	ofa_irenderable_set_last_y( instance, y );
 }
 
-/*
- * just test if the current entry is on the same ledger than the
- * previous one
- */
-static gboolean
-irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
-{
-	ofoEntry *current_entry, *prev_entry;
-
-	g_return_val_if_fail( current, FALSE );
-
-	if( !prev ){
-		return( TRUE );
-	}
-
-	current_entry = OFO_ENTRY( current->data );
-	prev_entry = OFO_ENTRY( prev->data );
-
-	return( g_utf8_collate(
-				ofo_entry_get_ledger( current_entry ),
-				ofo_entry_get_ledger( prev_entry )) != 0 );
-}
-
-/*
- * do not draw anything here
- */
-static void
-irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
-{
-	ofaLedgerSummaryRenderPrivate *priv;
-
-	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
-
-	/* setup the ledger properties */
-	g_free( priv->ledger_mnemo );
-	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
-
-	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->hub, priv->ledger_mnemo );
-	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
-
-	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );
-	priv->ledger_totals = NULL;
-}
-
-/*
- *  do not draw anything here, but increment ledger totals
- */
 static void
 irenderable_draw_line( ofaIRenderable *instance, GList *current )
 {
+	static const gchar *thisfn = "ofa_ledger_summary_render_irenderable_draw_line";
 	ofaLedgerSummaryRenderPrivate *priv;
+	ofoLedger *ledger;
+	GSList *mnemos_list;
+	GList *entries, *it, *ledger_currencies;
+	const gchar *cledmnemo, *ccuriso;
 	ofoEntry *entry;
-	const gchar *code;
+	ofsCurrency *scur;
 	ofoCurrency *currency;
 	ofxAmount debit, credit;
-	gboolean is_paginating;
+	gboolean is_paginating, is_empty;
+	gdouble y, line_height;
+	gint digits;
+	gboolean first;
+	gchar *str;
 
 	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
-	entry = OFO_ENTRY( current->data );
-
-	/* get currency properties */
-	code = ofo_entry_get_currency( entry );
-	currency = ofo_currency_get_by_code( priv->hub, code );
-	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-
-	/* debit */
-	debit = ofo_entry_get_debit( entry );
-
-	/* credit */
-	credit = ofo_entry_get_credit( entry );
-
 	is_paginating = ofa_irenderable_is_paginating( instance );
-	ofs_currency_add_currency(
-			&priv->ledger_totals, code,
-			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
-}
 
-/*
- * This function is called many times in order to auto-detect the
- * height of the group footer (in particular each time the
- * #ofa_irenderable_draw_line() function needs to know if there is
- * enough vertical space left to draw the current line)
- * so take care of:
- * - currency has yet to be defined even during pagination phase
- *   in order to be able to detect the heigth of the summary
- */
-static void
-irenderable_draw_group_footer( ofaIRenderable *instance )
-{
-	ofaLedgerSummaryRenderPrivate *priv;
-	GList *it;
-	ofsCurrency *cur;
-	gboolean is_paginating;
+	/* take ledger properties */
+	ledger = OFO_LEDGER( current->data );
+	ledger_currencies = NULL;
+	cledmnemo = ofo_ledger_get_mnemo( ledger );
+	mnemos_list = g_slist_prepend( NULL, ( gpointer ) cledmnemo );
 
-	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
+	/* take the entries for this ledger */
+	entries = ofo_entry_get_dataset_for_print_ledgers(
+						priv->hub, mnemos_list,
+						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
+						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
-	draw_ledger_totals( instance );
+	g_slist_free( mnemos_list );
+	is_empty = ( g_list_length( entries ) == 0 );
 
-	is_paginating = ofa_irenderable_is_paginating( instance );
-	for( it=priv->ledger_totals ; it ; it=it->next ){
-		cur = ( ofsCurrency * ) it->data;
+	/* compute the balance per currencies */
+	for( it=entries ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+
+		ccuriso = ofo_entry_get_currency( entry );
+		debit = ofo_entry_get_debit( entry );
+		credit = ofo_entry_get_credit( entry );
+
 		ofs_currency_add_currency(
-				&priv->report_totals, cur->currency,
-				is_paginating ? 0 : cur->debit, is_paginating ? 0 : cur->credit );
+				&ledger_currencies, ccuriso,
+				is_paginating ? 0 : debit, is_paginating ? 0 : credit );
+
+		priv->count += 1;
 	}
+
+	ofo_entry_free_dataset( entries );
+
+	/* draw a line per currency */
+	y = ofa_irenderable_get_last_y( instance );
+	line_height = ofa_irenderable_get_line_height( instance );
+	first = TRUE;
+
+	if( is_empty ){
+		ofa_irenderable_set_text( instance,
+				priv->body_ledcode_ltab, y, cledmnemo, PANGO_ALIGN_LEFT );
+		ofa_irenderable_set_text( instance,
+				priv->body_ledlabel_ltab, y, ofo_ledger_get_label( ledger ), PANGO_ALIGN_LEFT );
+		/* Aligning on the decimal point would be a pain.
+		 * Would it be worth !? */
+		ofa_irenderable_set_text( instance,
+				priv->body_debit_rtab, y, "0", PANGO_ALIGN_RIGHT );
+		ofa_irenderable_set_text( instance,
+				priv->body_credit_rtab, y, "0", PANGO_ALIGN_RIGHT );
+	} else {
+		for( it=ledger_currencies ; it ; it=it->next ){
+			scur = ( ofsCurrency * ) it->data;
+			currency = ofo_currency_get_by_code( priv->hub, scur->currency );
+			g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+			digits = ofo_currency_get_digits( currency );
+
+			g_debug( "%s: ledger=%s, currency=%s, y=%.1lf",
+					thisfn, cledmnemo, scur->currency, y );
+
+			if( first ){
+				ofa_irenderable_set_text( instance,
+						priv->body_ledcode_ltab, y, cledmnemo, PANGO_ALIGN_LEFT );
+				ofa_irenderable_set_text( instance,
+						priv->body_ledlabel_ltab, y, ofo_ledger_get_label( ledger ), PANGO_ALIGN_LEFT );
+			}
+
+			str = my_double_to_str_ex( scur->debit, digits );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			str = my_double_to_str_ex( scur->credit, digits );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			ofa_irenderable_set_text( instance,
+					priv->body_currency_rtab, y, scur->currency, PANGO_ALIGN_RIGHT );
+
+			ofs_currency_add_currency(
+					&priv->report_totals, scur->currency,
+					is_paginating ? 0 : scur->debit, is_paginating ? 0 : scur->credit );
+
+			first = FALSE;
+			y += line_height;
+		}
+	}
+	ofs_currency_list_free( &ledger_currencies );
+
+	y -= line_height;
+	ofa_irenderable_set_last_y( instance, y );
 }
 
 /*
@@ -688,67 +642,4 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	}
 
 	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );
-}
-
-/*
- * draw the total for this ledger by currencies
- * update the last_y accordingly
- */
-static void
-draw_ledger_totals( ofaIRenderable *instance )
-{
-	ofaLedgerSummaryRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.4;
-	gdouble y, height;
-	gboolean first;
-	gchar *str;
-	GList *it;
-	ofsCurrency *scur;
-	ofoCurrency *currency;
-	gint digits;
-
-	priv = OFA_LEDGER_SUMMARY_RENDER( instance )->priv;
-
-	y = ofa_irenderable_get_last_y( instance );
-	height = 0;
-
-	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
-		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
-		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-		digits = ofo_currency_get_digits( currency );
-
-		if( first ){
-			str = g_strdup_printf( _( "%s ledger balance : " ), priv->ledger_mnemo );
-			height = ofa_irenderable_set_text( instance,
-					priv->body_debit_rtab-st_amount_width, y,
-					str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			first = FALSE;
-		}
-
-		str = my_double_to_str_ex( scur->debit, digits );
-		ofa_irenderable_set_text( instance,
-				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		str = my_double_to_str_ex( scur->credit, digits );
-		ofa_irenderable_set_text( instance,
-				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		ofa_irenderable_set_text( instance,
-				priv->body_currency_rtab, y, scur->currency, PANGO_ALIGN_RIGHT );
-
-		y += height * ( 1+st_vspace_rate );
-	}
-
-	ofa_irenderable_set_last_y( instance, y );
-}
-
-static void
-free_currency( ofsCurrency *total_per_currency )
-{
-	g_free( total_per_currency->currency );
-	g_free( total_per_currency );
 }

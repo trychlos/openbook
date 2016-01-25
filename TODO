@@ -300,179 +300,183 @@
                 already set a BAT file, new propositions are not 
                 expanded
 
- 720 2015- 3-13 Reconciliation: when declining a proposition, should
-                search for the next
+ 720 2015- 3-13 FEAT Reconciliation: when declining a proposition,
+                     should search for the next
 
- 729 2015- 3-14 PrintLedgers: have an option to print a summary
+ 732 2015- 3-15 FEAT have a misc option to consult the audit log
 
- 732 2015- 3-15 have a misc option to consult the audit log
+ 733 2015- 3-15 FEAT be able to search for an entry
 
- 733 2015- 3-15 be able to search for an entry
+ 744 2015- 3-19 FEAT have an option to automatically check the balances
+                     when opening the dossier
 
- 744 2015- 3-19 have an option to automatically check the balances when
-               opening the dossier
+ 745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
+                     pre-selected account is displayed
 
- 745 2015- 3-19 AccountSelect: scroll the treeview to make sure the pre-
-                selected account is displayed
+ 751 2015- 3-20 FEAT Reconciliation: associate the bat file with the
+                     openbook account as soon as we reconciliate one
+                     line thus refusing the selection for another account
+                     + add this account number to treeview from bat page
+                     + add this account number to bat properties
 
- 751 2015- 3-20 Reconciliation: associate the bat file with the openbook
-                account as soon as we reconciliate one line thus refusing
-                the selection for another account
-                + add this account number to treeview from bat page
-                + add this account number to bat properties
+ 752 2015- 3-20 FEAT Reconciliation: when selecting a bat file, only
+                     allow those which are associated with the current
+                     account number (if any) - of those which are not
+                     yet associated
 
- 752 2015- 3-20 Reconciliation: when selecting a bat file, only allow
-                those which are associated with the current account
-                number (if any) - of those which are not yet associated
+ 758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
+                     entry +unsettle/unreconciliate
 
- 758 2015- 3-21 warns when deleting a settled or reconciliated entry
-                +unsettle/unreconciliate
+ 761 2015- 3-22 DISP in the warning displayed when restoring to a
+                     database, display the target database in bold (or
+                     red)
 
- 761 2015- 3-22 in the warning displayed when restoring to a database,
-                display the target database in bold (or red)
+ 783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
+                     which will be reported after exercice closing
 
- 783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
-                will be reported after exercice closing
+ 790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
 
- 790 2015- 4- 6 GuidedInputEx: replace the treeview by a revealer ?
+ 792 2015- 4- 6 FEAT have a comment in the backup
 
- 792 2015- 4- 6 have a comment in the backup
+ 793 2015- 4- 8 ARCH Consolidate preferences from IDatesFilter with
+                     those of the calling window (as much as possible)
 
- 793 2015- 4- 8 Consolidate preferences from IDatesFilter with those of
-                the calling window (as much as possible)
+ 796 2015- 4-13 FEAT IRenderable: have a second level of grouping
+                     (subgroup) use case: when printing accounts book,
+                     have a subtotal per class
 
- 796 2015- 4-13 IRenderable: have a second level of grouping (subgroup)
-                use case: when printing accounts book, have a subtotal
-                per class
+ 798 2015- 4-13 FEAT creating a new ledger let the user enter an entry
+                     at any effect date, even if all other ledgers has
+                     been previously closed - this may or may not be
+                     wanted - so we have to distinguish:
+                     - closing a ledger at a given date
+                     - closing a period at a given date
+                     (+ closing an exercice)
+     2015-10- 8      DOS_LAST_CLOSING is date of last closed period and
+                     has been introduced with DB model v26; it is not
+                     used at this time
 
- 798 2015- 4-13 creating a new ledger let the user enter an entry at
-                any effect date, even if all other ledgers has been
-                previously closed - this may or may not be wanted -
-                so we have to distinguish:
-                - closing a ledger at a given date
-                - closing a period at a given date
-                (+ closing an exercice)
-     2015-10- 8 DOS_LAST_CLOSING is date of last closed period and has
-                been introduced with DB model v26; it is not used at
-                this time
+ 799 2015- 4-13 DISP AccountsBook account top and bottom reports:
+                     - add a label [bottom report] or [top report] ?
+                     - in italic ?
+                     - added to the account label or rigt-aligned before the
+                       debit ?
 
- 799 2015- 4-13 AccountsBook account top and bottom reports:
-                - add a label [bottom report] or [top report] ?
-                - in italic ?
-                - added to the account label or rigt-aligned before the
-                  debit ?
+ 808 2015- 4-17 DISP when rendering, automatically computes the width of 
+                     standard field as date or amount
+     2015- 4-20      depending of the different headers and footers of
+                     the current print, this should involve selecting the
+                     ad-hoc font before computing the size
 
- 808 2015- 4-17 when rendering, automatically computes the width of 
-                standard field as date or amount
-     2015- 4-20 depending of the different headers and footers of the
-                current print, this should involve selecting the ad-hoc
-                font before computing the size
+ 809 2015- 4-17 FEAT when computing the ODs, do not generate an OD for
+                     "forfait kilométrique BNC" when option is "FR"
 
- 809 2015- 4-17 when computing the ODs, do not generate an OD for 
-                "forfait kilométrique BNC" when option is "FR"
+ 810 2015- 4-17 FEAT when computing the ODs, the "Frais réels du
+                     véhicule" should distinguish HT and TVA (but, yes,
+                     compute on TTC)
 
- 810 2015- 4-17 when computing the ODs, the "Frais réels du véhicule"
-                should distinguish HT and TVA (but, yes, compute on
-                TTC)
+ 811 2015- 4-17 FEAT Le compte d'équilibre de l'OD de régularisation de
+                     la CSG non déductible ne devrait pas être un compte
+                     de charge
 
- 811 2015- 4-17 Le compte d'équilibre de l'OD de régularisation de la
-                CSG non déductible ne devrait pas être un compte de
-                charge
+ 812 2015- 4-17 FEAT libellé des écritures d'amortissement: ajouter le
+                     numéro d'annuité et le nb total (#7 - 3/4)
 
- 812 2015- 4-17 libellé des écritures d'amortissement: ajouter le numéro
-                d'annuité et le nb total (#7 - 3/4)
+ 814 2015- 4-17 FEAT Dossier: have list of classes allowed to be
+                     reconciliated + classes allowed to be settled
 
- 814 2015- 4-17 Dossier: have list of classes allowed to be reconciliated
-                 + classes allowed to be settled
+ 821 2015- 4-27 ARCH check that concenating strings doesn't override the
+                     limit (as the MySQL truncation may make the string
+                     invalid utf-8) and take care to truncate to a valid
+                     utf-8
 
- 821 2015- 4-27 check that concenating strings doesn't override the limit
-                (as the MySQL truncation may make the string invalid utf-8)
-                and take care to truncate to a valid utf-8
+ 822 2015- 4-27 FEAT Review "solde at 01/01": these are not accounts
+                     balances after entries from 01/01, but opening
+                     exercice after carried forward entries *only*
 
- 822 2015- 4-27 Review "solde at 01/01": these are not accounts balances
-                after entries from 01/01, but opening exercice after 
-                carried forward entries *only*
+ 824 2015- 9-22 PACK use AX_COMPILER_FLAGS
 
- 824 2015- 9-22 use AX_COMPILER_FLAGS
+ 825 2015- 9-22 PACK use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
 
- 825 2015- 9-22 use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
+ 826 2015- 9-22 PACK use GResource
 
- 826 2015- 9-22 use GResource
+ 843 2015- 9-30 DDL  account number should be renamed as account identifier
 
- 843 2015- 9-30 account number should be renamed as account identifier
+ 853 2015-10- 1 GTK  review v_init_dialog's:
+                     - only store GtkWidget (as GtkWidget *) when needed
+                     - store object data members
+                     - set data before connecting the signal
+                       (or after the end of init ?)
+                       (so is not triggered now)
+                     - set container editable after notes
+                     - have ok_btn instead of btn_ok
+                     - update ok_btn when setting readonly buttons
+                     - call check_enable_dlg at the very end
 
- 853 2015-10- 1 review v_init_dialog's:
-                - only store GtkWidget (as GtkWidget *) when needed
-                - store object data members
-                - set data before connecting the signal
-                  (or after the end of init ?)
-                  (so is not triggered now)
-                - set container editable after notes
-                - have ok_btn instead of btn_ok
-                - update ok_btn when setting readonly buttons
-                - call check_enable_dlg at the very end
+ 862 2015-10- 7 DISP fix focus order on GtkBin-derived widgets on the
+                     assistants
+                     - RestoreAssistant: dossier treeview after created
+                       a new dossier
+                     - administrative credentials
 
- 862 2015-10- 7 fix focus order on GtkBin-derived widgets on the assistants
-                - RestoreAssistant: dossier treeview after created a new dossier
-                - administrative credentials
+ 869 2015-10-30 DISP GuidedInput: after having clicked on Validate,
+                     disable fields while recording the entries
 
- 869 2015-10-30 GuidedInput: after having clicked on Validate, disable
-                fields while recording the entries
+ 885 2015-11- 7 DDL  Have an operation counter (identifier)
+                     Use case: be able to delete the whole operation
+                     when the user wants to delete an entry
 
- 885 2015-11- 7 Have an operation counter (identifier)
-                Use case: be able to delete the whole operation when the
-                user wants to delete an entry
+ 886 2015-11- 7 FEAT ExerciceClosing: purge reconciliation groups when
+                     both bat files and entries are purged
 
- 886 2015-11- 7 ExerciceClosing: purge reconciliation groups when both
-                bat files and entries are purged
+ 909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
+                     signal (exe_dates_changed) sent on main window so
+                     that it may automatically update window title
 
- 909 2015-11-26 SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same signal
-                (exe_dates_changed) sent on main window so that it may
-                automatically update window title
+ 910 2015-11-30 FEAT let the user configure the main title as a
+                     preference
 
- 910 2015-11-30 let the user configure the main title as a preference
+ 915 2015-12- 4 ARCH a class object (say e.g. ofoClass) should
+                     implement the ofaIExportable/ofaIImportable
+                     interfaces but the exporter/importer plugins should
+                     rather implement a ofaIEXporter/ofaIImporter
+                     interface 
 
- 915 2015-12- 4 a class object (say e.g. ofoClass) should implement
-                the ofaIExportable/ofaIImportable interfaces - but the
-                exporter/importer plugins should rather implement a
-                ofaIEXporter/ofaIImporter interface 
+ 919 2015-12-10 GTK  my_utils_dialog_info/warning: have a transient parent
 
- 919 2015-12-10 my_utils_dialog_info/warning: have a transient parent
+ 920 2015-12-10 FEAT review RestoreAssistant
+                     + let restore on a selected exercice rather than on
+                     the current one
 
- 920 2015-12-10 review RestoreAssistant
-                + let restore on a selected exercice rather than on the
-                   current one
+ 933 2015-12-15 ARCH rename ofa-preferences (too close of
+                     ofa-ipreferences) while these are rather shortcuts
+                     to user preferences
 
- 933 2015-12-15 rename ofa-preferences (too close of ofa-ipreferences)
-                while these are rather shortcuts to user preferences
+ 937 2015-12-21 ARCH either move ofa-main-window.h to api/ (because it
+                     is needed by ofa-page.h) or say that api/ should
+                     only contain the actual public API, and thus remove
+                     from api/ some files which were only pulled up for
+                     compilation reasons
+     2016- 1-24      this would pull up ofaApplication, ofaFileDir and
+                     ofaMainWindow to src/core/, which itself would pull
+                     up almost all pages..
 
- 935 2015-12-17 DDLUpdate: does not show remediation when creating a
-                new dossier ?
+ 938 2015-12-21 ARCH distinguish a core api with core objects (eg. for
+                     command-line only tools) and a ui api which contains
+                     some base classes and interfaces which would be useful
+                     for plugins => implies to have a core lib and a ui lib
+     2015-12-27      have to choose between api/ui or api-ui styles
 
- 937 2015-12-21 either move ofa-main-window.h to api/ (because it is
-                needed by ofa-page.h) or say that api/ should only
-                contain the actual public API, and thus remove from
-                api/ some files which were only pulled up for compilation
-                reasons
-     2016- 1-24 this would pull up ofaApplication, ofaFileDir and ofaMainWindow
-                 to src/core/, which itself would pull up almost all pages..
+ 939 2015-12-21 FEAT tva/ofoTVAForm: make it importable
 
- 938 2015-12-21 distinguish a core api with core objects (eg. for
-                command-line only tools) and a ui api which contains
-                some base classes and interfaces which would be useful
-                for plugins => implies to have a core lib and a ui lib
-     2015-12-27 have to choose between api/ui or api-ui styles
+ 940 2015-12-21 FEAT tva/ofoTVAForm: make it exportable
 
- 939 2015-12-21 tva/ofoTVAForm: make it importable
+ 956 2016- 1- 6 PACK add to make distcheck a script which checks that
+                     -def includes are always used in headers (and only)
 
- 940 2015-12-21 tva/ofoTVAForm: make it exportable
+ 966 2016- 1-10 FEAT tva/ofoTVARecord: make it printable
 
- 956 2016- 1- 6 add to make distcheck a script which checks that -def
-                includes are always used in headers (and only)
-
- 966 2016- 1-10 tva/ofoTVARecord: make it printable
-
- 969 2016- 1-14 increase mnemonic size (ofaOpeTemplate and more ?)
+ 969 2016- 1-14 DDL  increase mnemonic size (ofaOpeTemplate and more ?)
 
  970
 
@@ -508,6 +512,9 @@
      2015- 3-12 are we sure we want this ?
      2016- 1-18 cancelled (at least for now)
 
+ 729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
+     2016- 1-25      new ofaLedgerSummaryRender print
+
  754 2015- 3-21 add unused count to bat page treeview
      2016- 1-24 done
 
@@ -529,6 +536,10 @@
                 need a single account selection
      2015-10- 7 see also (closed) #778
      2016- 1-10 class has been removed
+
+ 935 2015-12-17 DDLUpdate: does not show remediation when creating a
+                new dossier ?
+     2016- 1-24 cancelled
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)

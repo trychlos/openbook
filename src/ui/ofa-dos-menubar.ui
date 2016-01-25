@@ -119,7 +119,7 @@
           <attribute name="action">win.render-balances</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">A_ccounts book...</attribute>
+          <attribute name="label" translatable="yes">_Accounts book...</attribute>
           <attribute name="action">win.render-books</attribute>
         </item>
         <item>
@@ -127,7 +127,7 @@
           <attribute name="action">win.render-ledgers-book</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Ledgers summary...</attribute>
+          <attribute name="label" translatable="yes">Le_dgers summary...</attribute>
           <attribute name="action">win.render-ledgers-summary</attribute>
         </item>
         <item>
