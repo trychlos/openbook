@@ -24,6 +24,7 @@
 
  New features and improvements:
 
+   - myIDialog: new interface for non-modal management.
    - LedgerSummaryRender: have a summary per ledger (todo #729).
 
  Bug fixes:
