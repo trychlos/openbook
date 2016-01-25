@@ -151,13 +151,10 @@ window_constructed( GObject *instance )
 		if( priv->parent ){
 			gtk_window_set_transient_for( priv->toplevel, priv->parent );
 		}
-
 	} else {
-		g_warning( "%s: main_window=%p, parent=%p, toplevel=%p",
-				thisfn,
-				( void * ) priv->main_window,
-				( void * ) priv->parent,
-				( void * ) priv->toplevel );
+		g_warning( "%s: window_name=%s, main_window=%p, parent=%p, toplevel=%p",
+				thisfn, priv->window_name,
+				( void * ) priv->main_window, ( void * ) priv->parent, ( void * ) priv->toplevel );
 	}
 }
 
