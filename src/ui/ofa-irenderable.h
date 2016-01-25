@@ -480,6 +480,8 @@ gdouble      ofa_irenderable_get_text_height      ( ofaIRenderable *instance );
 gdouble      ofa_irenderable_get_text_width       ( ofaIRenderable *instance,
 															const gchar *text );
 
+gdouble      ofa_irenderable_get_line_height      ( ofaIRenderable *instance );
+
 void         ofa_irenderable_set_color            ( ofaIRenderable *instance,
 															gdouble r,
 															gdouble g,

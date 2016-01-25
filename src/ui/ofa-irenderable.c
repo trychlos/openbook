@@ -669,7 +669,7 @@ draw_line( ofaIRenderable *instance,
 	ofa_irenderable_set_color( instance, COLOR_BODY );
 	ofa_irenderable_set_font( instance, sdata->body_font );
 	font_height = ofa_irenderable_get_text_height( instance );
-	line_height = font_height * ( 1+sdata->body_vspace_rate );
+	line_height = ofa_irenderable_get_line_height( instance );
 
 	if( 0 ){
 		g_debug( "%s: paginating=%s, page_num=%d, line_num=%d, line=%p, next=%p, last_y=%lf, font_height=%lf, line_height=%lf, count=%d",
@@ -1393,6 +1393,27 @@ ofa_irenderable_get_text_width( ofaIRenderable *instance, const gchar *text )
 	sdata->current_layout = prev_layout;
 
 	return( cairo_width );
+}
+
+/**
+ * ofa_irenderable_get_line_height:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the height in cairo units used by a line.
+ */
+gdouble
+ofa_irenderable_get_line_height( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+	gdouble text_height, line_height;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_irenderable_data( instance );
+	text_height = ofa_irenderable_get_text_height( instance );
+	line_height = text_height * ( 1+sdata->body_vspace_rate );
+
+	return( line_height );
 }
 
 /**
