@@ -43,6 +43,7 @@ static const gchar    *st_cssfile       = PKGCSSDIR "/ofa.css";
 static GtkCssProvider *st_css_provider  = NULL;
 
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
+static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static gboolean utils_css_provider_setup( void );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
@@ -707,6 +708,47 @@ child_set_editable_cb( GtkWidget *widget, gpointer data )
 	} else {
 		my_utils_widget_set_editable( widget, editable );
 	}
+}
+
+/**
+ * my_utils_container_dump:
+ *
+ * Recursively dumps a container.
+ */
+void
+my_utils_container_dump( GtkContainer *container )
+{
+	my_utils_container_dump_rec( container, " " );
+}
+
+static void
+my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix )
+{
+	static const gchar *thisfn = "my_utils_container_dump";
+	GList *children, *ic;
+	GtkWidget *child;
+	const gchar *child_name;
+	gchar *new_prefix;
+
+	g_debug( "%s:%scontainer=%p (%s)",
+			thisfn, prefix, ( void * ) container, G_OBJECT_TYPE_NAME( container ));
+
+	children = gtk_container_get_children( container );
+
+	for( ic = children ; ic ; ic = ic->next ){
+		if( GTK_IS_WIDGET( ic->data )){
+			child = GTK_WIDGET( ic->data );
+			child_name = gtk_buildable_get_name( GTK_BUILDABLE( child ));
+			g_debug( "%s:%s%s %s", thisfn, prefix, child_name, G_OBJECT_TYPE_NAME( child ));
+			if( GTK_IS_CONTAINER( child )){
+				new_prefix = g_strdup_printf( "%s  ", prefix );
+				my_utils_container_dump_rec( GTK_CONTAINER( child ), new_prefix );
+				g_free( new_prefix );
+			}
+		}
+	}
+
+	g_list_free( children );
 }
 
 /**

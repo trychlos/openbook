@@ -78,6 +78,7 @@ GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container,
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );
 GtkWidget    *my_utils_container_attach_from_window   ( GtkContainer *container, GtkWindow *window, const gchar *widget );
 void          my_utils_container_set_editable         ( GtkContainer *container, gboolean editable );
+void          my_utils_container_dump                 ( GtkContainer *container );
 
 GtkWidget    *my_utils_container_notes_setup_full     ( GtkContainer *container,
 																const gchar *widget_name,
