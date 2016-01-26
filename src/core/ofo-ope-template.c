@@ -843,13 +843,42 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 
 /**
  * ofo_ope_template_is_valid:
+ * @mnemo: operation template mnemomnic.
+ * @label: operation template label.
+ * @ledger: attached ledger mnemonic.
+ * @msgerr: [allow-none]: error message placeholder.
+ *
+ * Returns: %TRUE if the arguments are valid and let us save the
+ * operation template, %FALSE else. In this later case, an error
+ * message is set in @msgerr, and should be #g_free() by the caller.
  */
 gboolean
-ofo_ope_template_is_valid( const gchar *mnemo, const gchar *label, const gchar *ledger )
+ofo_ope_template_is_valid( const gchar *mnemo, const gchar *label, const gchar *ledger, gchar **msgerr )
 {
-	return( my_strlen( mnemo ) &&
-			my_strlen( label ) &&
-			my_strlen( ledger ));
+	gboolean ok;
+
+	ok = FALSE;
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	if( !my_strlen( mnemo )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty mnemonic" ));
+		}
+	} else if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty label" ));
+		}
+	} else if( !my_strlen( ledger )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty ledger" ));
+		}
+	} else {
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 /**
