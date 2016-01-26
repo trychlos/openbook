@@ -306,11 +306,13 @@ ui_data_DATA = \
 	$(images_files)										\
 	$(NULL)
 
-resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/resources.xml)
-openbook-resources.c: resources.xml $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name openbook $(srcdir)/resources.xml
-openbook-resources.h: resources.xml $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name openbook $(srcdir)/resources.xml
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 openbook_built_sources = \
 	openbook-resources.c								\
@@ -347,5 +349,5 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
-	resources.xml										\
+	$(resxml)											\
 	$(NULL)
