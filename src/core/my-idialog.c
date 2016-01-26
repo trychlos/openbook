@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "api/my-idialog.h"
 #include "api/my-utils.h"
 
@@ -51,6 +53,9 @@ static void      interface_base_init( myIDialogInterface *klass );
 static void      interface_base_finalize( myIDialogInterface *klass );
 static gchar    *idialog_get_identifier( const myIDialog *instance );
 static void      idialog_init( myIDialog *instance );
+static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
+static void      on_close_clicked( GtkButton *button, myIDialog *instance );
+static void      do_close( myIDialog *instance );
 static sIDialog *get_idialog_data( const myIDialog *instance );
 static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
@@ -291,7 +296,7 @@ my_idialog_present( myIDialog *instance )
 	g_free( instance_id );
 
 	if( found ){
-		gtk_widget_destroy( GTK_WIDGET( instance ));
+		do_close( instance );
 
 	} else {
 		sdata = get_idialog_data( instance );
@@ -340,14 +345,86 @@ static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "my_idialog_init";
+	GtkWidget *cancel_btn;
 
 	if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
 		MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
-		return;
+
+		cancel_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-cancel" );
+		if( cancel_btn && GTK_IS_BUTTON( cancel_btn )){
+			g_signal_connect( cancel_btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
+		}
 	}
 
 	g_info( "%s: myIDialog instance %p does not provide 'init()' method",
 			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_idialog_set_readonly_buttons:
+ * @instance: this #myIDialog instance.
+ *
+ * Replace the OK/Cancel buttons with a Close one which has a
+ * GTK_RESPONSE_CANCEL response identifier.
+ *
+ * This method should only be called for GtkDialog classes.
+ *
+ * Returns: the newly added 'Close' button.
+ */
+GtkWidget *
+my_idialog_set_readonly_buttons( myIDialog *instance )
+{
+	GtkWidget *button;
+
+	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
+	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
+
+	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
+	if( button ){
+		gtk_widget_destroy( button );
+	}
+
+	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
+	if( button ){
+		gtk_widget_destroy( button );
+	}
+
+	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), instance );
+
+	return( button );
+}
+
+static void
+on_cancel_clicked( GtkButton *button, myIDialog *instance )
+{
+	do_close( instance );
+}
+
+static void
+on_close_clicked( GtkButton *button, myIDialog *instance )
+{
+	do_close( instance );
+}
+
+/**
+ * my_idialog_close:
+ * @instance: this #myIDialog instance.
+ *
+ * Close the #myIDialog instance.
+ */
+void
+my_idialog_close( myIDialog *instance )
+{
+	g_return_if_fail( instance && MY_IDIALOG( instance ));
+
+	do_close( instance );
+}
+
+static void
+do_close( myIDialog *instance )
+{
+	gtk_widget_destroy( GTK_WIDGET( instance ));
 }
 
 static sIDialog *

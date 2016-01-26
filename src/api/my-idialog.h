@@ -125,6 +125,10 @@ void                  my_idialog_set_ui_from_file          ( myIDialog *instance
 
 void                  my_idialog_present                   ( myIDialog *instance );
 
+void                  my_idialog_close                     ( myIDialog *instance );
+
+GtkWidget            *my_idialog_set_readonly_buttons      ( myIDialog *instance );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_MY_IDIALOG_H__ */
