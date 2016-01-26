@@ -594,9 +594,9 @@ init_plugin_page( ofaPreferences *self, ofaIPrefsProvider *instance )
 	myISettings *settings;
 
 	priv = self->priv;
-	settings = NULL;
-
+	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 	page = ofa_iprefs_provider_new_page( instance );
+
 	if( page ){
 		ofa_iprefs_page_init( page, settings, &label );
 		my_utils_widget_set_margin( GTK_WIDGET( page ), 4, 4, 4, 4 );
