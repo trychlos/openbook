@@ -174,7 +174,7 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-		ofa_ope_template_properties_new( ofa_page_get_main_window( OFA_PAGE( page )), ope );
+		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ope, NULL );
 	}
 }
 

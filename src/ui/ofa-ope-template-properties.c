@@ -69,26 +69,18 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	 */
 	const ofaMainWindow *main_window;
 	ofoOpeTemplate      *ope_template;
+	gchar               *ledger;			/* ledger mnemo */
 
 	/* internals
 	 */
 	ofaHub              *hub;
 	gboolean             is_current;
-	ofaLedgerCombo      *ledger_combo;
-	GtkWidget           *ledger_parent;
-	GtkWidget           *ref_entry;
-	GtkWidget           *grid;			/* detail grid */
-
-	/* result
-	 */
 	gboolean             is_new;
-	gboolean             updated;
 
 	/* data
 	 */
 	gchar               *mnemo;
 	gchar               *label;
-	gchar               *ledger;			/* ledger mnemo */
 	gboolean             ledger_locked;
 	gchar               *ref;				/* piece reference */
 	gboolean             ref_locked;
@@ -97,7 +89,12 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* UI
 	 */
+	ofaLedgerCombo      *ledger_combo;
+	GtkWidget           *ledger_parent;
+	GtkWidget           *ref_entry;
+	GtkWidget           *grid;				/* detail grid */
 	ofaOpeTemplateHelp  *help_dlg;
+	GtkWidget           *help_btn;
 	GtkWidget           *ok_btn;
 };
 
@@ -131,17 +128,18 @@ static void      idialog_iface_init( myIDialogInterface *iface );
 static guint     idialog_get_interface_version( const myIDialog *instance );
 static gchar    *idialog_get_identifier( const myIDialog *instance );
 static void      idialog_init( myIDialog *instance );
+static void      init_dialog_title( ofaOpeTemplateProperties *self );
+static void      init_mnemo( ofaOpeTemplateProperties *self );
+static void      init_label( ofaOpeTemplateProperties *self );
+static void      init_ledger( ofaOpeTemplateProperties *self );
+static void      init_ledger_locked( ofaOpeTemplateProperties *self );
+static void      init_ref( ofaOpeTemplateProperties *self );
+static void      init_detail( ofaOpeTemplateProperties *self );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void      set_detail_values( ofaOpeTemplateProperties *self, guint row );
-static void      init_dialog_title( ofaOpeTemplateProperties *self );
-static void      init_dialog_mnemo( ofaOpeTemplateProperties *self );
-static void      init_dialog_label( ofaOpeTemplateProperties *self );
-static void      init_dialog_ledger_locked( ofaOpeTemplateProperties *self );
-static void      init_dialog_ref( ofaOpeTemplateProperties *self );
-static void      init_dialog_detail( ofaOpeTemplateProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
@@ -149,10 +147,11 @@ static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTempla
 static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self );
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
+static void      on_help_closed( ofaOpeTemplateProperties *self, GObject *finalized_help );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
 static void      on_dialog_response( GtkDialog *dialog, gint response_id, void *empty );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static void      on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
 static gboolean  do_update( ofaOpeTemplateProperties *self );
 static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
 
@@ -221,7 +220,6 @@ ofa_ope_template_properties_init( ofaOpeTemplateProperties *self )
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
 						self, OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplatePropertiesPrivate );
 	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
 }
 
 static void
@@ -243,7 +241,7 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 static void
 idialog_iface_init( myIDialogInterface *iface )
 {
-	static const gchar *thisfn = "ofa_tva_form_properties_idialog_iface_init";
+	static const gchar *thisfn = "ofa_ofa_ope_template_properties_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -284,8 +282,7 @@ idialog_init( myIDialog *instance )
 	GtkApplicationWindow *main_window;
 	GtkApplication *application;
 	ofoDossier *dossier;
-	const gchar *mnemo;
-	GtkWidget *button, *label;
+	GtkWidget *button;
 
 	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
 	priv = self->priv;
@@ -305,35 +302,16 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 
-	init_dialog_title( self );
-	init_dialog_mnemo( self );
-	init_dialog_label( self );
-
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
-	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
-	priv->is_new = !my_strlen( mnemo );
-
-	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-ledger-parent" );
-	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
-	priv->ledger_combo = ofa_ledger_combo_new();
-	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
-
-	g_signal_connect(
-			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
-
-	ofa_ledger_combo_set_selected( priv->ledger_combo,
-			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-ledger-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
-
-	init_dialog_ledger_locked( self );
-	init_dialog_ref( self );
+	init_dialog_title( self );
+	init_mnemo( self );
+	init_label( self );
+	init_ledger( self );
+	init_ledger_locked( self );
+	init_ref( self );
 
 	my_utils_container_notes_init( instance, ope_template );
 	my_utils_container_updstamp_init( instance, ope_template );
@@ -341,6 +319,7 @@ idialog_init( myIDialog *instance )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-help" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), self );
+	priv->help_btn = button;
 
 	if( priv->is_current ){
 		gtk_widget_grab_focus(
@@ -349,17 +328,174 @@ idialog_init( myIDialog *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
-	/*
 	if( !priv->is_current ){
-		priv->ok_btn = my_dialog_set_readonly_buttons( self );
+		my_idialog_set_readonly_buttons( MY_IDIALOG( self ));
+		priv->ok_btn = NULL;
 	}
-	*/
 
 	/* init dialog detail rows after having globally set the fields
-	 * sensitivity so that we can individually adjust rows sensitivity */
-	init_dialog_detail( self );
+	 * sensitivity so that IGridList can individually adjust rows sensitivity */
+	init_detail( self );
 
 	check_for_enable_dlg( self );
+}
+
+static void
+init_dialog_title( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	const gchar *mnemo;
+	gchar *title;
+
+	priv = self->priv;
+	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
+	priv->is_new = !my_strlen( mnemo );
+
+	if( priv->is_new ){
+		title = g_strdup( _( "Defining a new operation template" ));
+	} else {
+		title = g_strdup_printf( _( "Updating « %s » operation template" ), mnemo );
+	}
+
+	gtk_window_set_title( GTK_WINDOW( self ), title );
+	g_free( title );
+}
+
+static void
+init_mnemo( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWidget *entry, *label;
+
+	priv = self->priv;
+
+	priv->mnemo = g_strdup( ofo_ope_template_get_mnemo( priv->ope_template ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	if( priv->mnemo ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->mnemo );
+	}
+	g_signal_connect( entry, "changed", G_CALLBACK( on_mnemo_changed ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+}
+
+static void
+init_label( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWidget *entry, *label;
+
+	priv = self->priv;
+
+	priv->label = g_strdup( ofo_ope_template_get_label( priv->ope_template ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	if( priv->label ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->label );
+	}
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+}
+
+static void
+init_ledger( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWidget *label;
+
+	priv = self->priv;
+
+	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-parent" );
+	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
+
+	priv->ledger_combo = ofa_ledger_combo_new();
+	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
+	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
+
+	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
+
+	ofa_ledger_combo_set_selected( priv->ledger_combo,
+			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
+}
+
+static void
+init_ledger_locked( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWidget *btn;
+
+	priv = self->priv;
+
+	priv->ledger_locked = ofo_ope_template_get_ledger_locked( priv->ope_template );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-jou-locked" );
+	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ledger_locked );
+
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
+}
+
+static void
+init_ref( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWidget *btn, *label;
+
+	priv = self->priv;
+
+	priv->ref = g_strdup( ofo_ope_template_get_ref( priv->ope_template ));
+	priv->ref_locked = ofo_ope_template_get_ref_locked( priv->ope_template );
+
+	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-entry" );
+	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
+
+	if( priv->ref ){
+		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );
+	}
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-locked" );
+	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
+
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
+}
+
+/*
+ * add one line per detail record
+ */
+static void
+init_detail( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	gint count, i;
+
+	priv = self->priv;
+
+	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-details" );
+	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
+
+	my_igridlist_init(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ), priv->is_current, DET_N_COLUMNS );
+
+	count = ofo_ope_template_get_detail_count( priv->ope_template );
+	for( i=1 ; i<=count ; ++i ){
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
+	}
 }
 
 /*
@@ -368,7 +504,7 @@ idialog_init( myIDialog *instance )
 static void
 igridlist_iface_init( myIGridListInterface *iface )
 {
-	static const gchar *thisfn = "ofa_tva_form_properties_igridlist_iface_init";
+	static const gchar *thisfn = "ofa_ofa_ope_template_properties_igridlist_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -521,59 +657,22 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 /**
  * ofa_ope_template_properties_run:
  * @main_window: the #ofaMainWindow main window of the application.
- * @model: the #ofoOpeTemplate to be displayed/updated.
- * @ledger_id: set to the current ledger when creating a new model,
- *  left to OFO_BASE_UNSET_ID when updating an existing model.
+ * @template: [allow-none]: a #ofoOpeTemplate to be edited.
+ * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
  *
- * Update the properties of an model
+ * Creates or represents a #ofaOpeTemplateProperties non-modal dialog
+ * to edit the @template.
  */
-gboolean
-ofa_ope_template_properties_run( const ofaMainWindow *main_window, ofoOpeTemplate *model, const gchar *ledger )
+void
+ofa_ope_template_properties_run(
+		const ofaMainWindow *main_window, ofoOpeTemplate *template, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_run";
 	ofaOpeTemplateProperties *self;
-	gboolean updated;
-
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-	g_debug( "%s: main_window=%p, model=%p",
-			thisfn, ( void * ) main_window, ( void * ) model );
-
-	self = g_object_new(
-					OFA_TYPE_OPE_TEMPLATE_PROPERTIES,
-					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_WINDOW_XML,  st_ui_xml,
-					MY_PROP_WINDOW_NAME, st_ui_id,
-					NULL );
-
-	self->priv->main_window = main_window;
-	self->priv->ope_template = model;
-	self->priv->ledger = g_strdup( ledger );
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
-}
-
-/**
- * ofa_ope_template_properties_new:
- * @main_window: the #ofaMainWindow main window of the application.
- * @template: [allow-none]: a #ofaOpeTemplate to be edited.
- *
- * Creates or represents a #ofaOpeTemplateProperties dialog to edit
- * the @template.
- */
-void
-ofa_ope_template_properties_new( const ofaMainWindow *main_window, ofoOpeTemplate *template )
-{
-	static const gchar *thisfn = "ofa_ope_template_properties_new";
-	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
 
-	g_debug( "%s: main_window=%p, template=%p",
-			thisfn, ( void * ) main_window, ( void * ) template );
+	g_debug( "%s: main_window=%p, template=%p, ledger=%s",
+			thisfn, ( void * ) main_window, ( void * ) template, ledger );
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	g_return_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ));
@@ -584,149 +683,10 @@ ofa_ope_template_properties_new( const ofaMainWindow *main_window, ofoOpeTemplat
 
 	priv = self->priv;
 	priv->ope_template = template;
+	priv->ledger = g_strdup( ledger );
 
 	/* after this call, @self may be invalid */
 	my_idialog_present( MY_IDIALOG( self ));
-}
-
-static void
-init_dialog_title( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	const gchar *mnemo;
-	gchar *title;
-
-	priv = self->priv;
-	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
-
-	if( !mnemo ){
-		title = g_strdup( _( "Defining a new operation template" ));
-	} else {
-		title = g_strdup_printf( _( "Updating « %s » operation template" ), mnemo );
-	}
-
-	gtk_window_set_title( GTK_WINDOW( self ), title );
-	g_free( title );
-}
-
-static void
-init_dialog_mnemo( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkEntry *entry;
-	GtkWidget *label;
-
-	priv = self->priv;
-
-	priv->mnemo = g_strdup( ofo_ope_template_get_mnemo( priv->ope_template ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-				GTK_CONTAINER( self ), "p1-mnemo-entry" ));
-	if( priv->mnemo ){
-		gtk_entry_set_text( entry, priv->mnemo );
-	}
-
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
-
-	label = my_utils_container_get_child_by_name(
-			GTK_CONTAINER( self ), "p1-mnemo-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-}
-
-static void
-init_dialog_label( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkEntry *entry;
-	GtkWidget *label;
-
-	priv = self->priv;
-
-	priv->label = g_strdup( ofo_ope_template_get_label( priv->ope_template ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( self ), "p1-label-entry" ));
-	if( priv->label ){
-		gtk_entry_set_text( entry, priv->label );
-	}
-
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
-
-	label = my_utils_container_get_child_by_name(
-			GTK_CONTAINER( self ), "p1-label-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-}
-
-static void
-init_dialog_ledger_locked( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkToggleButton *btn;
-
-	priv = self->priv;
-
-	priv->ledger_locked = ofo_ope_template_get_ledger_locked( priv->ope_template );
-	btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( self ), "p1-jou-locked" ));
-	gtk_toggle_button_set_active( btn, priv->ledger_locked );
-
-	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
-}
-
-static void
-init_dialog_ref( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkWindow *toplevel;
-	GtkWidget *btn, *label;
-
-	priv = self->priv;
-	toplevel = GTK_WINDOW( self );
-
-	priv->ref = g_strdup( ofo_ope_template_get_ref( priv->ope_template ));
-	priv->ref_locked = ofo_ope_template_get_ref_locked( priv->ope_template );
-
-	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-entry" );
-	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
-
-	if( priv->ref ){
-		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );
-	}
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-locked" );
-	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
-
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
-
-	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
-}
-
-/*
- * add one line per detail record
- */
-static void
-init_dialog_detail( ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	gint count, i;
-
-	priv = self->priv;
-
-	priv->grid = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( self ), "p1-details" );
-	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
-
-	my_igridlist_init(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ), priv->is_current, DET_N_COLUMNS );
-
-	count = ofo_ope_template_get_detail_count( self->priv->ope_template );
-	for( i=1 ; i<=count ; ++i ){
-		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
-	}
 }
 
 static void
@@ -821,7 +781,22 @@ on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 
 	priv->help_dlg = ofa_ope_template_help_run( OFA_MAIN_WINDOW( main_window ));
 
-	//gtk_widget_set_sensitive( btn, FALSE );
+	gtk_widget_set_sensitive( GTK_WIDGET( btn ), FALSE );
+	g_object_weak_ref( G_OBJECT( priv->help_dlg ), ( GWeakNotify ) on_help_closed, self );
+}
+
+static void
+on_help_closed( ofaOpeTemplateProperties *self, GObject *finalized_help )
+{
+	static const gchar *thisfn = "ofa_ope_template_properties_on_help_closed";
+	ofaOpeTemplatePropertiesPrivate *priv;
+
+	g_debug( "%s: self=%p, finalized_help=%p",
+			thisfn, ( void * ) self, ( void * ) finalized_help );
+
+	priv = self->priv;
+	priv->help_dlg = NULL;
+	gtk_widget_set_sensitive( priv->help_btn, TRUE );
 }
 
 /*
@@ -836,7 +811,9 @@ check_for_enable_dlg( ofaOpeTemplateProperties *self )
 	priv = self->priv;
 	ok = is_dialog_validable( self );
 
-	gtk_widget_set_sensitive( priv->ok_btn, ok );
+	if( priv->ok_btn ){
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	}
 }
 
 /*
@@ -862,22 +839,19 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	return( ok );
 }
 
+/*
+ * only receive 'Escape' which is delete-event
+ */
 static void
 on_dialog_response( GtkDialog *dialog, gint response_id, void *empty )
 {
 	g_debug( "ofa_ope_template_properties_on_dialog_response: dialog=%p, response_id=%d", ( void * ) dialog, response_id );
-	if( 0 ){
-		v_quit_on_ok( MY_DIALOG( dialog ));
-	}
 }
 
-/*
- * return %TRUE to allow quitting the dialog
- */
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
 {
-	return( do_update( OFA_OPE_TEMPLATE_PROPERTIES( dialog )));
+	do_update( self );
 }
 
 static gboolean
@@ -886,6 +860,7 @@ do_update( ofaOpeTemplateProperties *self )
 	ofaOpeTemplatePropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	guint i, count;
+	gboolean ok;
 
 	prev_mnemo = g_strdup( ofo_ope_template_get_mnemo( self->priv->ope_template ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
@@ -901,7 +876,7 @@ do_update( ofaOpeTemplateProperties *self )
 	ofo_ope_template_set_ledger_locked( priv->ope_template, priv->ledger_locked );
 	ofo_ope_template_set_ref( priv->ope_template, gtk_entry_get_text( GTK_ENTRY( priv->ref_entry )));
 	ofo_ope_template_set_ref_locked( priv->ope_template, priv->ref_locked );
-	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), ope_template );
+	my_utils_container_notes_get( GTK_WINDOW( self ), ope_template );
 
 	ofo_ope_template_free_detail_all( priv->ope_template );
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
@@ -910,16 +885,14 @@ do_update( ofaOpeTemplateProperties *self )
 	}
 
 	if( !prev_mnemo ){
-		priv->updated =
-				ofo_ope_template_insert( priv->ope_template, priv->hub );
+		ok = ofo_ope_template_insert( priv->ope_template, priv->hub );
 	} else {
-		priv->updated =
-				ofo_ope_template_update( priv->ope_template, prev_mnemo );
+		ok = ofo_ope_template_update( priv->ope_template, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );
 
-	return( priv->updated );
+	return( ok );
 }
 
 static void

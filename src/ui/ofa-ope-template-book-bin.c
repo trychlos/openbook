@@ -773,13 +773,7 @@ do_insert_ope_template( ofaOpeTemplateBookBin *bin )
 	}
 
 	ope = ofo_ope_template_new();
-
-	if( !ofa_ope_template_properties_run( priv->main_window, ope, ledger )){
-		g_object_unref( ope );
-
-	} else {
-		select_row_by_mnemo( bin, ofo_ope_template_get_mnemo( ope ));
-	}
+	ofa_ope_template_properties_run( priv->main_window, ope, ledger );
 }
 
 static void
@@ -796,7 +790,6 @@ do_update_ope_template( ofaOpeTemplateBookBin *bin )
 	if( mnemo ){
 		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
-
 		ofa_ope_template_properties_run( priv->main_window, ope, NULL );
 	}
 	g_free( mnemo );

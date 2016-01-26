@@ -72,12 +72,9 @@ typedef struct {
 
 GType    ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_ope_template_properties_run     ( const ofaMainWindow *parent,
+void     ofa_ope_template_properties_run     ( const ofaMainWindow *parent,
 													ofoOpeTemplate *template,
 													const gchar *ledger );
-
-void     ofa_ope_template_properties_new     ( const ofaMainWindow *parent,
-													ofoOpeTemplate *template );
 
 G_END_DECLS
 
