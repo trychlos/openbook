@@ -57,16 +57,13 @@ typedef struct _ofaOpeTemplatePropertiesPrivate         ofaOpeTemplateProperties
 
 typedef struct {
 	/*< public members >*/
-	GtkDialog                        parent;
-
-	/*< private members >*/
-	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaOpeTemplateProperties;
 
 typedef struct {
 	/*< public members >*/
-	GtkDialogClass                   parent;
+	GtkDialogClass parent;
 }
 	ofaOpeTemplatePropertiesClass;
 

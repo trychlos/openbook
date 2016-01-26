@@ -189,7 +189,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-render-page.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) ofa-settlement.$(OBJEXT) \
 	ofa-tree-store.$(OBJEXT) ofa-user-credentials-bin.$(OBJEXT)
-openbook_OBJECTS = $(am_openbook_OBJECTS)
+am__objects_1 = openbook-resources.$(OBJEXT)
+nodist_openbook_OBJECTS = $(am__objects_1)
+openbook_OBJECTS = $(am_openbook_OBJECTS) $(nodist_openbook_OBJECTS)
 am__DEPENDENCIES_1 =
 openbook_DEPENDENCIES = $(top_builddir)/src/core/libofa-core.la \
 	$(am__DEPENDENCIES_1)
@@ -231,7 +233,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(openbook_SOURCES)
+SOURCES = $(openbook_SOURCES) $(nodist_openbook_SOURCES)
 DIST_SOURCES = $(openbook_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -476,9 +478,6 @@ icondata = openbook-48x48.png
 core_datadir = $(pkgdatadir)/core
 ui_datadir = $(pkgdatadir)/ui
 css_datadir = $(pkgdatadir)/css
-BUILT_SOURCES = \
-	$(NULL)
-
 openbook_SOURCES = \
 	main.c												\
 	my-assistant.c										\
@@ -737,6 +736,20 @@ ui_data_DATA = \
 	$(images_files)										\
 	$(NULL)
 
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/resources.xml)
+openbook_built_sources = \
+	openbook-resources.c								\
+	openbook-resources.h								\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
 
 #applications_in_files = nact.desktop.in
 applications_in_files = \
@@ -757,6 +770,7 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
+	resources.xml										\
 	$(NULL)
 
 all: $(BUILT_SOURCES)
@@ -944,6 +958,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-user-credentials-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbook-resources.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1228,6 +1243,10 @@ uninstall-am: uninstall-applicationsDATA uninstall-binPROGRAMS \
 
 .PRECIOUS: Makefile
 
+openbook-resources.c: resources.xml $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name openbook $(srcdir)/resources.xml
+openbook-resources.h: resources.xml $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name openbook $(srcdir)/resources.xml
 
 @INTLTOOL_DESKTOP_RULE@
 

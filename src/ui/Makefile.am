@@ -48,9 +48,6 @@ AM_CPPFLAGS += \
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
-BUILT_SOURCES = \
-	$(NULL)
-
 openbook_SOURCES = \
 	main.c												\
 	my-assistant.c										\
@@ -309,6 +306,25 @@ ui_data_DATA = \
 	$(images_files)										\
 	$(NULL)
 
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/resources.xml)
+openbook-resources.c: resources.xml $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name openbook $(srcdir)/resources.xml
+openbook-resources.h: resources.xml $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name openbook $(srcdir)/resources.xml
+
+openbook_built_sources = \
+	openbook-resources.c								\
+	openbook-resources.h								\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
 @INTLTOOL_DESKTOP_RULE@
 
 #applications_in_files = nact.desktop.in
@@ -331,4 +347,5 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
+	resources.xml										\
 	$(NULL)
