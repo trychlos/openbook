@@ -205,18 +205,17 @@ iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **
 
 	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
 
-	if( !priv->dispose_has_run ){
-
-		priv->settings = g_object_ref( settings );
-
-		setup_bin( OFA_MYSQL_PREFS_BIN( instance ));
-
-		if( label ){
-			*label = g_strdup( ofa_mysql_idbprovider_get_provider_name());
-		}
+	if( priv->dispose_has_run ){
+		g_return_if_reached();
 	}
 
-	g_return_if_reached();
+	priv->settings = g_object_ref( settings );
+
+	setup_bin( OFA_MYSQL_PREFS_BIN( instance ));
+
+	if( label ){
+		*label = g_strdup( ofa_mysql_idbprovider_get_provider_name());
+	}
 }
 
 static gboolean
