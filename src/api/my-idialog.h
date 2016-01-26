@@ -57,6 +57,9 @@ typedef struct _myIDialog                    myIDialog;
  * myIDialogInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @get_identifier: [should]: returns the identifier of this window.
+ * @init: [should]: one-time initialization.
+ * @quit_on_escape: [should]: let ask for a user confirmation.
  *
  * This defines the interface that an #myIDialog may/should/must
  * implement.
@@ -80,7 +83,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint   ( *get_interface_version )( const myIDialog *instance );
+	guint    ( *get_interface_version )( const myIDialog *instance );
 
 	/**
 	 * get_identifier:
@@ -94,7 +97,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar * ( *get_identifier )       ( const myIDialog *instance );
+	gchar *  ( *get_identifier )       ( const myIDialog *instance );
 
 	/**
 	 * init:
@@ -104,7 +107,23 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void    ( *init )                 ( myIDialog *instance );
+	void     ( *init )                 ( myIDialog *instance );
+
+	/**
+	 * quit_on_escape:
+	 * @instance: the #myIDialog instance.
+	 *
+	 * Called when the user asks for quitting the dialog by hitting
+	 * the 'Escape' key, or destroy the window.
+	 *
+	 * Returns: %TRUE if the user confirms that he wants quit the
+	 * dialog.
+	 *
+	 * Defaults to %TRUE.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *quit_on_escape )       ( const myIDialog *instance );
 }
 	myIDialogInterface;
 
@@ -127,7 +146,7 @@ void                  my_idialog_present                   ( myIDialog *instance
 
 void                  my_idialog_close                     ( myIDialog *instance );
 
-GtkWidget            *my_idialog_set_readonly_buttons      ( myIDialog *instance );
+GtkWidget            *my_idialog_set_close_button          ( myIDialog *instance );
 
 G_END_DECLS
 
