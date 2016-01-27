@@ -67,7 +67,6 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
 	ofoOpeTemplate      *ope_template;
 	gchar               *ledger;			/* ledger mnemo */
 
@@ -150,7 +149,6 @@ static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self
 static void      on_help_closed( ofaOpeTemplateProperties *self, GObject *finalized_help );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
-static void      on_dialog_response( GtkDialog *dialog, gint response_id, void *empty );
 static void      on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
 static gboolean  do_update( ofaOpeTemplateProperties *self, gchar **msgerr );
 static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
@@ -290,8 +288,6 @@ idialog_init( myIDialog *instance )
 
 	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
 	priv = ofa_ope_template_properties_get_instance_private( self );
-
-	g_signal_connect( GTK_DIALOG( instance ), "response", G_CALLBACK( on_dialog_response ), NULL );
 
 	main_window = my_idialog_get_main_window( instance );
 	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
@@ -865,15 +861,6 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	return( ok );
 }
 
-/*
- * only receive 'Escape' which is delete-event
- */
-static void
-on_dialog_response( GtkDialog *dialog, gint response_id, void *empty )
-{
-	g_debug( "ofa_ope_template_properties_on_dialog_response: dialog=%p, response_id=%d", ( void * ) dialog, response_id );
-}
-
 static void
 on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
 {
@@ -885,6 +872,10 @@ on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
 
 	if( ok ){
 		my_idialog_close( MY_IDIALOG( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
 	}
 }
 
