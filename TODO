@@ -406,6 +406,9 @@
 
  869 2015-10-30 DISP GuidedInput: after having clicked on Validate,
                      disable fields while recording the entries
+     2016- 1-27      disable all fields is easy, but reenabling them
+                     after the operation is much more difficult, because
+                     must be made on per-widget basis
 
  885 2015-11- 7 DDL  Have an operation counter (identifier)
                      Use case: be able to delete the whole operation
