@@ -36,10 +36,18 @@
  * - the modal dialogs
  * - the non-modal dialogs.
  *
+ * Notes on size and position.
+ * Size and position of the windows are saved to / restored from the
+ * user settings, based on the specified settings name.
+ * This name may be explicitly specified via
+ * #my_idialog_set_settings_name() method, and defaults to the class
+ * name of the window.
+ *
  * Notes on non-modal dialogs.
  * 1/ They cannot have a return code
  * 2/ this myIDialog interface takes care of having at most one instance
- *    of each dialog class + object identifier
+ *    of each IDialog identifier (usually the dialog class name + object
+ *    identifier)
  */
 
 #include <gtk/gtk.h>
@@ -137,6 +145,12 @@ GtkApplicationWindow *my_idialog_get_main_window           ( const myIDialog *in
 
 void                  my_idialog_set_main_window           ( myIDialog *instance,
 																	GtkApplicationWindow *main_window );
+
+void                  my_idialog_set_parent                ( myIDialog *instance,
+																	GtkWindow *parent );
+
+void                  my_idialog_set_settings_name         ( myIDialog *instance,
+																	const gchar *name );
 
 void                  my_idialog_set_ui_from_file          ( myIDialog *instance,
 																	const gchar *xml_fname,

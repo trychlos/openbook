@@ -45,21 +45,24 @@ typedef struct {
 	GtkWindow            *parent;
 	gchar                *xml_fname;
 	gchar                *toplevel_name;
+	gchar                *settings_name;
 }
 	sIDialog;
 
-static GType     register_type( void );
-static void      interface_base_init( myIDialogInterface *klass );
-static void      interface_base_finalize( myIDialogInterface *klass );
-static gchar    *idialog_get_identifier( const myIDialog *instance );
-static void      idialog_init( myIDialog *instance );
-static gboolean  idialog_quit_on_escape( const myIDialog *instance );
-static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
-static void      on_close_clicked( GtkButton *button, myIDialog *instance );
-static gboolean  on_delete_event( GtkWidget *widget, GdkEvent *event, myIDialog *instance );
-static void      do_close( myIDialog *instance );
-static sIDialog *get_idialog_data( const myIDialog *instance );
-static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
+static GType        register_type( void );
+static void         interface_base_init( myIDialogInterface *klass );
+static void         interface_base_finalize( myIDialogInterface *klass );
+static gchar       *idialog_get_identifier( const myIDialog *instance );
+static void         idialog_init( myIDialog *instance );
+static void         idialog_set_transient_for( myIDialog *instance );
+static gboolean     idialog_quit_on_escape( const myIDialog *instance );
+static void         on_cancel_clicked( GtkButton *button, myIDialog *instance );
+static void         on_close_clicked( GtkButton *button, myIDialog *instance );
+static gboolean     on_delete_event( GtkWidget *widget, GdkEvent *event, myIDialog *instance );
+static void         do_close( myIDialog *instance );
+static const gchar *get_settings_name( myIDialog *instance );
+static sIDialog    *get_idialog_data( const myIDialog *instance );
+static void         on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
 /**
  * my_idialog_get_type:
@@ -200,6 +203,10 @@ my_idialog_get_main_window( const myIDialog *instance )
  * @main_window: the #GtkApplicationWindow main window of the application.
  *
  * Sets the main window, which happens to be the default parent.
+ *
+ * This method must be called by the implementation right after the
+ * instanciation of the window, and at latest before presenting (if
+ * non-modal) or running (if modal) the window.
  */
 void
 my_idialog_set_main_window( myIDialog *instance, GtkApplicationWindow *main_window )
@@ -211,6 +218,47 @@ my_idialog_set_main_window( myIDialog *instance, GtkApplicationWindow *main_wind
 
 	sdata = get_idialog_data( instance );
 	sdata->main_window = main_window;
+}
+
+/**
+ * my_idialog_set_parent:
+ * @instance: this #myIDialog instance.
+ * @parent: the #GtkWindow parent window.
+ *
+ * Sets the parent window.
+ * If not set, the parent window defaults to the main window.
+ */
+void
+my_idialog_set_parent( myIDialog *instance, GtkWindow *parent )
+{
+	sIDialog *sdata;
+
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+
+	sdata = get_idialog_data( instance );
+	sdata->parent = parent;
+}
+
+/**
+ * my_idialog_set_settings_name:
+ * @instance: this #myIDialog instance.
+ * @name: [allow-none]: the name to be used in user settings when saving
+ *  or restoring size and position of the window.
+ *
+ * Sets the user settings name.
+ * If not set, this name defaults to the window class name.
+ */
+void
+my_idialog_set_settings_name( myIDialog *instance, const gchar *name )
+{
+	sIDialog *sdata;
+
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+
+	sdata = get_idialog_data( instance );
+	g_free( sdata->settings_name );
+	sdata->settings_name = g_strdup( name );
 }
 
 /**
@@ -364,6 +412,8 @@ my_idialog_set_close_button( myIDialog *instance )
 
 	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
 
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
 	return( button );
 }
 
@@ -390,6 +440,7 @@ idialog_get_identifier( const myIDialog *instance )
 /*
  * idialog_init:
  * @instance: this #myIDialog instance.
+ * @identifier: the identifier of this window.
  *
  * Initialize the dialog once before first presentation.
  */
@@ -398,21 +449,23 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "my_idialog_init";
 	sIDialog *sdata;
+	const gchar *settings_name;
 	GtkWidget *cancel_btn, *close_btn;
+
+	sdata = get_idialog_data( instance );
+	g_return_if_fail( sdata->main_window && GTK_IS_APPLICATION_WINDOW( sdata->main_window ));
 
 	if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
 		MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
 
-		sdata = get_idialog_data( instance );
-		if( !sdata->parent ){
-			sdata->parent = GTK_WINDOW( sdata->main_window );
-		}
-		if( sdata->parent ){
-			gtk_window_set_transient_for( GTK_WINDOW( instance ), sdata->parent );
-		}
-		my_utils_window_restore_position( GTK_WINDOW( instance ), sdata->toplevel_name );
+		idialog_set_transient_for( instance );
 
-		my_utils_container_dump( GTK_CONTAINER( instance ));
+		settings_name = get_settings_name( instance );
+		my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name );
+
+		if( st_dump_container ){
+			my_utils_container_dump( GTK_CONTAINER( instance ));
+		}
 
 		if( GTK_IS_DIALOG( instance )){
 			cancel_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
@@ -432,12 +485,33 @@ idialog_init( myIDialog *instance )
 		}
 
 		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
+		gtk_widget_show_all( GTK_WIDGET( instance ));
 
 		return;
 	}
 
 	g_info( "%s: myIDialog instance %p does not provide 'init()' method",
 			thisfn, ( void * ) instance );
+}
+
+/*
+ * Set the new window transient regarding its parent.
+ * If not explicitly set via #my_idialog_set_parent() method, the parent
+ * defaults to the main window.
+ */
+static void
+idialog_set_transient_for( myIDialog *instance )
+{
+	sIDialog *sdata;
+
+	sdata = get_idialog_data( instance );
+
+	if( !sdata->parent ){
+		sdata->parent = GTK_WINDOW( sdata->main_window );
+	}
+	if( sdata->parent ){
+		gtk_window_set_transient_for( GTK_WINDOW( instance ), sdata->parent );
+	}
 }
 
 /*
@@ -499,7 +573,28 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIDialog *instance )
 static void
 do_close( myIDialog *instance )
 {
+	static const gchar *thisfn = "my_idialog_do_close";
+	const gchar *settings_name;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	settings_name = get_settings_name( instance );
+	my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
 	gtk_widget_destroy( GTK_WIDGET( instance ));
+}
+
+static const gchar *
+get_settings_name( myIDialog *instance )
+{
+	sIDialog *sdata;
+
+	sdata = get_idialog_data( instance );
+
+	if( !my_strlen( sdata->settings_name )){
+		sdata->settings_name = g_strdup( G_OBJECT_TYPE_NAME( instance ));
+	}
+
+	return(( const gchar * ) sdata->settings_name );
 }
 
 static sIDialog *
@@ -528,6 +623,7 @@ on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog )
 
 	g_free( sdata->xml_fname );
 	g_free( sdata->toplevel_name );
+	g_free( sdata->settings_name );
 	g_free( sdata );
 
 	st_list = g_list_remove( st_list, finalized_idialog );
