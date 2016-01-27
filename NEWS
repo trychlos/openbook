@@ -24,8 +24,10 @@
 
  New features and improvements:
 
-   - myIDialog: new interface for non-modal management.
    - LedgerSummaryRender: have a summary per ledger (todo #729).
+   - OpeGuidedInput: make the dialog non-modal (todo #653).
+   - OpeTemplateHelp: make the dialog non-modal (todo #621).
+   - OpeTemplateProperties: make the dialog non-modal (todo #653).
 
  Bug fixes:
 
@@ -33,7 +35,7 @@
 
  Other changes:
 
-   - 
+   - myIDialog: new interface for non-modal management.
 
 -----------------------------------------------------------------------
  Version 0.45

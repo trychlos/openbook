@@ -172,9 +172,6 @@
      2015- 4- 1 when done, review the Preferences which becomes non
                 validable if export field separator is empty
 
- 472 2014-11-29 set dialogs readonly if not current exercice
-     2015- 2- 5 done for properties
-
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
                 have one entry per account
@@ -216,6 +213,8 @@
 
  559 2015- 1- 8 have a macro language to automate dossier creation,
                 import of files
+     2016- 1-27 other use case: automatically print the reports on
+                period closing
 
  562 2015- 1- 8 Add misc menu option to see the loaded stores, and
                 reset them
@@ -244,11 +243,6 @@
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
 
- 621 2015- 2- 2 ope template: have an help dialog which lists the 
-                available macro and functions
-     2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
-                while keeping to react to user interactions
-
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
      2016- 1-25 icon is installed in $(datadir)
@@ -258,9 +252,6 @@
                 in GtkColorChooserWidget (this is bad)
                 + have to decide whether dossier color is a user pref
                 or a dossier pref (for all users of this dossier)
-
- 653 2015- 2-17 GuidedInputBin/OpeTemplateProperties dialogs should be
-                non-modal (use case: consult rates)
 
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
@@ -489,14 +480,28 @@
  429 2014-11-11 implement print preview inside of Openbook
      2016- 1-16 done long ago with IRenderable interface
 
+ 472 2014-11-29 set dialogs readonly if not current exercice
+     2015- 2- 5 done for properties
+
  607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
                 dossier_login in order to mutualize some code if possible
                 common behavior is: do not close current dossier if we
                 are not sure that credentials are ok
      2016- 1-18 obsoleted by new meta/period architecture
 
+ 621 2015- 2- 2 ope template: have an help dialog which lists the 
+                available macro and functions
+     2015- 2- 3 doesn't know how to make ofaOpeTemplateHelp non modal
+                while keeping to react to user interactions
+     2016- 1-27 done
+
  628 2015- 2- 3 FATAL: OpeTemplateProperties: segfault when saving
      2016- 1-25 cancelled as not reproducible
+
+ 653 2015- 2-17 GuidedInputBin/OpeTemplateProperties dialogs should be
+                non-modal (use case: consult rates)
+     2016- 1-27 ofaOpeTemplateProperties: done
+     2016- 1-27 ofaGuidedInput: done
 
  677 2015- 2-19 preferences for the dossier should be set in the dbms
                 (e.g. order of ope_templates pages)

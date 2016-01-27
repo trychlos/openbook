@@ -36,12 +36,11 @@
  * It internally implements an #ofaGuidedInputBin convenience class.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-ope-template-def.h"
 
@@ -58,16 +57,13 @@ typedef struct _ofaGuidedInputPrivate        ofaGuidedInputPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog               parent;
-
-	/*< private members >*/
-	ofaGuidedInputPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaGuidedInput;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass          parent;
+	GtkDialogClass parent;
 }
 	ofaGuidedInputClass;
 

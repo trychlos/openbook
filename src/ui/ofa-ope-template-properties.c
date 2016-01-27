@@ -243,7 +243,7 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 static void
 idialog_iface_init( myIDialogInterface *iface )
 {
-	static const gchar *thisfn = "ofa_ofa_ope_template_properties_idialog_iface_init";
+	static const gchar *thisfn = "ofa_ope_template_properties_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -911,8 +911,14 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 
 	if( !prev_mnemo ){
 		ok = ofo_ope_template_insert( priv->ope_template, priv->hub );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to create this new operation template" ));
+		}
 	} else {
 		ok = ofo_ope_template_update( priv->ope_template, prev_mnemo );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the operation template" ));
+		}
 	}
 
 	g_free( prev_mnemo );
