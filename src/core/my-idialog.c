@@ -452,6 +452,8 @@ idialog_get_identifier( const myIDialog *instance )
  * @identifier: the identifier of this window.
  *
  * Initialize the dialog once before first presentation.
+ *
+ * Response codes are defined in /usr/include/gtk-3.0/gtk/gtkdialog.h.
  */
 static void
 idialog_init( myIDialog *instance )
