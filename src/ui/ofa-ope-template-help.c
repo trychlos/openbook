@@ -26,30 +26,44 @@
 #include <config.h>
 #endif
 
-#include "api/my-dialog.h"
+#include "api/my-idialog.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
+
+#include "core/ofa-main-window.h"
 
 #include "ui/ofa-ope-template-help.h"
 
 /* private instance data
+ *
+ * The instance is make unique because of:
+ * 1/ non-modal
+ * 2/ managed through myIDialog interface
+ * 3/ does not provide any other identifier than standard type name.
  */
 struct _ofaOpeTemplateHelpPrivate {
+	gboolean dispose_has_run;
 
-	/* input parameters at initialization time
+	/* initialization
 	 */
-	const ofaMainWindow *main_window;
+
+	/* runtime
+	 */
+	GList   *parents;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-ope-template-help.ui";
-static const gchar *st_ui_id            = "OpeTemplateHelpWindow";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-help.ui";
 
-static void     init_window( ofaOpeTemplateHelp *help );
-static gboolean on_delete_event( GtkWidget *widget, GdkEvent *event, ofaOpeTemplateHelp *help );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static guint    idialog_get_interface_version( const myIDialog *instance );
+static void     idialog_init( myIDialog *instance );
+static void     add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
+static void     on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
 static void     on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help );
 static void     do_close( ofaOpeTemplateHelp *help );
 
-G_DEFINE_TYPE( ofaOpeTemplateHelp, ofa_ope_template_help, MY_TYPE_WINDOW )
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateHelp, ofa_ope_template_help, GTK_TYPE_DIALOG, 0, \
+		G_ADD_PRIVATE( ofaOpeTemplateHelp ) \
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ));
 
 static void
 ope_template_help_finalize( GObject *instance )
@@ -70,11 +84,23 @@ ope_template_help_finalize( GObject *instance )
 static void
 ope_template_help_dispose( GObject *instance )
 {
+	ofaOpeTemplateHelpPrivate *priv;
+	GList *it;
+
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_HELP( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_ope_template_help_get_instance_private( OFA_OPE_TEMPLATE_HELP( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		/* remove the weak reference callback on the still-alive parents */
+		for( it=priv->parents ; it ; it=it->next ){
+			g_object_weak_unref( G_OBJECT( it->data ), ( GWeakNotify ) on_parent_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -91,7 +117,7 @@ ofa_ope_template_help_init( ofaOpeTemplateHelp *self )
 
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_HELP( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATE_HELP, ofaOpeTemplateHelpPrivate );
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -104,69 +130,101 @@ ofa_ope_template_help_class_init( ofaOpeTemplateHelpClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_help_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_help_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaOpeTemplateHelpPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_help_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idialog_get_interface_version;
+	iface->init = idialog_init;
+}
+
+static guint
+idialog_get_interface_version( const myIDialog *instance )
+{
+	return( 1 );
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	GtkWidget *button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), instance );
 }
 
 /**
  * ofa_ope_template_help_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @parent: the #GtkWindow (usually a #ofaOpeTemplateProperties) parent.
+ *
+ * Creates if needed and presents this OpeTemplate help dialog.
+ * If not explicitely closed by the user, it will automatically auto-
+ * close itself on last parent finalization.
  */
-ofaOpeTemplateHelp *
-ofa_ope_template_help_run( const ofaMainWindow *main_window )
+void
+ofa_ope_template_help_run( const ofaMainWindow *main_window, GtkWindow *parent )
 {
 	ofaOpeTemplateHelp *self;
+	myIDialog *shown;
 
-	self = g_object_new(
-					OFA_TYPE_OPE_TEMPLATE_HELP,
-					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_WINDOW_XML,  st_ui_xml,
-					MY_PROP_WINDOW_NAME, st_ui_id,
-					NULL );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
 
-	init_window( self );
+	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_HELP, NULL );
+	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	return( self );
+	/* after this call, @self may be invalid */
+	shown = my_idialog_present( MY_IDIALOG( self ));
+
+	add_parent( OFA_OPE_TEMPLATE_HELP( shown ), parent );
+}
+
+/*
+ * records the parent
+ * this dialog will auto-close on last parent finalization
+ */
+static void
+add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent )
+{
+	ofaOpeTemplateHelpPrivate *priv;
+	GList *find;
+
+	priv = ofa_ope_template_help_get_instance_private( self );
+
+	find = g_list_find( priv->parents, parent );
+	if( !find ){
+		priv->parents = g_list_prepend( priv->parents, parent );
+		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, self );
+	}
 }
 
 static void
-init_window( ofaOpeTemplateHelp *help )
+on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent )
 {
-	GtkWindow *toplevel;
-	GtkWidget *button;
+	static const gchar *thisfn = "ofa_ope_template_help_on_parent_finalized";
+	ofaOpeTemplateHelpPrivate *priv;
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( help ));
+	g_debug( "%s: self=%p, finalized_parent=%p",
+			thisfn, ( void * ) self, ( void * ) finalized_parent );
 
-	g_signal_connect( toplevel, "delete-event", G_CALLBACK( on_delete_event ), help );
+	priv = ofa_ope_template_help_get_instance_private( self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-close" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), help );
+	priv->parents = g_list_remove( priv->parents, finalized_parent );
 
-	gtk_widget_show_all( GTK_WIDGET( toplevel ));
-	gtk_window_present( toplevel );
-
-	/*g_main_loop_new( NULL, TRUE );*/
-	/*
-	gtk_widget_grab_focus( GTK_WIDGET( toplevel ));
-	gboolean grabbed = gtk_widget_has_grab( GTK_WIDGET( toplevel ));
-	g_debug( "ofa_ope_template_help_init_window: grabbed=%s", grabbed ? "True":"False" );
-	*/
-	/*
-	gtk_main();
-	*/
-	/*
-	gtk_widget_grab_focus( button );
-	*/
-	/*
-	GMainLoop *loop = g_main_loop_new( NULL, FALSE );
-	g_main_loop_run (loop);
-	*/
-}
-
-static gboolean
-on_delete_event( GtkWidget *widget, GdkEvent *event, ofaOpeTemplateHelp *help )
-{
-	do_close( help );
-	return( TRUE );
+	if( !priv->parents || g_list_length( priv->parents ) == 0 ){
+		do_close( self );
+	}
 }
 
 /*
@@ -175,26 +233,11 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, ofaOpeTemplateHelp *help )
 static void
 on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help )
 {
-	g_debug( "ofa_ope_template_on_close_clicked" );
 	do_close( help );
-}
-
-/**
- * ofa_ope_template_help_close:
- */
-void
-ofa_ope_template_help_close( ofaOpeTemplateHelp *help )
-{
-	g_return_if_fail( help && OFA_IS_OPE_TEMPLATE_HELP( help ));
-
-	if( !MY_WINDOW( help )->prot->dispose_has_run ){
-
-		do_close( help );
-	}
 }
 
 static void
 do_close( ofaOpeTemplateHelp *help )
 {
-	g_object_unref( help );
+	my_idialog_close( MY_IDIALOG( help ));
 }

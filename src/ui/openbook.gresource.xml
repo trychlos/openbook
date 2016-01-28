@@ -2,6 +2,7 @@
 <gresources>
   <gresource prefix="/org/trychlos/openbook/ui">
     <file>ofa-guided-input.ui</file>
+    <file>ofa-ope-template-help.ui</file>
     <file>ofa-ope-template-properties.ui</file>
   </gresource>
 </gresources>

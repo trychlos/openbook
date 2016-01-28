@@ -93,8 +93,6 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	GtkWidget           *ref_entry;
 	GtkWidget           *details_grid;
 	GtkWidget           *msgerr_label;
-	ofaOpeTemplateHelp  *help_dlg;
-	GtkWidget           *help_btn;
 	GtkWidget           *ok_btn;
 };
 
@@ -146,7 +144,6 @@ static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTempla
 static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self );
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
-static void      on_help_closed( ofaOpeTemplateProperties *self, GObject *finalized_help );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
 static void      on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
@@ -196,11 +193,6 @@ ope_template_properties_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
-		/* close the help window */
-		if( priv->help_dlg ){
-			ofa_ope_template_help_close( priv->help_dlg );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -320,7 +312,6 @@ idialog_init( myIDialog *instance )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), self );
-	priv->help_btn = button;
 
 	if( priv->is_current ){
 		gtk_widget_grab_focus(
@@ -782,33 +773,12 @@ on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self )
 static void
 on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 {
-	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
-
-	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	main_window = my_idialog_get_main_window( MY_IDIALOG( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv->help_dlg = ofa_ope_template_help_run( OFA_MAIN_WINDOW( main_window ));
-
-	gtk_widget_set_sensitive( GTK_WIDGET( btn ), FALSE );
-	g_object_weak_ref( G_OBJECT( priv->help_dlg ), ( GWeakNotify ) on_help_closed, self );
-}
-
-static void
-on_help_closed( ofaOpeTemplateProperties *self, GObject *finalized_help )
-{
-	static const gchar *thisfn = "ofa_ope_template_properties_on_help_closed";
-	ofaOpeTemplatePropertiesPrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_help=%p",
-			thisfn, ( void * ) self, ( void * ) finalized_help );
-
-	priv = ofa_ope_template_properties_get_instance_private( self );
-
-	priv->help_dlg = NULL;
-	gtk_widget_set_sensitive( priv->help_btn, TRUE );
+	ofa_ope_template_help_run( OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( self ));
 }
 
 /*

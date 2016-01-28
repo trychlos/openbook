@@ -33,8 +33,20 @@
  * A non-modal dialog box which display an help about operation
  * templates.
  *
+ * Each ofaOpeTemplateProperties dialog is able to ask for opening this
+ * dialog. This dialog makes itself unique (is managed as a singleton),
+ * and takes care of auto-closing itself when the last
+ * ofaOpeTemplateProperties dialog is closed.
+ *
  * See api/ofo-ope-template.h for a full description of the model language.
+ *
+ * Development rules:
+ * - type:       unique non-modal dialog
+ * - settings:   yes
+ * - current:    no
  */
+
+#include <gtk/gtk.h>
 
 #include "api/ofa-main-window-def.h"
 
@@ -51,24 +63,20 @@ typedef struct _ofaOpeTemplateHelpPrivate         ofaOpeTemplateHelpPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myWindow                   parent;
-
-	/*< private members >*/
-	ofaOpeTemplateHelpPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaOpeTemplateHelp;
 
 typedef struct {
 	/*< public members >*/
-	myWindowClass              parent;
+	GtkDialogClass parent;
 }
 	ofaOpeTemplateHelpClass;
 
-GType               ofa_ope_template_help_get_type( void ) G_GNUC_CONST;
+GType ofa_ope_template_help_get_type( void ) G_GNUC_CONST;
 
-ofaOpeTemplateHelp *ofa_ope_template_help_run     ( const ofaMainWindow *main_window );
-
-void                ofa_ope_template_help_close   ( ofaOpeTemplateHelp *help );
+void  ofa_ope_template_help_run     ( const ofaMainWindow *main_window,
+											GtkWindow *parent );
 
 G_END_DECLS
 
