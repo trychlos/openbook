@@ -33,7 +33,7 @@
 
  Other changes:
 
-   - 
+   - ofa_account_chart_bin_toggle_collapse(): removed unused method.
 
 -----------------------------------------------------------------------
  Version 0.46

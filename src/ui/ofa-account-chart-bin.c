@@ -1525,46 +1525,6 @@ select_row_by_iter( ofaAccountChartBin *book, GtkTreeView *tview, GtkTreeModel *
 }
 
 /**
- * ofa_account_chart_bin_toggle_collapse:
- *
- * Expand/Collapse the tree if a current selection has children
- */
-void
-ofa_account_chart_bin_toggle_collapse( ofaAccountChartBin *book )
-{
-	static const gchar *thisfn = "ofa_account_chart_bin_toggle_collapse";
-	ofaAccountChartBinPrivate *priv;
-	GtkTreeView *tview;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-
-	g_debug( "%s: book=%p", thisfn, ( void * ) book );
-
-	g_return_if_fail( book && OFA_IS_ACCOUNT_CHART_BIN( book ));
-
-	priv = book->priv;
-
-	if( !priv->dispose_has_run ){
-
-		tview = ( GtkTreeView * ) get_current_tree_view( book );
-		if( tview ){
-			select = gtk_tree_view_get_selection( tview );
-			if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-				path = gtk_tree_model_get_path( tmodel, &iter );
-				if( gtk_tree_view_row_expanded( tview, path )){
-					gtk_tree_view_collapse_row( tview, path );
-				} else {
-					gtk_tree_view_expand_row( tview, path, TRUE );
-				}
-				gtk_tree_path_free( path );
-			}
-		}
-	}
-}
-
-/**
  * ofa_account_chart_bin_get_current_treeview:
  *
  * Returns the treeview associated to the current page

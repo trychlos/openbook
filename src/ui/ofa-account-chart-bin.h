@@ -84,8 +84,6 @@ gchar              *ofa_account_chart_bin_get_selected        ( ofaAccountChartB
 void                ofa_account_chart_bin_set_selected        ( ofaAccountChartBin *book,
 																		const gchar *number );
 
-void                ofa_account_chart_bin_toggle_collapse     ( ofaAccountChartBin *book );
-
 void                ofa_account_chart_bin_button_clicked      ( ofaAccountChartBin *book,
 																		gint button_id );
 
