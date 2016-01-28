@@ -156,7 +156,7 @@ void                  my_idialog_set_ui_from_file          ( myIDialog *instance
 																	const gchar *xml_fname,
 																	const gchar *toplevel_name );
 
-void                  my_idialog_present                   ( myIDialog *instance );
+myIDialog            *my_idialog_present                   ( myIDialog *instance );
 
 void                  my_idialog_close                     ( myIDialog *instance );
 

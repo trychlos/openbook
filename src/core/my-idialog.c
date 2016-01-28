@@ -328,8 +328,10 @@ my_idialog_set_ui_from_file( myIDialog *instance, const gchar *xml_fname, const 
  * window is returned instead.
  *
  * After the call, the @instance may so be invalid.
+ *
+ * Returns: the actually shown instance.
  */
-void
+myIDialog *
 my_idialog_present( myIDialog *instance )
 {
 	GList *it;
@@ -337,7 +339,7 @@ my_idialog_present( myIDialog *instance )
 	gchar *instance_id, *other_id;
 	gint cmp;
 
-	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
 
 	found = NULL;
 	instance_id = idialog_get_identifier( instance );
@@ -365,6 +367,7 @@ my_idialog_present( myIDialog *instance )
 	}
 
 	gtk_window_present( GTK_WINDOW( found ));
+	return( found );
 }
 
 /**
