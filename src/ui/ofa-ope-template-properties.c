@@ -764,7 +764,7 @@ on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
+	main_window = my_idialog_get_main_window( MY_IDIALOG( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));

@@ -29,7 +29,7 @@
 
  Bug fixes:
 
-   - 
+   - ofaOpeTemplateProperties::on_account_selection(): cast to MY_IDIALOG.
 
  Other changes:
 
