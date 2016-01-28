@@ -250,12 +250,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 /*
- * level 1: not displayed (should not appear)
- * level 2 and root: bold, colored background
- * level 3 and root: colored background
- * other root: italic
- *
- * detail accounts who have no currency are red written.
+ * display in grey italic the non-selectable accounts
  */
 static void
 on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
