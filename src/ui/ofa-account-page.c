@@ -53,7 +53,7 @@ G_DEFINE_TYPE( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
+static void       on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -130,7 +130,7 @@ v_setup_page( ofaPage *page )
 	ofa_account_frame_bin_set_buttons( priv->accounts_frame, TRUE, TRUE, TRUE );
 
 	g_signal_connect(
-			priv->accounts_frame, "ofa-activated", G_CALLBACK( on_account_activated ), page );
+			priv->accounts_frame, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 }
 
 static GtkWidget *
@@ -138,19 +138,19 @@ v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaAccountPagePrivate *priv;
 	ofaAccountChartBin *book;
-	GtkWidget *top_widget;
+	GtkWidget *widget;
 
 	g_return_val_if_fail( page && OFA_IS_ACCOUNT_PAGE( page ), NULL );
 
 	priv = OFA_ACCOUNT_PAGE( page )->priv;
 	book = ofa_account_frame_bin_get_chart( priv->accounts_frame );
-	top_widget = ofa_account_chart_bin_get_current_treeview( book );
+	widget = ofa_account_chart_bin_get_current_treeview( book );
 
-	return( top_widget );
+	return( widget );
 }
 
 static void
-on_account_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
+on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
 {
 	ofoAccount *account;
 	const ofaMainWindow *main_window;
