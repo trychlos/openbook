@@ -422,19 +422,25 @@ my_idialog_set_close_button( myIDialog *instance )
  * @instance: this #myIDialog instance.
  *
  * Returns: the instance identifier.
+ *
+ * Defaults to the class name of the window implementation.
  */
 static gchar *
 idialog_get_identifier( const myIDialog *instance )
 {
-	static const gchar *thisfn = "my_idialog_get_identifier";
+	gchar *identifier;
+
+	identifier = NULL;
 
 	if( MY_IDIALOG_GET_INTERFACE( instance )->get_identifier ){
-		return( MY_IDIALOG_GET_INTERFACE( instance )->get_identifier( instance ));
+		identifier = MY_IDIALOG_GET_INTERFACE( instance )->get_identifier( instance );
 	}
 
-	g_info( "%s: myIDialog instance %p does not provide 'get_identifier()' method",
-			thisfn, ( void * ) instance );
-	return( NULL );
+	if( !my_strlen( identifier )){
+		identifier = g_strdup( G_OBJECT_TYPE_NAME( instance ));
+	}
+
+	return( identifier );
 }
 
 /*
