@@ -877,7 +877,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 {
 	static const gchar *thisfn = "ofa_settlement_on_sort_model";
 	ofaSettlementPrivate *priv;
-	gint cmp, sort_column_id;
+	gint cmp;
 	gchar *sdopea, *sdeffa, *srefa, *slabela, *sleda, *sacca, *sdeba, *screa, *sstlmta;
 	gchar *sdopeb, *sdeffb, *srefb, *slabelb, *sledb, *saccb, *sdebb, *screb, *sstlmtb;
 
@@ -937,7 +937,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 			cmp = cmp_counters( self, sstlmta, sstlmtb );
 			break;
 		default:
-			g_warning( "%s: unhandled column: %d", thisfn, sort_column_id );
+			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
 			break;
 	}
 
