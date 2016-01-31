@@ -63,37 +63,37 @@
  * - button remove
  */
 struct _ofaOpeTemplatePropertiesPrivate {
-	gboolean             dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* initialization
 	 */
-	ofoOpeTemplate      *ope_template;
-	gchar               *ledger;			/* ledger mnemo */
+	ofoOpeTemplate *ope_template;
+	gchar          *ledger;				/* ledger mnemo */
 
 	/* internals
 	 */
-	ofaHub              *hub;
-	gboolean             is_current;
-	gboolean             is_new;
+	ofaHub         *hub;
+	gboolean        is_current;
+	gboolean        is_new;
 
 	/* data
 	 */
-	gchar               *mnemo;
-	gchar               *label;
-	gboolean             ledger_locked;
-	gchar               *ref;				/* piece reference */
-	gboolean             ref_locked;
-	gchar               *upd_user;
-	GTimeVal             upd_stamp;
+	gchar          *mnemo;
+	gchar          *label;
+	gboolean        ledger_locked;
+	gchar          *ref;				/* piece reference */
+	gboolean        ref_locked;
+	gchar          *upd_user;
+	GTimeVal        upd_stamp;
 
 	/* UI
 	 */
-	ofaLedgerCombo      *ledger_combo;
-	GtkWidget           *ledger_parent;
-	GtkWidget           *ref_entry;
-	GtkWidget           *details_grid;
-	GtkWidget           *msgerr_label;
-	GtkWidget           *ok_btn;
+	ofaLedgerCombo *ledger_combo;
+	GtkWidget      *ledger_parent;
+	GtkWidget      *ref_entry;
+	GtkWidget      *details_grid;
+	GtkWidget      *msgerr_label;
+	GtkWidget      *ok_btn;
 };
 
 /* columns in the detail treeview
