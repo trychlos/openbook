@@ -32,12 +32,12 @@
 #include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofo-account.h"
+#include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-account-store.h"
-#include "ui/ofa-account-chart-bin.h"
 #include "ui/ofa-account-frame-bin.h"
 
 /* private instance data
@@ -48,13 +48,15 @@ struct _ofaAccountSelectPrivate {
 	 */
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
+	gboolean             is_current;
 	gint                 allowed;
 
 	/* UI
 	 */
 	GtkWindow           *toplevel;
-	ofaAccountFrameBin  *account_frame;
-	ofaAccountChartBin  *account_chart;
+	ofaAccountFrameBin  *account_bin;
+	GtkWidget           *properties_btn;
+	GtkWidget           *delete_btn;
 	GtkWidget           *ok_btn;
 	GtkWidget           *msg_label;
 
@@ -71,10 +73,14 @@ G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
+static void      on_new_clicked( GtkButton *button, ofaAccountSelect *self );
+static void      on_properties_clicked( GtkButton *button, ofaAccountSelect *self );
+static void      on_delete_clicked( GtkButton *button, ofaAccountSelect *self );
 static void      on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
 static void      on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
+static void      do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
 static void      set_message( ofaAccountSelect *self, const gchar *str );
@@ -169,7 +175,6 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
-	ofaAccountChartBin *book;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -199,8 +204,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 
 	priv = st_this->priv;
 
-	book = ofa_account_frame_bin_get_chart( priv->account_frame );
-	ofa_account_chart_bin_set_selected( book, asked_number );
+	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
 	check_for_enable_dlg( st_this );
 
 	g_free( priv->account_number );
@@ -220,7 +224,9 @@ v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
 	ofaAccountSelectPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *parent, *btn;
+	ofaButtonsBox *box;
+	ofoDossier *dossier;
 
 	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
@@ -236,17 +242,28 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_frame = ofa_account_frame_bin_new( priv->main_window );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_frame ));
-	priv->account_chart = ofa_account_frame_bin_get_chart( priv->account_frame );
-	ofa_account_chart_bin_set_cell_data_func(
-			priv->account_chart, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
-	ofa_account_frame_bin_set_buttons( priv->account_frame, FALSE, FALSE, FALSE );
+	priv->account_bin = ofa_account_frame_bin_new( priv->main_window );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
+	ofa_account_frame_bin_set_cell_data_func(
+			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
 
-	g_signal_connect(
-			G_OBJECT( priv->account_frame ), "ofa-changed", G_CALLBACK( on_account_changed ), dialog );
-	g_signal_connect(
-			G_OBJECT( priv->account_frame ), "ofa-activated", G_CALLBACK( on_account_activated ), dialog );
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	priv->is_current = ofo_dossier_is_current( dossier );
+
+	box = ofa_account_frame_bin_get_buttons_box( priv->account_bin );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), dialog );
+	gtk_widget_set_sensitive( btn, priv->is_current );
+
+	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), dialog );
+	priv->properties_btn = btn;
+
+	ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), dialog );
+	priv->delete_btn = btn;
+
+	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_account_changed ), dialog );
+	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), dialog );
 }
 
 /*
@@ -263,7 +280,7 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	priv = self->priv;
 
-	ofa_account_chart_bin_cell_data_renderer( priv->account_chart, tcolumn, cell, tmodel, iter );
+	ofa_account_frame_bin_cell_data_render( priv->account_bin, tcolumn, cell, tmodel, iter );
 
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -274,6 +291,36 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 	}
+}
+
+static void
+on_new_clicked( GtkButton *button, ofaAccountSelect *self )
+{
+	ofaAccountSelectPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_account_frame_bin_do_new( priv->account_bin );
+}
+
+static void
+on_properties_clicked( GtkButton *button, ofaAccountSelect *self )
+{
+	ofaAccountSelectPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_account_frame_bin_do_properties( priv->account_bin );
+}
+
+static void
+on_delete_clicked( GtkButton *button, ofaAccountSelect *self )
+{
+	ofaAccountSelectPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_account_frame_bin_do_delete( priv->account_bin );
 }
 
 static void
@@ -299,7 +346,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	account = ofa_account_chart_bin_get_selected( priv->account_chart );
+	account = ofa_account_frame_bin_get_selected( priv->account_bin );
 	ok = is_selection_valid( self, account );
 	g_free( account );
 
@@ -321,10 +368,24 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
+		do_update_sensitivity( self, account );
 		ok = ofo_account_is_allowed( account, priv->allowed );
 	}
 
 	return( ok );
+}
+
+static void
+do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account )
+{
+	ofaAccountSelectPrivate *priv;
+	gboolean has_account;
+
+	priv = self->priv;
+	has_account = ( account && OFO_IS_ACCOUNT( account ));
+
+	gtk_widget_set_sensitive( priv->properties_btn, has_account );
+	gtk_widget_set_sensitive( priv->delete_btn, has_account && priv->is_current && ofo_account_is_deletable( account ));
 }
 
 static gboolean
@@ -337,14 +398,12 @@ static gboolean
 do_select( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
-	ofaAccountChartBin *book;
 	gchar *account;
 	gboolean ok;
 
 	priv = self->priv;
 
-	book = ofa_account_frame_bin_get_chart( priv->account_frame );
-	account = ofa_account_chart_bin_get_selected( book );
+	account = ofa_account_frame_bin_get_selected( priv->account_bin );
 	ok = is_selection_valid( self, account );
 	if( ok ){
 		priv->account_number = g_strdup( account );
