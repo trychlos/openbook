@@ -35,7 +35,7 @@
 
    - my_idialog_present(): returns the actually shown instance.
    - myIDialog::idialog_get_identifier(): defaults to implementation type name.
-   - ofa_account_chart_bin_toggle_collapse(): removed unused method.
+   - ofaAccountChartBin: remove obsoleted class.
 
 -----------------------------------------------------------------------
  Version 0.46
