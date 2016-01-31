@@ -229,7 +229,7 @@ v_setup_buttons( ofaPage *page )
 
 	priv->entries_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_VIEW_ENTRIES, G_CALLBACK( on_entry_page ), page );
+					buttons_box, _( "_View entries..." ), G_CALLBACK( on_entry_page ), page );
 
 	return( GTK_WIDGET( buttons_box ));
 }
