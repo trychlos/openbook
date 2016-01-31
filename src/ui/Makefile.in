@@ -141,7 +141,6 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	my-cell-renderer-date.$(OBJEXT) my-tab-label.$(OBJEXT) \
 	ofa-about.$(OBJEXT) ofa-account-book-bin.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
-	ofa-account-chart-bin.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) \
 	ofa-account-frame-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-account-properties.$(OBJEXT) ofa-account-select.$(OBJEXT) \
@@ -369,6 +368,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -494,8 +494,6 @@ openbook_SOURCES = \
 	ofa-account-book-bin.h								\
 	ofa-account-book-render.c							\
 	ofa-account-book-render.h							\
-	ofa-account-chart-bin.c								\
-	ofa-account-chart-bin.h								\
 	ofa-account-filter-vv-bin.c							\
 	ofa-account-filter-vv-bin.h							\
 	ofa-account-frame-bin.c								\
@@ -877,7 +875,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-chart-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@

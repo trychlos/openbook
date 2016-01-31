@@ -1584,8 +1584,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 	gboolean ok;
 	ofaHub *hub;
 
-	g_debug( "%s: ledger=%p, hub=%p, currency=%s",
-			thisfn, ( void * ) ledger, ( void * ) hub, currency );
+	g_debug( "%s: ledger=%p, currency=%s", thisfn, ( void * ) ledger, currency );
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( my_strlen( currency ), FALSE );

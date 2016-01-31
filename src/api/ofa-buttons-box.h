@@ -48,6 +48,7 @@
  * before the first button.
  */
 
+#include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
@@ -77,14 +78,11 @@ typedef struct {
 	ofaButtonsBoxClass;
 
 /* Some standard button mnemonics are defined here
- *  as an effort to get them homogene
+ *  as an effort to get them homogeneous
  */
 #define BUTTON_DELETE                   _( "_Delete..." )
 #define BUTTON_NEW                      _( "_New..." )
 #define BUTTON_PROPERTIES               _( "_Properties..." )
-#define BUTTON_RECONCILIATION           _( "_Reconciliation" )
-#define BUTTON_SETTLEMENT               _( "_Settlement" )
-#define BUTTON_VIEW_ENTRIES             _( "View _entries" )
 
 GType          ofa_buttons_box_get_type                ( void ) G_GNUC_CONST;
 

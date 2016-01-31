@@ -215,29 +215,38 @@ on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFile
 	const gchar *event_str = "";
 
 	switch( event_type ){
+		case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
+			event_str = "G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED";
+			break;
 		case G_FILE_MONITOR_EVENT_CHANGED:
 			event_str = "G_FILE_MONITOR_EVENT_CHANGED";
 			break;
 		case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
 			event_str = "G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT";
 			break;
-		case G_FILE_MONITOR_EVENT_DELETED:
-			event_str = "G_FILE_MONITOR_EVENT_DELETED";
-			break;
 		case G_FILE_MONITOR_EVENT_CREATED:
 			event_str = "G_FILE_MONITOR_EVENT_CREATED";
 			break;
-		case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-			event_str = "G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED";
+		case G_FILE_MONITOR_EVENT_DELETED:
+			event_str = "G_FILE_MONITOR_EVENT_DELETED";
+			break;
+		case G_FILE_MONITOR_EVENT_MOVED:
+			event_str = "G_FILE_MONITOR_EVENT_MOVED";
+			break;
+		case G_FILE_MONITOR_EVENT_MOVED_IN:
+			event_str = "G_FILE_MONITOR_EVENT_MOVED_IN";
+			break;
+		case G_FILE_MONITOR_EVENT_MOVED_OUT:
+			event_str = "G_FILE_MONITOR_EVENT_MOVED_OUT";
 			break;
 		case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
 			event_str = "G_FILE_MONITOR_EVENT_PRE_UNMOUNT";
 			break;
+		case G_FILE_MONITOR_EVENT_RENAMED:
+			event_str = "G_FILE_MONITOR_EVENT_RENAMED";
+			break;
 		case G_FILE_MONITOR_EVENT_UNMOUNTED:
 			event_str = "G_FILE_MONITOR_EVENT_UNMOUNTED";
-			break;
-		case G_FILE_MONITOR_EVENT_MOVED:
-			event_str = "G_FILE_MONITOR_EVENT_MOVED";
 			break;
 	}
 
