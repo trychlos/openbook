@@ -28,6 +28,7 @@
 
 #include "api/my-idialog.h"
 #include "api/my-utils.h"
+#include "api/ofa-page.h"
 
 #include "core/ofa-main-window.h"
 
@@ -41,13 +42,16 @@ struct _ofaNomodalPagePrivate {
 	/* initialization
 	 */
 	gchar     *title;
-	GtkWidget *top_widget;
+	GtkWidget *top_widget;				/* is also an ofaPage */
 };
+
+static GList *st_list                   = NULL;
 
 static void      idialog_iface_init( myIDialogInterface *iface );
 static guint     idialog_get_interface_version( const myIDialog *instance );
 static gchar    *idialog_get_identifier( const myIDialog *instance );
 static void      idialog_init( myIDialog *instance );
+static void      on_finalized_page( void *empty, GObject *finalized_page );
 
 G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0, \
 		G_ADD_PRIVATE( ofaNomodalPage ) \
@@ -140,10 +144,12 @@ static gchar *
 idialog_get_identifier( const myIDialog *instance )
 {
 	ofaNomodalPagePrivate *priv;
+	const gchar *cstr;
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
+	cstr = G_OBJECT_TYPE_NAME( priv->top_widget );
 
-	return( g_strdup( G_OBJECT_TYPE_NAME( priv->top_widget )));
+	return( g_strdup( cstr ));
 }
 
 static void
@@ -169,8 +175,7 @@ idialog_init( myIDialog *instance )
  * Creates or represents a #ofaNomodalPage non-modal window.
  */
 void
-ofa_nomodal_page_run(
-		const ofaMainWindow *main_window, const gchar *title, GtkWidget *page )
+ofa_nomodal_page_run( const ofaMainWindow *main_window, const gchar *title, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_nomodal_page_run";
 	ofaNomodalPage *self;
@@ -192,4 +197,66 @@ ofa_nomodal_page_run(
 
 	/* after this call, @self may be invalid */
 	my_idialog_present( MY_IDIALOG( self ));
+
+	if( MY_IS_IDIALOG( self )){
+		st_list = g_list_prepend( st_list, self );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_finalized_page, NULL );
+	}
+}
+
+static void
+on_finalized_page( void *empty, GObject *finalized_page )
+{
+	static const gchar *thisfn = "ofa_nomodal_page_on_finalized_page";
+
+	g_debug( "%s: empty=%p, finalized_page=%p", thisfn, ( void * ) empty, ( void * ) finalized_page );
+
+	st_list = g_list_remove( st_list, finalized_page );
+}
+
+/**
+ * ofa_nomodal_page_get_by_theme:
+ * @theme: the searched theme identifier.
+ *
+ * Returns: the #ofaNomodalPage which displays this @theme, or %NULL.
+ */
+ofaNomodalPage *
+ofa_nomodal_page_get_by_theme( gint theme )
+{
+	static const gchar *thisfn = "ofa_nomodal_page_get_by_theme";
+	ofaNomodalPage *page;
+	ofaNomodalPagePrivate *priv;
+	GList *it;
+
+	g_debug( "%s: theme=%d", thisfn, theme );
+
+	for( it=st_list ; it ; it=it->next ){
+		page = OFA_NOMODAL_PAGE( it->data );
+		priv = ofa_nomodal_page_get_instance_private( page );
+		if( ofa_page_get_theme( OFA_PAGE( priv->top_widget )) == theme ){
+			g_debug( "%s: found page=%p (ofaPage=%p (%s))",
+					thisfn, ( void * ) page, ( void * ) priv->top_widget, G_OBJECT_TYPE_NAME( priv->top_widget ));
+			return( page );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_nomodal_page_close_all:
+ *
+ * Close all opened pages.
+ */
+void
+ofa_nomodal_page_close_all( void )
+{
+	static const gchar *thisfn = "ofa_nomodal_page_close_all";
+	GList *it;
+
+	g_debug( "%s:", thisfn );
+
+	for( it=st_list ; it ; it=it->next ){
+		gtk_widget_destroy( GTK_WIDGET( it->data ));
+	}
 }

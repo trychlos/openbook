@@ -63,11 +63,15 @@ typedef struct {
 }
 	ofaNomodalPageClass;
 
-GType    ofa_nomodal_page_get_type( void ) G_GNUC_CONST;
+GType           ofa_nomodal_page_get_type    ( void ) G_GNUC_CONST;
 
-void     ofa_nomodal_page_run     ( const ofaMainWindow *parent,
-										const gchar *title,
-										GtkWidget *page );
+void            ofa_nomodal_page_run         ( const ofaMainWindow *parent,
+													const gchar *title,
+													GtkWidget *page );
+
+ofaNomodalPage *ofa_nomodal_page_get_by_theme( gint theme );
+
+void            ofa_nomodal_page_close_all   ( void );
 
 G_END_DECLS
 
