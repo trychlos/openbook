@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
+
 #include "ui/my-tab-label.h"
 
 /* priv instance data
@@ -192,14 +194,14 @@ setup_tab_content( myTabLabel *tab, GtkImage *image, const gchar *text )
 
 	priv = tab->priv;
 
-	gtk_grid_set_column_spacing( GTK_GRID( tab ), 5 );
-
 	if( image ){
 		gtk_grid_attach( GTK_GRID( tab ), GTK_WIDGET( image ), 0, 0, 1, 1 );
+		my_utils_widget_set_margin_right( GTK_WIDGET( image ), 2 );
 	}
 
 	label = gtk_label_new_with_mnemonic( text );
 	gtk_grid_attach( GTK_GRID( tab ), label, 1, 0, 1, 1 );
+	my_utils_widget_set_margin_right( label, 6 );
 	priv->label = g_strdup( text );
 
 	priv->pin_btn = gtk_button_new();
@@ -208,6 +210,7 @@ setup_tab_content( myTabLabel *tab, GtkImage *image, const gchar *text )
 	gtk_button_set_image( GTK_BUTTON( priv->pin_btn ),
 			gtk_image_new_from_icon_name( "view-fullscreen", GTK_ICON_SIZE_MENU ));
 	gtk_grid_attach( GTK_GRID( tab ), priv->pin_btn, 2, 0, 1, 1 );
+	my_utils_widget_set_margin_right( priv->pin_btn, 2 );
 
 	g_signal_connect( priv->pin_btn, "clicked", G_CALLBACK( on_pin_button_clicked ), tab );
 
