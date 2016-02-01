@@ -71,12 +71,17 @@ typedef struct {
 /**
  * MY_SIGNAL_TAB_CLOSE_CLICKED: emitted when the 'close' button of a
  *                               tab is clicked
+ * MY_SIGNAL_TAB_PIN_CLICKED: emitted when the 'pin' button of a
+ *                               tab is clicked
  */
-#define MY_SIGNAL_TAB_CLOSE_CLICKED    "my-signal-tab-close-clicked"
+#define MY_SIGNAL_TAB_CLOSE_CLICKED     "tab-close-clicked"
+#define MY_SIGNAL_TAB_PIN_CLICKED       "tab-pin-clicked"
 
-GType       my_tab_label_get_type( void ) G_GNUC_CONST;
+GType       my_tab_label_get_type ( void ) G_GNUC_CONST;
 
-myTabLabel *my_tab_label_new     ( GtkImage *image, const gchar *text );
+myTabLabel *my_tab_label_new      ( GtkImage *image, const gchar *text );
+
+gchar      *my_tab_label_get_label( const myTabLabel *tab );
 
 G_END_DECLS
 

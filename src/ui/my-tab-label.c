@@ -33,6 +33,9 @@
 struct _myTabLabelPrivate {
 	gboolean   dispose_has_run;
 
+	gchar     *label;
+
+	GtkWidget *pin_btn;
 	GtkWidget *close_btn;
 };
 
@@ -40,6 +43,7 @@ struct _myTabLabelPrivate {
  */
 enum {
 	TAB_CLOSE_CLICKED = 0,
+	TAB_PIN_CLICKED,
 	N_SIGNALS
 };
 
@@ -49,6 +53,8 @@ G_DEFINE_TYPE( myTabLabel, my_tab_label, GTK_TYPE_GRID )
 
 static void setup_tab_content( myTabLabel *tab, GtkImage *image, const gchar *text );
 static void setup_tab_style( myTabLabel *tab );
+static void on_pin_button_clicked( GtkButton *button, myTabLabel *tab );
+static void on_tab_pin_clicked_class_handler( myTabLabel *tab );
 static void on_close_button_clicked( GtkButton *button, myTabLabel *tab );
 static void on_tab_close_clicked_class_handler( myTabLabel *tab );
 
@@ -56,6 +62,7 @@ static void
 tab_label_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_tab_label_finalize";
+	myTabLabelPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -63,6 +70,9 @@ tab_label_finalize( GObject *instance )
 	g_return_if_fail( instance && MY_IS_TAB_LABEL( instance ));
 
 	/* free data members here */
+	priv = MY_TAB_LABEL( instance )->priv;
+
+	g_free( priv->label );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_tab_label_parent_class )->finalize( instance );
@@ -131,6 +141,27 @@ my_tab_label_class_init( myTabLabelClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				0 );
+
+	/**
+	 * myTabLabel::tab-pin-clicked:
+	 *
+	 * This signal is emitted when the user clicks on the pin button,
+	 * on the right of the tab label
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( myTabLabel *tab,
+	 * 								gpointer user_data );
+	 */
+	st_signals[ TAB_PIN_CLICKED ] = g_signal_new_class_handler(
+				MY_SIGNAL_TAB_PIN_CLICKED,
+				MY_TYPE_TAB_LABEL,
+				G_SIGNAL_RUN_LAST,
+				G_CALLBACK( on_tab_pin_clicked_class_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0 );
 }
 
 /**
@@ -169,16 +200,25 @@ setup_tab_content( myTabLabel *tab, GtkImage *image, const gchar *text )
 
 	label = gtk_label_new_with_mnemonic( text );
 	gtk_grid_attach( GTK_GRID( tab ), label, 1, 0, 1, 1 );
+	priv->label = g_strdup( text );
+
+	priv->pin_btn = gtk_button_new();
+	gtk_button_set_relief( GTK_BUTTON( priv->pin_btn ), GTK_RELIEF_NONE );
+	gtk_button_set_focus_on_click( GTK_BUTTON( priv->pin_btn ), FALSE );
+	gtk_button_set_image( GTK_BUTTON( priv->pin_btn ),
+			gtk_image_new_from_icon_name( "view-fullscreen", GTK_ICON_SIZE_MENU ));
+	gtk_grid_attach( GTK_GRID( tab ), priv->pin_btn, 2, 0, 1, 1 );
+
+	g_signal_connect( priv->pin_btn, "clicked", G_CALLBACK( on_pin_button_clicked ), tab );
 
 	priv->close_btn = gtk_button_new();
 	gtk_button_set_relief( GTK_BUTTON( priv->close_btn ), GTK_RELIEF_NONE );
 	gtk_button_set_focus_on_click( GTK_BUTTON( priv->close_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->close_btn ),
 			gtk_image_new_from_icon_name( "window-close", GTK_ICON_SIZE_MENU ));
-	gtk_grid_attach( GTK_GRID( tab ), priv->close_btn, 2, 0, 1, 1 );
+	gtk_grid_attach( GTK_GRID( tab ), priv->close_btn, 3, 0, 1, 1 );
 
-	g_signal_connect( G_OBJECT( priv->close_btn ),
-			"clicked", G_CALLBACK( on_close_button_clicked ), tab );
+	g_signal_connect( priv->close_btn, "clicked", G_CALLBACK( on_close_button_clicked ), tab );
 }
 
 static void
@@ -215,6 +255,20 @@ setup_tab_style( myTabLabel *tab )
 }
 
 static void
+on_pin_button_clicked( GtkButton *button, myTabLabel *tab )
+{
+	g_signal_emit_by_name( G_OBJECT( tab ), MY_SIGNAL_TAB_PIN_CLICKED );
+}
+
+static void
+on_tab_pin_clicked_class_handler( myTabLabel *tab )
+{
+	static const gchar *thisfn = "my_tab_label_on_tab_pin_clicked_class_handler";
+
+	g_debug( "%s: tab=%p", thisfn, ( void * ) tab );
+}
+
+static void
 on_close_button_clicked( GtkButton *button, myTabLabel *tab )
 {
 	g_signal_emit_by_name( G_OBJECT( tab ), MY_SIGNAL_TAB_CLOSE_CLICKED );
@@ -226,4 +280,27 @@ on_tab_close_clicked_class_handler( myTabLabel *tab )
 	static const gchar *thisfn = "my_tab_label_on_tab_close_clicked_class_handler";
 
 	g_debug( "%s: tab=%p", thisfn, ( void * ) tab );
+}
+
+/**
+ * my_tab_label_get_label:
+ * @tab:: this #myTabLabel instance.
+ *
+ * Returns: the attached label as a new string which should be #g_free()
+ *  by the caller.
+ */
+gchar *
+my_tab_label_get_label( const myTabLabel *tab )
+{
+	myTabLabelPrivate *priv;
+
+	g_return_val_if_fail( tab && MY_IS_TAB_LABEL( tab ), NULL );
+
+	priv = tab->priv;
+
+	if( priv->dispose_has_run ){
+		g_return_val_if_reached( NULL );
+	}
+
+	return( g_strdup( priv->label ));
 }
