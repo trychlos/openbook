@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
+#include "api/my-idialog.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
@@ -393,6 +394,7 @@ main_window_dispose( GObject *instance )
 		if( priv->pane ){
 			pane_save_position( priv->pane );
 		}
+		close_all_pages( OFA_MAIN_WINDOW( instance ));
 
 		/* unref object members here */
 		g_clear_object( &priv->hub );
@@ -1736,6 +1738,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	ofaPage *page;
 	const sThemeDef *theme_def;
 	ofoDossier *dossier;
+	ofaNomodalPage *nomodal;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -1761,12 +1764,17 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 			}
 		}
 
-		page = main_book_get_page( main_window, main_book, theme );
-		if( !page ){
-			page = main_book_create_page( main_window, main_book, theme_def );
+		nomodal = ofa_nomodal_page_get_by_theme( theme );
+		if( nomodal ){
+			my_idialog_present( MY_IDIALOG( nomodal ));
+		} else {
+			page = main_book_get_page( main_window, main_book, theme );
+			if( !page ){
+				page = main_book_create_page( main_window, main_book, theme_def );
+			}
+			g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+			main_book_activate_page( main_window, main_book, page );
 		}
-		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		main_book_activate_page( main_window, main_book, page );
 	}
 
 	return( page );
@@ -1936,6 +1944,8 @@ close_all_pages( ofaMainWindow *main_window )
 	while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
 		gtk_notebook_remove_page( book, count-1 );
 	}
+
+	ofa_nomodal_page_close_all();
 }
 
 static guint
@@ -1957,7 +1967,7 @@ on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fnty
 	def->theme_id = priv->last_theme;
 	priv->themes = g_list_prepend( priv->themes, def );
 
-	return( priv->last_theme );
+	return( def->theme_id );
 }
 
 static void
