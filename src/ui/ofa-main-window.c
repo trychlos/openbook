@@ -42,7 +42,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/my-tab-label.h"
+#include "ui/my-tab.h"
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
@@ -345,8 +345,8 @@ static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
 static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
-static void             on_tab_close_clicked( myTabLabel *tab, ofaPage *page );
-static void             on_tab_pin_clicked( myTabLabel *tab, ofaPage *page );
+static void             on_tab_close_clicked( myTab *tab, ofaPage *page );
+static void             on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void             close_all_pages( ofaMainWindow *main_window );
 static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
@@ -1809,7 +1809,7 @@ static ofaPage *
 main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
 {
 	ofaPage *page;
-	myTabLabel *tab;
+	myTab *tab;
 	GtkWidget *label;
 
 	/* the top child of the notebook page */
@@ -1820,7 +1820,7 @@ main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThem
 
 
 	/* the tab widget */
-	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
+	tab = my_tab_new( NULL, gettext( theme_def->label ));
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
 	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
@@ -1863,7 +1863,7 @@ main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage
 }
 
 static void
-on_tab_close_clicked( myTabLabel *tab, ofaPage *page )
+on_tab_close_clicked( myTab *tab, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_main_window_on_tab_close_clicked";
 	const ofaMainWindow *main_window;
@@ -1885,14 +1885,14 @@ on_tab_close_clicked( myTabLabel *tab, ofaPage *page )
 }
 
 static void
-on_tab_pin_clicked( myTabLabel *tab, ofaPage *page )
+on_tab_pin_clicked( myTab *tab, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
 	gchar *title;
 
 	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
 
-	title = my_tab_label_get_label( tab );
+	title = my_tab_get_label( tab );
 	g_object_ref( G_OBJECT( page ));
 
 	on_tab_close_clicked( tab, page );

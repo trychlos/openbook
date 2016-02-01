@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_TAB_LABEL_H__
-#define __MY_TAB_LABEL_H__
+#ifndef __MY_TAB_H__
+#define __MY_TAB_H__
 
 /**
- * SECTION: my_tab_label
- * @short_description: #myTabLabel class definition.
+ * SECTION: my_tab
+ * @short_description: #myTab class definition.
  * @include: ui/my-tab-label.h
  *
  * A custom label for GtkNotebook main pages, which embeds an icon on
@@ -44,29 +44,29 @@
 
 G_BEGIN_DECLS
 
-#define MY_TYPE_TAB_LABEL                ( my_tab_label_get_type())
-#define MY_TAB_LABEL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_TAB_LABEL, myTabLabel ))
-#define MY_TAB_LABEL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_TAB_LABEL, myTabLabelClass ))
-#define MY_IS_TAB_LABEL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_TAB_LABEL ))
-#define MY_IS_TAB_LABEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_TAB_LABEL ))
-#define MY_TAB_LABEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_TAB_LABEL, myTabLabelClass ))
+#define MY_TYPE_TAB                ( my_tab_get_type())
+#define MY_TAB( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_TAB, myTab ))
+#define MY_TAB_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_TAB, myTabClass ))
+#define MY_IS_TAB( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_TAB ))
+#define MY_IS_TAB_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_TAB ))
+#define MY_TAB_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_TAB, myTabClass ))
 
-typedef struct _myTabLabelPrivate        myTabLabelPrivate;
+typedef struct _myTabPrivate       myTabPrivate;
 
 typedef struct {
 	/*< public members >*/
 	GtkGrid            parent;
 
 	/*< private members >*/
-	myTabLabelPrivate *priv;
+	myTabPrivate *priv;
 }
-	myTabLabel;
+	myTab;
 
 typedef struct {
 	/*< public members >*/
 	GtkGridClass parent;
 }
-	myTabLabelClass;
+	myTabClass;
 
 /**
  * MY_SIGNAL_TAB_CLOSE_CLICKED: emitted when the 'close' button of a
@@ -77,12 +77,12 @@ typedef struct {
 #define MY_SIGNAL_TAB_CLOSE_CLICKED     "tab-close-clicked"
 #define MY_SIGNAL_TAB_PIN_CLICKED       "tab-pin-clicked"
 
-GType       my_tab_label_get_type ( void ) G_GNUC_CONST;
+GType       my_tab_get_type ( void ) G_GNUC_CONST;
 
-myTabLabel *my_tab_label_new      ( GtkImage *image, const gchar *text );
+myTab *my_tab_new      ( GtkImage *image, const gchar *text );
 
-gchar      *my_tab_label_get_label( const myTabLabel *tab );
+gchar      *my_tab_get_label( const myTab *tab );
 
 G_END_DECLS
 
-#endif /* __MY_TAB_LABEL_H__ */
+#endif /* __MY_TAB_H__ */
