@@ -66,7 +66,7 @@ typedef struct {
 GType    ofa_nomodal_page_get_type( void ) G_GNUC_CONST;
 
 void     ofa_nomodal_page_run     ( const ofaMainWindow *parent,
-										const gchar *identifier,
+										const gchar *title,
 										GtkWidget *page );
 
 G_END_DECLS

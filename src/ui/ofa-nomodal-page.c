@@ -40,7 +40,7 @@ struct _ofaNomodalPagePrivate {
 
 	/* initialization
 	 */
-	gchar     *identifier;
+	gchar     *title;
 	GtkWidget *top_widget;
 };
 
@@ -67,7 +67,7 @@ nomodal_page_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
-	g_free( priv->identifier );
+	g_free( priv->title );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_nomodal_page_parent_class )->finalize( instance );
@@ -143,7 +143,7 @@ idialog_get_identifier( const myIDialog *instance )
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
-	return( g_strdup( priv->identifier ));
+	return( g_strdup( G_OBJECT_TYPE_NAME( priv->top_widget )));
 }
 
 static void
@@ -153,7 +153,7 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
-	gtk_window_set_title( GTK_WINDOW( instance ), priv->identifier );
+	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
 	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
 
@@ -163,31 +163,31 @@ idialog_init( myIDialog *instance )
 /**
  * ofa_nomodal_page_run:
  * @main_window: the #ofaMainWindow main window of the application.
- * @identifier: the identifier which makes this window unique.
+ * @title: the title of the window.
  * @page: the #GtkWidget top widget.
  *
  * Creates or represents a #ofaNomodalPage non-modal window.
  */
 void
 ofa_nomodal_page_run(
-		const ofaMainWindow *main_window, const gchar *identifier, GtkWidget *page )
+		const ofaMainWindow *main_window, const gchar *title, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_nomodal_page_run";
 	ofaNomodalPage *self;
 	ofaNomodalPagePrivate *priv;
 
-	g_debug( "%s: main_window=%p, identifier=%s, page=%p",
-			thisfn, ( void * ) main_window, identifier, ( void * ) page );
+	g_debug( "%s: main_window=%p, title=%s, page=%p",
+			thisfn, ( void * ) main_window, title, ( void * ) page );
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( my_strlen( identifier ));
+	g_return_if_fail( my_strlen( title ));
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
 	self = g_object_new( OFA_TYPE_NOMODAL_PAGE, NULL );
 	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
 
 	priv = ofa_nomodal_page_get_instance_private( self );
-	priv->identifier = g_strdup( identifier );
+	priv->title = g_strdup( title );
 	priv->top_widget = page;
 
 	/* after this call, @self may be invalid */
