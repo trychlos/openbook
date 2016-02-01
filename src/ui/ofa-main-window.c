@@ -346,6 +346,7 @@ static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNote
 static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static void             on_tab_close_clicked( myTab *tab, ofaPage *page );
+static void             do_close( ofaPage *page );
 static void             on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void             close_all_pages( ofaMainWindow *main_window );
@@ -1791,7 +1792,7 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
 	count = gtk_notebook_get_n_pages( book );
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( book, i );
-		g_return_val_if_fail( OFA_IS_PAGE( page ), NULL );
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 		page_thm = ofa_page_get_theme( OFA_PAGE( page ));
 		if( page_thm == theme ){
 			return( OFA_PAGE( page ));
@@ -1866,11 +1867,18 @@ static void
 on_tab_close_clicked( myTab *tab, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_main_window_on_tab_close_clicked";
+
+	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
+
+	do_close( page );
+}
+
+static void
+do_close( ofaPage *page )
+{
 	const ofaMainWindow *main_window;
 	GtkNotebook *book;
 	gint page_num;
-
-	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
 
 	main_window = ofa_page_get_main_window( page );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -1895,7 +1903,7 @@ on_tab_pin_clicked( myTab *tab, ofaPage *page )
 	title = my_tab_get_label( tab );
 	g_object_ref( G_OBJECT( page ));
 
-	on_tab_close_clicked( tab, page );
+	do_close( page );
 	ofa_nomodal_page_run( ofa_page_get_main_window( page ), title, GTK_WIDGET( page ));
 
 	g_free( title );
