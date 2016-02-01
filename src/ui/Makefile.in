@@ -176,7 +176,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
 	ofa-ledger-summary-bin.$(OBJEXT) \
 	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
-	ofa-ope-template-book-bin.$(OBJEXT) \
+	ofa-nomodal-page.$(OBJEXT) ofa-ope-template-book-bin.$(OBJEXT) \
 	ofa-ope-template-frame-bin.$(OBJEXT) \
 	ofa-ope-template-help.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) \
@@ -622,6 +622,8 @@ openbook_SOURCES = \
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
 	ofa-main-window.c									\
+	ofa-nomodal-page.c									\
+	ofa-nomodal-page.h									\
 	ofa-ope-template-book-bin.c							\
 	ofa-ope-template-book-bin.h							\
 	ofa-ope-template-frame-bin.c						\
@@ -939,6 +941,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-nomodal-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-frame-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-help.Po@am__quote@

@@ -192,6 +192,8 @@ openbook_SOURCES = \
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
 	ofa-main-window.c									\
+	ofa-nomodal-page.c									\
+	ofa-nomodal-page.h									\
 	ofa-ope-template-book-bin.c							\
 	ofa-ope-template-book-bin.h							\
 	ofa-ope-template-frame-bin.c						\
