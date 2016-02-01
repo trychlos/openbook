@@ -25,6 +25,7 @@
 
  New features and improvements:
 
+   - ofaNomodalPage: new window class to be able to detach the theme pages.
    - ofaOpeTemplateHelp: uses myIDialog interface, is globally unique.
 
  Bug fixes:
@@ -37,7 +38,6 @@
    - myIDialog::idialog_get_identifier(): defaults to implementation type name.
    - myTabLabel: have a new 'detach' button on the tab.
    - ofaAccountChartBin: remove obsoleted class.
-   - ofaNomodalPage: new window class to be able to detach the theme pages.
 
 -----------------------------------------------------------------------
  Version 0.46
