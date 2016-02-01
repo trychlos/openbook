@@ -65,6 +65,7 @@
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-ledger-summary-render.h"
+#include "ui/ofa-nomodal-page.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
@@ -345,6 +346,7 @@ static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNote
 static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static void             on_tab_close_clicked( myTabLabel *tab, ofaPage *page );
+static void             on_tab_pin_clicked( myTabLabel *tab, ofaPage *page );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void             close_all_pages( ofaMainWindow *main_window );
 static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
@@ -1820,6 +1822,7 @@ main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThem
 	/* the tab widget */
 	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
+	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
 	/* the menu widget */
 	label = gtk_label_new( gettext( theme_def->label ));
@@ -1879,6 +1882,24 @@ on_tab_close_clicked( myTabLabel *tab, ofaPage *page )
 	g_return_if_fail( page_num >= 0 );
 
 	gtk_notebook_remove_page( book, page_num );
+}
+
+static void
+on_tab_pin_clicked( myTabLabel *tab, ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
+	gchar *title;
+
+	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
+
+	title = my_tab_label_get_label( tab );
+	g_object_ref( G_OBJECT( page ));
+
+	on_tab_close_clicked( tab, page );
+	ofa_nomodal_page_run( ofa_page_get_main_window( page ), title, GTK_WIDGET( page ));
+
+	g_free( title );
+	g_object_unref( G_OBJECT( page ));
 }
 
 /*
