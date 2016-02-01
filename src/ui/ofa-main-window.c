@@ -912,6 +912,7 @@ ofa_main_window_close_dossier( ofaMainWindow *main_window )
 	}
 
 	if( priv->hub ){
+		close_all_pages( main_window );
 		g_clear_object( &priv->hub );
 		application = gtk_window_get_application( GTK_WINDOW( main_window ));
 		ofa_ihubber_clear_hub( OFA_IHUBBER( application ));
@@ -1783,12 +1784,19 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 static GtkNotebook *
 main_get_book( const ofaMainWindow *window )
 {
+	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
 
-	book = gtk_paned_get_child2( window->priv->pane );
-	g_return_val_if_fail( GTK_IS_NOTEBOOK( book ), NULL );
+	priv = window->priv;
+	book = NULL;
 
-	return( GTK_NOTEBOOK( book ));
+	if( priv->pane ){
+		book = gtk_paned_get_child2( window->priv->pane );
+		g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
+		return( GTK_NOTEBOOK( book ));
+	}
+
+	return( NULL );
 }
 
 static ofaPage *
@@ -1941,10 +1949,11 @@ close_all_pages( ofaMainWindow *main_window )
 	gint count;
 
 	book = main_get_book( main_window );
-	while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
-		gtk_notebook_remove_page( book, count-1 );
+	if( book ){
+		while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
+			gtk_notebook_remove_page( book, count-1 );
+		}
 	}
-
 	ofa_nomodal_page_close_all();
 }
 
