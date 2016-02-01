@@ -46,6 +46,7 @@ typedef struct {
 	gchar                *xml_fname;
 	gchar                *toplevel_name;
 	gchar                *settings_name;
+	gboolean              initialized;
 }
 	sIDialog;
 
@@ -346,6 +347,9 @@ my_idialog_present( myIDialog *instance )
 
 	for( it=st_list ; it ; it=it->next ){
 		other = MY_IDIALOG( it->data );
+		if( other == instance ){
+			continue;
+		}
 		other_id = idialog_get_identifier( other );
 		cmp = g_utf8_collate( instance_id, other_id );
 		g_free( other_id );
@@ -466,43 +470,48 @@ idialog_init( myIDialog *instance )
 	sdata = get_idialog_data( instance );
 	g_return_if_fail( sdata->main_window && GTK_IS_APPLICATION_WINDOW( sdata->main_window ));
 
-	if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
-		MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
+	if( !sdata->initialized ){
 
-		idialog_set_transient_for( instance );
+		sdata->initialized = TRUE;
 
-		settings_name = get_settings_name( instance );
-		my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name );
+		if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
+			MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
 
-		if( st_dump_container ){
-			my_utils_container_dump( GTK_CONTAINER( instance ));
+			idialog_set_transient_for( instance );
+
+			settings_name = get_settings_name( instance );
+			my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name );
+
+			if( st_dump_container ){
+				my_utils_container_dump( GTK_CONTAINER( instance ));
+			}
+
+			if( GTK_IS_DIALOG( instance )){
+				cancel_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
+				if( cancel_btn ){
+					g_return_if_fail( GTK_IS_BUTTON( cancel_btn ));
+					g_signal_connect( cancel_btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
+				} else {
+					g_debug( "%s: unable to identify the [Cancel] button", thisfn );
+				}
+				close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CLOSE );
+				if( close_btn ){
+					g_return_if_fail( GTK_IS_BUTTON( close_btn ));
+					g_signal_connect( close_btn, "clicked", G_CALLBACK( on_close_clicked ), instance );
+				} else {
+					g_debug( "%s: unable to identify the [Close] button", thisfn );
+				}
+			}
+
+			g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
+			gtk_widget_show_all( GTK_WIDGET( instance ));
+
+			return;
 		}
 
-		if( GTK_IS_DIALOG( instance )){
-			cancel_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
-			if( cancel_btn ){
-				g_return_if_fail( GTK_IS_BUTTON( cancel_btn ));
-				g_signal_connect( cancel_btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
-			} else {
-				g_debug( "%s: unable to identify the [Cancel] button", thisfn );
-			}
-			close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CLOSE );
-			if( close_btn ){
-				g_return_if_fail( GTK_IS_BUTTON( close_btn ));
-				g_signal_connect( close_btn, "clicked", G_CALLBACK( on_close_clicked ), instance );
-			} else {
-				g_debug( "%s: unable to identify the [Close] button", thisfn );
-			}
-		}
-
-		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
-		gtk_widget_show_all( GTK_WIDGET( instance ));
-
-		return;
+		g_info( "%s: myIDialog instance %p does not provide 'init()' method",
+				thisfn, ( void * ) instance );
 	}
-
-	g_info( "%s: myIDialog instance %p does not provide 'init()' method",
-			thisfn, ( void * ) instance );
 }
 
 /*
@@ -602,7 +611,7 @@ get_settings_name( myIDialog *instance )
 	sdata = get_idialog_data( instance );
 
 	if( !my_strlen( sdata->settings_name )){
-		sdata->settings_name = g_strdup( G_OBJECT_TYPE_NAME( instance ));
+		sdata->settings_name = idialog_get_identifier( instance );
 	}
 
 	return(( const gchar * ) sdata->settings_name );

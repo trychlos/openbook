@@ -40,8 +40,8 @@
  * Size and position of the windows are saved to / restored from the
  * user settings, based on the specified settings name.
  * This name may be explicitly specified via
- * #my_idialog_set_settings_name() method, and defaults to the class
- * name of the window.
+ * #my_idialog_set_settings_name() method, and defaults to the identifier
+ * of the window.
  *
  * Notes on non-modal dialogs.
  * 1/ They cannot have a return code
