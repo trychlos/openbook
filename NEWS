@@ -30,7 +30,7 @@
 
  Bug fixes:
 
-   - 
+   - ofaBat: fix setting imported id on import (todo #795).
 
  Other changes:
 

@@ -1215,6 +1215,10 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounte
 	g_return_val_if_fail( sbat, FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
+	if( id ){
+		*id = 0;
+	}
+
 	bat = ofo_bat_new();
 
 	ofo_bat_set_uri( bat, sbat->uri );
@@ -1248,11 +1252,11 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounte
 	}
 
 	if( ok ){
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_BAT );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
 		if( id ){
 			*id = ofo_bat_get_id( bat );
 		}
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_BAT );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
 	}
 
 	/* do not g_object_unref() the newly created BAT as the ownership
