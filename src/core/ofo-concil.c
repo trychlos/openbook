@@ -407,6 +407,32 @@ ofo_concil_has_member( const ofoConcil *concil, const gchar *type, ofxCounter id
 	return( found );
 }
 
+/**
+ * ofo_concil_for_each_member:
+ * @concil:
+ * @fn:
+ * @user_data:
+ */
+void
+ofo_concil_for_each_member( ofoConcil *concil, ofoConcilEnumerate fn, void *user_data )
+{
+	ofoConcilPrivate *priv;
+	GList *it;
+	ofsConcilId *sid;
+
+	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+
+	if( OFO_BASE( concil )->prot->dispose_has_run ){
+		g_return_if_reached();
+	}
+
+	priv = concil->priv;
+	for( it=priv->ids ; it ; it=it->next ){
+		sid = ( ofsConcilId * ) it->data;
+		fn( concil, sid->type, sid->other_id, user_data );
+	}
+}
+
 static void
 concil_set_id( ofoConcil *concil, ofxCounter id )
 {

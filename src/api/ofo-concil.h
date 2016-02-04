@@ -77,6 +77,8 @@ typedef struct {
 #define CONCIL_TYPE_BAT                 "B"
 #define CONCIL_TYPE_ENTRY               "E"
 
+typedef void (*ofoConcilEnumerate )( ofoConcil *concil, const gchar *type, ofxCounter id, void *user_data );
+
 GType           ofo_concil_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_concil_connect_to_hub_signaling_system
@@ -93,6 +95,8 @@ const gchar    *ofo_concil_get_user                ( const ofoConcil *concil );
 const GTimeVal *ofo_concil_get_stamp               ( const ofoConcil *concil );
 GList          *ofo_concil_get_ids                 ( const ofoConcil *concil );
 gboolean        ofo_concil_has_member              ( const ofoConcil *concil, const gchar *type, ofxCounter id );
+
+void            ofo_concil_for_each_member         ( ofoConcil *concil, ofoConcilEnumerate fn, void *user_data );
 
 void            ofo_concil_set_dval                ( ofoConcil *concil, const GDate *dval );
 void            ofo_concil_set_user                ( ofoConcil *concil, const gchar *user );
