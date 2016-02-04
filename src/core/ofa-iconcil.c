@@ -36,6 +36,8 @@
 #include "core/ofa-iconcil.h"
 
 /* this structure is held by the object
+ * this is primarily thought to optimize the ofa_iconcil_get_concil()
+ * method.
  */
 typedef struct {
 	ofoConcil  *concil;
@@ -51,9 +53,12 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType        register_type( void );
 static void         interface_base_init( ofaIConcilInterface *klass );
 static void         interface_base_finalize( ofaIConcilInterface *klass );
+static void         remove_concil_member_cb( ofoConcil *concil, const gchar *type, ofxCounter id, void *empty );
 static const gchar *iconcil_get_type( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_id( const ofaIConcil *instance );
 static ofoConcil   *get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id );
+static sIConcil    *get_iconcil_data( const ofaIConcil *instance, gboolean search );
+static void         on_instance_finalized( sIConcil *sdata, GObject *finalized_instance );
 
 /**
  * ofa_iconcil_get_type:
@@ -171,36 +176,22 @@ ofa_iconcil_get_interface_version( const ofaIConcil *instance )
  *
  * Returns: the reconciliation group this instance belongs to, or %NULL.
  *
- * The reconciliation group is first searched in the in-memory
- * collection which is attached to the ICollector, then only is requested
- * from the database.
+ * The reconciliation group is first searched in the attached sIConcil
+ * structure.
+ * When first searching for this structure, the conciliation group is
+ * searched for in the in-memory collection which is attached to the
+ * ICollector, then only is requested from the database.
  */
 ofoConcil *
 ofa_iconcil_get_concil( const ofaIConcil *instance )
 {
-	ofoConcil *concil;
-	ofaHub *hub;
-	GList *collection;
+	sIConcil *sdata;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
 
-	hub = ofo_base_get_hub( OFO_BASE( instance ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	sdata = get_iconcil_data( instance, TRUE );
 
-	collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CONCIL );
-	concil = get_concil_from_collection(
-					collection,
-					iconcil_get_type( instance ),
-					iconcil_get_id( instance ));
-
-	if( !concil ){
-		concil = ofo_concil_get_by_other_id(
-						hub,
-						iconcil_get_type( instance ),
-						iconcil_get_id( instance ));
-	}
-
-	return( concil );
+	return( sdata->concil );
 }
 
 /**
@@ -226,8 +217,8 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );
-	concil = ofo_concil_new();
 
+	concil = ofo_concil_new();
 	ofo_concil_set_dval( concil, dval );
 	ofo_concil_set_user( concil, userid );
 	ofo_concil_set_stamp( concil, my_utils_stamp_set_now( &stamp ));
@@ -251,6 +242,7 @@ void
 ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 {
 	ofaHub *hub;
+	sIConcil *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
@@ -258,8 +250,13 @@ ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 	hub = ofo_base_get_hub( OFO_BASE( instance ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	sdata = get_iconcil_data( instance, FALSE );
+	g_return_if_fail( !sdata->concil );
+
 	ofo_concil_insert( concil, hub );
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
+
+	sdata->concil = concil;
 }
 
 /**
@@ -270,10 +267,17 @@ ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 void
 ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 {
+	sIConcil *sdata;
+
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
+	sdata = get_iconcil_data( instance, FALSE );
+	g_return_if_fail( !sdata->concil );
+
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
+
+	sdata->concil = concil;
 }
 
 /**
@@ -285,7 +289,20 @@ ofa_iconcil_remove_concil( ofoConcil *concil )
 {
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) remove_concil_member_cb, NULL );
+
 	ofo_concil_delete( concil );
+}
+
+/*
+ * should get rid of the sIConcil data structure for each ofaIConcil
+ * instance member currently begin alive in memory
+ */
+static void
+remove_concil_member_cb( ofoConcil *concil, const gchar *type, ofxCounter id, void *empty )
+{
+	g_debug( "ofa_iconcil_remove_concil_member_cb: concil=%p, type=%s, id=%ld, empty=%p",
+			( void * ) concil, type, id, ( void * ) empty );
 }
 
 static const gchar *
@@ -327,4 +344,50 @@ get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id 
 	}
 
 	return( NULL );
+}
+
+static sIConcil *
+get_iconcil_data( const ofaIConcil *instance, gboolean search )
+{
+	sIConcil *sdata;
+	ofaHub *hub;
+	GList *collection;
+
+	sdata = ( sIConcil * ) g_object_get_data( G_OBJECT( instance ), ICONCIL_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIConcil, 1 );
+		g_object_set_data( G_OBJECT( instance ), ICONCIL_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+		sdata->type = g_strdup( iconcil_get_type( instance ));
+
+		if( search ){
+			hub = ofo_base_get_hub( OFO_BASE( instance ));
+			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+			collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CONCIL );
+			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
+
+			if( !sdata->concil ){
+				sdata->concil = ofo_concil_get_by_other_id( hub, sdata->type, iconcil_get_id( instance ));
+			}
+		}
+	}
+
+	return( sdata );
+}
+
+/*
+ * ofaIConcil instance finalization
+ */
+static void
+on_instance_finalized( sIConcil *sdata, GObject *finalized_instance )
+{
+	static const gchar *thisfn = "ofa_iconcil_on_instance_finalized";
+
+	g_debug( "%s: sdata=%p, finalized_instance=%p",
+			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
+
+	g_free( sdata->type );
+	g_free( sdata );
 }

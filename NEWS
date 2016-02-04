@@ -31,6 +31,7 @@
  Bug fixes:
 
    - ofaBat: fix setting imported id on import (todo #795).
+   - ofaReconciliationPage: improve concililation groups management (todo #976).
 
  Other changes:
 
