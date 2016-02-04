@@ -469,7 +469,28 @@
  970 2016- 1-28 PACK distribute but do not install ressources which are
                      managed as GResource
 
- 971
+ 971 2016- 2- 3 FEAT have recently used
+
+ 972 2016- 2- 3 BUG  in GuidedInput, when entering 531 account (enter amount,
+                     Tab, goto account, enter 531 while all the entry is 
+                     selected) - see trash/bug972
+
+ 973 2016- 2- 3 BUG  after have validated Loyer avron, the fields are not
+                     fully reset) - see trash/bug973
+                     This seems to be true for all templates with an amount
+
+ 974 2016- 2- 3 PWI  add the end date to the credit remboursements template
+                     notes + update Exercice 2015.0.ods
+
+ 975 2016- 2- 3 BUG when importing boursorama pdf - see trash/bug975
+
+ 976 2016- 2- 4 BUG ReconciliationPage: only moving the mouse on the
+                    treeview does something (see g_debug output)
+
+ 977 2016- 2- 4 BUG ReconciliationPage: when conciliating two batlines
+                    (see trash/bug977)
+
+ 978
 
 -----------------------------------------------------------------------
  DONE
