@@ -519,9 +519,12 @@ on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
+	/* what is to do on the entries when a conciliation group is deleted ? */
+	/*
 	if( OFO_IS_CONCIL( object )){
 		g_warning( "%s: conciliation group deleted: should update the entries", thisfn );
 	}
+	*/
 }
 
 /*

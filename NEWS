@@ -33,6 +33,7 @@
    - ofaBat: fix setting imported id on import (todo #795).
    - ofaReconciliationPage: improve concililation groups management (todo #976).
    - ofoAccount: fix ofo_account_get_by_number() assertion (todo #972).
+   - ofoEntry: remove warning on conciliation delete.
 
  Other changes:
 
