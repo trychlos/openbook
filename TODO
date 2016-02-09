@@ -471,10 +471,6 @@
 
  971 2016- 2- 3 FEAT have recently used
 
- 972 2016- 2- 3 BUG  in GuidedInput, when entering 531 account (enter amount,
-                     Tab, goto account, enter 531 while all the entry is 
-                     selected) - see trash/bug972
-
  973 2016- 2- 3 BUG  after have validated Loyer avron, the fields are not
                      fully reset) - see trash/bug973
                      This seems to be true for all templates with an amount
@@ -693,6 +689,11 @@
                 main window and ihubber/application and why this is
                 relevant
      2016- 1-18 done
+
+ 972 2016- 2- 3 BUG  in GuidedInput, when entering 531 account (enter amount,
+                     Tab, goto account, enter 531 while all the entry is 
+                     selected) - see trash/bug972
+     2016- 2- 9 fixed
 
  975 2016- 2- 3 BUG when importing boursorama pdf - see trash/bug975
      2016- 2- 4 fixed

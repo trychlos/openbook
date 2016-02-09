@@ -632,7 +632,10 @@ ofo_account_get_by_number( ofaHub *hub, const gchar *number )
 	GList *dataset;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-	g_return_val_if_fail( my_strlen( number ), NULL );
+
+	if( !my_strlen( number )){
+		return( NULL );
+	}
 
 	dataset = ofo_account_get_dataset( hub );
 
