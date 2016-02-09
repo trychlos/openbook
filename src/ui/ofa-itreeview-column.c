@@ -41,20 +41,21 @@ typedef struct {
 	sColumn;
 
 static const sColumn st_columns[] = {
-	{ ITVC_ACC_ID,       N_( "Account identifier" ),        TRUE,  N_( "Account") },
-	{ ITVC_CONCIL_DATE,  N_( "Reconciliation date" ),       FALSE, N_( "Rec.") },
-	{ ITVC_CONCIL_ID,    N_( "Reconciliation identifier" ), FALSE, N_( "Id.") },
-	{ ITVC_CREDIT,       NULL,                              TRUE,  N_( "Credit") },
-	{ ITVC_CUR_ID,       N_( "Currency identifier" ),       TRUE,  N_( "Cur.") },
-	{ ITVC_DEBIT,        NULL,                              TRUE,  N_( "Debit") },
-	{ ITVC_DEFFECT,      N_( "Effect date" ),               FALSE, N_( "Effect") },
-	{ ITVC_DOPE,         N_( "Operation date" ),            TRUE,  N_( "Operation") },
-	{ ITVC_ENT_ID,       N_( "Entry number" ),              FALSE, N_( "Number") },
-	{ ITVC_ENT_LABEL,    NULL,                              TRUE,  N_( "Label") },
-	{ ITVC_ENT_REF,      N_( "Piece reference" ),           FALSE, N_( "Ref.") },
-	{ ITVC_ENT_STATUS,   N_( "Entry status" ),              FALSE, N_( "St.") },
-	{ ITVC_LED_ID,       N_( "Ledger identifier" ),         FALSE, N_( "Ledger") },
-	{ ITVC_STLMT_NUMBER, N_( "Settlement number" ),         FALSE, N_( "Stlmt.") },
+	{ ITVC_ACC_ID,       N_( "Account identifier" ),        TRUE,  N_( "Account" )},
+	{ ITVC_CONCIL_DATE,  N_( "Reconciliation date" ),       FALSE, N_( "Rec." )},
+	{ ITVC_CONCIL_ID,    N_( "Reconciliation identifier" ), FALSE, N_( "Id." )},
+	{ ITVC_CREDIT,       NULL,                              TRUE,  N_( "Credit" )},
+	{ ITVC_CUR_ID,       N_( "Currency identifier" ),       TRUE,  N_( "Cur." )},
+	{ ITVC_DEBIT,        NULL,                              TRUE,  N_( "Debit" )},
+	{ ITVC_DEFFECT,      N_( "Effect date" ),               FALSE, N_( "Effect" )},
+	{ ITVC_DOPE,         N_( "Operation date" ),            TRUE,  N_( "Operation" )},
+	{ ITVC_ENT_ID,       N_( "Entry number" ),              FALSE, N_( "Number" )},
+	{ ITVC_ENT_LABEL,    NULL,                              TRUE,  N_( "Label" )},
+	{ ITVC_ENT_REF,      N_( "Piece reference" ),           FALSE, N_( "Ref." )},
+	{ ITVC_ENT_STATUS,   N_( "Entry status" ),              FALSE, N_( "St." )},
+	{ ITVC_LED_ID,       N_( "Ledger identifier" ),         FALSE, N_( "Ledger" )},
+	{ ITVC_STLMT_NUMBER, N_( "Settlement number" ),         FALSE, N_( "Stlmt." )},
+	{ ITVC_TYPE,         N_( "Type" ),                      FALSE, N_( "Type" )},
 	{ -1 }
 };
 
