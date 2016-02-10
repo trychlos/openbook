@@ -404,12 +404,6 @@
                        a new dossier
                      - administrative credentials
 
- 869 2015-10-30 DISP GuidedInput: after having clicked on Validate,
-                     disable fields while recording the entries
-     2016- 1-27      disable all fields is easy, but reenabling them
-                     after the operation is much more difficult, because
-                     must be made on per-widget basis
-
  885 2015-11- 7 DDL  Have an operation counter (identifier)
                      Use case: be able to delete the whole operation
                      when the user wants to delete an entry
@@ -470,10 +464,6 @@
                      managed as GResource
 
  971 2016- 2- 3 FEAT have recently used dossiers
-
- 973 2016- 2- 3 BUG  after have validated Loyer avron, the fields are not
-                     fully reset) - see trash/bug973
-                     This seems to be true for all templates with an amount
 
  974 2016- 2- 3 PWI  add the end date to the credit remboursements template
                      notes + update Exercice 2015.0.ods
@@ -560,6 +550,13 @@
                 need a single account selection
      2015-10- 7 see also (closed) #778
      2016- 1-10 class has been removed
+
+ 869 2015-10-30 DISP GuidedInput: after having clicked on Validate,
+                     disable fields while recording the entries
+     2016- 1-27      disable all fields is easy, but reenabling them
+                     after the operation is much more difficult, because
+                     must be made on per-widget basis
+     2016- 2-10 cancelled
 
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?
@@ -691,6 +688,11 @@
                      Tab, goto account, enter 531 while all the entry is 
                      selected) - see trash/bug972
      2016- 2- 9 fixed
+
+ 973 2016- 2- 3 BUG  after have validated Loyer avron, the fields are not
+                     fully reset) - see trash/bug973
+                     This seems to be true for all templates with an amount
+     2016- 2-10 fixed
 
  975 2016- 2- 3 BUG when importing boursorama pdf - see trash/bug975
      2016- 2- 4 fixed

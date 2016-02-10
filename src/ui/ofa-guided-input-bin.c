@@ -1665,12 +1665,11 @@ ofa_guided_input_bin_apply( ofaGuidedInputBin *bin )
 	ok = FALSE;
 	priv = bin->priv;
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( do_validate( bin )){
-			ok = TRUE;
-			do_reset_entries_rows( bin );
-		}
+	if( do_validate( bin )){
+		ok = TRUE;
+		do_reset_entries_rows( bin );
 	}
 
 	return( ok );
@@ -1736,12 +1735,11 @@ void
 ofa_guided_input_bin_reset( ofaGuidedInputBin *bin )
 {
 	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
+	g_return_if_fail( !bin->priv->dispose_has_run );
 
-	if( !bin->priv->dispose_has_run ){
-
-		do_reset_entries_rows( bin );
-	}
+	do_reset_entries_rows( bin );
 }
+
 
 /*
  * nb: entries_count = count of entries + 2 (for totals and diff)
@@ -1754,7 +1752,11 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
 	gint i, model_count;
 	GtkWidget *entry;
 
+	g_debug( "do_reset_entries_rows: begin" );
 	priv = bin->priv;
+
+	ofs_ope_free( priv->ope );
+	priv->ope = ofs_ope_new( priv->model );
 
 	model_count = ofo_ope_template_get_detail_count( priv->model );
 	for( i=priv->rows_count ; i>=1+model_count ; --i ){
@@ -1765,17 +1767,31 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
 	for( i=1 ; i<=priv->rows_count ; ++i ){
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
 		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+			if( ofo_ope_template_get_detail_label_locked( priv->model, i-1 )){
+				g_signal_handlers_block_by_func( entry, on_entry_changed, bin );
+				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+				g_signal_handlers_unblock_by_func( entry, on_entry_changed, bin );
+			}
 		}
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+			if( ofo_ope_template_get_detail_debit_locked( priv->model, i-1 )){
+				g_signal_handlers_block_by_func( entry, on_entry_changed, bin );
+				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+				g_signal_handlers_unblock_by_func( entry, on_entry_changed, bin );
+			}
 		}
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+			if( ofo_ope_template_get_detail_credit_locked( priv->model, i-1 )){
+				g_signal_handlers_block_by_func( entry, on_entry_changed, bin );
+				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+				g_signal_handlers_unblock_by_func( entry, on_entry_changed, bin );
+			}
 		}
+		draw_valid_coche( bin, i, FALSE );
 	}
+	g_debug( "do_reset_entries_rows: end" );
 }
 
 /*

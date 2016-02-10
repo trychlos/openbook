@@ -905,7 +905,12 @@ on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self )
 static void
 on_right_ok( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_input_bin_apply( self->priv->input_bin );
+	ofaGuidedExPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_guided_input_bin_apply( priv->input_bin );
+	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 }
 
 /*
@@ -915,7 +920,12 @@ on_right_ok( GtkButton *button, ofaGuidedEx *self )
 static void
 on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_input_bin_reset( self->priv->input_bin );
+	ofaGuidedExPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_guided_input_bin_reset( priv->input_bin );
+	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 }
 
 /*
