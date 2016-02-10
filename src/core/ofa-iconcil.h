@@ -121,9 +121,12 @@ void         ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
 void         ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
 														ofoConcil *concil );
 
-void         ofa_iconcil_remove_concil             ( ofoConcil *concil );
+void         ofa_iconcil_remove_concil             ( ofaIConcil *instance,
+														ofoConcil *concil );
 
-const gchar *ofa_iconcil_get_concil_type           ( const ofaIConcil *instance );
+const gchar *ofa_iconcil_get_instance_type         ( const ofaIConcil *instance );
+
+ofxCounter   ofa_iconcil_get_instance_id           ( const ofaIConcil *instance );
 
 G_END_DECLS
 

@@ -36,7 +36,8 @@
  * file(s), the code handles things so that entries are always displayed
  * before BAT lines.
  *
- * This is displayed as a tree view per conciliation group:
+ * This is displayed as a tree view per - may be proposed - conciliation
+ * groups:
  *
  * - the first row of a conciliation group is at level zero,
  *   other rows of this same conciliation group being children of the
@@ -57,12 +58,12 @@
  *       conciliation.
  *
  * We so may have actual conciliation group or proposed conciliation
- * group. A proposed conciliation group will be build with an entry and
+ * group. A proposed conciliation group will be built with an entry and
  * a BAT line.
  *
  * Activating (enter or double-click) a row is only managed when this
- * row is the first one of an actual or proposed conciliation group.
- * When true, the state is toggled, i.e. the conciliation group is
+ * row is the first one (the parent) of an actual or proposed conciliation
+ * group. When true, the state is toggled, i.e. the conciliation group is
  * removed (if was set) or created (if was proposed).
  *
  * Actions:

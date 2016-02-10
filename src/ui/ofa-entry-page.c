@@ -3310,7 +3310,7 @@ do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
 	/* if entry was conciliated, then remove all conciliation group */
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
-		ofa_iconcil_remove_concil( concil );
+		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
 	}
 }
 

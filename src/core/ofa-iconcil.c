@@ -53,7 +53,6 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType        register_type( void );
 static void         interface_base_init( ofaIConcilInterface *klass );
 static void         interface_base_finalize( ofaIConcilInterface *klass );
-static void         remove_concil_member_cb( ofoConcil *concil, const gchar *type, ofxCounter id, void *empty );
 static const gchar *iconcil_get_type( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_id( const ofaIConcil *instance );
 static ofoConcil   *get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id );
@@ -282,37 +281,36 @@ ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 
 /**
  * ofa_iconcil_remove_concil:
- * @concil:
+ * @instance:
+ * @concil: [allow-none]:
+ *
+ * Clear the data attached to the @instance, and delete the @concil from
+ * the database.
  */
 void
-ofa_iconcil_remove_concil( ofoConcil *concil )
+ofa_iconcil_remove_concil( ofaIConcil *instance, ofoConcil *concil )
 {
-	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	sIConcil *sdata;
 
-	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) remove_concil_member_cb, NULL );
+	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 
-	ofo_concil_delete( concil );
-}
+	sdata = get_iconcil_data( instance, FALSE );
+	sdata->concil = NULL;
 
-/*
- * should get rid of the sIConcil data structure for each ofaIConcil
- * instance member currently begin alive in memory
- */
-static void
-remove_concil_member_cb( ofoConcil *concil, const gchar *type, ofxCounter id, void *empty )
-{
-	g_debug( "ofa_iconcil_remove_concil_member_cb: concil=%p, type=%s, id=%ld, empty=%p",
-			( void * ) concil, type, id, ( void * ) empty );
+	if( concil ){
+		g_return_if_fail( OFO_IS_CONCIL( concil ));
+		ofo_concil_delete( concil );
+	}
 }
 
 /**
- * ofa_iconcil_get_concil_type:
+ * ofa_iconcil_get_instance_type:
  * @instance: a #ofaIConcil object.
  *
  * Returns: the type of the @instance.
  */
 const gchar *
-ofa_iconcil_get_concil_type( const ofaIConcil *instance )
+ofa_iconcil_get_instance_type( const ofaIConcil *instance )
 {
 	return( iconcil_get_type( instance ));
 }
@@ -327,6 +325,18 @@ iconcil_get_type( const ofaIConcil *instance )
 	type = OFA_ICONCIL_GET_INTERFACE( instance )->get_object_type( instance );
 
 	return( type );
+}
+
+/**
+ * ofa_iconcil_get_instance_id:
+ * @instance: a #ofaIConcil object.
+ *
+ * Returns: the type of the @instance.
+ */
+ofxCounter
+ofa_iconcil_get_instance_id( const ofaIConcil *instance )
+{
+	return( iconcil_get_id( instance ));
 }
 
 static ofxCounter
