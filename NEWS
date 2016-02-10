@@ -37,6 +37,7 @@
 
  Other changes:
 
+   - ofa_iconcil_get_concil_type(): new method.
    - ofo_concil_for_each_member: new method.
 
 -----------------------------------------------------------------------

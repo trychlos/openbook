@@ -172,7 +172,7 @@ ofa_iconcil_get_interface_version( const ofaIConcil *instance )
 
 /**
  * ofa_iconcil_get_concil:
- * @instance: a #ofoConcil object.
+ * @instance: a #ofaIConcil object.
  *
  * Returns: the reconciliation group this instance belongs to, or %NULL.
  *
@@ -303,6 +303,18 @@ remove_concil_member_cb( ofoConcil *concil, const gchar *type, ofxCounter id, vo
 {
 	g_debug( "ofa_iconcil_remove_concil_member_cb: concil=%p, type=%s, id=%ld, empty=%p",
 			( void * ) concil, type, id, ( void * ) empty );
+}
+
+/**
+ * ofa_iconcil_get_concil_type:
+ * @instance: a #ofaIConcil object.
+ *
+ * Returns: the type of the @instance.
+ */
+const gchar *
+ofa_iconcil_get_concil_type( const ofaIConcil *instance )
+{
+	return( iconcil_get_type( instance ));
 }
 
 static const gchar *

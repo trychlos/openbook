@@ -104,24 +104,26 @@ typedef struct {
 }
 	ofaIConcilInterface;
 
-GType      ofa_iconcil_get_type                  ( void );
+GType        ofa_iconcil_get_type                  ( void );
 
-guint      ofa_iconcil_get_interface_last_version( void );
+guint        ofa_iconcil_get_interface_last_version( void );
 
-guint      ofa_iconcil_get_interface_version     ( const ofaIConcil *instance );
+guint        ofa_iconcil_get_interface_version     ( const ofaIConcil *instance );
 
-ofoConcil *ofa_iconcil_get_concil                ( const ofaIConcil *instance );
+ofoConcil   *ofa_iconcil_get_concil                ( const ofaIConcil *instance );
 
-ofoConcil *ofa_iconcil_new_concil                ( ofaIConcil *instance,
+ofoConcil   *ofa_iconcil_new_concil                ( ofaIConcil *instance,
 														const GDate *dval );
 
-void       ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
+void         ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
 														ofoConcil *concil );
 
-void       ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
+void         ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
 														ofoConcil *concil );
 
-void       ofa_iconcil_remove_concil             ( ofoConcil *concil );
+void         ofa_iconcil_remove_concil             ( ofoConcil *concil );
+
+const gchar *ofa_iconcil_get_concil_type           ( const ofaIConcil *instance );
 
 G_END_DECLS
 
