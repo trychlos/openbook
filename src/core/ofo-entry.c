@@ -3281,6 +3281,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	if( !errors ){
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
+			entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
 			if( entry_do_insert( entry, connect )){
 				ofo_base_set_hub( OFO_BASE( entry ), hub );
 
@@ -3292,6 +3293,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				if( concil ){
 					/* gives the ownership to the collection */
 					ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil );
+				}
+				if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
+					g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, entry );
 				}
 			} else {
 				errors -= 1;
