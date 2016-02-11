@@ -32,6 +32,7 @@
 
    - ofaBat: fix setting imported id on import (todo #795).
    - ofaGuidedInput: fix fields reset after validation (todo #973). 
+   - ofaReconciliationPage: does not try to associate a batline to a deleted entry.
    - ofaReconciliationPage: improve concililation groups management (todo #976).
    - ofaReconciliationPage: fix concililation/unconciliation operations (todo #977).
    - ofoAccount: fix ofo_account_get_by_number() assertion (todo #972).

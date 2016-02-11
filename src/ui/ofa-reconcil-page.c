@@ -208,7 +208,7 @@ static const gchar *st_default_reconciliated_class = "5"; /* default account cla
 
 #define DEBUG_FILTER                    FALSE
 #define DEBUG_RECONCILIATE              FALSE
-#define DEBUG_UNCONCILIATE              TRUE
+#define DEBUG_UNCONCILIATE              FALSE
 
 /* column ordering in the reconciliation store
  */
@@ -3286,8 +3286,6 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 		return( FALSE );
 	}
 
-	//const gchar *lab = OFO_IS_BAT_LINE( object ) ? ofo_bat_line_get_label( OFO_BAT_LINE( object )) : NULL;
-	//gboolean is_debug = lab ? g_str_has_prefix( lab, "CB DECATHLON 1" ) : FALSE;
 	gboolean is_debug = FALSE;
 
 	if( gtk_tree_model_get_iter_first( tmodel, iter )){
@@ -3311,9 +3309,12 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 				g_return_val_if_fail( obj && ( OFO_IS_ENTRY( obj ) || OFO_IS_BAT_LINE( obj )), FALSE );
 				g_object_unref( obj );
 				if( !ofa_iconcil_get_concil( OFA_ICONCIL( obj ))){
+					iter_balance = 0;
 					if( OFO_IS_ENTRY( obj )){
-						iter_balance = ofo_entry_get_credit( OFO_ENTRY( obj ))
-											- ofo_entry_get_debit( OFO_ENTRY( obj ));
+						if( ofo_entry_get_status( OFO_ENTRY( obj )) != ENT_STATUS_DELETED ){
+							iter_balance = ofo_entry_get_credit( OFO_ENTRY( obj ))
+												- ofo_entry_get_debit( OFO_ENTRY( obj ));
+						}
 					} else {
 						iter_balance = ofo_bat_line_get_amount( OFO_BAT_LINE( obj ));
 					}
