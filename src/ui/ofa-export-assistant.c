@@ -70,9 +70,9 @@ struct _ofaExportAssistantPrivate {
 	 */
 	GSList           *p1_group;
 	GtkWidget        *p1_btn;
-	gint              p1_idx;
-	gint              p1_last_code;
+	gint              p1_code;
 	gchar            *p1_datatype;
+	gint              p1_idx;
 
 	/* p2: select format
 	 */
@@ -172,6 +172,7 @@ G_DEFINE_TYPE( ofaExportAssistant, ofa_export_assistant, MY_TYPE_ASSISTANT )
 static void      p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
 static void      p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void      p1_on_type_toggled( GtkToggleButton *button, ofaExportAssistant *self );
 static gboolean  p1_is_complete( ofaExportAssistant *self );
 static void      p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
@@ -275,7 +276,8 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT_ASSISTANT, ofaExportAssistantPrivate );
 
-	self->priv->p1_last_code = -1;
+	self->priv->p1_code = -1;
+	self->priv->p1_idx = -1;
 }
 
 static void
@@ -360,15 +362,17 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
+	/* attach its identifier to each widget */
 	for( i=0 ; st_types[i].code ; ++i ){
 		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), st_types[i].widget_name );
 		g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 
-		g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, GINT_TO_POINTER( i ));
+		g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, GINT_TO_POINTER( st_types[i].code ));
+		g_signal_connect( btn, "toggled", G_CALLBACK( p1_on_type_toggled ), self );
+		g_debug( "%s: btn=%p, code=%d", thisfn, ( void * ) btn, st_types[i].code );
 
 		if( !priv->p1_group ){
 			priv->p1_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( btn ));
-			break;
 		}
 	}
 }
@@ -378,7 +382,7 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p1_do_display";
 	ofaExportAssistantPrivate *priv;
-	gint i;
+	gint i, code;
 	GtkWidget *btn;
 	gboolean found, is_complete;
 
@@ -391,8 +395,8 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	for( i=0 ; !found && st_types[i].code ; ++i ){
 		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), st_types[i].widget_name );
 		g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
-
-		if( st_types[i].code == priv->p1_last_code ){
+		code = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
+		if( code == priv->p1_code ){
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
 			found = TRUE;
 		}
@@ -404,7 +408,15 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	is_complete = p1_is_complete( self );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), is_complete );
+}
 
+static void
+p1_on_type_toggled( GtkToggleButton *button, ofaExportAssistant *self )
+{
+	gboolean is_complete;
+
+	is_complete = p1_is_complete( self );
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), is_complete );
 }
 
@@ -419,21 +431,24 @@ p1_is_complete( ofaExportAssistant *self )
 	g_return_val_if_fail( priv->p1_group, FALSE );
 
 	priv->p1_btn = NULL;
-	priv->p1_idx = -1;
+	priv->p1_code = -1;
 	g_free( priv->p1_datatype );
 	priv->p1_datatype = NULL;
 
 	/* which is the currently active button ? */
 	for( it=priv->p1_group ; it ; it=it->next ){
 		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( it->data ))){
-			priv->p1_idx = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_TYPE_INDEX ));
+			g_debug( "p1_is_complete: active button=%p", it->data );
+			priv->p1_code = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_TYPE_INDEX ));
 			priv->p1_btn = GTK_WIDGET( it->data );
 			priv->p1_datatype = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( it->data )));
 			break;;
+		} else {
+			g_debug( "p1_is_complete: button=%p is inactive", it->data );
 		}
 	}
 
-	return( priv->p1_idx >= 0 && priv->p1_btn && my_strlen( priv->p1_datatype ));
+	return( priv->p1_code > 0 && priv->p1_btn && my_strlen( priv->p1_datatype ));
 }
 
 static void
@@ -441,16 +456,22 @@ p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p1_do_forward";
 	ofaExportAssistantPrivate *priv;
+	gint i;
 
 	g_debug( "%s: self=%p, page=%p", thisfn, ( void * ) self, ( void * ) page );
 
-	if( p1_is_complete( self )){
+	priv = self->priv;
 
-		priv = self->priv;
-		g_debug( "%s: idx=%d", thisfn, priv->p1_idx );
-		priv->p1_last_code = st_types[priv->p1_idx].code;
-		set_settings( self );
+	for( i=0 ; st_types[i].code ; ++i ){
+		if( st_types[i].code == priv->p1_code ){
+			priv->p1_idx = i;
+			break;
+		}
 	}
+
+	g_debug( "%s: idx=%d, code=%d", thisfn, priv->p1_idx, priv->p1_code );
+
+	set_settings( self );
 }
 
 /*
@@ -599,7 +620,6 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_signal_connect(
 			priv->p3_chooser, "selection-changed", G_CALLBACK( p3_on_selection_changed ), self );
-
 	g_signal_connect(
 			priv->p3_chooser, "file-activated", G_CALLBACK( p3_on_file_activated ), self );
 
@@ -954,7 +974,7 @@ get_settings( ofaExportAssistant *self )
 	it = slist;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->p1_last_code = atoi( cstr );
+		priv->p1_code = atoi( cstr );
 	}
 
 	it = it ? it->next : NULL;
@@ -975,7 +995,7 @@ set_settings( ofaExportAssistant *self )
 	priv = self->priv;
 
 	str = g_strdup_printf( "%d;%s;",
-			priv->p1_last_code,
+			priv->p1_code,
 			priv->p3_furi ? priv->p3_furi : "" );
 
 	ofa_settings_user_set_string( st_pref_settings, str );
