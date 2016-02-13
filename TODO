@@ -489,7 +489,7 @@
                      non-conciliated entries, but should also print
                      unconciliated bat lines (or an empty set)
 
- 986 2016- 2-13 BUG after having valildated a first operation, the ope
+ 986 2016- 2-13 BUG after having validated a first operation, the ope
                     date is left on the dialog, but is considered as
                     invalid - see trash/bug986
                     + and/or review what actually happens after operation

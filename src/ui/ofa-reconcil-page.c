@@ -303,6 +303,7 @@ static void         collapse_node( ofaReconcilPage *self, GtkWidget *widget );
 static void         collapse_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void         expand_node( ofaReconcilPage *self, GtkWidget *widget );
 static void         expand_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void         expand_node_by_store_iter( ofaReconcilPage *self, GtkTreeIter *store_iter );
 static gboolean     check_for_enable_view( ofaReconcilPage *self );
 static void         default_expand_view( ofaReconcilPage *self );
 static void         expand_tview_selection( ofaReconcilPage *self );
@@ -1456,10 +1457,6 @@ do_select_bat( ofaReconcilPage *self )
 
 /*
  * try to import a bank account transaction list
- *
- * As coming here means that the user has selected a file, then we
- * begin with clearing the current bat lines (even if the import may
- * be unsuccessful)
  */
 static void
 on_import_clicked( GtkButton *button, ofaReconcilPage *self )
@@ -1571,7 +1568,6 @@ display_bat_file( ofaReconcilPage *self, ofoBat *bat )
 		insert_batline( self, OFO_BAT_LINE( it->data ));
 	}
 	ofo_bat_line_free_dataset( batlines );
-
 	default_expand_view( self );
 
 	display_bat_name( self );
@@ -2513,6 +2509,26 @@ expand_node_by_iter( ofaReconcilPage *self, GtkTreeView *tview, GtkTreeModel *tm
 		gtk_tree_view_expand_row( tview, path, FALSE );
 		gtk_tree_path_free( path );
 	}
+}
+
+static void
+expand_node_by_store_iter( ofaReconcilPage *self, GtkTreeIter *store_iter )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkTreePath *store_path, *filter_path, *sort_path;
+
+	priv = self->priv;
+	store_path = gtk_tree_model_get_path( priv->tstore, store_iter );
+	filter_path = gtk_tree_model_filter_convert_child_path_to_path(
+						GTK_TREE_MODEL_FILTER( priv->tfilter ), store_path );
+	sort_path = gtk_tree_model_sort_convert_child_path_to_path(
+						GTK_TREE_MODEL_SORT( priv->tsort ), filter_path );
+
+	gtk_tree_view_expand_row( priv->tview, sort_path, FALSE );
+
+	gtk_tree_path_free( sort_path );
+	gtk_tree_path_free( filter_path );
+	gtk_tree_path_free( store_path );
 }
 
 /*
@@ -3626,8 +3642,9 @@ remediate_orphan( ofaReconcilPage *self, GtkTreeIter *parent_iter )
 					set_row_batline( self, priv->tstore, &iter, OFO_BAT_LINE( object ));
 					dval = ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 				}
-				update_concil_data_by_store_iter( self, &cur_iter, 0, dval);
 				g_object_unref( object );
+				update_concil_data_by_store_iter( self, &cur_iter, 0, dval);
+				expand_node_by_store_iter( self, &cur_iter );
 				break;
 			}
 			if( !gtk_tree_model_iter_next( priv->tstore, &iter )){
