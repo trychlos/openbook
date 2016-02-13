@@ -30,6 +30,7 @@
 
  Bug fixes:
 
+   - ofaBatSelect: display unused count (todo #990).
    - ofaExportAssistant: fix type selection (todo #982).
    - ofaGuidedInput: fix fields reset after validation (todo #973).
    - ofaLedgerClose: remove unused and badly cast box. 

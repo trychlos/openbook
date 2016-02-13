@@ -220,7 +220,7 @@ static void
 setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 {
 	ofaBatSelectPrivate *priv;
-	static ofaBatColumns st_columns[] = { BAT_DISP_URI, 0 };
+	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, 0 };
 	GtkApplicationWindow *main_window;
 	GtkApplication *application;
 	ofaHub *hub;
