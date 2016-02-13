@@ -478,7 +478,7 @@
                 'render' as as often as he wants
 
  981 2016- 2-11 DBModel remediation dialog: have a right margin with take
-                into account the veertical slider
+                into account the vertical slider
 
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
                      own GtkBin, in order to take its own parameters
@@ -486,7 +486,13 @@
                      choose whether to import reconciliations/settlements
                      or no, to import deleted entries
 
- 984
+ 984 2016- 2-12 Add error message to account properties dialog
+
+ 985 2016- 2-12 BUG  Reconciliation summary: only take into account
+                     non-conciliated entries, but should also print
+                     unconciliated bat lines (or an empty set)
+
+ 986
 
 -----------------------------------------------------------------------
  DONE
