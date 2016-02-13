@@ -1419,7 +1419,7 @@ draw_valid_coche( ofaGuidedInputBin *bin, gint row, gboolean bvalid )
 	const sColumnDef *def;
 	GtkWidget *image;
 
-	g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
+	//g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
 
 	priv = bin->priv;
 	def = find_column_def_from_col_id( bin, OPE_COL_VALID );
