@@ -561,7 +561,7 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
 	ofaLedgerClosePrivate *priv;
 	gchar *str;
-	GtkWidget *label, *parent;
+	GtkWidget *label;
 	myProgressBar *bar;
 
 	priv = self->priv;
@@ -572,11 +572,9 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
-	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin( parent, 2, 2, 0, 10 );
-	gtk_grid_attach( GTK_GRID( grid ), parent, 1, priv->count, 1, 1 );
 	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
+	my_utils_widget_set_margin( GTK_WIDGET( bar ), 2, 2, 0, 10 );
+	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, priv->count, 1, 1 );
 
 	priv->count += 1;
 }
@@ -585,16 +583,13 @@ static gboolean
 close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
 	ofaLedgerClosePrivate *priv;
-	GtkWidget *widget, *bar;
+	GtkWidget *bar;
 	ofoLedger *ledger;
 	gboolean ok;
 
 	priv = self->priv;
 
-	widget = gtk_grid_get_child_at( GTK_GRID( grid ), 1, priv->count );
-	g_return_val_if_fail( widget && GTK_IS_BIN( widget ), FALSE );
-
-	bar = gtk_bin_get_child( GTK_BIN( widget ));
+	bar = gtk_grid_get_child_at( GTK_GRID( grid ), 1, priv->count );
 	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
 	priv->bar = MY_PROGRESS_BAR( bar );
 
