@@ -326,10 +326,12 @@ static void         set_settings( ofaReconcilPage *self );
 static void         connect_to_hub_signaling_system( ofaReconcilPage *self );
 static void         on_hub_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void         on_new_entry( ofaReconcilPage *self, ofoEntry *entry );
-static void         insert_new_entry( ofaReconcilPage *self, ofoEntry *entry );
-static void         remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter );
+static void         remediate_entry_orphan( ofaReconcilPage *self, ofoEntry *entry );
+static void         remediate_orphan( ofaReconcilPage *self, GtkTreeIter *parent_iter );
 static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
 static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
+static void         on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
+static void         on_deleted_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0, \
@@ -2160,10 +2162,23 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
 	concil =  ofa_iconcil_get_concil( OFA_ICONCIL( object ));
 
-	if( !concil && id == COL_DRECONCIL && gtk_tree_model_iter_has_child( tmodel, iter )){
-		gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
-		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+	if( gtk_tree_model_iter_has_child( tmodel, iter )){
+		/* DEBUG */
+		if( 0 ){
+			gchar *id_str, *dval_str;
+			gtk_tree_model_get( tmodel, iter, COL_IDCONCIL, &id_str, COL_DRECONCIL, &dval_str, -1 );
+			g_debug( "on_cell_data_func: type=%s, id=%ld, column_id=%d, concil=%p, concil_id=%s, concil_dval=%s",
+					ofa_iconcil_get_instance_type( OFA_ICONCIL( object )),
+					ofa_iconcil_get_instance_id( OFA_ICONCIL( object )),
+					id, ( void * ) concil, id_str, dval_str );
+			g_free( id_str );
+			g_free( dval_str );
+		}
+		if( !concil && id == COL_DRECONCIL ){
+			gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
 	}
 
 	/* bat lines (normal if reconciliated, italic else */
@@ -3505,6 +3520,10 @@ connect_to_hub_signaling_system( ofaReconcilPage *self )
 	handler = g_signal_connect(
 					priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+					priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -3541,79 +3560,85 @@ on_new_entry( ofaReconcilPage *self, ofoEntry *entry )
 	selected_account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 	entry_account = ofo_entry_get_account( entry );
 	if( !g_utf8_collate( selected_account, entry_account )){
-		insert_new_entry( self, entry );
+		insert_entry( self, entry );
+		remediate_entry_orphan( self, entry );
+		set_reconciliated_balance( self );
 	}
 }
 
+/*
+ * given a new entry being just newly inserted, seach for an orphan
+ * row which would be candidate for attachment as a child
+ */
 static void
-insert_new_entry( ofaReconcilPage *self, ofoEntry *entry )
+remediate_entry_orphan( ofaReconcilPage *self, ofoEntry *entry )
 {
-	ofaReconcilPagePrivate *priv;
-	GtkTreeModel *store;
-	GtkTreeIter iter;
+	GtkTreeIter *iter;
 
-	priv = self->priv;
-	store = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	gtk_tree_store_insert( GTK_TREE_STORE( store ), &iter, NULL, -1 );
-	set_row_entry( self, store, &iter, entry );
-	remediate_bat_lines( self, store, entry, &iter );
-	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+	iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
+	if( iter ){
+		remediate_orphan( self, iter );
+		gtk_tree_iter_free( iter );
+	}
 }
 
 /*
- * search for a BAT line at level 0 (not yet member of a proposal nor
- * reconciliated) which would be suitable for the given entry
+ * parent_iter is on the store model
  */
 static void
-remediate_bat_lines( ofaReconcilPage *self, GtkTreeModel *tstore, ofoEntry *entry, GtkTreeIter *entry_iter )
+remediate_orphan( ofaReconcilPage *self, GtkTreeIter *parent_iter )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_remediate_bat_lines";
-	ofxAmount ent_debit, ent_credit, bat_amount;
-	GtkTreeIter iter;
+	ofaReconcilPagePrivate *priv;
+	GtkTreeIter iter, cur_iter;
+	GtkTreePath *parent_path;
+	GtkTreeRowReference *parent_ref;
+	gchar *parent_sdeb, *parent_scre, *row_sdeb, *row_scre;
 	ofoBase *object;
-	gchar *bat_sdeb, *bat_scre;
+	gboolean found;
+	const GDate *dval;
 
-	ent_debit = ofo_entry_get_debit( entry );
-	ent_credit = -1*ofo_entry_get_credit( entry );
+	priv = self->priv;
+	gtk_tree_model_get( priv->tstore, parent_iter, COL_DEBIT, &parent_sdeb, COL_CREDIT, &parent_scre, -1 );
+	parent_path = gtk_tree_model_get_path( priv->tstore, parent_iter );
+	parent_ref = gtk_tree_row_reference_new( priv->tstore, parent_path );
+	gtk_tree_path_free( parent_path );
 
-	if( gtk_tree_model_get_iter_first( tstore, &iter )){
+	if( gtk_tree_model_get_iter_first( priv->tstore, &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( tstore, &iter, COL_OBJECT, &object, -1 );
-			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
-			g_object_unref( object );
-
-			/* search for a batline at level 0, not yet reconciliated,
-			 * with the right amounts */
-			if( OFO_IS_BAT_LINE( object ) /*&& !ofo_bat_line_is_used( OFO_BAT_LINE( object ))*/){
-				bat_amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
-				if(( bat_amount > 0 && bat_amount == ent_debit ) ||
-						( bat_amount < 0 && bat_amount == ent_credit )){
-
-					g_object_ref( object );
-					gtk_tree_store_remove( GTK_TREE_STORE( tstore ), &iter );
-					if( bat_amount < 0 ){
-						bat_sdeb = my_double_to_str( -bat_amount );
-						bat_scre = g_strdup( "" );
-					} else {
-						bat_sdeb = g_strdup( "" );
-						bat_scre = my_double_to_str( bat_amount );
-					}
-					g_debug( "%s: entry found for bat_sdeb=%s, bat_scre=%s", thisfn, bat_sdeb, bat_scre );
-					insert_batline( self, OFO_BAT_LINE( object ));
-					update_concil_data_by_store_iter(
-							self, entry_iter, 0, ofo_bat_line_get_deffect( OFO_BAT_LINE( object )));
-					g_object_unref( object );
-					g_free( bat_sdeb );
-					g_free( bat_scre );
-					break;
+			gtk_tree_model_get( priv->tstore, &iter, COL_DEBIT, &row_sdeb, COL_CREDIT, &row_scre, -1 );
+			found = ( !g_utf8_collate( parent_sdeb, row_scre ) && !g_utf8_collate( parent_scre, row_sdeb ));
+			g_free( row_sdeb );
+			g_free( row_scre );
+			if( found ){
+				gtk_tree_model_get( priv->tstore, &iter, COL_OBJECT, &object, -1 );
+				g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+				/* remove the found line */
+				gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &iter );
+				/* reinsert it as a child of the parent */
+				parent_path = gtk_tree_row_reference_get_path( parent_ref );
+				gtk_tree_model_get_iter( priv->tstore, &cur_iter, parent_path );
+				gtk_tree_path_free( parent_path );
+				gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &iter, &cur_iter, -1 );
+				if( OFO_IS_ENTRY( object )){
+					set_row_entry( self, priv->tstore, &iter, OFO_ENTRY( object ));
+					dval = ofo_entry_get_deffect( OFO_ENTRY( object ));
+				} else {
+					set_row_batline( self, priv->tstore, &iter, OFO_BAT_LINE( object ));
+					dval = ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 				}
+				update_concil_data_by_store_iter( self, &cur_iter, 0, dval);
+				g_object_unref( object );
+				break;
 			}
-
-			if( !gtk_tree_model_iter_next( tstore, &iter )){
+			if( !gtk_tree_model_iter_next( priv->tstore, &iter )){
 				break;
 			}
 		}
 	}
+
+	gtk_tree_row_reference_free( parent_ref );
+	g_free( parent_sdeb );
+	g_free( parent_scre );
 }
 
 /*
@@ -3647,7 +3672,6 @@ on_updated_entry( ofaReconcilPage *self, ofoEntry *entry )
 {
 	ofaReconcilPagePrivate *priv;
 	const gchar *selected_account, *entry_account;
-	GtkTreeModel *tstore;
 	GtkTreeIter *iter;
 
 	priv = self->priv;
@@ -3655,8 +3679,7 @@ on_updated_entry( ofaReconcilPage *self, ofoEntry *entry )
 
 	/* if the entry was present in the store, it is easy to remediate it */
 	if( iter ){
-		tstore = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		set_row_entry( self, tstore, iter, entry );
+		set_row_entry( self, priv->tstore, iter, entry );
 		gtk_tree_iter_free( iter );
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
@@ -3665,8 +3688,59 @@ on_updated_entry( ofaReconcilPage *self, ofoEntry *entry )
 		selected_account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 		entry_account = ofo_entry_get_account( entry );
 		if( !g_utf8_collate( selected_account, entry_account )){
-			insert_new_entry( self, entry );
+			insert_entry( self, entry );
 		}
+	}
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
+{
+	static const gchar *thisfn = "ofa_reconcil_page_on_hub_deleted_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p (%s)",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	if( OFO_IS_ENTRY( object )){
+		on_deleted_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+/* just remove the deleted entry
+ * maybe after having previously detached any child
+ */
+static void
+on_deleted_entry( ofaReconcilPage *self, ofoEntry *entry )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkTreeIter *iter, child_iter;
+	ofoBase *object;
+
+	priv = self->priv;
+	iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
+	if( iter ){
+		while( gtk_tree_model_iter_children( priv->tstore, &child_iter, iter )){
+			gtk_tree_model_get( priv->tstore, &child_iter, COL_OBJECT, &object, -1 );
+			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &child_iter );
+			gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &child_iter, NULL, -1 );
+			if( OFO_IS_ENTRY( object )){
+				set_row_entry( self, priv->tstore, &child_iter, OFO_ENTRY( object ));
+			} else {
+				set_row_batline( self, priv->tstore, &child_iter, OFO_BAT_LINE( object ));
+			}
+			g_object_unref( object );
+			gtk_tree_iter_free( iter );
+			iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
+		}
+		gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), iter );
+		gtk_tree_iter_free( iter );
+		set_reconciliated_balance( self );
 	}
 }
 

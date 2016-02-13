@@ -31,10 +31,12 @@
  Bug fixes:
 
    - ofaExportAssistant: fix type selection (todo #982).
-   - ofaGuidedInput: fix fields reset after validation (todo #973). 
+   - ofaGuidedInput: fix fields reset after validation (todo #973).
+   - ofaLedgerClose: remove unused and badly cast box. 
    - ofaReconciliationPage: does not try to associate a batline to a deleted entry.
    - ofaReconciliationPage: improve concililation groups management (todo #976).
    - ofaReconciliationPage: fix concililation/unconciliation operations (todo #977).
+   - ofaReconciliationPage: fix display of new entry conciliation date (todo #991).
    - ofoAccount: fix ofo_account_get_by_number() assertion (todo #972).
    - ofoBat: fix setting imported identifier on import (todo #795).
    - ofoEntry: remove warning on conciliation delete.
