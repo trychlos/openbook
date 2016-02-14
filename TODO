@@ -489,6 +489,7 @@
 
  992 2016- 2-14 dialogs are non-modal when possible
                 use G_ADD_PRIVATE
+                use g_return_if_fail( !priv->dipose_has_run )
                 depreciate myDialog, replacing it with myIDialog
                 objects valid_data method() provides an error message
 
