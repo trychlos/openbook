@@ -55,10 +55,7 @@ typedef struct _ofaListStorePrivate        ofaListStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkListStore         parent;
-
-	/*< private members >*/
-	ofaListStorePrivate *priv;
+	GtkListStore      parent;
 }
 	ofaListStore;
 
@@ -67,7 +64,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	GtkListStoreClass    parent;
+	GtkListStoreClass parent;
 
 	/*< protected virtual functions >*/
 	/**
@@ -91,9 +88,11 @@ typedef struct {
  */
 #define OFA_PROP_HUB                    "ofa-store-prop-hub"
 
-GType ofa_list_store_get_type    ( void ) G_GNUC_CONST;
+GType   ofa_list_store_get_type    ( void ) G_GNUC_CONST;
 
-void  ofa_list_store_load_dataset( ofaListStore *store );
+void    ofa_list_store_load_dataset( ofaListStore *store );
+
+ofaHub *ofa_list_store_get_hub     ( const ofaListStore *store );
 
 G_END_DECLS
 

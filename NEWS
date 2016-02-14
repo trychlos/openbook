@@ -52,6 +52,7 @@
 
    - ofa_iconcil_get_instance_id(): new method.
    - ofa_iconcil_get_instance_type(): new method.
+   - ofa_list_store_get_hub(): new method.
    - ofo_account_is_valid_data(): returns an error message.
    - ofo_concil_for_each_member: new method.
 

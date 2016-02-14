@@ -62,6 +62,7 @@ static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( const ofaIStore *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0, \
+		G_ADD_PRIVATE( ofaListStore ) \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ));
 
 static void
@@ -87,7 +88,7 @@ list_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LIST_STORE( instance ));
 
-	priv = OFA_LIST_STORE( instance )->priv;
+	priv = ofa_list_store_get_instance_private( OFA_LIST_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -107,19 +108,17 @@ list_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 
 	g_return_if_fail( object && OFA_IS_LIST_STORE( object ));
 
-	priv = OFA_LIST_STORE( object )->priv;
+	priv = ofa_list_store_get_instance_private( OFA_LIST_STORE( object ));
+	g_return_if_fail( !priv->dispose_has_run );
 
-	if( !priv->dispose_has_run ){
+	switch( property_id ){
+		case OFA_PROP_HUB_ID:
+			g_value_set_object( value, priv->hub );
+			break;
 
-		switch( property_id ){
-			case OFA_PROP_HUB_ID:
-				g_value_set_object( value, priv->hub );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
+		default:
+			G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
+			break;
 	}
 }
 
@@ -128,21 +127,19 @@ list_store_set_property( GObject *object, guint property_id, const GValue *value
 {
 	ofaListStorePrivate *priv;
 
-	g_return_if_fail( OFA_IS_LIST_STORE( object ));
+	g_return_if_fail( object && OFA_IS_LIST_STORE( object ));
 
-	priv = OFA_LIST_STORE( object )->priv;
+	priv = ofa_list_store_get_instance_private( OFA_LIST_STORE( object ));
+	g_return_if_fail( !priv->dispose_has_run );
 
-	if( !priv->dispose_has_run ){
+	switch( property_id ){
+		case OFA_PROP_HUB_ID:
+			priv->hub = g_value_get_object( value );
+			break;
 
-		switch( property_id ){
-			case OFA_PROP_HUB_ID:
-				priv->hub = g_value_get_object( value );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
+		default:
+			G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
+			break;
 	}
 }
 
@@ -160,7 +157,7 @@ list_store_constructed( GObject *instance )
 	 * time of the derived class), so that we will be auto-unreffed at
 	 * dossier finalization
 	 */
-	priv = OFA_LIST_STORE( instance )->priv;
+	priv = ofa_list_store_get_instance_private( OFA_LIST_STORE( instance ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
@@ -175,8 +172,6 @@ ofa_list_store_init( ofaListStore *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LIST_STORE, ofaListStorePrivate );
 }
 
 static void
@@ -191,8 +186,6 @@ ofa_list_store_class_init( ofaListStoreClass *klass )
 	G_OBJECT_CLASS( klass )->set_property = list_store_set_property;
 	G_OBJECT_CLASS( klass )->dispose = list_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = list_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaListStorePrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -264,7 +257,7 @@ istore_get_interface_version( const ofaIStore *instance )
 
 /**
  * ofa_list_store_load_dataset:
- * @store:
+ * @store: this #ofaListStore instance.
  */
 void
 ofa_list_store_load_dataset( ofaListStore *store )
@@ -273,18 +266,38 @@ ofa_list_store_load_dataset( ofaListStore *store )
 
 	g_return_if_fail( store && OFA_IS_LIST_STORE( store ));
 
-	priv = store->priv;
+	priv = ofa_list_store_get_instance_private( store );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	if( !priv->dispose_has_run ){
-
-		if( !priv->dataset_loaded ){
-			if( OFA_LIST_STORE_GET_CLASS( store )->load_dataset ){
-				OFA_LIST_STORE_GET_CLASS( store )->load_dataset( store );
-			}
-			priv->dataset_loaded = TRUE;
-
-		} else {
-			ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
+	if( !priv->dataset_loaded ){
+		if( OFA_LIST_STORE_GET_CLASS( store )->load_dataset ){
+			OFA_LIST_STORE_GET_CLASS( store )->load_dataset( store );
 		}
+		priv->dataset_loaded = TRUE;
+
+	} else {
+		ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
 	}
+}
+
+/**
+ * ofa_list_store_get_hub:
+ * @store: this #ofaListStore instance.
+ *
+ * Returns: the #ofaHub object provided at initialization time.
+ *
+ * The returned instance is owned by @store object, and should not be
+ * released by the caller.
+ */
+ofaHub *
+ofa_list_store_get_hub( const ofaListStore *store )
+{
+	ofaListStorePrivate *priv;
+
+	g_return_val_if_fail( store && OFA_IS_LIST_STORE( store ), NULL );
+
+	priv = ofa_list_store_get_instance_private( store );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->hub );
 }
