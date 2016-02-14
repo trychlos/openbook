@@ -1255,6 +1255,7 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounte
 		if( id ){
 			*id = ofo_bat_get_id( bat );
 		}
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
 	}
 
 	/* do not g_object_unref() the newly created BAT as the ownership
