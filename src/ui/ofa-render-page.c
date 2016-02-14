@@ -548,7 +548,6 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 
 	priv = page->priv;
 	render_pdf( page );
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	gtk_widget_queue_draw( priv->drawing_area );
 }
 

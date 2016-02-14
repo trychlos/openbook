@@ -30,6 +30,7 @@
    - ofaAccountProperties: display an error message + run non modal (todo #984).
    - ofaBatSelect: display unused count (todo #990) .
    - ofaITreeviewColumn: add ofaIConcil 'Type' column for display selection.
+   - ofaRenderPage: no more disabled 'Render' button after rendering (todo #980).
 
  Bug fixes:
 

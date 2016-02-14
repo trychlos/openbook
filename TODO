@@ -470,10 +470,6 @@
 
  979 2016- 2-11 BUG Bat files page: unused count is not updated
 
- 980 2016- 2-11 Render pages are not expected to dynamically auto-update
-                from the hub signaling system - so should let the user
-                'render' as as often as he wants
-
  981 2016- 2-11 DBModel remediation dialog: have a right margin with take
                 into account the vertical slider
 
@@ -742,6 +738,11 @@
  977 2016- 2- 4 BUG ReconciliationPage: when conciliating two batlines
                     (see trash/bug977)
      2016- 2-10 fixed
+
+ 980 2016- 2-11 Render pages are not expected to dynamically auto-update
+                from the hub signaling system - so should let the user
+                'render' as often as he wants
+     2016- 2-14 'Render' button is no more disabled afterr rendering
 
  982 2016- 2-11 BUG asking for entries export actually exports accounts
      2016- 2-11 fixed
