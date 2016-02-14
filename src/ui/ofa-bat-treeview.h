@@ -52,16 +52,13 @@ typedef struct _ofaBatTreeviewPrivate        ofaBatTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                 parent;
-
-	/*< private members >*/
-	ofaBatTreeviewPrivate *priv;
+	GtkBin      parent;
 }
 	ofaBatTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass            parent;
+	GtkBinClass parent;
 }
 	ofaBatTreeviewClass;
 
