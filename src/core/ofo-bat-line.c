@@ -261,6 +261,37 @@ bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub )
 }
 
 /**
+ * ofo_bat_line_get_bat_id_from_bat_line_id:
+ * @hub: the current #ofaHub object.
+ * @line_id: the #ofoBatLine identifier.
+ *
+ * Returns: the BAT file identifier to which the @id line is attached.
+ */
+ofxCounter
+ofo_bat_line_get_bat_id_from_bat_line_id( ofaHub *hub, ofxCounter line_id )
+{
+	const ofaIDBConnect *connect;
+	GString *query;
+	GSList *result, *icol;
+	ofxCounter bat_id;
+
+	bat_id = 0;
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_string_new( "SELECT BAT_ID FROM OFA_T_BAT_LINES " );
+	g_string_append_printf( query, "WHERE BAT_LINE_ID=%ld ", line_id );
+
+	if( ofa_idbconnect_query_ex( connect, query->str, &result, TRUE )){
+		icol = ( GSList * ) result->data;
+		bat_id = atol(( gchar * ) icol->data );
+		ofa_idbconnect_free_results( result );
+	}
+	g_string_free( query, TRUE );
+
+	return( bat_id );
+}
+
+/**
  * ofo_bat_line_new:
  */
 ofoBatLine *
