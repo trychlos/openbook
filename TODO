@@ -468,8 +468,6 @@
  978 2016- 2-11 BUG ReconciliationPage: does not keep the from effect
                     dates filter
 
- 979 2016- 2-11 BUG Bat files page: unused count is not updated
-
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
                      own GtkBin, in order to take its own parameters
                      use case: when importing entries, should be able to
@@ -494,7 +492,9 @@
                 depreciate myDialog, replacing it with myIDialog
                 objects valid_data method() provides an error message
 
- 993
+ 993 2016- 2-14 ofaBatPage: set selection on newly imported BAT file
+
+ 994
 
 -----------------------------------------------------------------------
  DONE
@@ -735,6 +735,9 @@
  977 2016- 2- 4 BUG ReconciliationPage: when conciliating two batlines
                     (see trash/bug977)
      2016- 2-10 fixed
+
+ 979 2016- 2-11 BUG Bat files page: unused count is not updated
+     2016- 2-14 fixed by connection to hub signaling system
 
  980 2016- 2-11 Render pages are not expected to dynamically auto-update
                 from the hub signaling system - so should let the user

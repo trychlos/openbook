@@ -34,6 +34,8 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-bat.h"
+#include "api/ofo-bat-line.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-bat-store.h"
@@ -65,14 +67,20 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store );
 static void     load_dataset( ofaBatStore *store, ofaHub *hub );
 static void     insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat );
-static void     set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter );
+static void     set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat );
+static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
 static void     connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub );
 static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store );
+static void     on_updated_bat( ofaBatStore *store, ofoBat *bat );
+static void     on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
-static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
+static void     on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
+static void     concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
 
-G_DEFINE_TYPE( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE, 0, \
+		G_ADD_PRIVATE( ofaBatStore ));
 
 static void
 bat_store_finalize( GObject *instance )
@@ -97,7 +105,7 @@ bat_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BAT_STORE( instance ));
 
-	priv = OFA_BAT_STORE( instance )->priv;
+	priv = ofa_bat_store_get_instance_private( OFA_BAT_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -119,8 +127,6 @@ ofa_bat_store_init( ofaBatStore *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_STORE, ofaBatStorePrivate );
 }
 
 static void
@@ -132,19 +138,17 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = bat_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaBatStorePrivate ));
 }
 
 /**
  * ofa_bat_store_new:
  * @hub: the current #ofaHub object.
  *
- * Instanciates a new #ofaBatStore and attached it to the @dossier
+ * Instanciates a new #ofaBatStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaBatStore
- * from the @dossier.
+ * from the @hub.
  *
- * A weak notify reference is put on this same @dossier, so that the
+ * A weak notify reference is put on this same @hub, so that the
  * instance will be unreffed when the @dossier will be destroyed.
  */
 ofaBatStore *
@@ -227,12 +231,13 @@ insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, hub, bat, &iter );
+	set_row_by_store_iter( store, &iter, bat );
 }
 
 static void
-set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
+set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat )
 {
+	static const gchar *thisfn = "ofa_bat_store_set_row_by_store_iter";
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
 	const gchar *cscurrency;
@@ -293,6 +298,8 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 			BAT_COL_OBJECT,          bat,
 			-1 );
 
+	g_debug( "%s: count=%s, unused=%s", thisfn, scount, sunused );
+
 	g_free( stamp );
 	g_free( scount );
 	g_free( sunused );
@@ -304,6 +311,32 @@ set_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat, GtkTreeIter *iter )
 }
 
 /*
+ * setup store iter
+ */
+static gboolean
+find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
+{
+	gchar *sid;
+	ofxCounter row_id;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, BAT_COL_ID, &sid, -1 );
+			row_id = atol( sid );
+			g_free( sid );
+			if( row_id == id ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+/*
  * connect to the dossier signaling system
  * there is no need to keep trace of the signal handlers, as the lifetime
  * of this store is equal to those of the dossier
@@ -312,7 +345,7 @@ static void
 connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 {
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
-	/* a BAT file is never updated */
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
 }
@@ -337,6 +370,51 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 }
 
 /*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store )
+{
+	static const gchar *thisfn = "ofa_bat_store_on_hub_updated_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) store );
+
+	if( OFO_IS_BAT( object )){
+		on_updated_bat( store, OFO_BAT( object ));
+
+	} else if( OFO_IS_CONCIL( object )){
+		on_updated_concil( store, hub, OFO_CONCIL( object ));
+	}
+}
+
+static void
+on_updated_bat( ofaBatStore *store, ofoBat *bat )
+{
+	GtkTreeIter iter;
+
+	if( find_bat_by_id( store, ofo_bat_get_id( bat ), &iter )){
+		set_row_by_store_iter( store, &iter, bat );
+	}
+}
+
+/*
+ * a conciliation group has been updated
+ * most of the time, this means that a bat line or an entry has been
+ *  added to the group - So update the counts for each batline of the
+ *  group
+ */
+static void
+on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
+{
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) concil_enumerate_cb, store );
+}
+
+/*
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
@@ -352,35 +430,36 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 			( void * ) store );
 
 	if( OFO_IS_BAT( object )){
-		if( find_bat_by_id( store,
-				ofo_bat_get_id( OFO_BAT( object )), &iter )){
-
+		if( find_bat_by_id( store, ofo_bat_get_id( OFO_BAT( object )), &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
 		}
+	} else if( OFO_IS_CONCIL( object )){
+		on_deleted_concil( store, hub, OFO_CONCIL( object ));
 	}
 }
 
-static gboolean
-find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
+static void
+on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
 {
-	gchar *sid;
-	ofxCounter row_id;
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) concil_enumerate_cb, store );
+}
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
-		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, BAT_COL_ID, &sid, -1 );
-			row_id = atol( sid );
-			g_free( sid );
-			if( row_id == id ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
-				break;
-			}
+static void
+concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store )
+{
+	ofxCounter bat_id;
+	ofaHub *hub;
+	GtkTreeIter iter;
+	ofoBat *bat;
+
+	if( !g_utf8_collate( type, CONCIL_TYPE_BAT )){
+		hub = ofa_list_store_get_hub( OFA_LIST_STORE( store ));
+		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( hub, id );
+		if( find_bat_by_id( store, bat_id, &iter )){
+			bat = ofo_bat_get_by_id( hub, bat_id );
+			set_row_by_store_iter( store, &iter, bat );
 		}
 	}
-
-	return( FALSE );
 }
 
 /*
