@@ -87,6 +87,8 @@ typedef struct {
 }
 	ImportFormat;
 
+#define DEBUG_LINE                      FALSE
+
 static gboolean bourso_pdf_v1_check( ofaBoursoPdfImporter *importer, const gchar *uri );
 static ofsBat  *bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri );
 
@@ -672,6 +674,9 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 	 *  its place - but we have yet to filter some useless lines */
 	for( it=lines ; it ; it=it->next ){
 		line = ( sLine * ) it->data;
+		if( DEBUG_LINE ){
+			g_debug( "%s: line=%s", thisfn, line->slabel );
+		}
 
 		if( line->sdate ){
 			detail = g_new0( ofsBatDetail, 1 );
@@ -693,7 +698,7 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 				prev_y = 0;
 			}
 
-		} else if( g_str_has_prefix( line->slabel, st_end_solde )){
+		} else if( line->slabel && g_str_has_prefix( line->slabel, st_end_solde )){
 			debit = get_double_from_str( line->sdebit );
 			credit = get_double_from_str( line->scredit );
 			bat->end_solde = credit - debit;
