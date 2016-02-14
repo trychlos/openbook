@@ -274,7 +274,6 @@ idialog_init( myIDialog *instance )
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofoDossier *dossier;
 	GtkWidget *button;
 
@@ -282,12 +281,9 @@ idialog_init( myIDialog *instance )
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	main_window = my_idialog_get_main_window( instance );
-	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
