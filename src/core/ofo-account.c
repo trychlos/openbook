@@ -1158,9 +1158,16 @@ account_get_string_ex( const ofoAccount *account, gint data_id )
 
 /**
  * ofo_account_is_valid_data:
+ * @number:
+ * @label:
+ * @currency:
+ * @root:
+ * @msgerr: [allow-none]:
+ *
+ * Returns: %TRUE if provided datas are valid for an account.
  */
 gboolean
-ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, gboolean root )
+ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, gboolean root, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofo_account_is_valid_data";
 	gunichar code;
@@ -1171,27 +1178,43 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 				thisfn, number, label, currency, root ? "True":"False" );
 	}
 
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
 	/* is account number valid ?
 	 * must begin with a digit, and be at least two chars
 	 */
 	if( my_strlen( number ) < 2 ){
+		if( msgerr ){
+			*msgerr = g_strdup_printf( _( "Account identifier '%s' is too short" ), number );
+		}
 		return( FALSE );
 	}
 	code = g_utf8_get_char( number );
 	value = g_unichar_digit_value( code );
 	/*g_debug( "ofo_account_is_valid_data: number=%s, code=%c, value=%d", number, code, value );*/
 	if( value < 1 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Account class is expected to be numeric" ));
+		}
 		return( FALSE );
 	}
 
 	/* label */
 	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Account label is empty" ));
+		}
 		return( FALSE );
 	}
 
 	/* currency must be set for detail account */
 	if( !root ){
 		if( !my_strlen( currency )){
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Currency must be set for detail account" ));
+			}
 			return( FALSE );
 		}
 	}
