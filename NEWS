@@ -29,6 +29,7 @@
    - ofaAccountFrameBin: scroll the treeview up to the preselected account (todo #988).
    - ofaAccountProperties: display an error message + run non modal (todo #984).
    - ofaBatPage: now dynamically auto-updates on conciliations (todo #979).
+   - ofaBatPage: select newly imported BAT file (todo #993).
    - ofaBatSelect: display unused count (todo #990) .
    - ofaITreeviewColumn: add ofaIConcil 'Type' column for display selection.
    - ofaRenderPage: no more disabled 'Render' button after rendering (todo #980).

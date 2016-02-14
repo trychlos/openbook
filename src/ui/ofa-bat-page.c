@@ -270,6 +270,7 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
 		g_return_if_fail( ofo_bat_is_deletable( bat ));
 		ofa_bat_treeview_delete_bat( priv->tview, bat );
 	}
+
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
@@ -280,6 +281,15 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
 static void
 on_import_clicked( GtkButton *button, ofaBatPage *page )
 {
-	ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
+	ofaBatPagePrivate *priv;
+	ofxCounter bat_id;
+
+	priv = ofa_bat_page_get_instance_private( page );
+
+	bat_id = ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
+	if( bat_id > 0 ){
+		ofa_bat_treeview_set_selected( priv->tview, bat_id );
+	}
+
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }

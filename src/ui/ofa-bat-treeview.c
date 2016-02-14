@@ -515,6 +515,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 				/* move the cursor so that it is visible */
 				path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->store ), &iter );
 				gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
+				gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
 				gtk_tree_path_free( path );
 				break;
 			}
