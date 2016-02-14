@@ -40,7 +40,8 @@
    - ofaReconciliationPage: fix concililation/unconciliation operations (todo #977).
    - ofaReconciliationPage: fix display of new entry conciliation date (todo #991).
    - ofoAccount: fix ofo_account_get_by_number() assertion (todo #972).
-   - ofoBat: fix setting imported identifier on import (todo #795).
+   - ofoBat: fix setting imported identifier on import (todo #989).
+   - ofoBat: do not free collection on import (todo #795).
    - ofoEntry: remove warning on conciliation delete.
    - ofoEntry: fix entry import.
 

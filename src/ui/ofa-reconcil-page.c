@@ -1436,9 +1436,7 @@ on_select_bat( GtkButton *button, ofaReconcilPage *self )
 }
 
 /*
- * select an already imported Bank Account Transaction list file
- *
- * Only reset the BAT lines id we try to load another BAT file
+ * Select an already imported Bank Account Transaction list file.
  * Hitting Cancel on BAT selection doesn't change anything
  */
 static void
