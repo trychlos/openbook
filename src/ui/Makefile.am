@@ -279,16 +279,16 @@ ui_files = \
 	ofa-ledger-summary-bin.ui							\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
+	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
 	ofa-reconcil-page.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
-	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
 	$(NULL)
 
-ui_resources = \
+resources_ui = \
 	ofa-account-properties.ui							\
 	ofa-guided-input.ui									\
 	ofa-ope-template-help.ui							\
@@ -306,7 +306,6 @@ ui_data_DATA = \
 	$(actions_files)									\
 	$(rc_files)											\
 	$(ui_files)											\
-	$(ui_resources)										\
 	$(images_files)										\
 	$(NULL)
 
@@ -353,5 +352,6 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
+	$(resources_ui)										\
 	$(resxml)											\
 	$(NULL)

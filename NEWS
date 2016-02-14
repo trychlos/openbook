@@ -35,7 +35,7 @@
 
  Other changes:
 
-   - 
+   - Do not install the resources which are managed as GResource (todo #970).
 
 -----------------------------------------------------------------------
  Version 0.48

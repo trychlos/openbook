@@ -460,9 +460,6 @@
 
  969 2016- 1-14 DDL  increase mnemonic size (ofaOpeTemplate and more ?)
 
- 970 2016- 1-28 PACK distribute but do not install ressources which are
-                     managed as GResource
-
  971 2016- 2- 3 FEAT have recently used dossiers
 
  978 2016- 2-11 BUG ReconciliationPage: does not keep the from effect
@@ -710,6 +707,10 @@
                 main window and ihubber/application and why this is
                 relevant
      2016- 1-18 done
+
+ 970 2016- 1-28 PACK distribute but do not install ressources which are
+                     managed as GResource
+     2016- 2-14 done
 
  972 2016- 2- 3 BUG  in GuidedInput, when entering 531 account (enter amount,
                      Tab, goto account, enter 531 while all the entry is 
