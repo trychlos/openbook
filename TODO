@@ -483,8 +483,6 @@
                      choose whether to import reconciliations/settlements
                      or no, to import deleted entries
 
- 984 2016- 2-12 Add error message to account properties dialog
-
  985 2016- 2-12 BUG  Reconciliation summary: only take into account
                      non-conciliated entries, but should also print
                      unconciliated bat lines (or an empty set)
@@ -498,9 +496,12 @@
                     computed), but some automatically computed fields are 
                     not locked, and so are not reset (but should)
 
- 987 2016- 2-13 PWI  delete LOYAVR operation (duplicate of AVRLOY)
+ 992 2016- 2-14 dialogs are non-modal when possible
+                use G_ADD_PRIVATE
+                depreciate myDialog, replacing it with myIDialog
+                objects valid_data method() provides an error message
 
- 992
+ 993
 
 -----------------------------------------------------------------------
  DONE
@@ -744,6 +745,14 @@
 
  982 2016- 2-11 BUG asking for entries export actually exports accounts
      2016- 2-11 fixed
+
+ 984 2016- 2-12 Add error message to account properties dialog
+     2016- 2-14 done
+                + use G_ADD_PRIVATE
+                + run non-modal
+
+ 987 2016- 2-13 PWI  delete LOYAVR operation (duplicate of AVRLOY)
+     2016- 2-14 done
 
  988 2016- 2-13 BUG  when selecting an account, should scroll the window
                      to make the initial selection visible

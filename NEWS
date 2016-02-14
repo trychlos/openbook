@@ -27,6 +27,7 @@
  New features and improvements:
 
    - ofaAccountFrameBin: scroll the treeview up to the preselected account (todo #988).
+   - ofaAccountProperties: display an error message + run non modal (todo #984).
    - ofaBatSelect: display unused count (todo #990) .
    - ofaITreeviewColumn: add ofaIConcil 'Type' column for display selection.
 

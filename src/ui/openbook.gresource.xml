@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/trychlos/openbook/ui">
+    <file>ofa-account-properties.ui</file>
     <file>ofa-guided-input.ui</file>
     <file>ofa-ope-template-help.ui</file>
     <file>ofa-ope-template-properties.ui</file>

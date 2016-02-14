@@ -38,7 +38,6 @@
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-account-def.h"
 
@@ -55,22 +54,20 @@ typedef struct _ofaAccountPropertiesPrivate        ofaAccountPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                     parent;
-
-	/*< private members >*/
-	ofaAccountPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaAccountProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	GtkDialogClass parent;
 }
 	ofaAccountPropertiesClass;
 
-GType    ofa_account_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_account_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_account_properties_run     ( const ofaMainWindow *main_window, ofoAccount *account );
+void  ofa_account_properties_run     ( const ofaMainWindow *main_window,
+												ofoAccount *account );
 
 G_END_DECLS
 

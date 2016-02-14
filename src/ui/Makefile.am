@@ -248,7 +248,6 @@ rc_files = \
 ui_files = \
 	ofa-account-book-bin.ui								\
 	ofa-account-filter-vv-bin.ui						\
-	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
@@ -272,15 +271,12 @@ ui_files = \
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
-	ofa-guided-input.ui									\
 	ofa-guided-input-bin.ui								\
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ledger-book-bin.ui								\
 	ofa-ledger-summary-bin.ui							\
-	ofa-ope-template-help.ui							\
-	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-reconcil-bin.ui									\
@@ -290,6 +286,13 @@ ui_files = \
 	ofa-rate-properties.ui								\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
+	$(NULL)
+
+ui_resources = \
+	ofa-account-properties.ui							\
+	ofa-guided-input.ui									\
+	ofa-ope-template-help.ui							\
+	ofa-ope-template-properties.ui						\
 	$(NULL)
 
 images_files = \
@@ -303,6 +306,7 @@ ui_data_DATA = \
 	$(actions_files)									\
 	$(rc_files)											\
 	$(ui_files)											\
+	$(ui_resources)										\
 	$(images_files)										\
 	$(NULL)
 

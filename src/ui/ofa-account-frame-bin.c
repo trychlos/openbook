@@ -970,13 +970,7 @@ do_insert_account( ofaAccountFrameBin *bin )
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
 	account = ofo_account_new();
-
-	if( !ofa_account_properties_run( priv->main_window, account )){
-		g_object_unref( account );
-
-	} else {
-		select_row_by_number( bin, ofo_account_get_number( account ));
-	}
+	ofa_account_properties_run( priv->main_window, account );
 }
 
 /**
