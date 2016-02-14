@@ -51,16 +51,13 @@ typedef struct _ofaBatPagePrivate        ofaBatPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage            parent;
-
-	/*< private members >*/
-	ofaBatPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaBatPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass       parent;
+	ofaPageClass parent;
 }
 	ofaBatPageClass;
 
