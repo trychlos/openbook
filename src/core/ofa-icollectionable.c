@@ -155,7 +155,7 @@ ofa_icollectionable_get_interface_version( const ofaICollectionable *instance )
 		return( OFA_ICOLLECTIONABLE_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'get_last_version()' method",
+	g_info( "%s: ofaICollectionable instance %p does not provide 'get_last_version()' method",
 			thisfn, ( void * ) instance );
 	return( 1 );
 }
@@ -179,7 +179,7 @@ ofa_icollectionable_load_collection( const ofaICollectionable *instance, ofaHub 
 		return( OFA_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection( instance, hub ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'load_collection()' method",
+	g_info( "%s: ofaICollectionable instance %p does not provide 'load_collection()' method",
 			thisfn, ( void * ) instance );
 	return( NULL );
 }
