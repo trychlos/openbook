@@ -26,6 +26,7 @@
 
  New features and improvements:
 
+   - ofaAccountFrameBin: scroll the treeview up to the preselected account (todo #988).
    - ofaBatSelect: display unused count (todo #990) .
    - ofaITreeviewColumn: add ofaIConcil 'Type' column for display selection.
 
@@ -34,7 +35,7 @@
    - import-bourso-pdf/ofaImporter: accept empty lines on bottom page.
    - ofaExportAssistant: fix type selection (todo #982).
    - ofaGuidedInput: fix fields reset after validation (todo #973).
-   - ofaLedgerClose: remove unused and badly cast box. 
+   - ofaLedgerClose: remove unused (and badly cast) box. 
    - ofaReconciliationPage: does not try to associate a batline to a deleted entry.
    - ofaReconciliationPage: improve concililation groups management (todo #976).
    - ofaReconciliationPage: fix concililation/unconciliation operations (todo #977).

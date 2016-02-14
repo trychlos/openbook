@@ -748,10 +748,7 @@ ofa_account_frame_bin_get_current_treeview( const ofaAccountFrameBin *bin )
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	tview = get_current_treeview( bin );
 
@@ -805,10 +802,7 @@ ofa_account_frame_bin_get_selected( ofaAccountFrameBin *bin )
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	account = NULL;
 	tview = ( GtkTreeView * ) get_current_treeview( bin );
@@ -842,10 +836,7 @@ ofa_account_frame_bin_set_selected( ofaAccountFrameBin *bin, const gchar *number
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	select_row_by_number( bin, number );
 }
@@ -999,10 +990,7 @@ ofa_account_frame_bin_do_new( ofaAccountFrameBin *bin )
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	do_insert_account( bin );
 }
@@ -1018,10 +1006,7 @@ ofa_account_frame_bin_do_properties( ofaAccountFrameBin *bin )
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	do_update_account( bin );
 }
@@ -1118,10 +1103,7 @@ ofa_account_frame_bin_do_delete( ofaAccountFrameBin *bin )
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	do_delete_account( bin );
 }
@@ -1182,10 +1164,7 @@ ofa_account_frame_bin_set_cell_data_func( ofaAccountFrameBin *bin, GtkTreeCellDa
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->cell_fn = fn_cell;
 	priv->cell_data = user_data;
@@ -1213,10 +1192,7 @@ ofa_account_frame_bin_cell_data_render( ofaAccountFrameBin *bin,
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	on_tview_cell_data_func( tcolumn, cell, tmodel, iter, bin );
 }
@@ -1488,19 +1464,19 @@ select_row_by_number( ofaAccountFrameBin *bin, const gchar *number )
 			page_n = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page_w );
 			gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_n );
 
-			if( ofa_account_store_get_by_number( priv->store, number, &store_iter )){
-				tview = my_utils_container_get_child_by_type(
-								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-				tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-				gtk_tree_model_filter_convert_child_iter_to_iter(
-						GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
+			ofa_account_store_get_by_number( priv->store, number, &store_iter );
+			tview = my_utils_container_get_child_by_type(
+							GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+			tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+			gtk_tree_model_filter_convert_child_iter_to_iter(
+					GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
 
-				path = gtk_tree_model_get_path( tfilter, &filter_iter );
-				gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
-				gtk_tree_path_free( path );
+			path = gtk_tree_model_get_path( tfilter, &filter_iter );
+			gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
+			gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( tview ), path, NULL, FALSE, 0, 0 );
+			gtk_tree_path_free( path );
 
-				select_row_by_iter( bin, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
-			}
+			select_row_by_iter( bin, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
 		}
 	}
 }
@@ -1530,10 +1506,7 @@ ofa_account_frame_bin_get_buttons_box( const ofaAccountFrameBin *bin )
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->buttonsbox );
 }

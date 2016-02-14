@@ -500,9 +500,6 @@
 
  987 2016- 2-13 PWI  delete LOYAVR operation (duplicate of AVRLOY)
 
- 988 2016- 2-13 BUG  when selecting an account, should scroll the window
-                     to make the initial selection visible
-
  992
 
 -----------------------------------------------------------------------
@@ -747,6 +744,10 @@
 
  982 2016- 2-11 BUG asking for entries export actually exports accounts
      2016- 2-11 fixed
+
+ 988 2016- 2-13 BUG  when selecting an account, should scroll the window
+                     to make the initial selection visible
+     2016- 2-14 fixed
 
  989 2016- 2-13 BUG  when importing a second bat file: display boursorama
                      account, import boursorama bat pdf, import lcl bat pdf,
