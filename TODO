@@ -470,9 +470,6 @@
 
  979 2016- 2-11 BUG Bat files page: unused count is not updated
 
- 981 2016- 2-11 DBModel remediation dialog: have a right margin with take
-                into account the vertical slider
-
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
                      own GtkBin, in order to take its own parameters
                      use case: when importing entries, should be able to
@@ -483,14 +480,14 @@
                      non-conciliated entries, but should also print
                      unconciliated bat lines (or an empty set)
 
- 986 2016- 2-13 BUG after having validated a first operation, the ope
-                    date is left on the dialog, but is considered as
-                    invalid - see trash/bug986
-                    + and/or review what actually happens after operation
-                    validation: for now, only locked fields are reset
-                    (because we are sure that locked fields are automatically
-                    computed), but some automatically computed fields are 
-                    not locked, and so are not reset (but should)
+ 986 2016- 2-13 FEAT after having validated a first operation, the ope
+                     date is left on the dialog, but is considered as
+                     invalid - see trash/bug986
+                     + and/or review what actually happens after operation
+                     validation: for now, only locked fields are reset
+                     (because we are sure that locked fields are automatically
+                     computed), but some automatically computed fields are 
+                     not locked, and so are not reset (but should)
 
  992 2016- 2-14 dialogs are non-modal when possible
                 use G_ADD_PRIVATE
@@ -743,6 +740,10 @@
                 from the hub signaling system - so should let the user
                 'render' as often as he wants
      2016- 2-14 'Render' button is no more disabled afterr rendering
+
+ 981 2016- 2-11 DBModel remediation dialog: have a right margin with take
+                into account the vertical slider
+     2016- 2-14 set right margin = 16
 
  982 2016- 2-11 BUG asking for entries export actually exports accounts
      2016- 2-11 fixed
