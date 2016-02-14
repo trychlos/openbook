@@ -61,10 +61,7 @@ typedef struct _ofaAccountStorePrivate        ofaAccountStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaTreeStore            parent;
-
-	/*< private members >*/
-	ofaAccountStorePrivate *priv;
+	ofaTreeStore      parent;
 }
 	ofaAccountStore;
 
@@ -73,7 +70,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	ofaTreeStoreClass       parent;
+	ofaTreeStoreClass parent;
 }
 	ofaAccountStoreClass;
 

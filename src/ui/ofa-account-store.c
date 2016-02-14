@@ -96,7 +96,8 @@ static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
 
-G_DEFINE_TYPE( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE, 0, \
+		G_ADD_PRIVATE( ofaAccountStore ))
 
 static void
 account_store_finalize( GObject *instance )
@@ -121,7 +122,7 @@ account_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_STORE( instance ));
 
-	priv = OFA_ACCOUNT_STORE( instance )->priv;
+	priv = ofa_account_store_get_instance_private( OFA_ACCOUNT_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -143,8 +144,6 @@ ofa_account_store_init( ofaAccountStore *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_STORE, ofaAccountStorePrivate );
 }
 
 static void
@@ -158,8 +157,6 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = account_store_finalize;
 
 	OFA_TREE_STORE_CLASS( klass )->load_dataset = tree_store_load_dataset;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountStorePrivate ));
 }
 
 /**
@@ -722,9 +719,9 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 
 /**
  * ofa_account_store_get_by_number:
- * @instance:
- * @number:
- * @iter:
+ * @instance: this #ofaAccountStore instance.
+ * @number: the searched for account identifier.
+ * @iter: [out]:
  *
  * Set the iter to the specified row.
  *
@@ -733,9 +730,18 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 gboolean
 ofa_account_store_get_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter )
 {
+	ofaAccountStorePrivate *priv;
 	gboolean found;
 
 	g_return_val_if_fail( store && OFA_IS_ACCOUNT_STORE( store ), FALSE );
+	g_return_val_if_fail( iter, FALSE );
+
+	if( !my_strlen( number )){
+		return( FALSE );
+	}
+
+	priv = ofa_account_store_get_instance_private( store );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	found = find_row_by_number( store, number, iter, NULL );
 
