@@ -46,6 +46,7 @@
 	../src/ui/ofa-ledger-book-bin.ui \
 	../src/ui/ofa-ledger-close.ui \
 	../src/ui/ofa-ledger-properties.ui \
+	../src/ui/ofa-ledger-summary-bin.ui \
 	../src/ui/ofa-ope-template-help.ui \
 	../src/ui/ofa-ope-template-properties.ui \
 	../src/ui/ofa-ope-template-select.ui \

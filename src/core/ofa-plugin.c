@@ -55,9 +55,7 @@ struct _ofaPluginPrivate {
 
 /* the list of loaded modules is statically maintained
  */
-static GList *st_modules = NULL;
-
-G_DEFINE_TYPE( ofaPlugin, ofa_plugin, G_TYPE_TYPE_MODULE )
+static GList *st_modules                = NULL;
 
 static ofaPlugin *plugin_new( const gchar *filename, GApplication *application );
 static gboolean   v_plugin_load( GTypeModule *gmodule );
@@ -67,6 +65,9 @@ static void       register_module_types( ofaPlugin *plugin );
 static void       add_module_type( ofaPlugin *plugin, GType type );
 static void       on_object_finalized( ofaPlugin *plugin, GObject *finalized_object );
 static void       v_plugin_unload( GTypeModule *gmodule );
+
+G_DEFINE_TYPE_EXTENDED( ofaPlugin, ofa_plugin, G_TYPE_TYPE_MODULE, 0, \
+		G_ADD_PRIVATE( ofaPlugin ));
 
 static void
 plugin_finalize( GObject *instance )
@@ -80,7 +81,8 @@ plugin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PLUGIN( instance ));
 
 	/* free data members here */
-	priv = OFA_PLUGIN( instance )->priv;
+	priv = ofa_plugin_get_instance_private( OFA_PLUGIN( instance ));
+
 	g_free( priv->path );
 	g_free( priv->name );
 
@@ -95,7 +97,7 @@ plugin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_PLUGIN( instance ));
 
-	priv = OFA_PLUGIN( instance )->priv;
+	priv = ofa_plugin_get_instance_private( OFA_PLUGIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -111,14 +113,16 @@ static void
 ofa_plugin_init( ofaPlugin *self )
 {
 	static const gchar *thisfn = "ofa_plugin_init";
+	ofaPluginPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_PLUGIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PLUGIN, ofaPluginPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = ofa_plugin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -133,8 +137,6 @@ ofa_plugin_class_init( ofaPluginClass *klass )
 
 	G_TYPE_MODULE_CLASS( klass )->load = v_plugin_load;
 	G_TYPE_MODULE_CLASS( klass )->unload = v_plugin_unload;
-
-	g_type_class_add_private( klass, sizeof( ofaPluginPrivate ));
 }
 
 /*
@@ -150,15 +152,14 @@ ofa_plugin_dump( const ofaPlugin *plugin )
 	ofaPluginPrivate *priv;
 	GList *iobj;
 
-	priv = plugin->priv;
+	priv = ofa_plugin_get_instance_private( plugin );
 
 	g_debug( "%s:    path=%s", thisfn, priv->path );
 	g_debug( "%s:    name=%s", thisfn, priv->name );
 	g_debug( "%s: library=%p", thisfn, ( void * ) priv->library );
 	g_debug( "%s: objects=%p (count=%d)", thisfn, ( void * ) priv->objects, g_list_length( priv->objects ));
 	for( iobj = priv->objects ; iobj ; iobj = iobj->next ){
-		g_debug( "%s:    iobj=%p (%s)",
-				thisfn, ( void * ) iobj->data, G_OBJECT_TYPE_NAME( iobj->data ));
+		g_debug( "%s:    iobj=%p (%s)", thisfn, ( void * ) iobj->data, G_OBJECT_TYPE_NAME( iobj->data ));
 	}
 }
 
@@ -188,6 +189,7 @@ ofa_plugin_load_modules( GApplication *application )
 	const gchar *entry;
 	gchar *fname;
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 
 	g_debug( "%s", thisfn );
 
@@ -206,7 +208,8 @@ ofa_plugin_load_modules( GApplication *application )
 			fname = g_build_filename( dirname, entry, NULL );
 			plugin = plugin_new( fname, application );
 			if( plugin ){
-				plugin->priv->name = my_utils_str_remove_suffix( entry, suffix );
+				priv = ofa_plugin_get_instance_private( plugin );
+				priv->name = my_utils_str_remove_suffix( entry, suffix );
 				st_modules = g_list_append( st_modules, plugin );
 				g_debug( "%s: module %s successfully loaded", thisfn, entry );
 			}
@@ -229,6 +232,7 @@ ofa_plugin_release_modules( void )
 {
 	static const gchar *thisfn = "ofa_plugin_release_modules";
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 	GList *imod;
 	GList *iobj;
 
@@ -237,21 +241,13 @@ ofa_plugin_release_modules( void )
 
 	for( imod = st_modules ; imod ; imod = imod->next ){
 		plugin = OFA_PLUGIN( imod->data );
+		priv = ofa_plugin_get_instance_private( plugin );
 
 		g_debug( "%s: objects=%p, count=%u",
-				thisfn, ( void * ) plugin->priv->objects, g_list_length( plugin->priv->objects ));
+				thisfn, ( void * ) priv->objects, g_list_length( priv->objects ));
 
-#if 0
-		for( iobj = plugin->priv->objects ; iobj ; iobj = iobj->next ){
-			if( G_IS_OBJECT( iobj->data )){
-				g_object_unref( iobj->data );
-			} else {
-				g_warning( "%s: object=%p is not a GObject", thisfn, ( void * ) iobj->data );
-			}
-		}
-#endif
-		while( plugin->priv->objects ){
-			iobj = plugin->priv->objects;
+		while( priv->objects ){
+			iobj = priv->objects;
 			if( G_IS_OBJECT( iobj->data )){
 				g_object_unref( iobj->data );
 			} else {
@@ -273,9 +269,11 @@ static ofaPlugin *
 plugin_new( const gchar *fname, GApplication *application )
 {
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 
 	plugin = g_object_new( OFA_TYPE_PLUGIN, NULL );
-	plugin->priv->path = g_strdup( fname );
+	priv = ofa_plugin_get_instance_private( plugin );
+	priv->path = g_strdup( fname );
 
 	if( !g_type_module_use( G_TYPE_MODULE( plugin )) || !is_an_ofa_plugin( plugin, application )){
 		g_object_unref( plugin );
@@ -298,6 +296,7 @@ v_plugin_load( GTypeModule *gmodule )
 {
 	static const gchar *thisfn = "ofa_plugin_v_plugin_load";
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 	gboolean loaded;
 
 	g_return_val_if_fail( G_IS_TYPE_PLUGIN( gmodule ), FALSE );
@@ -306,14 +305,12 @@ v_plugin_load( GTypeModule *gmodule )
 
 	loaded = FALSE;
 	plugin = OFA_PLUGIN( gmodule );
+	priv = ofa_plugin_get_instance_private( plugin );
+	priv->library = g_module_open( priv->path, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL );
 
-	plugin->priv->library = g_module_open(
-			plugin->priv->path, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL );
-
-	if( !plugin->priv->library ){
+	if( !priv->library ){
 		g_warning( "%s: g_module_open: path=%s, error=%s",
-						thisfn, plugin->priv->path, g_module_error());
-
+						thisfn, priv->path, g_module_error());
 	} else {
 		loaded = TRUE;
 	}
@@ -339,15 +336,18 @@ static gboolean
 is_an_ofa_plugin( ofaPlugin *plugin, GApplication *application )
 {
 	static const gchar *thisfn = "ofa_plugin_is_an_ofa_plugin";
+	ofaPluginPrivate *priv;
 	gboolean ok;
 
+	priv = ofa_plugin_get_instance_private( plugin );
+
 	ok =
-		plugin_check( plugin, "ofa_extension_startup" , ( gpointer * ) &plugin->priv->startup ) &&
-		plugin_check( plugin, "ofa_extension_list_types" , ( gpointer * ) &plugin->priv->list_types ) &&
-		plugin->priv->startup( G_TYPE_MODULE( plugin ), application );
+		plugin_check( plugin, "ofa_extension_startup" , ( gpointer * ) &priv->startup ) &&
+		plugin_check( plugin, "ofa_extension_list_types" , ( gpointer * ) &priv->list_types ) &&
+		priv->startup( G_TYPE_MODULE( plugin ), application );
 
 	if( ok ){
-		g_debug( "%s: %s: ok", thisfn, plugin->priv->path );
+		g_debug( "%s: %s: ok", thisfn, priv->path );
 	}
 
 	return( ok );
@@ -357,12 +357,15 @@ static gboolean
 plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn )
 {
 	static const gchar *thisfn = "ofa_plugin_plugin_check";
+	ofaPluginPrivate *priv;
 	gboolean ok;
 
-	ok = g_module_symbol( plugin->priv->library, symbol, pfn );
+	priv = ofa_plugin_get_instance_private( plugin );
+
+	ok = g_module_symbol( priv->library, symbol, pfn );
 
 	if( !ok ){
-		g_debug("%s: %s: %s: symbol not found", thisfn, plugin->priv->path, symbol );
+		g_debug("%s: %s: %s: symbol not found", thisfn, priv->path, symbol );
 	}
 
 	return( ok );
@@ -380,11 +383,14 @@ plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn )
 static void
 register_module_types( ofaPlugin *plugin )
 {
+	ofaPluginPrivate *priv;
 	const GType *types;
 	guint count, i;
 
-	count = plugin->priv->list_types( &types );
-	plugin->priv->objects = NULL;
+	priv = ofa_plugin_get_instance_private( plugin );
+
+	count = priv->list_types( &types );
+	priv->objects = NULL;
 
 	for( i = 0 ; i < count ; i++ ){
 		if( types[i] ){
@@ -396,7 +402,10 @@ register_module_types( ofaPlugin *plugin )
 static void
 add_module_type( ofaPlugin *plugin, GType type )
 {
+	ofaPluginPrivate *priv;
 	GObject *object;
+
+	priv = ofa_plugin_get_instance_private( plugin );
 
 	object = g_object_new( type, NULL );
 	g_debug( "ofa_plugin_add_module_type: allocating object=%p (%s)",
@@ -404,21 +413,24 @@ add_module_type( ofaPlugin *plugin, GType type )
 
 	g_object_weak_ref( object, ( GWeakNotify ) on_object_finalized, plugin );
 
-	plugin->priv->objects = g_list_prepend( plugin->priv->objects, object );
+	priv->objects = g_list_prepend( priv->objects, object );
 }
 
 static void
 on_object_finalized( ofaPlugin *plugin, GObject *finalized_object )
 {
 	static const gchar *thisfn = "ofa_plugin_object_finalized";
+	ofaPluginPrivate *priv;
 
 	g_debug( "%s: plugin=%p, finalized_object=%p (%s)",
 			thisfn, ( void * ) plugin,
 			( void * ) finalized_object, G_OBJECT_TYPE_NAME( finalized_object ));
 
-	plugin->priv->objects = g_list_remove( plugin->priv->objects, finalized_object );
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	g_debug( "%s: new objects list after remove is %p", thisfn, ( void * ) plugin->priv->objects );
+	priv->objects = g_list_remove( priv->objects, finalized_object );
+
+	g_debug( "%s: new objects list after remove is %p", thisfn, ( void * ) priv->objects );
 }
 
 /*
@@ -430,24 +442,26 @@ v_plugin_unload( GTypeModule *gmodule )
 {
 	static const gchar *thisfn = "ofa_plugin_v_plugin_unload";
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 
-	g_return_if_fail( G_IS_TYPE_PLUGIN( gmodule ));
+	g_return_if_fail( gmodule && G_IS_TYPE_PLUGIN( gmodule ));
 
 	g_debug( "%s: gmodule=%p", thisfn, ( void * ) gmodule );
 
 	plugin = OFA_PLUGIN( gmodule );
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	if( plugin->priv->shutdown ){
-		plugin->priv->shutdown();
+	if( priv->shutdown ){
+		priv->shutdown();
 	}
 
-	if( plugin->priv->library ){
-		g_module_close( plugin->priv->library );
+	if( priv->library ){
+		g_module_close( priv->library );
 	}
 
 	/* reinitialise the mandatory API */
-	plugin->priv->startup = NULL;
-	plugin->priv->list_types = NULL;
+	priv->startup = NULL;
+	priv->list_types = NULL;
 }
 
 /*
@@ -464,12 +478,15 @@ ofa_plugin_get_extensions_for_type( GType type )
 {
 	GList *willing_to, *im, *io;
 	ofaPlugin *plugin;
+	ofaPluginPrivate *priv;
 
 	willing_to = NULL;
 
 	for( im = st_modules; im ; im = im->next ){
 		plugin = OFA_PLUGIN( im->data );
-		for( io = plugin->priv->objects ; io ; io = io->next ){
+		priv = ofa_plugin_get_instance_private( plugin );
+
+		for( io = priv->objects ; io ; io = io->next ){
 			if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( io->data ), type )){
 				willing_to = g_list_prepend( willing_to, g_object_ref( io->data ));
 			}
@@ -527,14 +544,13 @@ ofa_plugin_get_object_for_type( const ofaPlugin *plugin, GType type )
 
 	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
 
-	priv = plugin->priv;
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		for( io = priv->objects ; io ; io = io->next ){
-			if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( io->data ), type )){
-				return( G_OBJECT( io->data ));
-			}
+	for( io = priv->objects ; io ; io = io->next ){
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( io->data ), type )){
+			return( G_OBJECT( io->data ));
 		}
 	}
 
@@ -555,14 +571,13 @@ ofa_plugin_has_object( const ofaPlugin *plugin, GObject *instance )
 
 	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), FALSE );
 
-	priv = plugin->priv;
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		for( io = priv->objects ; io ; io = io->next ){
-			if( G_OBJECT( io->data ) == instance ){
-				return( TRUE );
-			}
+	for( io = priv->objects ; io ; io = io->next ){
+		if( G_OBJECT( io->data ) == instance ){
+			return( TRUE );
 		}
 	}
 
@@ -579,17 +594,15 @@ ofa_plugin_get_name( ofaPlugin *plugin )
 
 	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
 
-	priv = plugin->priv;
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		if( !priv->get_name ){
-			plugin_check( plugin, "ofa_extension_get_name", ( gpointer * ) &priv->get_name );
-		}
-
-		if( priv->get_name ){
-			return( priv->get_name());
-		}
+	if( !priv->get_name ){
+		plugin_check( plugin, "ofa_extension_get_name", ( gpointer * ) &priv->get_name );
+	}
+	if( priv->get_name ){
+		return( priv->get_name());
 	}
 
 	return( NULL );
@@ -605,17 +618,15 @@ ofa_plugin_get_version_number( ofaPlugin *plugin )
 
 	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
 
-	priv = plugin->priv;
+	priv = ofa_plugin_get_instance_private( plugin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		if( !priv->get_version_number ){
-			plugin_check( plugin, "ofa_extension_get_version_number", ( gpointer * ) &priv->get_version_number );
-		}
-
-		if( priv->get_version_number ){
-			return( priv->get_version_number());
-		}
+	if( !priv->get_version_number ){
+		plugin_check( plugin, "ofa_extension_get_version_number", ( gpointer * ) &priv->get_version_number );
+	}
+	if( priv->get_version_number ){
+		return( priv->get_version_number());
 	}
 
 	return( NULL );

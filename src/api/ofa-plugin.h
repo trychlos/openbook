@@ -76,10 +76,7 @@ typedef struct _ofaPluginPrivate       ofaPluginPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GTypeModule       parent;
-
-	/*< private members >*/
-	ofaPluginPrivate *priv;
+	GTypeModule      parent;
 }
 	ofaPlugin;
 
