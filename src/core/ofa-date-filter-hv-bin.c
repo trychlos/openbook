@@ -43,7 +43,8 @@ static guint idate_filter_get_interface_version( const ofaIDateFilter *instance 
 static void  idate_filter_add_widget( ofaIDateFilter *instance, GtkWidget *widget, gint where );
 
 G_DEFINE_TYPE_EXTENDED( ofaDateFilterHVBin, ofa_date_filter_hv_bin, GTK_TYPE_BIN, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDATE_FILTER, idate_filter_iface_init ))
+		G_ADD_PRIVATE( ofaDateFilterHVBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDATE_FILTER, idate_filter_iface_init ));
 
 static void
 date_filter_hv_bin_finalize( GObject *instance )
@@ -68,7 +69,7 @@ date_filter_hv_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DATE_FILTER_HV_BIN( instance ));
 
-	priv = OFA_DATE_FILTER_HV_BIN( instance )->priv;
+	priv = ofa_date_filter_hv_bin_get_instance_private( OFA_DATE_FILTER_HV_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -85,14 +86,16 @@ static void
 ofa_date_filter_hv_bin_init( ofaDateFilterHVBin *self )
 {
 	static const gchar *thisfn = "ofa_date_filter_hv_bin_init";
+	ofaDateFilterHVBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DATE_FILTER_HV_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_DATE_FILTER_HV_BIN, ofaDateFilterHVBinPrivate );
+	priv = ofa_date_filter_hv_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -104,8 +107,6 @@ ofa_date_filter_hv_bin_class_init( ofaDateFilterHVBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = date_filter_hv_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = date_filter_hv_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDateFilterHVBinPrivate ));
 }
 
 /**

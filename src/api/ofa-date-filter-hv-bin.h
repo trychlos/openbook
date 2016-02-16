@@ -62,16 +62,13 @@ typedef struct _ofaDateFilterHVBinPrivate          ofaDateFilterHVBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                     parent;
-
-	/*< private members >*/
-	ofaDateFilterHVBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaDateFilterHVBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                parent;
+	GtkBinClass parent;
 }
 	ofaDateFilterHVBinClass;
 
