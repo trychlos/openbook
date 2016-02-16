@@ -462,9 +462,6 @@
 
  971 2016- 2- 3 FEAT have recently used dossiers
 
- 978 2016- 2-11 BUG ReconciliationPage: does not keep the from effect
-                    dates filter
-
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
                      own GtkBin, in order to take its own parameters
                      use case: when importing entries, should be able to
@@ -737,6 +734,10 @@
  977 2016- 2- 4 BUG ReconciliationPage: when conciliating two batlines
                     (see trash/bug977)
      2016- 2-10 fixed
+
+ 978 2016- 2-11 BUG ReconciliationPage: does not keep the from effect
+                    dates filter
+     2016- 2-16 fixed
 
  979 2016- 2-11 BUG Bat files page: unused count is not updated
      2016- 2-14 fixed by connection to hub signaling system

@@ -693,6 +693,7 @@ load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
 		if( my_strlen( cstr )){
+			my_date_set_from_sql( &sdata->from_date, cstr );
 			my_editable_date_set_date( GTK_EDITABLE( sdata->from_entry ), &sdata->from_date );
 		}
 
