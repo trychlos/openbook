@@ -46,9 +46,10 @@ struct _ofaButtonsBoxPrivate {
 #define STYLE_ROW_MARGIN                4
 #define STYLE_SPACER                    28
 
-G_DEFINE_TYPE( ofaButtonsBox, ofa_buttons_box, GTK_TYPE_BIN )
-
 static void setup_top_grid( ofaButtonsBox *box );
+
+G_DEFINE_TYPE_EXTENDED( ofaButtonsBox, ofa_buttons_box, GTK_TYPE_BIN, 0, \
+		G_ADD_PRIVATE( ofaButtonsBox ));
 
 static void
 buttons_box_finalize( GObject *instance )
@@ -73,7 +74,7 @@ buttons_box_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BUTTONS_BOX( instance ));
 
-	priv = ( OFA_BUTTONS_BOX( instance ))->priv;
+	priv = ofa_buttons_box_get_instance_private( OFA_BUTTONS_BOX( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -90,13 +91,16 @@ static void
 ofa_buttons_box_init( ofaButtonsBox *self )
 {
 	static const gchar *thisfn = "ofa_buttons_box_init";
+	ofaButtonsBoxPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BUTTONS_BOX( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BUTTONS_BOX, ofaButtonsBoxPrivate );
+	priv = ofa_buttons_box_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -108,8 +112,6 @@ ofa_buttons_box_class_init( ofaButtonsBoxClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = buttons_box_dispose;
 	G_OBJECT_CLASS( klass )->finalize = buttons_box_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaButtonsBoxPrivate ));
 }
 
 /**
@@ -133,7 +135,7 @@ setup_top_grid( ofaButtonsBox *box )
 	ofaButtonsBoxPrivate *priv;
 	GtkWidget *top_widget, *grid;
 
-	priv = box->priv;
+	priv = ofa_buttons_box_get_instance_private( box );
 
 	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	my_utils_widget_set_margin( top_widget, 0, 0, 8, 8 );
@@ -163,12 +165,11 @@ ofa_buttons_box_add_spacer( ofaButtonsBox *box )
 
 	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
 
-	priv = box->priv;
+	priv = ofa_buttons_box_get_instance_private( box );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->spacers += 1;
-	}
+	priv->spacers += 1;
 }
 
 /**
@@ -192,24 +193,21 @@ ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box, const gchar *mnemo
 	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
 	g_return_val_if_fail( my_strlen( mnemonic ), NULL );
 
-	priv = box->priv;
+	priv = ofa_buttons_box_get_instance_private( box );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		button = gtk_button_new_with_mnemonic( mnemonic );
-		my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
-		priv->spacers = 0;
-		gtk_widget_set_sensitive( button, FALSE );
+	button = gtk_button_new_with_mnemonic( mnemonic );
+	my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
+	priv->spacers = 0;
+	gtk_widget_set_sensitive( button, FALSE );
 
-		if( cb ){
-			g_signal_connect( button, "clicked", cb, user_data );
-		}
-
-		gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
-		priv->rows += 1;
-
-		return( button );
+	if( cb ){
+		g_signal_connect( button, "clicked", cb, user_data );
 	}
 
-	g_return_val_if_reached( NULL );
+	gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
+	priv->rows += 1;
+
+	return( button );
 }

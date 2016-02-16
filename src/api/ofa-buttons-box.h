@@ -64,16 +64,13 @@ typedef struct _ofaButtonsBoxPrivate        ofaButtonsBoxPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                parent;
-
-	/*< private members >*/
-	ofaButtonsBoxPrivate *priv;
+	GtkBin      parent;
 }
 	ofaButtonsBox;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass           parent;
+	GtkBinClass parent;
 }
 	ofaButtonsBoxClass;
 
@@ -91,9 +88,9 @@ ofaButtonsBox *ofa_buttons_box_new                     ( void );
 void           ofa_buttons_box_add_spacer              ( ofaButtonsBox *box );
 
 GtkWidget     *ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box,
-															const gchar *mnemonic,
-															GCallback cb,
-															void *user_data );
+																const gchar *mnemonic,
+																GCallback cb,
+																void *user_data );
 
 G_END_DECLS
 
