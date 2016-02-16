@@ -68,16 +68,13 @@ typedef struct _ofaFileFormatPrivate        ofaFileFormatPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject               parent;
-
-	/*< private members >*/
-	ofaFileFormatPrivate *priv;
+	GObject      parent;
 }
 	ofaFileFormat;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass          parent;
+	GObjectClass parent;
 }
 	ofaFileFormatClass;
 

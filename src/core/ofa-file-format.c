@@ -79,9 +79,10 @@ static const gchar *st_def_decimal      = ".";
 static const gchar *st_def_field_sep    = ";";
 static const gchar *st_def_headers      = "True";
 
-G_DEFINE_TYPE( ofaFileFormat, ofa_file_format, G_TYPE_OBJECT )
-
 static void  do_init( ofaFileFormat *self, const gchar *prefs_name );
+
+G_DEFINE_TYPE_EXTENDED( ofaFileFormat, ofa_file_format, G_TYPE_OBJECT, 0, \
+		G_ADD_PRIVATE( ofaFileFormat ));
 
 static void
 file_format_finalize( GObject *instance )
@@ -96,7 +97,7 @@ file_format_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_FILE_FORMAT( instance ));
 
 	/* free data members here */
-	priv = OFA_FILE_FORMAT( instance )->priv;
+	priv = ofa_file_format_get_instance_private( OFA_FILE_FORMAT( instance ));
 
 	g_free( priv->prefs_name );
 	g_free( priv->charmap );
@@ -113,7 +114,7 @@ file_format_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_FILE_FORMAT( instance ));
 
-	priv = OFA_FILE_FORMAT( instance )->priv;
+	priv = ofa_file_format_get_instance_private( OFA_FILE_FORMAT( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -130,15 +131,16 @@ static void
 ofa_file_format_init( ofaFileFormat *self )
 {
 	static const gchar *thisfn = "ofa_file_format_init";
+	ofaFileFormatPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_FILE_FORMAT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_FILE_FORMAT, ofaFileFormatPrivate );
+	priv = ofa_file_format_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -150,8 +152,6 @@ ofa_file_format_class_init( ofaFileFormatClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = file_format_dispose;
 	G_OBJECT_CLASS( klass )->finalize = file_format_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaFileFormatPrivate ));
 }
 
 /**
@@ -191,7 +191,7 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	const gchar *cstr;
 	gchar *text;
 
-	priv = self->priv;
+	priv = ofa_file_format_get_instance_private( self );
 
 	priv->prefs_name = g_strdup( prefs_name );
 	prefs_list = ofa_settings_user_get_string_list( prefs_name );
@@ -274,15 +274,11 @@ ofa_file_format_get_ffmode( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->mode );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
+	return( priv->mode );
 }
 
 /**
@@ -295,15 +291,11 @@ ofa_file_format_get_fftype( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->type );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
+	return( priv->type );
 }
 
 /**
@@ -323,7 +315,7 @@ ofa_file_format_get_fftype_str( ofaFFtype format )
 
 	/* only a debug message as the overflow of the previous loop is
 	 * used when enumerating valid file formats */
-	g_debug( "%s: unknown file format: %d (may be normal)", thisfn, format );
+	g_info( "%s: unknown file format: %d (may be normal)", thisfn, format );
 	return( NULL );
 }
 
@@ -337,15 +329,11 @@ ofa_file_format_get_charmap( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), NULL );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->charmap );
-	}
-
-	g_return_val_if_reached( NULL );
-	return( NULL );
+	return(( const gchar * ) priv->charmap );
 }
 
 /**
@@ -358,15 +346,11 @@ ofa_file_format_get_date_format( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), -1 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
-		return( priv->date_format );
-	}
-
-	g_return_val_if_reached( -1 );
-	return( -1 );
+	return( priv->date_format );
 }
 
 /**
@@ -379,15 +363,11 @@ ofa_file_format_get_decimal_sep( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->decimal_sep );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
+	return( priv->decimal_sep );
 }
 
 /**
@@ -400,15 +380,11 @@ ofa_file_format_get_field_sep( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->field_sep );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
+	return( priv->field_sep );
 }
 
 /**
@@ -419,17 +395,13 @@ ofa_file_format_get_headers_count( const ofaFileFormat *settings )
 {
 	ofaFileFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->h.count_headers );
-	}
-
-	g_return_val_if_reached( FALSE );
-	return( FALSE );
+	return( priv->h.count_headers );
 }
 
 /**
@@ -442,15 +414,11 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		return( priv->h.with_headers );
-	}
-
-	g_return_val_if_reached( FALSE );
-	return( FALSE );
+	return( priv->h.with_headers );
 }
 
 /**
@@ -482,68 +450,67 @@ ofa_file_format_set( ofaFileFormat *settings,
 
 	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
 
-	priv = settings->priv;
+	priv = ofa_file_format_get_instance_private( settings );
 	prefs_list = NULL;
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		/* name */
-		g_free( priv->name );
-		priv->name = g_strdup( name );
-		prefs_list = g_list_append( prefs_list, ( gpointer )( name ? name : "" ));
+	/* name */
+	g_free( priv->name );
+	priv->name = g_strdup( name );
+	prefs_list = g_list_append( prefs_list, ( gpointer )( name ? name : "" ));
 
-		/* file format */
-		priv->type = type;
-		sfile = g_strdup_printf( "%d", type );
-		prefs_list = g_list_append( prefs_list, sfile );
+	/* file format */
+	priv->type = type;
+	sfile = g_strdup_printf( "%d", type );
+	prefs_list = g_list_append( prefs_list, sfile );
 
-		/* mode */
-		priv->mode = mode;
-		sfile = g_strdup_printf( "%d", mode );
-		prefs_list = g_list_append( prefs_list, sfile );
+	/* mode */
+	priv->mode = mode;
+	sfile = g_strdup_printf( "%d", mode );
+	prefs_list = g_list_append( prefs_list, sfile );
 
-		/* charmap (may be %NULL) */
-		g_free( priv->charmap );
-		priv->charmap = g_strdup( charmap );
-		prefs_list = g_list_append( prefs_list, ( gpointer ) charmap );
+	/* charmap (may be %NULL) */
+	g_free( priv->charmap );
+	priv->charmap = g_strdup( charmap );
+	prefs_list = g_list_append( prefs_list, ( gpointer ) charmap );
 
-		/* date format  */
-		priv->date_format = date_format;
-		sdate = g_strdup_printf( "%d", date_format );
-		prefs_list = g_list_append( prefs_list, sdate );
+	/* date format  */
+	priv->date_format = date_format;
+	sdate = g_strdup_printf( "%d", date_format );
+	prefs_list = g_list_append( prefs_list, sdate );
 
-		/* decimal separator */
-		priv->decimal_sep = decimal_sep;
-		sdecimal = g_strdup_printf( "%d", decimal_sep );
-		prefs_list = g_list_append( prefs_list, sdecimal );
+	/* decimal separator */
+	priv->decimal_sep = decimal_sep;
+	sdecimal = g_strdup_printf( "%d", decimal_sep );
+	prefs_list = g_list_append( prefs_list, sdecimal );
 
-		/* field separator */
-		priv->field_sep = field_sep;
-		sfield = g_strdup_printf( "%d", field_sep );
-		prefs_list = g_list_append( prefs_list, sfield );
+	/* field separator */
+	priv->field_sep = field_sep;
+	sfield = g_strdup_printf( "%d", field_sep );
+	prefs_list = g_list_append( prefs_list, sfield );
 
-		/* with headers */
-		if( priv->mode == OFA_FFMODE_EXPORT ){
-			priv->h.with_headers = count_headers > 0;
-			sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
-		} else {
-			priv->h.count_headers = count_headers;
-			sheaders = g_strdup_printf( "%d", priv->h.count_headers );
-		}
-		prefs_list = g_list_append( prefs_list, sheaders );
-
-		/* save in user preferences */
-		g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
-		if( my_strlen( priv->prefs_name )){
-			ofa_settings_user_set_string_list( priv->prefs_name, prefs_list );
-		}
-
-		g_list_free( prefs_list );
-
-		g_free( sheaders );
-		g_free( sfield );
-		g_free( sdecimal );
-		g_free( sdate );
-		g_free( sfile );
+	/* with headers */
+	if( priv->mode == OFA_FFMODE_EXPORT ){
+		priv->h.with_headers = count_headers > 0;
+		sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
+	} else {
+		priv->h.count_headers = count_headers;
+		sheaders = g_strdup_printf( "%d", priv->h.count_headers );
 	}
+	prefs_list = g_list_append( prefs_list, sheaders );
+
+	/* save in user preferences */
+	g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
+	if( my_strlen( priv->prefs_name )){
+		ofa_settings_user_set_string_list( priv->prefs_name, prefs_list );
+	}
+
+	g_list_free( prefs_list );
+
+	g_free( sheaders );
+	g_free( sfield );
+	g_free( sdecimal );
+	g_free( sdate );
+	g_free( sfile );
 }
