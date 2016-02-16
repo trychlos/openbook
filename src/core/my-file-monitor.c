@@ -57,10 +57,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myFileMonitor, my_file_monitor, G_TYPE_OBJECT )
-
 static void on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, myFileMonitor *self );
 static void on_monitor_changed_timeout( myFileMonitor *self );
+
+G_DEFINE_TYPE_EXTENDED( myFileMonitor, my_file_monitor, G_TYPE_OBJECT, 0, \
+		G_ADD_PRIVATE( myFileMonitor ));
 
 static void
 settings_monitor_finalize( GObject *object )
@@ -74,7 +75,7 @@ settings_monitor_finalize( GObject *object )
 	g_return_if_fail( object && MY_IS_FILE_MONITOR( object ));
 
 	/* free data members here */
-	priv = MY_FILE_MONITOR( object )->priv;
+	priv = my_file_monitor_get_instance_private( MY_FILE_MONITOR( object ));
 
 	g_free( priv->filename );
 	g_clear_object( &priv->monitor );
@@ -91,7 +92,7 @@ settings_monitor_dispose( GObject *object )
 
 	g_return_if_fail( object && MY_IS_FILE_MONITOR( object ));
 
-	priv = MY_FILE_MONITOR( object )->priv;
+	priv = my_file_monitor_get_instance_private( MY_FILE_MONITOR( object ));
 
 	if( !priv->dispose_has_run ){
 
@@ -109,14 +110,16 @@ static void
 my_file_monitor_init( myFileMonitor *self )
 {
 	static const gchar *thisfn = "my_file_monitor_init";
+	myFileMonitorPrivate *priv;
 
 	g_return_if_fail( self && MY_IS_FILE_MONITOR( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_FILE_MONITOR, myFileMonitorPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = my_file_monitor_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -128,8 +131,6 @@ my_file_monitor_class_init( myFileMonitorClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = settings_monitor_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settings_monitor_finalize;
-
-	g_type_class_add_private( klass, sizeof( myFileMonitorPrivate ));
 
 	/**
 	 * myFileMonitor:
@@ -171,7 +172,7 @@ my_file_monitor_new( const gchar *filename )
 	g_return_val_if_fail( my_strlen( filename ), NULL );
 
 	monitor = g_object_new( MY_TYPE_FILE_MONITOR, NULL );
-	priv = monitor->priv;
+	priv = my_file_monitor_get_instance_private( monitor );
 	priv->filename = g_strdup( filename );
 	file = g_file_new_for_path( filename );
 	priv->monitor = g_file_monitor_file( file, G_FILE_MONITOR_NONE, NULL, NULL );
@@ -212,7 +213,10 @@ static void
 on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, myFileMonitor *self )
 {
 	static const gchar* thisfn = "my_file_monitor_on_monitor_changed";
+	myFileMonitorPrivate *priv;
 	const gchar *event_str = "";
+
+	priv = my_file_monitor_get_instance_private( self );
 
 	switch( event_type ){
 		case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
@@ -253,15 +257,16 @@ on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFile
 	g_debug( "%s: time=%lu, event_type=%d (%s)",
 			thisfn, g_get_monotonic_time(), event_type, event_str );
 
-	my_timeout_event( self->priv->timeout );
+	my_timeout_event( priv->timeout );
 }
 
 static void
 on_monitor_changed_timeout( myFileMonitor *monitor )
 {
 	static const gchar *thisfn = "my_file_monitor_on_monitor_changed_timeout";
-	myFileMonitorPrivate *priv = monitor->priv;
+	myFileMonitorPrivate *priv;
 
+	priv = my_file_monitor_get_instance_private( monitor );
 	g_debug( "%s: emitting signal: filename=%s", thisfn, priv->filename );
 	g_signal_emit_by_name( monitor, FILE_MONITOR_SIGNAL_CHANGED, priv->filename );
 }

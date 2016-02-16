@@ -56,16 +56,13 @@ typedef struct _myFileMonitorPrivate        myFileMonitorPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject               parent;
-
-	/*< private members >*/
-	myFileMonitorPrivate *priv;
+	GObject      parent;
 }
 	myFileMonitor;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass          parent;
+	GObjectClass parent;
 }
 	myFileMonitorClass;
 

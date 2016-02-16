@@ -323,9 +323,6 @@
 
  792 2015- 4- 6 FEAT have a comment in the backup
 
- 793 2015- 4- 8 ARCH Consolidate preferences from IDatesFilter with
-                     those of the calling window (as much as possible)
-
  796 2015- 4-13 FEAT IRenderable: have a second level of grouping
                      (subgroup) use case: when printing accounts book,
                      have a subtotal per class
@@ -565,6 +562,13 @@
 #4  0x0000000000448d50 in insert_left_model_row (self=0xd614e0, model=0x1483650) at ../../../src/ui/ofa-guided-ex.c:775
      2015- 4- 7 not reproduced
      2016- 1-18 cancelled (at least for now)
+
+ 793 2015- 4- 8 ARCH Consolidate preferences from IDatesFilter with
+                     those of the calling window (as much as possible)
+     2016- 2-16 current practice where caller says tto IDateFilter which
+                is the settings key, is rather clean - and actually
+                enough clean
+                -> cancelled
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both
