@@ -43,9 +43,6 @@ typedef struct {
 
 	/*< protected members >*/
 	ofaPageProtected *prot;
-
-	/*< private members >*/
-	ofaPagePrivate   *priv;
 }
 	ofaPage;
 

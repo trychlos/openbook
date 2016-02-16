@@ -42,6 +42,7 @@
    - ofaDateFilterHVBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormat: migrate to G_ADD_PRIVATE (todo #994).
    - ofaHub: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaPage: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48

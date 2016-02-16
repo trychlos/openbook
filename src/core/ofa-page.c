@@ -63,8 +63,6 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaPage, ofa_page, GTK_TYPE_GRID )
-
 static void       do_setup_page( ofaPage *page );
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
@@ -72,6 +70,9 @@ static GtkWidget *do_setup_buttons( ofaPage *page );
 static void       do_init_view( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+
+G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0, \
+		G_ADD_PRIVATE( ofaPage ));
 
 static void
 page_finalize( GObject *instance )
@@ -128,7 +129,7 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 
 	if( !prot->dispose_has_run ){
 
-		priv = OFA_PAGE( instance )->priv;
+		priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
@@ -162,7 +163,7 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 
 	if( !prot->dispose_has_run ){
 
-		priv = OFA_PAGE( instance )->priv;
+		priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
@@ -198,7 +199,7 @@ page_constructed( GObject *instance )
 	}
 
 	self = OFA_PAGE( instance );
-	priv = self->priv;
+	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 	g_debug( "%s: instance=%p (%s), main_window=%p, theme=%d",
 			thisfn,
@@ -216,6 +217,7 @@ static void
 ofa_page_init( ofaPage *self )
 {
 	static const gchar *thisfn = "ofa_page_init";
+	ofaPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -225,9 +227,9 @@ ofa_page_init( ofaPage *self )
 	self->prot = g_new0( ofaPageProtected, 1 );
 	self->prot->dispose_has_run = FALSE;
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPagePrivate );
-	self->priv->main_window = NULL;
-	self->priv->theme = -1;
+	priv = ofa_page_get_instance_private( self );
+	priv->main_window = NULL;
+	priv->theme = -1;
 }
 
 static void
@@ -242,8 +244,6 @@ ofa_page_class_init( ofaPageClass *klass )
 	G_OBJECT_CLASS( klass )->set_property = page_set_property;
 	G_OBJECT_CLASS( klass )->dispose = page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = page_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaPagePrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -411,14 +411,14 @@ v_get_top_focusable_widget( const ofaPage *page )
 const ofaMainWindow *
 ofa_page_get_main_window( const ofaPage *page )
 {
+	ofaPagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
 
-	if( !page->prot->dispose_has_run ){
+	priv = ofa_page_get_instance_private( page );
 
-		return( page->priv->main_window );
-	}
-
-	return( NULL );
+	return( priv->main_window );
 }
 
 /**
@@ -430,14 +430,14 @@ ofa_page_get_main_window( const ofaPage *page )
 gint
 ofa_page_get_theme( const ofaPage *page )
 {
+	ofaPagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), -1 );
+	g_return_val_if_fail( !page->prot->dispose_has_run, -1 );
 
-	if( !page->prot->dispose_has_run ){
+	priv = ofa_page_get_instance_private( page );
 
-		return( page->priv->theme );
-	}
-
-	return( -1 );
+	return( priv->theme );
 }
 
 /**
@@ -452,12 +452,10 @@ GtkWidget *
 ofa_page_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
 
-	if( !page->prot->dispose_has_run ){
-
-		if( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget ){
-			return( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget( page ));
-		}
+	if( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget ){
+		return( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget( page ));
 	}
 
 	return( NULL );
@@ -477,12 +475,9 @@ ofa_page_get_hub( const ofaPage *page )
 	ofaHub *hub;
 
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
 
-	if( page->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
-
-	priv = page->priv;
+	priv = ofa_page_get_instance_private( page );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
