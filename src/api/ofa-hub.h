@@ -130,15 +130,12 @@ typedef struct _ofaHubPrivate       ofaHubPrivate;
 
 struct _ofaHub {
 	/*< public members >*/
-	GObject        parent;
-
-	/*< private members >*/
-	ofaHubPrivate *priv;
+	GObject      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass   parent;
+	GObjectClass parent;
 }
 	ofaHubClass;
 

@@ -81,6 +81,7 @@ static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0, \
+		G_ADD_PRIVATE( ofaHub )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init ));
 
 static void
@@ -106,7 +107,7 @@ hub_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_HUB( instance ));
 
-	priv = OFA_HUB( instance )->priv;
+	priv = ofa_hub_get_instance_private( OFA_HUB( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -124,14 +125,16 @@ static void
 ofa_hub_init( ofaHub *self )
 {
 	static const gchar *thisfn = "ofa_hub_init";
+	ofaHubPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_HUB( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_HUB, ofaHubPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = ofa_hub_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -143,8 +146,6 @@ ofa_hub_class_init( ofaHubClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = hub_dispose;
 	G_OBJECT_CLASS( klass )->finalize = hub_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaHubPrivate ));
 
 	/**
 	 * ofaHub::hub-object-new:
@@ -375,7 +376,7 @@ ofa_hub_new_with_connect( const ofaIDBConnect *connect )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	hub = g_object_new( OFA_TYPE_HUB, NULL );
-	priv = hub->priv;
+	priv = ofa_hub_get_instance_private( hub );
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
 
@@ -439,11 +440,9 @@ ofa_hub_get_connect( const ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	priv = hub->priv;
+	priv = ofa_hub_get_instance_private( hub );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->connect );
 }
@@ -464,11 +463,9 @@ ofa_hub_get_dossier( const ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	priv = hub->priv;
+	priv = ofa_hub_get_instance_private( hub );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->dossier );
 }
@@ -489,11 +486,9 @@ ofa_hub_remediate_settings( const ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv = hub->priv;
+	priv = ofa_hub_get_instance_private( hub );
 
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	check_db_vs_settings( hub );
 }
@@ -732,7 +727,7 @@ ofa_hub_disconnect_handlers( ofaHub *hub, GList *handlers )
 	g_debug( "%s: hub=%p, handlers=%p (count=%d)",
 			thisfn, ( void * ) hub, ( void * ) handlers, g_list_length( handlers ));
 
-	priv = hub->priv;
+	priv = ofa_hub_get_instance_private( hub );
 
 	if( !priv->dispose_has_run ){
 		for( it=handlers ; it ; it=it->next ){
