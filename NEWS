@@ -37,6 +37,7 @@
 
    - Do not install the resources which are managed as GResource (todo #970).
    - myFileMonitor: migrate to G_ADD_PRIVATE (todo #994).
+   - myProgressBar: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48

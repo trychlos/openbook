@@ -53,16 +53,13 @@ typedef struct _myProgressBarPrivate        myProgressBarPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkProgressBar        parent;
-
-	/*< private members >*/
-	myProgressBarPrivate *priv;
+	GtkProgressBar      parent;
 }
 	myProgressBar;
 
 typedef struct {
 	/*< public members >*/
-	GtkProgressBarClass   parent;
+	GtkProgressBarClass parent;
 }
 	myProgressBarClass;
 

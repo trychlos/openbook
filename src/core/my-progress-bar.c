@@ -46,11 +46,12 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR )
-
 static void on_double( myProgressBar *self, gdouble progress, void *empty );
 static void on_text( myProgressBar *self, const gchar *text, void *empty );
 static void on_pulse( myProgressBar *self, void *empty );
+
+G_DEFINE_TYPE_EXTENDED( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR, 0, \
+		G_ADD_PRIVATE( myProgressBar ));
 
 static void
 progress_bar_finalize( GObject *instance )
@@ -75,7 +76,7 @@ progress_bar_dispose( GObject *instance )
 
 	g_return_if_fail( instance && MY_IS_PROGRESS_BAR( instance ));
 
-	priv = ( MY_PROGRESS_BAR( instance ))->priv;
+	priv = my_progress_bar_get_instance_private( MY_PROGRESS_BAR( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -92,16 +93,16 @@ static void
 my_progress_bar_init( myProgressBar *self )
 {
 	static const gchar *thisfn = "my_progress_bar_init";
+	myProgressBarPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, MY_TYPE_PROGRESS_BAR, myProgressBarPrivate );
+	priv = my_progress_bar_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -113,8 +114,6 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = progress_bar_dispose;
 	G_OBJECT_CLASS( klass )->finalize = progress_bar_finalize;
-
-	g_type_class_add_private( klass, sizeof( myProgressBarPrivate ));
 
 	/**
 	 * myProgressBar::double:
