@@ -50,16 +50,13 @@ typedef struct _ofoBatLinePrivate        ofoBatLinePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofoBase            parent;
-
-	/*< private members >*/
-	ofoBatLinePrivate *priv;
+	ofoBase      parent;
 }
 	ofoBatLine;
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass       parent;
+	ofoBaseClass parent;
 }
 	ofoBatLineClass;
 
