@@ -177,8 +177,6 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-static ofoBaseClass *ofo_entry_parent_class = NULL;
-
 static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
@@ -229,6 +227,12 @@ static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
 static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 
+G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoEntry )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init ));
+
 static void
 entry_finalize( GObject *instance )
 {
@@ -265,8 +269,6 @@ ofo_entry_init( ofoEntry *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_ENTRY, ofoEntryPrivate );
 }
 
 static void
@@ -276,73 +278,8 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_entry_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoEntryPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_entry_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoEntryClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_entry_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoEntry ),
-		0,
-		( GInstanceInitFunc ) ofo_entry_init
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iconcil_iface_info = {
-		( GInterfaceInitFunc ) iconcil_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoEntry", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICONCIL, &iconcil_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_entry_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -1528,14 +1465,12 @@ ofo_entry_get_abr_status( const ofoEntry *entry )
 	gint i;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
-
-		status = ofo_entry_get_status( entry );
-		for( i=0 ; st_status[i].num ; ++i ){
-			if( st_status[i].num == status ){
-				return( gettext( st_status[i].str ));
-			}
+	status = ofo_entry_get_status( entry );
+	for( i=0 ; st_status[i].num ; ++i ){
+		if( st_status[i].num == status ){
+			return( gettext( st_status[i].str ));
 		}
 	}
 
@@ -1624,10 +1559,7 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
 	ofoLedger *ledger;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
 
 	g_date_clear( date, 1 );
 	ledger = NULL;
@@ -1829,14 +1761,11 @@ entry_get_import_settled( const ofoEntry *entry )
 	ofoEntryPrivate *priv;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+	priv = ofo_entry_get_instance_private( entry );
 
-		priv = entry->priv;
-		return( priv->import_settled );
-	}
-
-	return( FALSE );
+	return( priv->import_settled );
 }
 
 /**
@@ -1855,14 +1784,10 @@ ofo_entry_is_editable( const ofoEntry *entry )
 	ofaEntryStatus status;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
-	editable = FALSE;
-
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
-
-		status = ofo_entry_get_status( entry );
-		editable = ( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
-	}
+	status = ofo_entry_get_status( entry );
+	editable = ( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
 	return( editable );
 }
@@ -2031,12 +1956,11 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
 	ofoEntryPrivate *priv;
 
 	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
 
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+	priv = ofo_entry_get_instance_private( entry );
 
-		priv = entry->priv;
-		priv->import_settled = settled;
-	}
+	priv->import_settled = settled;
 }
 
 /*
@@ -2070,10 +1994,7 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	is_valid = TRUE;
 	dossier = ofa_hub_get_dossier( hub );
@@ -2230,10 +2151,7 @@ ofo_entry_insert( ofoEntry *entry, ofaHub *hub )
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	dossier = ofa_hub_get_dossier( hub );
@@ -2449,10 +2367,7 @@ ofo_entry_update( ofoEntry *entry )
 	gboolean ok;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
@@ -2557,10 +2472,7 @@ ofo_entry_update_settlement( ofoEntry *entry, ofxCounter number )
 	gboolean ok;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
@@ -2655,10 +2567,7 @@ ofo_entry_validate( ofoEntry *entry )
 	ofaHub *hub;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
 	g_signal_emit_by_name( hub,
@@ -2725,10 +2634,7 @@ ofo_entry_delete( ofoEntry *entry )
 	gboolean ok;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-
-	if( OFO_BASE( entry )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( entry ));

@@ -69,7 +69,7 @@ typedef struct _ofoBaseProtected     ofoBaseProtected;
  */
 #define ofo_base_getter(C,V,T,R,I)			\
 		g_return_val_if_fail((V) && OFO_IS_ ## C(V),(R)); \
-		if( OFO_BASE(V)->prot->dispose_has_run) g_return_val_if_reached(R); \
+		g_return_val_if_fail( !OFO_BASE(V)->prot->dispose_has_run, (R)); \
 		return(ofa_box_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
 
 /**

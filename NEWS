@@ -56,6 +56,7 @@
    - ofoConcil: migrate to G_ADD_PRIVATE (todo #994).
    - ofoCurrency: migrate to G_ADD_PRIVATE (todo #994).
    - ofoDossier: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoEntry: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48
