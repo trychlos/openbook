@@ -165,7 +165,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 
 struct _ofoAccountPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
-	gboolean root;
 };
 
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
@@ -188,8 +187,6 @@ typedef struct {
 	GList       *children_list;
 }
 	sChildren;
-
-static ofoBaseClass *ofo_account_parent_class = NULL;
 
 static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
@@ -224,6 +221,12 @@ static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static gboolean     account_do_drop_content( const ofaIDBConnect *connect );
+
+G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoAccount )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ));
 
 static void
 account_finalize( GObject *instance )
@@ -264,8 +267,6 @@ ofo_account_init( ofoAccount *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_ACCOUNT, ofoAccountPrivate );
 }
 
 static void
@@ -275,73 +276,8 @@ ofo_account_class_init( ofoAccountClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_account_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = account_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoAccountPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_account_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoAccountClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_account_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoAccount ),
-		0,
-		( GInstanceInitFunc ) ofo_account_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoAccount", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_account_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
