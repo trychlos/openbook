@@ -49,6 +49,7 @@
    - ofaPreferences: migrate to G_ADD_PRIVATE (todo #994).
    - ofoAccount: migrate to G_ADD_PRIVATE (todo #994).
    - ofoBat: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoBat: rename ofo_bat_get|set_begin|end methods (todo #996).
    - ofoBase: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------

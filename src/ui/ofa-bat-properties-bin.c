@@ -375,11 +375,11 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_begin( bat ), ofa_prefs_date_display());
+	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display());
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_end( bat ), ofa_prefs_date_display());
+	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display());
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
 
@@ -397,16 +397,16 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), "" );
 	}
 
-	if( ofo_bat_get_solde_begin_set( bat )){
-		str = my_double_to_str( ofo_bat_get_solde_begin( bat ));
+	if( ofo_bat_get_begin_solde_set( bat )){
+		str = my_double_to_str( ofo_bat_get_begin_solde( bat ));
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), str );
 		g_free( str );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), "" );
 	}
 
-	if( ofo_bat_get_solde_end_set( bat )){
-		str = my_double_to_str( ofo_bat_get_solde_end( bat ));
+	if( ofo_bat_get_end_solde_set( bat )){
+		str = my_double_to_str( ofo_bat_get_end_solde( bat ));
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), str );
 		g_free( str );
 	} else {

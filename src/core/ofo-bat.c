@@ -283,10 +283,10 @@ ofo_bat_get_format( const ofoBat *bat )
 }
 
 /**
- * ofo_bat_get_begin:
+ * ofo_bat_get_begin_date:
  */
 const GDate *
-ofo_bat_get_begin( const ofoBat *bat )
+ofo_bat_get_begin_date( const ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -299,10 +299,42 @@ ofo_bat_get_begin( const ofoBat *bat )
 }
 
 /**
- * ofo_bat_get_end:
+ * ofo_bat_get_begin_solde:
+ */
+ofxAmount
+ofo_bat_get_begin_solde( const ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( priv->begin_solde );
+}
+
+/**
+ * ofo_bat_get_begin_solde_set:
+ */
+gboolean
+ofo_bat_get_begin_solde_set( const ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( priv->begin_solde_set );
+}
+
+/**
+ * ofo_bat_get_end_date:
  */
 const GDate *
-ofo_bat_get_end( const ofoBat *bat )
+ofo_bat_get_end_date( const ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -312,6 +344,38 @@ ofo_bat_get_end( const ofoBat *bat )
 	priv = ofo_bat_get_instance_private( bat );
 
 	return(( const GDate * ) &priv->end );
+}
+
+/**
+ * ofo_bat_get_end_solde:
+ */
+ofxAmount
+ofo_bat_get_end_solde( const ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( priv->end_solde );
+}
+
+/**
+ * ofo_bat_get_end_solde_set:
+ */
+gboolean
+ofo_bat_get_end_solde_set( const ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( priv->end_solde_set );
 }
 
 /**
@@ -344,70 +408,6 @@ ofo_bat_get_currency( const ofoBat *bat )
 	priv = ofo_bat_get_instance_private( bat );
 
 	return(( const gchar * ) priv->currency );
-}
-
-/**
- * ofo_bat_get_solde_begin:
- */
-ofxAmount
-ofo_bat_get_solde_begin( const ofoBat *bat )
-{
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->begin_solde );
-}
-
-/**
- * ofo_bat_get_solde_begin_set:
- */
-gboolean
-ofo_bat_get_solde_begin_set( const ofoBat *bat )
-{
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->begin_solde_set );
-}
-
-/**
- * ofo_bat_get_solde_end:
- */
-ofxAmount
-ofo_bat_get_solde_end( const ofoBat *bat )
-{
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->end_solde );
-}
-
-/**
- * ofo_bat_get_solde_end_set:
- */
-gboolean
-ofo_bat_get_solde_end_set( const ofoBat *bat )
-{
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->end_solde_set );
 }
 
 /**
@@ -675,10 +675,10 @@ ofo_bat_set_format( ofoBat *bat, const gchar *format )
 }
 
 /**
- * ofo_bat_set_begin:
+ * ofo_bat_set_begin_date:
  */
 void
-ofo_bat_set_begin( ofoBat *bat, const GDate *date )
+ofo_bat_set_begin_date( ofoBat *bat, const GDate *date )
 {
 	ofoBatPrivate *priv;
 
@@ -691,10 +691,42 @@ ofo_bat_set_begin( ofoBat *bat, const GDate *date )
 }
 
 /**
- * ofo_bat_set_end:
+ * ofo_bat_set_begin_solde:
  */
 void
-ofo_bat_set_end( ofoBat *bat, const GDate *date )
+ofo_bat_set_begin_solde( ofoBat *bat, ofxAmount solde )
+{
+	ofoBatPrivate *priv;
+
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	priv->begin_solde = solde;
+}
+
+/**
+ * ofo_bat_set_begin_solde_set:
+ */
+void
+ofo_bat_set_begin_solde_set( ofoBat *bat, gboolean set )
+{
+	ofoBatPrivate *priv;
+
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	priv->begin_solde_set = set;
+}
+
+/**
+ * ofo_bat_set_end_date:
+ */
+void
+ofo_bat_set_end_date( ofoBat *bat, const GDate *date )
 {
 	ofoBatPrivate *priv;
 
@@ -704,6 +736,38 @@ ofo_bat_set_end( ofoBat *bat, const GDate *date )
 	priv = ofo_bat_get_instance_private( bat );
 
 	my_date_set_from_date( &priv->end, date );
+}
+
+/**
+ * ofo_bat_set_end_solde:
+ */
+void
+ofo_bat_set_end_solde( ofoBat *bat, ofxAmount solde )
+{
+	ofoBatPrivate *priv;
+
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	priv->end_solde = solde;
+}
+
+/**
+ * ofo_bat_set_end_solde_set:
+ */
+void
+ofo_bat_set_end_solde_set( ofoBat *bat, gboolean set )
+{
+	ofoBatPrivate *priv;
+
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	priv->end_solde_set = set;
 }
 
 /**
@@ -738,70 +802,6 @@ ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 
 	g_free( priv->currency );
 	priv->currency = g_strdup( currency );
-}
-
-/**
- * ofo_bat_set_solde_begin:
- */
-void
-ofo_bat_set_solde_begin( ofoBat *bat, ofxAmount solde )
-{
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->begin_solde = solde;
-}
-
-/**
- * ofo_bat_set_solde_begin_set:
- */
-void
-ofo_bat_set_solde_begin_set( ofoBat *bat, gboolean set )
-{
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->begin_solde_set = set;
-}
-
-/**
- * ofo_bat_set_solde_end:
- */
-void
-ofo_bat_set_solde_end( ofoBat *bat, ofxAmount solde )
-{
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->end_solde = solde;
-}
-
-/**
- * ofo_bat_set_solde_end_set:
- */
-void
-ofo_bat_set_solde_end_set( ofoBat *bat, gboolean set )
-{
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->end_solde_set = set;
 }
 
 /**
@@ -954,7 +954,7 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 	}
 	g_free( str );
 
-	begin = ofo_bat_get_begin( bat );
+	begin = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( begin )){
 		str = my_date_to_str( begin, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
@@ -963,7 +963,7 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	end = ofo_bat_get_end( bat );
+	end = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( end )){
 		str = my_date_to_str( end, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
@@ -986,16 +986,16 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( ofo_bat_get_solde_begin_set( bat )){
-		str = my_double_to_sql( ofo_bat_get_solde_begin( bat ));
+	if( ofo_bat_get_begin_solde_set( bat )){
+		str = my_double_to_sql( ofo_bat_get_begin_solde( bat ));
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( ofo_bat_get_solde_end_set( bat )){
-		str = my_double_to_sql( ofo_bat_get_solde_end( bat ));
+	if( ofo_bat_get_end_solde_set( bat )){
+		str = my_double_to_sql( ofo_bat_get_end_solde( bat ));
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {
@@ -1223,14 +1223,14 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounte
 
 	ofo_bat_set_uri( bat, sbat->uri );
 	ofo_bat_set_format( bat, sbat->format );
-	ofo_bat_set_begin( bat, &sbat->begin );
-	ofo_bat_set_end( bat, &sbat->end );
+	ofo_bat_set_begin_date( bat, &sbat->begin );
+	ofo_bat_set_end_date( bat, &sbat->end );
 	ofo_bat_set_rib( bat, sbat->rib );
 	ofo_bat_set_currency( bat, sbat->currency );
-	ofo_bat_set_solde_begin( bat, sbat->begin_solde );
-	ofo_bat_set_solde_begin_set( bat, sbat->begin_solde_set );
-	ofo_bat_set_solde_end( bat, sbat->end_solde );
-	ofo_bat_set_solde_end_set( bat, sbat->end_solde_set );
+	ofo_bat_set_begin_solde( bat, sbat->begin_solde );
+	ofo_bat_set_begin_solde_set( bat, sbat->begin_solde_set );
+	ofo_bat_set_end_solde( bat, sbat->end_solde );
+	ofo_bat_set_end_solde_set( bat, sbat->end_solde_set );
 
 	ok = ofo_bat_insert( bat, hub );
 	if( ok ){
@@ -1321,12 +1321,12 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 			icol = icol->next;
 			if( icol->data ){
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-				ofo_bat_set_begin( bat, &date );
+				ofo_bat_set_begin_date( bat, &date );
 			}
 			icol = icol->next;
 			if( icol->data ){
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-				ofo_bat_set_end( bat, &date );
+				ofo_bat_set_end_date( bat, &date );
 			}
 			icol = icol->next;
 			if( icol->data ){
@@ -1338,19 +1338,19 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_set_solde_begin( bat,
+				ofo_bat_set_begin_solde( bat,
 						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_solde_begin_set( bat, TRUE );
+				ofo_bat_set_begin_solde_set( bat, TRUE );
 			} else {
-				ofo_bat_set_solde_begin_set( bat, FALSE );
+				ofo_bat_set_begin_solde_set( bat, FALSE );
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_set_solde_end( bat,
+				ofo_bat_set_end_solde( bat,
 						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_solde_end_set( bat, TRUE );
+				ofo_bat_set_end_solde_set( bat, TRUE );
 			} else {
-				ofo_bat_set_solde_end_set( bat, FALSE );
+				ofo_bat_set_end_solde_set( bat, FALSE );
 			}
 			icol = icol->next;
 			if( icol->data ){

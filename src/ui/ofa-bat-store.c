@@ -244,25 +244,25 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 	gint count, used;
 
 	sid = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
-	date = ofo_bat_get_begin( bat );
+	date = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( date )){
 		sbegin = my_date_to_str( date, ofa_prefs_date_display());
 	} else {
 		sbegin = g_strdup( "" );
 	}
-	date = ofo_bat_get_end( bat );
+	date = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( date )){
 		send = my_date_to_str( date, ofa_prefs_date_display());
 	} else {
 		send = g_strdup( "" );
 	}
-	if( ofo_bat_get_solde_begin_set( bat )){
-		sbeginsolde = my_double_to_str( ofo_bat_get_solde_begin( bat ));
+	if( ofo_bat_get_begin_solde_set( bat )){
+		sbeginsolde = my_double_to_str( ofo_bat_get_begin_solde( bat ));
 	} else {
 		sbeginsolde = g_strdup( "" );
 	}
-	if( ofo_bat_get_solde_end_set( bat )){
-		sendsolde = my_double_to_str( ofo_bat_get_solde_end( bat ));
+	if( ofo_bat_get_end_solde_set( bat )){
+		sendsolde = my_double_to_str( ofo_bat_get_end_solde( bat ));
 	} else {
 		sendsolde = g_strdup( "" );
 	}
@@ -287,9 +287,9 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 			BAT_COL_RIB,             ofo_bat_get_rib( bat ),
 			BAT_COL_CURRENCY,        cscurrency,
 			BAT_COL_BEGIN_SOLDE,     sbeginsolde,
-			BAT_COL_BEGIN_SOLDE_SET, ofo_bat_get_solde_begin_set( bat ),
+			BAT_COL_BEGIN_SOLDE_SET, ofo_bat_get_begin_solde_set( bat ),
 			BAT_COL_END_SOLDE,       sendsolde,
-			BAT_COL_END_SOLDE_SET,   ofo_bat_get_solde_end_set( bat ),
+			BAT_COL_END_SOLDE_SET,   ofo_bat_get_end_solde_set( bat ),
 			BAT_COL_NOTES,           ofo_bat_get_notes( bat ),
 			BAT_COL_COUNT,           scount,
 			BAT_COL_UNUSED,          sunused,

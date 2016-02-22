@@ -486,9 +486,6 @@
 
  995 2016- 2-14 PACK use g_return_if_fail( !priv->dipose_has_run )
 
- 996 2016- 2-22 ofo_bat_set_begin/end -> ofo_date_set_begin/end_date
-                ofo_bat_set_solde_begin/end -> ofo_date_set_begin/end_solde
-
  997
 
 -----------------------------------------------------------------------
@@ -792,6 +789,10 @@
 
  993 2016- 2-14 ofaBatPage: set selection on newly imported BAT file
      2016- 2-14 done
+
+ 996 2016- 2-22 ofo_bat_set_begin/end -> ofo_date_set_begin/end_date
+                ofo_bat_set_solde_begin/end -> ofo_date_set_begin/end_solde
+     2016- 2-22 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
