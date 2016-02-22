@@ -34,13 +34,14 @@
  * i.e. user preferences which are not attached to any dossier.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    no
  */
 
+#include <gtk/gtk.h>
+
 #include "api/my-date.h"
-#include "api/my-dialog.h"
 #include "api/ofa-plugin.h"
 
 G_BEGIN_DECLS
@@ -56,22 +57,19 @@ typedef struct _ofaPreferencesPrivate        ofaPreferencesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog               parent;
-
-	/*< private members >*/
-	ofaPreferencesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaPreferences;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass          parent;
+	GtkDialogClass parent;
 }
 	ofaPreferencesClass;
 
 GType        ofa_preferences_get_type( void ) G_GNUC_CONST;
 
-gboolean     ofa_preferences_run     ( GtkApplicationWindow *parent, ofaPlugin *plugin );
+void         ofa_preferences_run     ( GtkApplicationWindow *parent, ofaPlugin *plugin );
 
 /* these are helpers available to the rest of the application
  */

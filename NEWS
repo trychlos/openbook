@@ -42,9 +42,11 @@
    - ofaDateFilterHVBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormat: migrate to G_ADD_PRIVATE (todo #994).
    - ofaHub: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofaPage: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPlugin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPReferences: move user interface to GResource (todo #826).
+   - ofaPreferences: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48
