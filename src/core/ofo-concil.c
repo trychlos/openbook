@@ -68,6 +68,7 @@ static void       icollectionable_iface_init( ofaICollectionableInterface *iface
 static guint      icollectionable_get_interface_version( const ofaICollectionable *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoConcil )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ));
 
 static void
@@ -77,7 +78,7 @@ concil_finalize( GObject *instance )
 	ofoConcilPrivate *priv;
 	gchar *sdate;
 
-	priv = OFO_CONCIL( instance )->priv;
+	priv = ofo_concil_get_instance_private( OFO_CONCIL( instance ));
 
 	sdate = my_date_to_str( &priv->dval, ofa_prefs_date_display());
 	g_debug( "%s: instance=%p (%s): %ld: %s %s",
@@ -115,8 +116,6 @@ ofo_concil_init( ofoConcil *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CONCIL, ofoConcilPrivate );
 }
 
 static void
@@ -126,12 +125,8 @@ ofo_concil_class_init( ofoConcilClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_concil_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = concil_dispose;
 	G_OBJECT_CLASS( klass )->finalize = concil_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoConcilPrivate ));
 }
 
 /**
@@ -291,14 +286,14 @@ ofo_concil_new( void )
 ofxCounter
 ofo_concil_get_id( const ofoConcil *concil )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), -1 );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, -1 );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		return( concil->priv->id );
-	}
-
-	return( -1 );
+	return( priv->id );
 }
 
 /**
@@ -308,14 +303,14 @@ ofo_concil_get_id( const ofoConcil *concil )
 const GDate *
 ofo_concil_get_dval( const ofoConcil *concil )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		return(( const GDate * ) &concil->priv->dval );
-	}
-
-	return( NULL );
+	return(( const GDate * ) &priv->dval );
 }
 
 /**
@@ -325,14 +320,14 @@ ofo_concil_get_dval( const ofoConcil *concil )
 const gchar *
 ofo_concil_get_user( const ofoConcil *concil )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		return(( const gchar * ) concil->priv->user );
-	}
-
-	return( NULL );
+	return(( const gchar * ) priv->user );
 }
 
 /**
@@ -342,14 +337,14 @@ ofo_concil_get_user( const ofoConcil *concil )
 const GTimeVal *
 ofo_concil_get_stamp( const ofoConcil *concil )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		return(( const GTimeVal * ) &concil->priv->stamp );
-	}
-
-	return( NULL );
+	return(( const GTimeVal * ) &priv->stamp );
 }
 
 /**
@@ -364,14 +359,14 @@ ofo_concil_get_stamp( const ofoConcil *concil )
 GList *
 ofo_concil_get_ids( const ofoConcil *concil )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		return( concil->priv->ids );
-	}
-
-	return( NULL );
+	return( priv->ids );
 }
 
 /**
@@ -389,18 +384,16 @@ ofo_concil_has_member( const ofoConcil *concil, const gchar *type, ofxCounter id
 	ofsConcilId *sid;
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	found = FALSE;
+	priv = ofo_concil_get_instance_private( concil );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
-
-		priv = concil->priv;
-		for( it=priv->ids ; it ; it=it->next ){
-			sid = ( ofsConcilId * ) it->data;
-			if( ofs_concil_id_is_equal( sid, type, id )){
-				found = TRUE;
-				break;
-			}
+	for( it=priv->ids ; it ; it=it->next ){
+		sid = ( ofsConcilId * ) it->data;
+		if( ofs_concil_id_is_equal( sid, type, id )){
+			found = TRUE;
+			break;
 		}
 	}
 
@@ -421,12 +414,10 @@ ofo_concil_for_each_member( ofoConcil *concil, ofoConcilEnumerate fn, void *user
 	ofsConcilId *sid;
 
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( OFO_BASE( concil )->prot->dispose_has_run ){
-		g_return_if_reached();
-	}
+	priv = ofo_concil_get_instance_private( concil );
 
-	priv = concil->priv;
 	for( it=priv->ids ; it ; it=it->next ){
 		sid = ( ofsConcilId * ) it->data;
 		fn( concil, sid->type, sid->other_id, user_data );
@@ -436,12 +427,14 @@ ofo_concil_for_each_member( ofoConcil *concil, ofoConcilEnumerate fn, void *user
 static void
 concil_set_id( ofoConcil *concil, ofxCounter id )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		concil->priv->id = id;
-	}
+	priv->id = id;
 }
 
 /**
@@ -452,12 +445,14 @@ concil_set_id( ofoConcil *concil, ofxCounter id )
 void
 ofo_concil_set_dval( ofoConcil *concil, const GDate *dval )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		my_date_set_from_date( &concil->priv->dval, dval );
-	}
+	my_date_set_from_date( &priv->dval, dval );
 }
 
 /**
@@ -468,13 +463,15 @@ ofo_concil_set_dval( ofoConcil *concil, const GDate *dval )
 void
 ofo_concil_set_user( ofoConcil *concil, const gchar *user )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		g_free( concil->priv->user );
-		concil->priv->user = g_strdup( user );
-	}
+	g_free( priv->user );
+	priv->user = g_strdup( user );
 }
 
 /**
@@ -485,12 +482,14 @@ ofo_concil_set_user( ofoConcil *concil, const gchar *user )
 void
 ofo_concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp )
 {
+	ofoConcilPrivate *priv;
+
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		my_utils_stamp_set_from_stamp( &concil->priv->stamp, stamp );
-	}
+	my_utils_stamp_set_from_stamp( &priv->stamp, stamp );
 }
 
 static void
@@ -500,16 +499,15 @@ concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 	ofsConcilId *sid;
 
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	g_return_if_fail( !OFO_BASE( concil )->prot->dispose_has_run );
 
-	if( !OFO_BASE( concil )->prot->dispose_has_run ){
+	priv = ofo_concil_get_instance_private( concil );
 
-		sid = g_new0( ofsConcilId, 1 );
-		sid->type = g_strdup( type );
-		sid->other_id = id;
+	sid = g_new0( ofsConcilId, 1 );
+	sid->type = g_strdup( type );
+	sid->other_id = id;
 
-		priv = concil->priv;
-		priv->ids = g_list_prepend( priv->ids, ( gpointer ) sid );
-	}
+	priv->ids = g_list_prepend( priv->ids, ( gpointer ) sid );
 }
 
 /**
@@ -529,10 +527,7 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( concil )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	dossier = ofa_hub_get_dossier( hub );
@@ -607,10 +602,7 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
 	g_return_val_if_fail( my_strlen( type ), FALSE );
-
-	if( OFO_BASE( concil )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( concil ));
@@ -657,10 +649,7 @@ ofo_concil_delete( ofoConcil *concil )
 	g_debug( "%s: concil=%p", thisfn, ( void * ) concil );
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
-
-	if( OFO_BASE( concil )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( concil ));
@@ -722,7 +711,7 @@ icollectionable_get_interface_version( const ofaICollectionable *instance )
 	return( 1 );
 }
 
-/*
+#if 0
 static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
@@ -736,4 +725,4 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 
 	return( list );
 }
-*/
+#endif

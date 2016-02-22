@@ -53,6 +53,7 @@
    - ofoBat: rename ofo_bat_get|set_begin|end methods (todo #996).
    - ofoBatLine: migrate to G_ADD_PRIVATE (todo #994).
    - ofoClass: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoConcil: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48

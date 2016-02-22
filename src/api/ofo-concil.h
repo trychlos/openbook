@@ -59,15 +59,12 @@ typedef struct _ofoConcilPrivate       ofoConcilPrivate;
 
 struct _ofoConcil {
 	/*< public members >*/
-	ofoBase           parent;
-
-	/*< private members >*/
-	ofoConcilPrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass      parent;
+	ofoBaseClass parent;
 }
 	ofoConcilClass;
 
