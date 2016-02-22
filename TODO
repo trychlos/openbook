@@ -486,7 +486,10 @@
 
  995 2016- 2-14 PACK use g_return_if_fail( !priv->dipose_has_run )
 
- 996
+ 996 2016- 2-22 ofo_bat_set_begin/end -> ofo_date_set_begin/end_date
+                ofo_bat_set_solde_begin/end -> ofo_date_set_begin/end_solde
+
+ 997
 
 -----------------------------------------------------------------------
  DONE
