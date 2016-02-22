@@ -41,7 +41,8 @@ struct _ofoBasePrivate {
 	ofaHub  *hub;
 };
 
-G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
+G_DEFINE_TYPE_EXTENDED( ofoBase, ofo_base, G_TYPE_OBJECT, 0, \
+		G_ADD_PRIVATE( ofoBase ));
 
 static void
 ofo_base_finalize( GObject *instance )
@@ -88,8 +89,6 @@ ofo_base_init( ofoBase *self )
 	self->prot = g_new0( ofoBaseProtected, 1 );
 	self->prot->dispose_has_run = FALSE;
 	self->prot->fields = NULL;
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_BASE, ofoBasePrivate );
 }
 
 static void
@@ -101,8 +100,6 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoBasePrivate ));
 }
 
 /**
@@ -135,6 +132,7 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 {
 	const ofaIDBConnect *connect;
 	ofoBase *object;
+	ofoBasePrivate *priv;
 	GList *rows, *dataset, *it;
 
 	g_return_val_if_fail( defs, NULL );
@@ -147,7 +145,8 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 
 	for( it=rows ; it ; it=it->next ){
 		object = g_object_new( type, NULL );
-		object->priv->hub = hub;
+		priv = ofo_base_get_instance_private( object );
+		priv->hub = hub;
 		object->prot->fields = it->data;
 		dataset = g_list_prepend( dataset, object );
 	}
@@ -208,12 +207,9 @@ ofo_base_get_hub( const ofoBase *base )
 	ofoBasePrivate *priv;
 
 	g_return_val_if_fail( base && OFO_IS_BASE( base ), NULL );
+	g_return_val_if_fail( !base->prot->dispose_has_run, NULL );
 
-	if( base->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
-
-	priv = base->priv;
+	priv = ofo_base_get_instance_private( base );
 
 	return( priv->hub );
 }
@@ -235,11 +231,9 @@ ofo_base_set_hub( ofoBase *base, ofaHub *hub )
 
 	g_return_if_fail( base && OFO_IS_BASE( base ));
 	g_return_if_fail( !hub || OFA_IS_HUB( hub ));
+	g_return_if_fail( !base->prot->dispose_has_run);
 
-	if( base->prot->dispose_has_run ){
-		g_return_if_reached();
-	}
+	priv = ofo_base_get_instance_private( base );
 
-	priv = base->priv;
 	priv->hub = hub;
 }

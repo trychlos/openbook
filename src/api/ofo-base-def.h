@@ -43,9 +43,6 @@ typedef struct {
 
 	/*< protected members >*/
 	ofoBaseProtected *prot;
-
-	/*< private members >*/
-	ofoBasePrivate   *priv;
 }
 	ofoBase;
 
