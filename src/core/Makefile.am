@@ -41,7 +41,25 @@ AM_CPPFLAGS += \
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+
+openbook_built_sources = \
+	openbook-resources.c								\
+	openbook-resources.h								\
+	$(NULL)
+
 BUILT_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)							\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
@@ -147,6 +165,9 @@ ui_files = \
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
 	ofa-idbmodel.ui										\
+	$(NULL)
+
+resources_ui = \
 	ofa-preferences.ui									\
 	$(NULL)
 
@@ -160,4 +181,5 @@ CLEANFILES = \
 
 EXTRA_DIST = \
 	$(core_data_DATA)									\
+	$(resources_ui)										\
 	$(NULL)

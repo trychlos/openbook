@@ -163,8 +163,9 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(core_datadir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 =
-am_libofa_core_la_OBJECTS = $(am__objects_1) my-date.lo \
+am__objects_1 = openbook-resources.lo
+am__objects_2 = $(am__objects_1)
+am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-dialog.lo my-double.lo \
 	my-editable-amount.lo my-editable-date.lo my-field-combo.lo \
 	my-file-monitor.lo my-idialog.lo my-igridlist.lo \
@@ -443,7 +444,20 @@ pkglib_LTLIBRARIES = libofa-core.la
 core_datadir = $(pkgdatadir)/core
 css_datadir = $(pkgdatadir)/css
 init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook_built_sources = \
+	openbook-resources.c								\
+	openbook-resources.h								\
+	$(NULL)
+
 BUILT_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)							\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
@@ -549,6 +563,9 @@ ui_files = \
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
 	ofa-idbmodel.ui										\
+	$(NULL)
+
+resources_ui = \
 	ofa-preferences.ui									\
 	$(NULL)
 
@@ -562,6 +579,7 @@ CLEANFILES = \
 
 EXTRA_DIST = \
 	$(core_data_DATA)									\
+	$(resources_ui)										\
 	$(NULL)
 
 all: $(BUILT_SOURCES)
@@ -711,6 +729,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-concil-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-currency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-ope.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbook-resources.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -974,6 +993,10 @@ uninstall-am: uninstall-core_dataDATA uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
