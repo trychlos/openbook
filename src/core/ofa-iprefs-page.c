@@ -208,79 +208,87 @@ ofa_iprefs_page_set_provider( ofaIPrefsPage *instance, ofaIPrefsProvider *provid
  *  preferences settings file.
  * @label: [allow-none][out]: the label to be set as the notebook page
  *  tab title.
+ * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Initialize the page.
+ *
+ * Returns: %TRUE if the page has been successfully initialized,
+ * %FALSE else.
  */
-void
-ofa_iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label )
+gboolean
+ofa_iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_iprefs_page_init";
 
-	g_debug( "%s: instance=%p (%s), settings=%p, label=%p",
+	g_debug( "%s: instance=%p (%s), settings=%p, label=%p, msgerr=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) settings, ( void * ) label );
+			( void * ) settings, ( void * ) label, ( void * ) msgerr );
 
-	g_return_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ));
-	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ), FALSE );
+	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), FALSE );
 
 	if( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->init ){
-		OFA_IPREFS_PAGE_GET_INTERFACE( instance )->init( instance, settings, label );
-		return;
+		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->init( instance, settings, label, msgerr ));
 	}
 
 	g_info( "%s: ofaIPrefsPage instance %p does not provide 'init()' method",
 			thisfn, ( void * ) instance );
+	return( TRUE );
 }
 
 /**
  * ofa_iprefs_page_get_valid:
  * @instance: this #ofaIPrefsPage instance.
- * @message: [allow-none][out]: an error message to be returned.
+ * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Returns: %TRUE if the page is valid, %FALSE else.
  */
 gboolean
-ofa_iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **message )
+ofa_iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_iprefs_page_get_valild";
 
-	g_debug( "%s: instance=%p (%s), message=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) message );
+	g_debug( "%s: instance=%p (%s), msgerr=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) msgerr );
 
 	g_return_val_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ), FALSE );
 
 	if( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->get_valid ){
-		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->get_valid( instance, message ));
+		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->get_valid( instance, msgerr ));
 	}
 
 	g_info( "%s: ofaIPrefsPage instance %p does not provide 'get_valid()' method",
 			thisfn, ( void * ) instance );
-	return( FALSE );
+	return( TRUE );
 }
 
 /**
  * ofa_iprefs_page_apply:
  * @instance: this #ofaIPrefsPage instance.
+ * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Saves the user preferences.
+ *
+ * Returns: %TRUE if the updates have been successfully applied,
+ * %FALSE else.
  */
-void
-ofa_iprefs_page_apply( const ofaIPrefsPage *instance )
+gboolean
+ofa_iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_iprefs_page_apply";
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), msgerr=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) msgerr );
 
-	g_return_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ));
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ), FALSE );
 
 	if( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->apply ){
-		OFA_IPREFS_PAGE_GET_INTERFACE( instance )->apply( instance );
-		return;
+		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->apply( instance, msgerr ));
 	}
 
 	g_info( "%s: ofaIPrefsPage instance %p does not provide 'apply()' method",
 			thisfn, ( void * ) instance );
+	return( TRUE );
 }
 
 static sIPrefsPage *

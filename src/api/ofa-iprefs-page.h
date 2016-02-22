@@ -99,19 +99,24 @@ struct _ofaIPrefsPageInterface {
 	 *  file.
 	 * @label: [allow-none][out]: the label to be set as the notebook
 	 *  page tab title.
+	 * @msgerr: [allow-none][out]: an error message to be returned.
 	 *
 	 * Initialize the user preferences dialog.
 	 *
+	 * Returns: %TRUE if the page has been successfully initialized,
+	 * %FALSE else.
+	 *
 	 * Since: version 1
 	 */
-	void     ( *init )                 ( const ofaIPrefsPage *instance,
+	gboolean ( *init )                 ( const ofaIPrefsPage *instance,
 												myISettings *settings,
-												gchar **label );
+												gchar **label,
+												gchar **msgerr );
 
 	/**
 	 * get_valid:
 	 * @instance: the #ofaIPrefsPage provider.
-	 * @message: [allow-none][out]: an error message to be returned.
+	 * @msgerr: [allow-none][out]: an error message to be returned.
 	 *
 	 * Checks for the Preferences dialog.
 	 *
@@ -121,18 +126,23 @@ struct _ofaIPrefsPageInterface {
 	 * Since: version 1
 	 */
 	gboolean ( *get_valid )            ( const ofaIPrefsPage *instance,
-													gchar **message );
+													gchar **msgerr );
 
 	/**
 	 * apply:
 	 * @instance: the #ofaIPrefsPage provider.
+	 * @msgerr: [allow-none][out]: an error message to be returned.
 	 *
 	 * Terminate the Preferences dialog, writing the user preferences
 	 * to the same settings file used at #init() time.
 	 *
+	 * Returns: %TRUE if the updates have been successfully applied,
+	 * %FALSE else.
+	 *
 	 * Since: version 1
 	 */
-	void     ( *apply )                ( const ofaIPrefsPage *instance );
+	gboolean ( *apply )                ( const ofaIPrefsPage *instance,
+													gchar **msgerr );
 };
 
 GType              ofa_iprefs_page_get_type                  ( void );
@@ -146,14 +156,16 @@ ofaIPrefsProvider *ofa_iprefs_page_get_provider              ( const ofaIPrefsPa
 void               ofa_iprefs_page_set_provider              ( ofaIPrefsPage *instance,
 																	ofaIPrefsProvider *provider );
 
-void               ofa_iprefs_page_init                      ( const ofaIPrefsPage *instance,
+gboolean           ofa_iprefs_page_init                      ( const ofaIPrefsPage *instance,
 																	myISettings *settings,
-																	gchar **label );
+																	gchar **label,
+																	gchar **msgerr );
 
 gboolean           ofa_iprefs_page_get_valid                 ( const ofaIPrefsPage *instance,
-																	gchar **message );
+																	gchar **msgerr );
 
-void               ofa_iprefs_page_apply                     ( const ofaIPrefsPage *instance );
+gboolean           ofa_iprefs_page_apply                     ( const ofaIPrefsPage *instance,
+																	gchar **msgerr);
 
 G_END_DECLS
 
