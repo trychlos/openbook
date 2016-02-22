@@ -85,11 +85,6 @@ typedef struct {
 }
 	sCurrency;
 
-static ofoBaseClass *ofo_dossier_parent_class = NULL;
-
-static GType       register_type( void );
-static void        dossier_instance_init( ofoDossier *self );
-static void        dossier_class_init( ofoDossierClass *klass );
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
@@ -119,50 +114,9 @@ static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFile
 static void        free_cur_detail( sCurrency *details );
 static void        free_cur_details( GList *details );
 
-GType
-ofo_dossier_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_dossier_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoDossierClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) dossier_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoDossier ),
-		0,
-		( GInstanceInitFunc ) dossier_instance_init
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	return( type );
-}
+G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoDossier )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 dossier_finalize( GObject *instance )
@@ -176,7 +130,7 @@ dossier_finalize( GObject *instance )
 	g_return_if_fail( instance && OFO_IS_DOSSIER( instance ));
 
 	/* free data members here */
-	priv = OFO_DOSSIER( instance )->priv;
+	priv = ofo_dossier_get_instance_private( OFO_DOSSIER( instance ));
 
 	g_free( priv->currency );
 	g_free( priv->label );
@@ -204,7 +158,7 @@ dossier_dispose( GObject *instance )
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFO_DOSSIER( instance )->priv;
+		priv = ofo_dossier_get_instance_private( OFO_DOSSIER( instance ));
 
 		free_cur_details( priv->cur_details );
 	}
@@ -214,29 +168,23 @@ dossier_dispose( GObject *instance )
 }
 
 static void
-dossier_instance_init( ofoDossier *self )
+ofo_dossier_init( ofoDossier *self )
 {
-	static const gchar *thisfn = "ofo_dossier_instance_init";
+	static const gchar *thisfn = "ofo_dossier_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_DOSSIER, ofoDossierPrivate );
 }
 
 static void
-dossier_class_init( ofoDossierClass *klass )
+ofo_dossier_class_init( ofoDossierClass *klass )
 {
 	static const gchar *thisfn = "ofo_dossier_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_dossier_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoDossierPrivate ));
 }
 
 /**
@@ -348,10 +296,7 @@ ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
 	gint count;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
 	count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
 	return( count > 0 );
@@ -370,10 +315,7 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 	gint count;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
 	default_dev = ofo_dossier_get_default_currency( dossier );
 
@@ -399,10 +341,7 @@ ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 	gint cmp;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
 	import_ledger = ofo_dossier_get_import_ledger( dossier );
 	if( my_strlen( import_ledger )){
@@ -425,10 +364,7 @@ ofo_dossier_use_ope_template( const ofoDossier *dossier, const gchar *ope_templa
 	gint forward, solde;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
 	forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
 	solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
@@ -481,14 +417,14 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 const gchar *
 ofo_dossier_get_default_currency( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->currency );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->currency );
 }
 
 /**
@@ -499,14 +435,14 @@ ofo_dossier_get_default_currency( const ofoDossier *dossier )
 const GDate *
 ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const GDate * ) &dossier->priv->exe_begin );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const GDate * ) &priv->exe_begin );
 }
 
 /**
@@ -517,14 +453,14 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 const GDate *
 ofo_dossier_get_exe_end( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const GDate * ) &dossier->priv->exe_end );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const GDate * ) &priv->exe_end );
 }
 
 /**
@@ -535,14 +471,14 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier )
 gint
 ofo_dossier_get_exe_length( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, -1 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->exe_length );
-	}
-
-	g_return_val_if_reached( -1 );
+	return( priv->exe_length );
 }
 
 /**
@@ -553,14 +489,14 @@ ofo_dossier_get_exe_length( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->exe_notes );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->exe_notes );
 }
 
 /**
@@ -571,14 +507,14 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->forward_ope );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->forward_ope );
 }
 
 /**
@@ -589,14 +525,14 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->import_ledger );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->import_ledger );
 }
 
 /**
@@ -608,14 +544,14 @@ ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_label( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->label );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->label );
 }
 
 /**
@@ -626,14 +562,14 @@ ofo_dossier_get_label( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_notes( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->notes );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->notes );
 }
 
 /**
@@ -644,14 +580,14 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_siren( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->siren );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->siren );
 }
 
 /**
@@ -662,14 +598,14 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_siret( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->siret );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->siret );
 }
 
 /**
@@ -680,14 +616,14 @@ ofo_dossier_get_siret( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->sld_ope );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->sld_ope );
 }
 
 /**
@@ -699,14 +635,14 @@ ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_upd_user( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const gchar * ) dossier->priv->upd_user );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->upd_user );
 }
 
 /**
@@ -718,14 +654,14 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 const GTimeVal *
 ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return(( const GTimeVal * ) &dossier->priv->upd_stamp );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const GTimeVal * ) &priv->upd_stamp );
 }
 
 /**
@@ -737,14 +673,14 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 const gchar *
 ofo_dossier_get_status( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->current ? _( "Opened" ) : _( "Archived" ));
-	}
-
-	g_return_val_if_reached( NULL );
+	return( priv->current ? _( "Opened" ) : _( "Archived" ));
 }
 
 /**
@@ -755,14 +691,14 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_bat( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->last_bat );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->last_bat );
 }
 
 /**
@@ -773,14 +709,14 @@ ofo_dossier_get_last_bat( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_batline( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->last_batline );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->last_batline );
 }
 
 /**
@@ -791,14 +727,14 @@ ofo_dossier_get_last_batline( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_entry( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->last_entry );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->last_entry );
 }
 
 /**
@@ -809,14 +745,14 @@ ofo_dossier_get_last_entry( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->last_settlement );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->last_settlement );
 }
 
 /**
@@ -827,14 +763,14 @@ ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 ofxCounter
 ofo_dossier_get_last_concil( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->last_concil );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->last_concil );
 }
 
 /**
@@ -848,17 +784,15 @@ ofo_dossier_get_next_bat( ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		priv->last_bat += 1;
-		next = priv->last_bat;
-		dossier_update_next( dossier, "DOS_LAST_BAT", next );
-		return( next );
-	}
+	priv->last_bat += 1;
+	next = priv->last_bat;
+	dossier_update_next( dossier, "DOS_LAST_BAT", next );
 
-	g_return_val_if_reached( 0 );
+	return( next );
 }
 
 /**
@@ -872,17 +806,14 @@ ofo_dossier_get_next_batline( ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
+	priv->last_batline += 1;
+	next = priv->last_batline;
+	dossier_update_next( dossier, "DOS_LAST_BATLINE", next );
 
-		priv = dossier->priv;
-		priv->last_batline += 1;
-		next = priv->last_batline;
-		dossier_update_next( dossier, "DOS_LAST_BATLINE", next );
-		return( next );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( next );
 }
 
 /**
@@ -898,17 +829,14 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
+	priv->last_entry += 1;
+	next = priv->last_entry;
+	dossier_update_next( dossier, "DOS_LAST_ENTRY", next );
 
-		priv = dossier->priv;
-		priv->last_entry += 1;
-		next = priv->last_entry;
-		dossier_update_next( dossier, "DOS_LAST_ENTRY", next );
-		return( next );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( next );
 }
 
 /**
@@ -922,17 +850,14 @@ ofo_dossier_get_next_settlement( ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
+	priv->last_settlement += 1;
+	next = priv->last_settlement;
+	dossier_update_next( dossier, "DOS_LAST_SETTLEMENT", next );
 
-		priv = dossier->priv;
-		priv->last_settlement += 1;
-		next = priv->last_settlement;
-		dossier_update_next( dossier, "DOS_LAST_SETTLEMENT", next );
-		return( next );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( next );
 }
 
 /**
@@ -946,17 +871,14 @@ ofo_dossier_get_next_concil( ofoDossier *dossier )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
+	priv->last_concil += 1;
+	next = priv->last_concil;
+	dossier_update_next( dossier, "DOS_LAST_CONCIL", next );
 
-		priv = dossier->priv;
-		priv->last_concil += 1;
-		next = priv->last_concil;
-		dossier_update_next( dossier, "DOS_LAST_CONCIL", next );
-		return( next );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( next );
 }
 
 /*
@@ -993,14 +915,11 @@ ofo_dossier_get_last_closing_date( const ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		return(( const GDate * ) &priv->last_closing );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const GDate * ) &priv->last_closing );
 }
 
 /**
@@ -1015,14 +934,11 @@ ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		return( priv->prev_exe_last_entry );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->prev_exe_last_entry );
 }
 
 /**
@@ -1047,13 +963,10 @@ ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger,
 	gint to_add;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
 	if( ledger ){
 		g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
-	}
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
 	}
 
 	last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
@@ -1098,21 +1011,17 @@ ofo_dossier_get_currencies( const ofoDossier *dossier )
 	GList *it;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
+	list = NULL;
 
-		priv = dossier->priv;
-		list = NULL;
-
-		for( it=priv->cur_details ; it ; it=it->next ){
-			sdet = ( sCurrency * ) it->data;
-			list = g_slist_insert_sorted( list, g_strdup( sdet->currency ), ( GCompareFunc ) g_utf8_collate );
-		}
-
-		return( list );
+	for( it=priv->cur_details ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		list = g_slist_insert_sorted( list, g_strdup( sdet->currency ), ( GCompareFunc ) g_utf8_collate );
 	}
 
-	g_return_val_if_reached( NULL );
+	return( list );
 }
 
 /**
@@ -1132,13 +1041,11 @@ ofo_dossier_get_sld_account( ofoDossier *dossier, const gchar *currency )
 	sCurrency *sdet;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sdet = get_currency_detail( dossier, currency, FALSE );
-		if( sdet ){
-			return(( const gchar * ) sdet->sld_account );
-		}
+	sdet = get_currency_detail( dossier, currency, FALSE );
+	if( sdet ){
+		return(( const gchar * ) sdet->sld_account );
 	}
 
 	return( NULL );
@@ -1151,7 +1058,7 @@ get_currency_detail( ofoDossier *dossier, const gchar *currency, gboolean create
 	GList *it;
 	sCurrency *sdet;
 
-	priv = dossier->priv;
+	priv = ofo_dossier_get_instance_private( dossier );
 	sdet = NULL;
 
 	for( it=priv->cur_details ; it ; it=it->next ){
@@ -1232,14 +1139,14 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 gboolean
 ofo_dossier_is_current( const ofoDossier *dossier )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		return( dossier->priv->current );
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( priv->current );
 }
 
 /**
@@ -1280,13 +1187,15 @@ ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
 void
 ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->currency );
-		dossier->priv->currency = g_strdup( currency );
-	}
+	g_free( priv->currency );
+	priv->currency = g_strdup( currency );
 }
 
 /**
@@ -1295,12 +1204,14 @@ ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
 void
 ofo_dossier_set_exe_begin( ofoDossier *dossier, const GDate *date )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		my_date_set_from_date( &dossier->priv->exe_begin, date );
-	}
+	my_date_set_from_date( &priv->exe_begin, date );
 }
 
 /**
@@ -1309,12 +1220,14 @@ ofo_dossier_set_exe_begin( ofoDossier *dossier, const GDate *date )
 void
 ofo_dossier_set_exe_end( ofoDossier *dossier, const GDate *date )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		my_date_set_from_date( &dossier->priv->exe_end, date );
-	}
+	my_date_set_from_date( &priv->exe_end, date );
 }
 
 /**
@@ -1323,13 +1236,15 @@ ofo_dossier_set_exe_end( ofoDossier *dossier, const GDate *date )
 void
 ofo_dossier_set_exe_length( ofoDossier *dossier, gint nb_months )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( nb_months > 0 );
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->exe_length = nb_months;
-	}
+	priv->exe_length = nb_months;
 }
 
 /**
@@ -1345,13 +1260,12 @@ ofo_dossier_set_exe_notes( ofoDossier *dossier, const gchar *notes )
 	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		g_free( priv->exe_notes );
-		priv->exe_notes = g_strdup( notes );
-	}
+	g_free( priv->exe_notes );
+	priv->exe_notes = g_strdup( notes );
 }
 
 /**
@@ -1362,13 +1276,15 @@ ofo_dossier_set_exe_notes( ofoDossier *dossier, const gchar *notes )
 void
 ofo_dossier_set_forward_ope( ofoDossier *dossier, const gchar *ope )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->forward_ope );
-		dossier->priv->forward_ope = g_strdup( ope );
-	}
+	g_free( priv->forward_ope );
+	priv->forward_ope = g_strdup( ope );
 }
 
 /**
@@ -1379,13 +1295,15 @@ ofo_dossier_set_forward_ope( ofoDossier *dossier, const gchar *ope )
 void
 ofo_dossier_set_import_ledger( ofoDossier *dossier, const gchar *ledger )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->import_ledger );
-		dossier->priv->import_ledger = g_strdup( ledger );
-	}
+	g_free( priv->import_ledger );
+	priv->import_ledger = g_strdup( ledger );
 }
 
 /**
@@ -1394,14 +1312,16 @@ ofo_dossier_set_import_ledger( ofoDossier *dossier, const gchar *ledger )
 void
 ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( my_strlen( label ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->label );
-		dossier->priv->label = g_strdup( label );
-	}
+	g_free( priv->label );
+	priv->label = g_strdup( label );
 }
 
 /**
@@ -1410,13 +1330,15 @@ ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 void
 ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->notes );
-		dossier->priv->notes = g_strdup( notes );
-	}
+	g_free( priv->notes );
+	priv->notes = g_strdup( notes );
 }
 
 /**
@@ -1425,13 +1347,15 @@ ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 void
 ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->siren );
-		dossier->priv->siren = g_strdup( siren );
-	}
+	g_free( priv->siren );
+	priv->siren = g_strdup( siren );
 }
 
 /**
@@ -1440,13 +1364,15 @@ ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 void
 ofo_dossier_set_siret( ofoDossier *dossier, const gchar *siret )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->siret );
-		dossier->priv->siret = g_strdup( siret );
-	}
+	g_free( priv->siret );
+	priv->siret = g_strdup( siret );
 }
 
 /**
@@ -1457,13 +1383,15 @@ ofo_dossier_set_siret( ofoDossier *dossier, const gchar *siret )
 void
 ofo_dossier_set_sld_ope( ofoDossier *dossier, const gchar *ope )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->sld_ope );
-		dossier->priv->sld_ope = g_strdup( ope );
-	}
+	g_free( priv->sld_ope );
+	priv->sld_ope = g_strdup( ope );
 }
 
 /*
@@ -1472,14 +1400,16 @@ ofo_dossier_set_sld_ope( ofoDossier *dossier, const gchar *ope )
 static void
 dossier_set_upd_user( ofoDossier *dossier, const gchar *user )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( my_strlen( user ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		g_free( dossier->priv->upd_user );
-		dossier->priv->upd_user = g_strdup( user );
-	}
+	g_free( priv->upd_user );
+	priv->upd_user = g_strdup( user );
 }
 
 /*
@@ -1488,68 +1418,80 @@ dossier_set_upd_user( ofoDossier *dossier, const gchar *user )
 static void
 dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( stamp );
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		my_utils_stamp_set_from_stamp( &dossier->priv->upd_stamp, stamp );
-	}
+	my_utils_stamp_set_from_stamp( &priv->upd_stamp, stamp );
 }
 
 static void
 dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->last_bat = counter;
-	}
+	priv->last_bat = counter;
 }
 
 static void
 dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->last_batline = counter;
-	}
+	priv->last_batline = counter;
 }
 
 static void
 dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->last_entry = counter;
-	}
+	priv->last_entry = counter;
 }
 
 static void
 dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->last_settlement = counter;
-	}
+	priv->last_settlement = counter;
 }
 
 static void
 dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->last_concil = counter;
-	}
+	priv->last_concil = counter;
 }
 
 /**
@@ -1563,12 +1505,14 @@ dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter )
 void
 ofo_dossier_set_current( ofoDossier *dossier, gboolean current )
 {
+	ofoDossierPrivate *priv;
+
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		dossier->priv->current = current;
-	}
+	priv->current = current;
 }
 
 /**
@@ -1582,12 +1526,11 @@ ofo_dossier_set_last_closing_date( ofoDossier *dossier, const GDate *last_closin
 	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		my_date_set_from_date( &priv->last_closing, last_closing );
-	}
+	my_date_set_from_date( &priv->last_closing, last_closing );
 }
 
 /**
@@ -1600,12 +1543,11 @@ ofo_dossier_set_prev_exe_last_entry( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		dossier_set_prev_exe_last_entry( dossier, priv->prev_exe_last_entry );
-	}
+	dossier_set_prev_exe_last_entry( dossier, priv->last_entry );
 }
 
 /*
@@ -1618,7 +1560,8 @@ dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter last_entry )
 {
 	ofoDossierPrivate *priv;
 
-	priv = dossier->priv;
+	priv = ofo_dossier_get_instance_private( dossier );
+
 	priv->prev_exe_last_entry = last_entry;
 }
 
@@ -1637,13 +1580,12 @@ ofo_dossier_reset_currencies( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+	priv = ofo_dossier_get_instance_private( dossier );
 
-		priv = dossier->priv;
-		free_cur_details( priv->cur_details );
-		priv->cur_details = NULL;
-	}
+	free_cur_details( priv->cur_details );
+	priv->cur_details = NULL;
 }
 
 /**
@@ -1662,12 +1604,10 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( my_strlen( currency ));
 	g_return_if_fail( my_strlen( account ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sdet = get_currency_detail( dossier, currency, TRUE );
-		sdet->sld_account = g_strdup( account );
-	}
+	sdet = get_currency_detail( dossier, currency, TRUE );
+	sdet->sld_account = g_strdup( account );
 }
 
 static gboolean
@@ -1867,17 +1807,12 @@ ofo_dossier_update( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_update";
 
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-		return( dossier_do_update( dossier ));
-	}
-
-	g_assert_not_reached();
-	return( FALSE );
+	return( dossier_do_update( dossier ));
 }
 
 static gboolean
@@ -2045,10 +1980,7 @@ ofo_dossier_update_currencies( ofoDossier *dossier )
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( OFO_BASE( dossier )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
 
 	return( dossier_do_update_currencies( dossier ));
 }
@@ -2073,7 +2005,7 @@ do_update_currency_properties( ofoDossier *dossier )
 	gchar *stamp_str;
 	gint count;
 
-	priv = dossier->priv;
+	priv = ofo_dossier_get_instance_private( dossier );
 	hub = ofo_base_get_hub( OFO_BASE( dossier ));
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );

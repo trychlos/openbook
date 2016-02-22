@@ -65,15 +65,12 @@ typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 
 struct _ofoDossier {
 	/*< public members >*/
-	ofoBase            parent;
-
-	/*< private members >*/
-	ofoDossierPrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass       parent;
+	ofoBaseClass parent;
 }
 	ofoDossierClass;
 
