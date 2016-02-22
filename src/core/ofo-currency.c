@@ -63,8 +63,6 @@ struct _ofoCurrencyPrivate {
 	GTimeVal   upd_stamp;
 };
 
-static ofoBaseClass *ofo_currency_parent_class = NULL;
-
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
@@ -86,13 +84,19 @@ static guint        iimportable_get_interface_version( const ofaIImportable *ins
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static gboolean     currency_do_drop_content( const ofaIDBConnect *connect );
 
+G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoCurrency )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ));
+
 static void
 currency_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_currency_finalize";
 	ofoCurrencyPrivate *priv;
 
-	priv = OFO_CURRENCY( instance )->priv;
+	priv = ofo_currency_get_instance_private( OFO_CURRENCY( instance ));
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -131,8 +135,6 @@ ofo_currency_init( ofoCurrency *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CURRENCY, ofoCurrencyPrivate );
 }
 
 static void
@@ -142,73 +144,8 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_currency_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = currency_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoCurrencyPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_currency_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoCurrencyClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_currency_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoCurrency ),
-		0,
-		( GInstanceInitFunc ) ofo_currency_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoCurrency", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_currency_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -299,15 +236,14 @@ ofo_currency_new( void )
 const gchar *
 ofo_currency_get_code( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const gchar * ) currency->priv->code );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const gchar * ) priv->code );
 }
 
 /**
@@ -316,15 +252,14 @@ ofo_currency_get_code( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_label( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const gchar * ) currency->priv->label );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const gchar * ) priv->label );
 }
 
 /**
@@ -333,15 +268,14 @@ ofo_currency_get_label( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_symbol( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const gchar * ) currency->priv->symbol );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const gchar * ) priv->symbol );
 }
 
 /**
@@ -350,15 +284,12 @@ ofo_currency_get_symbol( const ofoCurrency *currency )
 gint
 ofo_currency_get_digits( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
-
-		return( currency->priv->digits );
-	}
-
-	g_assert_not_reached();
-	return( 0 );
+	return( priv->digits );
 }
 
 /**
@@ -367,15 +298,14 @@ ofo_currency_get_digits( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_notes( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const gchar * ) currency->priv->notes );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const gchar * ) priv->notes );
 }
 
 /**
@@ -384,15 +314,14 @@ ofo_currency_get_notes( const ofoCurrency *currency )
 const gchar *
 ofo_currency_get_upd_user( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const gchar * ) currency->priv->upd_user );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const gchar * ) priv->upd_user );
 }
 
 /**
@@ -401,15 +330,14 @@ ofo_currency_get_upd_user( const ofoCurrency *currency )
 const GTimeVal *
 ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		return(( const GTimeVal * ) &currency->priv->upd_stamp );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	return(( const GTimeVal * ) &priv->upd_stamp );
 }
 
 /**
@@ -424,15 +352,11 @@ ofo_currency_get_precision( const ofoCurrency *currency )
 	gint digits;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	digits = ofo_currency_get_digits( currency );
 
-		digits = ofo_currency_get_digits( currency );
-		return( exp10( -digits ));
-	}
-
-	g_assert_not_reached();
-	return( 0 );
+	return( exp10( -digits ));
 }
 
 /**
@@ -449,10 +373,7 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-
-	if( OFO_BASE( currency )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
 	dossier = ofa_hub_get_dossier( hub );
@@ -487,13 +408,15 @@ ofo_currency_is_valid( const gchar *code, const gchar *label, const gchar *symbo
 void
 ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		g_free( currency->priv->code );
-		currency->priv->code = g_strdup( code );
-	}
+	g_free( priv->code );
+	priv->code = g_strdup( code );
 }
 
 /**
@@ -502,13 +425,15 @@ ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 void
 ofo_currency_set_label( ofoCurrency *currency, const gchar *label )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		g_free( currency->priv->label );
-		currency->priv->label = g_strdup( label );
-	}
+	g_free( priv->label );
+	priv->label = g_strdup( label );
 }
 
 /**
@@ -517,13 +442,15 @@ ofo_currency_set_label( ofoCurrency *currency, const gchar *label )
 void
 ofo_currency_set_symbol( ofoCurrency *currency, const gchar *symbol )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		g_free( currency->priv->symbol );
-		currency->priv->symbol = g_strdup( symbol );
-	}
+	g_free( priv->symbol );
+	priv->symbol = g_strdup( symbol );
 }
 
 /**
@@ -532,12 +459,14 @@ ofo_currency_set_symbol( ofoCurrency *currency, const gchar *symbol )
 void
 ofo_currency_set_digits( ofoCurrency *currency, gint digits )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		currency->priv->digits = digits;
-	}
+	priv->digits = digits;
 }
 
 /**
@@ -546,13 +475,15 @@ ofo_currency_set_digits( ofoCurrency *currency, gint digits )
 void
 ofo_currency_set_notes( ofoCurrency *currency, const gchar *notes )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		g_free( currency->priv->notes );
-		currency->priv->notes = g_strdup( notes );
-	}
+	g_free( priv->notes );
+	priv->notes = g_strdup( notes );
 }
 
 /*
@@ -561,13 +492,15 @@ ofo_currency_set_notes( ofoCurrency *currency, const gchar *notes )
 static void
 currency_set_upd_user( ofoCurrency *currency, const gchar *user )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		g_free( currency->priv->upd_user );
-		currency->priv->upd_user = g_strdup( user );
-	}
+	g_free( priv->upd_user );
+	priv->upd_user = g_strdup( user );
 }
 
 /*
@@ -576,12 +509,14 @@ currency_set_upd_user( ofoCurrency *currency, const gchar *user )
 static void
 currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 {
+	ofoCurrencyPrivate *priv;
+
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	g_return_if_fail( !OFO_BASE( currency )->prot->dispose_has_run );
 
-	if( !OFO_BASE( currency )->prot->dispose_has_run ){
+	priv = ofo_currency_get_instance_private( currency );
 
-		my_utils_stamp_set_from_stamp( &currency->priv->upd_stamp, stamp );
-	}
+	my_utils_stamp_set_from_stamp( &priv->upd_stamp, stamp );
 }
 
 /**
@@ -600,10 +535,7 @@ ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( currency )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( currency ), hub );
@@ -689,10 +621,7 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 			thisfn, ( void * ) currency, prev_code );
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-
-	if( OFO_BASE( currency )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
@@ -770,10 +699,7 @@ ofo_currency_delete( ofoCurrency *currency )
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( ofo_currency_is_deletable( currency ), FALSE );
-
-	if( OFO_BASE( currency )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( currency ));

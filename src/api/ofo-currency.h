@@ -54,15 +54,12 @@ typedef struct _ofoCurrencyPrivate       ofoCurrencyPrivate;
 
 struct _ofoCurrency {
 	/*< public members >*/
-	ofoBase             parent;
-
-	/*< private members >*/
-	ofoCurrencyPrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass        parent;
+	ofoBaseClass parent;
 }
 	ofoCurrencyClass;
 
