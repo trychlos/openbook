@@ -59,15 +59,12 @@ typedef struct _ofoClassPrivate       ofoClassPrivate;
 
 struct _ofoClass {
 	/*< public members >*/
-	ofoBase          parent;
-
-	/*< private members >*/
-	ofoClassPrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass     parent;
+	ofoBaseClass parent;
 }
 	ofoClassClass;
 

@@ -92,8 +92,6 @@ struct _ofoClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-static ofoBaseClass *ofo_class_parent_class = NULL;
-
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
@@ -112,6 +110,12 @@ static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static gboolean   class_do_drop_content( const ofaIDBConnect *connect );
+
+G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
+		G_ADD_PRIVATE( ofoClass )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ));
 
 static void
 class_finalize( GObject *instance )
@@ -152,8 +156,6 @@ ofo_class_init( ofoClass *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CLASS, ofoClassPrivate );
 }
 
 static void
@@ -163,73 +165,8 @@ ofo_class_class_init( ofoClassClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_class_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = class_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoClassPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_class_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoClassClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_class_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoClass ),
-		0,
-		( GInstanceInitFunc ) ofo_class_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoClass", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_class_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -414,10 +351,7 @@ ofo_class_is_deletable( const ofoClass *class )
 	gboolean deletable;
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-
-	if( OFO_BASE( class )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( class ));
 	used_by_accounts = ofo_account_use_class( hub, ofo_class_get_number( class ));
@@ -432,9 +366,7 @@ ofo_class_is_deletable( const ofoClass *class )
 void
 ofo_class_set_number( ofoClass *class, gint number )
 {
-	if( !ofo_class_is_valid_number( number )){
-		g_return_if_reached();
-	}
+	g_return_if_fail( ofo_class_is_valid_number( number ));
 
 	ofo_base_setter( CLASS, class, int, CLA_NUMBER, number );
 }
@@ -445,9 +377,7 @@ ofo_class_set_number( ofoClass *class, gint number )
 void
 ofo_class_set_label( ofoClass *class, const gchar *label )
 {
-	if( !ofo_class_is_valid_label( label )){
-		g_return_if_reached();
-	}
+	g_return_if_fail( ofo_class_is_valid_label( label ));
 
 	ofo_base_setter( CLASS, class, string, CLA_LABEL, label );
 }
@@ -497,10 +427,7 @@ ofo_class_insert( ofoClass *class, ofaHub *hub )
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( class )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
@@ -574,10 +501,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 	g_debug( "%s: class=%p, prev_id=%d", thisfn, ( void * ) class, prev_id );
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-
-	if( OFO_BASE( class )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( class ));
@@ -653,10 +577,7 @@ ofo_class_delete( ofoClass *class )
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 	g_return_val_if_fail( ofo_class_is_deletable( class ), FALSE );
-
-	if( OFO_BASE( class )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( class ));
