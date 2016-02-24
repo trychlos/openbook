@@ -34,7 +34,7 @@
  * This interface manages for the application:
  * - the size and the position of windows and dialogs
  * - the modal dialogs
- * - the non-modal dialogs.
+ * - the non-modal windows.
  *
  * Notes on size and position.
  * Size and position of the windows are saved to / restored from the
@@ -43,7 +43,7 @@
  * #my_idialog_set_settings_name() method, and defaults to the identifier
  * of the window.
  *
- * Notes on non-modal dialogs.
+ * Notes on non-modal windows.
  * 1/ They cannot have a return code
  * 2/ this myIDialog interface takes care of having at most one instance
  *    of each IDialog identifier (usually the dialog class name + object
@@ -116,6 +116,25 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void     ( *init )                 ( myIDialog *instance );
+
+	/**
+	 * get_default_size:
+	 * @instance: the #myIDialog instance.
+	 * @x: [out]:
+	 * @y: [out]:
+	 * @cx: [out]:
+	 * @cy: [out]:
+	 *
+	 * Let the user provide its own default size and position when no
+	 * size and position have been recorded from a previous use.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *get_default_size )     ( myIDialog *instance,
+												guint *x,
+												guint *y,
+												guint *cx,
+												guint *cy );
 
 	/**
 	 * quit_on_escape:

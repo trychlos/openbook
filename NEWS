@@ -37,6 +37,7 @@
 
    - Do not install the resources which are managed as GResource (todo #970).
    - myFileMonitor: migrate to G_ADD_PRIVATE (todo #994).
+   - myIDialog: new get_default_size() interface method.
    - myProgressBar: migrate to G_ADD_PRIVATE (todo #994).
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
    - ofaButtonsBox: migrate to G_ADD_PRIVATE (todo #994).

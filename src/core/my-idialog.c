@@ -56,6 +56,7 @@ static void         interface_base_finalize( myIDialogInterface *klass );
 static gchar       *idialog_get_identifier( const myIDialog *instance );
 static void         idialog_init( myIDialog *instance );
 static void         idialog_set_transient_for( myIDialog *instance );
+static void         idialog_set_default_size( myIDialog *instance );
 static gboolean     idialog_quit_on_escape( const myIDialog *instance );
 static void         on_cancel_clicked( GtkButton *button, myIDialog *instance );
 static void         on_close_clicked( GtkButton *button, myIDialog *instance );
@@ -335,10 +336,13 @@ my_idialog_set_ui_from_file( myIDialog *instance, const gchar *xml_fname, const 
 myIDialog *
 my_idialog_present( myIDialog *instance )
 {
+	static const gchar *thisfn = "my_idialog_present";
 	GList *it;
 	myIDialog *other, *found;
 	gchar *instance_id, *other_id;
 	gint cmp;
+
+	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
 
@@ -370,7 +374,9 @@ my_idialog_present( myIDialog *instance )
 		found = instance;
 	}
 
+	g_debug( "%s: found=%p (%s)", thisfn, ( void * ) found, G_OBJECT_TYPE_NAME( found ));
 	gtk_window_present( GTK_WINDOW( found ));
+
 	return( found );
 }
 
@@ -480,7 +486,9 @@ idialog_init( myIDialog *instance )
 			idialog_set_transient_for( instance );
 
 			settings_name = get_settings_name( instance );
-			my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name );
+			if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
+				idialog_set_default_size( instance );
+			}
 
 			if( st_dump_container ){
 				my_utils_container_dump( GTK_CONTAINER( instance ));
@@ -506,11 +514,13 @@ idialog_init( myIDialog *instance )
 			g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
 			gtk_widget_show_all( GTK_WIDGET( instance ));
 
-			return;
+		} else {
+			g_info( "%s: myIDialog instance %p (%s) does not provide 'init()' method",
+					thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		}
-
-		g_info( "%s: myIDialog instance %p does not provide 'init()' method",
-				thisfn, ( void * ) instance );
+	} else {
+		g_info( "%s: myIDialog instance %p (%s) already initialized",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 	}
 }
 
@@ -531,6 +541,27 @@ idialog_set_transient_for( myIDialog *instance )
 	}
 	if( sdata->parent ){
 		gtk_window_set_transient_for( GTK_WINDOW( instance ), sdata->parent );
+	}
+}
+
+/*
+ * Let the caller provide its own default size and position
+ * when no previous size and position have already been recorded
+ */
+static void
+idialog_set_default_size( myIDialog *instance )
+{
+	static const gchar *thisfn = "my_idialog_set_default_size";
+	guint x, y, cx, cy;
+
+	if( MY_IDIALOG_GET_INTERFACE( instance )->get_default_size ){
+		MY_IDIALOG_GET_INTERFACE( instance )->get_default_size( instance, &x, &y, &cx, &cy );
+		gtk_window_move( GTK_WINDOW( instance ), x, y );
+		gtk_window_resize( GTK_WINDOW( instance ), cx, cy );
+
+	} else {
+		g_info( "%s: myIDialog instance %p (%s) does not provide 'get_default_size()' method",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 	}
 }
 
