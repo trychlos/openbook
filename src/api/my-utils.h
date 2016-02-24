@@ -129,7 +129,7 @@ gboolean      my_utils_input_stream_new               ( const gchar *filename, G
 
 void          my_utils_pango_layout_ellipsize         ( PangoLayout *layout, gint max_width );
 
-void          my_utils_window_restore_position        ( GtkWindow *window, const gchar *name );
+gboolean      my_utils_window_restore_position        ( GtkWindow *window, const gchar *name );
 void          my_utils_window_save_position           ( GtkWindow *window, const gchar *name );
 
 gboolean      my_utils_file_exists                    ( const gchar *filename );

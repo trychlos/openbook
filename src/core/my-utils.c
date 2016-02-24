@@ -1325,14 +1325,17 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 
 /**
  * my_utils_window_restore_position:
+ *
+ * Returns: %TRUE if size and position have been set, %FALSE else.
  */
-void
+gboolean
 my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 {
 	static const gchar *thisfn = "my_utils_window_restore_position";
 	gchar *key;
 	GList *list;
 	gint x=0, y=0, width=0, height=0;
+	gboolean set;
 
 	/*g_debug( "%s: toplevel=%p (%s), name=%s",
 			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
@@ -1340,7 +1343,8 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 	key = g_strdup_printf( "%s-pos", name );
 	list = ofa_settings_user_get_uint_list( key );
 	g_free( key );
-	/*g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));*/
+	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
+	set = ( list != NULL );
 
 	if( list ){
 		int_list_to_position( list, &x, &y, &width, &height );
@@ -1349,10 +1353,9 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 
 		gtk_window_move( toplevel, x, y );
 		gtk_window_resize( toplevel, width, height );
-
-	} else {
-		g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
 	}
+
+	return( set );
 }
 
 /*
