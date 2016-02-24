@@ -289,6 +289,8 @@ ofo_currency_get_digits( const ofoCurrency *currency )
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, 0 );
 
+	priv = ofo_currency_get_instance_private( currency );
+
 	return( priv->digits );
 }
 
