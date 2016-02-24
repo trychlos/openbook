@@ -51,6 +51,7 @@ static void      idialog_iface_init( myIDialogInterface *iface );
 static guint     idialog_get_interface_version( const myIDialog *instance );
 static gchar    *idialog_get_identifier( const myIDialog *instance );
 static void      idialog_init( myIDialog *instance );
+static void      idialog_get_default_size( myIDialog *instance, guint *x, guint *y, guint *cx, guint *cy );
 static void      on_finalized_page( void *empty, GObject *finalized_page );
 
 G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0, \
@@ -132,6 +133,7 @@ idialog_iface_init( myIDialogInterface *iface )
 	iface->get_interface_version = idialog_get_interface_version;
 	iface->get_identifier = idialog_get_identifier;
 	iface->init = idialog_init;
+	iface->get_default_size = idialog_get_default_size;
 }
 
 static guint
@@ -164,6 +166,31 @@ idialog_init( myIDialog *instance )
 	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
 
 	gtk_container_add( GTK_CONTAINER( instance ), priv->top_widget );
+}
+
+/*
+ * we set the default size and position to those of the main window
+ * so that we are sure they are suitable for the page
+ */
+static void
+idialog_get_default_size( myIDialog *instance, guint *x, guint *y, guint *cx, guint *cy )
+{
+	GtkApplicationWindow *main_window;
+	gint mw_x, mw_y, mw_width, mw_height;
+
+	*x = 0;
+	*y = 0;
+	*cx = 0;
+	*cy = 0;
+	main_window = my_idialog_get_main_window( instance );
+	if( GTK_IS_WINDOW( main_window )){
+		gtk_window_get_position( GTK_WINDOW( main_window ), &mw_x, &mw_y );
+		gtk_window_get_size( GTK_WINDOW( main_window ), &mw_width, &mw_height );
+		*x = mw_x + 100;
+		*y = mw_y + 100;
+		*cx = mw_width - 150;
+		*cy = mw_height - 150;
+	}
 }
 
 /**

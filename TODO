@@ -477,16 +477,21 @@
                      (because we are sure that locked fields are automatically
                      computed), but some automatically computed fields are 
                      not locked, and so are not reset (but should)
+     2016- 2-23 current behavior is not so bad - but operation date is
+                checked invalid even if it appears as valid
 
  992 2016- 2-14 dialogs are non-modal when possible
                 depreciate myDialog, replacing it with myIDialog
-                objects valid_data method() provides an error message
 
  994 2016- 2-14 PACK use G_ADD_PRIVATE
 
  995 2016- 2-14 PACK use g_return_if_fail( !priv->dipose_has_run )
 
- 997
+ 998 2016- 2-14 FEAT objects valid_data method() provides an error message
+
+ 999 2016- 2-24 FEAT add a Close button to nomodal pages
+
+1000
 
 -----------------------------------------------------------------------
  DONE
@@ -793,6 +798,10 @@
  996 2016- 2-22 ofo_bat_set_begin/end -> ofo_date_set_begin/end_date
                 ofo_bat_set_solde_begin/end -> ofo_date_set_begin/end_solde
      2016- 2-22 done
+
+ 997 2016- 2-23 BUG when trying to open a second non modal page never
+                    opened before
+     2016- 2-24 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
