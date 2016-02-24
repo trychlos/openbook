@@ -752,6 +752,10 @@ account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 
 	str_amount = my_double_to_str_ex( amount, priv->digits );
 	str = g_strdup_printf( "%s %s", str_amount, priv->currency );
+	/*
+	g_debug( "account_solde_to_str: digits=%d, currency=%s, amount=%lf, str=%s",
+			priv->digits, priv->currency, amount, str );
+			*/
 	g_free( str_amount );
 
 	return( str );
