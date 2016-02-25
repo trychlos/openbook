@@ -52,16 +52,13 @@ typedef struct _myDecimalComboPrivate        myDecimalComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBox            parent;
-
-	/*< private members >*/
-	myDecimalComboPrivate *priv;
+	GtkComboBox      parent;
 }
 	myDecimalCombo;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBoxClass       parent;
+	GtkComboBoxClass parent;
 }
 	myDecimalComboClass;
 
