@@ -50,16 +50,13 @@ typedef struct _mySettingsPrivate       mySettingsPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject            parent;
-
-	/*< private members >*/
-	mySettingsPrivate *priv;
+	GObject      parent;
 }
 	mySettings;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass       parent;
+	GObjectClass parent;
 }
 	mySettingsClass;
 

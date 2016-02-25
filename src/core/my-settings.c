@@ -69,8 +69,9 @@ static gchar     *get_conf_filename( const gchar *name, const gchar *envvar );
 static gchar    **str_to_array( const gchar *str );
 static gboolean   write_key_file( mySettings *settings );
 
-G_DEFINE_TYPE_EXTENDED( mySettings, my_settings, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ISETTINGS, isettings_iface_init ));
+G_DEFINE_TYPE_EXTENDED( mySettings, my_settings, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( mySettings )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ISETTINGS, isettings_iface_init ))
 
 static void
 settings_finalize( GObject *object )
@@ -84,7 +85,7 @@ settings_finalize( GObject *object )
 	g_return_if_fail( object && MY_IS_SETTINGS( object ));
 
 	/* free data members here */
-	priv = MY_SETTINGS( object )->priv;
+	priv = my_settings_get_instance_private( MY_SETTINGS( object ));
 
 	g_free( priv->fname );
 
@@ -99,7 +100,7 @@ settings_dispose( GObject *object )
 
 	g_return_if_fail( object && MY_IS_SETTINGS( object ));
 
-	priv = MY_SETTINGS( object )->priv;
+	priv = my_settings_get_instance_private( MY_SETTINGS( object ));
 
 	if( !priv->dispose_has_run ){
 
@@ -118,14 +119,16 @@ static void
 my_settings_init( mySettings *self )
 {
 	static const gchar *thisfn = "my_settings_init";
-
-	g_return_if_fail( self && MY_IS_SETTINGS( self ));
+	mySettingsPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_SETTINGS, mySettingsPrivate );
-	self->priv->dispose_has_run = FALSE;
+	g_return_if_fail( self && MY_IS_SETTINGS( self ));
+
+	priv = my_settings_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -137,8 +140,6 @@ my_settings_class_init( mySettingsClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = settings_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settings_finalize;
-
-	g_type_class_add_private( klass, sizeof( mySettingsPrivate ));
 }
 
 /*
@@ -182,13 +183,12 @@ isettings_get_keyfile( const myISettings *instance )
 	mySettingsPrivate *priv;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
 
-	if( !priv->dispose_has_run ){
-		return( priv->keyfile );
-	}
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
 
-	g_return_val_if_reached( NULL );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->keyfile );
 }
 
 static gchar *
@@ -197,13 +197,12 @@ isettings_get_filename( const myISettings *instance )
 	mySettingsPrivate *priv;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
 
-	if( !priv->dispose_has_run ){
-		return( g_strdup( priv->fname ));
-	}
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
 
-	g_return_val_if_reached( NULL );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( g_strdup( priv->fname ));
 }
 
 /*
@@ -221,23 +220,23 @@ isettings_get_groups( const myISettings *settings )
 	gchar **array, **iter;
 
 	g_return_val_if_fail( settings && MY_IS_SETTINGS( settings ), NULL );
-	priv = MY_SETTINGS( settings )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( settings ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 	g_return_val_if_fail( priv->keyfile, NULL );
 
-	if( !priv->dispose_has_run ){
-		list = NULL;
-		array = g_key_file_get_groups( priv->keyfile, NULL );
-		list = NULL;
-		iter = array;
-		while( *iter ){
-			list = g_list_prepend( list, g_strdup( *iter ));
-			iter++;
-		}
-		g_strfreev( array );
-		return( g_list_reverse( list ));
+	list = NULL;
+	array = g_key_file_get_groups( priv->keyfile, NULL );
+	list = NULL;
+	iter = array;
+	while( *iter ){
+		list = g_list_prepend( list, g_strdup( *iter ));
+		iter++;
 	}
+	g_strfreev( array );
 
-	g_return_val_if_reached( NULL );
+	return( g_list_reverse( list ));
 }
 
 static void
@@ -246,16 +245,16 @@ isettings_remove_group( myISettings *instance, const gchar *group )
 	mySettingsPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		g_key_file_remove_group( priv->keyfile, group, NULL );
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
+	g_key_file_remove_group( priv->keyfile, group, NULL );
+	write_key_file( MY_SETTINGS( instance ));
 
-	g_return_if_reached();
+	return;
 }
 
 static GList *
@@ -266,24 +265,24 @@ isettings_get_keys( const myISettings *instance, const gchar *group )
 	GList *list;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 	g_return_val_if_fail( priv->keyfile, NULL );
 
-	if( !priv->dispose_has_run ){
-		list = NULL;
-		array = g_key_file_get_keys( priv->keyfile, group, NULL, NULL );
-		if( array ){
-			iter = array;
-			while( *iter ){
-				list = g_list_prepend( list, g_strdup( *iter ));
-				iter++;
-			}
-			g_strfreev( array );
+	list = NULL;
+	array = g_key_file_get_keys( priv->keyfile, group, NULL, NULL );
+	if( array ){
+		iter = array;
+		while( *iter ){
+			list = g_list_prepend( list, g_strdup( *iter ));
+			iter++;
 		}
-		return( g_list_reverse( list ));
+		g_strfreev( array );
 	}
 
-	g_return_val_if_reached( NULL );
+	return( g_list_reverse( list ));
 }
 
 static void
@@ -292,16 +291,14 @@ isettings_remove_key( myISettings *instance, const gchar *group, const gchar *ke
 	mySettingsPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		g_key_file_remove_key( priv->keyfile, group, key, NULL );
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
-
-	g_return_if_reached();
+	g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 static gboolean
@@ -312,17 +309,17 @@ isettings_get_boolean( const myISettings *instance, const gchar *group, const gc
 	gchar *str;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), FALSE );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 	g_return_val_if_fail( priv->keyfile, FALSE );
 
-	if( !priv->dispose_has_run ){
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		value = my_utils_boolean_from_str( str );
-		g_free( str );
-		return( value );
-	}
+	str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+	value = my_utils_boolean_from_str( str );
+	g_free( str );
 
-	g_return_val_if_reached( FALSE );
+	return( value );
 }
 
 static void
@@ -332,18 +329,16 @@ isettings_set_boolean( myISettings *instance, const gchar *group, const gchar *k
 	gchar *str;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		str = g_strdup_printf( "%s", value ? "True":"False" );
-		g_key_file_set_string( priv->keyfile, group, key, str );
-		g_free( str );
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
-
-	g_return_if_reached();
+	str = g_strdup_printf( "%s", value ? "True":"False" );
+	g_key_file_set_string( priv->keyfile, group, key, str );
+	g_free( str );
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 static guint
@@ -354,20 +349,20 @@ isettings_get_uint( const myISettings *instance, const gchar *group, const gchar
 	gchar *str;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), 0 );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 	g_return_val_if_fail( priv->keyfile, 0 );
 
-	if( !priv->dispose_has_run ){
-		value = 0;
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			value = abs( atoi( str ));
-		}
-		g_free( str );
-		return( value );
+	value = 0;
+	str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+	if( my_strlen( str )){
+		value = abs( atoi( str ));
 	}
+	g_free( str );
 
-	g_return_val_if_reached( 0 );
+	return( value );
 }
 
 static void
@@ -377,18 +372,16 @@ isettings_set_uint( myISettings *instance, const gchar *group, const gchar *key,
 	gchar *str;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		str = g_strdup_printf( "%u", value );
-		g_key_file_set_string( priv->keyfile, group, key, str );
-		g_free( str );
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
-
-	g_return_if_reached();
+	str = g_strdup_printf( "%u", value );
+	g_key_file_set_string( priv->keyfile, group, key, str );
+	g_free( str );
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 /*
@@ -404,29 +397,29 @@ isettings_get_uint_list( const myISettings *instance, const gchar *group, const 
 	gint i;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 	g_return_val_if_fail( priv->keyfile, NULL );
 
-	if( !priv->dispose_has_run ){
-		list = NULL;
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			array = str_to_array( str );
-			if( array ){
-				iter = ( gchar ** ) array;
-				while( *iter ){
-					i = atoi( *iter );
-					list = g_list_prepend( list, GUINT_TO_POINTER( i < 0 ? 0 : i ));
-					iter++;
-				}
+	list = NULL;
+	str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+	if( my_strlen( str )){
+		array = str_to_array( str );
+		if( array ){
+			iter = ( gchar ** ) array;
+			while( *iter ){
+				i = atoi( *iter );
+				list = g_list_prepend( list, GUINT_TO_POINTER( i < 0 ? 0 : i ));
+				iter++;
 			}
-			g_strfreev( array );
 		}
-		g_free( str );
-		return( g_list_reverse( list ));
+		g_strfreev( array );
 	}
+	g_free( str );
 
-	g_return_val_if_reached( NULL );
+	return( g_list_reverse( list ));
 }
 
 /**
@@ -441,26 +434,24 @@ isettings_set_uint_list( myISettings *instance, const gchar *group, const gchar 
 	const GList *it;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		if( value && g_list_length(( GList * ) value )){
-			str = g_string_new( "" );
-			for( it=value ; it ; it=it->next ){
-				g_string_append_printf( str, "%u;", GPOINTER_TO_UINT( it->data ));
-			}
-			g_key_file_set_string( priv->keyfile, group, key, str->str );
-			g_string_free( str, TRUE );
-
-		} else {
-			g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	if( value && g_list_length(( GList * ) value )){
+		str = g_string_new( "" );
+		for( it=value ; it ; it=it->next ){
+			g_string_append_printf( str, "%u;", GPOINTER_TO_UINT( it->data ));
 		}
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
+		g_key_file_set_string( priv->keyfile, group, key, str->str );
+		g_string_free( str, TRUE );
 
-	g_return_if_reached();
+	} else {
+		g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	}
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 static gchar *
@@ -470,16 +461,16 @@ isettings_get_string( const myISettings *instance, const gchar *group, const gch
 	gchar *str;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 	g_return_val_if_fail( priv->keyfile, NULL );
 
-	if( !priv->dispose_has_run ){
-		str = NULL;
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		return( str );
-	}
+	str = NULL;
+	str = g_key_file_get_string( priv->keyfile, group, key, NULL );
 
-	g_return_val_if_reached( NULL );
+	return( str );
 }
 
 static void
@@ -488,16 +479,14 @@ isettings_set_string( myISettings *instance, const gchar *group, const gchar *ke
 	mySettingsPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		g_key_file_set_string( priv->keyfile, group, key, value );
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
-
-	g_return_if_reached();
+	g_key_file_set_string( priv->keyfile, group, key, value );
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 static GList *
@@ -509,28 +498,28 @@ isettings_get_string_list( const myISettings *instance, const gchar *group, cons
 	gchar **array, **iter;
 
 	g_return_val_if_fail( instance && MY_IS_SETTINGS( instance ), NULL );
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 	g_return_val_if_fail( priv->keyfile, NULL );
 
-	if( !priv->dispose_has_run ){
-		list = NULL;
-		str = g_key_file_get_string( priv->keyfile, group, key, NULL );
-		if( my_strlen( str )){
-			array = str_to_array( str );
-			if( array ){
-				iter = ( gchar ** ) array;
-				while( *iter ){
-					list = g_list_prepend( list, g_strdup( *iter ));
-					iter++;
-				}
+	list = NULL;
+	str = g_key_file_get_string( priv->keyfile, group, key, NULL );
+	if( my_strlen( str )){
+		array = str_to_array( str );
+		if( array ){
+			iter = ( gchar ** ) array;
+			while( *iter ){
+				list = g_list_prepend( list, g_strdup( *iter ));
+				iter++;
 			}
-			g_strfreev( array );
 		}
-		g_free( str );
-		return( g_list_reverse( list ));
+		g_strfreev( array );
 	}
+	g_free( str );
 
-	g_return_val_if_reached( NULL );
+	return( g_list_reverse( list ));
 }
 
 /**
@@ -545,26 +534,24 @@ isettings_set_string_list( myISettings *instance, const gchar *group, const gcha
 	const GList *it;
 
 	g_return_if_fail( instance && MY_IS_SETTINGS( instance ));
-	priv = MY_SETTINGS( instance )->priv;
+
+	priv = my_settings_get_instance_private( MY_SETTINGS( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	if( !priv->dispose_has_run ){
-		if( value && g_list_length(( GList * ) value )){
-			str = g_string_new( "" );
-			for( it=value ; it ; it=it->next ){
-				g_string_append_printf( str, "%s;", ( const gchar * ) it->data );
-			}
-			g_key_file_set_string( priv->keyfile, group, key, str->str );
-			g_string_free( str, TRUE );
-
-		} else {
-			g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	if( value && g_list_length(( GList * ) value )){
+		str = g_string_new( "" );
+		for( it=value ; it ; it=it->next ){
+			g_string_append_printf( str, "%s;", ( const gchar * ) it->data );
 		}
-		write_key_file( MY_SETTINGS( instance ));
-		return;
-	}
+		g_key_file_set_string( priv->keyfile, group, key, str->str );
+		g_string_free( str, TRUE );
 
-	g_return_if_reached();
+	} else {
+		g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	}
+	write_key_file( MY_SETTINGS( instance ));
 }
 
 /**
@@ -619,7 +606,8 @@ load_key_file( mySettings *settings, const gchar *filename )
 
 	g_debug( "%s: settings=%p, fname=%s", thisfn, ( void * ) settings, filename );
 
-	priv = settings->priv;
+	priv = my_settings_get_instance_private( settings );
+
 	priv->keyfile = g_key_file_new();
 	priv->fname = g_strdup( filename );
 
@@ -629,9 +617,9 @@ load_key_file( mySettings *settings, const gchar *filename )
 
 		if( error->code != G_FILE_ERROR_NOENT ){
 			g_warning( "%s: %s (%d) %s",
-					thisfn, settings->priv->fname, error->code, error->message );
+					thisfn, priv->fname, error->code, error->message );
 		} else {
-			g_debug( "%s: %s: file doesn't exist", thisfn, settings->priv->fname );
+			g_debug( "%s: %s: file doesn't exist", thisfn, priv->fname );
 		}
 
 		g_error_free( error );
@@ -732,7 +720,7 @@ write_key_file( mySettings *settings )
 
 	error = NULL;
 	ok = FALSE;
-	priv = settings->priv;
+	priv = my_settings_get_instance_private( settings );
 	data = g_key_file_to_data( priv->keyfile, &length, NULL );
 	sysfname = my_utils_filename_from_utf8( priv->fname );
 	if( !sysfname ){
