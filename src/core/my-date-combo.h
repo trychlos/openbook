@@ -53,16 +53,13 @@ typedef struct _myDateComboPrivate        myDateComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBox         parent;
-
-	/*< private members >*/
-	myDateComboPrivate *priv;
+	GtkComboBox      parent;
 }
 	myDateCombo;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBoxClass    parent;
+	GtkComboBoxClass parent;
 }
 	myDateComboClass;
 

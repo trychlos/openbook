@@ -51,11 +51,12 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myDateCombo, my_date_combo, GTK_TYPE_COMBO_BOX )
-
 static void setup_combo( myDateCombo *combo );
 static void populate_combo( myDateCombo *combo );
 static void on_format_changed( myDateCombo *combo, void *empty );
+
+G_DEFINE_TYPE_EXTENDED( myDateCombo, my_date_combo, GTK_TYPE_COMBO_BOX, 0,
+		G_ADD_PRIVATE( myDateCombo ))
 
 static void
 date_combo_finalize( GObject *instance )
@@ -80,7 +81,7 @@ date_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && MY_IS_DATE_COMBO( instance ));
 
-	priv = ( MY_DATE_COMBO( instance ))->priv;
+	priv = my_date_combo_get_instance_private( MY_DATE_COMBO( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -97,16 +98,16 @@ static void
 my_date_combo_init( myDateCombo *self )
 {
 	static const gchar *thisfn = "my_date_combo_init";
+	myDateComboPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && MY_IS_DATE_COMBO( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, MY_TYPE_DATE_COMBO, myDateComboPrivate );
+	priv = my_date_combo_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -118,8 +119,6 @@ my_date_combo_class_init( myDateComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = date_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = date_combo_finalize;
-
-	g_type_class_add_private( klass, sizeof( myDateComboPrivate ));
 
 	/**
 	 * myDateCombo::ofa-changed:
@@ -170,8 +169,8 @@ setup_combo( myDateCombo *combo )
 	GtkCellRenderer *cell;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_INT ));
+					N_COLUMNS,
+					G_TYPE_STRING, G_TYPE_INT ));
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), tmodel );
 	g_object_unref( tmodel );
 
@@ -237,17 +236,16 @@ my_date_combo_get_selected( myDateCombo *combo )
 
 	g_return_val_if_fail( combo && MY_IS_DATE_COMBO( combo ), 0 );
 
-	priv = combo->priv;
+	priv = my_date_combo_get_instance_private( combo );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
 	format = 0;
 
-	if( !priv->dispose_has_run ){
-
-		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
-			tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-			g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), 0 );
-			gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &format, -1 );
-		}
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), 0 );
+		gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &format, -1 );
 	}
 
 	return( format );
@@ -269,23 +267,24 @@ my_date_combo_set_selected( myDateCombo *combo, myDateFormat format )
 
 	g_debug( "%s: combo=%p, format=%d", thisfn, ( void * ) combo, format );
 
-	priv = combo->priv;
+	g_return_if_fail( combo && MY_IS_DATE_COMBO( combo ));
 
-	if( !priv->dispose_has_run ){
+	priv = my_date_combo_get_instance_private( combo );
 
-		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	g_return_if_fail( !priv->dispose_has_run );
 
-		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			while( TRUE ){
-				gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &dfmt, -1 );
-				if( dfmt == format ){
-					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
-					break;
-				}
-				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					break;
-				}
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &dfmt, -1 );
+			if( dfmt == format ){
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
 			}
 		}
 	}
