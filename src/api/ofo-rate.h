@@ -55,15 +55,12 @@ typedef struct _ofoRatePrivate       ofoRatePrivate;
 
 struct _ofoRate {
 	/*< public members >*/
-	ofoBase         parent;
-
-	/*< private members >*/
-	ofoRatePrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass    parent;
+	ofoBaseClass parent;
 }
 	ofoRateClass;
 

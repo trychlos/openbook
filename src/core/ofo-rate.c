@@ -134,8 +134,6 @@ struct _ofoRatePrivate {
 	GList *validities;
 };
 
-static ofoBaseClass *ofo_rate_parent_class = NULL;
-
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
@@ -165,6 +163,12 @@ static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *field
 static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean  rate_do_drop_content( const ofaIDBConnect *connect );
 
+G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
+		G_ADD_PRIVATE( ofoRate )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+
 static void
 rate_free_validity( GList *fields )
 {
@@ -174,8 +178,12 @@ rate_free_validity( GList *fields )
 static void
 rate_free_validities( ofoRate *rate )
 {
-	g_list_free_full( rate->priv->validities, ( GDestroyNotify ) rate_free_validity );
-	rate->priv->validities = NULL;
+	ofoRatePrivate *priv;
+
+	priv = ofo_rate_get_instance_private( rate );
+
+	g_list_free_full( priv->validities, ( GDestroyNotify ) rate_free_validity );
+	priv->validities = NULL;
 }
 
 static void
@@ -219,8 +227,6 @@ ofo_rate_init( ofoRate *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_RATE, ofoRatePrivate );
 }
 
 static void
@@ -230,73 +236,8 @@ ofo_rate_class_init( ofoRateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_rate_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = rate_dispose;
 	G_OBJECT_CLASS( klass )->finalize = rate_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoRatePrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_rate_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoRateClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_rate_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoRate ),
-		0,
-		( GInstanceInitFunc ) ofo_rate_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoRate", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_rate_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -436,27 +377,25 @@ ofo_rate_get_upd_stamp( const ofoRate *rate )
 const GDate *
 ofo_rate_get_min_valid( const ofoRate *rate )
 {
+	ofoRatePrivate *priv;
 	GList *it;
 	const GDate *val_begin, *min;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), NULL );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		for( min=NULL, it=rate->priv->validities ; it ; it=it->next ){
-			val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
-			if( !min ){
-				min = val_begin;
-			} else if( my_date_compare_ex( val_begin, min, TRUE ) < 0 ){
-				min = val_begin;
-			}
+	for( min=NULL, it=priv->validities ; it ; it=it->next ){
+		val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
+		if( !min ){
+			min = val_begin;
+		} else if( my_date_compare_ex( val_begin, min, TRUE ) < 0 ){
+			min = val_begin;
 		}
-
-		return( min );
 	}
 
-	g_assert_not_reached();
-	return( NULL );
+	return( min );
 }
 
 /**
@@ -469,27 +408,25 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 const GDate *
 ofo_rate_get_max_valid( const ofoRate *rate )
 {
+	ofoRatePrivate *priv;
 	GList *it;
 	const GDate *val_end, *max;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), NULL );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		for( max=NULL, it=rate->priv->validities ; it ; it=it->next ){
-			val_end = ofa_box_get_date( it->data, RAT_VAL_END );
-			if( !max ){
-				max = val_end;
-			} else if( my_date_compare_ex( val_end, max, FALSE ) > 0 ){
-				max = val_end;
-			}
+	for( max=NULL, it=priv->validities ; it ; it=it->next ){
+		val_end = ofa_box_get_date( it->data, RAT_VAL_END );
+		if( !max ){
+			max = val_end;
+		} else if( my_date_compare_ex( val_end, max, FALSE ) > 0 ){
+			max = val_end;
 		}
-
-		return( max );
 	}
 
-	g_assert_not_reached();
-	return( NULL );
+	return( max );
 }
 
 /**
@@ -500,14 +437,14 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 gint
 ofo_rate_get_val_count( const ofoRate *rate )
 {
+	ofoRatePrivate *priv;
+
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		return( g_list_length( rate->priv->validities ));
-	}
-
-	return( 0 );
+	return( g_list_length( priv->validities ));
 }
 
 /**
@@ -516,16 +453,17 @@ ofo_rate_get_val_count( const ofoRate *rate )
 const GDate *
 ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 {
+	ofoRatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), NULL );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		nth = g_list_nth( rate->priv->validities, idx );
-		if( nth ){
-			return( ofa_box_get_date( nth->data, RAT_VAL_BEGIN ));
-		}
+	nth = g_list_nth( priv->validities, idx );
+	if( nth ){
+		return( ofa_box_get_date( nth->data, RAT_VAL_BEGIN ));
 	}
 
 	return( NULL );
@@ -537,16 +475,17 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 const GDate *
 ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 {
+	ofoRatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), NULL );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		nth = g_list_nth( rate->priv->validities, idx );
-		if( nth ){
-			return( ofa_box_get_date( nth->data, RAT_VAL_END ));
-		}
+	nth = g_list_nth( priv->validities, idx );
+	if( nth ){
+		return( ofa_box_get_date( nth->data, RAT_VAL_END ));
 	}
 
 	return( NULL );
@@ -558,16 +497,17 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 ofxAmount
 ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 {
+	ofoRatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		nth = g_list_nth( rate->priv->validities, idx );
-		if( nth ){
-			return( ofa_box_get_amount( nth->data, RAT_VAL_RATE ));
-		}
+	nth = g_list_nth( priv->validities, idx );
+	if( nth ){
+		return( ofa_box_get_amount( nth->data, RAT_VAL_RATE ));
 	}
 
 	return( 0 );
@@ -584,6 +524,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 ofxAmount
 ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 {
+	ofoRatePrivate *priv;
 	GList *it;
 	const GDate *val_begin, *val_end;
 	ofxAmount amount;
@@ -592,31 +533,31 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
 	g_return_val_if_fail( date, 0 );
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
+	priv = ofo_rate_get_instance_private( rate );
 
-		for( it=rate->priv->validities ; it ; it=it->next ){
-			val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
-			val_end = ofa_box_get_date( it->data, RAT_VAL_END );
-			sdate = my_date_to_str( date, ofa_prefs_date_display());
-			sbegin = my_date_to_str( val_begin, ofa_prefs_date_display());
-			send = my_date_to_str( val_end, ofa_prefs_date_display());
-			g_debug( "ofo_rate_get_rate_at_date: date=%s, begin=%s, end=%s", sdate, sbegin, send );
-			g_free( sdate );
-			g_free( sbegin );
-			g_free( send );
-			cmp = my_date_compare_ex( val_begin, date, TRUE );
-			g_debug( "my_date_compare_ex( val_begin, date, TRUE ): cmp=%d", cmp );
-			if( cmp > 0 ){
-				continue;
-			}
-			cmp = my_date_compare_ex( val_end, date, FALSE );
-			g_debug( "my_date_compare_ex( val_end, date, FALSE ): cmp=%d", cmp );
-			if( cmp >= 0 ){
-				amount = ofa_box_get_amount( it->data, RAT_VAL_RATE );
-				/*g_debug( "amount=%.5lf", amount );*/
-				return( amount );
-			}
+	for( it=priv->validities ; it ; it=it->next ){
+		val_begin = ofa_box_get_date( it->data, RAT_VAL_BEGIN );
+		val_end = ofa_box_get_date( it->data, RAT_VAL_END );
+		sdate = my_date_to_str( date, ofa_prefs_date_display());
+		sbegin = my_date_to_str( val_begin, ofa_prefs_date_display());
+		send = my_date_to_str( val_end, ofa_prefs_date_display());
+		g_debug( "ofo_rate_get_rate_at_date: date=%s, begin=%s, end=%s", sdate, sbegin, send );
+		g_free( sdate );
+		g_free( sbegin );
+		g_free( send );
+		cmp = my_date_compare_ex( val_begin, date, TRUE );
+		g_debug( "my_date_compare_ex( val_begin, date, TRUE ): cmp=%d", cmp );
+		if( cmp > 0 ){
+			continue;
+		}
+		cmp = my_date_compare_ex( val_end, date, FALSE );
+		g_debug( "my_date_compare_ex( val_end, date, FALSE ): cmp=%d", cmp );
+		if( cmp >= 0 ){
+			amount = ofa_box_get_amount( it->data, RAT_VAL_RATE );
+			/*g_debug( "amount=%.5lf", amount );*/
+			return( amount );
 		}
 	}
 
@@ -638,10 +579,7 @@ ofo_rate_is_deletable( const ofoRate *rate )
 	ofaHub *hub;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-
-	if( OFO_BASE( rate )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( rate ));
 
@@ -733,11 +671,9 @@ ofo_rate_free_all_val( ofoRate *rate )
 {
 
 	g_return_if_fail( rate && OFO_IS_RATE( rate ));
+	g_return_if_fail( !OFO_BASE( rate )->prot->dispose_has_run );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		rate_free_validities( rate );
-	}
+	rate_free_validities( rate );
 }
 
 /**
@@ -755,12 +691,10 @@ ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount
 	GList *fields;
 
 	g_return_if_fail( rate && OFO_IS_RATE( rate ));
+	g_return_if_fail( !OFO_BASE( rate )->prot->dispose_has_run );
 
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		fields = rate_val_new_detail( rate, begin, end, value );
-		rate_val_add_detail( rate, fields );
-	}
+	fields = rate_val_new_detail( rate, begin, end, value );
+	rate_val_add_detail( rate, fields );
 }
 
 static GList *
@@ -782,7 +716,11 @@ rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmo
 static void
 rate_val_add_detail( ofoRate *rate, GList *detail )
 {
-	rate->priv->validities = g_list_append( rate->priv->validities, detail );
+	ofoRatePrivate *priv;
+
+	priv = ofo_rate_get_instance_private( rate );
+
+	priv->validities = g_list_append( priv->validities, detail );
 }
 
 /**
@@ -803,10 +741,7 @@ ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( rate )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
@@ -900,14 +835,16 @@ rate_delete_validities( ofoRate *rate, const ofaIDBConnect *connect )
 static gboolean
 rate_insert_validities( ofoRate *rate, const ofaIDBConnect *connect )
 {
+	ofoRatePrivate *priv;
 	gboolean ok;
 	GList *it;
 	gint count;
 
+	priv = ofo_rate_get_instance_private( rate );
 	ok = TRUE;
 	count = 0;
 
-	for( it=rate->priv->validities ; it ; it=it->next ){
+	for( it=priv->validities ; it ; it=it->next ){
 		ok &= rate_insert_validity( rate, it->data, ++count, connect );
 	}
 
@@ -982,10 +919,7 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
-
-	if( OFO_BASE( rate )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( rate ));
 	ok = FALSE;
@@ -1072,10 +1006,7 @@ ofo_rate_delete( ofoRate *rate )
 	g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-
-	if( OFO_BASE( rate )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( rate ));
 	ok = FALSE;
@@ -1245,6 +1176,7 @@ icollectionable_get_interface_version( const ofaICollectionable *instance )
 static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
+	ofoRatePrivate *priv;
 	GList *dataset, *it;
 	ofoRate *rate;
 	gchar *from;
@@ -1257,10 +1189,11 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
+		priv = ofo_rate_get_instance_private( rate );
 		from = g_strdup_printf(
 				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
 				ofo_rate_get_mnemo( rate ));
-		rate->priv->validities =
+		priv->validities =
 				ofo_base_load_rows( st_validities_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
@@ -1298,6 +1231,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
+	ofoRatePrivate *priv;
 	GList *dataset, *it, *det;
 	GSList *lines;
 	ofoRate *rate;
@@ -1318,7 +1252,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
-		count += g_list_length( rate->priv->validities );
+		count += ofo_rate_get_val_count( rate );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
@@ -1353,7 +1287,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 
 		rate = OFO_RATE( it->data );
-		for( det=rate->priv->validities ; det ; det=det->next ){
+		priv = ofo_rate_get_instance_private( rate );
+		for( det=priv->validities ; det ; det=det->next ){
 			str = ofa_box_get_csv_line( det->data, field_sep, decimal_sep );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
