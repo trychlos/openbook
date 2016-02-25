@@ -55,15 +55,12 @@ typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
 
 struct _ofoLedger {
 	/*< public members >*/
-	ofoBase           parent;
-
-	/*< private members >*/
-	ofoLedgerPrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass      parent;
+	ofoBaseClass parent;
 }
 	ofoLedgerClass;
 

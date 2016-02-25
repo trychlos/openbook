@@ -161,8 +161,6 @@ struct _ofoLedgerPrivate {
 	GList *balances;
 };
 
-static ofoBaseClass *ofo_ledger_parent_class = NULL;
-
 static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
@@ -199,6 +197,12 @@ static guint      iimportable_get_interface_version( const ofaIImportable *insta
 static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static gboolean   ledger_do_drop_content( const ofaIDBConnect *connect );
 
+G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
+		G_ADD_PRIVATE( ofoLedger )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+
 static void
 free_detail_cur( GList *fields )
 {
@@ -208,8 +212,12 @@ free_detail_cur( GList *fields )
 static void
 free_detail_currencies( ofoLedger *ledger )
 {
-	g_list_free_full( ledger->priv->balances, ( GDestroyNotify ) free_detail_cur );
-	ledger->priv->balances = NULL;
+	ofoLedgerPrivate *priv;
+
+	priv = ofo_ledger_get_instance_private( ledger );
+
+	g_list_free_full( priv->balances, ( GDestroyNotify ) free_detail_cur );
+	priv->balances = NULL;
 }
 
 static void
@@ -253,8 +261,6 @@ ofo_ledger_init( ofoLedger *self )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_LEDGER, ofoLedgerPrivate );
 }
 
 static void
@@ -264,73 +270,8 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_ledger_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = ledger_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_ledger_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoLedgerClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_ledger_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoLedger ),
-		0,
-		( GInstanceInitFunc ) ofo_ledger_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoLedger", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_ledger_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -708,10 +649,7 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
 	GSList *result, *icol;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, NULL );
 
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 
@@ -745,17 +683,15 @@ ofo_ledger_get_currencies( const ofoLedger *ledger )
 	const gchar *currency;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, NULL );
 
+	priv = ofo_ledger_get_instance_private( ledger );
 	list = NULL;
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		priv = ledger->priv;
-		for( it=priv->balances ; it ; it=it->next ){
-			balance = ( GList * ) it->data;
-			currency = ofa_box_get_string( balance, LED_CURRENCY );
-			list = g_list_insert_sorted( list, ( gpointer ) currency, ( GCompareFunc ) cmp_currencies );
-		}
+	for( it=priv->balances ; it ; it=it->next ){
+		balance = ( GList * ) it->data;
+		currency = ofa_box_get_string( balance, LED_CURRENCY );
+		list = g_list_insert_sorted( list, ( gpointer ) currency, ( GCompareFunc ) cmp_currencies );
 	}
 
 	return( list );
@@ -780,17 +716,15 @@ ofo_ledger_get_val_debit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_VAL_DEBIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_VAL_DEBIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 /**
@@ -806,17 +740,15 @@ ofo_ledger_get_val_credit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_VAL_CREDIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_VAL_CREDIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 /**
@@ -832,17 +764,15 @@ ofo_ledger_get_rough_debit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_ROUGH_DEBIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_ROUGH_DEBIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 /**
@@ -858,17 +788,15 @@ ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_ROUGH_CREDIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_ROUGH_CREDIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 /**
@@ -885,17 +813,15 @@ ofo_ledger_get_futur_debit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_FUT_DEBIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_FUT_DEBIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 /**
@@ -912,28 +838,29 @@ ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0.0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_balance_by_code( ledger, currency );
-		if( sdev ){
-			return( ofa_box_get_amount( sdev, LED_FUT_CREDIT ));
-		}
+	sdev = ledger_find_balance_by_code( ledger, currency );
+	if( sdev ){
+		return( ofa_box_get_amount( sdev, LED_FUT_CREDIT ));
 	}
 
-	return( 0.0 );
+	return( 0 );
 }
 
 static GList *
 ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency )
 {
 	static const gchar *thisfn = "ofo_ledger_ledger_find_balance_by_code";
+	ofoLedgerPrivate *priv;
 	GList *it;
 	GList *balance;
 	const gchar *bal_code;
 
-	for( it=ledger->priv->balances ; it ; it=it->next ){
+	priv = ofo_ledger_get_instance_private( ledger );
+
+	for( it=priv->balances ; it ; it=it->next ){
 		balance = ( GList * ) it->data;
 		bal_code = ofa_box_get_string( balance, LED_CURRENCY );
 		if( !g_utf8_collate( bal_code, currency )){
@@ -950,6 +877,7 @@ ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency )
 static GList *
 ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency )
 {
+	ofoLedgerPrivate *priv;
 	GList *balance;
 
 	balance = ledger_find_balance_by_code( ledger, currency );
@@ -964,7 +892,8 @@ ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency )
 		ofa_box_set_amount( balance, LED_FUT_DEBIT, 0 );
 		ofa_box_set_amount( balance, LED_FUT_CREDIT, 0 );
 
-		ledger->priv->balances = g_list_prepend( ledger->priv->balances, balance );
+		priv = ofo_ledger_get_instance_private( ledger );
+		priv->balances = g_list_prepend( priv->balances, balance );
 	}
 
 	return( balance );
@@ -1061,14 +990,12 @@ ofo_ledger_has_entries( const ofoLedger *ledger )
 	const gchar *mnemo;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 	mnemo = ofo_ledger_get_mnemo( ledger );
 	ok = ofo_entry_use_ledger( hub, mnemo );
+
 	return( ok );
 }
 
@@ -1096,10 +1023,7 @@ ofo_ledger_is_deletable( const ofoLedger *ledger )
 	const gchar *mnemo;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 	dossier = ofa_hub_get_dossier( hub );
@@ -1201,14 +1125,12 @@ ofo_ledger_set_val_debit( ofoLedger *ledger, ofxAmount amount, const gchar *curr
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_VAL_DEBIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_VAL_DEBIT, amount );
 }
 
 /**
@@ -1228,14 +1150,12 @@ ofo_ledger_set_val_credit( ofoLedger *ledger, ofxAmount amount, const gchar *cur
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_VAL_CREDIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_VAL_CREDIT, amount );
 }
 
 /**
@@ -1255,14 +1175,12 @@ ofo_ledger_set_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *cu
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount );
 }
 
 /**
@@ -1282,14 +1200,12 @@ ofo_ledger_set_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *c
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount );
 }
 
 /**
@@ -1309,14 +1225,12 @@ ofo_ledger_set_futur_debit( ofoLedger *ledger, ofxAmount amount, const gchar *cu
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_FUT_DEBIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_FUT_DEBIT, amount );
 }
 
 /**
@@ -1336,14 +1250,12 @@ ofo_ledger_set_futur_credit( ofoLedger *ledger, ofxAmount amount, const gchar *c
 	GList *balance;
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
 
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
 
-		balance = ledger_new_balance_with_code( ledger, currency );
-		g_return_if_fail( balance );
-
-		ofa_box_set_amount( balance, LED_FUT_CREDIT, amount );
-	}
+	ofa_box_set_amount( balance, LED_FUT_CREDIT, amount );
 }
 
 /**
@@ -1364,10 +1276,7 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( closing && my_date_is_valid( closing ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
@@ -1400,10 +1309,7 @@ ofo_ledger_insert( ofoLedger *ledger, ofaHub *hub )
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
@@ -1491,10 +1397,7 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
@@ -1588,10 +1491,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( my_strlen( currency ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
@@ -1677,10 +1577,7 @@ ofo_ledger_delete( ofoLedger *ledger )
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( ofo_ledger_is_deletable( ledger ), FALSE );
-
-	if( OFO_BASE( ledger )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
@@ -1759,6 +1656,7 @@ icollectionable_get_interface_version( const ofaICollectionable *instance )
 static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
+	ofoLedgerPrivate *priv;
 	GList *dataset, *it;
 	ofoLedger *ledger;
 	gchar *from;
@@ -1771,9 +1669,10 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
+		priv = ofo_ledger_get_instance_private( ledger );
 		from = g_strdup_printf(
 					"OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
-		ledger->priv->balances =
+		priv->balances =
 					ofo_base_load_rows( st_balances_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
@@ -1811,6 +1710,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
+	ofoLedgerPrivate *priv;
 	GList *dataset, *it, *bal;
 	GSList *lines;
 	gchar *str;
@@ -1831,7 +1731,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-		count += g_list_length( ledger->priv->balances );
+		priv = ofo_ledger_get_instance_private( ledger );
+		count += g_list_length( priv->balances );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
@@ -1866,7 +1767,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 
 		ledger = OFO_LEDGER( it->data );
-		for( bal=ledger->priv->balances ; bal ; bal=bal->next ){
+		priv = ofo_ledger_get_instance_private( ledger );
+
+		for( bal=priv->balances ; bal ; bal=bal->next ){
 			str = ofa_box_get_csv_line( bal->data, field_sep, decimal_sep );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
