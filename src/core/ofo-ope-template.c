@@ -176,8 +176,6 @@ struct _ofoOpeTemplatePrivate {
 /* mnemonic max length */
 #define MNEMO_LENGTH                    6
 
-static ofoBaseClass *ofo_ope_template_parent_class = NULL;
-
 static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
@@ -210,6 +208,12 @@ static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSLis
 static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint count, guint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaIDBConnect *connect );
 
+G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
+		G_ADD_PRIVATE( ofoOpeTemplate )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+
 static void
 details_list_free_detail( GList *fields )
 {
@@ -219,8 +223,12 @@ details_list_free_detail( GList *fields )
 static void
 details_list_free( ofoOpeTemplate *model )
 {
-	g_list_free_full( model->priv->details, ( GDestroyNotify ) details_list_free_detail );
-	model->priv->details = NULL;
+	ofoOpeTemplatePrivate *priv;
+
+	priv = ofo_ope_template_get_instance_private( model );
+
+	g_list_free_full( priv->details, ( GDestroyNotify ) details_list_free_detail );
+	priv->details = NULL;
 }
 
 static void
@@ -229,7 +237,7 @@ ope_template_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_ope_template_finalize";
 	ofoOpeTemplatePrivate *priv;
 
-	priv = OFO_OPE_TEMPLATE( instance )->priv;
+	priv = ofo_ope_template_get_instance_private( OFO_OPE_TEMPLATE( instance ));
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -269,8 +277,6 @@ ofo_ope_template_init( ofoOpeTemplate *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_OPE_TEMPLATE, ofoOpeTemplatePrivate );
 }
 
 static void
@@ -280,73 +286,8 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_ope_template_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = ope_template_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_ope_template_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoOpeTemplateClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_ope_template_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoOpeTemplate ),
-		0,
-		( GInstanceInitFunc ) ofo_ope_template_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iexportable_iface_info = {
-		( GInterfaceInitFunc ) iexportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iimportable_iface_info = {
-		( GInterfaceInitFunc ) iimportable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoOpeTemplate", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
-
-	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_ope_template_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -636,34 +577,30 @@ ofo_ope_template_new_from_template( const ofoOpeTemplate *model )
 	gint count, i;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	dest = NULL;
+	dest = ofo_ope_template_new();
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	ofo_ope_template_set_mnemo( dest, ofo_ope_template_get_mnemo( model ));
+	ofo_ope_template_set_label( dest, ofo_ope_template_get_label( model ));
+	ofo_ope_template_set_ledger( dest, ofo_ope_template_get_ledger( model ));
+	ofo_ope_template_set_ledger_locked( dest, ofo_ope_template_get_ledger_locked( model ));
+	ofo_ope_template_set_ref( dest, ofo_ope_template_get_ref( model ));
+	ofo_ope_template_set_ref_locked( dest, ofo_ope_template_get_ref_locked( model ));
+	ofo_ope_template_set_notes( dest, ofo_ope_template_get_notes( model ));
 
-		dest = ofo_ope_template_new();
-
-		ofo_ope_template_set_mnemo( dest, ofo_ope_template_get_mnemo( model ));
-		ofo_ope_template_set_label( dest, ofo_ope_template_get_label( model ));
-		ofo_ope_template_set_ledger( dest, ofo_ope_template_get_ledger( model ));
-		ofo_ope_template_set_ledger_locked( dest, ofo_ope_template_get_ledger_locked( model ));
-		ofo_ope_template_set_ref( dest, ofo_ope_template_get_ref( model ));
-		ofo_ope_template_set_ref_locked( dest, ofo_ope_template_get_ref_locked( model ));
-		ofo_ope_template_set_notes( dest, ofo_ope_template_get_notes( model ));
-
-		count = ofo_ope_template_get_detail_count( model );
-		for( i=0 ; i<count ; ++i ){
-			ofo_ope_template_add_detail( dest,
-					ofo_ope_template_get_detail_comment( model, i ),
-					ofo_ope_template_get_detail_account( model, i ),
-					ofo_ope_template_get_detail_account_locked( model, i ),
-					ofo_ope_template_get_detail_label( model, i ),
-					ofo_ope_template_get_detail_label_locked( model, i ),
-					ofo_ope_template_get_detail_debit( model, i ),
-					ofo_ope_template_get_detail_debit_locked( model, i ),
-					ofo_ope_template_get_detail_credit( model, i ),
-					ofo_ope_template_get_detail_credit_locked( model, i ));
-		}
+	count = ofo_ope_template_get_detail_count( model );
+	for( i=0 ; i<count ; ++i ){
+		ofo_ope_template_add_detail( dest,
+				ofo_ope_template_get_detail_comment( model, i ),
+				ofo_ope_template_get_detail_account( model, i ),
+				ofo_ope_template_get_detail_account_locked( model, i ),
+				ofo_ope_template_get_detail_label( model, i ),
+				ofo_ope_template_get_detail_label_locked( model, i ),
+				ofo_ope_template_get_detail_debit( model, i ),
+				ofo_ope_template_get_detail_debit_locked( model, i ),
+				ofo_ope_template_get_detail_credit( model, i ),
+				ofo_ope_template_get_detail_credit_locked( model, i ));
 	}
 
 	return( dest );
@@ -694,10 +631,7 @@ ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
 	gint i, maxlen;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
-
-	if( OFO_BASE( model )->prot->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
 	str = NULL;
 	hub = ofo_base_get_hub( OFO_BASE( model ));
@@ -749,14 +683,11 @@ ofo_ope_template_get_ledger_locked( const ofoOpeTemplate *model )
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_LED_LOCKED );
 
-		cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_LED_LOCKED );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -777,14 +708,11 @@ ofo_ope_template_get_ref_locked( const ofoOpeTemplate *model )
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_REF_LOCKED );
 
-		cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_REF_LOCKED );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -828,10 +756,7 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
-
-	if( OFO_BASE( model )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( model ));
 	dossier = ofa_hub_get_dossier( hub );
@@ -970,27 +895,28 @@ ofo_ope_template_add_detail( ofoOpeTemplate *model,
 								const gchar *debit, gboolean debit_locked,
 								const gchar *credit, gboolean credit_locked )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
+	g_return_if_fail( !OFO_BASE( model )->prot->dispose_has_run );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		fields = ofa_box_init_fields_list( st_details_defs );
-		ofa_box_set_string( fields, OTE_MNEMO, ofo_ope_template_get_mnemo( model ));
-		ofa_box_set_int( fields, OTE_DET_ROW, 1+ofo_ope_template_get_detail_count( model ));
-		ofa_box_set_string( fields, OTE_DET_COMMENT, comment );
-		ofa_box_set_string( fields, OTE_DET_ACCOUNT, account );
-		ofa_box_set_string( fields, OTE_DET_ACCOUNT_LOCKED, account_locked ? "Y":"N" );
-		ofa_box_set_string( fields, OTE_DET_LABEL, label );
-		ofa_box_set_string( fields, OTE_DET_LABEL_LOCKED, label_locked ? "Y":"N" );
-		ofa_box_set_string( fields, OTE_DET_DEBIT, debit );
-		ofa_box_set_string( fields, OTE_DET_DEBIT_LOCKED, debit_locked ? "Y":"N" );
-		ofa_box_set_string( fields, OTE_DET_CREDIT, credit );
-		ofa_box_set_string( fields, OTE_DET_CREDIT_LOCKED, credit_locked ? "Y":"N" );
+	fields = ofa_box_init_fields_list( st_details_defs );
+	ofa_box_set_string( fields, OTE_MNEMO, ofo_ope_template_get_mnemo( model ));
+	ofa_box_set_int( fields, OTE_DET_ROW, 1+ofo_ope_template_get_detail_count( model ));
+	ofa_box_set_string( fields, OTE_DET_COMMENT, comment );
+	ofa_box_set_string( fields, OTE_DET_ACCOUNT, account );
+	ofa_box_set_string( fields, OTE_DET_ACCOUNT_LOCKED, account_locked ? "Y":"N" );
+	ofa_box_set_string( fields, OTE_DET_LABEL, label );
+	ofa_box_set_string( fields, OTE_DET_LABEL_LOCKED, label_locked ? "Y":"N" );
+	ofa_box_set_string( fields, OTE_DET_DEBIT, debit );
+	ofa_box_set_string( fields, OTE_DET_DEBIT_LOCKED, debit_locked ? "Y":"N" );
+	ofa_box_set_string( fields, OTE_DET_CREDIT, credit );
+	ofa_box_set_string( fields, OTE_DET_CREDIT_LOCKED, credit_locked ? "Y":"N" );
 
-		model->priv->details = g_list_append( model->priv->details, fields );
-	}
+	priv->details = g_list_append( priv->details, fields );
 }
 
 /**
@@ -1000,11 +926,9 @@ void
 ofo_ope_template_free_detail_all( ofoOpeTemplate *model )
 {
 	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
+	g_return_if_fail( !OFO_BASE( model )->prot->dispose_has_run );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		details_list_free( model );
-	}
+	details_list_free( model );
 }
 
 /**
@@ -1013,14 +937,14 @@ ofo_ope_template_free_detail_all( ofoOpeTemplate *model )
 gint
 ofo_ope_template_get_detail_count( const ofoOpeTemplate *model )
 {
+	ofoOpeTemplatePrivate *priv;
+
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), 0 );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		return( g_list_length( model->priv->details ));
-	}
-
-	return( 0 );
+	return( g_list_length( priv->details ));
 }
 
 /**
@@ -1030,17 +954,18 @@ ofo_ope_template_get_detail_count( const ofoOpeTemplate *model )
 const gchar *
 ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( idx >= 0, NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, OTE_DET_COMMENT ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, OTE_DET_COMMENT ));
 	}
 
 	return( NULL );
@@ -1053,17 +978,18 @@ ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
 const gchar *
 ofo_ope_template_get_detail_account( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( idx >= 0, NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, OTE_DET_ACCOUNT ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, OTE_DET_ACCOUNT ));
 	}
 
 	return( NULL );
@@ -1076,19 +1002,20 @@ ofo_ope_template_get_detail_account( const ofoOpeTemplate *model, gint idx )
 gboolean
 ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			cstr = ofa_box_get_string( nth->data, OTE_DET_ACCOUNT_LOCKED );
-			return( !my_collate( cstr, "Y" ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		cstr = ofa_box_get_string( nth->data, OTE_DET_ACCOUNT_LOCKED );
+		return( !my_collate( cstr, "Y" ));
 	}
 
 	return( FALSE );
@@ -1101,17 +1028,18 @@ ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint id
 const gchar *
 ofo_ope_template_get_detail_label( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( idx >= 0, NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, OTE_DET_LABEL ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, OTE_DET_LABEL ));
 	}
 
 	return( NULL );
@@ -1124,19 +1052,20 @@ ofo_ope_template_get_detail_label( const ofoOpeTemplate *model, gint idx )
 gboolean
 ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			cstr = ofa_box_get_string( nth->data, OTE_DET_LABEL_LOCKED );
-			return( !my_collate( cstr, "Y" ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		cstr = ofa_box_get_string( nth->data, OTE_DET_LABEL_LOCKED );
+		return( !my_collate( cstr, "Y" ));
 	}
 
 	return( FALSE );
@@ -1149,17 +1078,18 @@ ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx 
 const gchar *
 ofo_ope_template_get_detail_debit( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( idx >= 0, NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, OTE_DET_DEBIT ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, OTE_DET_DEBIT ));
 	}
 
 	return( NULL );
@@ -1172,19 +1102,20 @@ ofo_ope_template_get_detail_debit( const ofoOpeTemplate *model, gint idx )
 gboolean
 ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			cstr = ofa_box_get_string( nth->data, OTE_DET_DEBIT_LOCKED );
-			return( !my_collate( cstr, "Y" ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		cstr = ofa_box_get_string( nth->data, OTE_DET_DEBIT_LOCKED );
+		return( !my_collate( cstr, "Y" ));
 	}
 
 	return( FALSE );
@@ -1197,17 +1128,18 @@ ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx 
 const gchar *
 ofo_ope_template_get_detail_credit( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( idx >= 0, NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			return( ofa_box_get_string( nth->data, OTE_DET_CREDIT ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, OTE_DET_CREDIT ));
 	}
 
 	return( NULL );
@@ -1220,19 +1152,20 @@ ofo_ope_template_get_detail_credit( const ofoOpeTemplate *model, gint idx )
 gboolean
 ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( idx >= 0, FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	priv = ofo_ope_template_get_instance_private( model );
 
-		nth = g_list_nth( model->priv->details, idx );
-		if( nth ){
-			cstr = ofa_box_get_string( nth->data, OTE_DET_CREDIT_LOCKED );
-			return( !my_collate( cstr, "Y" ));
-		}
+	nth = g_list_nth( priv->details, idx );
+	if( nth ){
+		cstr = ofa_box_get_string( nth->data, OTE_DET_CREDIT_LOCKED );
+		return( !my_collate( cstr, "Y" ));
 	}
 
 	return( FALSE );
@@ -1255,10 +1188,7 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofaHub *hub )
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( ope_template )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
@@ -1358,15 +1288,17 @@ model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 static gboolean
 model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 {
+	ofoOpeTemplatePrivate *priv;
 	gboolean ok;
 	GList *idet;
 	gint rang;
 
 	ok = FALSE;
+	priv = ofo_ope_template_get_instance_private( model );
 
 	if( model_delete_details( model, connect )){
 		ok = TRUE;
-		for( idet=model->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+		for( idet=priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			if( !model_insert_details( model, connect, rang, idet->data )){
 				ok = FALSE;
 				break;
@@ -1469,10 +1401,7 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
-
-	if( OFO_BASE( ope_template )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
@@ -1571,10 +1500,7 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template )
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
 	g_return_val_if_fail( ofo_ope_template_is_deletable( ope_template ), FALSE );
-
-	if( OFO_BASE( ope_template )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
@@ -1645,6 +1571,7 @@ icollectionable_get_interface_version( const ofaICollectionable *instance )
 static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it;
 	ofoOpeTemplate *template;
 	gchar *from;
@@ -1657,10 +1584,11 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 
 	for( it=dataset ; it ; it=it->next ){
 		template = OFO_OPE_TEMPLATE( it->data );
+		priv = ofo_ope_template_get_instance_private( template );
 		from = g_strdup_printf(
 				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 				ofo_ope_template_get_mnemo( template ));
-		template->priv->details =
+		priv->details =
 				ofo_base_load_rows( st_details_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
@@ -1698,6 +1626,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
+	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it, *det;
 	GSList *lines;
 	gchar *str;
@@ -1718,7 +1647,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 	for( it=dataset ; it ; it=it->next ){
 		model = OFO_OPE_TEMPLATE( it->data );
-		count += g_list_length( model->priv->details );
+		count += ofo_ope_template_get_detail_count( model );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
@@ -1753,7 +1682,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 
 		model = OFO_OPE_TEMPLATE( it->data );
-		for( det=model->priv->details ; det ; det=det->next ){
+		priv = ofo_ope_template_get_instance_private( model );
+
+		for( det=priv->details ; det ; det=det->next ){
 			str = ofa_box_get_csv_line_ex(
 					det->data, field_sep, decimal_sep, ( CSVExportFunc ) update_decimal_sep, ( void * ) settings );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
@@ -1859,6 +1790,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
 	ofoOpeTemplate *model;
+	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it;
 	guint errors, line;
 	gchar *msg, *mnemo;
@@ -1892,8 +1824,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				if( detail ){
 					model = model_find_by_mnemo( dataset, mnemo );
 					if( model ){
+						priv = ofo_ope_template_get_instance_private( model );
 						ofa_box_set_int( detail, OTE_DET_ROW, 1+ofo_ope_template_get_detail_count( model ));
-						model->priv->details = g_list_append( model->priv->details, detail );
+						priv->details = g_list_append( priv->details, detail );
 					}
 					g_free( mnemo );
 				}
@@ -1917,7 +1850,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			if( !model_do_insert( model, connect )){
 				errors -= 1;
 			}
-
 			ofa_iimportable_increment_progress(
 					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_ope_template_get_detail_count( model ));
 		}

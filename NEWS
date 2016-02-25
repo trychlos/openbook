@@ -61,6 +61,7 @@
    - ofoDossier: migrate to G_ADD_PRIVATE (todo #994).
    - ofoEntry: migrate to G_ADD_PRIVATE (todo #994).
    - ofoLedger: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoOpeTemplate: migrate to G_ADD_PRIVATE (todo #994).
 
 -----------------------------------------------------------------------
  Version 0.48

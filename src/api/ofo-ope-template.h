@@ -132,15 +132,12 @@ typedef struct _ofoOpeTemplatePrivate        ofoOpeTemplatePrivate;
 
 struct _ofoOpeTemplate {
 	/*< public members >*/
-	ofoBase                parent;
-
-	/*< private members >*/
-	ofoOpeTemplatePrivate *priv;
+	ofoBase      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass           parent;
+	ofoBaseClass parent;
 }
 	ofoOpeTemplateClass;
 
