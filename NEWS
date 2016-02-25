@@ -39,6 +39,7 @@
    - Do not install the resources which are managed as GResource (todo #970).
    - myDateCombo: migrate to G_ADD_PRIVATE (todo #994).
    - myDecimalCombo: migrate to G_ADD_PRIVATE (todo #994).
+   - myFieldCombo: migrate to G_ADD_PRIVATE (todo #994).
    - myFileMonitor: migrate to G_ADD_PRIVATE (todo #994).
    - myIDialog: new get_default_size() interface method.
    - myProgressBar: migrate to G_ADD_PRIVATE (todo #994).

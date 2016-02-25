@@ -52,16 +52,13 @@ typedef struct _myFieldComboPrivate        myFieldComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBox          parent;
-
-	/*< private members >*/
-	myFieldComboPrivate *priv;
+	GtkComboBox      parent;
 }
 	myFieldCombo;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBoxClass     parent;
+	GtkComboBoxClass parent;
 }
 	myFieldComboClass;
 
