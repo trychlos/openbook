@@ -55,16 +55,13 @@ typedef struct _ofaMySQLPrefsBinPrivate         ofaMySQLPrefsBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                   parent;
-
-	/*< private members >*/
-	ofaMySQLPrefsBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaMySQLPrefsBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass              parent;
+	GtkBinClass parent;
 }
 	ofaMySQLPrefsBinClass;
 

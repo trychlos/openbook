@@ -70,7 +70,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-prefs-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-prefs-bin.ui";
 
 static void     iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
 static guint    iprefs_page_get_interface_version( const ofaIPrefsPage *instance );
@@ -81,8 +81,9 @@ static void     setup_bin( ofaMySQLPrefsBin *bin );
 static void     on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
 static void     on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PAGE, iprefs_page_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaMySQLPrefsBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PAGE, iprefs_page_iface_init ))
 
 static void
 mysql_prefs_bin_finalize( GObject *instance )
@@ -96,7 +97,7 @@ mysql_prefs_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	g_free( priv->backup_cmdline );
 	g_free( priv->restore_cmdline );
@@ -112,9 +113,11 @@ mysql_prefs_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ));
 
-	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->settings );
@@ -129,14 +132,16 @@ static void
 ofa_mysql_prefs_bin_init( ofaMySQLPrefsBin *self )
 {
 	static const gchar *thisfn = "ofa_mysql_prefs_bin_instance_init";
+	ofaMySQLPrefsBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_MYSQL_PREFS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_MYSQL_PREFS_BIN, ofaMySQLPrefsBinPrivate );
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -148,8 +153,6 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_prefs_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_prefs_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLPrefsBinPrivate ));
 
 	/**
 	 * ofaMySQLPrefsBin::changed:
@@ -203,7 +206,7 @@ iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
 
-	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -226,7 +229,7 @@ iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **message )
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
 
-	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -248,7 +251,7 @@ iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
 
-	priv = OFA_MYSQL_PREFS_BIN( instance )->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -287,8 +290,9 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	GtkWidget *toplevel, *entry, *label;
 	gchar *cmdline;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "mpb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -329,7 +333,8 @@ on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
 	g_free( priv->backup_cmdline );
 	priv->backup_cmdline = g_strdup( gtk_entry_get_text( entry ));
 
@@ -341,7 +346,8 @@ on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
 	g_free( priv->restore_cmdline );
 	priv->restore_cmdline = g_strdup( gtk_entry_get_text( entry ));
 

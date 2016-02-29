@@ -510,12 +510,12 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@ui_files = \
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@resources_ui = \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.ui						\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@images_files = \

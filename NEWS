@@ -67,6 +67,8 @@
    - ofaMysqlEditorEnter: migrate to GResource (todo #826).
    - ofaMysqlMeta: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlPeriod: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaMysqlPrefsBin: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaMysqlPrefsBin: migrate to GResource (todo #826).
    - ofaPlugin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPReferences: move user interface to GResource (todo #826).
    - ofaPreferences: migrate to G_ADD_PRIVATE (todo #994).
