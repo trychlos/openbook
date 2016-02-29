@@ -67,9 +67,9 @@ static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *conn
 static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( const ofaICollectionable *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoConcil )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
 
 static void
 concil_finalize( GObject *instance )
