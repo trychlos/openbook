@@ -66,8 +66,8 @@ static void        on_settings_changed( myFileMonitor *monitor, const gchar *fil
 static GList      *load_dossiers( ofaFileDir *dir, GList *previous_list );
 static ofaIDBMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
 
-G_DEFINE_TYPE_EXTENDED( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT, 0, \
-		G_ADD_PRIVATE( ofaFileDir ));
+G_DEFINE_TYPE_EXTENDED( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaFileDir ))
 
 static void
 file_dir_finalize( GObject *instance )
