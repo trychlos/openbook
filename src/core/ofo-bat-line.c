@@ -67,9 +67,9 @@ static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
 static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBatLine )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init ))
 
 static void
 bat_line_finalize( GObject *instance )
