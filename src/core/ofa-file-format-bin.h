@@ -56,16 +56,13 @@ typedef struct _ofaFileFormatBinPrivate         ofaFileFormatBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                   parent;
-
-	/*< private members >*/
-	ofaFileFormatBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaFileFormatBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass              parent;
+	GtkBinClass parent;
 }
 	ofaFileFormatBinClass;
 

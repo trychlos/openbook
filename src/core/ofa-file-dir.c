@@ -66,7 +66,8 @@ static void        on_settings_changed( myFileMonitor *monitor, const gchar *fil
 static GList      *load_dossiers( ofaFileDir *dir, GList *previous_list );
 static ofaIDBMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
 
-G_DEFINE_TYPE( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT )
+G_DEFINE_TYPE_EXTENDED( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT, 0, \
+		G_ADD_PRIVATE( ofaFileDir ));
 
 static void
 file_dir_finalize( GObject *instance )
@@ -91,7 +92,7 @@ file_dir_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_FILE_DIR( instance ));
 
-	priv = OFA_FILE_DIR( instance )->priv;
+	priv = ofa_file_dir_get_instance_private( OFA_FILE_DIR( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -111,15 +112,16 @@ static void
 ofa_file_dir_init( ofaFileDir *self )
 {
 	static const gchar *thisfn = "ofa_file_dir_init";
+	ofaFileDirPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_FILE_DIR( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_FILE_DIR, ofaFileDirPrivate );
+	priv = ofa_file_dir_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -131,8 +133,6 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = file_dir_dispose;
 	G_OBJECT_CLASS( klass )->finalize = file_dir_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaFileDirPrivate ));
 
 	/**
 	 * ofaFiledir::changed:
@@ -182,7 +182,8 @@ setup_settings( ofaFileDir *dir )
 	ofaFileDirPrivate *priv;
 	gchar *filename;
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
+
 	priv->settings = g_object_ref( ofa_settings_get_settings( SETTINGS_TARGET_DOSSIER ));
 
 	filename = my_isettings_get_filename( priv->settings );
@@ -212,16 +213,13 @@ ofa_file_dir_get_dossiers( ofaFileDir *dir )
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		list = g_list_copy_deep( priv->list, ( GCopyFunc ) g_object_ref, NULL );
+	list = g_list_copy_deep( priv->list, ( GCopyFunc ) g_object_ref, NULL );
 
-		return( list );
-	}
-
-	g_return_val_if_reached( NULL );
+	return( list );
 }
 
 /*
@@ -235,7 +233,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 	GList *prev_list;
 	gchar *fname;
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 
 	/* we ignore next update signal emitted by the monitor when we
 	 * update the settings ourselves (so that the store may be
@@ -269,7 +267,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 	ofaIDBProvider *idbprovider;
 	ofaIDBMeta *meta;
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 	outlist = NULL;
 	prefix_len = my_strlen( FILE_DIR_DOSSIER_GROUP_PREFIX );
 	inlist = my_isettings_get_groups( priv->settings );
@@ -328,16 +326,13 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), 0 );
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		count = g_list_length( priv->list );
+	count = g_list_length( priv->list );
 
-		return( count );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( count );
 }
 
 /**
@@ -359,16 +354,13 @@ ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
 
 	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		meta = file_dir_get_meta( dossier_name, priv->list );
+	meta = file_dir_get_meta( dossier_name, priv->list );
 
-		return( meta );
-	}
-
-	g_return_val_if_reached( NULL );
+	return( meta );
 }
 
 static ofaIDBMeta *
@@ -417,26 +409,22 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 
-	priv = dir->priv;
+	priv = ofa_file_dir_get_instance_private( dir );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		dossier_name = ofa_idbmeta_get_dossier_name( meta );
-		group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
-		prov_instance = ofa_idbeditor_get_provider( editor );
-		prov_name = ofa_idbprovider_get_name( prov_instance );
-		my_isettings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
+	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
+	prov_instance = ofa_idbeditor_get_provider( editor );
+	prov_name = ofa_idbprovider_get_name( prov_instance );
+	my_isettings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
 
-		ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
+	ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 
-		g_object_unref( prov_instance );
-		g_free( group );
-		g_free( dossier_name );
+	g_object_unref( prov_instance );
+	g_free( group );
+	g_free( dossier_name );
 
-		on_settings_changed( priv->monitor, NULL, dir );
-		priv->ignore_next = TRUE;
-		return;
-	}
-
-	g_return_if_reached();
+	on_settings_changed( priv->monitor, NULL, dir );
+	priv->ignore_next = TRUE;
 }

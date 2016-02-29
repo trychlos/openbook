@@ -63,7 +63,7 @@ struct _ofaFileFormatBinPrivate {
 
 	/* runtime data
 	 */
-	ofaFFtype         format;
+	ofaFFtype       format;
 };
 
 /* column ordering in the file format combobox
@@ -90,9 +90,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-file-format-bin.ui";
-
-G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-file-format-bin.ui";
 
 static void     setup_bin( ofaFileFormatBin *bin );
 static void     init_file_format( ofaFileFormatBin *self );
@@ -113,6 +111,9 @@ static gint     get_file_format( ofaFileFormatBin *self );
 static gchar   *get_charmap( ofaFileFormatBin *self );
 static gboolean do_apply( ofaFileFormatBin *self );
 static GList   *get_available_charmaps( void );
+
+G_DEFINE_TYPE_EXTENDED( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaFileFormatBin ))
 
 static void
 file_format_bin_finalize( GObject *instance )
@@ -137,7 +138,7 @@ file_format_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_BIN( instance ));
 
-	priv = OFA_FILE_FORMAT_BIN( instance )->priv;
+	priv = ofa_file_format_bin_get_instance_private( OFA_FILE_FORMAT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -157,15 +158,16 @@ static void
 ofa_file_format_bin_init( ofaFileFormatBin *self )
 {
 	static const gchar *thisfn = "ofa_file_format_bin_init";
+	ofaFileFormatBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_FILE_FORMAT_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_FILE_FORMAT_BIN, ofaFileFormatBinPrivate );
+	priv = ofa_file_format_bin_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -177,8 +179,6 @@ ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = file_format_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = file_format_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaFileFormatBinPrivate ));
 
 	/**
 	 * ofaFileFormatBin::changed:
@@ -212,12 +212,15 @@ ofaFileFormatBin *
 ofa_file_format_bin_new( ofaFileFormat *format )
 {
 	ofaFileFormatBin *self;
+	ofaFileFormatBinPrivate *priv;
 
 	g_return_val_if_fail( format && OFA_IS_FILE_FORMAT( format ), NULL );
 
 	self = g_object_new( OFA_TYPE_FILE_FORMAT_BIN, NULL );
 
-	self->priv->settings = g_object_ref( format );
+	priv = ofa_file_format_bin_get_instance_private( self );
+
+	priv->settings = g_object_ref( format );
 
 	setup_bin( self );
 
@@ -234,8 +237,9 @@ setup_bin( ofaFileFormatBin *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_file_format_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "ffb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -281,7 +285,7 @@ init_file_format( ofaFileFormatBin *self )
 	const gchar *cstr;
 	GtkWidget *label;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	priv->format_combo =
 			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-export-format" );
@@ -340,7 +344,7 @@ on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->format_combo ), &iter )){
 		g_return_if_reached();
@@ -369,7 +373,7 @@ init_encoding( ofaFileFormatBin *self )
 	const gchar *cstr, *svalue;
 	GtkWidget *label;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	priv->encoding_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
 	g_return_if_fail( priv->encoding_combo && GTK_IS_COMBO_BOX( priv->encoding_combo ));
@@ -429,7 +433,7 @@ init_date_format( ofaFileFormatBin *self )
 	ofaFileFormatBinPrivate *priv;
 	GtkWidget *widget, *label;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	priv->date_combo = my_date_combo_new();
 
@@ -459,7 +463,8 @@ init_decimal_dot( ofaFileFormatBin *self )
 	GtkWidget *parent, *label;
 	gchar *sep;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
+
 	priv->decimal_combo = my_decimal_combo_new();
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-decimal-parent" );
@@ -491,7 +496,7 @@ init_field_separator( ofaFileFormatBin *self )
 	gchar *sep;
 	GtkWidget *label;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	priv->field_combo = my_field_combo_new();
 	priv->field_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-parent" );
@@ -528,7 +533,7 @@ init_headers( ofaFileFormatBin *self )
 	GtkWidget *widget;
 	GtkAdjustment *adjust;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 
 	mode = ofa_file_format_get_ffmode( priv->settings );
 
@@ -599,20 +604,20 @@ ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
 {
 	ofaFileFormatBinPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_file_format_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
-		if( column == 0 ){
-			return( priv->group0 );
-		}
-		if( column == 1 ){
-			return( priv->group1 );
-		}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+	if( column == 1 ){
+		return( priv->group1 );
 	}
 
-	g_return_val_if_reached( NULL );
+	return( NULL );
 }
 
 /**
@@ -631,14 +636,11 @@ ofa_file_format_bin_is_valid( ofaFileFormatBin *bin, gchar **error_message )
 
 	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), FALSE );
 
-	priv = bin->priv;
+	priv = ofa_file_format_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		return( is_validable( bin, error_message ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( is_validable( bin, error_message ));
 }
 
 static gboolean
@@ -648,7 +650,8 @@ is_validable( ofaFileFormatBin *self, gchar **error_message )
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iformat, ivalue;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
+
 	if( error_message ){
 		*error_message = NULL;
 	}
@@ -719,7 +722,7 @@ get_file_format( ofaFileFormatBin *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 	format = -1;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->format_combo ), &iter )){
@@ -739,7 +742,7 @@ get_charmap( ofaFileFormatBin *self )
 	GtkTreeIter iter;
 	gchar *charmap;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 	charmap = NULL;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->encoding_combo ), &iter )){
@@ -766,19 +769,15 @@ ofa_file_format_bin_apply( ofaFileFormatBin *settings )
 
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_BIN( settings ), FALSE );
 
-	priv = settings->priv;
+	priv = ofa_file_format_bin_get_instance_private( settings );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( !is_validable( settings, NULL )){
-			return( FALSE );
-		}
-
-		return( do_apply( settings ));
+	if( !is_validable( settings, NULL )){
+		return( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
-	return( FALSE );
+	return( do_apply( settings ));
 }
 
 static gboolean
@@ -789,7 +788,7 @@ do_apply( ofaFileFormatBin *self )
 	gint iformat, ivalue, iheaders;
 	ofaFFmode mode;
 
-	priv = self->priv;
+	priv = ofa_file_format_bin_get_instance_private( self );
 	charmap = NULL;
 	ivalue = -1;
 	iheaders = -1;

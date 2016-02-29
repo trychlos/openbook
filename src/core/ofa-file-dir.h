@@ -61,16 +61,13 @@ typedef struct _ofaFileDirPrivate        ofaFileDirPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject            parent;
-
-	/*< private members >*/
-	ofaFileDirPrivate *priv;
+	GObject      parent;
 }
 	ofaFileDir;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass       parent;
+	GObjectClass parent;
 }
 	ofaFileDirClass;
 
