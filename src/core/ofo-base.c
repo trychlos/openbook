@@ -41,8 +41,8 @@ struct _ofoBasePrivate {
 	ofaHub  *hub;
 };
 
-G_DEFINE_TYPE_EXTENDED( ofoBase, ofo_base, G_TYPE_OBJECT, 0, \
-		G_ADD_PRIVATE( ofoBase ));
+G_DEFINE_TYPE_EXTENDED( ofoBase, ofo_base, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofoBase ))
 
 static void
 ofo_base_finalize( GObject *instance )
