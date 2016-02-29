@@ -1110,8 +1110,8 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_tva_form_get_label( form ));
-	notes = my_utils_quote( ofo_tva_form_get_notes( form ));
+	label = my_utils_quote_single( ofo_tva_form_get_label( form ));
+	notes = my_utils_quote_single( ofo_tva_form_get_notes( form ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1235,7 +1235,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 
 	g_string_append_printf( query, "%u,", ofa_box_get_int( details, TFO_DET_LEVEL ));
 
-	code = my_utils_quote( ofa_box_get_string( details, TFO_DET_CODE ));
+	code = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_CODE ));
 	if( my_strlen( code )){
 		g_string_append_printf( query, "'%s',", code );
 	} else {
@@ -1243,7 +1243,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 	}
 	g_free( code );
 
-	label = my_utils_quote( ofa_box_get_string( details, TFO_DET_LABEL ));
+	label = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_LABEL ));
 	if( my_strlen( label )){
 		g_string_append_printf( query, "'%s',", label );
 	} else {
@@ -1254,7 +1254,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
 	g_string_append_printf( query, "'%s',", cstr );
 
-	base = my_utils_quote( ofa_box_get_string( details, TFO_DET_BASE ));
+	base = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_BASE ));
 	if( my_strlen( base )){
 		g_string_append_printf( query, "'%s',", base );
 	} else {
@@ -1265,7 +1265,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
 	g_string_append_printf( query, "'%s',", cstr );
 
-	amount = my_utils_quote( ofa_box_get_string( details, TFO_DET_AMOUNT ));
+	amount = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_AMOUNT ));
 	if( my_strlen( amount )){
 		g_string_append_printf( query, "'%s'", amount );
 	} else {
@@ -1297,7 +1297,7 @@ form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, G
 			"	VALUES('%s',%d",
 			ofo_tva_form_get_mnemo( form ), rang );
 
-	label = my_utils_quote( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
+	label = my_utils_quote_single( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
 	g_string_append_printf( query, ",'%s'", label );
 	g_free( label );
 
@@ -1363,8 +1363,8 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_tva_form_get_label( form ));
-	notes = my_utils_quote( ofo_tva_form_get_notes( form ));
+	label = my_utils_quote_single( ofo_tva_form_get_label( form ));
+	notes = my_utils_quote_single( ofo_tva_form_get_notes( form ));
 	new_mnemo = ofo_tva_form_get_mnemo( form );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

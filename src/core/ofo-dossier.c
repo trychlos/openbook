@@ -1869,7 +1869,7 @@ do_update_properties( ofoDossier *dossier )
 	g_string_append_printf( query,
 			"DOS_EXE_LENGTH=%d,", ofo_dossier_get_exe_length( dossier ));
 
-	notes = my_utils_quote( ofo_dossier_get_exe_notes( dossier ));
+	notes = my_utils_quote_single( ofo_dossier_get_exe_notes( dossier ));
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_EXE_NOTES='%s',", notes );
 	} else {
@@ -1891,7 +1891,7 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_IMPORT_LEDGER=NULL," );
 	}
 
-	label = my_utils_quote( ofo_dossier_get_label( dossier ));
+	label = my_utils_quote_single( ofo_dossier_get_label( dossier ));
 	if( my_strlen( label )){
 		g_string_append_printf( query, "DOS_LABEL='%s',", label );
 	} else {
@@ -1899,7 +1899,7 @@ do_update_properties( ofoDossier *dossier )
 	}
 	g_free( label );
 
-	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
+	notes = my_utils_quote_single( ofo_dossier_get_notes( dossier ));
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
 	} else {
@@ -2117,7 +2117,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	exenotes = my_utils_export_multi_lines( ofo_dossier_get_exe_notes( dossier ));
 	fope = ofo_dossier_get_forward_ope( dossier );
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
-	label = my_utils_quote( ofo_dossier_get_label( dossier ));
+	label = my_utils_quote_single( ofo_dossier_get_label( dossier ));
 	muser = ofo_dossier_get_upd_user( dossier );
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );

@@ -630,7 +630,7 @@ quote_query( const gchar *query )
 		g_regex_unref( regex );
 	}
 
-	quoted = my_utils_quote( new_str );
+	quoted = my_utils_quote_single( new_str );
 	g_free( new_str );
 
 	return( quoted );

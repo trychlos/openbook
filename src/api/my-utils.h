@@ -49,7 +49,7 @@ typedef enum {
 gint          my_collate                              ( const gchar *a, const gchar *b );
 glong         my_strlen                               ( const gchar *str );
 
-gchar        *my_utils_quote                          ( const gchar *str );
+gchar        *my_utils_quote_single                   ( const gchar *str );
 gchar        *my_utils_quote_double                   ( const gchar *str );
 
 GTimeVal     *my_utils_stamp_set_now                  ( GTimeVal *stamp );

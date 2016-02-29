@@ -575,7 +575,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_utils_quote( ofo_bat_line_get_ref( bat ));
+	str = my_utils_quote_single( ofo_bat_line_get_ref( bat ));
 	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
@@ -583,7 +583,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect )
 	}
 	g_free( str );
 
-	str = my_utils_quote( ofo_bat_line_get_label( bat ));
+	str = my_utils_quote_single( ofo_bat_line_get_label( bat ));
 	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {

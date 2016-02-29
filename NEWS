@@ -44,6 +44,7 @@
    - myIDialog: new get_default_size() interface method.
    - myProgressBar: migrate to G_ADD_PRIVATE (todo #994).
    - mySettings: migrate to G_ADD_PRIVATE (todo #994).
+   - my_utils_quote() is renamed to my_utils_quote_single().
    - my_utils_quote_double(): new function.
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
    - ofaButtonsBox: migrate to G_ADD_PRIVATE (todo #994).

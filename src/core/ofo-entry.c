@@ -2185,8 +2185,8 @@ entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect )
 	g_return_val_if_fail( OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_entry_get_label( entry ));
-	ref = my_utils_quote( ofo_entry_get_ref( entry ));
+	label = my_utils_quote_single( ofo_entry_get_label( entry ));
+	ref = my_utils_quote_single( ofo_entry_get_ref( entry ));
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	my_utils_stamp_set_now( &stamp );
@@ -2394,7 +2394,7 @@ entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_entry_get_label( entry ));
+	label = my_utils_quote_single( ofo_entry_get_label( entry ));
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_double_to_sql( ofo_entry_get_debit( entry ));
@@ -2410,7 +2410,7 @@ entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect )
 			label );
 
 	cstr = ofo_entry_get_ref( entry );
-	ref = my_strlen( cstr ) ? my_utils_quote( cstr ) : NULL;
+	ref = my_strlen( cstr ) ? my_utils_quote_single( cstr ) : NULL;
 	if( my_strlen( ref )){
 		g_string_append_printf( query, " ENT_REF='%s',", ref );
 	} else {

@@ -1298,8 +1298,8 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_tva_record_get_label( record ));
-	notes = my_utils_quote( ofo_tva_record_get_notes( record ));
+	label = my_utils_quote_single( ofo_tva_record_get_label( record ));
+	notes = my_utils_quote_single( ofo_tva_record_get_notes( record ));
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 	my_utils_stamp_set_now( &stamp );
@@ -1449,7 +1449,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 
 	g_string_append_printf( query, ",%u", ofa_box_get_int( details, TFO_DET_LEVEL ));
 
-	code = my_utils_quote( ofa_box_get_string( details, TFO_DET_CODE ));
+	code = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_CODE ));
 	if( my_strlen( code )){
 		g_string_append_printf( query, ",'%s'", code );
 	} else {
@@ -1457,7 +1457,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	}
 	g_free( code );
 
-	label = my_utils_quote( ofa_box_get_string( details, TFO_DET_LABEL ));
+	label = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_LABEL ));
 	if( my_strlen( label )){
 		g_string_append_printf( query, ",'%s'", label );
 	} else {
@@ -1468,7 +1468,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
 	g_string_append_printf( query, ",'%s'", cstr );
 
-	base = my_utils_quote( ofa_box_get_string( details, TFO_DET_BASE_RULE ));
+	base = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_BASE_RULE ));
 	if( my_strlen( base )){
 		g_string_append_printf( query, ",'%s'", base );
 	} else {
@@ -1483,7 +1483,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
 	g_string_append_printf( query, ",'%s'", cstr );
 
-	amount = my_utils_quote( ofa_box_get_string( details, TFO_DET_AMOUNT_RULE ));
+	amount = my_utils_quote_single( ofa_box_get_string( details, TFO_DET_AMOUNT_RULE ));
 	if( my_strlen( amount )){
 		g_string_append_printf( query, ",'%s'", amount );
 	} else {
@@ -1522,7 +1522,7 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
 			"	VALUES('%s','%s',%d",
 			ofo_tva_record_get_mnemo( record ), send, rang );
 
-	label = my_utils_quote( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
+	label = my_utils_quote_single( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
 	g_string_append_printf( query, ",'%s'", label );
 	g_free( label );
 
@@ -1592,8 +1592,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_tva_record_get_label( record ));
-	notes = my_utils_quote( ofo_tva_record_get_notes( record ));
+	label = my_utils_quote_single( ofo_tva_record_get_label( record ));
+	notes = my_utils_quote_single( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

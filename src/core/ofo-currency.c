@@ -567,9 +567,9 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_currency_get_label( currency ));
+	label = my_utils_quote_single( ofo_currency_get_label( currency ));
 	symbol = ofo_currency_get_symbol( currency );
-	notes = my_utils_quote( ofo_currency_get_notes( currency ));
+	notes = my_utils_quote_single( ofo_currency_get_notes( currency ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -648,8 +648,8 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote( ofo_currency_get_label( currency ));
-	notes = my_utils_quote( ofo_currency_get_notes( currency ));
+	label = my_utils_quote_single( ofo_currency_get_label( currency ));
+	notes = my_utils_quote_single( ofo_currency_get_notes( currency ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 

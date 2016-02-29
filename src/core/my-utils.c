@@ -39,6 +39,7 @@ typedef struct {
 }
 	sBuildableByName;
 
+static GRegex         *st_quote_single_regex = NULL;
 static GRegex         *st_quote_double_regex = NULL;
 static const gchar    *st_cssfile            = PKGCSSDIR "/ofa.css";
 static GtkCssProvider *st_css_provider       = NULL;
@@ -79,39 +80,36 @@ my_strlen( const gchar *str )
 }
 
 /**
- * my_utils_quote:
+ * my_utils_quote_single:
  *
  * Replace "'" quote characters with "\\'" before executing SQL queries
  */
 gchar *
-my_utils_quote( const gchar *str )
+my_utils_quote_single( const gchar *str )
 {
-	static const gchar *thisfn = "my_utils_quote";
-	GRegex *regex;
+	static const gchar *thisfn = "my_utils_quote_single";
 	GError *error;
 	gchar *new_str;
 
-	error = NULL;
 	new_str = NULL;
 
-	if( my_strlen( str )){
-
-		regex = g_regex_new( "'", 0, 0, &error );
-		if( error ){
-			g_warning( "%s: g_regex_new=%s", thisfn, error->message );
-			g_error_free( error );
-			return( NULL );
+	if( str ){
+		error = NULL;
+		if( !st_quote_single_regex ){
+			st_quote_single_regex = g_regex_new( "'", 0, 0, &error );
+			if( error ){
+				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+				g_error_free( error );
+				return( NULL );
+			}
 		}
-
-		new_str = g_regex_replace_literal( regex, str, -1, 0, "\\'", 0, &error );
+		g_return_val_if_fail( st_quote_single_regex, NULL );
+		new_str = g_regex_replace_literal( st_quote_single_regex, str, -1, 0, "\\'", 0, &error );
 		if( error ){
 			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
 			g_error_free( error );
-			g_regex_unref( regex );
 			return( NULL );
 		}
-
-		g_regex_unref( regex );
 	}
 
 	return( new_str );
@@ -130,10 +128,10 @@ my_utils_quote_double( const gchar *str )
 	GError *error;
 	gchar *new_str;
 
-	error = NULL;
 	new_str = NULL;
 
 	if( str ){
+		error = NULL;
 		if( !st_quote_double_regex ){
 			st_quote_double_regex = g_regex_new( "\"", 0, 0, &error );
 			if( error ){
