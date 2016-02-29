@@ -48,8 +48,8 @@ struct _ofaButtonsBoxPrivate {
 
 static void setup_top_grid( ofaButtonsBox *box );
 
-G_DEFINE_TYPE_EXTENDED( ofaButtonsBox, ofa_buttons_box, GTK_TYPE_BIN, 0, \
-		G_ADD_PRIVATE( ofaButtonsBox ));
+G_DEFINE_TYPE_EXTENDED( ofaButtonsBox, ofa_buttons_box, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaButtonsBox ))
 
 static void
 buttons_box_finalize( GObject *instance )
