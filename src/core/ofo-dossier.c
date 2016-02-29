@@ -114,9 +114,9 @@ static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFile
 static void        free_cur_detail( sCurrency *details );
 static void        free_cur_details( GList *details );
 
-G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
 
 static void
 dossier_finalize( GObject *instance )
