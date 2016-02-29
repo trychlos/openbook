@@ -80,9 +80,9 @@ static GSList *get_lines_from_csv( const gchar *uri, const ofaFileFormat *settin
 static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
-G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init ))
 
 static void
 hub_finalize( GObject *instance )
