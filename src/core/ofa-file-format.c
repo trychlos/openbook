@@ -81,8 +81,8 @@ static const gchar *st_def_headers      = "True";
 
 static void  do_init( ofaFileFormat *self, const gchar *prefs_name );
 
-G_DEFINE_TYPE_EXTENDED( ofaFileFormat, ofa_file_format, G_TYPE_OBJECT, 0, \
-		G_ADD_PRIVATE( ofaFileFormat ));
+G_DEFINE_TYPE_EXTENDED( ofaFileFormat, ofa_file_format, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaFileFormat ))
 
 static void
 file_format_finalize( GObject *instance )
