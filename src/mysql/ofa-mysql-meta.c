@@ -62,8 +62,9 @@ static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIDBPeriod
 static void            idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period );
 static void            idbmeta_dump( const ofaIDBMeta *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMETA, idbmeta_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMySQLMeta )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMETA, idbmeta_iface_init ))
 
 static void
 mysql_meta_finalize( GObject *instance )
@@ -77,7 +78,7 @@ mysql_meta_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	priv = OFA_MYSQL_META( instance )->priv;
+	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
 
 	g_free( priv->host );
 	g_free( priv->socket );
@@ -91,7 +92,7 @@ mysql_meta_dispose( GObject *instance )
 {
 	ofaMySQLMetaPrivate *priv;
 
-	priv = OFA_MYSQL_META( instance )->priv;
+	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -108,11 +109,14 @@ static void
 ofa_mysql_meta_init( ofaMySQLMeta *self )
 {
 	static const gchar *thisfn = "ofa_mysql_meta_init";
+	ofaMySQLMetaPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_META, ofaMySQLMetaPrivate );
+	priv = ofa_mysql_meta_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -124,8 +128,6 @@ ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_meta_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_meta_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLMetaPrivate ));
 }
 
 /*
@@ -160,20 +162,19 @@ idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar 
 
 	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
 
-	priv = OFA_MYSQL_META( meta )->priv;
+	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( meta ));
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		/* read connection informations from settings */
-		priv->host = my_isettings_get_string( settings, group, MYSQL_HOST_KEY );
-		priv->socket = my_isettings_get_string( settings, group, MYSQL_SOCKET_KEY );
-		priv->port = my_isettings_get_uint( settings, group, MYSQL_PORT_KEY );
+	/* read connection informations from settings */
+	priv->host = my_isettings_get_string( settings, group, MYSQL_HOST_KEY );
+	priv->socket = my_isettings_get_string( settings, group, MYSQL_SOCKET_KEY );
+	priv->port = my_isettings_get_uint( settings, group, MYSQL_PORT_KEY );
 
-		/* reload defined periods */
-		periods = load_periods( meta, settings, group );
-		ofa_idbmeta_set_periods( meta, periods );
-		ofa_idbmeta_free_periods( periods );
-	}
+	/* reload defined periods */
+	periods = load_periods( meta, settings, group );
+	ofa_idbmeta_set_periods( meta, periods );
+	ofa_idbmeta_free_periods( periods );
 }
 
 /*
@@ -243,31 +244,30 @@ idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISettin
 	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
 	g_return_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ));
 
-	priv = OFA_MYSQL_META( meta )->priv;
+	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( meta ));
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		/* write connection informations to settings */
-		host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
-		if( my_strlen( host )){
-			my_isettings_set_string( settings, group, MYSQL_HOST_KEY, host );
-		}
-		socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
-		if( my_strlen( socket )){
-			my_isettings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
-		}
-		port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
-		if( port > 0 ){
-			my_isettings_set_uint( settings, group, MYSQL_PORT_KEY, port );
-		}
-
-		/* initialize a new current period */
-		database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
-		period = ofa_mysql_period_new_to_settings( settings, group, TRUE, NULL, NULL, database );
-		periods = g_list_append( NULL, period );
-		ofa_idbmeta_set_periods( meta, periods );
-		ofa_idbmeta_free_periods( periods );
+	/* write connection informations to settings */
+	host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
+	if( my_strlen( host )){
+		my_isettings_set_string( settings, group, MYSQL_HOST_KEY, host );
 	}
+	socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
+	if( my_strlen( socket )){
+		my_isettings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
+	}
+	port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
+	if( port > 0 ){
+		my_isettings_set_uint( settings, group, MYSQL_PORT_KEY, port );
+	}
+
+	/* initialize a new current period */
+	database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
+	period = ofa_mysql_period_new_to_settings( settings, group, TRUE, NULL, NULL, database );
+	periods = g_list_append( NULL, period );
+	ofa_idbmeta_set_periods( meta, periods );
+	ofa_idbmeta_free_periods( periods );
 }
 
 static void
@@ -309,7 +309,8 @@ idbmeta_dump( const ofaIDBMeta *instance )
 	static const gchar *thisfn = "ofa_mysql_meta_dump";
 	ofaMySQLMetaPrivate *priv;
 
-	priv = OFA_MYSQL_META( instance )->priv;
+	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
+
 	g_debug( "%s: meta=%p", thisfn, ( void * ) instance );
 	g_debug( "%s:   host=%s", thisfn, priv->host );
 	g_debug( "%s:   socket=%s", thisfn, priv->socket );
@@ -348,14 +349,11 @@ ofa_mysql_meta_get_host( const ofaMySQLMeta *meta )
 
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
 
-	priv = meta->priv;
+	priv = ofa_mysql_meta_get_instance_private( meta );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->host );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->host );
 }
 
 /**
@@ -374,14 +372,11 @@ ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
 
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
 
-	priv = meta->priv;
+	priv = ofa_mysql_meta_get_instance_private( meta );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->socket );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->socket );
 }
 
 /**
@@ -398,14 +393,11 @@ ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
 
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), 0 );
 
-	priv = meta->priv;
+	priv = ofa_mysql_meta_get_instance_private( meta );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->port );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->port );
 }
 
 /**

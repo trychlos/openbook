@@ -49,16 +49,13 @@ typedef struct _ofaMySQLMetaPrivate        ofaMySQLMetaPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject              parent;
-
-	/*< private members >*/
-	ofaMySQLMetaPrivate *priv;
+	GObject      parent;
 }
 	ofaMySQLMeta;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass         parent;
+	GObjectClass parent;
 }
 	ofaMySQLMetaClass;
 
