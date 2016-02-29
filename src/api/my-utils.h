@@ -50,6 +50,7 @@ gint          my_collate                              ( const gchar *a, const gc
 glong         my_strlen                               ( const gchar *str );
 
 gchar        *my_utils_quote                          ( const gchar *str );
+gchar        *my_utils_quote_double                   ( const gchar *str );
 
 GTimeVal     *my_utils_stamp_set_now                  ( GTimeVal *stamp );
 GTimeVal     *my_utils_stamp_set_from_sql             ( GTimeVal *timeval, const gchar *str );

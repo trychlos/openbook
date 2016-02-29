@@ -39,8 +39,9 @@ typedef struct {
 }
 	sBuildableByName;
 
-static const gchar    *st_cssfile       = PKGCSSDIR "/ofa.css";
-static GtkCssProvider *st_css_provider  = NULL;
+static GRegex         *st_quote_double_regex = NULL;
+static const gchar    *st_cssfile            = PKGCSSDIR "/ofa.css";
+static GtkCssProvider *st_css_provider       = NULL;
 
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
@@ -111,6 +112,43 @@ my_utils_quote( const gchar *str )
 		}
 
 		g_regex_unref( regex );
+	}
+
+	return( new_str );
+}
+
+/**
+ * my_utils_quote_double:
+ *
+ * Replace '"' quote characters with '\"'
+ * Use case: strings export
+ */
+gchar *
+my_utils_quote_double( const gchar *str )
+{
+	static const gchar *thisfn = "my_utils_quote_double";
+	GError *error;
+	gchar *new_str;
+
+	error = NULL;
+	new_str = NULL;
+
+	if( str ){
+		if( !st_quote_double_regex ){
+			st_quote_double_regex = g_regex_new( "\"", 0, 0, &error );
+			if( error ){
+				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+				g_error_free( error );
+				return( NULL );
+			}
+		}
+		g_return_val_if_fail( st_quote_double_regex, NULL );
+		new_str = g_regex_replace_literal( st_quote_double_regex, str, -1, 0, "\\\"", 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+			g_error_free( error );
+			return( NULL );
+		}
 	}
 
 	return( new_str );
