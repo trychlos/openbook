@@ -302,7 +302,7 @@ ofa_iimportable_import( ofaIImportable *importable,
  * ofa_iimportable_get_string:
  *
  * Returns a newly allocated string pointed to by the @it.
- * If not null, the string is stripped from leading and tailing spaces.
+ * If not null, the string is stripped from leading and tailing spaces and double quotes.
  * The returned list should be g_free() by the caller.
  * Returns NULL if empty.
  */
@@ -310,22 +310,33 @@ gchar *
 ofa_iimportable_get_string( GSList **it )
 {
 	const gchar *cstr;
-	gchar *str;
+	gchar *str, *unquoted;
+	glong len;
 
 	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
 	if( cstr ){
 		str = g_strstrip( g_strdup( cstr ));
-		if( !my_strlen( str )){
-			g_free( str );
-			str = NULL;
+		unquoted = my_utils_unquote_double( str );
+		g_free( str );
+		len = my_strlen( unquoted );
+		if( len ){
+			if( unquoted[0] == '"' && unquoted[len-1] == '"' ){
+				str = g_strndup( unquoted+1, len-2 );
+				g_free( unquoted );
+				unquoted = str;
+			}
+		}
+		if( !my_strlen( unquoted )){
+			g_free( unquoted );
+			unquoted = NULL;
 		}
 	} else {
-		str = NULL;
+		unquoted = NULL;
 	}
 
 	*it = *it ? ( *it )->next : NULL;
 
-	return( str );
+	return( unquoted );
 }
 
 /**
