@@ -63,7 +63,7 @@ struct _ofaMySQLEditorEnterPrivate {
 	GtkSizeGroup *group0;
 };
 
-static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-editor-enter.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-editor-enter.ui";
 
 static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
 static guint         idbeditor_get_interface_version( const ofaIDBEditor *instance );
@@ -76,8 +76,9 @@ static void          on_socket_changed( GtkEntry *entry, ofaMySQLEditorEnter *bi
 static void          on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMySQLEditorEnter *bin );
 static void          on_database_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLEditorEnter, ofa_mysql_editor_enter, GTK_TYPE_BIN, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEDITOR, idbeditor_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLEditorEnter, ofa_mysql_editor_enter, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaMySQLEditorEnter )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEDITOR, idbeditor_iface_init ))
 
 static void
 mysql_editor_enter_finalize( GObject *instance )
@@ -91,7 +92,7 @@ mysql_editor_enter_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MYSQL_EDITOR_ENTER( instance ));
 
 	/* free data members here */
-	priv = OFA_MYSQL_EDITOR_ENTER( instance )->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( OFA_MYSQL_EDITOR_ENTER( instance ));
 
 	g_free( priv->host );
 	g_free( priv->socket );
@@ -108,9 +109,11 @@ mysql_editor_enter_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_EDITOR_ENTER( instance ));
 
-	priv = OFA_MYSQL_EDITOR_ENTER( instance )->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( OFA_MYSQL_EDITOR_ENTER( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
@@ -124,14 +127,16 @@ static void
 ofa_mysql_editor_enter_init( ofaMySQLEditorEnter *self )
 {
 	static const gchar *thisfn = "ofa_mysql_editor_enter_instance_init";
+	ofaMySQLEditorEnterPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_MYSQL_EDITOR_ENTER( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_MYSQL_EDITOR_ENTER, ofaMySQLEditorEnterPrivate );
+	priv = ofa_mysql_editor_enter_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -143,8 +148,6 @@ ofa_mysql_editor_enter_class_init( ofaMySQLEditorEnterClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_editor_enter_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_editor_enter_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLEditorEnterPrivate ));
 }
 
 /*
@@ -176,18 +179,16 @@ idbeditor_get_size_group( const ofaIDBEditor *instance, guint column )
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_EDITOR_ENTER( instance ), NULL );
 
-	priv = OFA_MYSQL_EDITOR_ENTER( instance )->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( OFA_MYSQL_EDITOR_ENTER( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		if( column == 0 ){
-			return( priv->group0 );
-		}
-		g_warning( "%s: column=%u", thisfn, column );
-		return( NULL );
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	g_warning( "%s: column=%u", thisfn, column );
+	return( NULL );
 }
 
 /*
@@ -201,20 +202,17 @@ idbeditor_get_valid( const ofaIDBEditor *instance, gchar **message )
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_EDITOR_ENTER( instance ), FALSE );
 
-	priv = OFA_MYSQL_EDITOR_ENTER( instance )->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( OFA_MYSQL_EDITOR_ENTER( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		ok = my_strlen( priv->database ) > 0;
+	ok = my_strlen( priv->database ) > 0;
 
-		if( message ){
-			*message = ok ? NULL : g_strdup( _( "Database name is not set" ));
-		}
-
-		return( ok );
+	if( message ){
+		*message = ok ? NULL : g_strdup( _( "Database name is not set" ));
 	}
 
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /**
@@ -242,8 +240,9 @@ setup_bin( ofaMySQLEditorEnter *bin )
 	GObject *object;
 	GtkWidget *toplevel, *entry, *label;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_mysql_editor_enter_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "mceb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -293,7 +292,8 @@ on_host_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( bin );
+
 	g_free( priv->host );
 	priv->host = g_strdup( gtk_entry_get_text( entry ));
 
@@ -306,7 +306,8 @@ on_port_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
 	ofaMySQLEditorEnterPrivate *priv;
 	const gchar *port;
 
-	priv = bin->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( bin );
+
 	port = gtk_entry_get_text( entry );
 	if( my_strlen( port )){
 		priv->port = ( guint ) atoi( port );
@@ -322,7 +323,8 @@ on_socket_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( bin );
+
 	g_free( priv->socket );
 	priv->socket = g_strdup( gtk_entry_get_text( entry ));
 
@@ -356,7 +358,8 @@ on_database_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( bin );
+
 	g_free( priv->database );
 	priv->database = g_strdup( gtk_entry_get_text( entry ));
 
@@ -379,14 +382,11 @@ ofa_mysql_editor_enter_get_host( const ofaMySQLEditorEnter *editor )
 
 	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), NULL );
 
-	priv = editor->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( editor );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->host );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->host );
 }
 
 /**
@@ -405,14 +405,11 @@ ofa_mysql_editor_enter_get_socket( const ofaMySQLEditorEnter *editor )
 
 	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), NULL );
 
-	priv = editor->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( editor );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->socket );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->socket );
 }
 
 /**
@@ -428,14 +425,11 @@ ofa_mysql_editor_enter_get_port( const ofaMySQLEditorEnter *editor )
 
 	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), 0 );
 
-	priv = editor->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( editor );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-		return( priv->port );
-	}
-
-	g_return_val_if_reached( 0 );
+	return( priv->port );
 }
 
 /**
@@ -454,12 +448,9 @@ ofa_mysql_editor_enter_get_database( const ofaMySQLEditorEnter *editor )
 
 	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), NULL );
 
-	priv = editor->priv;
+	priv = ofa_mysql_editor_enter_get_instance_private( editor );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->database );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->database );
 }

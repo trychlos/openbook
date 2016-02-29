@@ -103,12 +103,12 @@ libofa_mysql_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-mysql-editor-enter.ui						\
 	ofa-mysql-prefs-bin.ui							\
 	$(NULL)
 
 resources_ui = \
 	ofa-mysql-editor-display.ui						\
+	ofa-mysql-editor-enter.ui						\
 	$(NULL)
 
 images_files = \
