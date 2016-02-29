@@ -61,6 +61,8 @@
    - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofaPage: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlConnect: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaMysqlEditorDisplay: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaMysqlEditorDisplay: migrate to GResource (todo #826).
    - ofaPlugin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPReferences: move user interface to GResource (todo #826).
    - ofaPreferences: migrate to G_ADD_PRIVATE (todo #994).

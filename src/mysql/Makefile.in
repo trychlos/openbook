@@ -175,7 +175,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" \
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
+am__libofa_mysql_la_SOURCES_DIST = openbook-resources.c \
+	openbook-resources.h ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-cmdline.c ofa-mysql-cmdline.h ofa-mysql-connect.c \
 	ofa-mysql-connect.h ofa-mysql-editor-display.c \
 	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
@@ -186,8 +187,11 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-mysql.c ofa-mysql.h \
 	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
 	ofa-mysql-prefs-bin.h ofa-mysql-user-prefs.c \
 	ofa-mysql-user-prefs.h ofa-module.c
-@HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-mysql.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
+@HAVE_MYSQL_TRUE@am__objects_1 = openbook-resources.lo
+@HAVE_MYSQL_TRUE@am__objects_2 = $(am__objects_1)
+@HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = $(am__objects_2) \
+@HAVE_MYSQL_TRUE@	ofa-mysql.lo ofa-mysql-cmdline.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-meta.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.lo \
@@ -450,7 +454,24 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@pkglib_LTLIBRARIES = libofa-mysql.la
 @HAVE_MYSQL_TRUE@plugin_datadir = $(pkgdatadir)/$(plugin_id)
 @HAVE_MYSQL_TRUE@init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
+@HAVE_MYSQL_TRUE@resdir = $(srcdir)
+@HAVE_MYSQL_TRUE@resxml = $(srcdir)/openbook.gresource.xml
+@HAVE_MYSQL_TRUE@resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+@HAVE_MYSQL_TRUE@openbook_built_sources = \
+@HAVE_MYSQL_TRUE@	openbook-resources.c							\
+@HAVE_MYSQL_TRUE@	openbook-resources.h							\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+@HAVE_MYSQL_TRUE@BUILT_SOURCES = \
+@HAVE_MYSQL_TRUE@	$(openbook_built_sources)						\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+@HAVE_MYSQL_TRUE@nodist_openbook_SOURCES = \
+@HAVE_MYSQL_TRUE@	$(openbook_built_sources)						\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
 @HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
+@HAVE_MYSQL_TRUE@	$(BUILT_SOURCES)								\
 @HAVE_MYSQL_TRUE@	ofa-mysql.c										\
 @HAVE_MYSQL_TRUE@	ofa-mysql.h										\
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.c								\
@@ -489,9 +510,12 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@ui_files = \
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.ui						\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
+@HAVE_MYSQL_TRUE@resources_ui = \
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui						\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@images_files = \
@@ -508,9 +532,11 @@ top_srcdir = @top_srcdir@
 #	$(NULL)
 @HAVE_MYSQL_TRUE@EXTRA_DIST = \
 @HAVE_MYSQL_TRUE@	$(plugin_data_DATA)								\
+@HAVE_MYSQL_TRUE@	$(resources_ui)									\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
@@ -601,6 +627,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-user-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbook-resources.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -733,13 +760,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LTLIBRARIES) $(DATA)
 installdirs:
 	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(plugin_datadir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -769,6 +798,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
@@ -840,7 +870,7 @@ ps-am:
 
 uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibLTLIBRARIES cscopelist-am ctags \
@@ -860,6 +890,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
 
 .PRECIOUS: Makefile
 
+@HAVE_MYSQL_TRUE@openbook-resources.c: $(resxml) $(resource_files)
+@HAVE_MYSQL_TRUE@	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+@HAVE_MYSQL_TRUE@openbook-resources.h: $(resxml) $(resource_files)
+@HAVE_MYSQL_TRUE@	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

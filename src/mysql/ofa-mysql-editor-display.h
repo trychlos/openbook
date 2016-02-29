@@ -59,16 +59,13 @@ typedef struct _ofaMySQLEditorDisplayPrivate         ofaMySQLEditorDisplayPrivat
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                        parent;
-
-	/*< private members >*/
-	ofaMySQLEditorDisplayPrivate *priv;
+	GtkBin      parent;
 }
 	ofaMySQLEditorDisplay;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                   parent;
+	GtkBinClass parent;
 }
 	ofaMySQLEditorDisplayClass;
 

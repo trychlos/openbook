@@ -46,7 +46,7 @@ struct _ofaMySQLEditorDisplayPrivate {
 	GtkSizeGroup   *group0;
 };
 
-static const gchar *st_bin_xml          = PROVIDER_DATADIR "/ofa-mysql-editor-display.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-editor-display.ui";
 
 static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
 static guint         idbeditor_get_interface_version( const ofaIDBEditor *instance );
@@ -54,8 +54,9 @@ static void          idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMet
 static GtkSizeGroup *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
 static void          setup_bin( ofaMySQLEditorDisplay *bin );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLEditorDisplay, ofa_mysql_editor_display, GTK_TYPE_BIN, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEDITOR, idbeditor_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLEditorDisplay, ofa_mysql_editor_display, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaMySQLEditorDisplay )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEDITOR, idbeditor_iface_init ))
 
 static void
 mysql_editor_display_finalize( GObject *instance )
@@ -80,9 +81,11 @@ mysql_editor_display_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_EDITOR_DISPLAY( instance ));
 
-	priv = OFA_MYSQL_EDITOR_DISPLAY( instance )->priv;
+	priv = ofa_mysql_editor_display_get_instance_private( OFA_MYSQL_EDITOR_DISPLAY( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
@@ -96,14 +99,16 @@ static void
 ofa_mysql_editor_display_init( ofaMySQLEditorDisplay *self )
 {
 	static const gchar *thisfn = "ofa_mysql_editor_display_instance_init";
+	ofaMySQLEditorDisplayPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_MYSQL_EDITOR_DISPLAY( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_MYSQL_EDITOR_DISPLAY, ofaMySQLEditorDisplayPrivate );
+	priv = ofa_mysql_editor_display_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -115,8 +120,6 @@ ofa_mysql_editor_display_class_init( ofaMySQLEditorDisplayClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_editor_display_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_editor_display_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLEditorDisplayPrivate ));
 }
 
 /*
@@ -198,18 +201,16 @@ idbeditor_get_size_group( const ofaIDBEditor *instance, guint column )
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_EDITOR_DISPLAY( instance ), NULL );
 
-	priv = OFA_MYSQL_EDITOR_DISPLAY( instance )->priv;
+	priv = ofa_mysql_editor_display_get_instance_private( OFA_MYSQL_EDITOR_DISPLAY( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		if( column == 0 ){
-			return( priv->group0 );
-		}
-		g_warning( "%s: column=%u", thisfn, column );
-		return( NULL );
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	g_warning( "%s: column=%u", thisfn, column );
+	return( NULL );
 }
 
 /**
@@ -237,8 +238,9 @@ setup_bin( ofaMySQLEditorDisplay *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_mysql_editor_display_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "mcdb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
