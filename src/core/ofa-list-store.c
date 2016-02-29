@@ -61,9 +61,9 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( const ofaIStore *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0, \
-		G_ADD_PRIVATE( ofaListStore ) \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaListStore )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ))
 
 static void
 list_store_finalize( GObject *instance )
