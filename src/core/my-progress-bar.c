@@ -50,8 +50,8 @@ static void on_double( myProgressBar *self, gdouble progress, void *empty );
 static void on_text( myProgressBar *self, const gchar *text, void *empty );
 static void on_pulse( myProgressBar *self, void *empty );
 
-G_DEFINE_TYPE_EXTENDED( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR, 0, \
-		G_ADD_PRIVATE( myProgressBar ));
+G_DEFINE_TYPE_EXTENDED( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR, 0,
+		G_ADD_PRIVATE( myProgressBar ))
 
 static void
 progress_bar_finalize( GObject *instance )
