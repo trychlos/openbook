@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/trychlos/openbook/mysql">
+    <file>ofa-mysql-editor-display.ui</file>
+    <file>ofa-mysql-editor-enter.ui</file>
+    <file>ofa-mysql-prefs-bin.ui</file>
+  </gresource>
+</gresources>
