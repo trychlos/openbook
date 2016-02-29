@@ -54,41 +54,38 @@ typedef struct _ofaDossierDeletePrefsBinPrivate          ofaDossierDeletePrefsBi
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                           parent;
-
-	/*< private members >*/
-	ofaDossierDeletePrefsBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaDossierDeletePrefsBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                      parent;
+	GtkBinClass parent;
 }
 	ofaDossierDeletePrefsBinClass;
 
-	/**
-	 * ofnDBMode:
-	 *
-	 * What to do when the database already exists while defining a new
-	 * dossier.
-	 */
-	typedef enum {
-		DBMODE_REINIT = 1,
-		DBMODE_LEAVE_AS_IS
-	}
-		ofnDBMode;
+/**
+ * ofnDBMode:
+ *
+ * What to do when the database already exists while defining a new
+ * dossier.
+ */
+typedef enum {
+	DBMODE_REINIT = 1,
+	DBMODE_LEAVE_AS_IS
+}
+	ofnDBMode;
 
-	/**
-	 * ofnDBMode:
-	 *
-	 * What to do about the database when deleting a dossier.
-	 */
-	typedef enum {
-		DBMODE_DROP = 1,
-		DBMODE_KEEP
-	}
-		ofnDBDeleteMode;
+/**
+ * ofnDBMode:
+ *
+ * What to do about the database when deleting a dossier.
+ */
+typedef enum {
+	DBMODE_DROP = 1,
+	DBMODE_KEEP
+}
+	ofnDBDeleteMode;
 
 GType                     ofa_dossier_delete_prefs_bin_get_type        ( void ) G_GNUC_CONST;
 

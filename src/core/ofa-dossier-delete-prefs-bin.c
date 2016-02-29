@@ -59,17 +59,18 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-delete-prefs-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-dossier-delete-prefs-bin.ui";
 
 static const gchar *st_delete_prefs     = "DossierDeletePrefs";
-
-G_DEFINE_TYPE( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_BIN )
 
 static void setup_bin( ofaDossierDeletePrefsBin *bin );
 static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
 static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
 static void changed_composite( ofaDossierDeletePrefsBin *bin );
 static void setup_settings( ofaDossierDeletePrefsBin *bin );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaDossierDeletePrefsBin ))
 
 static void
 dossier_delete_prefs_bin_finalize( GObject *instance )
@@ -94,7 +95,7 @@ dossier_delete_prefs_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE_PREFS_BIN( instance ));
 
-	priv = OFA_DOSSIER_DELETE_PREFS_BIN( instance )->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( OFA_DOSSIER_DELETE_PREFS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -111,14 +112,16 @@ static void
 ofa_dossier_delete_prefs_bin_init( ofaDossierDeletePrefsBin *self )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_prefs_bin_init";
+	ofaDossierDeletePrefsBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_DELETE_PREFS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, ofaDossierDeletePrefsBinPrivate );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -130,8 +133,6 @@ ofa_dossier_delete_prefs_bin_class_init( ofaDossierDeletePrefsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_delete_prefs_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_delete_prefs_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrefsBinPrivate ));
 
 	/**
 	 * ofaDossierDeletePrefsBin::changed:
@@ -182,8 +183,9 @@ setup_bin( ofaDossierDeletePrefsBin *bin )
 	GObject *object;
 	GtkWidget *toplevel, *radio, *check, *frame;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "ddpb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -221,7 +223,8 @@ on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
 	ofaDossierDeletePrefsBinPrivate *priv;
 	gboolean is_active;
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+
 	is_active = gtk_toggle_button_get_active( btn );
 	priv->db_mode = 0;
 
@@ -242,7 +245,7 @@ on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
 	priv->account_mode = gtk_toggle_button_get_active( btn );
 
@@ -254,7 +257,8 @@ changed_composite( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+
 	g_signal_emit_by_name( bin, "ofa-changed", priv->db_mode, priv->account_mode );
 }
 
@@ -273,13 +277,11 @@ ofa_dossier_delete_prefs_bin_get_db_mode( const ofaDossierDeletePrefsBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ), -1 );
 
-	priv = bin->priv;
-	mode = -1;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
-		mode = priv->db_mode;
-	}
+	mode = priv->db_mode;
 
 	return( mode );
 }
@@ -297,18 +299,17 @@ ofa_dossier_delete_prefs_bin_set_db_mode( ofaDossierDeletePrefsBin *bin, gint mo
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		if( mode == DBMODE_DROP ){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), TRUE );
-			on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), bin );
+	if( mode == DBMODE_DROP ){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), TRUE );
+		on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_drop ), bin );
 
-		} else if( mode == DBMODE_KEEP ){
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), TRUE );
-			on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), bin );
-		}
+	} else if( mode == DBMODE_KEEP ){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), TRUE );
+		on_db_mode_toggled( GTK_TOGGLE_BUTTON( priv->p2_db_keep ), bin );
 	}
 }
 
@@ -327,13 +328,11 @@ ofa_dossier_delete_prefs_bin_get_account_mode( const ofaDossierDeletePrefsBin *b
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	drop = FALSE;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		drop = priv->account_mode;
-	}
+	drop = priv->account_mode;
 
 	return( drop );
 }
@@ -351,13 +350,12 @@ ofa_dossier_delete_prefs_bin_set_account_mode( ofaDossierDeletePrefsBin *bin, gb
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p3_account ), drop );
-		on_account_toggled( GTK_TOGGLE_BUTTON( priv->p3_account ), bin );
-	}
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p3_account ), drop );
+	on_account_toggled( GTK_TOGGLE_BUTTON( priv->p3_account ), bin );
 }
 
 /*
@@ -399,12 +397,11 @@ ofa_dossier_delete_prefs_bin_set_settings( const ofaDossierDeletePrefsBin *bin )
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		str = g_strdup_printf( "%d;%s;", priv->db_mode, priv->account_mode ? "True":"False" );
-		ofa_settings_user_set_string( st_delete_prefs, str );
-		g_free( str );
-	}
+	str = g_strdup_printf( "%d;%s;", priv->db_mode, priv->account_mode ? "True":"False" );
+	ofa_settings_user_set_string( st_delete_prefs, str );
+	g_free( str );
 }
