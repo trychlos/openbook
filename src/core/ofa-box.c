@@ -307,12 +307,14 @@ string_free( sBoxData *box )
 static gchar *
 string_to_csv_str( const sBoxData *box )
 {
-	gchar *str;
+	gchar *quoted, *str;
 
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( box->string ){
-		str = g_strdup( box->string );
+		quoted = my_utils_quote_double( box->string );
+		str = g_strdup_printf( "\"%s\"", quoted );
+		g_free( quoted );
 	} else {
 		str = g_strdup( "" );
 	}
