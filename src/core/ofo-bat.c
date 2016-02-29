@@ -82,9 +82,9 @@ static void        icollectionable_iface_init( ofaICollectionableInterface *ifac
 static guint       icollectionable_get_interface_version( const ofaICollectionable *instance );
 static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
-G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
 
 static void
 bat_finalize( GObject *instance )
