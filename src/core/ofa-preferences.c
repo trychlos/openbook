@@ -165,9 +165,9 @@ static gboolean       do_update_import_page( ofaPreferences *self, gchar **msger
 static gboolean       update_prefs_plugin( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
 static ofaIPrefsPage *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
 
-G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ));
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 preferences_finalize( GObject *instance )
