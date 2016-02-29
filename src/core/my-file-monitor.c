@@ -60,8 +60,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void on_monitor_changed( GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, myFileMonitor *self );
 static void on_monitor_changed_timeout( myFileMonitor *self );
 
-G_DEFINE_TYPE_EXTENDED( myFileMonitor, my_file_monitor, G_TYPE_OBJECT, 0, \
-		G_ADD_PRIVATE( myFileMonitor ));
+G_DEFINE_TYPE_EXTENDED( myFileMonitor, my_file_monitor, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( myFileMonitor ))
 
 static void
 settings_monitor_finalize( GObject *object )
