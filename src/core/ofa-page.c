@@ -71,8 +71,8 @@ static void       do_init_view( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 
-G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0, \
-		G_ADD_PRIVATE( ofaPage ));
+G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0,
+		G_ADD_PRIVATE( ofaPage ))
 
 static void
 page_finalize( GObject *instance )
