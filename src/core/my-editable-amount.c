@@ -64,16 +64,16 @@ typedef struct {
 #define DEFAULT_ACCEPT_SIGN              TRUE
 #define EDITABLE_AMOUNT_DATA             "my-editable-amount-data"
 
-static void             editable_amount_init( GtkEditable *editable );
-static void             on_editable_finalized( sEditable *data, GObject *was_the_editable );
+static void       editable_amount_init( GtkEditable *editable );
+static void       on_editable_finalized( sEditable *data, GObject *was_the_editable );
 static sEditable *get_editable_amount_data( GtkEditable *editable );
-static void             on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditable *data );
-static void             on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditable *data );
-static void             on_changed( GtkEditable *editable, sEditable *data );
-static gboolean         on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data );
-static gboolean         on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data );
-static gchar           *editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata );
-static void             editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *data );
+static void       on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditable *data );
+static void       on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditable *data );
+static void       on_changed( GtkEditable *editable, sEditable *data );
+static gboolean   on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data );
+static gboolean   on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data );
+static gchar     *editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata );
+static void       editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *data );
 
 /**
  * my_editable_amount_init:
