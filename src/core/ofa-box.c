@@ -662,7 +662,7 @@ ofa_box_get_csv_header( const ofsBoxDef *defs, gchar field_sep )
 			if( header->len ){
 				header = g_string_append_c( header, field_sep );
 			}
-			g_string_append_printf( header, "%s", name );
+			g_string_append_printf( header, "\"%s\"", name );
 			g_free( name );
 			idef++;
 		}
