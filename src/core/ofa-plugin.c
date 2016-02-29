@@ -66,8 +66,8 @@ static void       add_module_type( ofaPlugin *plugin, GType type );
 static void       on_object_finalized( ofaPlugin *plugin, GObject *finalized_object );
 static void       v_plugin_unload( GTypeModule *gmodule );
 
-G_DEFINE_TYPE_EXTENDED( ofaPlugin, ofa_plugin, G_TYPE_TYPE_MODULE, 0, \
-		G_ADD_PRIVATE( ofaPlugin ));
+G_DEFINE_TYPE_EXTENDED( ofaPlugin, ofa_plugin, G_TYPE_TYPE_MODULE, 0,
+		G_ADD_PRIVATE( ofaPlugin ))
 
 static void
 plugin_finalize( GObject *instance )
