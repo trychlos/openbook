@@ -57,16 +57,13 @@ typedef struct _ofaAdminCredentialsBinPrivate         ofaAdminCredentialsBinPriv
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                         parent;
-
-	/*< private members >*/
-	ofaAdminCredentialsBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaAdminCredentialsBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                    parent;
+	GtkBinClass parent;
 }
 	ofaAdminCredentialsBinClass;
 

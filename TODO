@@ -484,6 +484,8 @@
                 depreciate myDialog, replacing it with myIDialog
 
  994 2016- 2-14 PACK use G_ADD_PRIVATE
+                     + check for g_type_class_peek_parent()
+                     + check for g_type_class_add_private()
 
  995 2016- 2-14 PACK use g_return_if_fail( !priv->dipose_has_run )
 
@@ -529,7 +531,43 @@
 1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
                      the indexes should updated accordingly
 
-1013
+1013 2016- 2-26 FEAT GuidedInput: move the account label on top of the
+                     bottom frame, keeping the bottom of the bottom frame
+                     to error messages
+
+1014 2016- 2-26 FEAT ViewEntries: filter per operation template
+
+1015 2016- 2-26 FEAT RenderPage: after printing, should have a dialog box
+                     'successfully printed on xxx'
+
+1016 2016- 2-26 BUG  ViewEntries: footer solde amounts may be displayed as
+                     blue even if debit != credit 
+
+1017 2016- 2-26 BUG  Reconciliation: new entries wrongly display a reconciliation
+                     date (though a new entry obviously does not have any
+                     conciliation date) - maybe a uninitiallized string ?
+                     see trash/bug1017
+
+1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
+                     BAT page (a restart fixes this)
+
+1019 2016- 2-27 FEAT Reconciliation: ask for confirmation when amounts are
+                     not balanced
+
+1020 2016- 2-27 BUG  ImportAssistant: import and insertion progress bars
+                     have disappeared
+
+1021 2016- 2-28 FEAT Reconciliation: when having a multiple selection and
+                     displaying on footer the debit and credit balances,
+                     have a green/yellow light to highlight the balanced status
+                     without having to *read* the amounts
+
+1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
+
+1023 2016- 2-28 BUG  ExportAssistant: notes should be quoted, and quotes
+                     inside notes should be backslashed
+
+1024
 
 -----------------------------------------------------------------------
  DONE

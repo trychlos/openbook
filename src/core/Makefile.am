@@ -159,7 +159,6 @@ libofa_core_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-admin-credentials-bin.ui						\
 	ofa-date-filter-hv-bin.ui							\
 	ofa-dbms-root-bin.ui								\
 	ofa-dossier-delete-prefs-bin.ui						\
@@ -168,6 +167,7 @@ ui_files = \
 	$(NULL)
 
 resources_ui = \
+	ofa-admin-credentials-bin.ui						\
 	ofa-preferences.ui									\
 	$(NULL)
 

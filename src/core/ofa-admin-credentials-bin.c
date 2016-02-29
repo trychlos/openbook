@@ -60,9 +60,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-admin-credentials-bin.ui";
-
-G_DEFINE_TYPE( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN )
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-admin-credentials-bin.ui";
 
 static void     setup_bin( ofaAdminCredentialsBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
@@ -70,6 +68,9 @@ static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin 
 static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     changed_composite( ofaAdminCredentialsBin *self );
 static gboolean is_valid_composite( const ofaAdminCredentialsBin *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaAdminCredentialsBin ))
 
 static void
 admin_credentials_bin_finalize( GObject *instance )
@@ -83,7 +84,7 @@ admin_credentials_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ADMIN_CREDENTIALS_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_ADMIN_CREDENTIALS_BIN( instance )->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
 	g_free( priv->account );
 	g_free( priv->password );
@@ -100,7 +101,7 @@ admin_credentials_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ADMIN_CREDENTIALS_BIN( instance ));
 
-	priv = OFA_ADMIN_CREDENTIALS_BIN( instance )->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -118,14 +119,16 @@ static void
 ofa_admin_credentials_bin_init( ofaAdminCredentialsBin *self )
 {
 	static const gchar *thisfn = "ofa_admin_credentials_bin_instance_init";
+	ofaAdminCredentialsBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_ADMIN_CREDENTIALS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_ADMIN_CREDENTIALS_BIN, ofaAdminCredentialsBinPrivate );
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -137,8 +140,6 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = admin_credentials_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = admin_credentials_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaAdminCredentialsBinPrivate ));
 
 	/**
 	 * ofaAdminCredentialsBin::changed:
@@ -191,8 +192,9 @@ setup_bin( ofaAdminCredentialsBin *bin )
 	GObject *object;
 	GtkWidget *toplevel, *label;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "acb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -252,15 +254,17 @@ ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin, gui
 
 	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
 
-	priv = bin->priv;
+	g_return_val_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ), NULL );
 
-	if( !priv->dispose_has_run ){
-		if( column == 0 ){
-			return( priv->group0 );
-		}
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	return( NULL );
 }
 
 /**
@@ -277,23 +281,24 @@ ofa_admin_credentials_bin_grab_focus( const ofaAdminCredentialsBin *bin )
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
 
-		if( my_strlen( priv->account )){
-			if( my_strlen( priv->password )){
-				if( my_strlen( priv->bis )){
-					gtk_widget_grab_focus( priv->account_entry );
-				} else {
-					gtk_widget_grab_focus( priv->bis_entry );
-				}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( my_strlen( priv->account )){
+		if( my_strlen( priv->password )){
+			if( my_strlen( priv->bis )){
+				gtk_widget_grab_focus( priv->account_entry );
 			} else {
-				gtk_widget_grab_focus( priv->password_entry );
+				gtk_widget_grab_focus( priv->bis_entry );
 			}
 		} else {
-			gtk_widget_grab_focus( priv->account_entry );
+			gtk_widget_grab_focus( priv->password_entry );
 		}
+	} else {
+		gtk_widget_grab_focus( priv->account_entry );
 	}
 }
 
@@ -302,7 +307,7 @@ on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	g_free( priv->account );
 	priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -315,7 +320,7 @@ on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	g_free( priv->password );
 	priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -328,7 +333,7 @@ on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	g_free( priv->bis );
 	priv->bis = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -344,7 +349,7 @@ changed_composite( ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
 }
@@ -364,18 +369,18 @@ ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **e
 	ofaAdminCredentialsBinPrivate *priv;
 	gboolean is_valid;
 
-	priv = bin->priv;
-	is_valid = FALSE;
+	g_return_val_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ), FALSE );
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
 
-		is_valid = is_valid_composite( bin );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( error_message ){
-			*error_message = is_valid ?
-					NULL :
-					g_strdup( _( "Dossier administrative credentials are not valid" ));
-		}
+	is_valid = is_valid_composite( bin );
+
+	if( error_message ){
+		*error_message = is_valid ?
+				NULL :
+				g_strdup( _( "Dossier administrative credentials are not valid" ));
 	}
 
 	return( is_valid );
@@ -387,7 +392,7 @@ is_valid_composite( const ofaAdminCredentialsBin *bin )
 	ofaAdminCredentialsBinPrivate *priv;
 	gboolean ok;
 
-	priv = bin->priv;
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
 
 	ok = my_strlen( priv->account ) &&
 			my_strlen( priv->password ) &&
