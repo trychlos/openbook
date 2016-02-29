@@ -70,8 +70,9 @@ static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaI
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBCONNECT, idbconnect_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMySQLConnect )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBCONNECT, idbconnect_iface_init ))
 
 static void
 mysql_connect_finalize( GObject *instance )
@@ -84,7 +85,7 @@ mysql_connect_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
 	/* free data members here */
 	g_free( priv->mysql );
@@ -101,7 +102,7 @@ mysql_connect_dispose( GObject *instance )
 {
 	ofaMySQLConnectPrivate *priv;
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -119,11 +120,14 @@ static void
 ofa_mysql_connect_init( ofaMySQLConnect *self )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_init";
+	ofaMySQLConnectPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_CONNECT, ofaMySQLConnectPrivate );
+	priv = ofa_mysql_connect_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -135,8 +139,6 @@ ofa_mysql_connect_class_init( ofaMySQLConnectClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_connect_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_connect_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLConnectPrivate ));
 }
 
 /*
@@ -198,21 +200,18 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
 	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), FALSE );
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
-		socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
-		port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
-		database = server_only ? NULL : ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
+	host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
+	socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
+	port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
+	database = server_only ? NULL : ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
 
-		ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
+	ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
 
-		return( ok );
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /*
@@ -232,21 +231,18 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
-		socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
-		port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
-		database = period ? ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period )) : NULL;
+	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));
+	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( meta ));
+	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( meta ));
+	database = period ? ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period )) : NULL;
 
-		ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
+	ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
 
-		return( ok );
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /**
@@ -275,15 +271,13 @@ ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
-	priv = connect->priv;
+	priv = ofa_mysql_connect_get_instance_private( connect );
 
-	if( !priv->dispose_has_run ){
-		return( idbconnect_open_with_meta(
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( idbconnect_open_with_meta(
 						OFA_IDBCONNECT( connect ), account, password,
 						OFA_IDBMETA( meta ), period ? OFA_IDBPERIOD( period ) : NULL ));
-	}
-
-	g_return_val_if_reached( FALSE );
 }
 
 /*
@@ -314,52 +308,49 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 
-	priv = connect->priv;
+	priv = ofa_mysql_connect_get_instance_private( connect );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( priv->mysql ){
-			if( msg ){
-				*msg = g_strdup_printf( _( "%s: connect=%p is already opened" ), thisfn, ( void * ) connect );
-			}
-			/* though the connection is supposed actually opened,
-			 *  we signal the error */
-			return( FALSE );
-		}
-
-		ok = FALSE;
-		mysql = g_new0( MYSQL, 1 );
-		mysql_init( mysql );
-
-		/* whether the database charset be utf8 or latin1, the display
-		 * is ok if the latin1 option is specified, or if the option is
-		 * not specified at all; display is not ok with utf8 option */
-		//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
-		//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "latin1" );
-
+	if( priv->mysql ){
 		if( msg ){
-			*msg = NULL;
+			*msg = g_strdup_printf( _( "%s: connect=%p is already opened" ), thisfn, ( void * ) connect );
 		}
-
-		if( mysql_real_connect( mysql, host, account, password, database, port, socket, CLIENT_MULTI_RESULTS )){
-			ok = TRUE;
-			priv->mysql = mysql;
-			priv->host = g_strdup( host );
-			priv->socket = g_strdup( socket );
-			priv->database = g_strdup( database );
-			g_debug( "%s: connection OK: database=%s, account=%s", thisfn, database, account );
-
-		} else {
-			if( msg ){
-				*msg = g_strdup( mysql_error( mysql ));
-			}
-			g_free( mysql );
-		}
-
-		return( ok );
+		/* though the connection is supposed actually opened,
+		 *  we signal the error */
+		return( FALSE );
 	}
 
-	g_return_val_if_reached( FALSE );
+	ok = FALSE;
+	mysql = g_new0( MYSQL, 1 );
+	mysql_init( mysql );
+
+	/* whether the database charset be utf8 or latin1, the display
+	 * is ok if the latin1 option is specified, or if the option is
+	 * not specified at all; display is not ok with utf8 option */
+	//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
+	//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "latin1" );
+
+	if( msg ){
+		*msg = NULL;
+	}
+
+	if( mysql_real_connect( mysql, host, account, password, database, port, socket, CLIENT_MULTI_RESULTS )){
+		ok = TRUE;
+		priv->mysql = mysql;
+		priv->host = g_strdup( host );
+		priv->socket = g_strdup( socket );
+		priv->database = g_strdup( database );
+		g_debug( "%s: connection OK: database=%s, account=%s", thisfn, database, account );
+
+	} else {
+		if( msg ){
+			*msg = g_strdup( mysql_error( mysql ));
+		}
+		g_free( mysql );
+	}
+
+	return( ok );
 }
 
 /*
@@ -369,11 +360,12 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 static gboolean
 idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
 {
-	ofaMySQLConnect *connect;
+	ofaMySQLConnectPrivate *priv;
 	gboolean ok;
 
-	connect = OFA_MYSQL_CONNECT( instance );
-	ok = ( mysql_query( connect->priv->mysql, query ) == 0 );
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
+
+	ok = ( mysql_query( priv->mysql, query ) == 0 );
 
 	return( ok );
 }
@@ -393,13 +385,11 @@ ofa_mysql_connect_query( const ofaMySQLConnect *connect, const gchar *query )
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 
-	priv = connect->priv;
+	priv = ofa_mysql_connect_get_instance_private( connect );
 
-	if( !priv->dispose_has_run ){
-		return( idbconnect_query( OFA_IDBCONNECT( connect ), query ));
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	g_return_val_if_reached( FALSE );
+	return( idbconnect_query( OFA_IDBCONNECT( connect ), query ));
 }
 
 /*
@@ -408,7 +398,7 @@ ofa_mysql_connect_query( const ofaMySQLConnect *connect, const gchar *query )
 static gboolean
 idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result )
 {
-	ofaMySQLConnect *connect;
+	ofaMySQLConnectPrivate *priv;
 	gboolean ok;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -419,8 +409,8 @@ idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList *
 
 	if( idbconnect_query( instance, query )){
 		ok = TRUE;
-		connect = OFA_MYSQL_CONNECT( instance );
-		res = mysql_store_result( connect->priv->mysql );
+		priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
+		res = mysql_store_result( priv->mysql );
 		if( res ){
 			fields_count = mysql_num_fields( res );
 			while(( row = mysql_fetch_row( res ))){
@@ -442,11 +432,11 @@ idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList *
 static gchar *
 idbconnect_get_last_error( const ofaIDBConnect *instance )
 {
-	ofaMySQLConnect *connect;
+	ofaMySQLConnectPrivate *priv;
 	gchar *msg;
 
-	connect = OFA_MYSQL_CONNECT( instance );
-	msg = g_strdup( mysql_error( connect->priv->mysql ));
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
+	msg = g_strdup( mysql_error( priv->mysql ));
 
 	return( msg );
 }
@@ -490,43 +480,41 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBMeta *meta
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
 	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		period = ofa_idbmeta_get_current_period( meta );
-		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
+	period = ofa_idbmeta_get_current_period( meta );
+	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 
-		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
-		query = g_string_new( "" );
-		ok = TRUE;
+	database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
+	query = g_string_new( "" );
+	ok = TRUE;
 
-		if( ok ){
-			g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
-			g_debug( "%s: %s", thisfn, query->str );
-			ok = idbconnect_query( instance, query->str );
-			if( !ok ){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-			}
+	if( ok ){
+		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
+		g_debug( "%s: %s", thisfn, query->str );
+		ok = idbconnect_query( instance, query->str );
+		if( !ok ){
+			msg = idbconnect_get_last_error( instance );
+			g_warning( "%s: %s", thisfn, msg );
+			g_free( msg );
 		}
-		if( ok ){
-			g_string_printf( query, "CREATE DATABASE %s CHARACTER SET utf8", database );
-			g_debug( "%s: %s", thisfn, query->str );
-			ok = idbconnect_query( instance, query->str );
-			if( !ok ){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-			}
-		}
-		g_object_unref( period );
-		g_string_free( query, TRUE );
-		return( ok );
 	}
+	if( ok ){
+		g_string_printf( query, "CREATE DATABASE %s CHARACTER SET utf8", database );
+		g_debug( "%s: %s", thisfn, query->str );
+		ok = idbconnect_query( instance, query->str );
+		if( !ok ){
+			msg = idbconnect_get_last_error( instance );
+			g_warning( "%s: %s", thisfn, msg );
+			g_free( msg );
+		}
+	}
+	g_object_unref( period );
+	g_string_free( query, TRUE );
 
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /*
@@ -548,38 +536,50 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period
 	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 	g_return_val_if_fail( my_strlen( account ), FALSE );
 
-	priv = OFA_MYSQL_CONNECT( instance )->priv;
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		query = g_string_new( "" );
+	query = g_string_new( "" );
 
-		meta = ofa_idbconnect_get_meta( instance );
-		g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+	meta = ofa_idbconnect_get_meta( instance );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 
-		hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));
-		if( !my_strlen( hostname )){
-			g_free( hostname );
-			hostname = g_strdup( "localhost" );
-		}
+	hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));
+	if( !my_strlen( hostname )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
 
-		g_object_unref( meta );
+	g_object_unref( meta );
 
-		/* doesn't trap error on create user as the user may already exist */
+	/* doesn't trap error on create user as the user may already exist */
+	g_string_printf( query,
+			"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
+				account,
+				hostname,
+				password );
+	g_debug( "%s: %s", thisfn, query->str );
+	idbconnect_query( instance, query->str );
+	ok = TRUE;
+
+	database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
+
+	g_string_printf( query,
+			"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
+				database,
+				account,
+				hostname );
+	g_debug( "%s: %s", thisfn, query->str );
+	if( !idbconnect_query( instance, query->str )){
+		msg = idbconnect_get_last_error( instance );
+		g_warning( "%s: %s", thisfn, msg );
+		g_free( msg );
+		ok = FALSE;
+	}
+	if( ok ){
 		g_string_printf( query,
-				"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
-					account,
-					hostname,
-					password );
-		g_debug( "%s: %s", thisfn, query->str );
-		idbconnect_query( instance, query->str );
-		ok = TRUE;
-
-		database = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));
-
-		g_string_printf( query,
-				"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
-					database,
+				"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
 					account,
 					hostname );
 		g_debug( "%s: %s", thisfn, query->str );
@@ -589,35 +589,21 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period
 			g_free( msg );
 			ok = FALSE;
 		}
-		if( ok ){
-			g_string_printf( query,
-					"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
-						account,
-						hostname );
-			g_debug( "%s: %s", thisfn, query->str );
-			if( !idbconnect_query( instance, query->str )){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-				ok = FALSE;
-			}
-		}
-		if( ok ){
-			g_string_printf( query,
-					"FLUSH PRIVILEGES" );
-			g_debug( "%s: %s", thisfn, query->str );
-			if( !idbconnect_query( instance, query->str )){
-				msg = idbconnect_get_last_error( instance );
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-				ok = FALSE;
-			}
-		}
-		g_string_free( query, TRUE );
-		return( ok );
 	}
+	if( ok ){
+		g_string_printf( query,
+				"FLUSH PRIVILEGES" );
+		g_debug( "%s: %s", thisfn, query->str );
+		if( !idbconnect_query( instance, query->str )){
+			msg = idbconnect_get_last_error( instance );
+			g_warning( "%s: %s", thisfn, msg );
+			g_free( msg );
+			ok = FALSE;
+		}
+	}
+	g_string_free( query, TRUE );
 
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /**
@@ -640,13 +626,11 @@ ofa_mysql_connect_get_new_database( ofaMySQLConnect *connect, const gchar *prev_
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), NULL );
 	g_return_val_if_fail( my_strlen( prev_database ), NULL );
 
-	priv = connect->priv;
+	priv = ofa_mysql_connect_get_instance_private( connect );
 
-	if( !priv->dispose_has_run ){
-		return( find_new_database( connect, prev_database ));
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( NULL );
+	return( find_new_database( connect, prev_database ));
 }
 
 /*
@@ -703,7 +687,7 @@ local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname )
 	gboolean exists;
 	MYSQL_RES *result;
 
-	priv = connect->priv;
+	priv = ofa_mysql_connect_get_instance_private( connect );
 	exists = FALSE;
 
 	result = mysql_list_dbs( priv->mysql, dbname );

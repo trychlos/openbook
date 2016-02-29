@@ -51,16 +51,13 @@ typedef struct _ofaMySQLConnectPrivate        ofaMySQLConnectPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                 parent;
-
-	/*< private members >*/
-	ofaMySQLConnectPrivate *priv;
+	GObject      parent;
 }
 	ofaMySQLConnect;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass            parent;
+	GObjectClass parent;
 }
 	ofaMySQLConnectClass;
 
