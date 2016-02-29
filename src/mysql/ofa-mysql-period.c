@@ -54,8 +54,9 @@ static void            idbperiod_dump( const ofaIDBPeriod *instance );
 static ofaMySQLPeriod *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
 static void            write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPERIOD, idbperiod_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMySQLPeriod )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPERIOD, idbperiod_iface_init ))
 
 static void
 mysql_period_finalize( GObject *instance )
@@ -68,7 +69,7 @@ mysql_period_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
+	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
 
 	/* free data members here */
 	g_free( priv->database );
@@ -82,7 +83,7 @@ mysql_period_dispose( GObject *instance )
 {
 	ofaMySQLPeriodPrivate *priv;
 
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
+	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -99,11 +100,14 @@ static void
 ofa_mysql_period_init( ofaMySQLPeriod *self )
 {
 	static const gchar *thisfn = "ofa_mysql_period_init";
+	ofaMySQLPeriodPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_PERIOD, ofaMySQLPeriodPrivate );
+	priv = ofa_mysql_period_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -115,8 +119,6 @@ ofa_mysql_period_class_init( ofaMySQLPeriodClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_period_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_period_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMySQLPeriodPrivate ));
 }
 
 /*
@@ -146,14 +148,11 @@ idbperiod_get_name( const ofaIDBPeriod *instance )
 {
 	ofaMySQLPeriodPrivate *priv;
 
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
+	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return( g_strdup( priv->database ));
-	}
-
-	g_return_val_if_reached( NULL );
+	return( g_strdup( priv->database ));
 }
 
 static gint
@@ -162,8 +161,8 @@ idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 	ofaMySQLPeriodPrivate *a_priv, *b_priv;
 	gint cmp;
 
-	a_priv = OFA_MYSQL_PERIOD( a )->priv;
-	b_priv = OFA_MYSQL_PERIOD( b )->priv;
+	a_priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( a ));
+	b_priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( b ));
 
 	cmp = g_utf8_collate( a_priv->database, b_priv->database );
 
@@ -176,7 +175,8 @@ idbperiod_dump( const ofaIDBPeriod *instance )
 	static const gchar *thisfn = "ofa_mysql_period_dump";
 	ofaMySQLPeriodPrivate *priv;
 
-	priv = OFA_MYSQL_PERIOD( instance )->priv;
+	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
+
 	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
 	g_debug( "%s:   database=%s", thisfn, priv->database );
 }
@@ -224,7 +224,8 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
 	GDate date;
 
 	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
-	priv = period->priv;
+
+	priv = ofa_mysql_period_get_instance_private( period );
 
 	priv->database = g_strdup( key+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
 	//g_debug( "%s: key=%s, database=%s", thisfn, key, priv->database );
@@ -274,6 +275,7 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 									gboolean current, const GDate *begin, const GDate *end, const gchar *database )
 {
 	ofaMySQLPeriod *period;
+	ofaMySQLPeriodPrivate *priv;
 	gchar *key, *sbegin, *send, *content;
 
 	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
@@ -293,7 +295,8 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 	g_free( key );
 
 	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
-	period->priv->database = g_strdup( database );
+	priv = ofa_mysql_period_get_instance_private( period );
+	priv->database = g_strdup( database );
 	ofa_idbperiod_set_current( OFA_IDBPERIOD( period ), current );
 	ofa_idbperiod_set_begin_date( OFA_IDBPERIOD( period ), begin );
 	ofa_idbperiod_set_end_date( OFA_IDBPERIOD( period ), end );
@@ -317,14 +320,11 @@ ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
 
 	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), NULL );
 
-	priv = period->priv;
+	priv = ofa_mysql_period_get_instance_private( period );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return(( const gchar * ) priv->database );
-	}
-
-	g_return_val_if_reached( NULL );
+	return(( const gchar * ) priv->database );
 }
 
 /**
@@ -344,20 +344,19 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 {
 	ofaMySQLPeriodPrivate *priv;
 
-	priv = period->priv;
+	priv = ofa_mysql_period_get_instance_private( period );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		/* we update the internal data of the object through this is
-		 * pretty useless as writing into dossier settings file will
-		 * trigger a reload of all data (through the myFileMonitor) */
-		ofa_idbperiod_set_current( OFA_IDBPERIOD( period ), current );
-		ofa_idbperiod_set_begin_date( OFA_IDBPERIOD( period ), begin );
-		ofa_idbperiod_set_end_date( OFA_IDBPERIOD( period ), end );
+	/* we update the internal data of the object through this is
+	 * pretty useless as writing into dossier settings file will
+	 * trigger a reload of all data (through the myFileMonitor) */
+	ofa_idbperiod_set_current( OFA_IDBPERIOD( period ), current );
+	ofa_idbperiod_set_begin_date( OFA_IDBPERIOD( period ), begin );
+	ofa_idbperiod_set_end_date( OFA_IDBPERIOD( period ), end );
 
-		/* next update the settings */
-		write_to_settings( period, settings, group );
-	}
+	/* next update the settings */
+	write_to_settings( period, settings, group );
 }
 
 /**
@@ -374,14 +373,13 @@ ofa_mysql_period_remove( ofaMySQLPeriod *period, myISettings *settings, const gc
 	ofaMySQLPeriodPrivate *priv;
 	gchar *key;
 
-	priv = period->priv;
+	priv = ofa_mysql_period_get_instance_private( period );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
-		my_isettings_remove_key( settings, group, key );
-		g_free( key );
-	}
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
+	my_isettings_remove_key( settings, group, key );
+	g_free( key );
 }
 
 static void
@@ -390,7 +388,7 @@ write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *g
 	ofaMySQLPeriodPrivate *priv;
 	gchar *key, *content, *begin, *end;
 
-	priv = period->priv;
+	priv = ofa_mysql_period_get_instance_private( period );
 
 	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
 

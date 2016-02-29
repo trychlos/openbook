@@ -51,16 +51,13 @@ typedef struct _ofaMySQLPeriodPrivate        ofaMySQLPeriodPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                parent;
-
-	/*< private members >*/
-	ofaMySQLPeriodPrivate *priv;
+	GObject      parent;
 }
 	ofaMySQLPeriod;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass           parent;
+	GObjectClass parent;
 }
 	ofaMySQLPeriodClass;
 
