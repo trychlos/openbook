@@ -42,9 +42,9 @@ static void  idate_filter_iface_init( ofaIDateFilterInterface *iface );
 static guint idate_filter_get_interface_version( const ofaIDateFilter *instance );
 static void  idate_filter_add_widget( ofaIDateFilter *instance, GtkWidget *widget, gint where );
 
-G_DEFINE_TYPE_EXTENDED( ofaDateFilterHVBin, ofa_date_filter_hv_bin, GTK_TYPE_BIN, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaDateFilterHVBin, ofa_date_filter_hv_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDateFilterHVBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDATE_FILTER, idate_filter_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDATE_FILTER, idate_filter_iface_init ))
 
 static void
 date_filter_hv_bin_finalize( GObject *instance )
