@@ -111,7 +111,7 @@ guint        ofa_idate_filter_get_interface_last_version
                                                     ( const ofaIDateFilter *filter );
 
 void         ofa_idate_filter_setup_bin            ( ofaIDateFilter *filter,
-															const gchar *xml_name );
+															const gchar *ui_resource );
 
 void         ofa_idate_filter_add_widget           ( ofaIDateFilter *filter,
 															GtkWidget *widget,

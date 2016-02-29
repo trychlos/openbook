@@ -39,7 +39,7 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	gchar        *xml_name;
+	gchar        *ui_resource;
 	gboolean      mandatory;
 	gchar        *prefs_key;
 	GtkSizeGroup *group0;
@@ -74,7 +74,7 @@ static void           interface_base_init( ofaIDateFilterInterface *klass );
 static void           interface_base_finalize( ofaIDateFilterInterface *klass );
 static sIDateFilter *get_idate_filter_data( ofaIDateFilter *filter );
 static void           on_widget_finalized( ofaIDateFilter *idate_filter, void *finalized_widget );
-static void           setup_composite( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void           setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata );
 static void           on_from_changed( GtkEntry *entry, ofaIDateFilter *filter );
 static gboolean       on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
 static void           on_to_changed( GtkEntry *entry, ofaIDateFilter *filter );
@@ -221,25 +221,27 @@ ofa_idate_filter_get_interface_last_version( const ofaIDateFilter *instance )
 /**
  * ofa_idate_filter_setup_bin:
  * @filter: this #ofaIDateFilter instance.
+ * @ui_resource: the path of the binary resource which holds the user
+ *  interface XML description.
  *
- * Initialize the composite widget which implements this interface.
+ * Initialize the widget which implements this interface.
  */
 void
-ofa_idate_filter_setup_bin( ofaIDateFilter *filter, const gchar *xml_name )
+ofa_idate_filter_setup_bin( ofaIDateFilter *filter, const gchar *ui_resource )
 {
 	static const gchar *thisfn = "ofa_idate_filter_setup_bin";
 	sIDateFilter *sdata;
 
-	g_debug( "%s: filter=%p, xml_name=%s", thisfn, ( void * ) filter, xml_name );
+	g_debug( "%s: filter=%p, ui_resource=%s", thisfn, ( void * ) filter, ui_resource );
 
 	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
 
 	sdata = get_idate_filter_data( filter );
-	sdata->xml_name = g_strdup( xml_name );
+	sdata->ui_resource = g_strdup( ui_resource );
 	sdata->mandatory = DEFAULT_MANDATORY;
 
-	setup_composite( filter, sdata );
+	setup_bin( filter, sdata );
 }
 
 static sIDateFilter *
@@ -277,7 +279,7 @@ on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget )
 	sdata = get_idate_filter_data( filter );
 
 	g_clear_object( &sdata->group0 );
-	g_free( sdata->xml_name );
+	g_free( sdata->ui_resource );
 	g_free( sdata->prefs_key );
 	g_free( sdata );
 
@@ -285,13 +287,13 @@ on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget )
 }
 
 static void
-setup_composite( ofaIDateFilter *filter, sIDateFilter *sdata )
+setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *entry, *label;
 
-	builder = gtk_builder_new_from_file( sdata->xml_name );
+	builder = gtk_builder_new_from_resource( sdata->ui_resource );
 
 	object = gtk_builder_get_object( builder, "dfb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));

@@ -36,7 +36,7 @@ struct _ofaDateFilterHVBinPrivate {
 	gboolean dispose_has_run;
 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-date-filter-hv-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-date-filter-hv-bin.ui";
 
 static void  idate_filter_iface_init( ofaIDateFilterInterface *iface );
 static guint idate_filter_get_interface_version( const ofaIDateFilter *instance );
@@ -122,7 +122,7 @@ ofa_date_filter_hv_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_DATE_FILTER_HV_BIN, NULL );
 
-	ofa_idate_filter_setup_bin( OFA_IDATE_FILTER( bin ), st_bin_xml );
+	ofa_idate_filter_setup_bin( OFA_IDATE_FILTER( bin ), st_resource_ui );
 
 	return( bin );
 }

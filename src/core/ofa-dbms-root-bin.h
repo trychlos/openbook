@@ -61,16 +61,13 @@ typedef struct _ofaDBMSRootBinPrivate         ofaDBMSRootBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                 parent;
-
-	/*< private members >*/
-	ofaDBMSRootBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaDBMSRootBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass            parent;
+	GtkBinClass parent;
 }
 	ofaDBMSRootBinClass;
 

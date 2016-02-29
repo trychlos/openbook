@@ -47,8 +47,11 @@
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
    - ofaButtonsBox: migrate to G_ADD_PRIVATE (todo #994).
    - ofaDateFilterHVBin: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaDateFilterHVBin: migrate to GResource (todo #826).
+   - ofaDBMSRootBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormat: migrate to G_ADD_PRIVATE (todo #994).
    - ofaHub: migrate to G_ADD_PRIVATE (todo #994).
+   - ofa_idate_filter_setup_bin(): use a GResource path.
    - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofaPage: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPlugin: migrate to G_ADD_PRIVATE (todo #994).

@@ -63,15 +63,16 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dbms-root-bin.ui";
-
-G_DEFINE_TYPE( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN )
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-dbms-root-bin.ui";
 
 static void     setup_bin( ofaDBMSRootBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     changed_composite( ofaDBMSRootBin *self );
 static gboolean is_valid_composite( const ofaDBMSRootBin *bin );
+
+G_DEFINE_TYPE_EXTENDED( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaDBMSRootBin ))
 
 static void
 dbms_root_bin_finalize( GObject *instance )
@@ -85,7 +86,7 @@ dbms_root_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DBMS_ROOT_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_DBMS_ROOT_BIN( instance )->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( OFA_DBMS_ROOT_BIN( instance ));
 
 	g_free( priv->account );
 	g_free( priv->password );
@@ -101,9 +102,11 @@ dbms_root_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DBMS_ROOT_BIN( instance ));
 
-	priv = OFA_DBMS_ROOT_BIN( instance )->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( OFA_DBMS_ROOT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
@@ -118,17 +121,18 @@ static void
 ofa_dbms_root_bin_init( ofaDBMSRootBin *self )
 {
 	static const gchar *thisfn = "ofa_dbms_root_bin_instance_init";
+	ofaDBMSRootBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DBMS_ROOT_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_DBMS_ROOT_BIN, ofaDBMSRootBinPrivate );
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 
-	self->priv->account = NULL;
-	self->priv->password = NULL;
+	priv->dispose_has_run = FALSE;
+	priv->account = NULL;
+	priv->password = NULL;
 }
 
 static void
@@ -140,8 +144,6 @@ ofa_dbms_root_bin_class_init( ofaDBMSRootBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dbms_root_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dbms_root_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDBMSRootBinPrivate ));
 
 	/**
 	 * ofaDBMSRootBin::changed:
@@ -195,8 +197,9 @@ setup_bin( ofaDBMSRootBin *bin )
 	GObject *object;
 	GtkWidget *toplevel, *label;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "drb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -262,15 +265,15 @@ ofa_dbms_root_bin_get_size_group( const ofaDBMSRootBin *bin, guint column )
 
 	g_return_val_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
-		if( column == 0 ){
-			return( priv->group0 );
-		}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	return( NULL );
 }
 
 /**
@@ -293,13 +296,12 @@ ofa_dbms_root_bin_set_meta( ofaDBMSRootBin *bin, ofaIDBMeta *meta )
 	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	priv = bin->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		g_clear_object( &priv->meta );
-		priv->meta = g_object_ref( meta );
-	}
+	g_clear_object( &priv->meta );
+	priv->meta = g_object_ref( meta );
 }
 
 static void
@@ -307,7 +309,7 @@ on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 
 	g_free( priv->account );
 	priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -320,7 +322,7 @@ on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 
 	g_free( priv->password );
 	priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -336,7 +338,7 @@ changed_composite( ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 
 	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
 }
@@ -367,19 +369,19 @@ ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
 	ofaDBMSRootBinPrivate *priv;
 	gboolean ok;
 
-	priv = bin->priv;
-	ok = FALSE;
+	g_return_val_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ), FALSE );
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
-		ok = is_valid_composite( bin );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( error_message ){
-			*error_message = ok ?
-					NULL :
-					g_strdup( _( "DBMS root credentials are not valid" ));
-		}
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), "" );
+	ok = is_valid_composite( bin );
+
+	if( error_message ){
+		*error_message = ok ?
+				NULL :
+				g_strdup( _( "DBMS root credentials are not valid" ));
 	}
 
 	return( ok );
@@ -393,7 +395,7 @@ is_valid_composite( const ofaDBMSRootBin *bin )
 	ofaIDBConnect *connect;
 	gboolean ok;
 
-	priv = bin->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 	ok = FALSE;
 
 	if( my_strlen( priv->account ) && my_strlen( priv->password )){
@@ -431,13 +433,14 @@ ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
 {
 	ofaDBMSRootBinPrivate *priv;
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-		gtk_label_set_text(
-				GTK_LABEL( priv->msg_label ), valid ? _( "DB server connection is OK" ) : "" );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_label_set_text(
+			GTK_LABEL( priv->msg_label ), valid ? _( "DB server connection is OK" ) : "" );
 }
 
 /**
@@ -452,13 +455,12 @@ ofa_dbms_root_bin_get_credentials( const ofaDBMSRootBin *bin, gchar **account, g
 
 	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		*account = g_strdup( priv->account );
-		*password = g_strdup( priv->password );
-	}
+	*account = g_strdup( priv->account );
+	*password = g_strdup( priv->password );
 }
 
 /**
@@ -472,11 +474,12 @@ ofa_dbms_root_bin_set_credentials( ofaDBMSRootBin *bin, const gchar *account, co
 {
 	ofaDBMSRootBinPrivate *priv;
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
-		gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
+	gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
 }
