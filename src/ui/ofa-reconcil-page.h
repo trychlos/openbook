@@ -122,16 +122,13 @@ typedef struct _ofaReconcilPagePrivate        ofaReconcilPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                 parent;
-
-	/*< private members >*/
-	ofaReconcilPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaReconcilPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass            parent;
+	ofaPageClass parent;
 }
 	ofaReconcilPageClass;
 

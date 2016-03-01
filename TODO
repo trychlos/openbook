@@ -558,16 +558,19 @@
 1020 2016- 2-27 BUG  ImportAssistant: import and insertion progress bars
                      have disappeared
 
-1021 2016- 2-28 FEAT Reconciliation: when having a multiple selection and
-                     displaying on footer the debit and credit balances,
-                     have a green/yellow light to highlight the balanced status
-                     without having to *read* the amounts
-
 1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
 
 1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
+                     -> this is complicated as export is managed by ofaBox
+                        on individual fields which do not know about the
+                        currency :(
+                     -> unless a callback may provide this information ?
 
-1026
+1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
+
+1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
+
+1028
 
 -----------------------------------------------------------------------
  DONE
@@ -878,6 +881,12 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1021 2016- 2-28 FEAT Reconciliation: when having a multiple selection and
+                     displaying on footer the debit and credit balances,
+                     have a green/yellow light to highlight the balanced status
+                     without having to *read* the amounts
+     2016- 3- 1 done
 
 1023 2016- 2-28 BUG  ExportAssistant: notes should be quoted, and quotes
                      inside notes should be backslashed

@@ -281,7 +281,6 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
-	ofa-reconcil-page.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-settlement.ui									\
@@ -293,6 +292,11 @@ resources_ui = \
 	ofa-guided-input.ui									\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
+	ofa-reconcil-page.ui								\
+	\
+	light-empty-14.png									\
+	light-green-14.png									\
+	light-yellow-14.png									\
 	$(NULL)
 
 images_files = \

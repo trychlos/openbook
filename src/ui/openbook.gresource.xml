@@ -5,5 +5,9 @@
     <file>ofa-guided-input.ui</file>
     <file>ofa-ope-template-help.ui</file>
     <file>ofa-ope-template-properties.ui</file>
+    <file>ofa-reconcil-page.ui</file>
+    <file>light-empty-14.png</file>
+    <file>light-green-14.png</file>
+    <file>light-yellow-14.png</file>
   </gresource>
 </gresources>
