@@ -2838,13 +2838,13 @@ iimportable_get_interface_version( const ofaIImportable *instance )
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
+	static const gchar *thisfn = "ofo_entry_iimportable_import";
 	GSList *itl, *fields, *itf;
-	const gchar *cstr;
 	ofoEntry *entry;
 	GList *dataset, *it;
 	guint errors, line;
 	GDate date;
-	gchar *currency, *msg, *userid;
+	gchar *currency, *msg, *userid, *str;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit, precision;
@@ -2878,63 +2878,66 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		debit = 0;
 		credit = 0;
 		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
+		itf = fields;
 
 		/* operation date */
-		itf = fields;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &date, cstr, date_format );
+		str = ofa_iimportable_get_string( &itf, settings );
+		my_date_set_from_str( &date, str, date_format );
 		if( !my_date_is_valid( &date )){
-			msg = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+			msg = g_strdup_printf( _( "invalid entry operation date: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
 		ofo_entry_set_dope( entry, &date );
+		g_free( str );
 
 		/* effect date */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &date, cstr, date_format );
+		str = ofa_iimportable_get_string( &itf, settings );
+		my_date_set_from_str( &date, str, date_format );
 		if( !my_date_is_valid( &date )){
-			msg = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
+			msg = g_strdup_printf( _( "invalid entry effect date: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
 		ofo_entry_set_deffect( entry, &date );
+		g_free( str );
 
 		/* entry label */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry label" ));
+			g_free( str );
 			errors += 1;
 			continue;
 		}
-		ofo_entry_set_label( entry, cstr );
+		ofo_entry_set_label( entry, str );
+		g_free( str );
 
 		/* entry piece's reference - may be empty */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		ofo_entry_set_ref( entry, cstr );
+		str = ofa_iimportable_get_string( &itf, settings );
+		ofo_entry_set_ref( entry, str );
+		g_free( str );
 
 		/* entry currency - a default is provided by the account
 		 *  so check and set is pushed back after having read it */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		currency = g_strdup( cstr );
+		str = ofa_iimportable_get_string( &itf, settings );
+		currency = g_strdup( str );
+		g_free( str );
 
 		/* ledger - default is from the dossier */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
-			cstr = ofo_dossier_get_import_ledger( dossier );
-			if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
+			str = g_strdup( ofo_dossier_get_import_ledger( dossier ));
+			if( !my_strlen( str )){
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR,
 						_( "dossier is missing a default import ledger" ));
@@ -2942,69 +2945,75 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				continue;
 			}
 		}
-		ledger = ofo_ledger_get_by_mnemo( hub, cstr );
+		ledger = ofo_ledger_get_by_mnemo( hub, str );
 		if( !ledger ){
-			msg = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
+			msg = g_strdup_printf( _( "entry ledger not found: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
-		ofo_entry_set_ledger( entry, cstr );
+		ofo_entry_set_ledger( entry, str );
+		g_free( str );
 
 		/* operation template - optional */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		ofo_entry_set_ope_template( entry, cstr );
+		str = ofa_iimportable_get_string( &itf, settings );
+		ofo_entry_set_ope_template( entry, str );
+		g_free( str );
 
 		/* entry account */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry account" ));
 			errors += 1;
 			continue;
 		}
-		account = ofo_account_get_by_number( hub, cstr );
+		account = ofo_account_get_by_number( hub, str );
 		if( !account ){
-			msg = g_strdup_printf( _( "entry account not found: %s" ), cstr );
+			msg = g_strdup_printf( _( "entry account not found: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
 		if( ofo_account_is_root( account )){
-			msg = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
+			msg = g_strdup_printf( _( "entry account is a root account: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
 		if( ofo_account_is_closed( account )){
-			msg = g_strdup_printf( _( "entry account is closed: %s" ), cstr );
+			msg = g_strdup_printf( _( "entry account is closed: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
-		ofo_entry_set_account( entry, cstr );
+		ofo_entry_set_account( entry, str );
+		g_free( str );
 
-		cstr = ofo_account_get_currency( account );
+		str = g_strdup( ofo_account_get_currency( account ));
 		if( !my_strlen( currency )){
 			g_free( currency );
-			currency = g_strdup( cstr );
-		} else if( g_utf8_collate( currency, cstr )){
+			currency = str;
+		} else if( g_utf8_collate( currency, str )){
 			msg = g_strdup_printf(
 					_( "entry currency: %s is not the same than those of the account: %s" ),
-					currency, cstr );
+					currency, str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
@@ -3020,14 +3029,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		ofo_entry_set_currency( entry, currency );
 
 		/* debit */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		debit = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
+		str = ofa_iimportable_get_string( &itf, settings );
+		debit = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
+		g_free( str );
 
 		/* credit */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		credit = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
+		str = ofa_iimportable_get_string( &itf, settings );
+		credit = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
+		g_free( str );
 
 		/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
 		if(( debit && !credit ) || ( !debit && credit )){
@@ -3046,14 +3055,13 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* settlement (number or True)
 		 * do not allocate a settlement number from the dossier here
 		 * in case where the entries import would not be inserted */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( my_strlen( cstr ) && ofo_account_is_settleable( account )){
-			counter = atol( cstr );
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( my_strlen( str ) && ofo_account_is_settleable( account )){
+			counter = atol( str );
 			if( counter ){
 				entry_set_import_settled( entry, TRUE );
 			} else {
-				entry_set_import_settled( entry, my_utils_boolean_from_str( cstr ));
+				entry_set_import_settled( entry, my_utils_boolean_from_str( str ));
 			}
 		}
 
@@ -3076,40 +3084,40 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		itf = itf ? itf->next : NULL;
 
 		/* reconciliation date */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &date, cstr, date_format );
+		str = ofa_iimportable_get_string( &itf, settings );
+		my_date_set_from_str( &date, str, date_format );
 		if( my_date_is_valid( &date )){
 			concil = ofo_concil_new();
 			g_object_set_data( G_OBJECT( entry ), "entry-concil", concil );
 			ofo_concil_set_dval( concil, &date );
-			g_debug( "new concil: dval=%s", cstr );
+			g_debug( "%s: new concil dval=%s", thisfn, str );
 		}
+		g_free( str );
 
 		/* exported reconciliation user (defaults to current user) */
-		itf = itf ? itf->next : NULL;
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( concil ){
-			userid = g_strdup( itf ? ( const gchar * ) itf->data : NULL );
+			userid = str;
 			if( !my_strlen( userid )){
 				userid = ofa_idbconnect_get_account( connect );
 			}
 			ofo_concil_set_user( concil, userid );
-			g_debug( "concil user=%s", userid );
-			g_free( userid );
+			g_debug( "%s: new concil user=%s", thisfn, userid );
 		}
+		g_free( str );
 
 		/* exported reconciliation timestamp (defaults to now) */
-		itf = itf ? itf->next : NULL;
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( concil ){
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( !my_strlen( cstr )){
+			if( !my_strlen( str )){
 				my_utils_stamp_set_now( &stamp );
 			} else {
-				my_utils_stamp_set_from_str( &stamp, cstr );
+				my_utils_stamp_set_from_str( &stamp, str );
 			}
 			ofo_concil_set_stamp( concil, &stamp );
-			g_debug( "concil stamp=%s", cstr );
+			g_debug( "%s: new concil stamp=%s", thisfn, str );
 		}
+		g_free( str );
 
 		/* what to do regarding the effect date ?
 		 * we force it to be valid regarding exercice beginning and
