@@ -313,6 +313,7 @@ static void         default_expand_view( ofaReconcilPage *self );
 static void         expand_tview_selection( ofaReconcilPage *self );
 static void         on_reconciliate_clicked( GtkButton *button, ofaReconcilPage *self );
 static void         do_reconciliate( ofaReconcilPage *self );
+static gboolean     user_confirm_reconciliation( ofaReconcilPage *self, ofxAmount debit, ofxAmount credit );
 static GDate       *get_date_for_new_concil( ofaReconcilPage *self, GDate *date );
 static void         on_decline_clicked( GtkButton *button, ofaReconcilPage *self );
 static void         do_decline( ofaReconcilPage *self );
@@ -2730,6 +2731,13 @@ do_reconciliate( ofaReconcilPage *self )
 	examine_selection( self, &debit, &credit, &concil, &count, &unconcil_rows, &unique, &is_child );
 	g_return_if_fail( unique );
 
+	/* ask for a user confirmation when amounts are not balanced */
+	if( debit != credit ){
+		if( !user_confirm_reconciliation( self, debit, credit )){
+			return;
+		}
+	}
+
 	/* compute effect date of a new concil group */
 	if( !concil ){
 		if( !my_date_is_valid( get_date_for_new_concil( self, &dval ))){
@@ -2900,6 +2908,27 @@ do_reconciliate( ofaReconcilPage *self )
 	if( priv->bats ){
 		display_bat_counts( self );
 	}
+}
+
+static gboolean
+user_confirm_reconciliation( ofaReconcilPage *self, ofxAmount debit, ofxAmount credit )
+{
+	gboolean ok;
+	gchar *sdeb, *scre, *str;
+
+	sdeb = my_double_to_str( debit );
+	scre = my_double_to_str( credit );
+	str = g_strdup_printf( _( "Caution: reconciliated amounts are not balanced:\n"
+			"debit=%s, credit=%s.\n"
+			"Are you sure you want reconciliate this group ?" ), sdeb, scre );
+
+	ok = my_utils_dialog_question( str, _( "Reconciliate" ));
+
+	g_free( sdeb );
+	g_free( scre );
+	g_free( str );
+
+	return( ok );
 }
 
 /*

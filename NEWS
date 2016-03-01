@@ -31,6 +31,7 @@
    - ofaDossierOpen: gives a title to the dialog.
    - ofaDossierOpen: shows all dossier, even if only archived.
    - ofaPreferences: make the dialog non-modal (todo #992).
+   - ofaReconciliation: ask for user confirmation when amounts are not balanced (todo #1019).
    - ofaReconciliation: have a grey/green/yellow light for selected balance (todo #1021).
 
  Bug fixes:

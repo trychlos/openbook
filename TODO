@@ -552,9 +552,6 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1019 2016- 2-27 FEAT Reconciliation: ask for confirmation when amounts are
-                     not balanced
-
 1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
 
 1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
@@ -878,6 +875,10 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1019 2016- 2-27 FEAT Reconciliation: ask for confirmation when amounts are
+                     not balanced
+     2016- 3- 1 done
 
 1020 2016- 2-27 BUG  ImportAssistant: import and insertion progress bars
                      have disappeared
