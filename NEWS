@@ -29,11 +29,12 @@
 
    - ofaDossierManager: gives a title to the dialog.
    - ofaDossierOpen: gives a title to the dialog.
+   - ofaDossierOpen: shows all dossier, even if only archived.
    - ofaPreferences: make the dialog non-modal (todo #992).
 
  Bug fixes:
 
-   - ExportAssistant: all strings are quoted (todo #1023).
+   - ofaExportAssistant: all strings are quoted (todo #1023).
    - ofaIDateFilter: keep both 'from' and 'to' dates as user preferences (todo #978).
    - ofaNomodalPage: setup initial default size and position (todo #997).
    - ofoAccount: import close indicator.

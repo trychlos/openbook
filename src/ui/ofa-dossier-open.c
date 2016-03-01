@@ -287,7 +287,7 @@ v_init_dialog( myDialog *dialog )
 	priv->dossier_tview = ofa_dossier_treeview_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_dossier_treeview_set_columns( priv->dossier_tview, st_columns );
-	ofa_dossier_treeview_set_show( priv->dossier_tview, DOSSIER_SHOW_CURRENT );
+	ofa_dossier_treeview_set_show( priv->dossier_tview, DOSSIER_SHOW_UNIQUE );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
 	focus = GTK_WIDGET( priv->dossier_tview );

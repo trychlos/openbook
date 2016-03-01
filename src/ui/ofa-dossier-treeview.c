@@ -394,22 +394,31 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
+	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
+	GList *periods;
 
 	priv = tview->priv;
 	visible = TRUE;
-	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_PERIOD, &period, -1 );
-	if( period ){
-		switch( priv->show_mode ){
-			case DOSSIER_SHOW_ALL:
+	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
+
+	switch( priv->show_mode ){
+		case DOSSIER_SHOW_ALL:
+			visible = TRUE;
+			break;
+		case DOSSIER_SHOW_UNIQUE:
+			periods = ofa_idbmeta_get_periods( meta );
+			if( g_list_length( periods ) == 1 ){
 				visible = TRUE;
-				break;
-			case DOSSIER_SHOW_CURRENT:
+			} else {
 				visible = ofa_idbperiod_get_current( period );
-				break;
-		}
-		g_object_unref( period );
+			}
+			ofa_idbmeta_free_periods( periods );
+			break;
 	}
+
+	g_object_unref( period );
+	g_object_unref( meta );
 
 	return( visible );
 }

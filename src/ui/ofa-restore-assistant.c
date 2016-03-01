@@ -541,7 +541,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_treeview ));
 	ofa_dossier_treeview_set_columns( priv->p2_dossier_treeview, st_columns );
-	ofa_dossier_treeview_set_show( priv->p2_dossier_treeview, DOSSIER_SHOW_CURRENT );
+	ofa_dossier_treeview_set_show( priv->p2_dossier_treeview, DOSSIER_SHOW_UNIQUE );
 
 	g_signal_connect( priv->p2_dossier_treeview, "changed", G_CALLBACK( p2_on_dossier_changed ), self );
 	g_signal_connect( priv->p2_dossier_treeview, "activated", G_CALLBACK( p2_on_dossier_activated ), self );
