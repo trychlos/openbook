@@ -2214,10 +2214,11 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - label
  * - currency iso 3a code (mandatory for detail accounts, default to
  *   dossier currency)
- * - type = {D|R} (default to Detail)
- * - settleable = {S| } (defaults to no)
- * - reconciliable = {R| } (defaults to no)
- * - carried forwardable on new exercice = {F| } (defaults to no)
+ * - is_root = {N|Y} (defaults to no)
+ * - is_settleable = {N|Y} (defaults to no)
+ * - is_reconciliable = {N|Y} (defaults to no)
+ * - carried forwardable on new exercice = {N|Y} (defaults to no)
+ * - is_closed = {N|Y} (defaults to no)
  * - notes (opt)
  *
  * Replace the whole table with the provided datas.
@@ -2262,7 +2263,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* account number */
 		itf = fields;
 		str = ofa_iimportable_get_string( &itf, settings );
-		g_debug( "line=%u, str=%s", line, str );
 		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account number" ));
@@ -2389,6 +2389,25 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			} else {
 				ofo_account_set_forwardable( account,
 						!my_collate( str, ACCOUNT_FORWARDABLE ) || !my_collate( str, "Y" ));
+			}
+		}
+		g_free( str );
+
+		/* closed ? */
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( str ){
+			if( g_utf8_collate( str, ACCOUNT_CLOSED ) &&
+					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
+				msg = g_strdup_printf( _( "invalid closed account indicator: %s" ), str );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( str );
+				errors += 1;
+				continue;
+			} else {
+				ofo_account_set_closed( account,
+						!my_collate( str, ACCOUNT_CLOSED ) || !my_collate( str, "Y" ));
 			}
 		}
 		g_free( str );
