@@ -27,7 +27,8 @@
 
  New features and improvements:
 
-   - ofaPReferences: make the dialog non-modal (todo #992).
+   - ofaDossierManager: gives a title to the dialog.
+   - ofaPreferences: make the dialog non-modal (todo #992).
 
  Bug fixes:
 
