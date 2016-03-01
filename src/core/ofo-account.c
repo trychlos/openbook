@@ -2259,9 +2259,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		account = ofo_account_new();
 		fields = ( GSList * ) itl->data;
 		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
+		itf = fields;
 
 		/* account number */
-		itf = fields;
 		str = ofa_iimportable_get_string( &itf, settings );
 		if( !str ){
 			ofa_iimportable_set_message(
