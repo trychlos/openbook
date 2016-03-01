@@ -555,9 +555,6 @@
 1019 2016- 2-27 FEAT Reconciliation: ask for confirmation when amounts are
                      not balanced
 
-1020 2016- 2-27 BUG  ImportAssistant: import and insertion progress bars
-                     have disappeared
-
 1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
 
 1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
@@ -881,6 +878,10 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1020 2016- 2-27 BUG  ImportAssistant: import and insertion progress bars
+                     have disappeared
+     2016- 3- 1 fixed
 
 1021 2016- 2-28 FEAT Reconciliation: when having a multiple selection and
                      displaying on footer the debit and credit balances,

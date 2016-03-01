@@ -54,16 +54,13 @@ typedef struct _ofaImportAssistantPrivate        ofaImportAssistantPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myAssistant                parent;
-
-	/*< private members >*/
-	ofaImportAssistantPrivate *priv;
+	myAssistant      parent;
 }
 	ofaImportAssistant;
 
 typedef struct {
 	/*< public members >*/
-	myAssistantClass           parent;
+	myAssistantClass parent;
 }
 	ofaImportAssistantClass;
 
