@@ -192,7 +192,8 @@ void            ofa_iimportable_set_count         ( ofaIImportable *importable,
 
 /* an importable-oriented API
  */
-gchar          *ofa_iimportable_get_string        ( GSList **it );
+gchar          *ofa_iimportable_get_string        ( GSList **it,
+															const ofaFileFormat *settings );
 
 void            ofa_iimportable_pulse             ( ofaIImportable *importable,
 															ofeImportablePhase phase );

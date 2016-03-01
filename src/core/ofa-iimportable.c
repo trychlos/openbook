@@ -271,6 +271,8 @@ ofa_iimportable_import( ofaIImportable *importable,
 
 	count = ofa_file_format_get_headers_count( settings );
 	content = g_slist_nth( lines, count );
+	g_debug( "%s: count=%d, lines=%p (%d), content=%p (%d)",
+			thisfn, count, ( void * ) lines, g_slist_length( lines ), ( void * ) content, g_slist_length( content ));
 
 	errors = 0;
 	sdata->caller = caller;
@@ -303,40 +305,41 @@ ofa_iimportable_import( ofaIImportable *importable,
  *
  * Returns a newly allocated string pointed to by the @it.
  * If not null, the string is stripped from leading and tailing spaces and double quotes.
- * The returned list should be g_free() by the caller.
+ * The returned string should be g_free() by the caller.
+ *
  * Returns NULL if empty.
  */
 gchar *
-ofa_iimportable_get_string( GSList **it )
+ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 {
 	const gchar *cstr;
-	gchar *str, *unquoted;
+	gchar *str, *temp, *regexp;
 	glong len;
 
+	str = NULL;
 	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
 	if( cstr ){
-		str = g_strstrip( g_strdup( cstr ));
-		unquoted = my_utils_unquote_double( str );
-		g_free( str );
-		len = my_strlen( unquoted );
+		len = my_strlen( cstr );
 		if( len ){
-			if( unquoted[0] == '"' && unquoted[len-1] == '"' ){
-				str = g_strndup( unquoted+1, len-2 );
-				g_free( unquoted );
-				unquoted = str;
+			if( cstr[0] == '"' && cstr[len-1] == '"' ){
+				str = g_strndup( cstr+1, len-2 );
+			} else {
+				str = g_strstrip( g_strdup( cstr ));
+			}
+			regexp = g_strdup_printf( "[\"\n\r%c]", ofa_file_format_get_field_sep( settings ));
+			temp = my_utils_unquote_regexp( str, regexp );
+			g_free( str );
+			str = temp;
+			if( !my_strlen( str )){
+				g_free( str );
+				str = NULL;
 			}
 		}
-		if( !my_strlen( unquoted )){
-			g_free( unquoted );
-			unquoted = NULL;
-		}
-	} else {
-		unquoted = NULL;
 	}
 
 	*it = *it ? ( *it )->next : NULL;
 
-	return( unquoted );
+	return( str );
 }
 
 /**
