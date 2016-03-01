@@ -90,7 +90,9 @@
    - ofoClass: migrate to G_ADD_PRIVATE (todo #994).
    - ofoConcil: migrate to G_ADD_PRIVATE (todo #994).
    - ofoCurrency: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoCurrency: migrate to ofaBox-managed data.
    - ofoDossier: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoDossier: migrate to ofaBox-managed data.
    - ofoEntry: migrate to G_ADD_PRIVATE (todo #994).
    - ofoLedger: migrate to G_ADD_PRIVATE (todo #994).
    - ofoOpeTemplate: migrate to G_ADD_PRIVATE (todo #994).

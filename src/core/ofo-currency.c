@@ -743,17 +743,18 @@ iexportable_get_interface_version( const ofaIExportable *instance )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
-	GList *dataset, *it;
 	GSList *lines;
-	gchar *str, *stamp, *notes;
-	ofoCurrency *currency;
-	const gchar *muser;
-	gboolean ok, with_headers;
+	gchar *str;
+	GList *dataset, *it;
+	gchar field_sep, decimal_sep;
+	gboolean with_headers, ok;
 	gulong count;
 
 	dataset = ofo_currency_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
+	field_sep = ofa_file_format_get_field_sep( settings );
+	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -762,7 +763,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = g_strdup_printf( "Code;Label;Symbol;Digits;Notes;MajUser;MajStamp" );
+		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -772,24 +773,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		currency = OFO_CURRENCY( it->data );
-
-		notes = my_utils_export_multi_lines( ofo_currency_get_notes( currency ));
-		muser = ofo_currency_get_upd_user( currency );
-		stamp = my_utils_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_YYMDHMS );
-
-		str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s",
-				ofo_currency_get_code( currency ),
-				ofo_currency_get_label( currency ),
-				ofo_currency_get_symbol( currency ),
-				ofo_currency_get_digits( currency ),
-				notes ? notes : "",
-				muser ? muser : "",
-				muser ? stamp : "" );
-
-		g_free( notes );
-		g_free( stamp );
-
+		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
