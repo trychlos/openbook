@@ -852,7 +852,7 @@ ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency )
 static GList *
 ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency )
 {
-	static const gchar *thisfn = "ofo_ledger_ledger_find_balance_by_code";
+	static const gchar *thisfn = "ofo_ledger_find_balance_by_code";
 	ofoLedgerPrivate *priv;
 	GList *it;
 	GList *balance;
