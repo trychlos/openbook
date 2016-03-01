@@ -326,7 +326,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 			} else {
 				str = g_strstrip( g_strdup( cstr ));
 			}
-			regexp = g_strdup_printf( "[\"\n\r%c]", ofa_file_format_get_field_sep( settings ));
+			regexp = g_strdup_printf( "(\\\")|(\\\n)|(\\\r)|(\\%c)", ofa_file_format_get_field_sep( settings ));
 			temp = my_utils_unquote_regexp( str, regexp );
 			g_free( str );
 			str = temp;
@@ -335,6 +335,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 				str = NULL;
 			}
 		}
+		g_debug( "src='%s', out='%s'", cstr, str );
 	}
 
 	*it = *it ? ( *it )->next : NULL;
