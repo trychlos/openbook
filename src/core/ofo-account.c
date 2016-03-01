@@ -2261,7 +2261,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		/* account number */
 		itf = fields;
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
+		g_debug( "line=%u, str=%s", line, str );
 		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account number" ));
@@ -2283,7 +2284,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		g_free( str );
 
 		/* account label */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account label" ));
@@ -2293,7 +2294,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		ofo_account_set_label( account, str );
 
 		/* currency code */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( str ){
 			dev_code = g_strdup( str );
 		} else {
@@ -2316,7 +2317,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		/* root account
 		 * previous to DB model v27, root/detail accounts were marked with R/D
 		 * starting with v27, root accounts are marked with Y/N */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( !str ){
 			str = g_strdup( "N" );
 		} else if( g_utf8_collate( str, ACCOUNT_TYPE_DETAIL ) &&
@@ -2336,7 +2337,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		g_free( str );
 
 		/* settleable ? */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( str ){
 			if( g_utf8_collate( str, ACCOUNT_SETTLEABLE ) &&
 					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
@@ -2355,7 +2356,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		g_free( str );
 
 		/* reconciliable ? */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( str ){
 			if( g_utf8_collate( str, ACCOUNT_RECONCILIABLE ) &&
 					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
@@ -2374,7 +2375,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		g_free( str );
 
 		/* carried forwardable ? */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( str ){
 			if( g_utf8_collate( str, ACCOUNT_FORWARDABLE ) &&
 					g_utf8_collate( str, "Y" ) && g_utf8_collate( str, "N" )){
@@ -2394,7 +2395,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		/* notes
 		 * we are tolerant on the last field... */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		splitted = my_utils_import_multi_lines( str );
 		ofo_account_set_notes( account, splitted );
 		g_free( splitted );

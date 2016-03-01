@@ -569,7 +569,11 @@
                      inside notes should be backslashed
      2016- 2-29 All strings are quoted
 
-1024
+1024 2016- 3- 1 CODE replace my_utils_quote_single() with g_strescape() ?
+
+1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
+
+1026
 
 -----------------------------------------------------------------------
  DONE

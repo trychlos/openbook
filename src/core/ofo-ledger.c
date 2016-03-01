@@ -1859,7 +1859,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			have_prefix = ( my_strlen( cstr ) &&
 					( !g_utf8_collate( cstr, "1" ) || !g_utf8_collate( cstr, "2" )));
 		}
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( have_prefix ){
 			if( g_utf8_collate( str, "1" )){
 				msg = g_strdup_printf( _( "ignoring line with prefix=%s" ), str );
@@ -1870,7 +1870,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 				continue;
 			}
 			g_free( str );
-			str = ofa_iimportable_get_string( &itf );
+			str = ofa_iimportable_get_string( &itf, settings );
 		}
 		if( !str ){
 			ofa_iimportable_set_message(
@@ -1882,7 +1882,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		g_free( str );
 
 		/* ledger label */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger label" ));
@@ -1894,7 +1894,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		/* notes
 		 * we are tolerant on the last field... */
-		str = ofa_iimportable_get_string( &itf );
+		str = ofa_iimportable_get_string( &itf, settings );
 		splitted = my_utils_import_multi_lines( str );
 		ofo_ledger_set_notes( ledger, splitted );
 		g_free( splitted );
