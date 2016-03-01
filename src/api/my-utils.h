@@ -50,8 +50,8 @@ gint          my_collate                              ( const gchar *a, const gc
 glong         my_strlen                               ( const gchar *str );
 
 gchar        *my_utils_quote_single                   ( const gchar *str );
-gchar        *my_utils_quote_double                   ( const gchar *str );
-gchar        *my_utils_unquote_double                 ( const gchar *str );
+gchar        *my_utils_quote_regexp                   ( const gchar *str, const gchar *regexp );
+gchar        *my_utils_unquote_regexp                 ( const gchar *str, const gchar *regexp );
 
 GTimeVal     *my_utils_stamp_set_now                  ( GTimeVal *stamp );
 GTimeVal     *my_utils_stamp_set_from_sql             ( GTimeVal *timeval, const gchar *str );
@@ -140,6 +140,7 @@ gboolean      my_utils_file_is_readable_file          ( const gchar *filename );
 gchar        *my_utils_filename_from_utf8             ( const gchar *filename );
 
 gboolean      my_utils_uri_exists                     ( const gchar *uri );
+gchar        *my_utils_uri_get_content                ( const gchar *uri, guint *errors );
 gboolean      my_utils_uri_is_dir                     ( const gchar *uri );
 gboolean      my_utils_uri_is_readable_file           ( const gchar *uri );
 

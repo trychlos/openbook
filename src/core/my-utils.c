@@ -29,6 +29,7 @@
 #include <gio/gio.h>
 #include <glib/gi18n.h>
 #include <time.h>
+#include <stdarg.h>
 
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
@@ -39,12 +40,12 @@ typedef struct {
 }
 	sBuildableByName;
 
-static GRegex         *st_quote_single_regex   = NULL;
-static GRegex         *st_quote_double_regex   = NULL;
-static GRegex         *st_unquote_double_regex = NULL;
-static const gchar    *st_cssfile              = PKGCSSDIR "/ofa.css";
-static GtkCssProvider *st_css_provider         = NULL;
+static GRegex         *st_quote_single_regex    = NULL;
+static const gchar    *st_cssfile               = PKGCSSDIR "/ofa.css";
+static GtkCssProvider *st_css_provider          = NULL;
 
+static gboolean utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data );
+static gboolean utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data );
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
@@ -117,77 +118,104 @@ my_utils_quote_single( const gchar *str )
 }
 
 /**
- * my_utils_quote_double:
+ * my_utils_quote_regexp:
  *
- * Replace '"' quote characters with '\"'
- * Use case: strings export
+ * Backslash characters in the provided regular expression.
+ *
+ * Use case: strings export.
  */
 gchar *
-my_utils_quote_double( const gchar *str )
+my_utils_quote_regexp( const gchar *str, const gchar *regexp )
 {
-	static const gchar *thisfn = "my_utils_quote_double";
+	static const gchar *thisfn = "my_utils_quote_regexp";
+	GRegex *regex;
 	GError *error;
-	gchar *new_str;
+	gchar *out_str;
 
-	new_str = NULL;
+	out_str = NULL;
 
 	if( str ){
 		error = NULL;
-		if( !st_quote_double_regex ){
-			st_quote_double_regex = g_regex_new( "\"", 0, 0, &error );
-			if( error ){
-				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
-				g_error_free( error );
-				return( NULL );
-			}
-		}
-		g_return_val_if_fail( st_quote_double_regex, NULL );
-		new_str = g_regex_replace_literal( st_quote_double_regex, str, -1, 0, "\\\"", 0, &error );
-		if( error ){
-			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+		regex = g_regex_new( regexp, 0, 0, &error );
+		if( error || !regex ){
+			g_warning( "%s: g_regex_new=%s (%s)", thisfn, error->message, regexp );
 			g_error_free( error );
 			return( NULL );
 		}
+		out_str = g_regex_replace_eval( regex, str, -1, 0, 0, utils_quote_cb, NULL, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s (%s)", thisfn, error->message, regexp );
+			g_error_free( error );
+			return( NULL );
+		}
+		/* debug */
+		if( 0 ){
+			g_debug( "%s: regexp='%s', str='%s', new_str='%s'", thisfn, regexp, str, out_str );
+		}
+		g_regex_unref( regex );
 	}
 
-	return( new_str );
+	return( out_str );
+}
+
+static gboolean
+utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data )
+{
+	gchar *match;
+
+	match = g_match_info_fetch( info, 0 );
+	g_string_append_printf( res, "\\%s", match );
+
+	return( FALSE );
 }
 
 /**
- * my_utils_unquote_double:
+ * my_utils_unquote_regexp:
  *
- * Replace '\"' backslashed quote characters with single quote '"'
- * Use case: strings import
+ * Unbackslash characters in the provided regular expression.
+ *
+ * Use case: strings import.
  */
 gchar *
-my_utils_unquote_double( const gchar *str )
+my_utils_unquote_regexp( const gchar *str, const gchar *regexp )
 {
-	static const gchar *thisfn = "my_utils_unquote_double";
+	static const gchar *thisfn = "my_utils_unquote_regexp";
+	GRegex *regex;
 	GError *error;
-	gchar *new_str;
+	gchar *quoted_regexp, *out_str;
 
-	new_str = NULL;
+	out_str = NULL;
 
 	if( str ){
+		quoted_regexp = my_utils_quote_regexp( regexp, regexp );
 		error = NULL;
-		if( !st_unquote_double_regex ){
-			st_unquote_double_regex = g_regex_new( "\\\"", 0, 0, &error );
-			if( error ){
-				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
-				g_error_free( error );
-				return( NULL );
-			}
-		}
-		g_return_val_if_fail( st_unquote_double_regex, NULL );
-		new_str = g_regex_replace_literal( st_unquote_double_regex, str, -1, 0, "\"", 0, &error );
-		if( error ){
-			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+		regex = g_regex_new( quoted_regexp, 0, 0, &error );
+		if( error || !regex ){
+			g_warning( "%s: g_regex_new=%s (%s)", thisfn, error->message, regexp );
 			g_error_free( error );
 			return( NULL );
 		}
+		out_str = g_regex_replace_eval( regex, str, -1, 0, 0, utils_unquote_cb, NULL, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s (%s)", thisfn, error->message, regexp );
+			g_error_free( error );
+			return( NULL );
+		}
+		g_regex_unref( regex );
 	}
 
-	return( new_str );
+	return( out_str );
+}
+
+static gboolean
+utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data )
+{
+	gchar *match;
+
+	match = g_match_info_fetch( info, 0 );
+	g_string_append_printf( res, "%s", match+1 );
+
+	return( FALSE );
 }
 
 /**
@@ -1629,6 +1657,49 @@ my_utils_uri_exists( const gchar *uri )
 	g_debug( "my_utils_uri_exists: the uri '%s' exists: %s", uri, exists ? "True":"False" );
 
 	return( exists );
+}
+
+/**
+ * my_utils_uri_get_content:
+ * @uri:
+ * @errors: [out]:
+ *
+ * Returns the file content as a single buffer of chars (though null-terminated)
+ */
+gchar *
+my_utils_uri_get_content( const gchar *uri, guint *errors )
+{
+	GFile *gfile;
+	gchar *sysfname, *content, *str;
+	GError *error;
+
+	sysfname = my_utils_filename_from_utf8( uri );
+	if( !sysfname ){
+		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), uri );
+		my_utils_dialog_warning( str );
+		g_free( str );
+		*errors += 1;
+		return( NULL );
+	}
+
+	gfile = g_file_new_for_uri( sysfname );
+	g_free( sysfname );
+
+	error = NULL;
+	content = NULL;
+	if( !g_file_load_contents( gfile, NULL, &content, NULL, NULL, &error )){
+		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ), uri, error->message );
+		my_utils_dialog_warning( str );
+		g_free( str );
+		g_error_free( error );
+		g_free( content );
+		*errors += 1;
+		content = NULL;
+	}
+
+	g_object_unref( gfile );
+
+	return( content );
 }
 
 /**
