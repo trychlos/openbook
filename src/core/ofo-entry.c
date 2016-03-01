@@ -3038,7 +3038,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		credit = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
 		g_free( str );
 
-		/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
+		if( 0 ){
+			g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
+		}
 		if(( debit && !credit ) || ( !debit && credit )){
 			ofo_entry_set_debit( entry, debit );
 			ofo_entry_set_credit( entry, credit );
