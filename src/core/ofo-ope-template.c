@@ -204,8 +204,8 @@ static gchar          *update_decimal_sep( const ofsBoxDef *def, eBoxType type, 
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
-static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, guint count, guint *errors );
-static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint count, guint *errors, gchar **mnemo );
+static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors );
+static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
@@ -1813,14 +1813,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		type = atoi( cstr );
 		switch( type ){
 			case 1:
-				model = model_import_csv_model( importable, fields, line, &errors );
+				model = model_import_csv_model( importable, fields, settings, line, &errors );
 				if( model ){
 					dataset = g_list_prepend( dataset, model );
 				}
 				break;
 			case 2:
 				mnemo = NULL;
-				detail = model_import_csv_detail( importable, fields, line, &errors, &mnemo );
+				detail = model_import_csv_detail( importable, fields, settings, line, &errors, &mnemo );
 				if( detail ){
 					model = model_find_by_mnemo( dataset, mnemo );
 					if( model ){
@@ -1863,10 +1863,10 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static ofoOpeTemplate *
-model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, guint *errors )
+model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
 {
 	ofoOpeTemplate *model;
-	const gchar *cstr;
+	gchar *str;
 	GSList *itf;
 	gboolean locked;
 	gchar *splitted;
@@ -1875,140 +1875,140 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	itf = fields;
 
 	/* model mnemo */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_mnemo( model, cstr );
+	ofo_ope_template_set_mnemo( model, str );
+	g_free( str );
 
 	/* model label */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template label" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_label( model, cstr );
+	ofo_ope_template_set_label( model, str );
+	g_free( str );
 
 	/* model ledger */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template ledger" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_ledger( model, cstr );
+	ofo_ope_template_set_ledger( model, str );
+	g_free( str );
 
 	/* model ledger locked
 	 * default to false if not set, but must be valid if set */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	locked = my_utils_boolean_from_str( cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	locked = my_utils_boolean_from_str( str );
 	ofo_ope_template_set_ledger_locked( model, locked );
+	g_free( str );
 
 	/* model ref */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( my_strlen( cstr )){
-		ofo_ope_template_set_ref( model, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( my_strlen( str )){
+		ofo_ope_template_set_ref( model, str );
 	}
+	g_free( str );
 
 	/* model ref locked
 	 * default to false if not set, but must be valid if set */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	locked = my_utils_boolean_from_str( cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	locked = my_utils_boolean_from_str( str );
 	ofo_ope_template_set_ref_locked( model, locked );
+	g_free( str );
 
 	/* notes
 	 * we are tolerant on the last field... */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	splitted = my_utils_import_multi_lines( cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	splitted = my_utils_import_multi_lines( str );
 	ofo_ope_template_set_notes( model, splitted );
 	g_free( splitted );
+	g_free( str );
 
 	return( model );
 }
 
 static GList *
-model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line, guint *errors, gchar **mnemo )
+model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
-	const gchar *cstr;
+	gchar *str;
 	GSList *itf;
 
 	detail = ofa_box_init_fields_list( st_details_defs );
 	itf = fields;
 
 	/* model mnemo */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_free( detail );
 		return( NULL );
 	}
-	*mnemo = g_strdup( cstr );
-	ofa_box_set_string( detail, OTE_MNEMO, cstr );
+	*mnemo = g_strdup( str );
+	ofa_box_set_string( detail, OTE_MNEMO, str );
+	g_free( str );
 
 	/* detail comment */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_COMMENT, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_COMMENT, str );
+	g_free( str );
 
 	/* detail account */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_ACCOUNT, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_ACCOUNT, str );
+	g_free( str );
 
 	/* detail account locked */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_ACCOUNT_LOCKED, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_ACCOUNT_LOCKED, str );
+	g_free( str );
 
 	/* detail label */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_LABEL, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_LABEL, str );
+	g_free( str );
 
 	/* detail label locked */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_LABEL_LOCKED, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_LABEL_LOCKED, str );
+	g_free( str );
 
 	/* detail debit */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_DEBIT, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_DEBIT, str );
+	g_free( str );
 
 	/* detail debit locked */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_DEBIT_LOCKED, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_DEBIT_LOCKED, str );
+	g_free( str );
 
 	/* detail credit */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_CREDIT, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_CREDIT, str );
+	g_free( str );
 
 	/* detail credit locked */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, OTE_DET_CREDIT_LOCKED, cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, OTE_DET_CREDIT_LOCKED, str );
+	g_free( str );
 
 	return( detail );
 }
