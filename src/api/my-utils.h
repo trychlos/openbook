@@ -71,12 +71,14 @@ gchar        *my_utils_str_remove_underlines          ( const gchar *string );
 gchar        *my_utils_str_replace                    ( const gchar *string, const gchar *old, const gchar *new );
 
 GtkWidget    *my_utils_builder_load_from_path         ( const gchar *path_xml, const gchar *widget_name );
+GtkWidget    *my_utils_builder_load_from_resource     ( const gchar *resource, const gchar *widget_name );
 
 void          my_utils_dialog_warning                 ( const gchar *msg );
 gboolean      my_utils_dialog_question                ( const gchar *msg, const gchar *ok_text );
 
 GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
+GtkWidget    *my_utils_container_attach_from_resource ( GtkContainer *container, const gchar *resource, const gchar *window, const gchar *widget );
 GtkWidget    *my_utils_container_attach_from_ui       ( GtkContainer *container, const gchar *ui, const gchar *window, const gchar *widget );
 GtkWidget    *my_utils_container_attach_from_window   ( GtkContainer *container, GtkWindow *window, const gchar *widget );
 void          my_utils_container_set_editable         ( GtkContainer *container, gboolean editable );

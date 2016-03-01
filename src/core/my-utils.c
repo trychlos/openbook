@@ -512,6 +512,36 @@ my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name
 }
 
 /**
+ * my_utils_builder_load_from_resource:
+ *
+ * Returns the loaded widget, or NULL.
+ */
+GtkWidget *
+my_utils_builder_load_from_resource( const gchar *resource, const gchar *widget_name )
+{
+	static const gchar *thisfn = "my_utils_builder_load_from_resource";
+	GtkWidget *widget;
+	GtkBuilder *builder;
+
+	builder = gtk_builder_new_from_resource( resource );
+
+	widget = ( GtkWidget * ) gtk_builder_get_object( builder, widget_name );
+	if( widget ){
+		/* take a ref on non-toplevel widgets to survive to the unref of the builder */
+		if( GTK_IS_WIDGET( widget ) && !gtk_widget_is_toplevel( widget )){
+			g_object_ref( widget );
+		}
+	} else {
+		g_warning( "%s: unable to find '%s' object in '%s' resource",
+								thisfn, widget_name, resource );
+	}
+
+	g_object_unref( builder );
+
+	return( widget );
+}
+
+/**
  * my_utils_dialog_warning:
  */
 void
@@ -720,6 +750,34 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 
 	g_list_free( children );
 	return( found );
+}
+
+/**
+ * my_utils_container_attach_from_resource:
+ * @container: the target container
+ * @resource: the path of the bundled resource
+ * @window: the name of the top window in the resource
+ * @widget: the name of the top widget to be attached to the @container.
+ *
+ * Load the named resource @resource, load the named @window, extract
+ * the named @widget from the @window, attaching this @widget to the
+ * @container.
+ *
+ * Returns: the loaded @widget, or %NULL.
+ */
+GtkWidget *
+my_utils_container_attach_from_resource( GtkContainer *container, const gchar *resource, const gchar *window, const gchar *widget )
+{
+	GtkWidget *toplevel, *top_widget;
+
+	g_return_val_if_fail( container && GTK_IS_CONTAINER( container ), NULL );
+
+	toplevel = my_utils_builder_load_from_resource( resource, window );
+	g_return_val_if_fail( toplevel && GTK_IS_WINDOW( toplevel ), NULL );
+	top_widget = my_utils_container_attach_from_window( container, GTK_WINDOW( toplevel ), widget );
+	gtk_widget_destroy( toplevel );
+
+	return( top_widget );
 }
 
 /**
