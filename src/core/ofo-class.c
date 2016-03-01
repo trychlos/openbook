@@ -785,11 +785,10 @@ static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
-	const gchar *cstr;
 	ofoClass *class;
 	GList *dataset, *it;
 	guint errors, number, line;
-	gchar *msg, *splitted;
+	gchar *msg, *splitted, *str;
 	const ofaIDBConnect *connect;
 
 	line = 0;
@@ -802,39 +801,45 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		class = ofo_class_new();
 		fields = ( GSList * ) itl->data;
 		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
-
 		itf = fields;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
+
+		/* class number */
+		str = ofa_iimportable_get_string( &itf, settings );
 		number = 0;
-		if( cstr ){
-			number = atoi( cstr );
+		if( str ){
+			number = atoi( str );
 		}
 		if( number < 1 || number > 9 ){
-			msg = g_strdup_printf( _( "invalid class number: %s" ), cstr );
+			msg = g_strdup_printf( _( "invalid class number: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
+		g_free( str );
 		ofo_class_set_number( class, number );
 
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		/* class label */
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty class label" ));
 			errors += 1;
+			g_free( str );
 			continue;
 		} else {
-			ofo_class_set_label( class, cstr );
+			ofo_class_set_label( class, str );
 		}
+		g_free( str );
 
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		splitted = my_utils_import_multi_lines( cstr );
+		/* notes */
+		str = ofa_iimportable_get_string( &itf, settings );
+		splitted = my_utils_import_multi_lines( str );
 		ofo_class_set_notes( class, splitted );
 		g_free( splitted );
+		g_free( str );
 
 		dataset = g_list_prepend( dataset, class );
 	}
