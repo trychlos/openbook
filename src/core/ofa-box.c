@@ -92,7 +92,7 @@ amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-amount_to_csv_str( const sBoxData *box )
+amount_to_csv_str( const sBoxData *box, gchar field_sep )
 {
 	gchar *str;
 
@@ -141,7 +141,7 @@ counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-counter_to_csv_str( const sBoxData *box )
+counter_to_csv_str( const sBoxData *box, gchar field_sep )
 {
 	gchar *str;
 
@@ -190,7 +190,7 @@ int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-int_to_csv_str( const sBoxData *box )
+int_to_csv_str( const sBoxData *box, gchar field_sep )
 {
 	gchar *str;
 
@@ -241,7 +241,7 @@ date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-date_to_csv_str( const sBoxData *box )
+date_to_csv_str( const sBoxData *box, gchar field_sep )
 {
 	gchar *str;
 
@@ -305,16 +305,18 @@ string_free( sBoxData *box )
 }
 
 static gchar *
-string_to_csv_str( const sBoxData *box )
+string_to_csv_str( const sBoxData *box, gchar field_sep )
 {
-	gchar *quoted, *str;
+	gchar *temp, *str, *regexp;
 
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( box->string ){
-		quoted = my_utils_quote_double( box->string );
-		str = g_strdup_printf( "\"%s\"", quoted );
-		g_free( quoted );
+		regexp = g_strdup_printf( "[\"\n\r%c]", field_sep );
+		temp = my_utils_quote_regexp( box->string, regexp );
+		str = g_strdup_printf( "\"%s\"", temp );
+		g_free( temp );
+		g_free( regexp );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -369,7 +371,7 @@ timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-timestamp_to_csv_str( const sBoxData *box )
+timestamp_to_csv_str( const sBoxData *box, gchar field_sep )
 {
 	gchar *str;
 
@@ -415,7 +417,7 @@ timestamp_set_fn( sBoxData *box, const GTimeVal *value )
 
 typedef gpointer      ( *NewFromDBMSStrFn )( const ofsBoxDef *def, const gchar *str );
 typedef void          ( *FreeFn )          ( gpointer box );
-typedef gchar       * ( *ExportToCSVStrFn )( gconstpointer box );
+typedef gchar       * ( *ExportToCSVStrFn )( gconstpointer box, gchar field_sep );
 typedef gconstpointer ( *GetFn )           ( gconstpointer box );
 typedef void          ( *SetFn )           ( gpointer box, gconstpointer value );
 
@@ -562,7 +564,7 @@ ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
 		}
 		helper = box_get_helper_for_type( box->def->type );
 		key = get_csv_name( box->def );
-		value = helper->to_csv_str_fn( box );
+		value = helper->to_csv_str_fn( box, '\0' );
 		g_debug( "%s: %s=%s", fname, key, value );
 		g_free( key );
 		g_free( value );
@@ -749,7 +751,7 @@ ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_s
 		ihelper = box_get_helper_for_type( def->type );
 		g_return_val_if_fail( ihelper, NULL );
 
-		str = ihelper->to_csv_str_fn( it->data );
+		str = ihelper->to_csv_str_fn( it->data, field_sep );
 		if( ihelper->type == OFA_TYPE_AMOUNT ){
 			set_decimal_point( str, decimal_sep );
 		}
@@ -788,7 +790,7 @@ ofa_box_get_csv_line_ex( const GList *fields_list,
 		ihelper = box_get_helper_for_type( def->type );
 		g_return_val_if_fail( ihelper, NULL );
 
-		str = ihelper->to_csv_str_fn( it->data );
+		str = ihelper->to_csv_str_fn( it->data, field_sep );
 		if( ihelper->type == OFA_TYPE_AMOUNT ){
 			set_decimal_point( str, decimal_sep );
 		}
