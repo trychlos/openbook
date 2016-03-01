@@ -76,7 +76,7 @@ static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    init_signaling_system( const ofaHub *hub );
 static void    check_db_vs_settings( const ofaHub *hub );
-static GSList *get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings );
+static GSList *get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors );
 static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
@@ -573,8 +573,10 @@ guint
 ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const ofaFileFormat *settings, void *caller, guint *errors )
 {
 	guint count, local_errors;
+	gchar *content;
 	GSList *lines;
 	gchar *str;
+	gint headers_count;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 	g_return_val_if_fail( object && OFA_IS_IIMPORTABLE( object ), 0 );
@@ -583,27 +585,34 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 
 	count = 0;
 	local_errors = 0;
-	lines = get_lines_from_csv( uri, settings );
+	headers_count = ofa_file_format_get_headers_count( settings );
 
-	if( lines ){
-		count = g_slist_length( lines ) - ofa_file_format_get_headers_count( settings );
+	content = my_utils_uri_get_content( uri, &local_errors );
+	if( !local_errors ){
+		lines = get_lines_from_content( content, settings, &local_errors );
+		if( !local_errors ){
+			if( lines ){
+				count = g_slist_length( lines ) - headers_count;
 
-		if( count > 0 ){
-			local_errors = ofa_iimportable_import( object, lines, settings, hub, caller );
+				if( count > 0 ){
+					local_errors = ofa_iimportable_import( object, lines, settings, hub, caller );
 
-		} else if( count < 0 ){
-			count = 0;
-			local_errors += 1;
-			str = g_strdup_printf(
-					_( "Headers count=%u greater than count of lines read from '%s' file" ),
-					ofa_file_format_get_headers_count( settings ), uri );
-			my_utils_dialog_warning( str );
-			g_free( str );
+				} else if( count < 0 ){
+					count = 0;
+					local_errors += 1;
+					str = g_strdup_printf(
+							_( "Expected headers count=%u greater than count of lines read from '%s' file" ),
+							headers_count, uri );
+					my_utils_dialog_warning( str );
+					g_free( str );
+				}
+
+				free_lines( lines );
+			}
 		}
-
-		free_lines( lines );
 	}
 
+	g_free( content );
 	if( errors ){
 		*errors = local_errors;
 	}
@@ -613,84 +622,98 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 
 /*
  * Returns a GSList of lines, where each lines->data is a GSList of
- * fields
+ * fields.
+ * We have to explore the content to extract each field which
+ * may or may not be quoted, considering only newlines which are not
+ * inside a quoted field.
  */
 static GSList *
-get_lines_from_csv( const gchar *uri, const ofaFileFormat *settings )
+get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors )
 {
-	GFile *gfile;
-	gchar *sysfname, *contents, *str;
+	static const gchar *thisfn = "ofa_hub_get_lines_from_content";
+	GSList *tmp_list, *out_list, *it_list, *field_list;
+	gchar *field_sep;
+	gchar **lines, **it_line;
+	gchar **fields, **it_field;
+	gchar *prev, *temp, *str;
 	GError *error;
-	gchar **lines, **iter_line;
-	gchar **fields, **iter_field;
-	GSList *s_fields, *s_lines;
-	gchar *field, *field_sep;
+	guint numline;
 
-	sysfname = my_utils_filename_from_utf8( uri );
-	if( !sysfname ){
-		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), uri );
-		my_utils_dialog_warning( str );
-		g_free( str );
-		return( NULL );
+	/* split on end-of-line
+	 * then re-concatenate segments where end-of-line was backslashed */
+	lines = g_strsplit( content, "\n", -1 );
+	it_line = lines;
+	prev = NULL;
+	tmp_list = NULL;
+	numline = 0;
+	while( *it_line ){
+		if( prev ){
+			temp = g_strconcat( prev, "\n", *it_line, NULL );
+			g_free( prev );
+			prev = temp;
+		} else {
+			prev = g_strdup( *it_line );
+		}
+		if( my_strlen( prev ) && !g_str_has_suffix( prev, "\\" )){
+			error = NULL;
+			temp = g_convert( prev, -1,
+									ofa_file_format_get_charmap( settings ),
+									"UTF-8", NULL, NULL, &error );
+			if( temp ){
+				numline += 1;
+				if( 0 ){
+					g_debug( "num=%u line='%s'", numline, temp );
+				}
+				tmp_list = g_slist_prepend( tmp_list, temp );
+			} else {
+				str = g_strdup_printf(
+						_( "Charset conversion error: %s\nline='%s'" ), error->message, prev );
+				my_utils_dialog_warning( str );
+				g_free( str );
+			}
+			g_free( prev );
+			prev = NULL;
+		}
+		it_line++;
 	}
-	gfile = g_file_new_for_uri( sysfname );
-	g_free( sysfname );
-
-	error = NULL;
-	contents = NULL;
-	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
-		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ), uri, error->message );
-		my_utils_dialog_warning( str );
-		g_free( str );
-		g_error_free( error );
-		g_free( contents );
-		g_object_unref( gfile );
-		return( NULL );
+	g_strfreev( lines );
+	tmp_list = g_slist_reverse( tmp_list );
+	if( 0 ){
+		g_debug( "%s: tmp_list count=%d", thisfn, g_slist_length( tmp_list ));
 	}
 
-	lines = g_strsplit( contents, "\n", -1 );
-
-	g_free( contents );
-	g_object_unref( gfile );
-
-	s_lines = NULL;
-	iter_line = lines;
+	/* tmp_list is now a list of lines
+	 * fields have to be splitted when field separator is not backslashed */
+	out_list = NULL;
 	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( settings ));
 
-	while( *iter_line ){
-		error = NULL;
-		str = g_convert( *iter_line, -1,
-								ofa_file_format_get_charmap( settings ),
-								"UTF-8", NULL, NULL, &error );
-		if( !str ){
-			str = g_strdup_printf(
-					_( "Charset conversion error: %s\nline='%s'" ), error->message, *iter_line );
-			my_utils_dialog_warning( str );
-			g_free( str );
-			g_strfreev( lines );
-			return( NULL );
-		}
-		if( my_strlen( *iter_line )){
-			fields = g_strsplit(( const gchar * ) *iter_line, field_sep, -1 );
-			s_fields = NULL;
-			iter_field = fields;
-
-			while( *iter_field ){
-				field = g_strstrip( g_strdup( *iter_field ));
-				s_fields = g_slist_prepend( s_fields, field );
-				iter_field++;
+	for( it_list=tmp_list ; it_list ; it_list=it_list->next ){
+		fields = g_strsplit(( const gchar * ) it_list->data, field_sep, -1 );
+		it_field = fields;
+		field_list = NULL;
+		prev = NULL;
+		while( *it_field ){
+			if( prev ){
+				temp = g_strconcat( prev, field_sep, *it_field, NULL );
+				g_free( prev );
+				prev = temp;
+			} else {
+				prev = g_strdup( *it_field );
 			}
-
-			g_strfreev( fields );
-			s_lines = g_slist_prepend( s_lines, g_slist_reverse( s_fields ));
+			if( !g_str_has_suffix( prev, "\\" )){
+				/*g_debug( "field='%s'", prev );*/
+				field_list = g_slist_prepend( field_list, prev );
+				prev = NULL;
+			}
+			it_field++;
 		}
-		g_free( str );
-		iter_line++;
+		out_list = g_slist_prepend( out_list, g_slist_reverse( field_list ));
+		g_strfreev( fields );
 	}
+	g_slist_free_full( tmp_list, ( GDestroyNotify ) g_free );
+	g_debug( "%s: out_list count=%d", thisfn, g_slist_length( out_list ));
 
-	g_free( field_sep );
-	g_strfreev( lines );
-	return( g_slist_reverse( s_lines ));
+	return( g_slist_reverse( out_list ));
 }
 
 static void
