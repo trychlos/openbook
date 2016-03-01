@@ -334,7 +334,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 				str2 = NULL;
 			}
 		}
-		if( 1 ){
+		if( 0 ){
 			g_debug( "src='%s', temp='%s', out='%s'", cstr, str1, str2 );
 		}
 		g_free( str1 );
