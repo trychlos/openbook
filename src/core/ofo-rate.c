@@ -1435,7 +1435,7 @@ static ofoRate *
 rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
 {
 	ofoRate *rate;
-	const gchar *cstr;
+	gchar *str;
 	GSList *itf;
 	gchar *splitted;
 
@@ -1443,36 +1443,38 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileF
 	itf = fields;
 
 	/* rate mnemo */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
 		g_object_unref( rate );
+		g_free( str );
 		return( NULL );
 	}
-	ofo_rate_set_mnemo( rate, cstr );
+	ofo_rate_set_mnemo( rate, str );
+	g_free( str );
 
 	/* rate label */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate label" ));
 		*errors += 1;
 		g_object_unref( rate );
+		g_free( str );
 		return( NULL );
 	}
-	ofo_rate_set_label( rate, cstr );
+	ofo_rate_set_label( rate, str );
+	g_free( str );
 
 	/* notes
 	 * we are tolerant on the last field... */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	splitted = my_utils_import_multi_lines( cstr );
+	str = ofa_iimportable_get_string( &itf, settings );
+	splitted = my_utils_import_multi_lines( str );
 	ofo_rate_set_notes( rate, splitted );
 	g_free( splitted );
+	g_free( str );
 
 	return( rate );
 }
@@ -1481,7 +1483,7 @@ static GList *
 rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
-	const gchar *cstr;
+	gchar *str;
 	GSList *itf;
 	GDate date;
 	ofxAmount amount;
@@ -1490,36 +1492,37 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 	itf = fields;
 
 	/* rate mnemo */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
 		ofa_box_free_fields_list( detail );
+		g_free( str );
 		return( NULL );
 	}
-	*mnemo = g_strdup( cstr );
-	ofa_box_set_string( detail, RAT_MNEMO, cstr );
+	*mnemo = g_strdup( str );
+	ofa_box_set_string( detail, RAT_MNEMO, str );
+	g_free( str );
 
 	/* row number (placeholder) */
 	itf = itf ? itf->next : NULL;
 
 	/* rate begin validity */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_date( detail, RAT_VAL_BEGIN, my_date_set_from_sql( &date, cstr ));
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_date( detail, RAT_VAL_BEGIN, my_date_set_from_sql( &date, str ));
+	g_free( str );
 
 	/* rate end validity */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_date( detail, RAT_VAL_END, my_date_set_from_sql( &date, cstr ));
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_date( detail, RAT_VAL_END, my_date_set_from_sql( &date, str ));
+	g_free( str );
 
 	/* rate rate */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	amount = my_double_set_from_csv( cstr, ofa_file_format_get_decimal_sep( settings ));
+	str = ofa_iimportable_get_string( &itf, settings );
+	amount = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
 	ofa_box_set_amount( detail, RAT_VAL_RATE, amount );
+	g_free( str );
 
 	return( detail );
 }
