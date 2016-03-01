@@ -698,13 +698,9 @@ gint
 ofo_account_get_class( const ofoAccount *account )
 {
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		return( ofo_account_get_class_from_number( ofo_account_get_number( account )));
-	}
-
-	return( 0 );
+	return( ofo_account_get_class_from_number( ofo_account_get_number( account )));
 }
 
 /**
@@ -944,10 +940,7 @@ ofo_account_is_deletable( const ofoAccount *account )
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 	dossier = ofa_hub_get_dossier( hub );
@@ -979,14 +972,11 @@ ofo_account_is_root( const ofoAccount *account )
 	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	cstr = account_get_string_ex( account, ACC_ROOT );
 
-		cstr = account_get_string_ex( account, ACC_ROOT );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -1005,14 +995,11 @@ ofo_account_is_settleable( const ofoAccount *account )
 	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	cstr = account_get_string_ex( account, ACC_SETTLEABLE );
 
-		cstr = account_get_string_ex( account, ACC_SETTLEABLE );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -1032,14 +1019,11 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
 
-		cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -1054,14 +1038,11 @@ ofo_account_is_forwardable( const ofoAccount *account )
 	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	cstr = account_get_string_ex( account, ACC_FORWARDABLE );
 
-		cstr = account_get_string_ex( account, ACC_FORWARDABLE );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -1076,14 +1057,11 @@ ofo_account_is_closed( const ofoAccount *account )
 	const gchar *cstr;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	cstr = account_get_string_ex( account, ACC_CLOSED );
 
-		cstr = account_get_string_ex( account, ACC_CLOSED );
-		return( !my_collate( cstr, "Y" ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( !my_collate( cstr, "Y" ));
 }
 
 static const gchar *
@@ -1224,16 +1202,12 @@ ofo_account_get_global_solde( const ofoAccount *account )
 	ofxAmount amount;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
 
-	amount = 0;
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		amount -= ofo_account_get_val_debit( account );
-		amount += ofo_account_get_val_credit( account );
-		amount -= ofo_account_get_rough_debit( account );
-		amount += ofo_account_get_rough_credit( account );
-	}
+	amount -= ofo_account_get_val_debit( account );
+	amount += ofo_account_get_val_credit( account );
+	amount -= ofo_account_get_rough_debit( account );
+	amount += ofo_account_get_rough_credit( account );
 
 	return( amount );
 }
@@ -1251,16 +1225,12 @@ ofo_account_has_children( const ofoAccount *account )
 	sChildren child_str;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	account_get_children( account, &child_str );
+	g_list_free( child_str.children_list );
 
-		account_get_children( account, &child_str );
-		g_list_free( child_str.children_list );
-
-		return( child_str.children_count > 0 );
-	}
-
-	return( FALSE );
+	return( child_str.children_count > 0 );
 }
 
 /**
@@ -1277,15 +1247,11 @@ ofo_account_get_children( const ofoAccount *account )
 	sChildren child_str;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	account_get_children( account, &child_str );
 
-		account_get_children( account, &child_str );
-
-		return( child_str.children_list );
-	}
-
-	return( NULL );
+	return( child_str.children_list );
 }
 
 static void
@@ -1333,15 +1299,11 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( candidate && OFO_IS_ACCOUNT( candidate ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	is_child = FALSE;
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account_number = ofo_account_get_number( account );
-		candidate_number = ofo_account_get_number( candidate );
-		is_child = g_str_has_prefix( candidate_number, account_number );
-	}
+	account_number = ofo_account_get_number( account );
+	candidate_number = ofo_account_get_number( candidate );
+	is_child = g_str_has_prefix( candidate_number, account_number );
 
 	return( is_child );
 }
@@ -1360,35 +1322,31 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowables )
 	gboolean ok;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	ok = FALSE;
+	if( !ofo_account_is_closed( account ) || ( allowables & ACCOUNT_ALLOW_CLOSED )){
 
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		if( !ofo_account_is_closed( account ) || ( allowables & ACCOUNT_ALLOW_CLOSED )){
-
-			if( !ok && ( allowables & ACCOUNT_ALLOW_ALL )){
+		if( !ok && ( allowables & ACCOUNT_ALLOW_ALL )){
+			ok = TRUE;
+		}
+		if( !ok && ( allowables & ACCOUNT_ALLOW_ROOT )){
+			if( ofo_account_is_root( account )){
 				ok = TRUE;
 			}
-			if( !ok && ( allowables & ACCOUNT_ALLOW_ROOT )){
-				if( ofo_account_is_root( account )){
-					ok = TRUE;
-				}
+		}
+		if( !ok && ( allowables & ACCOUNT_ALLOW_DETAIL )){
+			if( !ofo_account_is_root( account )){
+				ok = TRUE;
 			}
-			if( !ok && ( allowables & ACCOUNT_ALLOW_DETAIL )){
-				if( !ofo_account_is_root( account )){
-					ok = TRUE;
-				}
+		}
+		if( !ok && ( allowables & ACCOUNT_ALLOW_SETTLEABLE )){
+			if( ofo_account_is_settleable( account )){
+				ok = TRUE;
 			}
-			if( !ok && ( allowables & ACCOUNT_ALLOW_SETTLEABLE )){
-				if( ofo_account_is_settleable( account )){
-					ok = TRUE;
-				}
-			}
-			if( !ok && ( allowables & ACCOUNT_ALLOW_RECONCILIABLE )){
-				if( ofo_account_is_reconciliable( account )){
-					ok = TRUE;
-				}
+		}
+		if( !ok && ( allowables & ACCOUNT_ALLOW_RECONCILIABLE )){
+			if( ofo_account_is_reconciliable( account )){
+				ok = TRUE;
 			}
 		}
 	}
@@ -1439,12 +1397,7 @@ ofo_account_archive_open_balances( ofoAccount *account )
 	ofaHub *hub;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-	ok = FALSE;
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	if( ofo_account_is_root( account )){
 		ok = TRUE;
@@ -1707,10 +1660,7 @@ ofo_account_insert( ofoAccount *account, ofaHub *hub )
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	connect = ofa_hub_get_connect( hub );
@@ -1810,10 +1760,7 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 				thisfn, ( void * ) account, prev_number );
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
@@ -1920,10 +1867,7 @@ ofo_account_update_amounts( ofoAccount *account )
 	g_debug( "%s: account=%p", thisfn, ( void * ) account );
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
@@ -2030,10 +1974,7 @@ ofo_account_delete( ofoAccount *account )
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( ofo_account_is_deletable( account ), FALSE );
-
-	if( OFO_BASE( account )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
