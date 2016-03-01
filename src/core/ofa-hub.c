@@ -657,19 +657,30 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 		if( my_strlen( prev ) && !g_str_has_suffix( prev, "\\" )){
 			error = NULL;
 			temp = g_convert( prev, -1,
-									ofa_file_format_get_charmap( settings ),
-									"UTF-8", NULL, NULL, &error );
+								ofa_file_format_get_charmap( settings ),
+								"UTF-8", NULL, NULL, &error );
 			if( temp ){
-				numline += 1;
-				if( 0 ){
-					g_debug( "num=%u line='%s'", numline, temp );
+				if( g_utf8_validate( temp, -1, NULL )){
+					numline += 1;
+					if( 0 ){
+						g_debug( "num=%u line='%s'", numline, temp );
+					}
+					tmp_list = g_slist_prepend( tmp_list, temp );
+				} else {
+					str = g_strdup_printf(
+							_( "The string is not UTF8-valide: '%s'" ), temp );
+					my_utils_dialog_warning( str );
+					g_free( str );
+					*errors += 1;
+					break;
 				}
-				tmp_list = g_slist_prepend( tmp_list, temp );
 			} else {
 				str = g_strdup_printf(
 						_( "Charset conversion error: %s\nline='%s'" ), error->message, prev );
 				my_utils_dialog_warning( str );
 				g_free( str );
+				*errors += 1;
+				break;
 			}
 			g_free( prev );
 			prev = NULL;
@@ -688,32 +699,35 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	out_list = NULL;
 	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( settings ));
 
-	for( it_list=tmp_list ; it_list ; it_list=it_list->next ){
-		fields = g_strsplit(( const gchar * ) it_list->data, field_sep, -1 );
-		it_field = fields;
-		field_list = NULL;
-		prev = NULL;
-		numline += 1;
-		while( *it_field ){
-			if( prev ){
-				temp = g_strconcat( prev, field_sep, *it_field, NULL );
-				g_free( prev );
-				prev = temp;
-			} else {
-				prev = g_strdup( *it_field );
-			}
-			if( !g_str_has_suffix( prev, "\\" )){
-				if( 0 ){
-					g_debug( "%s: numline=%u, field='%s'", thisfn, numline, prev );
+	if( *errors == 0 ){
+		for( it_list=tmp_list ; it_list ; it_list=it_list->next ){
+			fields = g_strsplit(( const gchar * ) it_list->data, field_sep, -1 );
+			it_field = fields;
+			field_list = NULL;
+			prev = NULL;
+			numline += 1;
+			while( *it_field ){
+				if( prev ){
+					temp = g_strconcat( prev, field_sep, *it_field, NULL );
+					g_free( prev );
+					prev = temp;
+				} else {
+					prev = g_strdup( *it_field );
 				}
-				field_list = g_slist_prepend( field_list, prev );
-				prev = NULL;
+				if( !g_str_has_suffix( prev, "\\" )){
+					if( 0 ){
+						g_debug( "%s: numline=%u, field='%s'", thisfn, numline, prev );
+					}
+					field_list = g_slist_prepend( field_list, prev );
+					prev = NULL;
+				}
+				it_field++;
 			}
-			it_field++;
+			out_list = g_slist_prepend( out_list, g_slist_reverse( field_list ));
+			g_strfreev( fields );
 		}
-		out_list = g_slist_prepend( out_list, g_slist_reverse( field_list ));
-		g_strfreev( fields );
 	}
+	g_free( field_sep );
 	g_slist_free_full( tmp_list, ( GDestroyNotify ) g_free );
 	g_debug( "%s: out_list count=%d", thisfn, g_slist_length( out_list ));
 
