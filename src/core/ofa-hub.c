@@ -684,6 +684,7 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 
 	/* tmp_list is now a list of lines
 	 * fields have to be splitted when field separator is not backslashed */
+	numline = 0;
 	out_list = NULL;
 	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( settings ));
 
@@ -692,6 +693,7 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 		it_field = fields;
 		field_list = NULL;
 		prev = NULL;
+		numline += 1;
 		while( *it_field ){
 			if( prev ){
 				temp = g_strconcat( prev, field_sep, *it_field, NULL );
@@ -701,7 +703,9 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 				prev = g_strdup( *it_field );
 			}
 			if( !g_str_has_suffix( prev, "\\" )){
-				/*g_debug( "field='%s'", prev );*/
+				if( 0 ){
+					g_debug( "%s: numline=%u, field='%s'", thisfn, numline, prev );
+				}
 				field_list = g_slist_prepend( field_list, prev );
 				prev = NULL;
 			}
