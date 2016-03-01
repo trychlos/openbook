@@ -182,14 +182,13 @@ my_utils_unquote_regexp( const gchar *str, const gchar *regexp )
 	static const gchar *thisfn = "my_utils_unquote_regexp";
 	GRegex *regex;
 	GError *error;
-	gchar *quoted_regexp, *out_str;
+	gchar *out_str;
 
 	out_str = NULL;
 
 	if( str ){
-		quoted_regexp = my_utils_quote_regexp( regexp, regexp );
 		error = NULL;
-		regex = g_regex_new( quoted_regexp, 0, 0, &error );
+		regex = g_regex_new( regexp, 0, 0, &error );
 		if( error || !regex ){
 			g_warning( "%s: g_regex_new=%s (%s)", thisfn, error->message, regexp );
 			g_error_free( error );
@@ -213,7 +212,11 @@ utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data )
 	gchar *match;
 
 	match = g_match_info_fetch( info, 0 );
-	g_string_append_printf( res, "%s", match+1 );
+	if( 0 ){
+		g_debug( "string='%s', count=%d, match='%s'",
+				g_match_info_get_string( info ), g_match_info_get_match_count( info ), match );
+	}
+	g_string_append_printf( res, "%s", match );
 
 	return( FALSE );
 }
