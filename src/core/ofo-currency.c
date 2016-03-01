@@ -945,11 +945,10 @@ static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
-	const gchar *cstr;
 	ofoCurrency *currency;
 	GList *dataset, *it;
 	guint errors, line;
-	gchar *splitted;
+	gchar *splitted, *str;
 	const ofaIDBConnect *connect;
 
 	line = 0;
@@ -962,53 +961,54 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		currency = ofo_currency_new();
 		fields = ( GSList * ) itl->data;
 		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
+		itf = fields;
 
 		/* currency code */
-		itf = fields;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ISO 3A currency code" ));
 			errors += 1;
 			continue;
 		}
-		ofo_currency_set_code( currency, cstr );
+		ofo_currency_set_code( currency, str );
+		g_free( str );
 
 		/* currency label */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency label" ));
 			errors += 1;
 			continue;
 		}
-		ofo_currency_set_label( currency, cstr );
+		ofo_currency_set_label( currency, str );
+		g_free( str );
 
 		/* currency symbol */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
+		str = ofa_iimportable_get_string( &itf, settings );
+		if( !my_strlen( str )){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency symbol" ));
 			errors += 1;
 			continue;
 		}
-		ofo_currency_set_symbol( currency, cstr );
+		ofo_currency_set_symbol( currency, str );
+		g_free( str );
 
 		/* currency digits - defaults to 2 */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		str = ofa_iimportable_get_string( &itf, settings );
 		ofo_currency_set_digits( currency,
-				( my_strlen( cstr ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
+				( my_strlen( str ) ? atoi( str ) : CUR_DEFAULT_DIGITS ));
+		g_free( str );
 
 		/* notes
 		 * we are tolerant on the last field... */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		splitted = my_utils_import_multi_lines( cstr );
+		str = ofa_iimportable_get_string( &itf, settings );
+		splitted = my_utils_import_multi_lines( str );
 		ofo_currency_set_notes( currency, splitted );
 		g_free( splitted );
+		g_free( str );
 
 		dataset = g_list_prepend( dataset, currency );
 	}
