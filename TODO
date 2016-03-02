@@ -565,8 +565,6 @@
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
 
-1029 2016- 3- 2 FEAT ofaBox: have to/from string, to/from dbms
-
 1031
 
 -----------------------------------------------------------------------
@@ -902,6 +900,9 @@
      2016- 3- 1 cancelled
 
 1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
+     2016- 3- 2 done
+
+1029 2016- 3- 2 FEAT ofaBox: have to/from string, to/from dbms
      2016- 3- 2 done
 
 1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing

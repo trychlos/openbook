@@ -75,8 +75,29 @@ box_new( const ofsBoxDef *def )
 	return( box );
 }
 
+/*
+ * OFA_TYPE_AMOUNT
+ * ofxAmount
+ */
+static gpointer
+amount_get( const sBoxData *box )
+{
+	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, 0 );
+
+	return( AMOUNT_TO_GPOINTER( box->amount ));
+}
+
+static void
+amount_set( sBoxData *box, gconstpointer value )
+{
+	g_return_if_fail( box->def->type == OFA_TYPE_AMOUNT );
+
+	box->is_null = FALSE;
+	box->amount = GPOINTER_TO_AMOUNT( value );
+}
+
 static sBoxData *
-amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+amount_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -92,7 +113,7 @@ amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-amount_to_csv_str( const sBoxData *box, gchar field_sep )
+amount_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *str;
 
@@ -107,25 +128,29 @@ amount_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static gpointer
-amount_get_fn( const sBoxData *box )
+/*
+ * OFA_TYPE_COUNTER
+ * ofxCounter
+ */
+static ofxCounter
+counter_get( const sBoxData *box )
 {
-	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, 0 );
+	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, 0 );
 
-	return( AMOUNT_TO_GPOINTER( box->amount ));
+	return( box->counter );
 }
 
 static void
-amount_set_fn( sBoxData *box, gconstpointer value )
+counter_set( sBoxData *box, ofxCounter value )
 {
-	g_return_if_fail( box->def->type == OFA_TYPE_AMOUNT );
+	g_return_if_fail( box->def->type == OFA_TYPE_COUNTER );
 
 	box->is_null = FALSE;
-	box->amount = GPOINTER_TO_AMOUNT( value );
+	box->counter = value;
 }
 
 static sBoxData *
-counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+counter_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -141,7 +166,7 @@ counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-counter_to_csv_str( const sBoxData *box, gchar field_sep )
+counter_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *str;
 
@@ -156,25 +181,28 @@ counter_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static ofxCounter
-counter_get_fn( const sBoxData *box )
+/*
+ * OFA_TYPE_INTEGER
+ */
+static gint
+int_get( const sBoxData *box )
 {
-	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, 0 );
+	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, 0 );
 
-	return( box->counter );
+	return( box->integer );
 }
 
 static void
-counter_set_fn( sBoxData *box, ofxCounter value )
+int_set( sBoxData *box, gint value )
 {
-	g_return_if_fail( box->def->type == OFA_TYPE_COUNTER );
+	g_return_if_fail( box->def->type == OFA_TYPE_INTEGER );
 
 	box->is_null = FALSE;
-	box->counter = value;
+	box->integer = value;
 }
 
 static sBoxData *
-int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+int_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -190,7 +218,7 @@ int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-int_to_csv_str( const sBoxData *box, gchar field_sep )
+int_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *str;
 
@@ -205,25 +233,33 @@ int_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static gint
-int_get_fn( const sBoxData *box )
+/*
+ * OFA_TYPE_DATE
+ */
+static const GDate *
+date_get( const sBoxData *box )
 {
-	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, 0 );
+	g_return_val_if_fail( box->def->type == OFA_TYPE_DATE, NULL );
 
-	return( box->integer );
+	return(( const GDate * ) &box->date );
 }
 
 static void
-int_set_fn( sBoxData *box, gint value )
+date_set( sBoxData *box, const GDate *value )
 {
-	g_return_if_fail( box->def->type == OFA_TYPE_INTEGER );
+	g_return_if_fail( box->def->type == OFA_TYPE_DATE );
 
-	box->is_null = FALSE;
-	box->integer = value;
+	if( value && my_date_is_valid( value )){
+		box->is_null = FALSE;
+		memcpy( &box->date, value, sizeof( GDate ));
+	} else {
+		box->is_null = TRUE;
+		my_date_clear( &box->date );
+	}
 }
 
 static sBoxData *
-date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+date_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -234,14 +270,14 @@ date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	if( my_strlen( str )){
 		box->is_null = FALSE;
 		my_date_set_from_sql( &box->date, str );
-		/*g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, ofa_prefs_date_display()));*/
+		/*g_debug( "date_new_from_dbms: date=%s", my_date_to_str( &box->date, ofa_prefs_date_display()));*/
 	}
 
 	return( box );
 }
 
 static gchar *
-date_to_csv_str( const sBoxData *box, gchar field_sep )
+date_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *str;
 
@@ -256,30 +292,41 @@ date_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static const GDate *
-date_get_fn( const sBoxData *box )
+/*
+ * OFA_TYPE_STRING
+ */
+static const gchar *
+string_get( const sBoxData *box )
 {
-	g_return_val_if_fail( box->def->type == OFA_TYPE_DATE, NULL );
+	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
-	return(( const GDate * ) &box->date );
+	/*g_debug( "string_get: is_null=%s, value=%s", box->is_null ? "True":"False", box->string );*/
+	return(( const gchar * ) box->string );
 }
 
 static void
-date_set_fn( sBoxData *box, const GDate *value )
+string_set( sBoxData *box, const gchar *value )
 {
-	g_return_if_fail( box->def->type == OFA_TYPE_DATE );
+	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
-	if( value && my_date_is_valid( value )){
+	g_free( box->string );
+	/* debug */
+	if( 0 ){
+		g_debug( "string_set: value=%s, len=%ld", value, my_strlen( value ));
+	}
+
+	if( my_strlen( value )){
 		box->is_null = FALSE;
-		memcpy( &box->date, value, sizeof( GDate ));
+		box->string = g_strdup( value );
+
 	} else {
 		box->is_null = TRUE;
-		my_date_clear( &box->date );
+		box->string = NULL;
 	}
 }
 
 static sBoxData *
-string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+string_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -294,24 +341,16 @@ string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 	return( box );
 }
 
-static void
-string_free( sBoxData *box )
-{
-	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
-
-	/*g_debug( "ofa_box_string_free: box=%p", ( void * ) box );*/
-	g_free( box->string );
-	g_free( box );
-}
-
 static gchar *
-string_to_csv_str( const sBoxData *box, gchar field_sep )
+string_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *temp, *str, *regexp;
+	gchar field_sep;
 
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( box->string ){
+		field_sep = ofa_file_format_get_field_sep( format );
 		regexp = g_strdup_printf( "[\"\n\r%c]", field_sep );
 		temp = my_utils_quote_regexp( box->string, regexp );
 		str = g_strdup_printf( "\"%s\"", temp );
@@ -324,38 +363,47 @@ string_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static const gchar *
-string_get_fn( const sBoxData *box )
-{
-	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
-
-	/*g_debug( "string_get_fn: is_null=%s, value=%s", box->is_null ? "True":"False", box->string );*/
-	return(( const gchar * ) box->string );
-}
-
 static void
-string_set_fn( sBoxData *box, const gchar *value )
+string_free( sBoxData *box )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
+	/*g_debug( "ofa_box_string_free: box=%p", ( void * ) box );*/
 	g_free( box->string );
-	/* debug */
-	if( 0 ){
-		g_debug( "string_set_fn: value=%s, len=%ld", value, my_strlen( value ));
+	g_free( box );
+}
+
+/*
+ * OFA_TYPE_TIMESTAMP
+ */
+static const GTimeVal *
+timestamp_get( const sBoxData *box )
+{
+	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
+
+	if( !box->is_null ){
+		return(( const GTimeVal * ) &box->timestamp );
 	}
 
-	if( my_strlen( value )){
+	return( NULL );
+}
+
+static void
+timestamp_set( sBoxData *box, const GTimeVal *value )
+{
+	g_return_if_fail( box->def->type == OFA_TYPE_TIMESTAMP );
+
+	if( value ){
 		box->is_null = FALSE;
-		box->string = g_strdup( value );
+		memcpy( &box->timestamp, value, sizeof( GTimeVal ));
 
 	} else {
 		box->is_null = TRUE;
-		box->string = NULL;
 	}
 }
 
 static sBoxData *
-timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
+timestamp_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxData *box;
 
@@ -371,7 +419,7 @@ timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-timestamp_to_csv_str( const sBoxData *box, gchar field_sep )
+timestamp_to_string( const sBoxData *box, const ofaFileFormat *format )
 {
 	gchar *str;
 
@@ -389,85 +437,75 @@ timestamp_to_csv_str( const sBoxData *box, gchar field_sep )
 	return( str );
 }
 
-static const GTimeVal *
-timestamp_get_fn( const sBoxData *box )
-{
-	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
-
-	if( !box->is_null ){
-		return(( const GTimeVal * ) &box->timestamp );
-	}
-
-	return( NULL );
-}
-
-static void
-timestamp_set_fn( sBoxData *box, const GTimeVal *value )
-{
-	g_return_if_fail( box->def->type == OFA_TYPE_TIMESTAMP );
-
-	if( value ){
-		box->is_null = FALSE;
-		memcpy( &box->timestamp, value, sizeof( GTimeVal ));
-
-	} else {
-		box->is_null = TRUE;
-	}
-}
-
-typedef gpointer      ( *NewFromDBMSStrFn )( const ofsBoxDef *def, const gchar *str );
-typedef void          ( *FreeFn )          ( gpointer box );
-typedef gchar       * ( *ExportToCSVStrFn )( gconstpointer box, gchar field_sep );
-typedef gconstpointer ( *GetFn )           ( gconstpointer box );
-typedef void          ( *SetFn )           ( gpointer box, gconstpointer value );
+typedef gconstpointer ( *GetFn )       ( gconstpointer box );
+typedef void          ( *SetFn )       ( gpointer box, gconstpointer value );
+typedef gpointer      ( *FromDBMSFn )  ( const ofsBoxDef *def, const gchar *source );
+typedef gchar       * ( *ToDBMSFn )    ( gconstpointer box );
+typedef gpointer      ( *FromStringFn )( const ofsBoxDef *def, const gchar *source );
+typedef gchar       * ( *ToStringFn )  ( gconstpointer box, const ofaFileFormat *format );
+typedef void          ( *FreeFn )      ( gpointer box );
 
 typedef struct {
-	gint             type;
-	NewFromDBMSStrFn new_from_dbms_fn;
-	FreeFn           free_fn;
-	ExportToCSVStrFn to_csv_str_fn;
-	GetFn            get_fn;
-	SetFn            set_fn;
+	gint         type;
+	GetFn        get_fn;
+	SetFn        set_fn;
+	FromDBMSFn   from_dbms_fn;
+	ToDBMSFn     to_dbms_fn;
+	FromStringFn from_string_fn;
+	ToStringFn   to_string_fn;
+	FreeFn       free_fn;
 }
 	sBoxHelpers;
 
 static const sBoxHelpers st_box_helpers[] = {
 		{ OFA_TYPE_AMOUNT,
-				( NewFromDBMSStrFn ) amount_new_from_dbms_str,
-				( FreeFn )           g_free,
-				( ExportToCSVStrFn ) amount_to_csv_str,
-				( GetFn )            amount_get_fn,
-				( SetFn )            amount_set_fn },
+				( GetFn )        amount_get,
+				( SetFn )        amount_set,
+				( FromDBMSFn )   amount_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   amount_to_string,
+				( FreeFn )       g_free },
 		{ OFA_TYPE_COUNTER,
-				( NewFromDBMSStrFn ) counter_new_from_dbms_str,
-				( FreeFn )           g_free,
-				( ExportToCSVStrFn ) counter_to_csv_str,
-				( GetFn )            counter_get_fn,
-				( SetFn )            counter_set_fn },
+				( GetFn )        counter_get,
+				( SetFn )        counter_set,
+				( FromDBMSFn )   counter_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   counter_to_string,
+				( FreeFn )       g_free },
 		{ OFA_TYPE_INTEGER,
-				( NewFromDBMSStrFn ) int_new_from_dbms_str,
-				( FreeFn )           g_free,
-				( ExportToCSVStrFn ) int_to_csv_str,
-				( GetFn )            int_get_fn,
-				( SetFn )            int_set_fn },
+				( GetFn )        int_get,
+				( SetFn )        int_set,
+				( FromDBMSFn )   int_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   int_to_string,
+				( FreeFn )       g_free },
 		{ OFA_TYPE_DATE,
-				( NewFromDBMSStrFn ) date_new_from_dbms_str,
-				( FreeFn )           g_free,
-				( ExportToCSVStrFn ) date_to_csv_str,
-				( GetFn )            date_get_fn,
-				( SetFn )            date_set_fn },
+				( GetFn )        date_get,
+				( SetFn )        date_set,
+				( FromDBMSFn )   date_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   date_to_string,
+				( FreeFn )       g_free },
 		{ OFA_TYPE_STRING,
-				( NewFromDBMSStrFn ) string_new_from_dbms_str,
-				( FreeFn )           string_free,
-				( ExportToCSVStrFn ) string_to_csv_str,
-				( GetFn )            string_get_fn,
-				( SetFn )            string_set_fn },
+				( GetFn )        string_get,
+				( SetFn )        string_set,
+				( FromDBMSFn )   string_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   string_to_string,
+				( FreeFn )       string_free },
 		{ OFA_TYPE_TIMESTAMP,
-				( NewFromDBMSStrFn ) timestamp_new_from_dbms_str,
-				( FreeFn )           g_free,
-				( ExportToCSVStrFn ) timestamp_to_csv_str,
-				( GetFn )            timestamp_get_fn,
-				( SetFn )            timestamp_set_fn },
+				( GetFn )        timestamp_get,
+				( SetFn )        timestamp_set,
+				( FromDBMSFn )   timestamp_new_from_dbms,
+				( ToDBMSFn )     NULL,
+				( FromStringFn ) NULL,
+				( ToStringFn )   timestamp_to_string,
+				( FreeFn )       g_free },
 		{ 0 }
 };
 
@@ -564,7 +602,7 @@ ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
 		}
 		helper = box_get_helper_for_type( box->def->type );
 		key = get_csv_name( box->def );
-		value = helper->to_csv_str_fn( box, '\0' );
+		value = helper->to_string_fn( box, '\0' );
 		g_debug( "%s: %s=%s", fname, key, value );
 		g_free( key );
 		g_free( value );
@@ -631,7 +669,7 @@ ofa_box_dbms_parse_result( const ofsBoxDef *defs, GSList *row )
 			ihelper = box_get_helper_for_type( idef->type );
 			g_return_val_if_fail( ihelper, NULL );
 			icol = ( GSList * )( first ? row->data : icol->next );
-			fields_list = g_list_prepend( fields_list, ihelper->new_from_dbms_fn( idef, icol->data ));
+			fields_list = g_list_prepend( fields_list, ihelper->from_dbms_fn( idef, icol->data ));
 			idef++;
 			first = FALSE;
 		}
@@ -768,7 +806,7 @@ ofa_box_csv_get_line_ex( const GList *fields_list, const ofaFileFormat *format, 
 		ihelper = box_get_helper_for_type( def->type );
 		g_return_val_if_fail( ihelper, NULL );
 
-		str = ihelper->to_csv_str_fn( it->data, field_sep );
+		str = ihelper->to_string_fn( it->data, format );
 		if( ihelper->type == OFA_TYPE_AMOUNT ){
 			set_decimal_point( str, decimal_sep );
 		}

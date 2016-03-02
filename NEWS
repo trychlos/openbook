@@ -60,6 +60,7 @@
    - my_utils_unquote_regexp(): new function.
    - my_utils_uri_get_content(): new function.
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
+   - ofaBox: have to/from string, to/from dbms (todo #1029).
    - ofaBox: refactoring exports with ofaFileFormat (todo #1030).
    - ofaButtonsBox: migrate to G_ADD_PRIVATE (todo #994).
    - ofaDateFilterHVBin: migrate to G_ADD_PRIVATE (todo #994).
