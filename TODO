@@ -562,7 +562,15 @@
 
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
 
-1028
+1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
+                     double quotes should be a configuration parameter
+
+1029 2016- 3- 2 FEAT ofaBox: have to/from string, to/from dbms
+
+1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing
+                     or exporting
+
+1031
 
 -----------------------------------------------------------------------
  DONE
