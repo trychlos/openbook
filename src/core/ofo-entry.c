@@ -2708,7 +2708,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 {
 	GList *result, *it;
 	gboolean ok, with_headers;
-	gchar field_sep, decimal_sep;
+	gchar field_sep;
 	gulong count;
 	gchar *str, *str2, *sdate, *suser, *sstamp;
 	GSList *lines;
@@ -2718,7 +2718,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
-	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( result );
 	if( with_headers ){
@@ -2727,7 +2726,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
 				str, field_sep, "ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp" );
 		lines = g_slist_prepend( NULL, str2 );
@@ -2740,7 +2739,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=result ; it ; it=it->next ){
-		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );

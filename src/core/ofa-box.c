@@ -490,7 +490,7 @@ ofa_box_register_types( void )
  * returns the sBoxHelpers structure for the specified @type
  */
 static const sBoxHelpers *
-box_get_helper_for_type( eBoxType type )
+box_get_helper_for_type( ofeBoxType type )
 {
 	static const gchar *thisfn = "ofa_box_get_helper_for_type";
 	const sBoxHelpers *ihelper;
@@ -572,7 +572,7 @@ ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
 }
 
 /**
- * ofa_box_get_dbms_columns:
+ * ofa_box_dbms_get_columns_list:
  * @defs: the definition of ofaBox elementary data of the object
  *
  * Returns the list of DBMS columns, as a newly allocated string which
@@ -581,7 +581,7 @@ ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
  * The returned string is suitable for a DBMS selection.
  */
 gchar *
-ofa_box_get_dbms_columns( const ofsBoxDef *defs )
+ofa_box_dbms_get_columns_list( const ofsBoxDef *defs )
 {
 	GString *query;
 	const ofsBoxDef *idef;
@@ -605,7 +605,7 @@ ofa_box_get_dbms_columns( const ofsBoxDef *defs )
 }
 
 /**
- * ofa_box_parse_dbms_result:
+ * ofa_box_dbms_parse_result:
  * @defs: the definition of ofaBox elementary data of the object
  * @row: a row of the DBMS result to be parsed.
  *
@@ -614,7 +614,7 @@ ofa_box_get_dbms_columns( const ofsBoxDef *defs )
  * initialized to NULL values.
  */
 GList *
-ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
+ofa_box_dbms_parse_result( const ofsBoxDef *defs, GSList *row )
 {
 	GList *fields_list;
 	GSList *icol;
@@ -641,21 +641,23 @@ ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
 }
 
 /**
- * ofa_box_get_csv_header:
+ * ofa_box_csv_get_header:
  * @boxed: the definition of ofaBox elementary data of the object
- * @field_sep: the field separator (usually a semi-colon)
+ * @format: the #ofaFileFormat configuration settings.
  *
  * Returns the header of a CSV-type export, with a semi-colon separator,
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_get_csv_header( const ofsBoxDef *defs, gchar field_sep )
+ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaFileFormat *format )
 {
 	GString *header;
 	const ofsBoxDef *idef;
 	gchar *name;
+	gchar field_sep;
 
 	header = g_string_new( "" );
+	field_sep = ofa_file_format_get_field_sep( format );
 
 	if( defs ){
 		idef = defs;
@@ -724,63 +726,39 @@ compute_csv_name( const gchar *dbms_name )
 }
 
 /**
- * ofa_box_get_csv_line:
+ * ofa_box_csv_get_line:
  * @fields_list: the list of elementary datas of the record
- * @field_sep: the field separator (usually a semi-colon)
- * @decimal_sep: the decimal point separator (usually a dot or a comma)
+ * @format: the #ofaFileFormat configuration settings.
  *
- * Returns the line of a CSV-type export, with a semi-colon separator,
+ * Returns the line of a CSV-type export, with requested configuration,
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_sep )
+ofa_box_csv_get_line( const GList *fields_list, const ofaFileFormat *format )
 {
-	GString *line;
-	const GList *it;
-	const ofsBoxDef *def;
-	const sBoxHelpers *ihelper;
-	gchar *str;
-
-	line = g_string_new( "" );
-
-	for( it=fields_list ; it ; it=it->next ){
-
-		def = (( sBoxData * ) it->data )->def;
-		g_return_val_if_fail( def, NULL );
-
-		ihelper = box_get_helper_for_type( def->type );
-		g_return_val_if_fail( ihelper, NULL );
-
-		str = ihelper->to_csv_str_fn( it->data, field_sep );
-		if( ihelper->type == OFA_TYPE_AMOUNT ){
-			set_decimal_point( str, decimal_sep );
-		}
-
-		if( line->len ){
-			line = g_string_append_c( line, field_sep );
-		}
-
-		g_string_append_printf( line, "%s", str );
-		g_free( str );
-	}
-
-	return( g_string_free( line, FALSE ));
+	return( ofa_box_csv_get_line_ex( fields_list, format, NULL, NULL ));
 }
 
 /**
- * ofa_box_get_csv_line_ex:
+ * ofa_box_csv_get_line_ex:
+ * @fields_list:
+ * @format: the #ofaFileFormat configuration settings.
+ * @cb:
+ * @user_data:
  */
 gchar *
-ofa_box_get_csv_line_ex( const GList *fields_list,
-		gchar field_sep, gchar decimal_sep, CSVExportFunc cb, void *user_data )
+ofa_box_csv_get_line_ex( const GList *fields_list, const ofaFileFormat *format, CSVExportFunc cb, void *user_data )
 {
 	GString *line;
 	const GList *it;
 	const ofsBoxDef *def;
 	const sBoxHelpers *ihelper;
 	gchar *str, *str2;
+	gchar decimal_sep, field_sep;
 
 	line = g_string_new( "" );
+	decimal_sep = ofa_file_format_get_decimal_sep( format );
+	field_sep = ofa_file_format_get_field_sep( format );
 
 	for( it=fields_list ; it ; it=it->next ){
 
@@ -796,7 +774,7 @@ ofa_box_get_csv_line_ex( const GList *fields_list,
 		}
 
 		if( cb ){
-			str2 = cb( def, ihelper->type, str, user_data );
+			str2 = cb( def, ihelper->type, format, str, user_data );
 		} else {
 			str2 = g_strdup( str );
 		}

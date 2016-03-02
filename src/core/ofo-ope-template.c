@@ -118,7 +118,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-static const ofsBoxDef st_details_defs[] = {
+static const ofsBoxDef st_detail_defs[] = {
 		{ OFA_BOX_CSV( OTE_MNEMO ),
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
@@ -200,7 +200,7 @@ static GList          *icollectionable_load_collection( const ofaICollectionable
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean        iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
-static gchar          *update_decimal_sep( const ofsBoxDef *def, eBoxType type, const gchar *text, const ofaFileFormat *settings );
+static gchar          *update_decimal_sep( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
@@ -903,7 +903,7 @@ ofo_ope_template_add_detail( ofoOpeTemplate *model,
 
 	priv = ofo_ope_template_get_instance_private( model );
 
-	fields = ofa_box_init_fields_list( st_details_defs );
+	fields = ofa_box_init_fields_list( st_detail_defs );
 	ofa_box_set_string( fields, OTE_MNEMO, ofo_ope_template_get_mnemo( model ));
 	ofa_box_set_int( fields, OTE_DET_ROW, 1+ofo_ope_template_get_detail_count( model ));
 	ofa_box_set_string( fields, OTE_DET_COMMENT, comment );
@@ -1589,7 +1589,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 				ofo_ope_template_get_mnemo( template ));
 		priv->details =
-				ofo_base_load_rows( st_details_defs, ofa_hub_get_connect( hub ), from );
+				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -1632,14 +1632,13 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	ofoOpeTemplate *model;
 	gboolean ok, with_headers;
-	gchar field_sep, decimal_sep;
+	gchar field_sep;
 	gulong count;
 
 	dataset = ofo_ope_template_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
-	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1652,7 +1651,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1661,7 +1660,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
-		str = ofa_box_get_csv_header( st_details_defs, field_sep );
+		str = ofa_box_csv_get_header( st_detail_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1672,7 +1671,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1685,8 +1684,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		priv = ofo_ope_template_get_instance_private( model );
 
 		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_get_csv_line_ex(
-					det->data, field_sep, decimal_sep, ( CSVExportFunc ) update_decimal_sep, ( void * ) settings );
+			str = ofa_box_csv_get_line_ex( det->data, settings, ( CSVExportFunc ) update_decimal_sep, NULL );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1707,7 +1705,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * => this user-remediation function
  */
 static gchar *
-update_decimal_sep( const ofsBoxDef *def, eBoxType type, const gchar *text, const ofaFileFormat *settings )
+update_decimal_sep( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *settings, const gchar *text, void *empty )
 {
 	gchar *str;
 	gchar decimal_sep;
@@ -1949,7 +1947,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFi
 	gchar *str;
 	GSList *itf;
 
-	detail = ofa_box_init_fields_list( st_details_defs );
+	detail = ofa_box_init_fields_list( st_detail_defs );
 	itf = fields;
 
 	/* model mnemo */

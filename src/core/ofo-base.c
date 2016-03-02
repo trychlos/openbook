@@ -177,13 +177,13 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
 	g_return_val_if_fail( cnx && OFA_IS_IDBCONNECT( cnx ), NULL );
 
 	rows = NULL;
-	columns = ofa_box_get_dbms_columns( defs );
+	columns = ofa_box_dbms_get_columns_list( defs );
 	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
 	g_free( columns );
 
 	if( ofa_idbconnect_query_ex( cnx, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
-			rows = g_list_prepend( rows, ofa_box_parse_dbms_result( defs, irow ));
+			rows = g_list_prepend( rows, ofa_box_dbms_parse_result( defs, irow ));
 		}
 		ofa_idbconnect_free_results( result );
 	}

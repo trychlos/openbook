@@ -174,7 +174,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-static const ofsBoxDef st_boxed_curs[] = {
+static const ofsBoxDef st_currency_defs[] = {
 		{ OFA_BOX_CSV( DOS_CURRENCY ),
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
@@ -1021,7 +1021,7 @@ dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency )
 	cur_detail = dossier_find_currency_by_code( dossier, currency );
 
 	if( !cur_detail ){
-		cur_detail = ofa_box_init_fields_list( st_boxed_curs );
+		cur_detail = ofa_box_init_fields_list( st_currency_defs );
 		ofa_box_set_string( cur_detail, DOS_CURRENCY, currency );
 		ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, NULL );
 
@@ -1414,7 +1414,7 @@ dossier_do_read( ofaHub *hub )
 	where = g_strdup_printf(
 				"OFA_T_DOSSIER_CUR WHERE DOS_ID=%d ORDER BY DOS_CURRENCY ASC", DOSSIER_ROW_ID );
 	priv->cur_details =
-				ofo_base_load_rows( st_boxed_curs, ofa_hub_get_connect( hub ), where );
+				ofo_base_load_rows( st_currency_defs, ofa_hub_get_connect( hub ), where );
 	g_free( where );
 
 	return( dossier );
@@ -1707,7 +1707,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	gboolean ok, with_headers;
 	gulong count;
-	gchar field_sep, decimal_sep;
+	gchar field_sep;
 
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -1716,7 +1716,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
-	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = 1;
 	if( with_headers ){
@@ -1726,7 +1725,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1735,7 +1734,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
-		str = ofa_box_get_csv_header( st_boxed_curs, field_sep );
+		str = ofa_box_csv_get_header( st_currency_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1745,7 +1744,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 	}
 
-	str = ofa_box_get_csv_line( OFO_BASE( dossier )->prot->fields, field_sep, decimal_sep );
+	str = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, settings );
 	lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 	g_free( str );
 	ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1755,7 +1754,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( cur_detail=priv->cur_details ; cur_detail ; cur_detail=cur_detail->next ){
-		str = ofa_box_get_csv_line( cur_detail->data, field_sep, decimal_sep );
+		str = ofa_box_csv_get_line( cur_detail->data, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );

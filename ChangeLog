@@ -988,7 +988,7 @@
 	* src/core/my-utils.c: new function my_utils_char_replace().
 
 	* src/api/ofa-box.h,
-	* src/core/ofa-box.c: new function ofa_box_get_csv_line_ex().
+	* src/core/ofa-box.c: new function ofa_box_csv_get_line_ex().
 
 	* src/core/ofo-ope-template.c: updated accordingly.
 

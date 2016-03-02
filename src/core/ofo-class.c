@@ -706,12 +706,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	gboolean with_headers, ok;
 	gulong count;
-	gchar field_sep;
 
 	dataset = ofo_class_get_dataset( hub );
-
 	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -720,7 +717,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -730,7 +727,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );

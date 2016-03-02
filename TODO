@@ -567,9 +567,6 @@
 
 1029 2016- 3- 2 FEAT ofaBox: have to/from string, to/from dbms
 
-1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing
-                     or exporting
-
 1031
 
 -----------------------------------------------------------------------
@@ -905,6 +902,10 @@
      2016- 3- 1 cancelled
 
 1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
+     2016- 3- 2 done
+
+1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing
+                     or exporting
      2016- 3- 2 done
 
 -----------------------------------------------------------------------

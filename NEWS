@@ -60,6 +60,7 @@
    - my_utils_unquote_regexp(): new function.
    - my_utils_uri_get_content(): new function.
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
+   - ofaBox: refactoring exports with ofaFileFormat (todo #1030).
    - ofaButtonsBox: migrate to G_ADD_PRIVATE (todo #994).
    - ofaDateFilterHVBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaDateFilterHVBin: migrate to GResource (todo #826).
@@ -655,7 +656,7 @@
 
    - new ofaDateFilterBin composite widget.
    - new my_utils_char_replace() function.
-   - new ofa_box_get_csv_line_ex() function.
+   - new ofa_box_csv_get_line_ex() function.
    - ofa_extension_startup() now takes a GApplication as argument.
    - new 'main-window-created' signal.
    - new my_utils_dialog_question() function.

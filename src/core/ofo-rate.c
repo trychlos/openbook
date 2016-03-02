@@ -93,7 +93,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-static const ofsBoxDef st_validities_defs[] = {
+static const ofsBoxDef st_validity_defs[] = {
 		{ RAT_MNEMO,
 				"RAT_MNEMO",
 				NULL,
@@ -702,7 +702,7 @@ rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmo
 {
 	GList *fields;
 
-	fields = ofa_box_init_fields_list( st_validities_defs );
+	fields = ofa_box_init_fields_list( st_validity_defs );
 	ofa_box_set_string( fields, RAT_MNEMO, ofo_rate_get_mnemo( rate ));
 	ofa_box_set_int( fields, RAT_VAL_ROW, 1+ofo_rate_get_val_count( rate ));
 	ofa_box_set_date( fields, RAT_VAL_BEGIN, begin );
@@ -1194,7 +1194,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
 				ofo_rate_get_mnemo( rate ));
 		priv->validities =
-				ofo_base_load_rows( st_validities_defs, ofa_hub_get_connect( hub ), from );
+				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -1238,13 +1238,12 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str;
 	gboolean ok, with_headers;
 	gulong count;
-	gchar field_sep, decimal_sep;
+	gchar field_sep;
 
 	dataset = ofo_rate_get_dataset( hub );
 
 	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
-	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1257,7 +1256,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1266,7 +1265,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
-		str = ofa_box_get_csv_header( st_validities_defs, field_sep );
+		str = ofa_box_csv_get_header( st_validity_defs, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1277,7 +1276,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
 		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1289,7 +1288,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		rate = OFO_RATE( it->data );
 		priv = ofo_rate_get_instance_private( rate );
 		for( det=priv->validities ; det ; det=det->next ){
-			str = ofa_box_get_csv_line( det->data, field_sep, decimal_sep );
+			str = ofa_box_csv_get_line( det->data, settings );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1488,7 +1487,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 	GDate date;
 	ofxAmount amount;
 
-	detail = ofa_box_init_fields_list( st_validities_defs );
+	detail = ofa_box_init_fields_list( st_validity_defs );
 	itf = fields;
 
 	/* rate mnemo */

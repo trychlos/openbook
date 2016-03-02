@@ -27,6 +27,8 @@
 
 #include <glib.h>
 
+#include "api/ofa-file-format.h"
+
 /**
  * SECTION: ofa_box
  * @short_description: Definition of GBoxed-derived types
@@ -46,7 +48,7 @@ typedef enum {
 	OFA_TYPE_STRING,
 	OFA_TYPE_TIMESTAMP,
 }
-	eBoxType;
+	ofeBoxType;
 
 /**
  * ofsBoxDef:
@@ -75,7 +77,7 @@ typedef struct {
 	gint         id;
 	const gchar *dbms;
 	const gchar *csv;
-	eBoxType     type;
+	ofeBoxType     type;
 	gboolean     import;
 	gboolean     csv_zero_as_empty;
 }
@@ -98,7 +100,7 @@ typedef struct {
 /**
  * a callback function which may be called on CSV exporting
  */
-typedef gchar * ( *CSVExportFunc )( const ofsBoxDef *def, eBoxType type, const gchar *text, void *user_data );
+typedef gchar * ( *CSVExportFunc )( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *format, const gchar *text, void *user_data );
 
 /* because DBMS keeps 5 digits after the decimal dot */
 #define PRECISION                       100000
@@ -114,17 +116,18 @@ GList        *ofa_box_init_fields_list     ( const ofsBoxDef *defs );
 
 void          ofa_box_dump_fields_list     ( const gchar *fname, const GList *fields );
 
-gchar        *ofa_box_get_dbms_columns     ( const ofsBoxDef *defs );
+gchar        *ofa_box_dbms_get_columns_list( const ofsBoxDef *defs );
 
-GList        *ofa_box_parse_dbms_result    ( const ofsBoxDef *defs, GSList *row );
+GList        *ofa_box_dbms_parse_result    ( const ofsBoxDef *defs, GSList *row );
 
-gchar        *ofa_box_get_csv_header       ( const ofsBoxDef *defs, gchar field_sep );
+gchar        *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
+													const ofaFileFormat *format );
 
-gchar        *ofa_box_get_csv_line         ( const GList *fields_list,
-													gchar field_sep, gchar decimal_sep );
+gchar        *ofa_box_csv_get_line         ( const GList *fields_list,
+													const ofaFileFormat *format );
 
-gchar        *ofa_box_get_csv_line_ex      ( const GList *fields_list,
-													gchar field_sep, gchar decimal_sep,
+gchar        *ofa_box_csv_get_line_ex      ( const GList *fields_list,
+													const ofaFileFormat *format,
 													CSVExportFunc cb, void *user_data );
 
 gconstpointer ofa_box_get_value            ( const GList *fields_list, gint id );
