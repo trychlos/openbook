@@ -41,6 +41,7 @@
    - ofaImportAssistant: restore the progress bars (todo #1020).
    - ofaNomodalPage: setup initial default size and position (todo #997).
    - ofoAccount: import close indicator.
+   - ofoDossier: fix export, taking advantage of ofaBox architecture (todo #1026). 
 
  Other changes:
 

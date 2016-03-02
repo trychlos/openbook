@@ -546,7 +546,7 @@
 
 1017 2016- 2-26 BUG  Reconciliation: new entries wrongly display a reconciliation
                      date (though a new entry obviously does not have any
-                     conciliation date) - maybe a uninitiallized string ?
+                     conciliation date) - maybe a uninitialized string ?
                      see trash/bug1017
 
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
@@ -559,8 +559,6 @@
                         on individual fields which do not know about the
                         currency :(
                      -> unless a callback may provide this information ?
-
-1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
 
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
 
@@ -897,6 +895,9 @@
 
 1024 2016- 3- 1 CODE replace my_utils_quote_single() with g_strescape() ?
      2016- 3- 1 cancelled
+
+1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
+     2016- 3- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
