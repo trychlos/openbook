@@ -58,6 +58,7 @@ struct _ofaFileFormatBinPrivate {
 	GtkWidget      *dispo_frame;
 	GtkWidget      *str_delim_entry;
 	GtkWidget      *headers_btn;
+	GtkWidget      *headers_label;
 	GtkWidget      *headers_count;
 	GtkSizeGroup   *group0;
 	GtkSizeGroup   *group1;
@@ -108,6 +109,7 @@ static void     init_str_delimiter( ofaFileFormatBin *self );
 static void     init_headers( ofaFileFormatBin *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
 static void     on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self );
+static void     setup_format( ofaFileFormatBin *bin );
 static gboolean is_validable( ofaFileFormatBin *self, gchar **error_message );
 static gint     get_file_format( ofaFileFormatBin *self );
 static gchar   *get_charmap( ofaFileFormatBin *self );
@@ -206,7 +208,8 @@ ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 
 /**
  * ofa_file_format_bin_new:
- * @format: a #ofaFileFormat instance, usually read from settings.
+ * @format: [allow-none]: a #ofaFileFormat instance, usually read from
+ *  settings.
  *
  * Returns: a new #ofaFileFormatBin instance.
  */
@@ -216,15 +219,18 @@ ofa_file_format_bin_new( ofaFileFormat *format )
 	ofaFileFormatBin *self;
 	ofaFileFormatBinPrivate *priv;
 
-	g_return_val_if_fail( format && OFA_IS_FILE_FORMAT( format ), NULL );
+	g_return_val_if_fail( !format || OFA_IS_FILE_FORMAT( format ), NULL );
 
 	self = g_object_new( OFA_TYPE_FILE_FORMAT_BIN, NULL );
 
 	priv = ofa_file_format_bin_get_instance_private( self );
 
-	priv->settings = g_object_ref( format );
-
 	setup_bin( self );
+
+	if( format ){
+		priv->settings = g_object_ref( format );
+		setup_format( self );
+	}
 
 	return( self );
 }
@@ -283,8 +289,7 @@ init_file_format( ofaFileFormatBin *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
-	gint i, idx;
-	ofaFFtype fmt;
+	gint i;
 	const gchar *cstr;
 	GtkWidget *label;
 
@@ -309,9 +314,6 @@ init_file_format( ofaFileFormatBin *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->format_combo ), cell, "text", EXP_COL_LABEL );
 
-	fmt = ofa_file_format_get_fftype( priv->settings );
-	idx = -1;
-
 	for( i=1 ; TRUE ; ++i ){
 		cstr = ofa_file_format_get_fftype_str( i );
 		if( cstr ){
@@ -322,9 +324,6 @@ init_file_format( ofaFileFormatBin *self )
 					EXP_COL_FORMAT, i,
 					EXP_COL_LABEL,  cstr,
 					-1 );
-			if( fmt == i ){
-				idx = i-1;
-			}
 		} else {
 			break;
 		}
@@ -332,12 +331,6 @@ init_file_format( ofaFileFormatBin *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->format_combo ), "changed", G_CALLBACK( on_fftype_changed ), self );
-
-	/* default to export as csv */
-	if( idx == -1 ){
-		idx = 0;
-	}
-	gtk_combo_box_set_active( GTK_COMBO_BOX( priv->format_combo ), idx );
 }
 
 static void
@@ -372,8 +365,8 @@ init_encoding( ofaFileFormatBin *self )
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
 	GList *charmaps, *it;
-	gint i, idx;
-	const gchar *cstr, *svalue;
+	gint i;
+	const gchar *cstr;
 	GtkWidget *label;
 
 	priv = ofa_file_format_bin_get_instance_private( self );
@@ -397,9 +390,7 @@ init_encoding( ofaFileFormatBin *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->encoding_combo ), cell, "text", ENC_COL_CODE );
 
-	svalue = ofa_file_format_get_charmap( priv->settings );
 	charmaps = get_available_charmaps();
-	idx = -1;
 
 	for( it=charmaps, i=0 ; it ; it=it->next, ++i ){
 		cstr = ( const gchar * ) it->data;
@@ -409,14 +400,8 @@ init_encoding( ofaFileFormatBin *self )
 				-1,
 				ENC_COL_CODE, cstr,
 				-1 );
-		if( !g_utf8_collate( svalue, cstr )){
-			idx = i;
-		}
 	}
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->encoding_combo ), idx );
-	}
+	gtk_combo_box_set_id_column( GTK_COMBO_BOX( priv->encoding_combo ), ENC_COL_CODE );
 
 	g_list_free_full( charmaps, ( GDestroyNotify ) g_free );
 
@@ -448,7 +433,6 @@ init_date_format( ofaFileFormatBin *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->date_combo ));
 
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->date_combo ));
-	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
 
 	g_signal_connect( priv->date_combo, "ofa-changed", G_CALLBACK( on_date_changed ), self );
 }
@@ -464,7 +448,6 @@ init_decimal_dot( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
 	GtkWidget *parent, *label;
-	gchar *sep;
 
 	priv = ofa_file_format_bin_get_instance_private( self );
 
@@ -479,10 +462,6 @@ init_decimal_dot( ofaFileFormatBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->decimal_combo ));
 
-	sep = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
-	my_decimal_combo_set_selected( priv->decimal_combo, sep );
-	g_free( sep );
-
 	g_signal_connect( priv->decimal_combo, "ofa-changed", G_CALLBACK( on_decimal_changed ), self );
 }
 
@@ -496,7 +475,6 @@ static void
 init_field_separator( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
-	gchar *sep;
 	GtkWidget *label;
 
 	priv = ofa_file_format_bin_get_instance_private( self );
@@ -511,11 +489,6 @@ init_field_separator( ofaFileFormatBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->field_combo ));
 	priv->field_label = label;
-
-	sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
-	/*g_debug( "init_field_dot: sep='%s'", sep );*/
-	my_field_combo_set_selected( priv->field_combo, sep );
-	g_free( sep );
 
 	g_signal_connect( priv->field_combo, "ofa-changed", G_CALLBACK( on_field_changed ), self );
 }
@@ -546,57 +519,23 @@ static void
 init_headers( ofaFileFormatBin *self )
 {
 	ofaFileFormatBinPrivate *priv;
-	ofaFFmode mode;
-	gboolean bvalue;
-	gint count;
-	GtkWidget *widget;
-	GtkAdjustment *adjust;
 
 	priv = ofa_file_format_bin_get_instance_private( self );
 
-	mode = ofa_file_format_get_ffmode( priv->settings );
+	priv->headers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
+	g_return_if_fail( priv->headers_btn && GTK_IS_TOGGLE_BUTTON( priv->headers_btn ));
 
-	if( mode == OFA_FFMODE_EXPORT ){
-		priv->headers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
-		g_return_if_fail( priv->headers_btn && GTK_IS_TOGGLE_BUTTON( priv->headers_btn ));
+	g_signal_connect( priv->headers_btn, "toggled", G_CALLBACK( on_headers_toggled ), self );
 
-		bvalue = ofa_file_format_has_headers( priv->settings );
-		g_signal_connect(
-				G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
+	priv->headers_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-count-label" );
+	g_return_if_fail( priv->headers_label && GTK_IS_LABEL( priv->headers_label ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-count-label" );
-		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-		gtk_widget_destroy( widget );
+	priv->headers_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
+	g_return_if_fail( priv->headers_count && GTK_IS_SPIN_BUTTON( priv->headers_count ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
-		g_return_if_fail( widget && GTK_IS_SPIN_BUTTON( widget ));
-		gtk_widget_destroy( widget );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->headers_label ), priv->headers_count );
 
-	} else {
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-label1x1" );
-		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-		gtk_widget_destroy( widget );
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
-		g_return_if_fail( widget && GTK_IS_TOGGLE_BUTTON( widget ));
-		gtk_widget_destroy( widget );
-
-		priv->headers_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-count" );
-		g_return_if_fail( priv->headers_count && GTK_IS_SPIN_BUTTON( priv->headers_count ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-count-label" );
-		g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-		gtk_label_set_mnemonic_widget( GTK_LABEL( widget ), priv->headers_count );
-
-		count = ofa_file_format_get_headers_count( priv->settings );
-		adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
-		gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
-
-		g_signal_connect(
-				G_OBJECT( priv->headers_count ), "value-changed", G_CALLBACK( on_headers_count_changed ), self );
-		gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
-	}
+	g_signal_connect( priv->headers_count, "value-changed", G_CALLBACK( on_headers_count_changed ), self );
 }
 
 static void
@@ -637,6 +576,109 @@ ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_file_format_bin_change_format:
+ * @bin: this #ofaFileFormatBin instance.
+ * @format: the new #ofaFileFormat object to be considered.
+ *
+ * Release the reference previously taken on the initial object, and
+ * then take a new reference on @format.
+ */
+void
+ofa_file_format_bin_change_format( ofaFileFormatBin *bin, ofaFileFormat *format )
+{
+	ofaFileFormatBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
+	g_return_if_fail( format && OFA_IS_FILE_FORMAT( format ));
+
+	priv = ofa_file_format_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_clear_object( &priv->settings );
+	priv->settings = g_object_ref( format );
+
+	setup_format( bin );
+}
+
+static void
+setup_format( ofaFileFormatBin *bin )
+{
+	ofaFileFormatBinPrivate *priv;
+	gchar *str;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gint settings_fmt, store_fmt;
+	ofaFFmode mode;
+	gboolean bvalue;
+	gint count;
+	GtkAdjustment *adjust;
+
+	priv = ofa_file_format_bin_get_instance_private( bin );
+
+	/* encoding */
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->encoding_combo ), ofa_file_format_get_charmap( priv->settings ));
+
+	/* date format */
+	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
+
+	/* decimal separator */
+	str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
+	my_decimal_combo_set_selected( priv->decimal_combo, str );
+	g_free( str );
+
+	/* field separator */
+	str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
+	my_field_combo_set_selected( priv->field_combo, str );
+	g_free( str );
+
+	/* string delimiter */
+	str = g_strdup_printf( "%c", ofa_file_format_get_string_delim( priv->settings ));
+	gtk_entry_set_text( GTK_ENTRY( priv->str_delim_entry ), str );
+	g_free( str );
+
+	/* headers */
+	mode = ofa_file_format_get_ffmode( priv->settings );
+	switch( mode ){
+		case OFA_FFMODE_EXPORT:
+			gtk_widget_show( priv->headers_btn );
+			bvalue = ofa_file_format_has_headers( priv->settings );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
+			on_headers_toggled( GTK_TOGGLE_BUTTON( priv->headers_btn ), bin );
+
+			gtk_widget_hide( priv->headers_label );
+			gtk_widget_hide( priv->headers_count );
+			break;
+
+		case OFA_FFMODE_IMPORT:
+			gtk_widget_hide( priv->headers_btn );
+			gtk_widget_show( priv->headers_label );
+			gtk_widget_show( priv->headers_count );
+			count = ofa_file_format_get_headers_count( priv->settings );
+			adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
+			gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
+			gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
+			break;
+	}
+
+	/* export format */
+	settings_fmt = ofa_file_format_get_fftype( priv->settings );
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->format_combo ));
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &store_fmt, -1 );
+			if( store_fmt == settings_fmt ){
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( priv->format_combo ), &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
 }
 
 /**

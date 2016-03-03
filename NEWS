@@ -91,6 +91,7 @@
    - ofa_file_change_prefs_name(): new method.
    - ofaFileFormatBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormatBin: migrate to GResource (todo #826).
+   - ofa_file_format_bin_change_format(): new method.
    - ofaGuidedInputBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaGuidedInputBin: migrate to GResource (todo #826).
    - ofaGuidedInputBin: return if dispose_has_run fails (todo #995).

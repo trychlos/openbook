@@ -73,6 +73,9 @@ ofaFileFormatBin *ofa_file_format_bin_new           ( ofaFileFormat *format );
 GtkSizeGroup     *ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin,
 																guint col_number );
 
+void              ofa_file_format_bin_change_format ( ofaFileFormatBin *bin,
+																ofaFileFormat *format );
+
 gboolean          ofa_file_format_bin_is_valid      ( ofaFileFormatBin *bin,
 																gchar **error_message );
 
