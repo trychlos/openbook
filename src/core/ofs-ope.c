@@ -37,6 +37,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -1025,6 +1026,8 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	ofoAccount *account;
 	const gchar *currency;
 	gboolean ok;
+	ofoCurrency *cur_object;
+	gint cur_digits;
 
 	ok = TRUE;
 	account = NULL;
@@ -1084,7 +1087,10 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	}
 
 	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
-		ofs_currency_add_currency( &checker->currencies, currency, detail->debit, detail->credit );
+		cur_object = ofo_currency_get_by_code( hub, currency );
+		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), FALSE );
+		cur_digits = ofo_currency_get_digits( cur_object );
+		ofs_currency_add_currency( &checker->currencies, currency, cur_digits, detail->debit, detail->credit );
 	}
 
 	return( ok );

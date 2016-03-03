@@ -817,7 +817,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	is_paginating = ofa_irenderable_is_paginating( instance );
 	ofs_currency_add_currency(
-			&priv->ledger_totals, code,
+			&priv->ledger_totals, code, digits,
 			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 }
 
@@ -852,7 +852,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	for( it=priv->ledger_totals ; it ; it=it->next ){
 		cur = ( ofsCurrency * ) it->data;
 		ofs_currency_add_currency(
-				&priv->report_totals, cur->currency,
+				&priv->report_totals, cur->currency, cur->digits,
 				is_paginating ? 0 : cur->debit, is_paginating ? 0 : cur->credit );
 	}
 }

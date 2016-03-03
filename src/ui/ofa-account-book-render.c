@@ -954,6 +954,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 		is_paginating = ofa_irenderable_is_paginating( instance );
 		ofs_currency_add_currency( &priv->totals,
 				priv->currency_code,
+				priv->currency_digits,
 				is_paginating ? 0 : priv->account_debit,
 				is_paginating ? 0 : priv->account_credit );
 	}

@@ -698,7 +698,6 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
-	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
 	ofa-guided-input-bin.ui								\
@@ -719,6 +718,7 @@ ui_files = \
 
 resources_ui = \
 	ofa-account-properties.ui							\
+	ofa-entry-page.ui									\
 	ofa-guided-input.ui									\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\

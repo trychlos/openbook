@@ -31,16 +31,16 @@
 
 #include "api/ofs-currency.h"
 
-static ofsCurrency *currency_get_by_code( GList **list, const gchar *currency );
+static ofsCurrency *currency_get_by_code( GList **list, const gchar *currency, gint digits );
 static gint         cmp_currency( const ofsCurrency *a, const ofsCurrency *b );
 static void         currency_dump( ofsCurrency *cur, void *empty );
 static void         currency_free( ofsCurrency *cur );
 
-/**
- * ofs_currency_get_by_code:
+/*
+ * currency_get_by_code:
  */
 static ofsCurrency *
-currency_get_by_code( GList **list, const gchar *currency )
+currency_get_by_code( GList **list, const gchar *currency, gint digits )
 {
 	GList *it;
 	ofsCurrency *found;
@@ -56,6 +56,7 @@ currency_get_by_code( GList **list, const gchar *currency )
 	if( !found ){
 		found = g_new0( ofsCurrency, 1 );
 		found->currency = g_strdup( currency );
+		found->digits = digits;
 		*list = g_list_insert_sorted( *list, found, ( GCompareFunc ) cmp_currency );
 	}
 
@@ -102,18 +103,20 @@ ofs_currency_update_amounts( ofsCurrency *currency )
  * ofs_currency_add_currency:
  */
 void
-ofs_currency_add_currency( GList **list, const gchar *currency, gdouble debit, gdouble credit )
+ofs_currency_add_currency( GList **list, const gchar *currency, gint digits, gdouble debit, gdouble credit )
 {
 	ofsCurrency *found;
-	gdouble precision;
+	gdouble precision, temp_amount;
 
-	found = currency_get_by_code( list, currency );
+	found = currency_get_by_code( list, currency, digits );
 	found->debit += debit;
 	found->credit += credit;
 
 	precision = exp10( found->digits );
-	found->ldebit = ( gulong ) found->debit * precision;
-	found->lcredit = ( gulong ) found->credit * precision;
+	temp_amount = found->debit * precision + 0.5;
+	found->ldebit = ( gulong ) temp_amount;
+	temp_amount = found->credit * precision + 0.5;
+	found->lcredit = ( gulong ) temp_amount;
 }
 
 /**

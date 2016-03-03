@@ -2888,6 +2888,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	myDateFormat date_format;
 	const ofaIDBConnect *connect;
 	ofoDossier *dossier;
+	gint cur_digits;
 
 	dataset = NULL;
 	line = 0;
@@ -3057,6 +3058,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			continue;
 		}
 		ofo_entry_set_currency( entry, currency );
+		cur_digits = ofo_currency_get_digits( cur_object );
 
 		/* debit */
 		str = ofa_iimportable_get_string( &itf, settings );
@@ -3159,15 +3161,15 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		status = ofo_entry_get_status( entry );
 		switch( status ){
 			case ENT_STATUS_PAST:
-				ofs_currency_add_currency( &past, currency, debit, credit );
+				ofs_currency_add_currency( &past, currency, cur_digits, debit, credit );
 				break;
 
 			case ENT_STATUS_ROUGH:
-				ofs_currency_add_currency( &exe, currency, debit, credit );
+				ofs_currency_add_currency( &exe, currency, cur_digits, debit, credit );
 				break;
 
 			case ENT_STATUS_FUTURE:
-				ofs_currency_add_currency( &fut, currency, debit, credit );
+				ofs_currency_add_currency( &fut, currency, cur_digits, debit, credit );
 				break;
 
 			default:

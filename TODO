@@ -541,9 +541,6 @@
 1015 2016- 2-26 FEAT RenderPage: after printing, should have a dialog box
                      'successfully printed on xxx'
 
-1016 2016- 2-26 BUG  ViewEntries: footer solde amounts may be displayed as
-                     blue even if debit != credit 
-
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
@@ -555,7 +552,9 @@
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
 
-1032
+1032 2016- 3- 3 BUG  LedgerSummary: does not display the date selection in the title
+
+1033
 
 -----------------------------------------------------------------------
  DONE
@@ -866,6 +865,10 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1016 2016- 2-26 BUG  ViewEntries: footer solde amounts may be displayed as
+                     blue even if debit != credit 
+     2016- 3- 3 fixed
 
 1017 2016- 2-26 BUG  Reconciliation: new entries wrongly display a reconciliation
                      date (though a new entry obviously does not have any

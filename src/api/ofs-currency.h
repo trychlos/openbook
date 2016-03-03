@@ -62,6 +62,7 @@ typedef struct {
 
 void  ofs_currency_add_currency  ( GList **list,
 										const gchar *currency,
+										gint digits,
 										gdouble debit,
 										gdouble credit );
 

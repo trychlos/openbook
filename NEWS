@@ -43,7 +43,8 @@
    - ofaNomodalPage: setup initial default size and position (todo #997).
    - ofaReconcilPage: fix reconciliation date on new entries (todo #1017).
    - ofoAccount: import close indicator.
-   - ofoDossier: fix export, taking advantage of ofaBox architecture (todo #1026). 
+   - ofoDossier: fix export, taking advantage of ofaBox architecture (todo #1026).
+   - ofsCurrency: take into account the digits count of the currency (todo #1016).
 
  Other changes:
 
@@ -107,6 +108,7 @@
    - ofoLedger: migrate to G_ADD_PRIVATE (todo #994).
    - ofoOpeTemplate: migrate to G_ADD_PRIVATE (todo #994).
    - ofoRate: migrate to G_ADD_PRIVATE (todo #994).
+   - of_currency_add_currency(): now wants the digits count of the currency.
 
 -----------------------------------------------------------------------
  Version 0.48
