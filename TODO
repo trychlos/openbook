@@ -552,9 +552,9 @@
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
 
-1032 2016- 3- 3 BUG  LedgerSummary: does not display the date selection in the title
+1033 2016- 3- 3 BUG  RenderPage: vertical space missing if there is no subtitle
 
-1033
+1034
 
 -----------------------------------------------------------------------
  DONE
@@ -916,6 +916,9 @@
 1031 2016- 3- 3 BUG  ExportAssistant: when file overwrite confirmation is
                       cancelled, goes anyway to Apply page, with empty filename
      2016- 3- 3 cancelled as inherent to GtkAssistant behavior
+
+1032 2016- 3- 3 BUG  LedgerSummary: does not display the date selection in the title
+     2016- 3- 3 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -81,6 +81,8 @@
    - ofa_idate_filter_setup_bin(): use a GResource path.
    - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofoLedgerBookRender: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoLedgerSummaryRender: add date selection as a subtitle (todo #1032).
+   - ofoLedgerSummaryRender: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlConnect: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlEditorDisplay: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlEditorDisplay: migrate to GResource (todo #826).

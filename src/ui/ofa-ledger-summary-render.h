@@ -49,16 +49,13 @@ typedef struct _ofaLedgerSummaryRenderPrivate         ofaLedgerSummaryRenderPriv
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPage                  parent;
-
-	/*< private members >*/
-	ofaLedgerSummaryRenderPrivate *priv;
+	ofaRenderPage      parent;
 }
 	ofaLedgerSummaryRender;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPageClass             parent;
+	ofaRenderPageClass parent;
 }
 	ofaLedgerSummaryRenderClass;
 
