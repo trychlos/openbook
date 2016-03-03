@@ -62,16 +62,13 @@ typedef struct _ofaGuidedInputBinPrivate         ofaGuidedInputBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                    parent;
-
-	/*< private members >*/
-	ofaGuidedInputBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaGuidedInputBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass               parent;
+	GtkBinClass parent;
 }
 	ofaGuidedInputBinClass;
 

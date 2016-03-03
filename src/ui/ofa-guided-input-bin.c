@@ -209,18 +209,15 @@ enum {
 	N_SIGNALS
 };
 
-static guint st_signals[ N_SIGNALS ]    = { 0 };
+static guint st_signals[ N_SIGNALS ]        = { 0 };
 
-static GDate st_last_dope               = { 0 };
-static GDate st_last_deff               = { 0 };
+static GDate st_last_dope                   = { 0 };
+static GDate st_last_deff                   = { 0 };
 
-static const gchar *st_image_empty      = PKGUIDIR "/filler.png";
-static const gchar *st_image_check      = PKGUIDIR "/green-checkmark.png";
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-guided-input-bin.ui";
+static const gchar *st_resource_image_empty = "/org/trychlos/openbook/ui/filler.png";
+static const gchar *st_resource_image_check = "/org/trychlos/openbook/ui/green-checkmark.png";
+static const gchar *st_resource_ui          = "/org/trychlos/openbook/ui/ofa-guided-input-bin.ui";
 
-G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
-
-static void              setup_bin( ofaGuidedInputBin *bin );
 static void              setup_main_window( ofaGuidedInputBin *bin );
 static void              setup_dialog( ofaGuidedInputBin *bin );
 static void              init_model_data( ofaGuidedInputBin *bin );
@@ -263,6 +260,9 @@ static void              do_reset_entries_rows( ofaGuidedInputBin *bin );
 static void              on_hub_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
 static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
+G_DEFINE_TYPE_EXTENDED( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaGuidedInputBin ))
+
 static void
 guided_input_bin_finalize( GObject *instance )
 {
@@ -275,7 +275,7 @@ guided_input_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_GUIDED_INPUT_BIN( instance )->priv;
+	priv = ofa_guided_input_bin_get_instance_private( OFA_GUIDED_INPUT_BIN( instance ));
 
 	if( priv->currency_list ){
 		ofs_currency_list_free( &priv->currency_list );
@@ -292,9 +292,10 @@ guided_input_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
-	priv = OFA_GUIDED_INPUT_BIN( instance )->priv;
+	priv = ofa_guided_input_bin_get_instance_private( OFA_GUIDED_INPUT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
@@ -316,8 +317,7 @@ ofa_guided_input_bin_init( ofaGuidedInputBin *self )
 
 	g_return_if_fail( self && OFA_IS_GUIDED_INPUT_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_INPUT_BIN, ofaGuidedInputBinPrivate );
-	priv = self->priv;
+	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 	my_date_clear( &priv->deffect_min );
@@ -334,8 +334,6 @@ ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = guided_input_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_input_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaGuidedInputBinPrivate ));
 
 	my_date_clear( &st_last_dope );
 	my_date_clear( &st_last_deff );
@@ -374,35 +372,19 @@ ofaGuidedInputBin *
 ofa_guided_input_bin_new( const ofaMainWindow *main_window )
 {
 	ofaGuidedInputBin *bin;
+	ofaGuidedInputBinPrivate *priv;
 
 	bin = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
-	bin->priv->main_window = main_window;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
-	setup_bin( bin );
+	priv->main_window = main_window;
+
+	my_utils_container_attach_from_resource( GTK_CONTAINER( bin ), st_resource_ui, "gib-window", "top" );
 	setup_main_window( bin );
 	setup_dialog( bin );
 
 	return( bin );
-}
-
-static void
-setup_bin( ofaGuidedInputBin *bin )
-{
-	GtkBuilder *builder;
-	GObject *object;
-	GtkWidget *toplevel;
-
-	builder = gtk_builder_new_from_file( st_bin_xml );
-
-	object = gtk_builder_get_object( builder, "gib-window" );
-	g_return_if_fail( object && GTK_IS_WINDOW( object ));
-	toplevel = GTK_WIDGET( g_object_ref( object ));
-
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
-
-	gtk_widget_destroy( toplevel );
-	g_object_unref( builder );
 }
 
 static void
@@ -413,7 +395,7 @@ setup_main_window( ofaGuidedInputBin *bin )
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
@@ -441,7 +423,7 @@ setup_dialog( ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *widget, *view;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	/* set ledger combo */
 	priv->ledger_combo = ofa_ledger_combo_new();
@@ -548,35 +530,33 @@ ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, const ofoOpeTempl
 	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
 	g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+	g_return_if_fail( !priv->dispose_has_run );
 
-	if( !priv->dispose_has_run ){
+	priv->check_allowed = FALSE;
 
-		priv->check_allowed = FALSE;
-
-		/* remove previous entries if any */
-		for( i=priv->rows_count ; i>=1 ; --i ){
-			gtk_grid_remove_row( priv->entries_grid, i );
-		}
-		ofs_ope_free( priv->ope );
-		priv->rows_count = 0;
-
-		priv->model = template;
-		priv->ope = ofs_ope_new( template );
-
-		count = ofo_ope_template_get_detail_count( priv->model );
-		for( i=1 ; i<=count ; ++i ){
-			add_entry_row( bin, i );
-		}
-
-		init_model_data( bin );
-
-		gtk_widget_show_all( GTK_WIDGET( bin ));
-
-		priv->check_allowed = TRUE;
-		check_for_enable_dlg( bin );
+	/* remove previous entries if any */
+	for( i=priv->rows_count ; i>=1 ; --i ){
+		gtk_grid_remove_row( priv->entries_grid, i );
 	}
+	ofs_ope_free( priv->ope );
+	priv->rows_count = 0;
+
+	priv->model = template;
+	priv->ope = ofs_ope_new( template );
+
+	count = ofo_ope_template_get_detail_count( priv->model );
+	for( i=1 ; i<=count ; ++i ){
+		add_entry_row( bin, i );
+	}
+
+	init_model_data( bin );
+
+	gtk_widget_show_all( GTK_WIDGET( bin ));
+
+	priv->check_allowed = TRUE;
+	check_for_enable_dlg( bin );
 }
 
 static void
@@ -586,7 +566,7 @@ init_model_data( ofaGuidedInputBin *bin )
 	gchar *str;
 	const gchar *cstr;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	/* operation and effect dates */
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->dope_entry ), TRUE );
@@ -630,7 +610,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	GtkWidget *label;
 	gchar *str;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	/* col #0: rang: number of the entry */
 	str = g_strdup_printf( "%2d", row );
@@ -662,7 +642,8 @@ add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 	const sColumnDef *col_def;
 	const gchar *comment;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	col_def = find_column_def_from_col_id( bin, col_id );
 	g_return_if_fail( col_def );
 
@@ -706,7 +687,8 @@ row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	gboolean locked;
 	sEntryData *sdata;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	widget = NULL;
 
 	/* only create the entry if the field is not empty or not locked
@@ -792,7 +774,7 @@ row_widget_image( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 {
 	GtkWidget *image;
 
-	image = gtk_image_new_from_file( st_image_empty );
+	image = gtk_image_new_from_resource( st_resource_image_empty );
 
 	return( image );
 }
@@ -823,7 +805,8 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 	ofoLedger *ledger;
 	ofoDossier *dossier;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	ope = priv->ope;
 	dossier = ofa_hub_get_dossier( priv->hub );
 
@@ -844,7 +827,8 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	ope = priv->ope;
 
 	/* check the operation date */
@@ -877,7 +861,12 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 static gboolean
 on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	bin->priv->deffect_has_focus = TRUE;
+	ofaGuidedInputBinPrivate *priv;
+
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
+	priv->deffect_has_focus = TRUE;
+
 	return( FALSE );
 }
 
@@ -889,7 +878,12 @@ on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 static gboolean
 on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	bin->priv->deffect_has_focus = FALSE;
+	ofaGuidedInputBinPrivate *priv;
+
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
+	priv->deffect_has_focus = FALSE;
+
 	return( FALSE );
 }
 
@@ -899,7 +893,8 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	ope = priv->ope;
 
 	if( priv->deffect_has_focus ){
@@ -919,7 +914,7 @@ on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	const gchar *content;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	content = gtk_entry_get_text( GTK_ENTRY( editable ));
 
@@ -989,7 +984,7 @@ on_account_selection( ofaGuidedInputBin *bin, gint row )
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *entry;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -1006,7 +1001,7 @@ do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row )
 	ofaGuidedInputBinPrivate *priv;
 	gchar *number;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	number = ofa_account_select_run(
 			priv->main_window, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
@@ -1030,7 +1025,7 @@ check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row  )
 	ofoAccount *account;
 	const gchar *asked_account;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number( priv->hub, asked_account );
@@ -1058,7 +1053,8 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	priv->on_changed_count = 0;
@@ -1095,7 +1091,8 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 	sEntryData *sdata;
 	const gchar *current;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	g_debug( "%s: entry=%p, row=%u, column=%u",
@@ -1133,7 +1130,8 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 	sEntryData *sdata;
 	const gchar *cstr;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	g_debug( "%s: entry=%p, row=%d, column=%d, focused_row=%u, focused_column=%u, on_changed_count=%u",
@@ -1200,7 +1198,8 @@ setup_account_label_in_comment( ofaGuidedInputBin *bin, gint row_id )
 	gchar *comment;
 	ofoAccount *account;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	comment = NULL;
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row_id );
@@ -1245,7 +1244,7 @@ check_for_enable_dlg( ofaGuidedInputBin *bin )
 	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	if( priv->entries_grid && priv->check_allowed ){
 
@@ -1269,13 +1268,11 @@ ofa_guided_input_bin_is_valid( ofaGuidedInputBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	ok = FALSE;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		ok = is_dialog_validable( bin );
-	}
+	ok = is_dialog_validable( bin );
 
 	return( ok );
 }
@@ -1299,7 +1296,7 @@ is_dialog_validable( ofaGuidedInputBin *bin )
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	ope = priv->ope;
 	ofs_currency_list_free( &priv->currency_list );
@@ -1353,7 +1350,8 @@ set_ope_to_ui( const ofaGuidedInputBin *bin, gint row, gint col_id, const gchar 
 	const sColumnDef *def;
 	GtkWidget *entry, *label;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	def = find_column_def_from_col_id( bin, col_id );
 	g_return_if_fail( def );
 
@@ -1396,7 +1394,8 @@ display_currency( ofaGuidedInputBin *bin, gint row, ofsOpeDetail *detail )
 	const gchar *currency, *display_cur;
 	GtkWidget *label;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	display_cur = "";
 
 	if( detail->account ){
@@ -1421,7 +1420,8 @@ draw_valid_coche( ofaGuidedInputBin *bin, gint row, gboolean bvalid )
 
 	//g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	def = find_column_def_from_col_id( bin, OPE_COL_VALID );
 	g_return_if_fail( def && def->column_type == TYPE_IMAGE );
 
@@ -1429,9 +1429,9 @@ draw_valid_coche( ofaGuidedInputBin *bin, gint row, gboolean bvalid )
 	g_return_if_fail( image && GTK_IS_IMAGE( image ));
 
 	if( bvalid ){
-		gtk_image_set_from_file( GTK_IMAGE( image ), st_image_check );
+		gtk_image_set_from_resource( GTK_IMAGE( image ), st_resource_image_check );
 	} else {
-		gtk_image_set_from_file( GTK_IMAGE( image ), st_image_empty );
+		gtk_image_set_from_resource( GTK_IMAGE( image ), st_resource_image_empty );
 	}
 
 	gtk_widget_queue_draw( image );
@@ -1442,7 +1442,7 @@ set_comment( ofaGuidedInputBin *bin, const gchar *comment )
 {
 	ofaGuidedInputBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	gtk_label_set_text( GTK_LABEL( priv->comment ), comment );
 }
@@ -1452,7 +1452,7 @@ set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 {
 	ofaGuidedInputBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	gtk_label_set_text( GTK_LABEL( priv->message ), errmsg );
 	my_utils_widget_set_style( priv->message, my_strlen( errmsg ) ? "labelerror" : "labelnormal" );
@@ -1478,7 +1478,7 @@ update_totals( ofaGuidedInputBin *bin )
 	gdouble ddiff, cdiff;
 	gchar *total_str;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	if( !priv->model ){
 		return( FALSE );
@@ -1557,7 +1557,7 @@ add_total_diff_lines( ofaGuidedInputBin *bin, gint row )
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *entry;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	label = gtk_label_new( NULL );
 	gtk_widget_set_margin_top( label, TOTAUX_TOP_MARGIN );
@@ -1610,7 +1610,8 @@ total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdo
 	gchar *amount_str;
 	gboolean has_diff;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	has_diff = FALSE;
 
 	/* set the debit diff amount (or empty) */
@@ -1662,10 +1663,11 @@ ofa_guided_input_bin_apply( ofaGuidedInputBin *bin )
 	g_return_val_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ), FALSE );
 	g_return_val_if_fail( is_dialog_validable( bin ), FALSE );
 
-	ok = FALSE;
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ok = FALSE;
 
 	if( do_validate( bin )){
 		ok = TRUE;
@@ -1682,7 +1684,8 @@ do_validate( ofaGuidedInputBin *bin )
 	gboolean ok;
 	GList *entries, *it;
 
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
 	ok = TRUE;
 	entries = ofs_ope_generate_entries( priv->ope );
 
@@ -1709,21 +1712,13 @@ do_validate( ofaGuidedInputBin *bin )
 static void
 display_ok_message( ofaGuidedInputBin *bin, gint count )
 {
-	GtkWidget *dialog;
 	gchar *message;
 
 	message = g_strdup_printf( _( "%d entries have been successfully created" ), count );
 
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( bin->priv->main_window ),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_INFO,
-			GTK_BUTTONS_OK,
-			"%s", message );
+	my_utils_dialog_info( message );
 
 	g_free( message );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 /**
@@ -1734,8 +1729,13 @@ display_ok_message( ofaGuidedInputBin *bin, gint count )
 void
 ofa_guided_input_bin_reset( ofaGuidedInputBin *bin )
 {
+	ofaGuidedInputBinPrivate *priv;
+
 	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
-	g_return_if_fail( !bin->priv->dispose_has_run );
+
+	priv = ofa_guided_input_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
 
 	do_reset_entries_rows( bin );
 }
@@ -1752,8 +1752,7 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
 	gint i, model_count;
 	GtkWidget *entry;
 
-	g_debug( "do_reset_entries_rows: begin" );
-	priv = bin->priv;
+	priv = ofa_guided_input_bin_get_instance_private( bin );
 
 	ofs_ope_free( priv->ope );
 	priv->ope = ofs_ope_new( priv->model );
@@ -1791,7 +1790,6 @@ do_reset_entries_rows( ofaGuidedInputBin *bin )
 		}
 		draw_valid_coche( bin, i, FALSE );
 	}
-	g_debug( "do_reset_entries_rows: end" );
 }
 
 /*
@@ -1801,6 +1799,7 @@ static void
 on_hub_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_on_hub_updated_object";
+	ofaGuidedInputBinPrivate *priv;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -1809,8 +1808,10 @@ on_hub_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *pr
 			prev_id,
 			( void * ) self );
 
+	priv = ofa_guided_input_bin_get_instance_private( self );
+
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		if( OFO_OPE_TEMPLATE( object ) == self->priv->model ){
+		if( OFO_OPE_TEMPLATE( object ) == priv->model ){
 			ofa_guided_input_bin_set_ope_template( self, OFO_OPE_TEMPLATE( object ));
 		}
 	}
@@ -1832,7 +1833,7 @@ on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputB
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	priv = self->priv;
+	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		if( OFO_OPE_TEMPLATE( object ) == priv->model ){
