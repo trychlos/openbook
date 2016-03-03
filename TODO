@@ -560,9 +560,6 @@
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
 
-1031 2016- 3- 3 BUG  ExportAssistant: when file overwrite confirmation is
-                      cancelled, goes anyway to Apply page, with empty filename
-
 1032
 
 -----------------------------------------------------------------------
@@ -911,6 +908,10 @@
 1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing
                      or exporting
      2016- 3- 2 done
+
+1031 2016- 3- 3 BUG  ExportAssistant: when file overwrite confirmation is
+                      cancelled, goes anyway to Apply page, with empty filename
+     2016- 3- 3 cancelled as inherent to GtkAssistant behavior
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

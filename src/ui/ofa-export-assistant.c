@@ -167,8 +167,6 @@ static const gchar *st_ui_id            = "ExportAssistant";
 
 static const gchar *st_pref_settings    = "ExportAssistant-settings";
 
-G_DEFINE_TYPE( ofaExportAssistant, ofa_export_assistant, MY_TYPE_ASSISTANT )
-
 static void      p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
 static void      p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
@@ -188,12 +186,15 @@ static void      p3_on_file_activated( GtkFileChooser *chooser, ofaExportAssista
 static gboolean  p3_check_for_complete( ofaExportAssistant *self );
 static void      p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static gboolean  confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
+static gboolean  p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
 static void      p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  export_data( ofaExportAssistant *self );
 static void      p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
 static void      get_settings( ofaExportAssistant *self );
 static void      set_settings( ofaExportAssistant *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaExportAssistant, ofa_export_assistant, MY_TYPE_ASSISTANT, 0,
+		G_ADD_PRIVATE( ofaExportAssistant ))
 
 static const ofsAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
@@ -235,7 +236,8 @@ export_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_EXPORT_ASSISTANT( instance ));
 
 	/* free data members here */
-	priv = OFA_EXPORT_ASSISTANT( instance )->priv;
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
 	g_free( priv->p1_datatype );
 	g_free( priv->p2_format );
 	g_free( priv->p3_last_folder );
@@ -254,9 +256,9 @@ export_dispose( GObject *instance )
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
-		priv = OFA_EXPORT_ASSISTANT( instance )->priv;
-
 		/* unref object members here */
+		priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
 		g_clear_object( &priv->p2_export_settings );
 	}
 
@@ -268,16 +270,17 @@ static void
 ofa_export_assistant_init( ofaExportAssistant *self )
 {
 	static const gchar *thisfn = "ofa_export_assistant_init";
+	ofaExportAssistantPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_EXPORT_ASSISTANT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT_ASSISTANT, ofaExportAssistantPrivate );
+	priv = ofa_export_assistant_get_instance_private( self );
 
-	self->priv->p1_code = -1;
-	self->priv->p1_idx = -1;
+	priv->p1_code = -1;
+	priv->p1_idx = -1;
 }
 
 static void
@@ -289,8 +292,6 @@ ofa_export_assistant_class_init( ofaExportAssistantClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = export_dispose;
 	G_OBJECT_CLASS( klass )->finalize = export_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaExportAssistantPrivate ));
 }
 
 /**
@@ -332,7 +333,7 @@ p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	application = my_window_get_application( MY_WINDOW( self ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
@@ -360,7 +361,7 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	/* attach its identifier to each widget */
 	for( i=0 ; st_types[i].code ; ++i ){
@@ -369,7 +370,9 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 		g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, GINT_TO_POINTER( st_types[i].code ));
 		g_signal_connect( btn, "toggled", G_CALLBACK( p1_on_type_toggled ), self );
-		g_debug( "%s: btn=%p, code=%d", thisfn, ( void * ) btn, st_types[i].code );
+		if( 0 ){
+			g_debug( "%s: btn=%p, code=%d", thisfn, ( void * ) btn, st_types[i].code );
+		}
 
 		if( !priv->p1_group ){
 			priv->p1_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( btn ));
@@ -389,7 +392,8 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
+
 	found = FALSE;
 
 	for( i=0 ; !found && st_types[i].code ; ++i ){
@@ -426,7 +430,7 @@ p1_is_complete( ofaExportAssistant *self )
 	ofaExportAssistantPrivate *priv;
 	GSList *it;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	g_return_val_if_fail( priv->p1_group, FALSE );
 
@@ -438,13 +442,10 @@ p1_is_complete( ofaExportAssistant *self )
 	/* which is the currently active button ? */
 	for( it=priv->p1_group ; it ; it=it->next ){
 		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( it->data ))){
-			g_debug( "p1_is_complete: active button=%p", it->data );
 			priv->p1_code = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_TYPE_INDEX ));
 			priv->p1_btn = GTK_WIDGET( it->data );
 			priv->p1_datatype = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( it->data )));
 			break;;
-		} else {
-			g_debug( "p1_is_complete: button=%p is inactive", it->data );
 		}
 	}
 
@@ -460,7 +461,7 @@ p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: self=%p, page=%p", thisfn, ( void * ) self, ( void * ) page );
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	for( i=0 ; st_types[i].code ; ++i ){
 		if( st_types[i].code == priv->p1_code ){
@@ -491,7 +492,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	priv->p2_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-datatype" );
 	g_return_if_fail( priv->p2_datatype && GTK_IS_LABEL( priv->p2_datatype ));
@@ -534,7 +535,7 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_datatype ), priv->p1_datatype );
 
@@ -560,7 +561,8 @@ p2_check_for_complete( ofaExportAssistant *self )
 	gboolean ok;
 	gchar *message;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
+
 	ok = ofa_file_format_bin_is_valid( priv->p2_settings_prefs, &message );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_message ), my_strlen( message ) ? message : "" );
@@ -579,7 +581,7 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	ofa_file_format_bin_apply( priv->p2_settings_prefs );
 
@@ -601,7 +603,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	g_return_if_fail( priv->p1_idx >= 0 );
 
@@ -646,7 +648,7 @@ p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p1_datatype );
 	gtk_label_set_text( GTK_LABEL( priv->p3_format ), priv->p2_format );
@@ -691,7 +693,7 @@ p3_check_for_complete( ofaExportAssistant *self )
 	gboolean ok;
 	gchar *name, *final, *folder;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	g_free( priv->p3_furi );
 
@@ -721,18 +723,40 @@ p3_check_for_complete( ofaExportAssistant *self )
 	return( ok );
 }
 
+/*
+ * should be directly managed by the GtkFileChooser class, but doesn't
+ * seem to work :(
+ *
+ * Returns: %TRUE in order to confirm overwrite.
+ */
+static gboolean
+p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname )
+{
+	gboolean ok;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "The file '%s' already exists.\n"
+					"Are you sure you want to overwrite it ?" ), fname );
+
+	ok = my_utils_dialog_question( str, _( "_Overwrite" ));
+
+	g_free( str );
+
+	return( ok );
+}
+
 static void
 p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p3_do_forward";
 	ofaExportAssistantPrivate *priv;
-	gboolean complete;
+	gboolean ok;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
-	complete = TRUE;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	/* keep the last used folder in case we go back to this page
 	 * we choose to keep the same folder, letting the user choose
@@ -740,17 +764,20 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_free( priv->p3_last_folder );
 	priv->p3_last_folder = g_path_get_dirname( priv->p3_furi );
 
+	/* we cannot prevent this test to be made only here
+	 * if the user cancel, then the assistant will anyway go to the
+	 * Confirmation page, without any dest uri
+	 * This is because GtkAssistant does not let us stay on the same page
+	 * when the user has clicked on the Next button */
 	if( my_utils_uri_exists( priv->p3_furi )){
-		complete = confirm_overwrite( self, priv->p3_furi );
-		if( !complete ){
+		ok = p3_confirm_overwrite( self, priv->p3_furi );
+		if( !ok ){
 			g_free( priv->p3_furi );
 			priv->p3_furi = NULL;
 		}
 	}
 
-	if( complete ){
-		set_settings( self );
-	}
+	set_settings( self );
 }
 
 /*
@@ -769,7 +796,7 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-data" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -824,29 +851,6 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 /*
- * should be directly managed by the GtkFileChooser class, but doesn't
- * seem to work :(
- *
- * Returns: %TRUE in order to confirm overwrite.
- */
-static gboolean
-confirm_overwrite( const ofaExportAssistant *self, const gchar *fname )
-{
-	gboolean ok;
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "The file '%s' already exists.\n"
-					"Are you sure you want to overwrite it ?" ), fname );
-
-	ok = my_utils_dialog_question( str, _( "_Overwrite" ));
-
-	g_free( str );
-
-	return( ok );
-}
-
-/*
  * When executing this function, the display stays on the 'Confirmation'
  * page - The 'Result page is only displayed after this computing
  * returns.
@@ -877,7 +881,8 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), FALSE );
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
+
 	priv->p5_page = page;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
@@ -906,7 +911,7 @@ export_data( ofaExportAssistant *self )
 	gchar *str, *text;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
@@ -950,7 +955,7 @@ p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text,
 {
 	ofaExportAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	g_signal_emit_by_name( priv->p5_bar, "ofa-double", progress );
 	g_signal_emit_by_name( priv->p5_bar, "ofa-text", text );
@@ -967,7 +972,7 @@ get_settings( ofaExportAssistant *self )
 	GList *slist, *it;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	slist = ofa_settings_user_get_string_list( st_pref_settings );
 
@@ -992,7 +997,7 @@ set_settings( ofaExportAssistant *self )
 	ofaExportAssistantPrivate *priv;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_export_assistant_get_instance_private( self );
 
 	str = g_strdup_printf( "%d;%s;",
 			priv->p1_code,
