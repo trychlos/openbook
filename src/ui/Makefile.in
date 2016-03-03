@@ -710,7 +710,6 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
-	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
@@ -723,6 +722,7 @@ resources_ui = \
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-reconcil-page.ui								\
+	ofa-render-page.ui									\
 	\
 	light-empty-14.png									\
 	light-green-14.png									\

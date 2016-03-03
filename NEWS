@@ -40,6 +40,7 @@
    - ofaExportAssistant: amounts have a fixed count of decimals (todo #1025).
    - ofaIDateFilter: keep both 'from' and 'to' dates as user preferences (todo #978).
    - ofaImportAssistant: restore the progress bars (todo #1020).
+   - ofaIRenderable: have a vertical space before columns header even if no subtitle (todo #1033).
    - ofaNomodalPage: setup initial default size and position (todo #997).
    - ofaReconcilPage: fix reconciliation date on new entries (todo #1017).
    - ofoAccount: import close indicator.

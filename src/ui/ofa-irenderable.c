@@ -522,23 +522,22 @@ draw_page_header_subtitle( ofaIRenderable *instance, gint page_num, sIRenderable
 	gdouble y, height;
 	gchar *title;
 
+	y = sdata->last_y;
+
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle ){
 		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle( instance );
 		if( my_strlen( title )){
-			y = sdata->last_y;
-
 			ofa_irenderable_set_color( instance, COLOR_HEADER_SUBTITLE );
 			ofa_irenderable_set_font( instance, st_default_header_subtitle_font );
 			height = ofa_irenderable_set_text(
 					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
-
 			y += height;
-			y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
-
-			sdata->last_y = y;
 		}
 		g_free( title );
 	}
+
+	y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
+	sdata->last_y = y;
 }
 
 static void

@@ -553,6 +553,7 @@
                      double quotes should be a configuration parameter
 
 1033 2016- 3- 3 BUG  RenderPage: vertical space missing if there is no subtitle
+     2016- 3- 3 fixed
 
 1034
 
