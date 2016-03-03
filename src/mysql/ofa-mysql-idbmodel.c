@@ -236,7 +236,7 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
 	label = gtk_label_new( str );
 	g_free( str );
-	my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
+	my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 	ofa_idbmodel_add_row_widget( instance, dialog, label );
 
@@ -249,7 +249,7 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 								st_migrates[i].ver_target );
 					label = gtk_label_new( str );
 					g_free( str );
-					my_utils_widget_set_margin( label, 0, 0, 2*MARGIN_LEFT, 0 );
+					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
 					my_utils_widget_set_style( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 					ofa_idbmodel_add_row_widget( instance, dialog, label );
@@ -270,7 +270,7 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 		str = g_strdup_printf( _( "Last version is v %u: up to date" ), last_version );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
+		my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 		ofa_idbmodel_add_row_widget( instance, dialog, label );
 	}
@@ -317,7 +317,7 @@ add_row( sUpdate *update_data, const gchar *title, gboolean with_bar )
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 
 	label = gtk_label_new( title );
-	my_utils_widget_set_margin( label, 0, 0, MARGIN_LEFT, 0 );
+	my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, 0, 1, 1 );
 

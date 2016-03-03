@@ -72,6 +72,7 @@
    - my_utils_quote_regexp(): new function.
    - my_utils_unquote_regexp(): new function.
    - my_utils_uri_get_content(): new function.
+   - my_utils_widget_set_margin(): renamed as my_utils_widget_set_margins().
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
    - ofoAccountBookRender: migrate to G_ADD_PRIVATE (todo #994).
    - ofaBox: have to/from string, to/from dbms (todo #1029).

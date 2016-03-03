@@ -609,7 +609,7 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	my_utils_widget_set_margin( label, 0, 2, 0, 4 );
+	my_utils_widget_set_margins( label, 0, 2, 0, 4 );
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_RANG, row, 1, 1 );

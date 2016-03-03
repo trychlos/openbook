@@ -843,7 +843,7 @@ display_progress_init( ofaDossierProperties *self )
 	gtk_container_add( GTK_CONTAINER( content ), grid );
 
 	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin( widget, 2, 2, 10, 10 );
+	my_utils_widget_set_margins( widget, 2, 2, 10, 10 );
 	gtk_grid_attach( GTK_GRID( grid ), widget, 0, 0, 1, 1 );
 
 	priv->bar = my_progress_bar_new();

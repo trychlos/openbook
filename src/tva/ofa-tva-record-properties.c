@@ -432,7 +432,7 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 
 		label = gtk_label_new( NULL );
 		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-		my_utils_widget_set_margin( label, 0, 0, 0, 4 );
+		my_utils_widget_set_margins( label, 0, 0, 0, 4 );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, row, 1, 1 );
 		str = g_strdup_printf( "<i>%u</i>", row );

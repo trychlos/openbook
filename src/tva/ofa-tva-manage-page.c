@@ -194,7 +194,7 @@ setup_form_treeview( ofaTVAManagePage *self )
 	priv = self->priv;
 
 	frame = gtk_frame_new( NULL );
-	my_utils_widget_set_margin( frame, 4, 4, 4, 0 );
+	my_utils_widget_set_margins( frame, 4, 4, 4, 0 );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );

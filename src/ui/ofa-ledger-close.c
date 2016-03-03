@@ -540,7 +540,7 @@ do_close( ofaLedgerClose *self )
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
 	g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
-	my_utils_widget_set_margin( button, 4, 4, 0, 8 );
+	my_utils_widget_set_margins( button, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( button, FALSE );
 
 	content = gtk_dialog_get_content_area( GTK_DIALOG( dialog ));
@@ -590,7 +590,7 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
 	bar = my_progress_bar_new();
-	my_utils_widget_set_margin( GTK_WIDGET( bar ), 2, 2, 0, 10 );
+	my_utils_widget_set_margins( GTK_WIDGET( bar ), 2, 2, 0, 10 );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, priv->count, 1, 1 );
 
 	priv->count += 1;

@@ -121,7 +121,7 @@ GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
 void          my_utils_widget_set_editable            ( GtkWidget *widget, gboolean editable );
 void          my_utils_widget_remove_style            ( GtkWidget *widget, const gchar *style );
 void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );
-void          my_utils_widget_set_margin              ( GtkWidget *widget, guint top, guint bottom, guint left, guint right );
+void          my_utils_widget_set_margins             ( GtkWidget *widget, guint top, guint bottom, guint left, guint right );
 void          my_utils_widget_set_margin_left         ( GtkWidget *widget, guint left );
 void          my_utils_widget_set_margin_right        ( GtkWidget *widget, guint right );
 void          my_utils_widget_set_xalign              ( GtkWidget *widget, gfloat xalign );

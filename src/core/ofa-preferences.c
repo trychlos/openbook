@@ -595,7 +595,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 	}
 
 	if( ok ){
-		my_utils_widget_set_margin( GTK_WIDGET( page ), 4, 4, 4, 4 );
+		my_utils_widget_set_margins( GTK_WIDGET( page ), 4, 4, 4, 4 );
 		wlabel = gtk_label_new( label );
 		g_free( label );
 		gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), GTK_WIDGET( page ), wlabel );

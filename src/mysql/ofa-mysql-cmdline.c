@@ -549,14 +549,14 @@ async_create_window( sExecuteInfos *infos, const gchar *window_title )
 	gtk_container_add( GTK_CONTAINER( content ), grid );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	my_utils_widget_set_margin( scrolled, 4, 6, 4, 4 );
+	my_utils_widget_set_margins( scrolled, 4, 6, 4, 4 );
 	gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
 	gtk_grid_attach( GTK_GRID( grid ), scrolled, 0, 0, 1, 1 );
 
 	infos->textview = gtk_text_view_new();
 	gtk_widget_set_hexpand( infos->textview, TRUE );
 	gtk_widget_set_vexpand( infos->textview, TRUE );
-	my_utils_widget_set_margin( infos->textview, 2, 2, 2, 2 );
+	my_utils_widget_set_margins( infos->textview, 2, 2, 2, 2 );
 	gtk_text_view_set_editable( GTK_TEXT_VIEW( infos->textview ), FALSE );
 	gtk_container_add( GTK_CONTAINER( scrolled ), infos->textview );
 

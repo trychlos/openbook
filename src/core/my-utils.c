@@ -1258,7 +1258,7 @@ my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
 }
 
 /**
- * my_utils_widget_set_margin:
+ * my_utils_widget_set_margins:
  * @widget:
  * @top:
  * @bottom:
@@ -1268,7 +1268,7 @@ my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
  * Set the desired margins on the given @widget.
  */
 void
-my_utils_widget_set_margin( GtkWidget *widget, guint top, guint bottom, guint left, guint right )
+my_utils_widget_set_margins( GtkWidget *widget, guint top, guint bottom, guint left, guint right )
 {
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 

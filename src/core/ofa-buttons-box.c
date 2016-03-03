@@ -138,7 +138,7 @@ setup_top_grid( ofaButtonsBox *box )
 	priv = ofa_buttons_box_get_instance_private( box );
 
 	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin( top_widget, 0, 0, 8, 8 );
+	my_utils_widget_set_margins( top_widget, 0, 0, 8, 8 );
 	gtk_container_add( GTK_CONTAINER( box ), top_widget );
 
 	grid = gtk_grid_new();
@@ -198,7 +198,7 @@ ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box, const gchar *mnemo
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	button = gtk_button_new_with_mnemonic( mnemonic );
-	my_utils_widget_set_margin( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
+	my_utils_widget_set_margins( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
 	priv->spacers = 0;
 	gtk_widget_set_sensitive( button, FALSE );
 

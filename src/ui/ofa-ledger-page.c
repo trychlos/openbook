@@ -181,7 +181,7 @@ setup_tree_view( ofaPage *page )
 	priv = OFA_LEDGER_PAGE( page )->priv;
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margin( parent, 4, 4, 4, 0 );
+	my_utils_widget_set_margins( parent, 4, 4, 4, 0 );
 
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));

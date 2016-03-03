@@ -280,7 +280,7 @@ setup_bin( ofaOpeTemplateFrameBin *bin )
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	grid = gtk_grid_new();
-	my_utils_widget_set_margin( grid, 0, 4, 4, 0 );
+	my_utils_widget_set_margins( grid, 0, 4, 4, 0 );
 	gtk_container_add( GTK_CONTAINER( bin ), grid );
 	priv->grid = GTK_GRID( grid );
 

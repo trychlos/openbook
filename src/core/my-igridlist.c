@@ -225,7 +225,7 @@ add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GUINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_widget_set_halign( button, GTK_ALIGN_END );
-	my_utils_widget_set_margin( GTK_WIDGET( button ), 0, 0, 0, right_margin );
+	my_utils_widget_set_margins( GTK_WIDGET( button ), 0, 0, 0, right_margin );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( button, "clicked", cb, user_data );
 	gtk_grid_attach( grid, button, column, row, 1, 1 );
@@ -434,7 +434,7 @@ add_empty_row( GtkGrid *grid, guint row, sIGridList *data )
 	/* add the row number */
 	label = gtk_label_new( NULL );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	my_utils_widget_set_margin( label, 0, 0, 0, 4 );
+	my_utils_widget_set_margins( label, 0, 0, 0, 4 );
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( grid, label, COL_ROW, row, 1, 1 );
 	str = g_strdup_printf( "<i>%u</i>", row );
