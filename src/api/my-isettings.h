@@ -386,6 +386,10 @@ GList    *my_isettings_get_keys                  ( const myISettings *instance,
 void      my_isettings_free_keys                 ( const myISettings *instance,
 														GList *key_list );
 
+gboolean  my_isettings_has_key                   ( const myISettings *instance,
+														const gchar *group,
+														const gchar *key );
+
 void      my_isettings_remove_key                ( myISettings *settings,
 														const gchar *group,
 														const gchar *key );

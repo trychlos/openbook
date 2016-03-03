@@ -64,6 +64,7 @@
    - myFieldCombo: migrate to G_ADD_PRIVATE (todo #994).
    - myFileMonitor: migrate to G_ADD_PRIVATE (todo #994).
    - myIDialog: new get_default_size() interface method.
+   - my_isettings_has_key(): new method.
    - myProgressBar: migrate to G_ADD_PRIVATE (todo #994).
    - mySettings: migrate to G_ADD_PRIVATE (todo #994).
    - my_utils_builder_load_from_resource(): new function.

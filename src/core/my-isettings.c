@@ -306,6 +306,41 @@ my_isettings_free_keys( const myISettings *instance, GList *key_list )
 }
 
 /**
+ * my_isettings_has_key:
+ * @instance: this #myISettings instance.
+ * @group: the group name.
+ * @key: the searched key.
+ *
+ * Returns: %TRUE if the provided @key exists in the specified @group.
+ */
+gboolean
+my_isettings_has_key( const myISettings *instance, const gchar *group, const gchar *key )
+{
+	static const gchar *thisfn = "my_isettings_has_key";
+	GList *keys, *it;
+	gboolean found;
+
+	g_debug( "%s: instance=%p, group=%s, key=%s", thisfn, ( void * ) instance, group, key );
+
+	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), FALSE );
+	g_return_val_if_fail( my_strlen( group ), FALSE );
+
+	found = FALSE;
+	keys = my_isettings_get_keys( instance, group );
+
+	for( it=keys ; it ; it=it->next ){
+		if( !my_collate( it->data, key )){
+			found = TRUE;
+			break;
+		}
+	}
+
+	my_isettings_free_keys( instance, keys );
+
+	return( found );
+}
+
+/**
  * my_isettings_remove_key:
  * @instance: this #myISettings instance.
  * @group: the name of the group.
