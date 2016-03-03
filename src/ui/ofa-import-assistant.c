@@ -102,6 +102,7 @@ struct _ofaImportAssistantPrivate {
 	 */
 	GtkWidget        *p3_furi;
 	GtkWidget        *p3_datatype;
+	gchar            *p3_settings_key;
 	ofaFileFormat    *p3_import_settings;
 	ofaFileFormatBin *p3_settings_prefs;
 	GtkWidget        *p3_message;
@@ -127,6 +128,7 @@ typedef struct {
 	guint        type_id;
 	const gchar *w_name;				/* the name of the radio button widget */
 	fn_type      get_type;
+	const gchar *import_suffix;
 }
 	sRadios;
 
@@ -142,14 +144,14 @@ enum {
 };
 
 static const sRadios st_radios[] = {
-		{ IMPORT_BAT,      "p2-releve",   NULL },
-		{ IMPORT_CLASS,    "p2-class",    ofo_class_get_type },
-		{ IMPORT_ACCOUNT,  "p2-account",  ofo_account_get_type },
-		{ IMPORT_CURRENCY, "p2-currency", ofo_currency_get_type },
-		{ IMPORT_LEDGER,   "p2-journals", ofo_ledger_get_type },
-		{ IMPORT_MODEL,    "p2-model",    ofo_ope_template_get_type },
-		{ IMPORT_RATE,     "p2-rate",     ofo_rate_get_type },
-		{ IMPORT_ENTRY,    "p2-entries",  ofo_entry_get_type },
+		{ IMPORT_BAT,      "p2-releve",   NULL,                      "Bat" },
+		{ IMPORT_CLASS,    "p2-class",    ofo_class_get_type,        "Class" },
+		{ IMPORT_ACCOUNT,  "p2-account",  ofo_account_get_type,      "Account" },
+		{ IMPORT_CURRENCY, "p2-currency", ofo_currency_get_type,     "Currency" },
+		{ IMPORT_LEDGER,   "p2-journals", ofo_ledger_get_type,       "Ledger" },
+		{ IMPORT_MODEL,    "p2-model",    ofo_ope_template_get_type, "Model" },
+		{ IMPORT_RATE,     "p2-rate",     ofo_rate_get_type,         "Rate" },
+		{ IMPORT_ENTRY,    "p2-entries",  ofo_entry_get_type,        "Entry" },
 		{ 0 }
 };
 
@@ -244,6 +246,7 @@ import_assistant_finalize( GObject *instance )
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
 	g_free( priv->p2_datatype );
+	g_free( priv->p3_settings_key );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_import_assistant_parent_class )->finalize( instance );
@@ -538,6 +541,7 @@ p2_on_type_toggled( GtkToggleButton *button, ofaImportAssistant *self )
 		priv->p2_type = st_radios[priv->p2_idx].type_id;
 		priv->p2_type_btn = GTK_BUTTON( button );
 		priv->p2_datatype = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( button )));
+
 	} else {
 		priv->p2_idx = -1;
 		priv->p2_type = 0;
@@ -607,15 +611,13 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-settings-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->p3_import_settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-	priv->p3_settings_prefs = ofa_file_format_bin_new( priv->p3_import_settings );
+	priv->p3_settings_prefs = ofa_file_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_settings_prefs ));
 	my_utils_size_group_add_size_group(
 			hgroup, ofa_file_format_bin_get_size_group( priv->p3_settings_prefs, 0 ));
 
 	g_signal_connect(
-			G_OBJECT( priv->p3_settings_prefs ),
-			"ofa-changed", G_CALLBACK( p3_on_settings_changed ), self );
+			priv->p3_settings_prefs, "ofa-changed", G_CALLBACK( p3_on_settings_changed ), self );
 
 	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
 	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
@@ -629,6 +631,9 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p3_do_init";
 	ofaImportAssistantPrivate *priv;
+	gchar *candidate_key;
+	const gchar *found_key;
+	myISettings *instance;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -637,6 +642,27 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p2_datatype );
+
+	g_clear_object( &priv->p3_import_settings );
+
+	candidate_key =  g_strdup_printf( "%s-%s", SETTINGS_IMPORT_SETTINGS, st_radios[priv->p2_idx].import_suffix );
+	instance = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+
+	if( my_isettings_has_key( instance, SETTINGS_GROUP_GENERAL, candidate_key )){
+		found_key = candidate_key;
+	} else {
+		g_debug( "%s: candidate_key=%s not found", thisfn, candidate_key );
+		found_key = SETTINGS_IMPORT_SETTINGS;
+	}
+	priv->p3_settings_key = g_strdup( candidate_key );
+
+	g_clear_object( &priv->p3_import_settings );
+	priv->p3_import_settings = ofa_file_format_new( found_key );
+	ofa_file_format_change_prefs_name( priv->p3_import_settings, priv->p3_settings_key );
+	ofa_file_format_bin_change_format( priv->p3_settings_prefs, priv->p3_import_settings );
+
+	g_free( candidate_key );
 
 	p3_check_for_complete( self );
 }
@@ -737,6 +763,13 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
 		str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p3_import_settings ));
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-strdelim" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		my_utils_widget_set_style( label, "labelinfo" );
+		str = g_strdup_printf( "%c", ofa_file_format_get_string_delim( priv->p3_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 

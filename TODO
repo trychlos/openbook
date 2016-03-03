@@ -508,9 +508,6 @@
                      ending solde, the reconciliation summary should display
                      a bottom note with "solde OK with bank"
 
-1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
-                     input data type
-
 1006 2016- 2-25 BUG  import Boursorama-20150630.pdf: the last line 'AVOIR...'
                      is not rightly imported
                      idem: Boursorama-20150731.pdf line 'AVOIR...'
@@ -847,6 +844,10 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
+                     input data type
+     2016- 3- 3 done
 
 1008 2016- 2-25 FEAT ViewEntries: add operation template in the columns list
      2016- 3- 3 done

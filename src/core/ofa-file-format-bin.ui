@@ -181,16 +181,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="ffb-label1x1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkLabel" id="ffb-count-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -207,6 +197,9 @@
                   <object class="GtkSpinButton" id="p3-count">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="halign">start</property>
+                    <property name="width_chars">4</property>
+                    <property name="max_width_chars">4</property>
                     <property name="text" translatable="yes">0</property>
                     <property name="climb_rate">1</property>
                     <property name="snap_to_ticks">True</property>
@@ -234,6 +227,7 @@
                   <object class="GtkEntry" id="p3-string-delimiter">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="halign">start</property>
                     <property name="max_length">1</property>
                     <property name="width_chars">2</property>
                     <property name="max_width_chars">2</property>
@@ -242,6 +236,18 @@
                     <property name="left_attach">1</property>
                     <property name="top_attach">0</property>
                   </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
               </object>
             </child>
@@ -319,13 +325,13 @@
   </object>
   <object class="GtkSizeGroup" id="ffb-col0-hsize">
     <widgets>
-      <widget name="ffb-format-label"/>
-      <widget name="ffb-encoding-label"/>
       <widget name="ffb-date-label"/>
       <widget name="ffb-decimal-label"/>
+      <widget name="ffb-encoding-label"/>
       <widget name="p5-field-label"/>
-      <widget name="ffb-label1x1"/>
       <widget name="ffb-count-label"/>
+      <widget name="p3-string-label"/>
+      <widget name="ffb-format-label"/>
     </widgets>
   </object>
   <object class="GtkSizeGroup" id="ffb-col1-hsize">
