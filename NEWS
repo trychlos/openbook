@@ -34,6 +34,7 @@
    - ofaFileFormat: now haves a string delimiter configuration option (todo #1028).
    - ofaGuidedInputBin: account selection icon is set inside of the entry.
    - ofaIPrintable: have an information message after successful printing (todo #1015).
+   - ofaLedgerClose: make the dialog non-modal (todo #992).
    - ofaPreferences: make the dialog non-modal (todo #992).
    - ofaReconciliation: ask for user confirmation when amounts are not balanced (todo #1019).
    - ofaReconciliation: have a grey/green/yellow light for selected balance (todo #1021).
@@ -47,6 +48,7 @@
    - ofaImportAssistant: restore the progress bars (todo #1020).
    - ofaIRenderable: have a vertical space before columns header even if no subtitle (todo #1033).
    - ofaIRenderable: fix the vertical position of the rubber (todo #1022).
+   - ofaLedgerClose: review 'Close' button margins (todo #1009).
    - ofaNomodalPage: setup initial default size and position (todo #997).
    - ofaReconcilPage: fix reconciliation date on new entries (todo #1017).
    - ofoAccount: import close indicator.
@@ -92,6 +94,8 @@
    - ofa_idate_filter_setup_bin(): use a GResource path.
    - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofoLedgerBookRender: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoLedgerClose: migrate to G_ADD_PRIVATE (todo #994).
+   - ofoLedgerClose: migrate to GResource (todo #826).
    - ofoLedgerSummaryRender: add date selection as a subtitle (todo #1032).
    - ofoLedgerSummaryRender: migrate to G_ADD_PRIVATE (todo #994).
    - ofaMysqlConnect: migrate to G_ADD_PRIVATE (todo #994).

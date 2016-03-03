@@ -270,7 +270,6 @@ ui_files = \
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
 	ofa-import-assistant.ui								\
-	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ledger-book-bin.ui								\
 	ofa-ledger-summary-bin.ui							\
@@ -289,6 +288,7 @@ resources_ui = \
 	ofa-entry-page.ui									\
 	ofa-guided-input.ui									\
 	ofa-guided-input-bin.ui								\
+	ofa-ledger-close.ui									\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-reconcil-page.ui								\

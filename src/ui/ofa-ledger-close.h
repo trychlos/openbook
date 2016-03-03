@@ -38,7 +38,6 @@
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-ledger-def.h"
 
@@ -55,22 +54,19 @@ typedef struct _ofaLedgerClosePrivate        ofaLedgerClosePrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog               parent;
-
-	/*< private members >*/
-	ofaLedgerClosePrivate *priv;
+	GtkDialog      parent;
 }
 	ofaLedgerClose;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass          parent;
+	GtkDialogClass parent;
 }
 	ofaLedgerCloseClass;
 
 GType    ofa_ledger_close_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_ledger_close_run     ( ofaMainWindow *parent );
+void     ofa_ledger_close_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 
