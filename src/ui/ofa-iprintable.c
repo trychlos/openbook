@@ -319,13 +319,14 @@ do_print( ofaIPrintable *instance, sIPrintable *sdata )
 	            &error );
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
-		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
+		str = g_strdup_printf( _( "Error while printing the document:\n%s" ), error->message );
 		my_utils_dialog_warning( str );
 		g_free( str );
 		g_error_free( error );
 
 	} else {
 		printed = TRUE;
+		my_utils_dialog_info( _( "The document has been successfully printed" ));
 		save_settings( instance, sdata );
 	}
 

@@ -542,6 +542,25 @@ my_utils_builder_load_from_resource( const gchar *resource, const gchar *widget_
 }
 
 /**
+ * my_utils_dialog_info:
+ */
+void
+my_utils_dialog_info( const gchar *msg )
+{
+	GtkWidget *dialog;
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_INFO,
+			GTK_BUTTONS_OK,
+			"%s", msg );
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
+}
+
+/**
  * my_utils_dialog_warning:
  */
 void

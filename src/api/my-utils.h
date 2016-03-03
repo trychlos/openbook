@@ -73,6 +73,7 @@ gchar        *my_utils_str_replace                    ( const gchar *string, con
 GtkWidget    *my_utils_builder_load_from_path         ( const gchar *path_xml, const gchar *widget_name );
 GtkWidget    *my_utils_builder_load_from_resource     ( const gchar *resource, const gchar *widget_name );
 
+void          my_utils_dialog_info                    ( const gchar *msg );
 void          my_utils_dialog_warning                 ( const gchar *msg );
 gboolean      my_utils_dialog_question                ( const gchar *msg, const gchar *ok_text );
 

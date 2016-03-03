@@ -538,9 +538,6 @@
 
 1014 2016- 2-26 FEAT ViewEntries: filter per operation template
 
-1015 2016- 2-26 FEAT RenderPage: after printing, should have a dialog box
-                     'successfully printed on xxx'
-
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
@@ -551,9 +548,6 @@
 
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
-
-1033 2016- 3- 3 BUG  RenderPage: vertical space missing if there is no subtitle
-     2016- 3- 3 fixed
 
 1034
 
@@ -867,6 +861,10 @@
                     opened before
      2016- 2-24 fixed
 
+1015 2016- 2-26 FEAT RenderPage: after printing, should have a dialog box
+                     'successfully printed on xxx'
+     2016- 3- 3 done
+
 1016 2016- 2-26 BUG  ViewEntries: footer solde amounts may be displayed as
                      blue even if debit != credit 
      2016- 3- 3 fixed
@@ -919,6 +917,9 @@
      2016- 3- 3 cancelled as inherent to GtkAssistant behavior
 
 1032 2016- 3- 3 BUG  LedgerSummary: does not display the date selection in the title
+     2016- 3- 3 fixed
+
+1033 2016- 3- 3 BUG  RenderPage: vertical space missing if there is no subtitle
      2016- 3- 3 fixed
 
 -----------------------------------------------------------------------

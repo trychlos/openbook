@@ -30,6 +30,7 @@
    - ofaDossierManager: gives a title to the dialog.
    - ofaDossierOpen: gives a title to the dialog.
    - ofaDossierOpen: shows all dossier, even if only archived.
+   - ofaIPrintable: have an information message after successful printing (todo #1015).
    - ofaPreferences: make the dialog non-modal (todo #992).
    - ofaReconciliation: ask for user confirmation when amounts are not balanced (todo #1019).
    - ofaReconciliation: have a grey/green/yellow light for selected balance (todo #1021).
@@ -59,6 +60,7 @@
    - mySettings: migrate to G_ADD_PRIVATE (todo #994).
    - my_utils_builder_load_from_resource(): new function.
    - my_utils_container_attach_from_resource(): new function.
+   - my_utils_dialog_info(): new function.
    - my_utils_quote() is renamed to my_utils_quote_single().
    - my_utils_quote_regexp(): new function.
    - my_utils_unquote_regexp(): new function.
