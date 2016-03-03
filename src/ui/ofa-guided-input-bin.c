@@ -119,7 +119,6 @@ enum {
 	TYPE_NONE = 0,
 	TYPE_ENTRY,
 	TYPE_LABEL,
-	TYPE_BUTTON,
 	TYPE_IMAGE
 };
 
@@ -147,12 +146,6 @@ static sColumnDef st_col_defs[] = {
 				ofo_ope_template_get_detail_account,
 				ofo_ope_template_get_detail_account_locked,
 				ACCOUNT_WIDTH, FALSE, 0, FALSE, NULL
-		},
-		{ OPE_COL_ACCOUNT_SELECT,
-				TYPE_BUTTON,
-				NULL,
-				NULL,
-				0, FALSE, 0, FALSE, "gtk-index"
 		},
 		{ OPE_COL_LABEL,
 				TYPE_ENTRY,
@@ -225,7 +218,6 @@ static void              add_entry_row( ofaGuidedInputBin *bin, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row );
 static GtkWidget        *row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
-static GtkWidget        *row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_image( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
 static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *bin );
@@ -235,7 +227,7 @@ static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event,
 static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
 static void              on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *bin );
 static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin );
-static void              on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin );
+static void              on_account_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaGuidedInputBin *bin );
 static void              on_account_selection( ofaGuidedInputBin *bin, gint row );
 static void              do_account_selection( ofaGuidedInputBin *bin, GtkEntry *entry, gint row );
 static void              check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row );
@@ -624,7 +616,6 @@ add_entry_row( ofaGuidedInputBin *bin, gint row )
 
 	/* other columns starting with OPE_COL_ACCOUNT=1 */
 	add_entry_row_widget( bin, OPE_COL_ACCOUNT, row );
-	add_entry_row_widget( bin, OPE_COL_ACCOUNT_SELECT, row );
 	add_entry_row_widget( bin, OPE_COL_LABEL, row );
 	add_entry_row_widget( bin, OPE_COL_DEBIT, row );
 	add_entry_row_widget( bin, OPE_COL_CREDIT, row );
@@ -657,10 +648,6 @@ add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 
 		case TYPE_LABEL:
 			widget = row_widget_label( bin, col_def, row );
-			break;
-
-		case TYPE_BUTTON:
-			widget = row_widget_button( bin, col_def, row );
 			break;
 
 		case TYPE_IMAGE:
@@ -726,14 +713,15 @@ row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_entry_finalized, sdata );
 
 		if( !locked ){
-			g_signal_connect(
-					G_OBJECT( widget ), "changed", G_CALLBACK( on_entry_changed ), bin );
-			g_signal_connect(
-					G_OBJECT( widget ), "focus-in-event", G_CALLBACK( on_entry_focus_in ), bin );
-			g_signal_connect(
-					G_OBJECT( widget ), "focus-out-event", G_CALLBACK( on_entry_focus_out ), bin );
-			g_signal_connect(
-					G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_key_pressed ), bin );
+			g_signal_connect( widget, "changed", G_CALLBACK( on_entry_changed ), bin );
+			g_signal_connect( widget, "focus-in-event", G_CALLBACK( on_entry_focus_in ), bin );
+			g_signal_connect( widget, "focus-out-event", G_CALLBACK( on_entry_focus_out ), bin );
+			g_signal_connect( widget, "key-press-event", G_CALLBACK( on_key_pressed ), bin );
+		}
+
+		if( col_def->column_id == OPE_COL_ACCOUNT && !locked ){
+			gtk_entry_set_icon_from_icon_name( GTK_ENTRY( widget ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
+			g_signal_connect( widget, "icon-press", G_CALLBACK( on_account_icon_pressed ), bin );
 		}
 	}
 
@@ -752,21 +740,6 @@ row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 	}
 
 	return( widget );
-}
-
-static GtkWidget *
-row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
-{
-	GtkWidget *button;
-
-	button = gtk_button_new_from_icon_name( col_def->stock_id, GTK_ICON_SIZE_MENU );
-	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( col_def->column_id ));
-	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-
-	g_signal_connect(
-			G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), bin );
-
-	return( button );
 }
 
 static GtkWidget *
@@ -957,19 +930,20 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin )
 }
 
 /*
- * click on a button in an entry row
+ * click on an icon in the account entry
  */
 static void
-on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin )
+on_account_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	gint column, row;
+	sEntryData *sdata;
 
-	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
-	switch( column ){
-		case OPE_COL_ACCOUNT_SELECT:
-			on_account_selection( bin, row );
+	switch( icon_pos ){
+		case GTK_ENTRY_ICON_SECONDARY:
+			on_account_selection( bin, sdata->row_id );
+			break;
+		default:
 			break;
 	}
 }

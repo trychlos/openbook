@@ -526,9 +526,6 @@
 
 1010 2016- 2-25 FEAT Ope: formula interpretation should be recursive
 
-1011 2016- 2-25 BUG  GuidedInput: do not install the account index button
-                     when account is locked
-
 1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
                      the indexes should updated accordingly
 
@@ -852,6 +849,10 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1011 2016- 2-25 BUG  GuidedInput: do not install the account index button
+                     when account is locked
+     2016- 3- 3 fixed
 
 1013 2016- 2-26 FEAT GuidedInput: move the account label on top of the
                      bottom frame, keeping the bottom of the bottom frame
