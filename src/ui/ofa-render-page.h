@@ -58,16 +58,13 @@ typedef struct _ofaRenderPagePrivate        ofaRenderPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage               parent;
-
-	/*< private members >*/
-	ofaRenderPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaRenderPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass          parent;
+	ofaPageClass parent;
 
 	/*< virtual protected methods >*/
 	/**

@@ -94,8 +94,11 @@
    - ofaMysqlPrefsBin: migrate to GResource (todo #826).
    - ofaPage: migrate to G_ADD_PRIVATE (todo #994).
    - ofaPlugin: migrate to G_ADD_PRIVATE (todo #994).
-   - ofaPReferences: move user interface to GResource (todo #826).
+   - ofaPreferences: move user interface to GResource (todo #826).
    - ofaPreferences: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaRenderPage: migrate to G_ADD_PRIVATE (todo #994).
+   - ofaRenderPage: migrate to GResource (todo #826).
+   - ofaRenderPage: return if dispose_has_run fails (todo #995).
    - ofoAccount: migrate to G_ADD_PRIVATE (todo #994).
    - ofoAccount: return if dispose_has_run fails (todo #995).
    - ofoBase: migrate to G_ADD_PRIVATE (todo #994).

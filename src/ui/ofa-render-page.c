@@ -78,16 +78,9 @@ struct _ofaRenderPagePrivate {
 #define MSG_ERROR                       "labelerror"	/* red */
 #define MSG_INFO                        "labelinfo"		/* blue */
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-render-page.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
 
-static ofaPageClass *ofa_render_page_parent_class = NULL;
-
-static GType              register_type( void );
-static void               render_page_finalize( GObject *instance );
-static void               render_page_dispose( GObject *instance );
-static void               render_page_instance_init( ofaRenderPage *self );
-static void               render_page_class_init( ofaRenderPageClass *klass );
 static GtkWidget         *v_setup_view( ofaPage *page );
 static void               setup_args_area( ofaRenderPage *page, GtkContainer *parent );
 static void               setup_actions_area( ofaRenderPage *page, GtkContainer *parent );
@@ -113,50 +106,9 @@ static void               iprintable_begin_print( ofaIPrintable *instance, GtkPr
 static void               iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static void               iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 
-GType
-ofa_render_page_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_render_page_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaRenderPageClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) render_page_class_init,
-		NULL,
-		NULL,
-		sizeof( ofaRenderPage ),
-		0,
-		( GInstanceInitFunc ) render_page_instance_init
-	};
-
-	static const GInterfaceInfo iprintable_iface_info = {
-		( GInterfaceInitFunc ) iprintable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_PAGE, "ofaRenderPage", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IPRINTABLE, &iprintable_iface_info );
-
-	return( type );
-}
+G_DEFINE_TYPE_EXTENDED( ofaRenderPage, ofa_render_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaRenderPage )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPRINTABLE, iprintable_iface_init ))
 
 static void
 render_page_finalize( GObject *instance )
@@ -184,7 +136,7 @@ render_page_dispose( GObject *instance )
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_RENDER_PAGE( instance )->priv;
+		priv = ofa_render_page_get_instance_private( OFA_RENDER_PAGE( instance ));
 
 		pdf_crs_free( &priv->pdf_crs );
 	}
@@ -194,20 +146,18 @@ render_page_dispose( GObject *instance )
 }
 
 static void
-render_page_instance_init( ofaRenderPage *self )
+ofa_render_page_init( ofaRenderPage *self )
 {
-	static const gchar *thisfn = "ofa_render_page_instance_init";
+	static const gchar *thisfn = "ofa_render_page_init";
 
 	g_return_if_fail( OFA_IS_RENDER_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RENDER_PAGE, ofaRenderPagePrivate );
 }
 
 static void
-render_page_class_init( ofaRenderPageClass *klass )
+ofa_render_page_class_init( ofaRenderPageClass *klass )
 {
 	static const gchar *thisfn = "ofa_render_page_class_init";
 
@@ -219,8 +169,6 @@ render_page_class_init( ofaRenderPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = render_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-
-	g_type_class_add_private( klass, sizeof( ofaRenderPagePrivate ));
 }
 
 static GtkWidget *
@@ -232,7 +180,7 @@ v_setup_view( ofaPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	widget = my_utils_container_attach_from_ui( GTK_CONTAINER( page_widget ), st_ui_xml, st_ui_name, "top" );
+	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
 	g_return_val_if_fail( widget && GTK_IS_CONTAINER( widget ), NULL );
 
 	setup_args_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
@@ -265,7 +213,7 @@ setup_actions_area( ofaRenderPage *page, GtkContainer *parent )
 	ofaRenderPagePrivate *priv;
 	GtkWidget *button;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	button = my_utils_container_get_child_by_name( parent, "render-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -286,7 +234,7 @@ setup_drawing_area( ofaRenderPage *page, GtkContainer *parent )
 	ofaRenderPagePrivate *priv;
 	GtkWidget *drawing, *label;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	drawing = my_utils_container_get_child_by_name( parent, "drawing-zone" );
 	g_return_if_fail( drawing && GTK_IS_DRAWING_AREA( drawing ));
@@ -308,7 +256,7 @@ setup_page_size( ofaRenderPage *page )
 	GtkPageOrientation orientation;
 	GtkPageSetup *page_setup;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	paper_name = OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name ?
 			OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name( OFA_RENDER_PAGE( page )) :
@@ -351,20 +299,18 @@ ofa_render_page_clear_drawing_area( ofaRenderPage *page )
 	cairo_t *cr;
 
 	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+	priv = ofa_render_page_get_instance_private( page );
 
-		priv = page->priv;
+	/* free data */
+	ofa_render_page_free_dataset( page );
+	pdf_crs_free( &priv->pdf_crs );
 
-		/* free data */
-		ofa_render_page_free_dataset( page );
-		pdf_crs_free( &priv->pdf_crs );
-
-		/* reset the drawing area */
-		cr = create_context( page, priv->render_width, priv->render_height );
-		draw_widget_background( cr, priv->drawing_area );
-		cairo_destroy( cr );
-	}
+	/* reset the drawing area */
+	cr = create_context( page, priv->render_width, priv->render_height );
+	draw_widget_background( cr, priv->drawing_area );
+	cairo_destroy( cr );
 }
 
 /**
@@ -388,17 +334,15 @@ ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const 
 			is_valid ? "True":"False", message );
 
 	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+	priv = ofa_render_page_get_instance_private( page );
 
-		priv = page->priv;
+	gtk_widget_set_sensitive( priv->render_btn, is_valid );
+	gtk_widget_set_sensitive( priv->print_btn, is_valid );
+	set_message( page, is_valid ? "" : message, MSG_ERROR );
 
-		gtk_widget_set_sensitive( priv->render_btn, is_valid );
-		gtk_widget_set_sensitive( priv->print_btn, is_valid );
-		set_message( page, is_valid ? "" : message, MSG_ERROR );
-
-		ofa_render_page_clear_drawing_area( page );
-	}
+	ofa_render_page_clear_drawing_area( page );
 }
 
 static GList *
@@ -425,14 +369,12 @@ ofa_render_page_free_dataset( ofaRenderPage *page )
 	ofaRenderPagePrivate *priv;
 
 	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	if( !OFA_PAGE( page )->prot->dispose_has_run ){
-
-		if( OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset ){
-			priv = page->priv;
-			OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset( page, priv->dataset );
-			priv->dataset = NULL;
-		}
+	if( OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset ){
+		priv = ofa_render_page_get_instance_private( page );
+		OFA_RENDER_PAGE_GET_CLASS( page )->free_dataset( page, priv->dataset );
+		priv->dataset = NULL;
 	}
 }
 
@@ -451,7 +393,8 @@ on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page )
 	gint widget_width, req_width, req_height, nb_pages;
 	gdouble x;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
+
 	draw_widget_background( cr, area );
 
 	widget_width = gtk_widget_get_allocated_width( area );
@@ -511,7 +454,8 @@ do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x )
 	cairo_t *pdf_cr;
 	gdouble y, dx, dy;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
+
 	y = PAGE_EXT_MARGIN_V_HEIGHT;
 	dx = shift_x+(priv->paper_width-priv->render_width)/2.0;
 
@@ -535,7 +479,8 @@ draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y )
 {
 	ofaRenderPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
+
 	cairo_set_source_rgb( cr, COLOR_WHITE );
 	cairo_rectangle( cr, x, y, priv->paper_width, priv->paper_height );
 	cairo_fill( cr );
@@ -546,7 +491,8 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
+
 	render_pdf( page );
 	gtk_widget_queue_draw( priv->drawing_area );
 }
@@ -559,7 +505,7 @@ render_pdf( ofaRenderPage *page )
 	cairo_t *cr, *page_cr;
 	gint pages_count, i;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	if( !priv->dataset ){
 		priv->dataset = get_dataset( page );
@@ -589,7 +535,7 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	if( !priv->dataset ){
 		render_pdf( page );
@@ -616,7 +562,7 @@ set_message( ofaRenderPage *page, const gchar *message, const gchar *spec )
 {
 	ofaRenderPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_render_page_get_instance_private( page );
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
 	my_utils_widget_set_style( priv->msg_label, spec );
@@ -696,7 +642,7 @@ iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, G
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 
-	priv = OFA_RENDER_PAGE( instance )->priv;
+	priv = ofa_render_page_get_instance_private( OFA_RENDER_PAGE( instance ));
 
 	pages_count = ofa_irenderable_begin_render(
 			OFA_IRENDERABLE( instance ),
