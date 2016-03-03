@@ -49,16 +49,13 @@ typedef struct _ofaAccountBookRenderPrivate         ofaAccountBookRenderPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPage                parent;
-
-	/*< private members >*/
-	ofaAccountBookRenderPrivate *priv;
+	ofaRenderPage      parent;
 }
 	ofaAccountBookRender;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPageClass           parent;
+	ofaRenderPageClass parent;
 }
 	ofaAccountBookRenderClass;
 

@@ -145,13 +145,6 @@ static const gint st_body_font_size      = 9;
 #define st_sens_width                    (gdouble) 18/9*st_body_font_size
 #define st_column_hspacing               (gdouble) 4
 
-static ofaRenderPageClass *ofa_account_book_render_parent_class = NULL;
-
-static GType              register_type( void );
-static void               accounts_book_render_finalize( GObject *instance );
-static void               accounts_book_render_dispose( GObject *instance );
-static void               accounts_book_render_instance_init( ofaAccountBookRender *self );
-static void               accounts_book_render_class_init( ofaAccountBookRenderClass *klass );
 static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
@@ -181,53 +174,12 @@ static void               irenderable_draw_group_bottom_report( ofaIRenderable *
 static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 
-GType
-ofa_account_book_render_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_account_book_render_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaAccountBookRenderClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) accounts_book_render_class_init,
-		NULL,
-		NULL,
-		sizeof( ofaAccountBookRender ),
-		0,
-		( GInstanceInitFunc ) accounts_book_render_instance_init
-	};
-
-	static const GInterfaceInfo irenderable_iface_info = {
-		( GInterfaceInitFunc ) irenderable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_RENDER_PAGE, "ofaAccountBookRender", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IRENDERABLE, &irenderable_iface_info );
-
-	return( type );
-}
+G_DEFINE_TYPE_EXTENDED( ofaAccountBookRender, ofa_account_book_render, OFA_TYPE_RENDER_PAGE, 0,
+		G_ADD_PRIVATE( ofaAccountBookRender )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IRENDERABLE, irenderable_iface_init ))
 
 static void
-accounts_book_render_finalize( GObject *instance )
+account_book_render_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_account_book_render_finalize";
 	ofaAccountBookRenderPrivate *priv;
@@ -238,7 +190,7 @@ accounts_book_render_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_BOOK_RENDER( instance ));
 
 	/* free data members here */
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -248,7 +200,7 @@ accounts_book_render_finalize( GObject *instance )
 }
 
 static void
-accounts_book_render_dispose( GObject *instance )
+account_book_render_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_BOOK_RENDER( instance ));
 
@@ -262,29 +214,25 @@ accounts_book_render_dispose( GObject *instance )
 }
 
 static void
-accounts_book_render_instance_init( ofaAccountBookRender *self )
+ofa_account_book_render_init( ofaAccountBookRender *self )
 {
-	static const gchar *thisfn = "ofa_account_book_render_instance_init";
+	static const gchar *thisfn = "ofa_account_book_render_init";
 
 	g_return_if_fail( OFA_IS_ACCOUNT_BOOK_RENDER( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_BOOK_RENDER, ofaAccountBookRenderPrivate );
 }
 
 static void
-accounts_book_render_class_init( ofaAccountBookRenderClass *klass )
+ofa_account_book_render_class_init( ofaAccountBookRenderClass *klass )
 {
 	static const gchar *thisfn = "ofa_account_book_render_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofa_account_book_render_parent_class = g_type_class_peek_parent( klass );
-
-	G_OBJECT_CLASS( klass )->dispose = accounts_book_render_dispose;
-	G_OBJECT_CLASS( klass )->finalize = accounts_book_render_finalize;
+	G_OBJECT_CLASS( klass )->dispose = account_book_render_dispose;
+	G_OBJECT_CLASS( klass )->finalize = account_book_render_finalize;
 
 	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
@@ -295,8 +243,6 @@ accounts_book_render_class_init( ofaAccountBookRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountBookRenderPrivate ));
 }
 
 static void
@@ -309,7 +255,8 @@ page_init_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
+
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
@@ -328,7 +275,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 	ofaAccountBookRenderPrivate *priv;
 	ofaAccountBookBin *bin;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
 
 	bin = ofa_account_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
@@ -381,7 +328,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( page )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -448,7 +395,7 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	ofs_currency_list_free( &priv->totals );
 
@@ -467,7 +414,8 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
+
 	priv->new_page = ofa_account_book_bin_get_new_page_per_account( priv->args_bin );
 
 	return( priv->new_page );
@@ -482,7 +430,7 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	static const gchar *thisfn = "ofa_account_book_render_irenderable_begin_render";
 	ofaAccountBookRenderPrivate *priv;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
 			thisfn, ( void * ) instance, render_width, render_height );
@@ -527,7 +475,8 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
+
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
@@ -552,7 +501,7 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	gchar *sfrom_date, *sto_date;
 	GString *stitle;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	/* recall of account and date selections in line 4 */
 	stitle = g_string_new( "" );
@@ -599,7 +548,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	static gdouble st_vspace_rate = 0.5;
 	gdouble y, text_height, vspace;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	text_height = ofa_irenderable_get_text_height( instance );
@@ -682,7 +631,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	gdouble y, height;
 	ofoCurrency *currency;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
@@ -742,7 +691,7 @@ draw_account_report( ofaAccountBookRender *self, gboolean with_solde )
 	gchar *str;
 	gdouble y, height;
 
-	priv = self->priv;
+	priv = ofa_account_book_render_get_instance_private( self );
 
 	y = ofa_irenderable_get_last_y( OFA_IRENDERABLE( self ));
 	height = ofa_irenderable_get_text_height( OFA_IRENDERABLE( self ));
@@ -786,7 +735,7 @@ draw_account_solde_debit_credit( ofaAccountBookRender *self, gdouble y )
 	ofxAmount amount;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_account_book_render_get_instance_private( self );
 
 	/* current account balance
 	 * if current balance is zero, then also print it */
@@ -825,7 +774,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofxAmount amount;
 	ofoConcil *concil;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
@@ -921,7 +870,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	gdouble y, height;
 	gboolean is_paginating;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	height = 0;
@@ -979,7 +928,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	ofoCurrency *currency;
 	gint digits;
 
-	priv = OFA_ACCOUNT_BOOK_RENDER( instance )->priv;
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 	if( !priv->count ){
 		ofa_irenderable_draw_no_data( instance );
