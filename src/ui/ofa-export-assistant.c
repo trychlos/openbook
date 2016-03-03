@@ -81,6 +81,7 @@ struct _ofaExportAssistantPrivate {
 	ofaFileFormatBin *p2_settings_prefs;
 	GtkWidget        *p2_message;
 	gchar            *p2_format;
+	gchar            *p2_settings_key;
 
 	/* p3: output file
 	 */
@@ -144,18 +145,19 @@ typedef struct {
 	const gchar *widget_name;
 	const gchar *base_name;
 	fn_type      get_type;
+	const gchar *export_suffix;
 }
 	sTypes;
 
 static sTypes st_types[] = {
-		{ DATA_ACCOUNT,  "p1-account",  N_( "ofaAccounts.csv" ),     ofo_account_get_type },
-		{ DATA_CLASS,    "p1-class",    N_( "ofaClasses.csv" ),      ofo_class_get_type },
-		{ DATA_CURRENCY, "p1-currency", N_( "ofaCurrencies.csv" ),   ofo_currency_get_type },
-		{ DATA_ENTRY,    "p1-entries",  N_( "ofaEntries.csv" ),      ofo_entry_get_type },
-		{ DATA_LEDGER,   "p1-ledger",   N_( "ofaLedgers.csv" ),      ofo_ledger_get_type },
-		{ DATA_MODEL,    "p1-model",    N_( "ofaOpeTemplates.csv" ), ofo_ope_template_get_type },
-		{ DATA_RATE,     "p1-rate",     N_( "ofaRates.csv" ),        ofo_rate_get_type },
-		{ DATA_DOSSIER,  "p1-dossier",  N_( "ofaDossier.csv" ),      ofo_dossier_get_type },
+		{ DATA_ACCOUNT,  "p1-account",  N_( "ofaAccounts.csv" ),     ofo_account_get_type,      "Account" },
+		{ DATA_CLASS,    "p1-class",    N_( "ofaClasses.csv" ),      ofo_class_get_type,        "Class" },
+		{ DATA_CURRENCY, "p1-currency", N_( "ofaCurrencies.csv" ),   ofo_currency_get_type,     "Currency" },
+		{ DATA_ENTRY,    "p1-entries",  N_( "ofaEntries.csv" ),      ofo_entry_get_type,        "Entry" },
+		{ DATA_LEDGER,   "p1-ledger",   N_( "ofaLedgers.csv" ),      ofo_ledger_get_type,       "Ledger" },
+		{ DATA_MODEL,    "p1-model",    N_( "ofaOpeTemplates.csv" ), ofo_ope_template_get_type, "Model" },
+		{ DATA_RATE,     "p1-rate",     N_( "ofaRates.csv" ),        ofo_rate_get_type,         "Rate" },
+		{ DATA_DOSSIER,  "p1-dossier",  N_( "ofaDossier.csv" ),      ofo_dossier_get_type,      "Dossier" },
 		{ 0 }
 };
 
@@ -240,6 +242,7 @@ export_finalize( GObject *instance )
 
 	g_free( priv->p1_datatype );
 	g_free( priv->p2_format );
+	g_free( priv->p2_settings_key );
 	g_free( priv->p3_last_folder );
 	g_free( priv->p3_furi );
 
@@ -500,8 +503,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-settings-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_export_settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
-	priv->p2_settings_prefs = ofa_file_format_bin_new( priv->p2_export_settings );
+	priv->p2_settings_prefs = ofa_file_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
 
 	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
@@ -531,6 +533,9 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_display";
 	ofaExportAssistantPrivate *priv;
+	gchar *candidate_key;
+	const gchar *found_key;
+	myISettings *instance;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -538,6 +543,25 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_datatype ), priv->p1_datatype );
+
+	candidate_key =  g_strdup_printf( "%s-%s", SETTINGS_EXPORT_SETTINGS, st_types[priv->p1_idx].export_suffix );
+	instance = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+
+	if( my_isettings_has_key( instance, SETTINGS_GROUP_GENERAL, candidate_key )){
+		found_key = candidate_key;
+	} else {
+		g_debug( "%s: candidate_key=%s not found", thisfn, candidate_key );
+		found_key = SETTINGS_EXPORT_SETTINGS;
+	}
+	priv->p2_settings_key = g_strdup( candidate_key );
+
+	g_clear_object( &priv->p2_export_settings );
+	priv->p2_export_settings = ofa_file_format_new( found_key );
+	ofa_file_format_change_prefs_name( priv->p2_export_settings, priv->p2_settings_key );
+	ofa_file_format_bin_change_format( priv->p2_settings_prefs, priv->p2_export_settings );
+
+	g_free( candidate_key );
 
 	p2_check_for_complete( self );
 }

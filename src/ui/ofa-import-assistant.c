@@ -643,8 +643,6 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p2_datatype );
 
-	g_clear_object( &priv->p3_import_settings );
-
 	candidate_key =  g_strdup_printf( "%s-%s", SETTINGS_IMPORT_SETTINGS, st_radios[priv->p2_idx].import_suffix );
 	instance = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
