@@ -30,6 +30,7 @@
    - ofaDossierManager: gives a title to the dialog.
    - ofaDossierOpen: gives a title to the dialog.
    - ofaDossierOpen: shows all dossier, even if only archived.
+   - ofaFileFormat: now haves a string delimiter configuration option (todo #1028).
    - ofaIPrintable: have an information message after successful printing (todo #1015).
    - ofaPreferences: make the dialog non-modal (todo #992).
    - ofaReconciliation: ask for user confirmation when amounts are not balanced (todo #1019).

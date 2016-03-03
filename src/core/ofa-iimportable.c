@@ -313,16 +313,19 @@ gchar *
 ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 {
 	const gchar *cstr;
-	gchar *str1, *str2, *regexp;
+	gchar *str1, *str2, *regexp, *str_delim_str;
 	glong len;
+	gchar str_delim;
 
 	str2 = NULL;
 	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
 	if( cstr ){
 		str1 = NULL;
+		str_delim = ofa_file_format_get_string_delim( settings );
+		str_delim_str = g_strdup_printf( "%c", str_delim );
 		len = my_strlen( cstr );
 		if( len ){
-			if( g_str_has_prefix( cstr, "\"" ) && g_str_has_suffix( cstr, "\"" )){
+			if( str_delim && g_str_has_prefix( cstr, str_delim_str ) && g_str_has_suffix( cstr, str_delim_str )){
 				str1 = g_utf8_substring( cstr, 1, len-1 );
 			} else {
 				str1 = g_strstrip( g_strdup( cstr ));
@@ -337,6 +340,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 		if( 0 ){
 			g_debug( "src='%s', temp='%s', out='%s'", cstr, str1, str2 );
 		}
+		g_free( str_delim_str );
 		g_free( str1 );
 	}
 	*it = *it ? ( *it )->next : NULL;

@@ -1395,7 +1395,7 @@ import_utf8_comma_pipe_file( sUpdate *update_data, sImport *import )
 
 		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', import->header_count );
+				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', '\0', import->header_count );
 		object = g_object_new( import->typefn(), NULL );
 		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );

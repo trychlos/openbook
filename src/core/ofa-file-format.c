@@ -52,6 +52,7 @@ struct _ofaFileFormatPrivate {
 	myDateFormat date_format;
 	gchar        decimal_sep;
 	gchar        field_sep;				/* csv only */
+	gchar        string_delim;			/* csv only */
 	union {
 		gboolean with_headers;
 		gint     count_headers;
@@ -78,6 +79,7 @@ static const gint   st_def_date         = MY_DATE_SQL;
 static const gchar *st_def_decimal      = ".";
 static const gchar *st_def_field_sep    = ";";
 static const gchar *st_def_headers      = "True";
+static const gchar *st_def_string_delim = "\"";
 
 static void  do_init( ofaFileFormat *self, const gchar *prefs_name );
 
@@ -179,8 +181,8 @@ ofa_file_format_new( const gchar *prefs_name )
 /*
  * read file format from user settings:
  *
- * export: name;type;mode;charmap;date_format;decimal_sep;field_sep;with_headers
- * import: name;type;mode;charmap;date_format;decimal_sep;field_sep;count_headers
+ * export: name;type;mode;charmap;date_format;decimal_sep;field_sep;with_headers;string_delim
+ * import: name;type;mode;charmap;date_format;decimal_sep;field_sep;count_headers;string_delim
  */
 static void
 do_init( ofaFileFormat *self, const gchar *prefs_name )
@@ -260,6 +262,13 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	} else {
 		priv->h.count_headers = atoi( cstr );
 	}
+
+	/* string delimiter */
+	it = it ? it->next : NULL;
+	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
+	text = g_strdup( cstr ? cstr : st_def_string_delim );
+	priv->string_delim = atoi( text );
+	g_free( text );
 
 	ofa_settings_free_string_list( prefs_list );
 }
@@ -388,6 +397,23 @@ ofa_file_format_get_field_sep( const ofaFileFormat *settings )
 }
 
 /**
+ * ofa_file_format_get_string_delim:
+ */
+gchar
+ofa_file_format_get_string_delim( const ofaFileFormat *settings )
+{
+	ofaFileFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+
+	priv = ofa_file_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( priv->string_delim );
+}
+
+/**
  * ofa_file_format_get_headers_count:
  */
 gint
@@ -442,11 +468,12 @@ ofa_file_format_set( ofaFileFormat *settings,
 								myDateFormat date_format,
 								gchar decimal_sep,
 								gchar field_sep,
+								gchar string_delim,
 								gint count_headers )
 {
 	ofaFileFormatPrivate *priv;
 	GList *prefs_list;
-	gchar *sfile, *sdate, *sdecimal, *sfield, *sheaders;
+	gchar *sfile, *sdate, *sdecimal, *sfield, *sheaders, *sstrdelim;
 
 	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
 
@@ -500,6 +527,11 @@ ofa_file_format_set( ofaFileFormat *settings,
 	}
 	prefs_list = g_list_append( prefs_list, sheaders );
 
+	/* string delimiter */
+	priv->string_delim = string_delim;
+	sstrdelim = g_strdup_printf( "%d", string_delim );
+	prefs_list = g_list_append( prefs_list, sstrdelim );
+
 	/* save in user preferences */
 	g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
 	if( my_strlen( priv->prefs_name )){
@@ -508,6 +540,7 @@ ofa_file_format_set( ofaFileFormat *settings,
 
 	g_list_free( prefs_list );
 
+	g_free( sstrdelim );
 	g_free( sheaders );
 	g_free( sfield );
 	g_free( sdecimal );

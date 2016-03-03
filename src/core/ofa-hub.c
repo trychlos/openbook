@@ -648,6 +648,9 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	numline = 0;
 	while( *it_line ){
 		if( prev ){
+			temp = g_utf8_substring( prev, 0, my_strlen( prev )-1 );
+			g_free( prev );
+			prev = temp;
 			temp = g_strconcat( prev, "\n", *it_line, NULL );
 			g_free( prev );
 			prev = temp;

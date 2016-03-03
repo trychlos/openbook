@@ -75,7 +75,7 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 
 		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', 0 );
+				NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', '\0', 0 );
 
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));

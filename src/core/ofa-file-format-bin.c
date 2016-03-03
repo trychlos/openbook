@@ -56,6 +56,7 @@ struct _ofaFileFormatBinPrivate {
 	GtkWidget      *field_parent;
 	GtkWidget      *field_label;
 	GtkWidget      *dispo_frame;
+	GtkWidget      *str_delim_entry;
 	GtkWidget      *headers_btn;
 	GtkWidget      *headers_count;
 	GtkSizeGroup   *group0;
@@ -103,6 +104,7 @@ static void     init_decimal_dot( ofaFileFormatBin *self );
 static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self );
 static void     init_field_separator( ofaFileFormatBin *self );
 static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self );
+static void     init_str_delimiter( ofaFileFormatBin *self );
 static void     init_headers( ofaFileFormatBin *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
 static void     on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self );
@@ -262,6 +264,7 @@ setup_bin( ofaFileFormatBin *bin )
 	init_date_format( bin );
 	init_decimal_dot( bin );
 	init_field_separator( bin );
+	init_str_delimiter( bin );
 	init_headers( bin );
 
 	/* export format at the end so that it is able to rely on
@@ -521,6 +524,22 @@ static void
 on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+init_str_delimiter( ofaFileFormatBin *self )
+{
+	ofaFileFormatBinPrivate *priv;
+	GtkWidget *label;
+
+	priv = ofa_file_format_bin_get_instance_private( self );
+
+	priv->str_delim_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-string-delimiter" );
+	g_return_if_fail( priv->str_delim_entry && GTK_IS_ENTRY( priv->str_delim_entry ));
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-string-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->str_delim_entry );
 }
 
 static void
@@ -787,6 +806,7 @@ do_apply( ofaFileFormatBin *self )
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iformat, ivalue, iheaders;
 	ofaFFmode mode;
+	const gchar *str_delim;
 
 	priv = ofa_file_format_bin_get_instance_private( self );
 	charmap = NULL;
@@ -794,6 +814,7 @@ do_apply( ofaFileFormatBin *self )
 	iheaders = -1;
 	decimal_sep = g_strdup( "");
 	field_sep = g_strdup( "");
+	str_delim = g_strdup( "");
 
 	iformat = get_file_format( self );
 	mode = ofa_file_format_get_ffmode( priv->settings );
@@ -803,6 +824,7 @@ do_apply( ofaFileFormatBin *self )
 		ivalue = my_date_combo_get_selected( priv->date_combo );
 		decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
 		field_sep = my_field_combo_get_selected( priv->field_combo );
+		str_delim = gtk_entry_get_text( GTK_ENTRY( priv->str_delim_entry ));
 
 		if( mode == OFA_FFMODE_EXPORT ){
 			iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
@@ -814,7 +836,7 @@ do_apply( ofaFileFormatBin *self )
 	ofa_file_format_set( priv->settings,
 								NULL,
 								iformat,
-								mode, charmap, ivalue, decimal_sep[0], field_sep[0], iheaders );
+								mode, charmap, ivalue, decimal_sep[0], field_sep[0], str_delim[0], iheaders );
 
 	g_free( field_sep );
 	g_free( decimal_sep );

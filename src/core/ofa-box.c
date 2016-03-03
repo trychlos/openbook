@@ -344,15 +344,20 @@ static gchar *
 string_to_string( const ofsBoxData *box, const ofaFileFormat *format )
 {
 	gchar *temp, *str, *regexp;
-	gchar field_sep;
+	gchar field_sep, str_delim;
 
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( box->string ){
 		field_sep = ofa_file_format_get_field_sep( format );
+		str_delim = ofa_file_format_get_string_delim( format );
 		regexp = g_strdup_printf( "[\"\n\r%c]", field_sep );
 		temp = my_utils_quote_regexp( box->string, regexp );
-		str = g_strdup_printf( "\"%s\"", temp );
+		if( str_delim ){
+			str = g_strdup_printf( "%c%s%c", str_delim, temp, str_delim );
+		} else {
+			str = g_strdup( temp );
+		}
 		g_free( temp );
 		g_free( regexp );
 	} else {
@@ -688,10 +693,11 @@ ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaFileFormat *format )
 	GString *header;
 	const ofsBoxDef *idef;
 	gchar *name;
-	gchar field_sep;
+	gchar field_sep, str_delim;
 
 	header = g_string_new( "" );
 	field_sep = ofa_file_format_get_field_sep( format );
+	str_delim = ofa_file_format_get_string_delim( format );
 
 	if( defs ){
 		idef = defs;
@@ -700,7 +706,11 @@ ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaFileFormat *format )
 			if( header->len ){
 				header = g_string_append_c( header, field_sep );
 			}
-			g_string_append_printf( header, "\"%s\"", name );
+			if( str_delim ){
+				g_string_append_printf( header, "%c%s%c", str_delim, name, str_delim );
+			} else {
+				header = g_string_append( header, name );
+			}
 			g_free( name );
 			idef++;
 		}
