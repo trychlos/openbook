@@ -200,7 +200,7 @@ static GList          *icollectionable_load_collection( const ofaICollectionable
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean        iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
-static gchar          *update_decimal_sep( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *format, const gchar *text, void *empty );
+static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
@@ -1705,14 +1705,16 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * => this user-remediation function
  */
 static gchar *
-update_decimal_sep( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *settings, const gchar *text, void *empty )
+update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *settings, const gchar *text, void *empty )
 {
+	const ofsBoxDef *box_def;
 	gchar *str;
 	gchar decimal_sep;
 
 	str = g_strdup( text );
+	box_def = ofa_box_data_get_def( box_data );
 
-	if( def->id == OTE_DET_DEBIT || def->id == OTE_DET_CREDIT ){
+	if( box_def->id == OTE_DET_DEBIT || box_def->id == OTE_DET_CREDIT ){
 		decimal_sep = ofa_file_format_get_decimal_sep( settings );
 		if( decimal_sep != '.' ){
 			g_free( str );

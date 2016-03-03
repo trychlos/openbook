@@ -219,6 +219,7 @@ static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *conne
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gchar       *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
@@ -2713,6 +2714,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar *str, *str2, *sdate, *suser, *sstamp;
 	GSList *lines;
 	ofoConcil *concil;
+	const gchar *acc_id, *cur_code;
+	ofoAccount *account;
+	ofoCurrency *currency;
 
 	result = entry_load_dataset( hub, NULL, NULL );
 
@@ -2739,7 +2743,15 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=result ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		acc_id = ofo_entry_get_account( OFO_ENTRY( it->data ));
+		g_return_val_if_fail( acc_id && my_strlen( acc_id ), FALSE );
+		account = ofo_account_get_by_number( hub, acc_id );
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+		cur_code = ofo_account_get_currency( account );
+		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
+		currency = ofo_currency_get_by_code( hub, cur_code );
+		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
@@ -2761,6 +2773,25 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofo_entry_free_dataset( result );
 
 	return( TRUE );
+}
+
+/*
+ * a callback to adjust the decimal digits count to the precision of the
+ * currency of the account of the entry
+ */
+static gchar *
+export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency )
+{
+	const ofsBoxDef *box_def;
+	gchar *str;
+
+	box_def = ofa_box_data_get_def( box_data );
+	if( box_def->type == OFA_TYPE_AMOUNT ){
+		str = my_double_to_sql_ex( ofa_box_data_get_amount( box_data ), ofo_currency_get_digits( currency ));
+	} else {
+		str = g_strdup( text );
+	}
+	return( str );
 }
 
 /*

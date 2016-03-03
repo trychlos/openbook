@@ -192,6 +192,7 @@ static GList     *icollectionable_load_collection( const ofaICollectionable *ins
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gchar     *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
@@ -1718,6 +1719,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gulong count;
 	gchar field_sep;
 	ofoLedger *ledger;
+	const gchar *cur_code;
+	ofoCurrency *currency;
 
 	dataset = ofo_ledger_get_dataset( hub );
 
@@ -1769,7 +1772,11 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		priv = ofo_ledger_get_instance_private( ledger );
 
 		for( bal=priv->balances ; bal ; bal=bal->next ){
-			str = ofa_box_csv_get_line( bal->data, settings );
+			cur_code = ofa_box_get_string( bal, LED_CURRENCY );
+			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
+			currency = ofo_currency_get_by_code( hub, cur_code );
+			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+			str = ofa_box_csv_get_line_ex( bal->data, settings, ( CSVExportFunc ) export_cb, currency );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1781,6 +1788,25 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	return( TRUE );
+}
+
+/*
+ * a callback to adjust the decimal digits count to the precision of the
+ * currency of the account of the entry
+ */
+static gchar *
+export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency )
+{
+	const ofsBoxDef *box_def;
+	gchar *str;
+
+	box_def = ofa_box_data_get_def( box_data );
+	if( box_def->type == OFA_TYPE_AMOUNT ){
+		str = my_double_to_sql_ex( ofa_box_data_get_amount( box_data ), ofo_currency_get_digits( currency ));
+	} else {
+		str = g_strdup( text );
+	}
+	return( str );
 }
 
 /*

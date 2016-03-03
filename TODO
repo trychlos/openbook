@@ -554,18 +554,16 @@
 
 1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
 
-1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
-                     -> this is complicated as export is managed by ofaBox
-                        on individual fields which do not know about the
-                        currency :(
-                     -> unless a callback may provide this information ?
-
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
+     2016- 3- 2      Have to be done after exporter/exportable review
 
 1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
 
-1031
+1031 2016- 3- 3 BUG  ExportAssistant: when file overwrite confirmation is
+                      cancelled, goes anyway to Apply page, with empty filename
+
+1032
 
 -----------------------------------------------------------------------
  DONE
@@ -898,6 +896,11 @@
 
 1024 2016- 3- 1 CODE replace my_utils_quote_single() with g_strescape() ?
      2016- 3- 1 cancelled
+
+1025 2016- 3- 1 BUG  when exporting amounts, have the right count of decimal digits
+                     -> unless a callback may provide this information ?
+     2016- 3- 3 ofoAccount, ofoEntry, ofoLedger: OK
+                done
 
 1026 2016- 3- 1 CODE ofoDossier: take advantage of ofaBox when exporting
      2016- 3- 2 done

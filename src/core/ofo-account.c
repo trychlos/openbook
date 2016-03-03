@@ -217,6 +217,7 @@ static GList       *icollectionable_load_collection( const ofaICollectionable *i
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gchar       *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
@@ -2089,6 +2090,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	GList *dataset, *it;
 	gboolean with_headers, ok;
 	gulong count;
+	ofoCurrency *currency;
+	const gchar *cur_code;
 
 	dataset = ofo_account_get_dataset( hub );
 	with_headers = ofa_file_format_has_headers( settings );
@@ -2110,7 +2113,14 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		cur_code = ofo_account_get_currency( OFO_ACCOUNT( it->data ));
+		if( my_strlen( cur_code )){
+			currency = ofo_currency_get_by_code( hub, cur_code );
+			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+			str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
+		} else {
+			str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		}
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -2120,6 +2130,25 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	return( TRUE );
+}
+
+/*
+ * a callback to adjust the decimal digits count to the precision of the
+ * currency of the account
+ */
+static gchar *
+export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency )
+{
+	const ofsBoxDef *box_def;
+	gchar *str;
+
+	box_def = ofa_box_data_get_def( box_data );
+	if( box_def->type == OFA_TYPE_AMOUNT ){
+		str = my_double_to_sql_ex( ofa_box_data_get_amount( box_data ), ofo_currency_get_digits( currency ));
+	} else {
+		str = g_strdup( text );
+	}
+	return( str );
 }
 
 /*

@@ -227,6 +227,9 @@ my_double_set_from_str( const gchar *string )
  *
  * Returns: a newly allocated string which represents the specified
  * value, suitable for an SQL insertion.
+ *
+ * Decimal separator is a dot '.' (not locale-dependant, not user-prefs dependant);
+ * No thousand separator.
  */
 gchar *
 my_double_to_sql( gdouble value )
@@ -237,6 +240,42 @@ my_double_to_sql( gdouble value )
 	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
 	g_strchug( amount );
 	text = g_strdup( amount );
+
+	return( text );
+}
+
+/**
+ * my_double_to_sql_ex:
+ * @value:
+ * @decimals:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, suitable for an SQL insertion.
+ *
+ * Decimal separator is a dot '.' (not locale-dependant, not user-prefs dependant);
+ * No thousand separator.
+ */
+gchar *
+my_double_to_sql_ex( gdouble value, gint decimals )
+{
+	gchar amount_str[1+G_ASCII_DTOSTR_BUF_SIZE];
+	gchar *temp_str, *text;
+	gdouble temp_double;
+	glong temp_long;
+
+	temp_double = value*exp10( decimals ) + 0.5;
+	temp_long = ( glong ) temp_double;
+	g_ascii_dtostr( amount_str, G_ASCII_DTOSTR_BUF_SIZE, temp_long );
+	g_strchug( amount_str );
+
+	if( value ){
+		temp_str = g_strreverse( g_strdup( amount_str ));
+		temp_str[decimals] = '\0';
+		amount_str[my_strlen( amount_str )-decimals] = '\0';
+		text = g_strconcat( amount_str, ".", g_strreverse( temp_str ), NULL );
+	} else {
+		text = g_strdup( amount_str );
+	}
 
 	return( text );
 }

@@ -37,8 +37,9 @@
 
 G_BEGIN_DECLS
 
-typedef gint64  ofxCounter;
-typedef gdouble ofxAmount;
+typedef gint64                          ofxCounter;
+typedef gdouble                         ofxAmount;
+typedef struct _ofsBoxData              ofsBoxData;
 
 typedef enum {
 	OFA_TYPE_AMOUNT = 1,
@@ -77,7 +78,7 @@ typedef struct {
 	gint         id;
 	const gchar *dbms;
 	const gchar *csv;
-	ofeBoxType     type;
+	ofeBoxType   type;
 	gboolean     import;
 	gboolean     csv_zero_as_empty;
 }
@@ -100,7 +101,7 @@ typedef struct {
 /**
  * a callback function which may be called on CSV exporting
  */
-typedef gchar * ( *CSVExportFunc )( const ofsBoxDef *def, ofeBoxType type, const ofaFileFormat *format, const gchar *text, void *user_data );
+typedef gchar * ( *CSVExportFunc )( const ofsBoxData *data, const ofaFileFormat *format, const gchar *text, void *user_data );
 
 /* because DBMS keeps 5 digits after the decimal dot */
 #define PRECISION                       100000
@@ -110,45 +111,51 @@ typedef gchar * ( *CSVExportFunc )( const ofsBoxDef *def, ofeBoxType type, const
 #define GPOINTER_TO_COUNTER(P)          ((ofxCounter)(glong)(P))
 #define COUNTER_TO_GPOINTER(D)          ((gpointer)(ofxCounter)(D))
 
-void          ofa_box_register_types       ( void );
+void             ofa_box_register_types       ( void );
 
-GList        *ofa_box_init_fields_list     ( const ofsBoxDef *defs );
+GList           *ofa_box_init_fields_list     ( const ofsBoxDef *defs );
 
-void          ofa_box_dump_fields_list     ( const gchar *fname, const GList *fields );
+void             ofa_box_dump_fields_list     ( const gchar *fname, const GList *fields );
 
-gchar        *ofa_box_dbms_get_columns_list( const ofsBoxDef *defs );
+gchar           *ofa_box_dbms_get_columns_list( const ofsBoxDef *defs );
 
-GList        *ofa_box_dbms_parse_result    ( const ofsBoxDef *defs, GSList *row );
+GList           *ofa_box_dbms_parse_result    ( const ofsBoxDef *defs, GSList *row );
 
-gchar        *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
+gchar           *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
 													const ofaFileFormat *format );
 
-gchar        *ofa_box_csv_get_line         ( const GList *fields_list,
+gchar           *ofa_box_csv_get_line         ( const GList *fields_list,
 													const ofaFileFormat *format );
 
-gchar        *ofa_box_csv_get_line_ex      ( const GList *fields_list,
+gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
 													const ofaFileFormat *format,
 													CSVExportFunc cb, void *user_data );
 
-gconstpointer ofa_box_get_value            ( const GList *fields_list, gint id );
+gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint id );
 
-#define       ofa_box_get_amount(F,I)      (GPOINTER_TO_AMOUNT(ofa_box_get_value((F),(I))))
-#define       ofa_box_get_counter(F,I)     (GPOINTER_TO_COUNTER(ofa_box_get_value((F),(I))))
-#define       ofa_box_get_int(F,I)         (GPOINTER_TO_INT(ofa_box_get_value((F),(I))))
-#define       ofa_box_get_date(F,I)        ((const GDate *)ofa_box_get_value((F),(I)))
-#define       ofa_box_get_string(F,I)      ((const gchar *)ofa_box_get_value((F),(I)))
-#define       ofa_box_get_timestamp(F,I)   ((const GTimeVal *)ofa_box_get_value((F),(I)))
+#define          ofa_box_get_amount(F,I)      (GPOINTER_TO_AMOUNT(ofa_box_get_value((F),(I))))
+#define          ofa_box_get_counter(F,I)     (GPOINTER_TO_COUNTER(ofa_box_get_value((F),(I))))
+#define          ofa_box_get_int(F,I)         (GPOINTER_TO_INT(ofa_box_get_value((F),(I))))
+#define          ofa_box_get_date(F,I)        ((const GDate *)ofa_box_get_value((F),(I)))
+#define          ofa_box_get_string(F,I)      ((const gchar *)ofa_box_get_value((F),(I)))
+#define          ofa_box_get_timestamp(F,I)   ((const GTimeVal *)ofa_box_get_value((F),(I)))
 
-void          ofa_box_set_value            ( const GList *fields_list, gint id, gconstpointer value );
+void             ofa_box_set_value            ( const GList *fields_list, gint id, gconstpointer value );
 
-#define       ofa_box_set_amount(F,I,V)    ofa_box_set_value((F),(I),AMOUNT_TO_GPOINTER(V))
-#define       ofa_box_set_counter(F,I,V)   ofa_box_set_value((F),(I),COUNTER_TO_GPOINTER(V))
-#define       ofa_box_set_int(F,I,V)       ofa_box_set_value((F),(I),GINT_TO_POINTER(V))
-#define       ofa_box_set_date(F,I,V)      ofa_box_set_value((F),(I),(const GDate *)(V))
-#define       ofa_box_set_string(F,I,V)    ofa_box_set_value((F),(I),(const gchar *)(V))
-#define       ofa_box_set_timestamp(F,I,V) ofa_box_set_value((F),(I),(const GTimeVal *)(V))
+#define          ofa_box_set_amount(F,I,V)    ofa_box_set_value((F),(I),AMOUNT_TO_GPOINTER(V))
+#define          ofa_box_set_counter(F,I,V)   ofa_box_set_value((F),(I),COUNTER_TO_GPOINTER(V))
+#define          ofa_box_set_int(F,I,V)       ofa_box_set_value((F),(I),GINT_TO_POINTER(V))
+#define          ofa_box_set_date(F,I,V)      ofa_box_set_value((F),(I),(const GDate *)(V))
+#define          ofa_box_set_string(F,I,V)    ofa_box_set_value((F),(I),(const gchar *)(V))
+#define          ofa_box_set_timestamp(F,I,V) ofa_box_set_value((F),(I),(const GTimeVal *)(V))
 
-void          ofa_box_free_fields_list     ( GList *fields_list );
+void             ofa_box_free_fields_list     ( GList *fields_list );
+
+const ofsBoxDef *ofa_box_data_get_def         ( const ofsBoxData *box );
+
+gconstpointer    ofa_box_data_get_value       ( const ofsBoxData *box );
+
+#define          ofa_box_data_get_amount(B)   (GPOINTER_TO_AMOUNT(ofa_box_data_get_value((B))))
 
 G_END_DECLS
 
