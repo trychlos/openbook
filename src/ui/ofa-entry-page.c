@@ -79,6 +79,7 @@ enum {
 	ENT_COL_CREDIT,
 	ENT_COL_CURRENCY,
 	ENT_COL_STATUS,
+	ENT_COL_OPE_TEMPLATE,
 				/*  below columns are not visible */
 	ENT_COL_OBJECT,
 	ENT_COL_MSGERR,
@@ -219,19 +220,20 @@ static const gchar *st_pref_sort_s      = "EntryPageSortS";
 #define SEL_ACCOUNT                     "Account"
 
 static const ofsTreeviewColumnId st_treeview_column_ids[] = {
-		{ ENT_COL_DOPE,      ITVC_DOPE },
-		{ ENT_COL_DEFF,      ITVC_DEFFECT },
-		{ ENT_COL_NUMBER,    ITVC_ENT_ID },
-		{ ENT_COL_REF,       ITVC_ENT_REF },
-		{ ENT_COL_LEDGER,    ITVC_LED_ID },
-		{ ENT_COL_ACCOUNT,   ITVC_ACC_ID },
-		{ ENT_COL_LABEL,     ITVC_ENT_LABEL },
-		{ ENT_COL_SETTLE,    ITVC_STLMT_NUMBER },
-		{ ENT_COL_DRECONCIL, ITVC_CONCIL_DATE },
-		{ ENT_COL_DEBIT,     ITVC_DEBIT },
-		{ ENT_COL_CREDIT,    ITVC_CREDIT },
-		{ ENT_COL_CURRENCY,  ITVC_CUR_ID },
-		{ ENT_COL_STATUS,    ITVC_ENT_STATUS },
+		{ ENT_COL_DOPE,         ITVC_DOPE },
+		{ ENT_COL_DEFF,         ITVC_DEFFECT },
+		{ ENT_COL_NUMBER,       ITVC_ENT_ID },
+		{ ENT_COL_REF,          ITVC_ENT_REF },
+		{ ENT_COL_LEDGER,       ITVC_LED_ID },
+		{ ENT_COL_ACCOUNT,      ITVC_ACC_ID },
+		{ ENT_COL_LABEL,        ITVC_ENT_LABEL },
+		{ ENT_COL_OPE_TEMPLATE, ITVC_OPE_TEMPLATE },
+		{ ENT_COL_SETTLE,       ITVC_STLMT_NUMBER },
+		{ ENT_COL_DRECONCIL,    ITVC_CONCIL_DATE },
+		{ ENT_COL_DEBIT,        ITVC_DEBIT },
+		{ ENT_COL_CREDIT,       ITVC_CREDIT },
+		{ ENT_COL_CURRENCY,     ITVC_CUR_ID },
+		{ ENT_COL_STATUS,       ITVC_ENT_STATUS },
 		{ -1 }
 };
 
@@ -790,6 +792,7 @@ setup_entries_treeview( ofaEntryPage *self )
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, settlement, dreconcil */
 			G_TYPE_STRING,									/* debit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* credit, currency, status */
+			G_TYPE_STRING,									/* ope template */
 			/* below columns are not visible */
 			G_TYPE_OBJECT,									/* the entry itself */
 			G_TYPE_STRING, G_TYPE_STRING,					/* error msg, warning msg */
@@ -970,6 +973,30 @@ setup_entries_treeview( ofaEntryPage *self )
 	if( sort_id == column_id ){
 		sort_column = column;
 	}
+
+	/* operation template
+	 */
+	column_id = ENT_COL_OPE_TEMPLATE;
+	text_cell = gtk_cell_renderer_text_new();
+	priv->renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Model" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
+	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
 
 	/* settlement number
 	 */
@@ -1155,40 +1182,44 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPag
 	ofxCounter numa, numb;
 	GtkSortType sort_order;
 	gchar *sdopea, *sdeffa, *srefa,
-			*slabela, *sleda, *sacca, *sdeba, *screa, *scura, *sstlmta, *sdcona, *sstaa;
+			*slabela, *sleda, *sacca, *sdeba, *screa, *scura, *sstlmta, *sdcona, *sstaa,
+			*smodela;
 	gchar *sdopeb, *sdeffb, *srefb,
-			*slabelb, *sledb, *saccb, *sdebb, *screb, *scurb, *sstlmtb, *sdconb, *sstab;
+			*slabelb, *sledb, *saccb, *sdebb, *screb, *scurb, *sstlmtb, *sdconb, *sstab,
+			*smodelb;
 
 	gtk_tree_model_get( tmodel, a,
-			ENT_COL_DOPE,      &sdopea,
-			ENT_COL_DEFF,      &sdeffa,
-			ENT_COL_NUMBER,    &numa,
-			ENT_COL_REF,       &srefa,
-			ENT_COL_LABEL,     &slabela,
-			ENT_COL_LEDGER,    &sleda,
-			ENT_COL_ACCOUNT,   &sacca,
-			ENT_COL_DEBIT,     &sdeba,
-			ENT_COL_CREDIT,    &screa,
-			ENT_COL_CURRENCY,  &scura,
-			ENT_COL_SETTLE,    &sstlmta,
-			ENT_COL_DRECONCIL, &sdcona,
-			ENT_COL_STATUS,    &sstaa,
+			ENT_COL_DOPE,         &sdopea,
+			ENT_COL_DEFF,         &sdeffa,
+			ENT_COL_NUMBER,       &numa,
+			ENT_COL_REF,          &srefa,
+			ENT_COL_LABEL,        &slabela,
+			ENT_COL_LEDGER,       &sleda,
+			ENT_COL_ACCOUNT,      &sacca,
+			ENT_COL_DEBIT,        &sdeba,
+			ENT_COL_CREDIT,       &screa,
+			ENT_COL_CURRENCY,     &scura,
+			ENT_COL_SETTLE,       &sstlmta,
+			ENT_COL_DRECONCIL,    &sdcona,
+			ENT_COL_OPE_TEMPLATE, &smodela,
+			ENT_COL_STATUS,       &sstaa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			ENT_COL_DOPE,      &sdopeb,
-			ENT_COL_DEFF,      &sdeffb,
-			ENT_COL_NUMBER,    &numb,
-			ENT_COL_REF,       &srefb,
-			ENT_COL_LABEL,     &slabelb,
-			ENT_COL_LEDGER,    &sledb,
-			ENT_COL_ACCOUNT,   &saccb,
-			ENT_COL_DEBIT,     &sdebb,
-			ENT_COL_CREDIT,    &screb,
-			ENT_COL_CURRENCY,  &scurb,
-			ENT_COL_SETTLE,    &sstlmtb,
-			ENT_COL_DRECONCIL, &sdconb,
-			ENT_COL_STATUS,    &sstab,
+			ENT_COL_DOPE,         &sdopeb,
+			ENT_COL_DEFF,         &sdeffb,
+			ENT_COL_NUMBER,       &numb,
+			ENT_COL_REF,          &srefb,
+			ENT_COL_LABEL,        &slabelb,
+			ENT_COL_LEDGER,       &sledb,
+			ENT_COL_ACCOUNT,      &saccb,
+			ENT_COL_DEBIT,        &sdebb,
+			ENT_COL_CREDIT,       &screb,
+			ENT_COL_CURRENCY,     &scurb,
+			ENT_COL_SETTLE,       &sstlmtb,
+			ENT_COL_DRECONCIL,    &sdconb,
+			ENT_COL_OPE_TEMPLATE, &smodelb,
+			ENT_COL_STATUS,       &sstab,
 			-1 );
 
 	cmp = 0;
@@ -1233,6 +1264,9 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPag
 			break;
 		case ENT_COL_DRECONCIL:
 			cmp = my_date_compare_by_str( sdcona, sdconb, ofa_prefs_date_display());
+			break;
+		case ENT_COL_OPE_TEMPLATE:
+			cmp = cmp_strings( self, smodela, smodelb );
 			break;
 		case ENT_COL_STATUS:
 			cmp = cmp_strings( self, sstaa, sstab );
@@ -1671,6 +1705,7 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
 				ENT_COL_SETTLE,       ssettle,
 				ENT_COL_DRECONCIL,    "",
+				ENT_COL_OPE_TEMPLATE, ofo_entry_get_ope_template( entry ),
 				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
 				ENT_COL_OBJECT,       entry,
 				ENT_COL_MSGERR,       "",

@@ -54,6 +54,7 @@ static const sColumn st_columns[] = {
 	{ ITVC_ENT_REF,      N_( "Piece reference" ),           FALSE, N_( "Ref." )},
 	{ ITVC_ENT_STATUS,   N_( "Entry status" ),              FALSE, N_( "St." )},
 	{ ITVC_LED_ID,       N_( "Ledger identifier" ),         FALSE, N_( "Ledger" )},
+	{ ITVC_OPE_TEMPLATE, N_( "Operation template" ),        FALSE, N_( "Model" )},
 	{ ITVC_STLMT_NUMBER, N_( "Settlement number" ),         FALSE, N_( "Stlmt." )},
 	{ ITVC_TYPE,         N_( "Type" ),                      FALSE, N_( "Type" )},
 	{ -1 }

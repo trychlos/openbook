@@ -519,8 +519,6 @@
                      when the amount is set, but one of another field is
                      wrong
 
-1008 2016- 2-25 FEAT ViewEntries: add operation template in the columns list
-
 1010 2016- 2-25 FEAT Ope: formula interpretation should be recursive
 
 1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
@@ -849,6 +847,9 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1008 2016- 2-25 FEAT ViewEntries: add operation template in the columns list
+     2016- 3- 3 done
 
 1009 2016- 2-25 FEAT ClosingLedger: review Close button margins
                      (cf. trash/bug1009)
