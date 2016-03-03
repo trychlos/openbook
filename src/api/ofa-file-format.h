@@ -83,8 +83,8 @@ typedef struct {
  * The format of the file as a whole.
  * @OFA_FFTYPE_CSV:   a text file, csv-like format, line-oriented, with
  *                  a field separator
- * @OFA_FFTYPE_FIXED: a binary mode, fixed-format file (without field
- *                  separator).
+ * @OFA_FFTYPE_FIXED: a text or binary mode, fixed-format file (without
+ *                  field separator).
  * @OFA_FFTYPE_OTHER: any other format, whether it is text or binary;
  *                  this format is not handled by Openbook, and must
  *                  be managed by a specialized code (e.g. BAT).
