@@ -88,6 +88,7 @@
    - ofaDossierDeletePrefsBin: migrate to GResource (todo #826).
    - ofaFileDir: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormat: migrate to G_ADD_PRIVATE (todo #994).
+   - ofa_file_change_prefs_name(): new method.
    - ofaFileFormatBin: migrate to G_ADD_PRIVATE (todo #994).
    - ofaFileFormatBin: migrate to GResource (todo #826).
    - ofaGuidedInputBin: migrate to G_ADD_PRIVATE (todo #994).

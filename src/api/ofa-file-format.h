@@ -134,6 +134,9 @@ void           ofa_file_format_set              ( ofaFileFormat *settings,
 														gchar string_delim,
 														gint count_headers );
 
+void           ofa_file_format_change_prefs_name( ofaFileFormat *settings,
+														const gchar *new_name );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_FILE_FORMAT_H__ */

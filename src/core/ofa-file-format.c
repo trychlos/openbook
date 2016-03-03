@@ -478,9 +478,10 @@ ofa_file_format_set( ofaFileFormat *settings,
 	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
 
 	priv = ofa_file_format_get_instance_private( settings );
-	prefs_list = NULL;
 
 	g_return_if_fail( !priv->dispose_has_run );
+
+	prefs_list = NULL;
 
 	/* name */
 	g_free( priv->name );
@@ -546,4 +547,28 @@ ofa_file_format_set( ofaFileFormat *settings,
 	g_free( sdecimal );
 	g_free( sdate );
 	g_free( sfile );
+}
+
+/**
+ * ofa_file_change_prefs_name:
+ * @settings:
+ * @name:
+ *
+ * Change the name of the key in the user preferences configuration file.
+ * This let us read a default user preference, and then write to a new
+ * (hopefully more specific) user preference.
+ */
+void
+ofa_file_format_change_prefs_name( ofaFileFormat *settings, const gchar *name )
+{
+	ofaFileFormatPrivate *priv;
+
+	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
+
+	priv = ofa_file_format_get_instance_private( settings );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->prefs_name );
+	priv->prefs_name = g_strdup( name );
 }
