@@ -44,7 +44,7 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	gchar               *xml_name;
+	gchar               *resource_name;
 	const ofaMainWindow *main_window;
 	ofaHub              *hub;
 	ofoDossier          *dossier;
@@ -53,13 +53,11 @@ typedef struct {
 
 	GtkWidget           *from_prompt;
 	GtkWidget           *from_entry;
-	GtkWidget           *from_select;
 	GtkWidget           *from_label;
 	gchar               *from_account;
 
 	GtkWidget           *to_prompt;
 	GtkWidget           *to_entry;
-	GtkWidget           *to_select;
 	GtkWidget           *to_label;
 	gchar               *to_account;
 
@@ -91,8 +89,8 @@ static void              setup_composite( ofaIAccountFilter *filter, sIAccountFi
 static void              on_from_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void              on_to_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void              on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
-static void              on_from_select_clicked( GtkButton *button, ofaIAccountFilter *filter );
-static void              on_to_select_clicked( GtkButton *button, ofaIAccountFilter *filter );
+static void              on_from_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter );
+static void              on_to_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter );
 static void              on_select_clicked( ofaIAccountFilter *filter, gint who, GtkWidget *entry, sIAccountFilter *sdata );
 static void              on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter );
 static gboolean          is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
@@ -208,26 +206,26 @@ ofa_iaccount_filter_get_interface_last_version( const ofaIAccountFilter *instanc
 /**
  * ofa_iaccount_filter_setup_bin:
  * @filter: this #ofaIAccountFilter instance.
- * @xml_name: the UI .xml definition file name.
+ * @resource_name: the UI .xml definition resource path.
  * @main_window: the #ofaMainWindow main window of the application.
  *
  * Initialize the composite widget which implements this interface.
  */
 void
-ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *xml_name, const ofaMainWindow *main_window )
+ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *resource_name, const ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_setup_bin";
 	sIAccountFilter *sdata;
 	GtkApplication *application;
 
-	g_debug( "%s: filter=%p, xml_name=%s, main_window=%p",
-			thisfn, ( void * ) filter, xml_name, ( void * ) main_window );
+	g_debug( "%s: filter=%p, resource_name=%s, main_window=%p",
+			thisfn, ( void * ) filter, resource_name, ( void * ) main_window );
 
 	g_return_if_fail( filter && G_IS_OBJECT( filter ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	sdata = get_iaccount_filter_data( filter );
-	sdata->xml_name = g_strdup( xml_name );
+	sdata->resource_name = g_strdup( resource_name );
 	sdata->main_window = main_window;
 
 	application = gtk_window_get_application( GTK_WINDOW( main_window ));
@@ -277,7 +275,7 @@ on_widget_finalized( ofaIAccountFilter *filter, void *finalized_widget )
 	sdata = get_iaccount_filter_data( filter );
 
 	g_clear_object( &sdata->group0 );
-	g_free( sdata->xml_name );
+	g_free( sdata->resource_name );
 	g_free( sdata->prefs_key );
 	g_free( sdata->from_account );
 	g_free( sdata->to_account );
@@ -291,9 +289,9 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 {
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry, *label, *button, *check;
+	GtkWidget *toplevel, *entry, *label, *check;
 
-	builder = gtk_builder_new_from_file( sdata->xml_name );
+	builder = gtk_builder_new_from_resource( sdata->resource_name );
 
 	object = gtk_builder_get_object( builder, "afb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -318,11 +316,8 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-select" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	sdata->from_select = button;
-
-	g_signal_connect( button, "clicked", G_CALLBACK( on_from_select_clicked ), filter );
+	gtk_entry_set_icon_from_icon_name( GTK_ENTRY( entry ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
+	g_signal_connect( entry, "icon-press", G_CALLBACK( on_from_icon_pressed ), filter );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -341,11 +336,8 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-select" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	sdata->to_select = button;
-
-	g_signal_connect( button, "clicked", G_CALLBACK( on_to_select_clicked ), filter );
+	gtk_entry_set_icon_from_icon_name( GTK_ENTRY( entry ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
+	g_signal_connect( entry, "icon-press", G_CALLBACK( on_to_icon_pressed ), filter );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -388,7 +380,7 @@ on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWid
 }
 
 static void
-on_from_select_clicked( GtkButton *button, ofaIAccountFilter *filter )
+on_from_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter )
 {
 	sIAccountFilter *sdata;
 
@@ -397,7 +389,7 @@ on_from_select_clicked( GtkButton *button, ofaIAccountFilter *filter )
 }
 
 static void
-on_to_select_clicked( GtkButton *button, ofaIAccountFilter *filter )
+on_to_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter )
 {
 	sIAccountFilter *sdata;
 
@@ -430,12 +422,10 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter )
 
 	gtk_widget_set_sensitive( sdata->from_prompt, !sdata->all_accounts );
 	gtk_widget_set_sensitive( sdata->from_entry, !sdata->all_accounts );
-	gtk_widget_set_sensitive( sdata->from_select, !sdata->all_accounts );
 	gtk_widget_set_sensitive( sdata->from_label, !sdata->all_accounts );
 
 	gtk_widget_set_sensitive( sdata->to_prompt, !sdata->all_accounts );
 	gtk_widget_set_sensitive( sdata->to_entry, !sdata->all_accounts );
-	gtk_widget_set_sensitive( sdata->to_select, !sdata->all_accounts );
 	gtk_widget_set_sensitive( sdata->to_label, !sdata->all_accounts );
 
 	set_settings( filter, sdata );

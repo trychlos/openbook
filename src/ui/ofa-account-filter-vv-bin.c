@@ -37,12 +37,13 @@ struct _ofaAccountFilterVVBinPrivate {
 	gboolean       dispose_has_run;
 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-account-filter-vv-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-filter-vv-bin.ui";
 
 static void  iaccount_filter_iface_init( ofaIAccountFilterInterface *iface );
 static guint iaccount_filter_get_interface_version( const ofaIAccountFilter *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaAccountFilterVVBin, ofa_account_filter_vv_bin, GTK_TYPE_BIN, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaAccountFilterVVBin, ofa_account_filter_vv_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaAccountFilterVVBin )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_FILTER, iaccount_filter_iface_init ))
 
 static void
@@ -68,7 +69,7 @@ account_filter_vv_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_FILTER_VV_BIN( instance ));
 
-	priv = OFA_ACCOUNT_FILTER_VV_BIN( instance )->priv;
+	priv = ofa_account_filter_vv_bin_get_instance_private( OFA_ACCOUNT_FILTER_VV_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -85,14 +86,16 @@ static void
 ofa_account_filter_vv_bin_init( ofaAccountFilterVVBin *self )
 {
 	static const gchar *thisfn = "ofa_account_filter_vv_bin_init";
+	ofaAccountFilterVVBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_ACCOUNT_FILTER_VV_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_ACCOUNT_FILTER_VV_BIN, ofaAccountFilterVVBinPrivate );
+	priv = ofa_account_filter_vv_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -104,8 +107,6 @@ ofa_account_filter_vv_bin_class_init( ofaAccountFilterVVBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = account_filter_vv_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_filter_vv_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountFilterVVBinPrivate ));
 }
 
 /**
@@ -121,8 +122,7 @@ ofa_account_filter_vv_bin_new( const ofaMainWindow *main_window )
 
 	bin = g_object_new( OFA_TYPE_ACCOUNT_FILTER_VV_BIN, NULL );
 
-	ofa_iaccount_filter_setup_bin(
-			OFA_IACCOUNT_FILTER( bin ), st_bin_xml, main_window );
+	ofa_iaccount_filter_setup_bin( OFA_IACCOUNT_FILTER( bin ), st_resource_ui, main_window );
 
 	return( bin );
 }

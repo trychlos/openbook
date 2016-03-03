@@ -90,7 +90,7 @@ guint        ofa_iaccount_filter_get_interface_last_version
                                                   ( const ofaIAccountFilter *filter );
 
 void         ofa_iaccount_filter_setup_bin       ( ofaIAccountFilter *filter,
-															const gchar *xml_name,
+															const gchar *resource_name,
 															const ofaMainWindow *main_window );
 
 void         ofa_iaccount_filter_set_prefs       ( ofaIAccountFilter *filter,

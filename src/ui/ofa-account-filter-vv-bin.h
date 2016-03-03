@@ -74,16 +74,13 @@ typedef struct _ofaAccountFilterVVBinPrivate          ofaAccountFilterVVBinPriva
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                        parent;
-
-	/*< private members >*/
-	ofaAccountFilterVVBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaAccountFilterVVBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                   parent;
+	GtkBinClass parent;
 }
 	ofaAccountFilterVVBinClass;
 

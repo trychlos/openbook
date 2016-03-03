@@ -247,7 +247,6 @@ rc_files = \
 
 ui_files = \
 	ofa-account-book-bin.ui								\
-	ofa-account-filter-vv-bin.ui						\
 	ofa-account-select.ui								\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
@@ -285,6 +284,7 @@ ui_files = \
 	$(NULL)
 
 resources_ui = \
+	ofa-account-filter-vv-bin.ui						\
 	ofa-account-properties.ui							\
 	ofa-entry-page.ui									\
 	ofa-guided-input.ui									\

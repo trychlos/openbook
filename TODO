@@ -538,7 +538,10 @@
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
      2016- 3- 2      Have to be done after exporter/exportable review
 
-1034
+1034 2016- 3- 3 FEAT find a better icon than gtk-index for account selection
+                     + have the same, bigger, icon for account chart
+
+1035
 
 -----------------------------------------------------------------------
  DONE
