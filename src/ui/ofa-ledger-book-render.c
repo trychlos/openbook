@@ -134,13 +134,6 @@ static const gint st_body_font_size      = 9;
 #define st_currency_width                (gdouble) 23/10*st_body_font_size
 #define st_column_hspacing               (gdouble) 4
 
-static ofaRenderPageClass *ofa_ledger_book_render_parent_class = NULL;
-
-static GType              register_type( void );
-static void               ledgers_book_render_finalize( GObject *instance );
-static void               ledgers_book_render_dispose( GObject *instance );
-static void               ledgers_book_render_instance_init( ofaLedgerBookRender *self );
-static void               ledgers_book_render_class_init( ofaLedgerBookRenderClass *klass );
 static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
@@ -170,53 +163,12 @@ static void               irenderable_draw_bottom_summary( ofaIRenderable *insta
 static void               draw_ledger_totals( ofaIRenderable *instance );
 static void               free_currency( ofsCurrency *total_per_currency );
 
-GType
-ofa_ledger_book_render_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_ledger_book_render_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaLedgerBookRenderClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ledgers_book_render_class_init,
-		NULL,
-		NULL,
-		sizeof( ofaLedgerBookRender ),
-		0,
-		( GInstanceInitFunc ) ledgers_book_render_instance_init
-	};
-
-	static const GInterfaceInfo irenderable_iface_info = {
-		( GInterfaceInitFunc ) irenderable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_RENDER_PAGE, "ofaLedgerBookRender", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IRENDERABLE, &irenderable_iface_info );
-
-	return( type );
-}
+G_DEFINE_TYPE_EXTENDED( ofaLedgerBookRender, ofa_ledger_book_render, OFA_TYPE_RENDER_PAGE, 0,
+		G_ADD_PRIVATE( ofaLedgerBookRender )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IRENDERABLE, irenderable_iface_init ))
 
 static void
-ledgers_book_render_finalize( GObject *instance )
+ledger_book_render_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_book_render_finalize";
 	ofaLedgerBookRenderPrivate *priv;
@@ -227,7 +179,7 @@ ledgers_book_render_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_BOOK_RENDER( instance ));
 
 	/* free data members here */
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	ofs_currency_list_free( &priv->ledger_totals );
 	ofs_currency_list_free( &priv->report_totals );
@@ -237,7 +189,7 @@ ledgers_book_render_finalize( GObject *instance )
 }
 
 static void
-ledgers_book_render_dispose( GObject *instance )
+ledger_book_render_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_LEDGER_BOOK_RENDER( instance ));
 
@@ -251,29 +203,25 @@ ledgers_book_render_dispose( GObject *instance )
 }
 
 static void
-ledgers_book_render_instance_init( ofaLedgerBookRender *self )
+ofa_ledger_book_render_init( ofaLedgerBookRender *self )
 {
-	static const gchar *thisfn = "ofa_ledger_book_render_instance_init";
+	static const gchar *thisfn = "ofa_ledger_book_render_init";
 
 	g_return_if_fail( OFA_IS_LEDGER_BOOK_RENDER( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_BOOK_RENDER, ofaLedgerBookRenderPrivate );
 }
 
 static void
-ledgers_book_render_class_init( ofaLedgerBookRenderClass *klass )
+ofa_ledger_book_render_class_init( ofaLedgerBookRenderClass *klass )
 {
 	static const gchar *thisfn = "ofa_ledger_book_render_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofa_ledger_book_render_parent_class = g_type_class_peek_parent( klass );
-
-	G_OBJECT_CLASS( klass )->dispose = ledgers_book_render_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ledgers_book_render_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_book_render_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_book_render_finalize;
 
 	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
@@ -284,8 +232,6 @@ ledgers_book_render_class_init( ofaLedgerBookRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
-
-	g_type_class_add_private( klass, sizeof( ofaLedgerBookRenderPrivate ));
 }
 
 static void
@@ -298,7 +244,8 @@ page_init_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
+
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
@@ -316,7 +263,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 	ofaLedgerBookRenderPrivate *priv;
 	ofaLedgerBookBin *bin;
 
-	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
 	bin = ofa_ledger_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
@@ -358,7 +305,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *dataset;
 	ofaIDateFilter *date_filter;
 
-	priv = OFA_LEDGER_BOOK_RENDER( page )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
 	priv->all_ledgers = ofa_ledger_book_bin_get_all_ledgers( priv->args_bin );
 	tview = ofa_ledger_book_bin_get_treeview( priv->args_bin );
@@ -450,7 +397,7 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	ofs_currency_list_free( &priv->report_totals );
 
@@ -469,7 +416,8 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
 	priv->new_page = ofa_ledger_book_bin_get_new_page_per_ledger( priv->args_bin );
 
 	return( priv->new_page );
@@ -484,7 +432,7 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	static const gchar *thisfn = "ofa_ledger_book_render_irenderable_begin_render";
 	ofaLedgerBookRenderPrivate *priv;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
 			thisfn, ( void * ) instance, render_width, render_height );
@@ -527,7 +475,8 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
@@ -554,7 +503,7 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	GList *it;
 	gboolean first;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	/* recall of ledgers and date selections in line 4 */
 	stitle = g_string_new( "" );
@@ -600,7 +549,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	static gdouble st_vspace_rate = 0.5;
 	gdouble y, text_height, vspace;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	text_height = ofa_irenderable_get_text_height( instance );
@@ -684,7 +633,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
@@ -733,7 +682,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofoConcil *concil;
 	gboolean is_paginating;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
@@ -844,7 +793,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	ofsCurrency *cur;
 	gboolean is_paginating;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	draw_ledger_totals( instance );
 
@@ -873,7 +822,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	ofoCurrency *currency;
 	gint digits, shift;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	if( !priv->count ){
 		ofa_irenderable_draw_no_data( instance );
@@ -943,7 +892,7 @@ draw_ledger_totals( ofaIRenderable *instance )
 	ofoCurrency *currency;
 	gint digits;
 
-	priv = OFA_LEDGER_BOOK_RENDER( instance )->priv;
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	height = 0;

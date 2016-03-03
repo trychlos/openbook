@@ -48,16 +48,13 @@ typedef struct _ofaLedgerBookRenderPrivate         ofaLedgerBookRenderPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPage               parent;
-
-	/*< private members >*/
-	ofaLedgerBookRenderPrivate *priv;
+	ofaRenderPage      parent;
 }
 	ofaLedgerBookRender;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPageClass          parent;
+	ofaRenderPageClass parent;
 }
 	ofaLedgerBookRenderClass;
 
