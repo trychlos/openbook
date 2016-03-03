@@ -544,11 +544,6 @@
 1016 2016- 2-26 BUG  ViewEntries: footer solde amounts may be displayed as
                      blue even if debit != credit 
 
-1017 2016- 2-26 BUG  Reconciliation: new entries wrongly display a reconciliation
-                     date (though a new entry obviously does not have any
-                     conciliation date) - maybe a uninitialized string ?
-                     see trash/bug1017
-
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
@@ -871,6 +866,12 @@
  997 2016- 2-23 BUG when trying to open a second non modal page never
                     opened before
      2016- 2-24 fixed
+
+1017 2016- 2-26 BUG  Reconciliation: new entries wrongly display a reconciliation
+                     date (though a new entry obviously does not have any
+                     conciliation date) - maybe a uninitialized string ?
+                     see trash/bug1017
+     2016- 3- 3 fixed (maybe, because difficult to reproduce)
 
 1019 2016- 2-27 FEAT Reconciliation: ask for confirmation when amounts are
                      not balanced

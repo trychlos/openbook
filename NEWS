@@ -41,6 +41,7 @@
    - ofaIDateFilter: keep both 'from' and 'to' dates as user preferences (todo #978).
    - ofaImportAssistant: restore the progress bars (todo #1020).
    - ofaNomodalPage: setup initial default size and position (todo #997).
+   - ofaReconcilPage: fix reconciliation date on new entries (todo #1017).
    - ofoAccount: import close indicator.
    - ofoDossier: fix export, taking advantage of ofaBox architecture (todo #1026). 
 

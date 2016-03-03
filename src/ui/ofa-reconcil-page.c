@@ -1328,7 +1328,7 @@ set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, o
 	}
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	dconcil = concil ? ofo_concil_get_dval( concil ) : NULL;
-	sdrap = my_date_to_str( dconcil, ofa_prefs_date_display());
+	sdrap = concil ? my_date_to_str( dconcil, ofa_prefs_date_display()) : g_strdup( "" );
 	sid = concil ? g_strdup_printf( "%lu", ofo_concil_get_id( concil )) : g_strdup( "" );
 
 	gtk_tree_store_set(
