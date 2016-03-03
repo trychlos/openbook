@@ -541,8 +541,6 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
-
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
      2016- 3- 2      Have to be done after exporter/exportable review
 
@@ -888,6 +886,9 @@
                      have a green/yellow light to highlight the balanced status
                      without having to *read* the amounts
      2016- 3- 1 done
+
+1022 2016- 2-28 BUG  RenderPage: grey background is slightly shifted
+     2016- 3- 3 fixed
 
 1023 2016- 2-28 BUG  ExportAssistant: notes should be quoted, and quotes
                      inside notes should be backslashed

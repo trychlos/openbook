@@ -740,7 +740,7 @@ draw_line( ofaIRenderable *instance,
 
 	/* have a rubber every other line */
 	if( line_num % 2 ){
-		ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.25, line_height );
+		ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.5, line_height );
 	}
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line ){
