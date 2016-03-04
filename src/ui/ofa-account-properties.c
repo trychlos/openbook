@@ -30,7 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofo-base.h"
@@ -99,10 +99,9 @@ typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-properties.ui";
 
-static void      idialog_iface_init( myIDialogInterface *iface );
-static guint     idialog_get_interface_version( const myIDialog *instance );
-static gchar    *idialog_get_identifier( const myIDialog *instance );
-static void      idialog_init( myIDialog *instance );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
 static void      init_ui( ofaAccountProperties *dialog );
 static void      remove_balances_page( ofaAccountProperties *self );
 static void      init_balances_page( ofaAccountProperties *self );
@@ -121,7 +120,7 @@ static void      set_msgerr( ofaAccountProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0, \
 		G_ADD_PRIVATE( ofaAccountProperties ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ));
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ));
 
 static void
 account_properties_finalize( GObject *instance )
@@ -196,32 +195,55 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
+/**
+ * ofa_account_properties_run:
+ * @main_window: the main window of the application.
+ * @account: the account.
+ *
+ * Update the properties of an account
+ */
+void
+ofa_account_properties_run( const ofaMainWindow *main_window, ofoAccount *account )
+{
+	static const gchar *thisfn = "ofa_account_properties_run";
+	ofaAccountProperties *self;
+	ofaAccountPropertiesPrivate *priv;
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+	g_debug( "%s: main_window=%p, account=%p",
+			thisfn, ( void * ) main_window, ( void * ) account );
+
+	self = g_object_new( OFA_TYPE_ACCOUNT_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	priv = ofa_account_properties_get_instance_private( self );
+	priv->account = account;
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
 /*
- * myIDialog interface management
+ * myIWindow interface management
  */
 static void
-idialog_iface_init( myIDialogInterface *iface )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_account_properties_idialog_iface_init";
+	static const gchar *thisfn = "ofa_account_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->get_identifier = idialog_get_identifier;
-	iface->init = idialog_init;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
 }
 
 /*
  * identifier is built with class name and template mnemo
  */
 static gchar *
-idialog_get_identifier( const myIDialog *instance )
+iwindow_get_identifier( const myIWindow *instance )
 {
 	ofaAccountPropertiesPrivate *priv;
 	gchar *id;
@@ -242,9 +264,9 @@ idialog_get_identifier( const myIDialog *instance )
  * account
  */
 static void
-idialog_init( myIDialog *instance )
+iwindow_init( myIWindow *instance )
 {
-	static const gchar *thisfn = "ofa_account_properties_idialog_init";
+	static const gchar *thisfn = "ofa_account_properties_iwindow_init";
 	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -254,7 +276,7 @@ idialog_init( myIDialog *instance )
 	self = OFA_ACCOUNT_PROPERTIES( instance );
 	priv = ofa_account_properties_get_instance_private( self );
 
-	main_window = my_idialog_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -348,7 +370,7 @@ idialog_init( myIDialog *instance )
 	my_utils_widget_set_editable( priv->currency_combo, priv->is_current && !priv->has_entries );
 
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( self ));
+		my_iwindow_set_close_button( MY_IWINDOW( self ));
 		priv->ok_btn = NULL;
 	}
 }
@@ -503,36 +525,6 @@ set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, cons
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname_cur ));
 	gtk_label_set_text( label, priv->cur_symbol );
-}
-
-/**
- * ofa_account_properties_run:
- * @main_window: the main window of the application.
- * @account: the account.
- *
- * Update the properties of an account
- */
-void
-ofa_account_properties_run( const ofaMainWindow *main_window, ofoAccount *account )
-{
-	static const gchar *thisfn = "ofa_account_properties_run";
-	ofaAccountProperties *self;
-	ofaAccountPropertiesPrivate *priv;
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-
-	g_debug( "%s: main_window=%p, account=%p",
-			thisfn, ( void * ) main_window, ( void * ) account );
-
-	self = g_object_new( OFA_TYPE_ACCOUNT_PROPERTIES, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
-
-	priv = ofa_account_properties_get_instance_private( self );
-	priv->account = account;
-
-	/* after this call, @self may be invalid */
-	my_idialog_present( MY_IDIALOG( self ));
 }
 
 static void
@@ -702,7 +694,7 @@ on_ok_clicked( GtkButton *button, ofaAccountProperties *self )
 	ok = do_update( self, &msgerr );
 
 	if( ok ){
-		my_idialog_close( MY_IDIALOG( self ));
+		my_iwindow_close( MY_IWINDOW( self ));
 
 	} else {
 		my_utils_dialog_warning( msgerr );

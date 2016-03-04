@@ -61,6 +61,7 @@
  Other changes:
 
    - Do not install the resources which are managed as GResource (todo #970).
+   - myIDialog interface is renamed to myIWindow.
 
 -----------------------------------------------------------------------
  Version 0.48

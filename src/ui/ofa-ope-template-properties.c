@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-igridlist.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
@@ -121,10 +121,9 @@ enum {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-properties.ui";
 
-static void      idialog_iface_init( myIDialogInterface *iface );
-static guint     idialog_get_interface_version( const myIDialog *instance );
-static gchar    *idialog_get_identifier( const myIDialog *instance );
-static void      idialog_init( myIDialog *instance );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
 static void      init_dialog_title( ofaOpeTemplateProperties *self );
 static void      init_mnemo( ofaOpeTemplateProperties *self );
 static void      init_label( ofaOpeTemplateProperties *self );
@@ -153,7 +152,7 @@ static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0, \
 		G_ADD_PRIVATE( ofaOpeTemplateProperties ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ) \
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ) \
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
 
 static void
@@ -229,32 +228,59 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
+/**
+ * ofa_ope_template_properties_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @template: [allow-none]: a #ofoOpeTemplate to be edited.
+ * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
+ *
+ * Creates or represents a #ofaOpeTemplateProperties non-modal dialog
+ * to edit the @template.
+ */
+void
+ofa_ope_template_properties_run(
+		const ofaMainWindow *main_window, ofoOpeTemplate *template, const gchar *ledger )
+{
+	static const gchar *thisfn = "ofa_ope_template_properties_run";
+	ofaOpeTemplateProperties *self;
+	ofaOpeTemplatePropertiesPrivate *priv;
+
+	g_debug( "%s: main_window=%p, template=%p, ledger=%s",
+			thisfn, ( void * ) main_window, ( void * ) template, ledger );
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ));
+
+	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	priv = ofa_ope_template_properties_get_instance_private( self );
+	priv->ope_template = template;
+	priv->ledger = g_strdup( ledger );
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
 /*
- * myIDialog interface management
+ * myIWindow interface management
  */
 static void
-idialog_iface_init( myIDialogInterface *iface )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_ope_template_properties_idialog_iface_init";
+	static const gchar *thisfn = "ofa_ope_template_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->get_identifier = idialog_get_identifier;
-	iface->init = idialog_init;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
 }
 
 /*
  * identifier is built with class name and template mnemo
  */
 static gchar *
-idialog_get_identifier( const myIDialog *instance )
+iwindow_get_identifier( const myIWindow *instance )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	gchar *id;
@@ -269,7 +295,7 @@ idialog_get_identifier( const myIDialog *instance )
 }
 
 static void
-idialog_init( myIDialog *instance )
+iwindow_init( myIWindow *instance )
 {
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
@@ -280,7 +306,7 @@ idialog_init( myIDialog *instance )
 	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	main_window = my_idialog_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -317,7 +343,7 @@ idialog_init( myIDialog *instance )
 	/* if not the current exercice, then only have a 'Close' button */
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( self ));
+		my_iwindow_set_close_button( MY_IWINDOW( self ));
 		priv->ok_btn = NULL;
 	}
 
@@ -643,40 +669,6 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_credit_locked( priv->ope_template, row-1 ));
 }
 
-/**
- * ofa_ope_template_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
- * @template: [allow-none]: a #ofoOpeTemplate to be edited.
- * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
- *
- * Creates or represents a #ofaOpeTemplateProperties non-modal dialog
- * to edit the @template.
- */
-void
-ofa_ope_template_properties_run(
-		const ofaMainWindow *main_window, ofoOpeTemplate *template, const gchar *ledger )
-{
-	static const gchar *thisfn = "ofa_ope_template_properties_run";
-	ofaOpeTemplateProperties *self;
-	ofaOpeTemplatePropertiesPrivate *priv;
-
-	g_debug( "%s: main_window=%p, template=%p, ledger=%s",
-			thisfn, ( void * ) main_window, ( void * ) template, ledger );
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ));
-
-	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_PROPERTIES, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
-
-	priv = ofa_ope_template_properties_get_instance_private( self );
-	priv->ope_template = template;
-	priv->ledger = g_strdup( ledger );
-
-	/* after this call, @self may be invalid */
-	my_idialog_present( MY_IDIALOG( self ));
-}
-
 static void
 on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 {
@@ -751,7 +743,7 @@ on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	main_window = my_idialog_get_main_window( MY_IDIALOG( self ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
@@ -771,7 +763,7 @@ on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 {
 	GtkApplicationWindow *main_window;
 
-	main_window = my_idialog_get_main_window( MY_IDIALOG( self ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	ofa_ope_template_help_run( OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( self ));
@@ -837,7 +829,7 @@ on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
 	ok = do_update( self, &msgerr );
 
 	if( ok ){
-		my_idialog_close( MY_IDIALOG( self ));
+		my_iwindow_close( MY_IWINDOW( self ));
 
 	} else {
 		my_utils_dialog_warning( msgerr );

@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 
 #include "core/ofa-main-window.h"
@@ -37,7 +37,7 @@
  *
  * The instance is make unique because of:
  * 1/ non-modal
- * 2/ managed through myIDialog interface
+ * 2/ managed through myIWindow interface
  * 3/ does not provide any other identifier than standard type name.
  */
 struct _ofaOpeTemplateHelpPrivate {
@@ -53,9 +53,8 @@ struct _ofaOpeTemplateHelpPrivate {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-help.ui";
 
-static void     idialog_iface_init( myIDialogInterface *iface );
-static guint    idialog_get_interface_version( const myIDialog *instance );
-static void     idialog_init( myIDialog *instance );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static void     add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
 static void     on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
 static void     on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help );
@@ -63,7 +62,7 @@ static void     do_close( ofaOpeTemplateHelp *help );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateHelp, ofa_ope_template_help, GTK_TYPE_DIALOG, 0, \
 		G_ADD_PRIVATE( ofaOpeTemplateHelp ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ));
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ));
 
 static void
 ope_template_help_finalize( GObject *instance )
@@ -133,36 +132,6 @@ ofa_ope_template_help_class_init( ofaOpeTemplateHelpClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ope_template_help_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->init = idialog_init;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
-}
-
-static void
-idialog_init( myIDialog *instance )
-{
-	GtkWidget *button;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), instance );
-}
-
 /**
  * ofa_ope_template_help_run:
  * @main_window: the #ofaMainWindow main window of the application.
@@ -176,18 +145,41 @@ void
 ofa_ope_template_help_run( const ofaMainWindow *main_window, GtkWindow *parent )
 {
 	ofaOpeTemplateHelp *self;
-	myIDialog *shown;
+	myIWindow *shown;
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_HELP, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
 	/* after this call, @self may be invalid */
-	shown = my_idialog_present( MY_IDIALOG( self ));
+	shown = my_iwindow_present( MY_IWINDOW( self ));
 
 	add_parent( OFA_OPE_TEMPLATE_HELP( shown ), parent );
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_help_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	GtkWidget *button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), instance );
 }
 
 /*
@@ -239,5 +231,5 @@ on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help )
 static void
 do_close( ofaOpeTemplateHelp *help )
 {
-	my_idialog_close( MY_IDIALOG( help ));
+	my_iwindow_close( MY_IWINDOW( help ));
 }

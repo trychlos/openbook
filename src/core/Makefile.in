@@ -168,25 +168,25 @@ am__objects_2 = $(am__objects_1)
 am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-dialog.lo my-double.lo \
 	my-editable-amount.lo my-editable-date.lo my-field-combo.lo \
-	my-file-monitor.lo my-idialog.lo my-igridlist.lo \
-	my-isettings.lo my-progress-bar.lo my-settings.lo \
-	my-timeout.lo my-utils.lo my-window.lo \
-	ofa-admin-credentials-bin.lo ofa-box.lo ofa-buttons-box.lo \
-	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-file-dir.lo \
-	ofa-file-format.lo ofa-file-format-bin.lo ofa-hub.lo \
-	ofa-iabout.lo ofa-icollectionable.lo ofa-icollector.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
-	ofa-idbperiod.lo ofa-idbprovider.lo ofa-iexeclose-close.lo \
-	ofa-iexportable.lo ofa-ihubber.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-iprefs-page.lo ofa-iprefs-provider.lo \
-	ofa-istore.lo ofa-list-store.lo ofa-page.lo ofa-plugin.lo \
-	ofa-preferences.lo ofa-settings.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-bat.lo ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
+	my-file-monitor.lo my-igridlist.lo my-isettings.lo \
+	my-iwindow.lo my-progress-bar.lo my-settings.lo my-timeout.lo \
+	my-utils.lo my-window.lo ofa-admin-credentials-bin.lo \
+	ofa-box.lo ofa-buttons-box.lo ofa-date-filter-hv-bin.lo \
+	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
+	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
+	ofa-hub.lo ofa-iabout.lo ofa-icollectionable.lo \
+	ofa-icollector.lo ofa-iconcil.lo ofa-idate-filter.lo \
+	ofa-idbconnect.lo ofa-idbeditor.lo ofa-idbmeta.lo \
+	ofa-idbmodel.lo ofa-idbperiod.lo ofa-idbprovider.lo \
+	ofa-iexeclose-close.lo ofa-iexportable.lo ofa-ihubber.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-iprefs-page.lo \
+	ofa-iprefs-provider.lo ofa-istore.lo ofa-list-store.lo \
+	ofa-page.lo ofa-plugin.lo ofa-preferences.lo ofa-settings.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
+	ofs-currency.lo ofs-ope.lo
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -474,9 +474,9 @@ libofa_core_la_SOURCES = \
 	my-field-combo.c									\
 	my-field-combo.h									\
 	my-file-monitor.c									\
-	my-idialog.c										\
 	my-igridlist.c										\
 	my-isettings.c										\
+	my-iwindow.c										\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-settings.h										\
@@ -670,9 +670,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-date.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-igridlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-timeout.Plo@am__quote@

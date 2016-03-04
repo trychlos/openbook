@@ -31,7 +31,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
@@ -1767,7 +1767,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 
 		nomodal = ofa_nomodal_page_get_by_theme( theme );
 		if( nomodal ){
-			my_idialog_present( MY_IDIALOG( nomodal ));
+			my_iwindow_present( MY_IWINDOW( nomodal ));
 		} else {
 			page = main_book_get_page( main_window, main_book, theme );
 			if( !page ){

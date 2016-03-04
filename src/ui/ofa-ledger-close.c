@@ -30,7 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-editable-date.h"
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
@@ -78,9 +78,8 @@ struct _ofaLedgerClosePrivate {
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
 static const gchar  *st_settings        = "LedgerClose";
 
-static void      idialog_iface_init( myIDialogInterface *iface );
-static guint     idialog_get_interface_version( const myIDialog *instance );
-static void      idialog_init( myIDialog *instance );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      iwindow_init( myIWindow *instance );
 static void      setup_ledgers_treeview( ofaLedgerClose *self );
 static void      setup_date( ofaLedgerClose *self );
 static void      setup_others( ofaLedgerClose *self );
@@ -103,7 +102,7 @@ static void      set_settings( ofaLedgerClose *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerClose, ofa_ledger_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerClose )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 ledger_close_finalize( GObject *instance )
@@ -174,24 +173,40 @@ ofa_ledger_close_class_init( ofaLedgerCloseClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
+/**
+ * ofa_ledger_close_run:
+ * @main: the main window of the application.
+ *
+ * Run an intermediate closing on selected ledgers
+ */
+void
+ofa_ledger_close_run( ofaMainWindow *main_window )
+{
+	static const gchar *thisfn = "ofa_ledger_close_run";
+	ofaLedgerClose *self;
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	self = g_object_new( OFA_TYPE_LEDGER_CLOSE, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
 /*
- * myIDialog interface management
+ * myIWindow interface management
  */
 static void
-idialog_iface_init( myIDialogInterface *iface )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_ledger_close_idialog_iface_init";
+	static const gchar *thisfn = "ofa_ledger_close_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->init = idialog_init;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
+	iface->init = iwindow_init;
 }
 
 /*
@@ -200,7 +215,7 @@ idialog_get_interface_version( const myIDialog *instance )
  * when entering, only initialization data are set: main_window
  */
 static void
-idialog_init( myIDialog *instance )
+iwindow_init( myIWindow *instance )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -208,7 +223,7 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
 
-	main_window = my_idialog_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -306,29 +321,6 @@ setup_others( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 	my_utils_widget_set_style( label, "labelerror" );
-}
-
-/**
- * ofa_ledger_close_run:
- * @main: the main window of the application.
- *
- * Run an intermediate closing on selected ledgers
- */
-void
-ofa_ledger_close_run( ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_ledger_close_run";
-	ofaLedgerClose *self;
-
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
-
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
-
-	self = g_object_new( OFA_TYPE_LEDGER_CLOSE, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
-
-	/* after this call, @self may be invalid */
-	my_idialog_present( MY_IDIALOG( self ));
 }
 
 /*

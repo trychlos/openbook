@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
@@ -129,9 +129,8 @@ typedef struct {
 
 typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIPrefsProvider * );
 
-static void           idialog_iface_init( myIDialogInterface *iface );
-static guint          idialog_get_interface_version( const myIDialog *instance );
-static void           idialog_init( myIDialog *instance );
+static void           iwindow_iface_init( myIWindowInterface *iface );
+static void           iwindow_init( myIWindow *instance );
 static void           init_quitting_page( ofaPreferences *self );
 static void           init_dossier_page( ofaPreferences *self );
 static void           init_account_page( ofaPreferences *self );
@@ -167,7 +166,7 @@ static ofaIPrefsPage *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 preferences_finalize( GObject *instance )
@@ -238,30 +237,54 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
+/**
+ * ofa_preferences_run:
+ * @main: the main window of the application.
+ * @plugin: [allow-null]: the #ofaPlugin object for which the properties
+ *  are to be displayed.
+ *
+ * Update the properties of a dossier.
+ */
+void
+ofa_preferences_run( GtkApplicationWindow *main_window, ofaPlugin *plugin )
+{
+	static const gchar *thisfn = "ofa_preferences_run";
+	ofaPreferences *self;
+	ofaPreferencesPrivate *priv;
+
+	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
+
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	self = g_object_new( OFA_TYPE_PREFERENCES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	priv->plugin = plugin;
+	priv->object_page = NULL;
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
 /*
- * myIDialog interface management
+ * myIWindow interface management
  */
 static void
-idialog_iface_init( myIDialogInterface *iface )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_preferences_idialog_iface_init";
+	static const gchar *thisfn = "ofa_preferences_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->init = idialog_init;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
+	iface->init = iwindow_init;
 }
 
 /*
  */
 static void
-idialog_init( myIDialog *instance )
+iwindow_init( myIWindow *instance )
 {
 	ofaPreferences *self;
 	ofaPreferencesPrivate *priv;
@@ -617,37 +640,6 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 	return( ok );
 }
 
-/**
- * ofa_preferences_run:
- * @main: the main window of the application.
- * @plugin: [allow-null]: the #ofaPlugin object for which the properties
- *  are to be displayed.
- *
- * Update the properties of a dossier.
- */
-void
-ofa_preferences_run( GtkApplicationWindow *main_window, ofaPlugin *plugin )
-{
-	static const gchar *thisfn = "ofa_preferences_run";
-	ofaPreferences *self;
-	ofaPreferencesPrivate *priv;
-
-	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
-
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
-
-	self = g_object_new( OFA_TYPE_PREFERENCES, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
-
-	priv = ofa_preferences_get_instance_private( self );
-
-	priv->plugin = plugin;
-	priv->object_page = NULL;
-
-	/* after this call, @self may be invalid */
-	my_idialog_present( MY_IDIALOG( self ));
-}
-
 /*
  * activate the first page of the preferences notebook
  */
@@ -774,7 +766,7 @@ on_ok_clicked( GtkButton *button, ofaPreferences *self )
 	ok = do_update( self, &msgerr );
 
 	if( ok ){
-		my_idialog_close( MY_IDIALOG( self ));
+		my_iwindow_close( MY_IWINDOW( self ));
 
 	} else {
 		my_utils_dialog_warning( msgerr );

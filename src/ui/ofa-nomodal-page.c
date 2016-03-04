@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-page.h"
 
@@ -47,16 +47,15 @@ struct _ofaNomodalPagePrivate {
 
 static GList *st_list                   = NULL;
 
-static void      idialog_iface_init( myIDialogInterface *iface );
-static guint     idialog_get_interface_version( const myIDialog *instance );
-static gchar    *idialog_get_identifier( const myIDialog *instance );
-static void      idialog_init( myIDialog *instance );
-static void      idialog_get_default_size( myIDialog *instance, guint *x, guint *y, guint *cx, guint *cy );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
+static void      iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy );
 static void      on_finalized_page( void *empty, GObject *finalized_page );
 
-G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0,
 		G_ADD_PRIVATE( ofaNomodalPage ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ));
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 nomodal_page_finalize( GObject *instance )
@@ -120,79 +119,6 @@ ofa_nomodal_page_class_init( ofaNomodalPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = nomodal_page_finalize;
 }
 
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_nomodal_page_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idialog_get_interface_version;
-	iface->get_identifier = idialog_get_identifier;
-	iface->init = idialog_init;
-	iface->get_default_size = idialog_get_default_size;
-}
-
-static guint
-idialog_get_interface_version( const myIDialog *instance )
-{
-	return( 1 );
-}
-
-static gchar *
-idialog_get_identifier( const myIDialog *instance )
-{
-	ofaNomodalPagePrivate *priv;
-	const gchar *cstr;
-
-	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
-	cstr = G_OBJECT_TYPE_NAME( priv->top_widget );
-
-	return( g_strdup( cstr ));
-}
-
-static void
-idialog_init( myIDialog *instance )
-{
-	ofaNomodalPagePrivate *priv;
-
-	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
-
-	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
-	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
-	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
-
-	gtk_container_add( GTK_CONTAINER( instance ), priv->top_widget );
-}
-
-/*
- * we set the default size and position to those of the main window
- * so that we are sure they are suitable for the page
- */
-static void
-idialog_get_default_size( myIDialog *instance, guint *x, guint *y, guint *cx, guint *cy )
-{
-	GtkApplicationWindow *main_window;
-	gint mw_x, mw_y, mw_width, mw_height;
-
-	*x = 0;
-	*y = 0;
-	*cx = 0;
-	*cy = 0;
-	main_window = my_idialog_get_main_window( instance );
-	if( GTK_IS_WINDOW( main_window )){
-		gtk_window_get_position( GTK_WINDOW( main_window ), &mw_x, &mw_y );
-		gtk_window_get_size( GTK_WINDOW( main_window ), &mw_width, &mw_height );
-		*x = mw_x + 100;
-		*y = mw_y + 100;
-		*cx = mw_width - 150;
-		*cy = mw_height - 150;
-	}
-}
-
 /**
  * ofa_nomodal_page_run:
  * @main_window: the #ofaMainWindow main window of the application.
@@ -216,18 +142,84 @@ ofa_nomodal_page_run( const ofaMainWindow *main_window, const gchar *title, GtkW
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
 	self = g_object_new( OFA_TYPE_NOMODAL_PAGE, NULL );
-	my_idialog_set_main_window( MY_IDIALOG( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
 	priv = ofa_nomodal_page_get_instance_private( self );
 	priv->title = g_strdup( title );
 	priv->top_widget = page;
 
 	/* after this call, @self may be invalid */
-	my_idialog_present( MY_IDIALOG( self ));
+	my_iwindow_present( MY_IWINDOW( self ));
 
-	if( MY_IS_IDIALOG( self )){
+	if( MY_IS_IWINDOW( self )){
 		st_list = g_list_prepend( st_list, self );
 		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_finalized_page, NULL );
+	}
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_nomodal_page_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+	iface->get_default_size = iwindow_get_default_size;
+}
+
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
+	ofaNomodalPagePrivate *priv;
+	const gchar *cstr;
+
+	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
+	cstr = G_OBJECT_TYPE_NAME( priv->top_widget );
+
+	return( g_strdup( cstr ));
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaNomodalPagePrivate *priv;
+
+	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
+
+	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
+	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
+	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
+
+	gtk_container_add( GTK_CONTAINER( instance ), priv->top_widget );
+}
+
+/*
+ * we set the default size and position to those of the main window
+ * so that we are sure they are suitable for the page
+ */
+static void
+iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy )
+{
+	GtkApplicationWindow *main_window;
+	gint mw_x, mw_y, mw_width, mw_height;
+
+	*x = 0;
+	*y = 0;
+	*cx = 0;
+	*cy = 0;
+	main_window = my_iwindow_get_main_window( instance );
+	if( GTK_IS_WINDOW( main_window )){
+		gtk_window_get_position( GTK_WINDOW( main_window ), &mw_x, &mw_y );
+		gtk_window_get_size( GTK_WINDOW( main_window ), &mw_width, &mw_height );
+		*x = mw_x + 100;
+		*y = mw_y + 100;
+		*cx = mw_width - 150;
+		*cy = mw_height - 150;
 	}
 }
 
