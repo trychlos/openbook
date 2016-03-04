@@ -50,8 +50,6 @@ AM_CPPFLAGS += \
 
 openbook_SOURCES = \
 	main.c												\
-	my-assistant.c										\
-	my-assistant.h										\
 	my-cell-renderer-amount.c							\
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\

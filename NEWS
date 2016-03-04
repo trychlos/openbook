@@ -68,6 +68,7 @@
    - Migrate to G_ADD_PRIVATE (todo #994).
    - Migrate to GResource (todo #826).
    - Return if dispose_has_run fails (todo #995).
+   - myAssistant: removed base class.
    - myIAssistant: new interface.
    - myIDialog: new get_default_size() interface method.
    - myIDialog interface is renamed to myIWindow.
