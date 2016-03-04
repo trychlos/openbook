@@ -35,8 +35,6 @@
 
 #include "api/ofa-main-window-def.h"
 
-#include "ui/my-assistant.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXPORT_ASSISTANT                ( ofa_export_assistant_get_type())

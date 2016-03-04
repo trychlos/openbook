@@ -136,8 +136,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)" \
 	"$(DESTDIR)$(ui_datadir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_openbook_OBJECTS = main.$(OBJEXT) my-assistant.$(OBJEXT) \
-	my-cell-renderer-amount.$(OBJEXT) \
+am_openbook_OBJECTS = main.$(OBJEXT) my-cell-renderer-amount.$(OBJEXT) \
 	my-cell-renderer-date.$(OBJEXT) my-iassistant.$(OBJEXT) \
 	my-tab.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-book-bin.$(OBJEXT) \
@@ -481,8 +480,6 @@ ui_datadir = $(pkgdatadir)/ui
 css_datadir = $(pkgdatadir)/css
 openbook_SOURCES = \
 	main.c												\
-	my-assistant.c										\
-	my-assistant.h										\
 	my-cell-renderer-amount.c							\
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
@@ -881,7 +878,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-amount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-cell-renderer-date.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iassistant.Po@am__quote@

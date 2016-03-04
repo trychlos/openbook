@@ -561,6 +561,7 @@ async_create_window( sExecuteInfos *infos, const gchar *window_title )
 	gtk_container_add( GTK_CONTAINER( scrolled ), infos->textview );
 
 	infos->close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( infos->window ), GTK_RESPONSE_ACCEPT );
+	my_utils_widget_set_margins( infos->close_btn, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( infos->close_btn, FALSE );
 
 	my_utils_window_restore_position( GTK_WINDOW( infos->window ), st_window_name );
