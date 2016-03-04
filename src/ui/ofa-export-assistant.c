@@ -612,8 +612,9 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p2_export_settings );
 	priv->p2_export_settings = ofa_file_format_new( found_key );
-	ofa_file_format_change_prefs_name( priv->p2_export_settings, priv->p2_settings_key );
-	ofa_file_format_bin_change_format( priv->p2_settings_prefs, priv->p2_export_settings );
+	ofa_file_format_set_prefs_name( priv->p2_export_settings, priv->p2_settings_key );
+	ofa_file_format_set_mode( priv->p2_export_settings, OFA_FFMODE_EXPORT );
+	ofa_file_format_bin_set_format( priv->p2_settings_prefs, priv->p2_export_settings );
 
 	g_free( candidate_key );
 
@@ -977,6 +978,8 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	/* message provided by the ofaIExportable interface */
 	g_signal_connect(
 			G_OBJECT( priv->p5_base ), "ofa-progress", G_CALLBACK( p5_on_progress ), self );
+
+	gtk_widget_show_all( page );
 
 	g_idle_add(( GSourceFunc ) export_data, self );
 }

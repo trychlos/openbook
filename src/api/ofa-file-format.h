@@ -134,7 +134,10 @@ void           ofa_file_format_set              ( ofaFileFormat *settings,
 														gchar string_delim,
 														gint count_headers );
 
-void           ofa_file_format_change_prefs_name( ofaFileFormat *settings,
+void           ofa_file_format_set_mode         ( ofaFileFormat *settings,
+														ofaFFmode mode );
+
+void           ofa_file_format_set_prefs_name   ( ofaFileFormat *settings,
 														const gchar *new_name );
 
 G_END_DECLS

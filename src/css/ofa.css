@@ -69,7 +69,7 @@ GtkLabel.labelinvalid {
 }
 
 GtkLabel.labelinfo {
-	color: #0000ff;
+	color: #0000ff;				/* blue */
 }
 
 GtkLabel.labelbalance {

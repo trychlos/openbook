@@ -30,6 +30,7 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
@@ -38,6 +39,7 @@
 #include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"
@@ -52,6 +54,7 @@
 #include "core/ofa-file-format-bin.h"
 #include "core/ofa-main-window.h"
 
+#include "ui/my-iassistant.h"
 #include "ui/ofa-import-assistant.h"
 
 /* Export Assistant
@@ -78,6 +81,7 @@ enum {
 /* private instance data
  */
 struct _ofaImportAssistantPrivate {
+	gboolean          dispose_has_run;
 
 	/* p0: introduction
 	 */
@@ -158,14 +162,13 @@ static const sRadios st_radios[] = {
 /* data set against each of above radio buttons */
 #define DATA_BUTTON_INDEX               "ofa-data-button-idx"
 
-/* the user preferences stored as a string list
- * folder
- */
-static const gchar *st_prefs_import     = "ImportAssistant-settings";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-import-assistant.ui";
+static const gchar *st_prefs_import     = "ofaImportAssistant-settings";
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-import-assistant.ui";
-static const gchar *st_ui_id            = "ImportAssistant";
-
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     iassistant_iface_init( myIAssistantInterface *iface );
+static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     iimporter_iface_init( ofaIImporterInterface *iface );
 static guint    iimporter_get_interface_version( const ofaIImporter *instance );
 static void     p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -197,34 +200,36 @@ static void     p5_on_message( ofaIImporter *importer, guint line_number, ofeImp
 static void     get_settings( ofaImportAssistant *self );
 static void     update_settings( ofaImportAssistant *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, MY_TYPE_ASSISTANT, 0,
+G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaImportAssistant )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IASSISTANT, iassistant_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ))
 
-static const ofsAssistant st_pages_cb [] = {
+static const ofsIAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
 				NULL,
 				NULL,
-				( myAssistantCb ) p0_do_forward },
+				( myIAssistantCb ) p0_do_forward },
 		{ ASSIST_PAGE_SELECT,
-				( myAssistantCb ) p1_do_init,
-				( myAssistantCb ) p1_do_display,
-				( myAssistantCb ) p1_do_forward },
+				( myIAssistantCb ) p1_do_init,
+				( myIAssistantCb ) p1_do_display,
+				( myIAssistantCb ) p1_do_forward },
 		{ ASSIST_PAGE_TYPE,
-				( myAssistantCb ) p2_do_init,
-				( myAssistantCb ) p2_do_display,
-				( myAssistantCb ) p2_do_forward },
+				( myIAssistantCb ) p2_do_init,
+				( myIAssistantCb ) p2_do_display,
+				( myIAssistantCb ) p2_do_forward },
 		{ ASSIST_PAGE_SETTINGS,
-				( myAssistantCb ) p3_do_init,
-				( myAssistantCb ) p3_do_display,
-				( myAssistantCb ) p3_do_forward },
+				( myIAssistantCb ) p3_do_init,
+				( myIAssistantCb ) p3_do_display,
+				( myIAssistantCb ) p3_do_forward },
 		{ ASSIST_PAGE_CONFIRM,
 				NULL,
-				( myAssistantCb ) p4_do_display,
+				( myIAssistantCb ) p4_do_display,
 				NULL },
 		{ ASSIST_PAGE_DONE,
 				NULL,
-				( myAssistantCb ) p5_do_display,
+				( myIAssistantCb ) p5_do_display,
 				NULL },
 		{ -1 }
 };
@@ -259,9 +264,11 @@ import_assistant_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_IMPORT_ASSISTANT( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
-		priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->p3_import_settings );
@@ -286,7 +293,10 @@ ofa_import_assistant_init( ofaImportAssistant *self )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	priv->dispose_has_run = FALSE;
 	priv->p2_type = -1;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -298,6 +308,30 @@ ofa_import_assistant_class_init( ofaImportAssistantClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = import_assistant_dispose;
 	G_OBJECT_CLASS( klass )->finalize = import_assistant_finalize;
+
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
+
+/**
+ * Run the assistant.
+ *
+ * @main: the main window of the application.
+ */
+void
+ofa_import_assistant_run( ofaMainWindow *main_window )
+{
+	static const gchar *thisfn = "ofa_import_assistant_run";
+	ofaImportAssistant *self;
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+
+	g_debug( "%s: main_window=%p", thisfn, main_window );
+
+	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
 /*
@@ -319,54 +353,71 @@ iimporter_get_interface_version( const ofaIImporter *instance )
 	return( 1 );
 }
 
-/**
- * Run the assistant.
- *
- * @main: the main window of the application.
+/*
+ * myIWindow interface management
  */
-void
-ofa_import_assistant_run( ofaMainWindow *main_window )
+static void
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_import_assistant_run";
-	ofaImportAssistant *self;
+	static const gchar *thisfn = "ofa_export_assistant_iwindow_iface_init";
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
-
-	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT,
-							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_WINDOW_XML,  st_ui_xml,
-							MY_PROP_WINDOW_NAME, st_ui_id,
-							NULL );
-
-	get_settings( self );
-
-	/* messages provided by the ofaIImporter interface */
-	g_signal_connect( self, "pulse", G_CALLBACK( p5_on_pulse ), self );
-	g_signal_connect( self, "progress", G_CALLBACK( p5_on_progress ), self );
-	g_signal_connect( self, "message", G_CALLBACK( p5_on_message ), self );
-
-	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
-	my_assistant_run( MY_ASSISTANT( self ));
+	iface->init = iwindow_init;
 }
 
 static void
-p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
+	get_settings( OFA_IMPORT_ASSISTANT( instance ));
+
+	/* messages provided by the ofaIImporter interface */
+	g_signal_connect( instance, "pulse", G_CALLBACK( p5_on_pulse ), instance );
+	g_signal_connect( instance, "progress", G_CALLBACK( p5_on_progress ), instance );
+	g_signal_connect( instance, "message", G_CALLBACK( p5_on_message ), instance );
+}
+
+/*
+ * myIAssistant interface management
+ */
+static void
+iassistant_iface_init( myIAssistantInterface *iface )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iassistant_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->is_willing_to_quit = iassistant_is_willing_to_quit;
+}
+
+static gboolean
+iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
+{
+	return( ofa_prefs_assistant_is_willing_to_quit( keyval ));
+}
+
+static void
+p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p0_do_forward";
 	ofaImportAssistantPrivate *priv;
-	GtkApplication *application;
+	GtkApplicationWindow *main_window;
+
+	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	application = my_window_get_application( MY_WINDOW( self ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) priv->hub );
 }
 
 /*
@@ -433,7 +484,7 @@ static void
 p1_on_file_activated( GtkFileChooser *chooser, ofaImportAssistant *self )
 {
 	if( p1_check_for_complete( self )){
-		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( self )));
+		gtk_assistant_next_page( GTK_ASSISTANT( self ));
 	}
 }
 
@@ -451,7 +502,7 @@ p1_check_for_complete( ofaImportAssistant *self )
 	ok = my_strlen( priv->p1_furi ) &&
 			my_utils_uri_is_readable_file( priv->p1_furi );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
 	return( ok );
 }
@@ -560,7 +611,7 @@ p2_check_for_complete( ofaImportAssistant *self )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->p2_type > 0 );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), priv->p2_type > 0 );
 }
 
 static void
@@ -657,8 +708,9 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p3_import_settings );
 	priv->p3_import_settings = ofa_file_format_new( found_key );
-	ofa_file_format_change_prefs_name( priv->p3_import_settings, priv->p3_settings_key );
-	ofa_file_format_bin_change_format( priv->p3_settings_prefs, priv->p3_import_settings );
+	ofa_file_format_set_prefs_name( priv->p3_import_settings, priv->p3_settings_key );
+	ofa_file_format_set_mode( priv->p3_import_settings, OFA_FFMODE_IMPORT );
+	ofa_file_format_bin_set_format( priv->p3_settings_prefs, priv->p3_import_settings );
 
 	g_free( candidate_key );
 
@@ -685,7 +737,7 @@ p3_check_for_complete( ofaImportAssistant *self )
 	gtk_label_set_text( GTK_LABEL( priv->p3_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 }
 
 static void
@@ -780,7 +832,7 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	complete = my_strlen( priv->p1_furi ) > 0;
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), complete );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), complete );
 }
 
 /*
@@ -799,7 +851,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), FALSE );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
@@ -859,8 +911,7 @@ p5_error_no_interface( const ofaImportAssistant *self )
 	g_free( str );
 
 	/* prepare the assistant to terminate */
-	label = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )) ), "p5-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );
 
 	cstr = _( "Unfortunately, we have not been able to do anything for "
 			"import the specified file.\n"
@@ -868,8 +919,9 @@ p5_error_no_interface( const ofaImportAssistant *self )
 			"Openbook maintainer." );
 
 	gtk_label_set_text( GTK_LABEL( label ), cstr );
+	my_utils_widget_set_style( label, "labelerror" );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 }
 
 static gboolean
@@ -881,6 +933,7 @@ p5_do_import( ofaImportAssistant *self )
 	gint ffmt;
 	guint count, errors;
 	gboolean has_worked;
+	const gchar *style;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
@@ -904,8 +957,7 @@ p5_do_import( ofaImportAssistant *self )
 	}
 
 	/* then display the result */
-	label = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )) ), "p5-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );
 
 	str = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( priv->p2_type_btn )));
 
@@ -914,29 +966,36 @@ p5_do_import( ofaImportAssistant *self )
 			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
 					"imported into « %s »." ),
 					count, priv->p1_furi, str );
+			style = "labelinfo";
+
 		} else if( errors > 0 ){
 			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
 					"during analyse and import phase.\n"
 					"The « %s » recordset has been left unchanged.\n"
 					"Please fix these errors, and retry then." ), priv->p1_furi, str );
+			style = "labelerror";
+
 		} else if( errors < 0 ){
 			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
 					"during insertion phase.\n"
 					"The « %s » recordset only contains the successfully inserted records.\n"
 					"Please fix these errors, and retry then." ), priv->p1_furi, str );
+			style = "labelerror";
 		}
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, the required file format is not "
 				"managed at this time.\n"
 				"Please fix this, and retry, then." ));
+		style = "labelerror";
 	}
 
 	g_free( str );
 
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
+	my_utils_widget_set_style( label, style );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), TRUE );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	/* do not continue and remove from idle callbacks list */
 	return( FALSE );

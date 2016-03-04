@@ -39,8 +39,6 @@
 
 #include "api/ofa-main-window-def.h"
 
-#include "ui/my-assistant.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_IMPORT_ASSISTANT                ( ofa_import_assistant_get_type())
@@ -54,13 +52,13 @@ typedef struct _ofaImportAssistantPrivate        ofaImportAssistantPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myAssistant      parent;
+	GtkAssistant      parent;
 }
 	ofaImportAssistant;
 
 typedef struct {
 	/*< public members >*/
-	myAssistantClass parent;
+	GtkAssistantClass parent;
 }
 	ofaImportAssistantClass;
 

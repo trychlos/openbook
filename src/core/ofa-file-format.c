@@ -550,6 +550,27 @@ ofa_file_format_set( ofaFileFormat *settings,
 }
 
 /**
+ * ofa_file_format_set_mode:
+ * @settings:
+ * @mode:
+ *
+ * Set the import/export mode.
+ */
+void
+ofa_file_format_set_mode( ofaFileFormat *settings, ofaFFmode mode )
+{
+	ofaFileFormatPrivate *priv;
+
+	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
+
+	priv = ofa_file_format_get_instance_private( settings );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->mode = mode;
+}
+
+/**
  * ofa_file_change_prefs_name:
  * @settings:
  * @name:
@@ -559,7 +580,7 @@ ofa_file_format_set( ofaFileFormat *settings,
  * (hopefully more specific) user preference.
  */
 void
-ofa_file_format_change_prefs_name( ofaFileFormat *settings, const gchar *name )
+ofa_file_format_set_prefs_name( ofaFileFormat *settings, const gchar *name )
 {
 	ofaFileFormatPrivate *priv;
 

@@ -579,7 +579,7 @@ ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
 }
 
 /**
- * ofa_file_format_bin_change_format:
+ * ofa_file_format_bin_set_format:
  * @bin: this #ofaFileFormatBin instance.
  * @format: the new #ofaFileFormat object to be considered.
  *
@@ -587,7 +587,7 @@ ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
  * then take a new reference on @format.
  */
 void
-ofa_file_format_bin_change_format( ofaFileFormatBin *bin, ofaFileFormat *format )
+ofa_file_format_bin_set_format( ofaFileFormatBin *bin, ofaFileFormat *format )
 {
 	ofaFileFormatBinPrivate *priv;
 
@@ -607,6 +607,7 @@ ofa_file_format_bin_change_format( ofaFileFormatBin *bin, ofaFileFormat *format 
 static void
 setup_format( ofaFileFormatBin *bin )
 {
+	static const gchar *thisfn = "ofa_file_format_bin_setup_format";
 	ofaFileFormatBinPrivate *priv;
 	gchar *str;
 	GtkTreeModel *tmodel;
@@ -644,6 +645,8 @@ setup_format( ofaFileFormatBin *bin )
 	mode = ofa_file_format_get_ffmode( priv->settings );
 	switch( mode ){
 		case OFA_FFMODE_EXPORT:
+			/* have toggle button
+			 * remove spin button */
 			gtk_widget_show( priv->headers_btn );
 			bvalue = ofa_file_format_has_headers( priv->settings );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
@@ -654,6 +657,8 @@ setup_format( ofaFileFormatBin *bin )
 			break;
 
 		case OFA_FFMODE_IMPORT:
+			/* hide toggle
+			 * have spin button */
 			gtk_widget_hide( priv->headers_btn );
 			gtk_widget_show( priv->headers_label );
 			gtk_widget_show( priv->headers_count );
@@ -662,6 +667,9 @@ setup_format( ofaFileFormatBin *bin )
 			gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
 			gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
 			break;
+
+		default:
+			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
 	}
 
 	/* export format */
