@@ -75,7 +75,8 @@ static void          do_delete( ofaTVADeclarePage *page, ofoTVARecord *record, G
 static gboolean      delete_confirmed( ofaTVADeclarePage *self, ofoTVARecord *record );
 static gboolean      find_row_by_ptr( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
-G_DEFINE_TYPE( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE_EXTENDED( ofaTVADeclarePage, ofa_tva_declare_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaTVADeclarePage ))
 
 static void
 tva_declare_page_finalize( GObject *instance )
@@ -116,8 +117,6 @@ ofa_tva_declare_page_init( ofaTVADeclarePage *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_TVA_DECLARE_PAGE( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_DECLARE_PAGE, ofaTVADeclarePagePrivate );
 }
 
 static void
@@ -133,8 +132,6 @@ ofa_tva_declare_page_class_init( ofaTVADeclarePageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaTVADeclarePagePrivate ));
 }
 
 static GtkWidget *
@@ -147,7 +144,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_TVA_DECLARE_PAGE( page )->priv;
+	priv = ofa_tva_declare_page_get_instance_private( OFA_TVA_DECLARE_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -178,7 +175,7 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	GtkTreeSelection *select;
 	ofaTVARecordStore *store;
 
-	priv = self->priv;
+	priv = ofa_tva_declare_page_get_instance_private( self );
 
 	frame = gtk_frame_new( NULL );
 	my_utils_widget_set_margins( frame, 4, 4, 4, 0 );
@@ -252,7 +249,7 @@ v_setup_buttons( ofaPage *page )
 	ofaTVADeclarePagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 
-	priv = OFA_TVA_DECLARE_PAGE( page )->priv;
+	priv = ofa_tva_declare_page_get_instance_private( OFA_TVA_DECLARE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -282,7 +279,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	g_return_val_if_fail( page && OFA_IS_TVA_DECLARE_PAGE( page ), NULL );
 
-	priv = OFA_TVA_DECLARE_PAGE( page )->priv;
+	priv = ofa_tva_declare_page_get_instance_private( OFA_TVA_DECLARE_PAGE( page ));
 
 	return( priv->record_treeview );
 }
@@ -323,7 +320,8 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 	ofoTVARecord *record;
 	gboolean is_record;
 
-	priv = self->priv;
+	priv = ofa_tva_declare_page_get_instance_private( self );
+
 	record = treeview_get_selected( self, &tmodel, &iter );
 	is_record = record && OFO_IS_TVA_RECORD( record );
 
@@ -345,7 +343,8 @@ treeview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIt
 	GtkTreeSelection *select;
 	ofoTVARecord *object;
 
-	priv = page->priv;
+	priv = ofa_tva_declare_page_get_instance_private( page );
+
 	object = NULL;
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->record_treeview ));
@@ -455,13 +454,11 @@ ofa_tva_declare_page_set_selected( ofaTVADeclarePage *page, ofoTVARecord *record
 
 	g_return_if_fail( page && OFA_IS_TVA_DECLARE_PAGE( page ));
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	if( OFA_PAGE( page )->prot->dispose_has_run ){
-		g_return_if_reached();
-	}
+	priv = ofa_tva_declare_page_get_instance_private( page );
 
 	if( find_row_by_ptr( page, record, &tmodel, &iter )){
-		priv = page->priv;
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->record_treeview ));
 		path = gtk_tree_model_get_path( tmodel, &iter );
 		gtk_tree_selection_select_path( select, path );
@@ -480,7 +477,8 @@ find_row_by_ptr( ofaTVADeclarePage *page, ofoTVARecord *record, GtkTreeModel **t
 	const GDate *dend;
 	gint cmp;
 
-	priv = page->priv;
+	priv = ofa_tva_declare_page_get_instance_private( page );
+
 	*tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->record_treeview ));
 	mnemo = ofo_tva_record_get_mnemo( record );
 	dend = ofo_tva_record_get_end( record );

@@ -54,16 +54,13 @@ typedef struct _ofaTVADeclarePagePrivate         ofaTVADeclarePagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                   parent;
-
-	/*< private members >*/
-	ofaTVADeclarePagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaTVADeclarePage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass              parent;
+	ofaPageClass parent;
 }
 	ofaTVADeclarePageClass;
 

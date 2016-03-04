@@ -519,10 +519,9 @@
 1010 2016- 2-25 FEAT Ope: formula interpretation should be recursive
 
 1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
-                     the indexes should updated accordingly
+                     the indexes should be updated accordingly
 
 1014 2016- 2-26 FEAT ViewEntries: filter per operation template
-     2016- 3- 3      must be done after #1008
 
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
