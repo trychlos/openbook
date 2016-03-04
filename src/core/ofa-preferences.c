@@ -153,6 +153,7 @@ static void           check_for_activable_dlg( ofaPreferences *self );
 static void           on_ok_clicked( GtkButton *button, ofaPreferences *self );
 static gboolean       do_update( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
+static gboolean       is_willing_to_quit( void );
 static gboolean       do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_account_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_locales_page( ofaPreferences *self, gchar **msgerr );
@@ -854,6 +855,33 @@ gboolean
 ofa_prefs_assistant_confirm_on_cancel( void )
 {
 	return( ofa_settings_user_get_boolean( st_assistant_confirm_on_cancel ));
+}
+
+/**
+ * ofa_prefs_assistant_is_willing_to_quit:
+ */
+gboolean
+ofa_prefs_assistant_is_willing_to_quit( guint keyval )
+{
+	gboolean ok;
+
+	ok = (( keyval == GDK_KEY_Escape &&
+			ofa_prefs_assistant_quit_on_escape() && (!ofa_prefs_assistant_confirm_on_escape() || is_willing_to_quit())) ||
+			( keyval == GDK_KEY_Cancel && (!ofa_prefs_assistant_confirm_on_cancel() || is_willing_to_quit())));
+
+	return( ok );
+}
+
+static gboolean
+is_willing_to_quit( void )
+{
+	gboolean ok;
+
+	ok = my_utils_dialog_question(
+			_( "Are you sure you want to quit this assistant ?" ),
+			_( "_Quit" ));
+
+	return( ok );
 }
 
 /**

@@ -76,6 +76,7 @@ void         ofa_preferences_run     ( GtkApplicationWindow *parent, ofaPlugin *
 gboolean     ofa_prefs_assistant_quit_on_escape         ( void );
 gboolean     ofa_prefs_assistant_confirm_on_escape      ( void );
 gboolean     ofa_prefs_assistant_confirm_on_cancel      ( void );
+gboolean     ofa_prefs_assistant_is_willing_to_quit     ( guint keyval );
 
 gboolean     ofa_prefs_appli_confirm_on_quit            ( void );
 gboolean     ofa_prefs_appli_confirm_on_altf4           ( void );

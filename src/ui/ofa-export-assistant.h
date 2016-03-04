@@ -50,13 +50,13 @@ typedef struct _ofaExportAssistantPrivate        ofaExportAssistantPrivate;
 
 typedef struct {
 	/*< public memnbers >*/
-	myAssistant      parent;
+	GtkAssistant      parent;
 }
 	ofaExportAssistant;
 
 typedef struct {
 	/*< public memnbers >*/
-	myAssistantClass parent;
+	GtkAssistantClass parent;
 }
 	ofaExportAssistantClass;
 

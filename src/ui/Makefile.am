@@ -56,6 +56,8 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\
 	my-cell-renderer-date.h								\
+	my-iassistant.c										\
+	my-iassistant.h										\
 	my-tab.c											\
 	my-tab.h											\
 	ofa-about.c											\
@@ -268,7 +270,6 @@ ui_files = \
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-exercice-close-assistant.ui						\
-	ofa-export-assistant.ui								\
 	ofa-import-assistant.ui								\
 	ofa-ledger-properties.ui							\
 	ofa-ledger-book-bin.ui								\
@@ -286,6 +287,7 @@ resources_ui = \
 	ofa-account-filter-vv-bin.ui						\
 	ofa-account-properties.ui							\
 	ofa-entry-page.ui									\
+	ofa-export-assistant.ui								\
 	ofa-guided-input.ui									\
 	ofa-guided-input-bin.ui								\
 	ofa-ledger-close.ui									\

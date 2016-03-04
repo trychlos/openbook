@@ -60,8 +60,8 @@ typedef enum {
 /* some used keys
  */
 #define SETTINGS_EXPORT_FOLDER                       "ExportDefaultFolder"
-#define SETTINGS_EXPORT_SETTINGS                     "ExportSettings"
-#define SETTINGS_IMPORT_SETTINGS                     "ImportSettings"
+#define SETTINGS_EXPORT_SETTINGS                     "ofaExportAssistant"		/* same than class name */
+#define SETTINGS_IMPORT_SETTINGS                     "ofaImportAssistant"
 
 GType        ofa_settings_get_type                   ( void ) G_GNUC_CONST;
 
