@@ -32,14 +32,14 @@ plugin_datadir = $(pkgdatadir)/$(plugin_id)
 init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
 
 AM_CPPFLAGS += \
-	-I $(top_srcdir)								\
-	-I $(top_srcdir)/src							\
-	$(OPENBOOK_CFLAGS)								\
-	-DG_LOG_DOMAIN=\"OFA\"							\
-	-DPROVIDER_ID=\"$(plugin_id)\"					\
-	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
-	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
-	-DINIT1DIR=\""$(init1_datadir)"\"				\
+	-I $(top_srcdir)									\
+	-I $(top_srcdir)/src								\
+	$(OPENBOOK_CFLAGS)									\
+	-DG_LOG_DOMAIN=\"OFA\"								\
+	-DPROVIDER_ID=\"$(plugin_id)\"						\
+	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"			\
+	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"				\
+	-DINIT1DIR=\""$(init1_datadir)"\"					\
 	$(NULL)
 
 resdir = $(srcdir)
@@ -51,81 +51,86 @@ openbook-resources.h: $(resxml) $(resource_files)
 	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 openbook_built_sources = \
-	openbook-resources.c							\
-	openbook-resources.h							\
+	openbook-resources.c								\
+	openbook-resources.h								\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)						\
+	$(openbook_built_sources)							\
 	$(NULL)
 
 nodist_openbook_SOURCES = \
-	$(openbook_built_sources)						\
+	$(openbook_built_sources)							\
 	$(NULL)
 
 libofa_mysql_la_SOURCES = \
-	$(BUILT_SOURCES)								\
-	ofa-mysql.c										\
-	ofa-mysql.h										\
-	ofa-mysql-cmdline.c								\
-	ofa-mysql-cmdline.h								\
-	ofa-mysql-connect.c								\
-	ofa-mysql-connect.h								\
-	ofa-mysql-editor-display.c						\
-	ofa-mysql-editor-display.h						\
-	ofa-mysql-editor-enter.c						\
-	ofa-mysql-editor-enter.h						\
-	ofa-mysql-meta.c								\
-	ofa-mysql-meta.h								\
-	ofa-mysql-idbmodel.c							\
-	ofa-mysql-idbmodel.h							\
-	ofa-mysql-idbprovider.c							\
-	ofa-mysql-idbprovider.h							\
-	ofa-mysql-iprefs-provider.c						\
-	ofa-mysql-iprefs-provider.h						\
-	ofa-mysql-period.c								\
-	ofa-mysql-period.h								\
-	ofa-mysql-prefs-bin.c							\
-	ofa-mysql-prefs-bin.h							\
-	ofa-mysql-user-prefs.c							\
-	ofa-mysql-user-prefs.h							\
-	ofa-module.c									\
+	$(BUILT_SOURCES)									\
+	ofa-mysql.c											\
+	ofa-mysql.h											\
+	ofa-mysql-cmdline.c									\
+	ofa-mysql-cmdline.h									\
+	ofa-mysql-connect.c									\
+	ofa-mysql-connect.h									\
+	ofa-mysql-editor-display.c							\
+	ofa-mysql-editor-display.h							\
+	ofa-mysql-editor-enter.c							\
+	ofa-mysql-editor-enter.h							\
+	ofa-mysql-meta.c									\
+	ofa-mysql-meta.h									\
+	ofa-mysql-idbmodel.c								\
+	ofa-mysql-idbmodel.h								\
+	ofa-mysql-idbprovider.c								\
+	ofa-mysql-idbprovider.h								\
+	ofa-mysql-iprefs-provider.c							\
+	ofa-mysql-iprefs-provider.h							\
+	ofa-mysql-period.c									\
+	ofa-mysql-period.h									\
+	ofa-mysql-prefs-bin.c								\
+	ofa-mysql-prefs-bin.h								\
+	ofa-mysql-user-prefs.c								\
+	ofa-mysql-user-prefs.h								\
+	ofa-module.c										\
 	$(NULL)
 
 libofa_mysql_la_LIBADD = \
-	$(OPENBOOK_LIBS)								\
+	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
 libofa_mysql_la_LDFLAGS = \
-	-module 										\
-	-no-undefined									\
-	-avoid-version									\
+	-module 											\
+	-no-undefined										\
+	-avoid-version										\
 	$(NULL)
 
 ui_files = \
 	$(NULL)
 
 resources_ui = \
-	ofa-mysql-editor-display.ui						\
-	ofa-mysql-editor-enter.ui						\
-	ofa-mysql-prefs-bin.ui							\
+	ofa-mysql-editor-display.ui							\
+	ofa-mysql-editor-enter.ui							\
+	ofa-mysql-prefs-bin.ui								\
 	$(NULL)
 
 images_files = \
 	$(NULL)
 
 plugin_data_DATA = \
-	$(ui_files)										\
-	$(images_files)									\
+	$(ui_files)											\
+	$(images_files)										\
 	$(NULL)
 
 #pkglibexec_SCRIPTS = \
-#	ofa-mysql-clone.sh								\
+#	ofa-mysql-clone.sh									\
 #	$(NULL)
 
+CLEANFILES = \
+	$(BUILT_SOURCES)									\
+	$(NULL)
+
 EXTRA_DIST = \
-	$(plugin_data_DATA)								\
-	$(resources_ui)									\
+	$(plugin_data_DATA)									\
+	$(resources_ui)										\
+	$(resxml)											\
 	$(NULL)
 
 endif

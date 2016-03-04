@@ -580,6 +580,7 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(core_data_DATA)									\
 	$(resources_ui)										\
+	$(resxml)											\
 	$(NULL)
 
 all: $(BUILT_SOURCES)

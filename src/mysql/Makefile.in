@@ -113,14 +113,14 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @HAVE_MYSQL_TRUE@am__append_1 = \
-@HAVE_MYSQL_TRUE@	-I $(top_srcdir)								\
-@HAVE_MYSQL_TRUE@	-I $(top_srcdir)/src							\
-@HAVE_MYSQL_TRUE@	$(OPENBOOK_CFLAGS)								\
-@HAVE_MYSQL_TRUE@	-DG_LOG_DOMAIN=\"OFA\"							\
-@HAVE_MYSQL_TRUE@	-DPROVIDER_ID=\"$(plugin_id)\"					\
-@HAVE_MYSQL_TRUE@	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
-@HAVE_MYSQL_TRUE@	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
-@HAVE_MYSQL_TRUE@	-DINIT1DIR=\""$(init1_datadir)"\"				\
+@HAVE_MYSQL_TRUE@	-I $(top_srcdir)									\
+@HAVE_MYSQL_TRUE@	-I $(top_srcdir)/src								\
+@HAVE_MYSQL_TRUE@	$(OPENBOOK_CFLAGS)									\
+@HAVE_MYSQL_TRUE@	-DG_LOG_DOMAIN=\"OFA\"								\
+@HAVE_MYSQL_TRUE@	-DPROVIDER_ID=\"$(plugin_id)\"						\
+@HAVE_MYSQL_TRUE@	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"			\
+@HAVE_MYSQL_TRUE@	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"				\
+@HAVE_MYSQL_TRUE@	-DINIT1DIR=\""$(init1_datadir)"\"					\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 subdir = src/mysql
@@ -458,81 +458,86 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@resxml = $(srcdir)/openbook.gresource.xml
 @HAVE_MYSQL_TRUE@resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
 @HAVE_MYSQL_TRUE@openbook_built_sources = \
-@HAVE_MYSQL_TRUE@	openbook-resources.c							\
-@HAVE_MYSQL_TRUE@	openbook-resources.h							\
+@HAVE_MYSQL_TRUE@	openbook-resources.c								\
+@HAVE_MYSQL_TRUE@	openbook-resources.h								\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@BUILT_SOURCES = \
-@HAVE_MYSQL_TRUE@	$(openbook_built_sources)						\
+@HAVE_MYSQL_TRUE@	$(openbook_built_sources)							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@nodist_openbook_SOURCES = \
-@HAVE_MYSQL_TRUE@	$(openbook_built_sources)						\
+@HAVE_MYSQL_TRUE@	$(openbook_built_sources)							\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
-@HAVE_MYSQL_TRUE@	$(BUILT_SOURCES)								\
-@HAVE_MYSQL_TRUE@	ofa-mysql.c										\
-@HAVE_MYSQL_TRUE@	ofa-mysql.h										\
-@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.c								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect.c								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-connect.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.c						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.h						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.c						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-meta.c								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-meta.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.c							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.h							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.c							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.h							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.c						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.h						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-period.c								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-period.h								\
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.h							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.c							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.h							\
-@HAVE_MYSQL_TRUE@	ofa-module.c									\
+@HAVE_MYSQL_TRUE@	$(BUILT_SOURCES)									\
+@HAVE_MYSQL_TRUE@	ofa-mysql.c											\
+@HAVE_MYSQL_TRUE@	ofa-mysql.h											\
+@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.c									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.h									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect.c									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-connect.h									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-meta.c									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-meta.h									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbmodel.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-idbprovider.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-period.c									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-period.h									\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.h								\
+@HAVE_MYSQL_TRUE@	ofa-module.c										\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@libofa_mysql_la_LIBADD = \
-@HAVE_MYSQL_TRUE@	$(OPENBOOK_LIBS)								\
+@HAVE_MYSQL_TRUE@	$(OPENBOOK_LIBS)									\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@libofa_mysql_la_LDFLAGS = \
-@HAVE_MYSQL_TRUE@	-module 										\
-@HAVE_MYSQL_TRUE@	-no-undefined									\
-@HAVE_MYSQL_TRUE@	-avoid-version									\
+@HAVE_MYSQL_TRUE@	-module 											\
+@HAVE_MYSQL_TRUE@	-no-undefined										\
+@HAVE_MYSQL_TRUE@	-avoid-version										\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@ui_files = \
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@resources_ui = \
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.ui						\
-@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.ui							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.ui							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.ui								\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@images_files = \
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@plugin_data_DATA = \
-@HAVE_MYSQL_TRUE@	$(ui_files)										\
-@HAVE_MYSQL_TRUE@	$(images_files)									\
+@HAVE_MYSQL_TRUE@	$(ui_files)											\
+@HAVE_MYSQL_TRUE@	$(images_files)										\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 
 #pkglibexec_SCRIPTS = \
-#	ofa-mysql-clone.sh								\
+#	ofa-mysql-clone.sh									\
 #	$(NULL)
+@HAVE_MYSQL_TRUE@CLEANFILES = \
+@HAVE_MYSQL_TRUE@	$(BUILT_SOURCES)									\
+@HAVE_MYSQL_TRUE@	$(NULL)
+
 @HAVE_MYSQL_TRUE@EXTRA_DIST = \
-@HAVE_MYSQL_TRUE@	$(plugin_data_DATA)								\
-@HAVE_MYSQL_TRUE@	$(resources_ui)									\
+@HAVE_MYSQL_TRUE@	$(plugin_data_DATA)									\
+@HAVE_MYSQL_TRUE@	$(resources_ui)										\
+@HAVE_MYSQL_TRUE@	$(resxml)											\
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 all: $(BUILT_SOURCES)
@@ -790,6 +795,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

@@ -174,7 +174,7 @@ resources_ui = \
 core_data_DATA = \
 	$(ui_files)											\
 	$(NULL)
-	
+
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
@@ -182,4 +182,5 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(core_data_DATA)									\
 	$(resources_ui)										\
+	$(resxml)											\
 	$(NULL)

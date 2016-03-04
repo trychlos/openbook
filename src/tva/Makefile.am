@@ -27,11 +27,11 @@ pkglib_LTLIBRARIES = libofa-tva.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
 AM_CPPFLAGS += \
-	-I $(top_srcdir)								\
-	-I $(top_srcdir)/src							\
-	$(OPENBOOK_CFLAGS)								\
-	-DG_LOG_DOMAIN=\"OFA\"							\
-	-DPLUGINUIDIR=\"$(plugin_datadir)\"				\
+	-I $(top_srcdir)									\
+	-I $(top_srcdir)/src								\
+	$(OPENBOOK_CFLAGS)									\
+	-DG_LOG_DOMAIN=\"OFA\"								\
+	-DPLUGINUIDIR=\"$(plugin_datadir)\"					\
 	$(NULL)
 
 resdir = $(srcdir)
@@ -43,76 +43,81 @@ openbook-resources.h: $(resxml) $(resource_files)
 	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 openbook_built_sources = \
-	openbook-resources.c							\
-	openbook-resources.h							\
+	openbook-resources.c								\
+	openbook-resources.h								\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)						\
+	$(openbook_built_sources)							\
 	$(NULL)
 
 nodist_openbook_SOURCES = \
-	$(openbook_built_sources)						\
+	$(openbook_built_sources)							\
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
-	ofa-module.c									\
-	ofa-tva.c										\
-	ofa-tva.h										\
-	ofa-tva-dbmodel.c								\
-	ofa-tva-dbmodel.h								\
-	ofa-tva-declare-page.c							\
-	ofa-tva-declare-page.h							\
-	ofa-tva-execlose.c								\
-	ofa-tva-execlose.h								\
-	ofa-tva-form-properties.c						\
-	ofa-tva-form-properties.h						\
-	ofa-tva-form-store.c							\
-	ofa-tva-form-store.h							\
-	ofa-tva-main.c									\
-	ofa-tva-main.h									\
-	ofa-tva-manage-page.c							\
-	ofa-tva-manage-page.h							\
-	ofa-tva-record-new.c							\
-	ofa-tva-record-new.h							\
-	ofa-tva-record-properties.c						\
-	ofa-tva-record-properties.h						\
-	ofa-tva-record-store.c							\
-	ofa-tva-record-store.h							\
-	ofo-tva-form.c									\
-	ofo-tva-form.h									\
-	ofo-tva-record.c								\
-	ofo-tva-record.h								\
+	ofa-module.c										\
+	ofa-tva.c											\
+	ofa-tva.h											\
+	ofa-tva-dbmodel.c									\
+	ofa-tva-dbmodel.h									\
+	ofa-tva-declare-page.c								\
+	ofa-tva-declare-page.h								\
+	ofa-tva-execlose.c									\
+	ofa-tva-execlose.h									\
+	ofa-tva-form-properties.c							\
+	ofa-tva-form-properties.h							\
+	ofa-tva-form-store.c								\
+	ofa-tva-form-store.h								\
+	ofa-tva-main.c										\
+	ofa-tva-main.h										\
+	ofa-tva-manage-page.c								\
+	ofa-tva-manage-page.h								\
+	ofa-tva-record-new.c								\
+	ofa-tva-record-new.h								\
+	ofa-tva-record-properties.c							\
+	ofa-tva-record-properties.h							\
+	ofa-tva-record-store.c								\
+	ofa-tva-record-store.h								\
+	ofo-tva-form.c										\
+	ofo-tva-form.h										\
+	ofo-tva-record.c									\
+	ofo-tva-record.h									\
 	$(NULL)
 
 libofa_tva_la_LIBADD = \
-	$(OPENBOOK_LIBS)								\
+	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
 libofa_tva_la_LDFLAGS = \
-	-module 										\
-	-no-undefined									\
-	-avoid-version									\
+	-module 											\
+	-no-undefined										\
+	-avoid-version										\
 	$(NULL)
 
 ui_files = \
-	ofa-tva-record-new.ui							\
-	ofa-tva-record-properties.ui					\
+	ofa-tva-record-new.ui								\
+	ofa-tva-record-properties.ui						\
 	$(NULL)
 
 resources_ui = \
-	ofa-tva-form-properties.ui						\
+	ofa-tva-form-properties.ui							\
 	$(NULL)
 
 images_files = \
 	$(NULL)
 
 plugin_data_DATA = \
-	$(ui_files)										\
-	$(images_files)									\
+	$(ui_files)											\
+	$(images_files)										\
+	$(NULL)
+
+CLEANFILES = \
+	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(plugin_data_DATA)								\
-	$(resources_ui)									\
+	$(plugin_data_DATA)									\
+	$(resources_ui)										\
+	$(resxml)											\
 	$(NULL)
