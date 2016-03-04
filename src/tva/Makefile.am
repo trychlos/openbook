@@ -34,6 +34,27 @@ AM_CPPFLAGS += \
 	-DPLUGINUIDIR=\"$(plugin_datadir)\"				\
 	$(NULL)
 
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+
+openbook_built_sources = \
+	openbook-resources.c							\
+	openbook-resources.h							\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(openbook_built_sources)						\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)						\
+	$(NULL)
+
 libofa_tva_la_SOURCES = \
 	ofa-module.c									\
 	ofa-tva.c										\
@@ -75,9 +96,12 @@ libofa_tva_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-tva-form-properties.ui						\
 	ofa-tva-record-new.ui							\
 	ofa-tva-record-properties.ui					\
+	$(NULL)
+
+resources_ui = \
+	ofa-tva-form-properties.ui						\
 	$(NULL)
 
 images_files = \
@@ -90,4 +114,5 @@ plugin_data_DATA = \
 
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
+	$(resources_ui)									\
 	$(NULL)

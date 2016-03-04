@@ -56,7 +56,6 @@
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 #include "tva/ofo-tva-form.h"
@@ -74,22 +73,20 @@ typedef struct _ofaTVAFormPropertiesPrivate         ofaTVAFormPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                     parent;
-
-	/*< private members >*/
-	ofaTVAFormPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaTVAFormProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass                parent;
+	GtkDialogClass parent;
 }
 	ofaTVAFormPropertiesClass;
 
-GType    ofa_tva_form_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_tva_form_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_tva_form_properties_run     ( const ofaMainWindow *main_window, ofoTVAForm *form );
+void  ofa_tva_form_properties_run     ( const ofaMainWindow *main_window,
+											ofoTVAForm *form );
 
 G_END_DECLS
 

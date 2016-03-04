@@ -78,7 +78,6 @@ static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTr
 static void        on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self );
 static ofoTVAForm *treeview_get_selected( ofaTVAManagePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void        on_new_clicked( GtkButton *button, ofaTVAManagePage *page );
-static void        select_row_by_object( ofaTVAManagePage *page, ofoTVAForm *form );
 static void        on_update_clicked( GtkButton *button, ofaTVAManagePage *page );
 static void        on_delete_clicked( GtkButton *button, ofaTVAManagePage *page );
 static void        try_to_delete_current_row( ofaTVAManagePage *page );
@@ -371,45 +370,7 @@ on_new_clicked( GtkButton *button, ofaTVAManagePage *page )
 
 	priv = page->priv;
 	form = ofo_tva_form_new();
-
-	if( ofa_tva_form_properties_run( priv->main_window, form )){
-		select_row_by_object( page, form );
-
-	} else {
-		g_object_unref( form );
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
-}
-
-static void
-select_row_by_object( ofaTVAManagePage *page, ofoTVAForm *object )
-{
-	ofaTVAManagePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTVAForm *row_object;
-	GtkTreeSelection *selection;
-	gint cmp;
-
-	priv = page->priv;
-	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->form_treeview ));
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, TVA_FORM_COL_OBJECT, &row_object, -1 );
-			g_return_if_fail( row_object && OFO_IS_TVA_FORM( row_object ));
-			g_object_unref( row_object );
-			cmp = ofo_tva_form_compare_id( object, row_object );
-			if( cmp == 0 ){
-				selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->form_treeview ));
-				gtk_tree_selection_select_iter( selection, &iter );
-				break;
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
+	ofa_tva_form_properties_run( priv->main_window, form );
 }
 
 static void

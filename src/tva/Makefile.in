@@ -422,6 +422,22 @@ top_srcdir = @top_srcdir@
 plugin_id = ofa-tva
 pkglib_LTLIBRARIES = libofa-tva.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook_built_sources = \
+	openbook-resources.c							\
+	openbook-resources.h							\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(openbook_built_sources)						\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)						\
+	$(NULL)
+
 libofa_tva_la_SOURCES = \
 	ofa-module.c									\
 	ofa-tva.c										\
@@ -463,9 +479,12 @@ libofa_tva_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-tva-form-properties.ui						\
 	ofa-tva-record-new.ui							\
 	ofa-tva-record-properties.ui					\
+	$(NULL)
+
+resources_ui = \
+	ofa-tva-form-properties.ui						\
 	$(NULL)
 
 images_files = \
@@ -478,9 +497,11 @@ plugin_data_DATA = \
 
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
+	$(resources_ui)									\
 	$(NULL)
 
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
@@ -704,13 +725,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LTLIBRARIES) $(DATA)
 installdirs:
 	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(plugin_datadir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -740,6 +763,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
@@ -811,7 +835,7 @@ ps-am:
 
 uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibLTLIBRARIES cscopelist-am ctags \
@@ -831,6 +855,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
 
 .PRECIOUS: Makefile
 
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

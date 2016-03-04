@@ -33,10 +33,9 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-igridlist.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -49,6 +48,7 @@
 /* private instance data
  */
 struct _ofaTVAFormPropertiesPrivate {
+	gboolean dispose_has_run;
 
 	/* internals
 	 */
@@ -56,7 +56,6 @@ struct _ofaTVAFormPropertiesPrivate {
 	gboolean       is_current;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
-	gboolean       updated;
 
 	/* UI
 	 */
@@ -109,9 +108,11 @@ enum {
 	N_BOOL_COLUMNS
 };
 
-static const gchar  *st_ui_xml       = PLUGINUIDIR "/ofa-tva-form-properties.ui";
-static const gchar  *st_ui_id        = "TVAFormPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-form-properties.ui";
 
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     iwindow_init( myIWindow *instance );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( const myIGridList *instance );
 static void     igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
@@ -119,7 +120,6 @@ static void     set_detail_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_detail_values( ofaTVAFormProperties *self, guint row );
 static void     set_boolean_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_boolean_values( ofaTVAFormProperties *self, guint row );
-static void     v_init_dialog( myDialog *dialog );
 static void     on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self );
@@ -131,12 +131,14 @@ static void     on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *se
 static void     on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     check_for_enable_dlg( ofaTVAFormProperties *self );
 static gboolean is_dialog_validable( ofaTVAFormProperties *self );
-static gboolean v_quit_on_ok( myDialog *dialog );
-static gboolean do_update( ofaTVAFormProperties *self );
+static void     on_ok_clicked( GtkButton *button, ofaTVAFormProperties *self );
+static gboolean do_update( ofaTVAFormProperties *self, gchar **msgerr );
 static void     set_message( ofaTVAFormProperties *dialog, const gchar *msg );
 
-G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, MY_TYPE_DIALOG, 0, \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaTVAFormProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
 tva_form_properties_finalize( GObject *instance )
@@ -147,10 +149,11 @@ tva_form_properties_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_TVA_FORM_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_TVA_FORM_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_TVA_FORM_PROPERTIES( instance )->priv;
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
 	g_free( priv->mnemo );
 	g_free( priv->label );
 
@@ -161,9 +164,15 @@ tva_form_properties_finalize( GObject *instance )
 static void
 tva_form_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_TVA_FORM_PROPERTIES( instance ));
+	ofaTVAFormPropertiesPrivate *priv;
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	g_return_if_fail( instance && OFA_IS_TVA_FORM_PROPERTIES( instance ));
+
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -176,16 +185,19 @@ static void
 ofa_tva_form_properties_init( ofaTVAFormProperties *self )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_init";
+	ofaTVAFormPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_TVA_FORM_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_TVA_FORM_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_FORM_PROPERTIES, ofaTVAFormPropertiesPrivate );
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
-	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -198,10 +210,176 @@ ofa_tva_form_properties_class_init( ofaTVAFormPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = tva_form_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_form_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
 
-	g_type_class_add_private( klass, sizeof( ofaTVAFormPropertiesPrivate ));
+/**
+ * ofa_tva_form_properties_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @form: the #ofoTVAForm to be displayed/updated.
+ *
+ * Update the properties of a tva_form.
+ */
+void
+ofa_tva_form_properties_run( const ofaMainWindow *main_window, ofoTVAForm *form )
+{
+	static const gchar *thisfn = "ofa_tva_form_properties_run";
+	ofaTVAFormProperties *self;
+	ofaTVAFormPropertiesPrivate *priv;
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	g_debug( "%s: main_window=%p, form=%p",
+			thisfn, ( void * ) main_window, ( void * ) form );
+
+	self = g_object_new( OFA_TYPE_TVA_FORM_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	priv = ofa_tva_form_properties_get_instance_private( self );
+	priv->tva_form = form;
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_form_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and VAT form mnemo
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	gchar *id;
+
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%s",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_tva_form_get_mnemo( priv->tva_form ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
+	guint count, idx;
+	gchar *title;
+	const gchar *mnemo;
+	GtkEntry *entry;
+	GtkWidget *label;
+
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	priv->is_current = ofo_dossier_is_current( dossier );
+
+	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
+	if( !mnemo ){
+		priv->is_new = TRUE;
+		title = g_strdup( _( "Defining a new TVA form" ));
+	} else {
+		title = g_strdup_printf( _( "Updating « %s » TVA form" ), mnemo );
+	}
+	gtk_window_set_title( GTK_WINDOW( instance ), title );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	/* mnemonic */
+	priv->mnemo = g_strdup( mnemo );
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-entry" ));
+	if( priv->mnemo ){
+		gtk_entry_set_text( entry, priv->mnemo );
+	}
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), instance );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
+	priv->label = g_strdup( ofo_tva_form_get_label( priv->tva_form ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-entry" ));
+	if( priv->label ){
+		gtk_entry_set_text( entry, priv->label );
+	}
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
+	priv->corresp_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-has-corresp" );
+	g_return_if_fail( priv->corresp_btn && GTK_TOGGLE_BUTTON( priv->corresp_btn ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->corresp_btn ),
+			ofo_tva_form_get_has_correspondence( priv->tva_form ));
+
+	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_form );
+	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_form );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+
+	/* set the detail rows after having set editability for current
+	 * dossier (because my_utils_container_set_editable() set the
+	 * sensitivity flag without considering the has_amount flag or
+	 * the row number - which is ok in general but not here) */
+	priv->det_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-grid" );
+	g_return_if_fail( priv->det_grid && GTK_IS_GRID( priv->det_grid ));
+	my_igridlist_init(
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ), priv->is_current, N_DET_COLUMNS );
+	count = ofo_tva_form_detail_get_count( priv->tva_form );
+	for( idx=0 ; idx<count ; ++idx ){
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ));
+	}
+
+	priv->bool_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p3-grid" );
+	g_return_if_fail( priv->bool_grid && GTK_IS_GRID( priv->bool_grid ));
+	my_igridlist_init(
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ), priv->is_current, N_BOOL_COLUMNS );
+	count = ofo_tva_form_boolean_get_count( priv->tva_form );
+	for( idx=0 ; idx<count ; ++idx ){
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ));
+	}
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !priv->is_current ){
+		my_iwindow_set_close_button( MY_IWINDOW( instance ));
+		priv->ok_btn = NULL;
+	}
+
+	check_for_enable_dlg( OFA_TVA_FORM_PROPERTIES( instance ));
 }
 
 /*
@@ -231,7 +409,8 @@ igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
 
 	g_return_if_fail( instance && OFA_IS_TVA_FORM_PROPERTIES( instance ));
 
-	priv = OFA_TVA_FORM_PROPERTIES( instance )->priv;
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
 	if( grid == GTK_GRID( priv->det_grid )){
 		set_detail_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
 		set_detail_values( OFA_TVA_FORM_PROPERTIES( instance ), row );
@@ -253,7 +432,7 @@ set_detail_widgets( ofaTVAFormProperties *self, guint row )
 	GtkWidget *entry, *toggle, *spin;
 	GtkAdjustment *adjustment;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
 	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
@@ -322,7 +501,8 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 	guint idx, level;
 	gboolean has_base, has_amount;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	idx = row-1;
 
 	spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, row );
@@ -383,7 +563,7 @@ set_boolean_widgets( ofaTVAFormProperties *self, guint row )
 	ofaTVAFormPropertiesPrivate *priv;
 	GtkWidget *entry;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
@@ -403,7 +583,8 @@ set_boolean_values( ofaTVAFormProperties *self, guint row )
 	const gchar *cstr;
 	guint idx;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	idx = row-1;
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, row );
@@ -414,157 +595,12 @@ set_boolean_values( ofaTVAFormProperties *self, guint row )
 	}
 }
 
-/**
- * ofa_tva_form_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
- * @form: the #ofoTVAForm to be displayed/updated.
- *
- * Update the properties of a tva_form.
- */
-gboolean
-ofa_tva_form_properties_run( const ofaMainWindow *main_window, ofoTVAForm *form )
-{
-	static const gchar *thisfn = "ofa_tva_form_properties_run";
-	ofaTVAFormProperties *self;
-	gboolean updated;
-
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-	g_debug( "%s: main_window=%p, form=%p",
-			thisfn, ( void * ) main_window, ( void * ) form );
-
-	self = g_object_new(
-					OFA_TYPE_TVA_FORM_PROPERTIES,
-					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_WINDOW_XML,  st_ui_xml,
-					MY_PROP_WINDOW_NAME, st_ui_id,
-					NULL );
-
-	self->priv->tva_form = form;
-
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
-}
-
-static void
-v_init_dialog( myDialog *dialog )
-{
-	ofaTVAFormProperties *self;
-	ofaTVAFormPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	GtkApplication *application;
-	ofoDossier *dossier;
-	guint count, idx;
-	gchar *title;
-	const gchar *mnemo;
-	GtkEntry *entry;
-	GtkWidget *label;
-	GtkContainer *container;
-
-	self = OFA_TVA_FORM_PROPERTIES( dialog );
-	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
-
-	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
-	if( !mnemo ){
-		priv->is_new = TRUE;
-		title = g_strdup( _( "Defining a new TVA form" ));
-	} else {
-		title = g_strdup_printf( _( "Updating « %s » TVA form" ), mnemo );
-	}
-	gtk_window_set_title( GTK_WINDOW( container ), title );
-
-	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-
-	/* mnemonic */
-	priv->mnemo = g_strdup( mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo-entry" ));
-	if( priv->mnemo ){
-		gtk_entry_set_text( entry, priv->mnemo );
-	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
-
-	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-
-	priv->label = g_strdup( ofo_tva_form_get_label( priv->tva_form ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label-entry" ));
-	if( priv->label ){
-		gtk_entry_set_text( entry, priv->label );
-	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
-
-	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-
-	priv->corresp_btn = my_utils_container_get_child_by_name( container, "p1-has-corresp" );
-	g_return_if_fail( priv->corresp_btn && GTK_TOGGLE_BUTTON( priv->corresp_btn ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->corresp_btn ),
-			ofo_tva_form_get_has_correspondence( priv->tva_form ));
-
-	my_utils_container_notes_init( container, tva_form );
-	my_utils_container_updstamp_init( container, tva_form );
-	my_utils_container_set_editable( container, priv->is_current );
-
-	/* set the detail rows after having set editability for current
-	 * dossier (because my_utils_container_set_editable() set the
-	 * sensitivity flag without considering the has_amount flag or
-	 * the row number - which is ok in general but not here) */
-	priv->det_grid = my_utils_container_get_child_by_name( container, "p2-grid" );
-	g_return_if_fail( priv->det_grid && GTK_IS_GRID( priv->det_grid ));
-	my_igridlist_init(
-			MY_IGRIDLIST( dialog ), GTK_GRID( priv->det_grid ), priv->is_current, N_DET_COLUMNS );
-	count = ofo_tva_form_detail_get_count( priv->tva_form );
-	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( dialog ), GTK_GRID( priv->det_grid ));
-	}
-
-	priv->bool_grid = my_utils_container_get_child_by_name( container, "p3-grid" );
-	g_return_if_fail( priv->bool_grid && GTK_IS_GRID( priv->bool_grid ));
-	my_igridlist_init(
-			MY_IGRIDLIST( dialog ), GTK_GRID( priv->bool_grid ), priv->is_current, N_BOOL_COLUMNS );
-	count = ofo_tva_form_boolean_get_count( priv->tva_form );
-	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( dialog ), GTK_GRID( priv->bool_grid ));
-	}
-
-	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
-		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
-	}
-
-	check_for_enable_dlg( self );
-}
-
 static void
 on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	g_free( priv->mnemo );
 	priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -577,7 +613,7 @@ on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	g_free( priv->label );
 	priv->label = g_strdup( gtk_entry_get_text( entry ));
@@ -605,7 +641,8 @@ on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	GtkWidget *entry;
 	gboolean checked;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	checked = gtk_toggle_button_get_active( button );
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, row );
@@ -629,7 +666,8 @@ on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	GtkWidget *entry;
 	gboolean checked;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	checked = gtk_toggle_button_get_active( button );
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
@@ -660,7 +698,8 @@ check_for_enable_dlg( ofaTVAFormProperties *self )
 	ofaTVAFormPropertiesPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	ok = is_dialog_validable( self );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
@@ -676,7 +715,8 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	gboolean ok, exists, subok;
 	gchar *msgerr;
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
 	msgerr = NULL;
 	ok = ofo_tva_form_is_valid( priv->mnemo, &msgerr );
 	//g_debug( "is_dialog_validable: is_valid=%s", ok ? "True":"False" );
@@ -696,13 +736,22 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	return( ok );
 }
 
-/*
- * return %TRUE to allow quitting the dialog
- */
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaTVAFormProperties *self )
 {
-	return( do_update( OFA_TVA_FORM_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 /*
@@ -711,7 +760,7 @@ v_quit_on_ok( myDialog *dialog )
  * Please note that a record is uniquely identified by the mnemo + the date
  */
 static gboolean
-do_update( ofaTVAFormProperties *self )
+do_update( ofaTVAFormProperties *self, gchar **msgerr )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	gint i;
@@ -719,10 +768,11 @@ do_update( ofaTVAFormProperties *self )
 	const gchar *code, *label, *base, *amount;
 	gchar *prev_mnemo;
 	guint rows_count, level;
+	gboolean ok;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	priv = self->priv;
+	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	prev_mnemo = g_strdup( ofo_tva_form_get_mnemo( priv->tva_form ));
 
@@ -731,7 +781,7 @@ do_update( ofaTVAFormProperties *self )
 	ofo_tva_form_set_has_correspondence(
 			priv->tva_form,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->corresp_btn )));
-	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), tva_form );
+	my_utils_container_notes_get( GTK_WINDOW( self ), tva_form );
 
 	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
 	ofo_tva_form_detail_free_all( priv->tva_form );
@@ -774,16 +824,20 @@ do_update( ofaTVAFormProperties *self )
 	}
 
 	if( priv->is_new ){
-		priv->updated =
-				ofo_tva_form_insert( priv->tva_form, priv->hub );
+		ok = ofo_tva_form_insert( priv->tva_form, priv->hub );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to create this new VAT form" ));
+		}
 	} else {
-		priv->updated =
-				ofo_tva_form_update( priv->tva_form, prev_mnemo );
+		ok = ofo_tva_form_update( priv->tva_form, prev_mnemo );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the VAT form" ));
+		}
 	}
 
 	g_free( prev_mnemo );
 
-	return( priv->updated );
+	return( ok );
 }
 
 static void
@@ -791,13 +845,10 @@ set_message( ofaTVAFormProperties *dialog, const gchar *msg )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 
-	priv = dialog->priv;
+	priv = ofa_tva_form_properties_get_instance_private( dialog );
 
 	if( !priv->msg_label ){
-		priv->msg_label =
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-						"px-msgerr" );
+		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 		my_utils_widget_set_style( priv->msg_label, "labelerror");
 	}

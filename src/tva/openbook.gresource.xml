@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/trychlos/openbook/tva">
+    <file>ofa-tva-form-properties.ui</file>
+    <file>ofa-tva-record-new.ui</file>
+  </gresource>
+</gresources>
