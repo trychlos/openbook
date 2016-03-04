@@ -32,6 +32,7 @@
    - ofaDossierOpen: gives a title to the dialog.
    - ofaDossierOpen: shows all dossier, even if only archived.
    - ofaEntryPage: display operation template (todo #1008).
+   - ofaExerciceCloseAssistant: makes the assistant non-modal, using new myIAssistant interface.
    - ofaExportAssistant: makes the assistant non-modal, using new myIAssistant interface.
    - ofaExportAssistant: keep the format configuration per data type.
    - ofaFileFormat: now haves a string delimiter configuration option (todo #1028).

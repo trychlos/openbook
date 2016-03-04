@@ -143,6 +143,9 @@ void     my_iassistant_set_page_initialized      ( myIAssistant *instance,
 void     my_iassistant_set_current_page_complete ( myIAssistant *instance,
 														gboolean complete );
 
+void     my_iassistant_set_current_page_type     ( myIAssistant *instance,
+														GtkAssistantPageType type );
+
 G_END_DECLS
 
 #endif /* __MY_IASSISTANT_H__ */

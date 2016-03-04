@@ -494,6 +494,29 @@ my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean comple
 	}
 }
 
+/**
+ * my_assistant_set_current_page_type:
+ * @instance: this #myIAssistant instance.
+ * @type: the type to be set.
+ *
+ * Set the current page type.
+ */
+void
+my_iassistant_set_current_page_type( myIAssistant *instance, GtkAssistantPageType type )
+{
+	sIAssistantInstance *inst_data;
+
+	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+
+	inst_data = get_iassistant_instance_data( instance );
+	g_return_if_fail( inst_data );
+
+	if( inst_data->cur_page_widget ){
+		g_return_if_fail( GTK_IS_WIDGET( inst_data->cur_page_widget ));
+		gtk_assistant_set_page_type( GTK_ASSISTANT( instance ), inst_data->cur_page_widget, type );
+	}
+}
+
 static sIAssistantInstance *
 get_iassistant_instance_data( myIAssistant *instance )
 {

@@ -81,8 +81,6 @@
  *        consulting a closed exercice
  */
 
-#include "ui/my-assistant.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXERCICE_CLOSE_ASSISTANT                ( ofa_exercice_close_assistant_get_type())
@@ -96,16 +94,13 @@ typedef struct _ofaExerciceCloseAssistantPrivate         ofaExerciceCloseAssista
 
 typedef struct {
 	/*< public members >*/
-	myAssistant                       parent;
-
-	/*< private members >*/
-	ofaExerciceCloseAssistantPrivate *priv;
+	GtkAssistant      parent;
 }
 	ofaExerciceCloseAssistant;
 
 typedef struct {
 	/*< public members >*/
-	myAssistantClass                  parent;
+	GtkAssistantClass parent;
 }
 	ofaExerciceCloseAssistantClass;
 
