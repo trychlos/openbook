@@ -118,9 +118,9 @@ static void      on_ok_clicked( GtkButton *button, ofaAccountProperties *self );
 static gboolean  do_update( ofaAccountProperties *self, gchar **msgerr );
 static void      set_msgerr( ofaAccountProperties *self, const gchar *msg );
 
-G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0, \
-		G_ADD_PRIVATE( ofaAccountProperties ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaAccountProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 account_properties_finalize( GObject *instance )
