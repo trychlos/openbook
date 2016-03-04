@@ -86,7 +86,8 @@ static gboolean    delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form );
 static void        on_declare_clicked( GtkButton *button, ofaTVAManagePage *page );
 static gboolean    do_declare( ofaTVAManagePage *page, ofoTVAForm *form );
 
-G_DEFINE_TYPE( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE )
+G_DEFINE_TYPE_EXTENDED( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaTVAManagePage ))
 
 static void
 tva_manage_page_finalize( GObject *instance )
@@ -127,8 +128,6 @@ ofa_tva_manage_page_init( ofaTVAManagePage *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_TVA_MANAGE_PAGE( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_MANAGE_PAGE, ofaTVAManagePagePrivate );
 }
 
 static void
@@ -144,8 +143,6 @@ ofa_tva_manage_page_class_init( ofaTVAManagePageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaTVAManagePagePrivate ));
 }
 
 static GtkWidget *
@@ -158,7 +155,8 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
+	priv = ofa_tva_manage_page_get_instance_private( OFA_TVA_MANAGE_PAGE( page ));
+
 	priv->main_window = ofa_page_get_main_window( page );
 
 	priv->hub = ofa_page_get_hub( page );
@@ -190,7 +188,7 @@ setup_form_treeview( ofaTVAManagePage *self )
 	GtkTreeSelection *select;
 	ofaTVAFormStore *store;
 
-	priv = self->priv;
+	priv = ofa_tva_manage_page_get_instance_private( self );
 
 	frame = gtk_frame_new( NULL );
 	my_utils_widget_set_margins( frame, 4, 4, 4, 0 );
@@ -241,7 +239,7 @@ v_setup_buttons( ofaPage *page )
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
+	priv = ofa_tva_manage_page_get_instance_private( OFA_TVA_MANAGE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -275,7 +273,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	g_return_val_if_fail( page && OFA_IS_TVA_MANAGE_PAGE( page ), NULL );
 
-	priv = OFA_TVA_MANAGE_PAGE( page )->priv;
+	priv = ofa_tva_manage_page_get_instance_private( OFA_TVA_MANAGE_PAGE( page ));
 
 	return( priv->form_treeview );
 }
@@ -318,7 +316,8 @@ on_row_selected( GtkTreeSelection *selection, ofaTVAManagePage *self )
 	ofoTVAForm *form;
 	gboolean is_form;
 
-	priv = self->priv;
+	priv = ofa_tva_manage_page_get_instance_private( self );
+
 	form = treeview_get_selected( self, &tmodel, &iter );
 	is_form = form && OFO_IS_TVA_FORM( form );
 
@@ -345,7 +344,8 @@ treeview_get_selected( ofaTVAManagePage *page, GtkTreeModel **tmodel, GtkTreeIte
 	GtkTreeSelection *select;
 	ofoTVAForm *object;
 
-	priv = page->priv;
+	priv = ofa_tva_manage_page_get_instance_private( page );
+
 	object = NULL;
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->form_treeview ));
@@ -368,7 +368,8 @@ on_new_clicked( GtkButton *button, ofaTVAManagePage *page )
 	ofaTVAManagePagePrivate *priv;
 	ofoTVAForm *form;
 
-	priv = page->priv;
+	priv = ofa_tva_manage_page_get_instance_private( page );
+
 	form = ofo_tva_form_new();
 	ofa_tva_form_properties_run( priv->main_window, form );
 }
@@ -381,7 +382,8 @@ on_update_clicked( GtkButton *button, ofaTVAManagePage *page )
 	GtkTreeIter iter;
 	ofoTVAForm *form;
 
-	priv = page->priv;
+	priv = ofa_tva_manage_page_get_instance_private( page );
+
 	form = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
@@ -483,7 +485,8 @@ do_declare( ofaTVAManagePage *page, ofoTVAForm *form )
 	ofaPage *declare_page;
 	gboolean ok;
 
-	priv = page->priv;
+	priv = ofa_tva_manage_page_get_instance_private( page );
+
 	ok = FALSE;
 
 	record = ofo_tva_record_new_from_form( form );
