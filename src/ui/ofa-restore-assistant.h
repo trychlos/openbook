@@ -43,8 +43,6 @@
 
 #include "api/ofa-main-window-def.h"
 
-#include "ui/my-assistant.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RESTORE_ASSISTANT                ( ofa_restore_assistant_get_type())
@@ -58,16 +56,13 @@ typedef struct _ofaRestoreAssistantPrivate        ofaRestoreAssistantPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myAssistant                 parent;
-
-	/*< private members >*/
-	ofaRestoreAssistantPrivate *priv;
+	GtkAssistant      parent;
 }
 	ofaRestoreAssistant;
 
 typedef struct {
 	/*< public members >*/
-	myAssistantClass            parent;
+	GtkAssistantClass parent;
 }
 	ofaRestoreAssistantClass;
 

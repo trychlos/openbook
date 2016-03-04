@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/my-window-prot.h"
@@ -38,7 +39,7 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ihubber.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -47,6 +48,7 @@
 #include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
+#include "ui/my-iassistant.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
@@ -92,6 +94,7 @@ typedef struct {
 /* private instance data
  */
 struct _ofaRestoreAssistantPrivate {
+	gboolean                dispose_has_run;
 
 	/* p1: select file to be imported
 	 */
@@ -149,10 +152,6 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_label1;
 	GtkWidget              *p6_label2;
-
-	/* open the dossier after restore
-	 */
-	sOpenData              *sdata;
 };
 
 /* GtkFileChooser filters
@@ -180,11 +179,13 @@ static sFilter st_filters[] = {
 /* the user preferences stored as a string list
  * folder
  */
-static const gchar *st_prefs_import     = "RestoreAssistant-settings";
+static const gchar *st_prefs_import     = "ofaRestoreAssistant-settings";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-restore-assistant.ui";
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-restore-assistant.ui";
-static const gchar *st_ui_id            = "RestoreAssistant";
-
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     iassistant_iface_init( myIAssistantInterface *iface );
+static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p1_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser );
 static void     p1_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -219,40 +220,42 @@ static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
-static void     dump_open_data( sOpenData *data );
 static void     get_settings( ofaRestoreAssistant *self );
 static void     update_settings( ofaRestoreAssistant *self );
 
-G_DEFINE_TYPE( ofaRestoreAssistant, ofa_restore_assistant, MY_TYPE_ASSISTANT );
+G_DEFINE_TYPE_EXTENDED( ofaRestoreAssistant, ofa_restore_assistant, GTK_TYPE_ASSISTANT, 0,
+		G_ADD_PRIVATE( ofaRestoreAssistant )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IASSISTANT, iassistant_iface_init ))
 
-static const ofsAssistant st_pages_cb [] = {
+static const ofsIAssistant st_pages_cb [] = {
 		{ ASSIST_PAGE_INTRO,
 				NULL,
 				NULL,
 				NULL },
 		{ ASSIST_PAGE_SELECT,
-				( myAssistantCb ) p1_do_init,
-				( myAssistantCb ) p1_do_display,
-				( myAssistantCb ) p1_do_forward },
+				( myIAssistantCb ) p1_do_init,
+				( myIAssistantCb ) p1_do_display,
+				( myIAssistantCb ) p1_do_forward },
 		{ ASSIST_PAGE_TARGET,
-				( myAssistantCb ) p2_do_init,
-				( myAssistantCb ) p2_do_display,
-				( myAssistantCb ) p2_do_forward },
+				( myIAssistantCb ) p2_do_init,
+				( myIAssistantCb ) p2_do_display,
+				( myIAssistantCb ) p2_do_forward },
 		{ ASSIST_PAGE_ROOT,
-				( myAssistantCb ) p3_do_init,
-				( myAssistantCb ) p3_do_display,
-				( myAssistantCb ) p3_do_forward },
+				( myIAssistantCb ) p3_do_init,
+				( myIAssistantCb ) p3_do_display,
+				( myIAssistantCb ) p3_do_forward },
 		{ ASSIST_PAGE_ADMIN,
-				( myAssistantCb ) p4_do_init,
-				( myAssistantCb ) p4_do_display,
-				( myAssistantCb ) p4_do_forward },
+				( myIAssistantCb ) p4_do_init,
+				( myIAssistantCb ) p4_do_display,
+				( myIAssistantCb ) p4_do_forward },
 		{ ASSIST_PAGE_CONFIRM,
-				( myAssistantCb ) p5_do_init,
-				( myAssistantCb ) p5_do_display,
+				( myIAssistantCb ) p5_do_init,
+				( myIAssistantCb ) p5_do_display,
 				NULL },
 		{ ASSIST_PAGE_DONE,
-				( myAssistantCb ) p6_do_init,
-				( myAssistantCb ) p6_do_display,
+				( myIAssistantCb ) p6_do_init,
+				( myIAssistantCb ) p6_do_display,
 				NULL },
 		{ -1 }
 };
@@ -269,7 +272,7 @@ restore_assistant_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_RESTORE_ASSISTANT( instance ));
 
 	/* free data members here */
-	priv = OFA_RESTORE_ASSISTANT( instance )->priv;
+	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
@@ -290,9 +293,11 @@ restore_assistant_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_RESTORE_ASSISTANT( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
-		priv = OFA_RESTORE_ASSISTANT( instance )->priv;
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->p2_meta );
@@ -309,14 +314,18 @@ static void
 ofa_restore_assistant_init( ofaRestoreAssistant *self )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_init";
+	ofaRestoreAssistantPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_RESTORE_ASSISTANT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_RESTORE_ASSISTANT, ofaRestoreAssistantPrivate );
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -329,7 +338,7 @@ ofa_restore_assistant_class_init( ofaRestoreAssistantClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = restore_assistant_dispose;
 	G_OBJECT_CLASS( klass )->finalize = restore_assistant_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaRestoreAssistantPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -342,50 +351,59 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_run";
 	ofaRestoreAssistant *self;
-	sOpenData *data;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
-	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT,
-							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_WINDOW_XML,  st_ui_xml,
-							MY_PROP_WINDOW_NAME, st_ui_id,
-							NULL );
+	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	get_settings( self );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
 
-#if 0
-	GtkAssistant *assistant = my_assistant_get_assistant( MY_ASSISTANT( self ));
-	gint n_pages = gtk_assistant_get_n_pages( assistant );
-	gint i;
-	for( i=0 ; i<n_pages ; ++i ){
-		GtkWidget *page = gtk_assistant_get_nth_page( assistant, i );
-		g_debug( "ofa_restore_assistant_run: page_num=%d, page_widget=%p", i, ( void * ) page );
-	}
-#endif
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iwindow_iface_init";
 
-	data = g_new0( sOpenData, 1 );
-	self->priv->sdata = data;
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
-	my_assistant_run( MY_ASSISTANT( self ));
+	iface->init = iwindow_init;
+}
 
-	/* open the dossier after the assistant has quit */
-	if( data->open ){
-		ofa_dossier_open_run(
-				data->main_window, data->meta, data->period, data->account, data->password );
-		if( 1 ){
-			dump_open_data( data );
-		}
-		g_free( data->password );
-		g_free( data->account );
-		g_clear_object( &data->period );
-		g_clear_object( &data->meta );
-	}
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
 
-	g_free( data );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
+	get_settings( OFA_RESTORE_ASSISTANT( instance ));
+}
+
+/*
+ * myIAssistant interface management
+ */
+static void
+iassistant_iface_init( myIAssistantInterface *iface )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iassistant_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->is_willing_to_quit = iassistant_is_willing_to_quit;
+}
+
+static gboolean
+iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
+{
+	return( ofa_prefs_assistant_is_willing_to_quit( keyval ));
 }
 
 /*
@@ -402,7 +420,7 @@ p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-filechooser" );
 	g_return_if_fail( widget && GTK_IS_FILE_CHOOSER_WIDGET( widget ));
@@ -410,10 +428,8 @@ p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	p1_set_filters( self, priv->p1_chooser );
 
-	g_signal_connect(
-			G_OBJECT( widget ), "selection-changed", G_CALLBACK( p1_on_selection_changed ), self );
-	g_signal_connect(
-			G_OBJECT( widget ), "file-activated", G_CALLBACK( p1_on_file_activated ), self );
+	g_signal_connect( widget, "selection-changed", G_CALLBACK( p1_on_selection_changed ), self );
+	g_signal_connect( widget, "file-activated", G_CALLBACK( p1_on_file_activated ), self );
 }
 
 static void
@@ -423,7 +439,8 @@ p1_set_filters( ofaRestoreAssistant *self, GtkFileChooser *chooser )
 	gint i;
 	GtkFileFilter *filter, *selected;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	selected = NULL;
 	for( i=0 ; st_filters[i].type ; ++i ){
 		filter = gtk_file_filter_new();
@@ -452,7 +469,7 @@ p1_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	if( priv->p1_folder ){
 		gtk_file_chooser_set_current_folder_uri( priv->p1_chooser, priv->p1_folder );
@@ -471,7 +488,7 @@ static void
 p1_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self )
 {
 	if( p1_check_for_complete( self )){
-		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( self )));
+		gtk_assistant_next_page( GTK_ASSISTANT( self ));
 	}
 }
 
@@ -481,7 +498,7 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_free( priv->p1_furi );
 	priv->p1_furi = gtk_file_chooser_get_uri( priv->p1_chooser );
@@ -490,7 +507,7 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 	ok = my_strlen( priv->p1_furi ) > 0 &&
 			my_utils_uri_is_readable_file( priv->p1_furi );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
 	return( ok );
 }
@@ -501,7 +518,7 @@ p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	ofaRestoreAssistantPrivate *priv;
 	GtkFileFilter *filter;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_free( priv->p1_folder );
 	priv->p1_folder = gtk_file_chooser_get_current_folder_uri( priv->p1_chooser );
@@ -530,7 +547,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
@@ -564,7 +581,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
 
@@ -578,7 +595,8 @@ p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIDBPeriod 
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = assistant->priv;
+	priv = ofa_restore_assistant_get_instance_private( assistant );
+
 	g_clear_object( &priv->p2_meta );
 	priv->p2_meta = g_object_ref( meta );
 	g_clear_object( &priv->p2_period );
@@ -592,14 +610,15 @@ p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBMeta *meta, ofaIDBPerio
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = assistant->priv;
+	priv = ofa_restore_assistant_get_instance_private( assistant );
+
 	g_clear_object( &priv->p2_meta );
 	priv->p2_meta = g_object_ref( meta );
 	g_clear_object( &priv->p2_period );
 	priv->p2_period = g_object_ref( period );
 
 	if( p2_check_for_complete( assistant )){
-		gtk_assistant_next_page( my_assistant_get_assistant( MY_ASSISTANT( assistant )));
+		gtk_assistant_next_page( GTK_ASSISTANT( assistant ));
 	}
 }
 
@@ -609,18 +628,16 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
 	gchar *dossier_name;
-	GtkWindow *toplevel;
 	ofaIDBMeta *meta;
 
-	priv = assistant->priv;
+	priv = ofa_restore_assistant_get_instance_private( assistant );
+
 	meta = NULL;
 
-	main_window = my_window_get_main_window( MY_WINDOW( assistant ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( assistant ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( assistant ));
-
-	if( ofa_dossier_new_mini_run( OFA_MAIN_WINDOW( main_window ), toplevel, &meta )){
+	if( ofa_dossier_new_mini_run( OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( assistant ), &meta )){
 
 		g_clear_object( &priv->p2_meta );
 		priv->p2_meta = meta;
@@ -641,7 +658,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	ok = ( priv->p2_meta && OFA_IS_IDBMETA( priv->p2_meta ) &&
 			priv->p2_period && OFA_IS_IDBPERIOD( priv->p2_period ));
@@ -651,7 +668,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 		priv->p2_dbname = ofa_idbperiod_get_name( priv->p2_period );
 	}
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
 	return( ok );
 }
@@ -675,7 +692,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
 	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
@@ -724,7 +741,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 
@@ -773,7 +790,7 @@ p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar 
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_free( priv->p3_account );
 	priv->p3_account = g_strdup( account );
@@ -791,7 +808,8 @@ p3_check_for_complete( ofaRestoreAssistant *self )
 	gboolean ok;
 	gchar *message;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	p3_set_message( self, "" );
 
 	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials, &message );
@@ -800,7 +818,7 @@ p3_check_for_complete( ofaRestoreAssistant *self )
 		g_free( message );
 	}
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 }
 
 static void
@@ -808,7 +826,7 @@ p3_set_message( ofaRestoreAssistant *self, const gchar *message )
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	if( priv->p3_message ){
 		gtk_label_set_text( GTK_LABEL( priv->p3_message ), message );
@@ -830,7 +848,7 @@ p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_clear_object( &priv->p3_connect );
 	provider = ofa_idbmeta_get_provider( priv->p2_meta );
@@ -856,7 +874,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p4_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( priv->p4_furi && GTK_IS_LABEL( priv->p4_furi ));
@@ -919,7 +937,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
 
@@ -942,7 +960,7 @@ p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *accou
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_free( priv->p4_account );
 	priv->p4_account = g_strdup( account );
@@ -958,7 +976,7 @@ p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p4_open = gtk_toggle_button_get_active( button );
 }
@@ -970,7 +988,8 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 	gboolean ok;
 	gchar *message;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	p4_set_message( self, "" );
 
 	ok = ofa_admin_credentials_bin_is_valid( priv->p4_admin_credentials, &message );
@@ -979,7 +998,7 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 		g_free( message );
 	}
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), ok );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 }
 
 static void
@@ -987,7 +1006,7 @@ p4_set_message( ofaRestoreAssistant *self, const gchar *message )
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	if( priv->p4_message ){
 		gtk_label_set_text( GTK_LABEL( priv->p4_message ), message );
@@ -1020,7 +1039,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p5_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
 	g_return_if_fail( priv->p5_furi && GTK_IS_LABEL( priv->p5_furi ));
@@ -1067,7 +1086,8 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
@@ -1097,7 +1117,8 @@ p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	priv->p6_page = page;
 
 	priv->p6_label1 = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label61" );
@@ -1113,7 +1134,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofaHub *hub;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
@@ -1121,7 +1141,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
@@ -1132,14 +1152,11 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
-		main_window = my_window_get_main_window( MY_WINDOW( self ));
+		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
 		/* may be NULL */
-		hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 
 		/* first close the currently opened dossier */
 		if( hub ){
@@ -1158,7 +1175,8 @@ p6_restore_confirmed( const ofaRestoreAssistant *self )
 	gboolean ok;
 	gchar *name, *str;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	name = ofa_idbperiod_get_name( priv->p2_period );
 
 	str = g_strdup_printf(
@@ -1187,7 +1205,8 @@ p6_do_restore( ofaRestoreAssistant *self )
 	gchar *dossier_name, *str;
 	const gchar *style;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
 	dossier_name = ofa_idbmeta_get_dossier_name( priv->p2_meta );
 
 	/* restore the backup */
@@ -1220,49 +1239,35 @@ p6_do_restore( ofaRestoreAssistant *self )
 }
 
 /*
- * open the dossier if asked for
- * actually, keep the needed datas so that the dossier may be opened
- * after the assistant has quit
+ * Open the dossier if asked for.
+ *
+ * Actually, because this assistant is non modal, the dossier is opened
+ * before the assistant has quit.
  */
 static gboolean
 p6_do_open( ofaRestoreAssistant *self )
 {
+	static const gchar *thisfn = "ofa_restore_assistant_p6_do_open";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	sOpenData *sdata;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	g_debug( "%s: self=%p, meta=%p, period=%p, account=%s",
+			thisfn, ( void * ) self, ( void * ) priv->p2_meta, ( void * ) priv->p2_period, priv->p4_account );
 
 	if( priv->p4_open ){
-		sdata = priv->sdata;
-		sdata->open = priv->p4_open;
-		main_window = my_window_get_main_window( MY_WINDOW( self ));
+		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 		g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
-		sdata->main_window = OFA_MAIN_WINDOW( main_window );
-		sdata->meta = g_object_ref( priv->p2_meta );
-		sdata->period = g_object_ref( priv->p2_period );
-		sdata->account = g_strdup( priv->p4_account );
-		sdata->password = g_strdup( priv->p4_password );
+
+		ofa_dossier_open_run(
+				OFA_MAIN_WINDOW( main_window ),
+				priv->p2_meta, priv->p2_period, priv->p4_account, priv->p4_password );
+
+		g_debug( "%s: return from ofa_dossier_open_run", thisfn );
 	}
 
 	return( G_SOURCE_REMOVE );
-}
-
-static void
-dump_open_data( sOpenData *data )
-{
-	static const gchar *thisfn = "ofa_restore_assistant_dump_open_data";
-
-	g_debug( "%s: data=%p", thisfn, ( void * ) data );
-	g_debug( "%s: data->open=%s", thisfn, data->open ? "True":"False" );
-	g_debug( "%s: data->main_window=%p (ref_count=%d)",
-			thisfn, ( void * ) data->main_window, G_OBJECT( data->main_window )->ref_count );
-	g_debug( "%s: data->meta=%p (ref_count=%d)",
-			thisfn, ( void * ) data->meta, G_OBJECT( data->meta )->ref_count );
-	g_debug( "%s: data->period=%p (ref_count=%d)",
-			thisfn, ( void * ) data->period, G_OBJECT( data->period )->ref_count );
-	g_debug( "%s: data->account=%s", thisfn, data->account );
-	g_debug( "%s: data->password=%s", thisfn, data->password );
 }
 
 /*
@@ -1275,7 +1280,7 @@ get_settings( ofaRestoreAssistant *self )
 	GList *list, *it;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	list = ofa_settings_user_get_string_list( st_prefs_import );
 
@@ -1307,7 +1312,7 @@ update_settings( ofaRestoreAssistant *self )
 	ofaRestoreAssistantPrivate *priv;
 	GList *list;
 
-	priv = self->priv;
+	priv = ofa_restore_assistant_get_instance_private( self );
 
 	list = g_list_append( NULL, g_strdup( priv->p1_folder ));
 	list = g_list_append( list, g_strdup_printf( "%s", priv->p4_open ? "True":"False" ));

@@ -277,7 +277,6 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
-	ofa-restore-assistant.ui							\
 	ofa-settlement.ui									\
 	ofa-user-credentials-bin.ui							\
 	$(NULL)
@@ -295,6 +294,7 @@ resources_ui = \
 	ofa-ope-template-properties.ui						\
 	ofa-reconcil-page.ui								\
 	ofa-render-page.ui									\
+	ofa-restore-assistant.ui							\
 	\
 	filler.png											\
 	green-checkmark.png									\
