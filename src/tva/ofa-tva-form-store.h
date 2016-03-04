@@ -60,10 +60,7 @@ typedef struct _ofaTVAFormStorePrivate         ofaTVAFormStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaListStore            parent;
-
-	/*< private members >*/
-	ofaTVAFormStorePrivate *priv;
+	ofaListStore      parent;
 }
 	ofaTVAFormStore;
 
@@ -72,7 +69,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	ofaListStoreClass       parent;
+	ofaListStoreClass parent;
 }
 	ofaTVAFormStoreClass;
 
