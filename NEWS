@@ -32,7 +32,7 @@
 
  Bug fixes:
 
-   - 
+   - ofaDossierTreeview: just ignore rows with empty columns (todo #1035).
 
  Other changes:
 

@@ -527,12 +527,12 @@
                      BAT page (a restart fixes this)
 
 1027 2016- 3- 1 CODE iexportable_export(): factorize ofaBox-managed code 
-     2016- 3- 2      Have to be done after exporter/exportable review
+     2016- 3- 2      Have to be done after iexporter/iexportable review
 
 1034 2016- 3- 3 FEAT find a better icon than gtk-index for account selection
                      + have the same, bigger, icon for account chart
 
-1035
+1036
 
 -----------------------------------------------------------------------
  DONE
@@ -932,6 +932,11 @@
 
 1033 2016- 3- 3 BUG  RenderPage: vertical space missing if there is no subtitle
      2016- 3- 3 fixed
+
+1035 2016- 3- 5 BUG  OFA-CRITICAL **: ofa_idbmeta_get_periods: assertion 'meta && OFA_IS_IDBMETA( meta )' failed
+                     After restore, after having open the dossier
+                     see trash/bug1035
+     2016- 3- 5 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

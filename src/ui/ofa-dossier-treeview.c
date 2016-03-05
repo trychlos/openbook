@@ -402,6 +402,13 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 	visible = TRUE;
 	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
 
+	/* note: a new row is first inserted, before the columns be set
+	 * (cf. ofaDossierStore::insert_row())
+	 * so just ignore the row if columns are still empty */
+	if( !meta || !period ){
+		return( FALSE );
+	}
+
 	switch( priv->show_mode ){
 		case DOSSIER_SHOW_ALL:
 			visible = TRUE;
