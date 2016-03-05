@@ -64,14 +64,15 @@ struct _ofaBackupPrivate {
 	ofaIDBMeta          *meta;			/* its meta datas */
 };
 
-static const gchar *st_dialog_name   = "BackupDlg";
-static const gchar *st_backup_folder = "ofa-LastBackupFolder";
-
-G_DEFINE_TYPE( ofaBackup, ofa_backup, G_TYPE_OBJECT )
+static const gchar *st_dialog_name      = "BackupDlg";
+static const gchar *st_backup_folder    = "ofa-LastBackupFolder";
 
 static void       init_dialog( ofaBackup *self );
 static gchar     *get_default_name( ofaBackup *self );
 static gboolean   do_backup( ofaBackup *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaBackup, ofa_backup, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaBackup ))
 
 static void
 backup_finalize( GObject *instance )
