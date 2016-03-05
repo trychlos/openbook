@@ -59,14 +59,15 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaBalanceGridBin, ofa_balance_grid_bin, GTK_TYPE_BIN )
-
 static void setup_grid( ofaBalanceGridBin *self );
 static void on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
 static void write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top );
 
+G_DEFINE_TYPE_EXTENDED( ofaBalanceGridBin, ofa_balance_grid_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaBalanceGridBin ))
+
 static void
-balances_grid_finalize( GObject *instance )
+balance_grid_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_balance_grid_bin_finalize";
 
@@ -82,13 +83,13 @@ balances_grid_finalize( GObject *instance )
 }
 
 static void
-balances_grid_dispose( GObject *instance )
+balance_grid_bin_dispose( GObject *instance )
 {
 	ofaBalanceGridBinPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_BALANCE_GRID_BIN( instance ));
 
-	priv = ( OFA_BALANCE_GRID_BIN( instance ))->priv;
+	priv = ofa_balance_grid_bin_get_instance_private( OFA_BALANCE_GRID_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -105,16 +106,16 @@ static void
 ofa_balance_grid_bin_init( ofaBalanceGridBin *self )
 {
 	static const gchar *thisfn = "ofa_balance_grid_bin_init";
+	ofaBalanceGridBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BALANCE_GRID_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_BALANCE_GRID_BIN, ofaBalanceGridBinPrivate );
+	priv = ofa_balance_grid_bin_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -124,10 +125,8 @@ ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = balances_grid_dispose;
-	G_OBJECT_CLASS( klass )->finalize = balances_grid_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaBalanceGridBinPrivate ));
+	G_OBJECT_CLASS( klass )->dispose = balance_grid_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = balance_grid_bin_finalize;
 
 	/**
 	 * ofaBalanceGridBin::update:
@@ -175,7 +174,7 @@ setup_grid( ofaBalanceGridBin *self )
 	ofaBalanceGridBinPrivate *priv;
 	GtkWidget *grid;
 
-	priv = self->priv;
+	priv = ofa_balance_grid_bin_get_instance_private( self );
 
 	grid = gtk_grid_new();
 	gtk_container_add( GTK_CONTAINER( self ), grid );
@@ -199,7 +198,8 @@ on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdoubl
 
 	g_return_if_fail( self && OFA_IS_BALANCE_GRID_BIN( self ));
 
-	priv = self->priv;
+	priv = ofa_balance_grid_bin_get_instance_private( self );
+
 	found = FALSE;
 
 	for( i=0 ; ; ++i ){
@@ -257,7 +257,7 @@ write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top )
 	GtkWidget *widget;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_balance_grid_bin_get_instance_private( self );
 
 	widget = gtk_grid_get_child_at( priv->grid, left, top );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));

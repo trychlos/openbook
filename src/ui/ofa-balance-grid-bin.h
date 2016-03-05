@@ -50,16 +50,13 @@ typedef struct _ofaBalanceGridBinPrivate         ofaBalanceGridBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                    parent;
-
-	/*< private members >*/
-	ofaBalanceGridBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaBalanceGridBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass               parent;
+	GtkBinClass parent;
 }
 	ofaBalanceGridBinClass;
 
