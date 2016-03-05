@@ -48,16 +48,13 @@ typedef struct _ofaBackupPrivate        ofaBackupPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject           parent;
-
-	/*< private members >*/
-	ofaBackupPrivate *priv;
+	GObject      parent;
 }
 	ofaBackup;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass      parent;
+	GObjectClass parent;
 }
 	ofaBackupClass;
 

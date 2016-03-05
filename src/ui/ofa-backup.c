@@ -96,7 +96,7 @@ backup_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BACKUP( instance ));
 
-	priv = OFA_BACKUP( instance )->priv;
+	priv = ofa_backup_get_instance_private( OFA_BACKUP( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -116,14 +116,16 @@ static void
 ofa_backup_init( ofaBackup *self )
 {
 	static const gchar *thisfn = "ofa_backup_init";
+	ofaBackupPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BACKUP( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BACKUP, ofaBackupPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = ofa_backup_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -135,8 +137,6 @@ ofa_backup_class_init( ofaBackupClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = backup_dispose;
 	G_OBJECT_CLASS( klass )->finalize = backup_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaBackupPrivate ));
 }
 
 /**
@@ -157,7 +157,9 @@ ofa_backup_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new( OFA_TYPE_BACKUP, NULL );
-	priv = self->priv;
+
+	priv = ofa_backup_get_instance_private( self );
+
 	priv->main_window = main_window;
 
 	init_dialog( self );
@@ -177,7 +179,7 @@ init_dialog( ofaBackup *self )
 	GtkApplication *application;
 	gchar *last_folder, *def_name;
 
-	priv = self->priv;
+	priv = ofa_backup_get_instance_private( self );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
@@ -220,8 +222,9 @@ get_default_name( ofaBackup *self )
 	gchar *name, *fname, *sdate, *result;
 	GDate date;
 
+	priv = ofa_backup_get_instance_private( self );
+
 	/* get name without spaces */
-	priv = self->priv;
 	period = ofa_idbconnect_get_period( priv->connect );
 	name = ofa_idbperiod_get_name( period );
 
@@ -248,7 +251,7 @@ do_backup( ofaBackup *self )
 	gchar *fname, *folder, *uri;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_backup_get_instance_private( self );
 
 	/* folder is nul while the user has not make it the current folder
 	 * by entering into the folder */
