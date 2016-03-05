@@ -51,9 +51,6 @@ typedef struct _ofaAboutPrivate       ofaAboutPrivate;
 typedef struct {
 	/*< public members >*/
 	GtkAboutDialog      parent;
-
-	/*< private members >*/
-	ofaAboutPrivate    *priv;
 }
 	ofaAbout;
 

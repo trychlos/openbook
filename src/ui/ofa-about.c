@@ -41,9 +41,10 @@ struct _ofaAboutPrivate {
 
 static const gchar *st_icon_fname       = ICONFNAME;
 
-G_DEFINE_TYPE( ofaAbout, ofa_about, GTK_TYPE_ABOUT_DIALOG )
+G_DEFINE_TYPE_EXTENDED( ofaAbout, ofa_about, GTK_TYPE_ABOUT_DIALOG, 0,
+		G_ADD_PRIVATE( ofaAbout ))
 
-static void on_close_clicked( GtkButton *button, ofaAbout *about );
+static void on_cancel_clicked( GtkButton *button, ofaAbout *about );
 
 static void
 about_finalize( GObject *instance )
@@ -68,7 +69,7 @@ about_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ABOUT( instance ));
 
-	priv = ( OFA_ABOUT( instance ))->priv;
+	priv = ofa_about_get_instance_private( OFA_ABOUT( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -85,16 +86,16 @@ static void
 ofa_about_init( ofaAbout *self )
 {
 	static const gchar *thisfn = "ofa_about_init";
+	ofaAboutPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_ABOUT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_ABOUT, ofaAboutPrivate );
+	priv = ofa_about_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -106,8 +107,6 @@ ofa_about_class_init( ofaAboutClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = about_dispose;
 	G_OBJECT_CLASS( klass )->finalize = about_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaAboutPrivate ));
 }
 
 /**
@@ -157,7 +156,9 @@ ofa_about_run( const ofaMainWindow *main_window )
 	g_object_unref( pixbuf );
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( about ), GTK_RESPONSE_CANCEL );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_close_clicked ), about );
+	if( button ){
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_cancel_clicked ), about );
+	}
 
 	gtk_dialog_run( GTK_DIALOG( about ));
 
@@ -165,7 +166,7 @@ ofa_about_run( const ofaMainWindow *main_window )
 }
 
 static void
-on_close_clicked( GtkButton *button, ofaAbout *about )
+on_cancel_clicked( GtkButton *button, ofaAbout *about )
 {
 	gtk_widget_destroy( GTK_WIDGET( about ));
 }
