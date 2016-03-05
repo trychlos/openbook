@@ -67,10 +67,8 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-account-book-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-book-bin.ui";
 static const gchar *st_settings         = "RenderAccountsBook";
-
-G_DEFINE_TYPE( ofaAccountBookBin, ofa_account_book_bin, GTK_TYPE_BIN )
 
 static void setup_bin( ofaAccountBookBin *bin );
 static void setup_account_selection( ofaAccountBookBin *bin );
@@ -81,6 +79,9 @@ static void on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *sel
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookBin *self );
 static void load_settings( ofaAccountBookBin *bin );
 static void set_settings( ofaAccountBookBin *bin );
+
+G_DEFINE_TYPE_EXTENDED( ofaAccountBookBin, ofa_account_book_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaAccountBookBin ))
 
 static void
 accounts_book_bin_finalize( GObject *instance )
@@ -105,7 +106,7 @@ accounts_book_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_BOOK_BIN( instance ));
 
-	priv = OFA_ACCOUNT_BOOK_BIN( instance )->priv;
+	priv = ofa_account_book_bin_get_instance_private( OFA_ACCOUNT_BOOK_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -122,14 +123,16 @@ static void
 ofa_account_book_bin_init( ofaAccountBookBin *self )
 {
 	static const gchar *thisfn = "ofa_account_book_bin_init";
+	ofaAccountBookBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_ACCOUNT_BOOK_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBinPrivate );
+	priv = ofa_account_book_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -141,8 +144,6 @@ ofa_account_book_bin_class_init( ofaAccountBookBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = accounts_book_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_book_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountBookBinPrivate ));
 
 	/**
 	 * ofaAccountBookBin::ofa-changed:
@@ -176,10 +177,12 @@ ofaAccountBookBin *
 ofa_account_book_bin_new( const ofaMainWindow *main_window )
 {
 	ofaAccountBookBin *self;
+	ofaAccountBookBinPrivate *priv;
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_BOOK_BIN, NULL );
 
-	self->priv->main_window = main_window;
+	priv = ofa_account_book_bin_get_instance_private( self );
+	priv->main_window = main_window;
 
 	setup_bin( self );
 	setup_account_selection( self );
@@ -198,7 +201,7 @@ setup_bin( ofaAccountBookBin *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "abb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -217,7 +220,7 @@ setup_account_selection( ofaAccountBookBin *bin )
 	GtkWidget *parent;
 	ofaAccountFilterVVBin *filter;
 
-	priv = bin->priv;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -237,7 +240,7 @@ setup_date_selection( ofaAccountBookBin *bin )
 	GtkWidget *parent, *label;
 	ofaDateFilterHVBin *filter;
 
-	priv = bin->priv;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -260,7 +263,7 @@ setup_others( ofaAccountBookBin *bin )
 	ofaAccountBookBinPrivate *priv;
 	GtkWidget *toggle;
 
-	priv = bin->priv;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-one-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
@@ -280,7 +283,7 @@ on_new_page_toggled( GtkToggleButton *button, ofaAccountBookBin *self )
 {
 	ofaAccountBookBinPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_account_book_bin_get_instance_private( self );
 
 	priv->new_page = gtk_toggle_button_get_active( button );
 
@@ -308,22 +311,21 @@ ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	valid = FALSE;
+	priv = ofa_account_book_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
 	if( message ){
 		*message = NULL;
 	}
 
-	if( !priv->dispose_has_run ){
+	valid = ofa_idate_filter_is_valid(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
+			ofa_idate_filter_is_valid(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
 
-		valid = ofa_idate_filter_is_valid(
-						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
-				ofa_idate_filter_is_valid(
-						OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
-
-		if( valid ){
-			set_settings( bin );
-		}
+	if( valid ){
+		set_settings( bin );
 	}
 
 	return( valid );
@@ -340,13 +342,11 @@ ofa_account_book_bin_get_account_filter( const ofaAccountBookBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
-	priv = bin->priv;
-	filter = NULL;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		filter = OFA_IACCOUNT_FILTER( priv->account_filter );
-	}
+	filter = OFA_IACCOUNT_FILTER( priv->account_filter );
 
 	return( filter );
 }
@@ -362,15 +362,12 @@ ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	new_page = FALSE;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		new_page = priv->new_page;
-	}
-
-	return( new_page );
+	new_page = priv->new_page;
+return( new_page );
 }
 
 /**
@@ -384,13 +381,11 @@ ofa_account_book_bin_get_date_filter( const ofaAccountBookBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_BIN( bin ), NULL );
 
-	priv = bin->priv;
-	date_filter = NULL;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		date_filter = OFA_IDATE_FILTER( priv->date_filter );
-	}
+	date_filter = OFA_IDATE_FILTER( priv->date_filter );
 
 	return( date_filter );
 }
@@ -407,7 +402,8 @@ load_settings( ofaAccountBookBin *bin )
 	const gchar *cstr;
 	GDate date;
 
-	priv = bin->priv;
+	priv = ofa_account_book_bin_get_instance_private( bin );
+
 	list = ofa_settings_user_get_string_list( st_settings );
 
 	it = list;
@@ -466,7 +462,7 @@ set_settings( ofaAccountBookBin *bin )
 	const gchar *from_account, *to_account;
 	gboolean all_accounts;
 
-	priv = bin->priv;
+	priv = ofa_account_book_bin_get_instance_private( bin );
 
 	from_account = ofa_iaccount_filter_get_account(
 			OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_FROM );

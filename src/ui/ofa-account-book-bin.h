@@ -79,16 +79,13 @@ typedef struct _ofaAccountBookBinPrivate         ofaAccountBookBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                    parent;
-
-	/*< private members >*/
-	ofaAccountBookBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaAccountBookBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass               parent;
+	GtkBinClass parent;
 }
 	ofaAccountBookBinClass;
 
