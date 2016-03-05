@@ -141,10 +141,7 @@ typedef struct _ofaApplicationPrivate       ofaApplicationPrivate;
 
 struct _ofaApplication {
 	/*< public members >*/
-	GtkApplication         parent;
-
-	/*< private members >*/
-	ofaApplicationPrivate *priv;
+	GtkApplication      parent;
 };
 
 /**
@@ -152,7 +149,7 @@ struct _ofaApplication {
  */
 typedef struct {
 	/*< public members >*/
-	GtkApplicationClass    parent;
+	GtkApplicationClass parent;
 }
 	ofaApplicationClass;
 

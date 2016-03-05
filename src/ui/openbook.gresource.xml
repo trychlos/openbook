@@ -16,6 +16,9 @@
     <file>ofa-reconcil-page.ui</file>
     <file>ofa-render-page.ui</file>
     <file>ofa-restore-assistant.ui</file>
+
+    <file>ofa-app-menubar.ui</file>
+
     <file>filler.png</file>
     <file>green-checkmark.png</file>
     <file>light-empty-14.png</file>
