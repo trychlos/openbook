@@ -51,14 +51,15 @@ enum {
 
 static gint st_signals[ N_SIGNALS ] = { 0 };
 
-G_DEFINE_TYPE( myTab, my_tab, GTK_TYPE_GRID )
-
 static void setup_tab_content( myTab *tab, GtkImage *image, const gchar *text );
 static void setup_tab_style( myTab *tab );
 static void on_pin_button_clicked( GtkButton *button, myTab *tab );
 static void on_tab_pin_clicked_class_handler( myTab *tab );
 static void on_close_button_clicked( GtkButton *button, myTab *tab );
 static void on_tab_close_clicked_class_handler( myTab *tab );
+
+G_DEFINE_TYPE_EXTENDED( myTab, my_tab, GTK_TYPE_GRID, 0,
+		G_ADD_PRIVATE( myTab ))
 
 static void
 tab_finalize( GObject *instance )
@@ -72,7 +73,7 @@ tab_finalize( GObject *instance )
 	g_return_if_fail( instance && MY_IS_TAB( instance ));
 
 	/* free data members here */
-	priv = MY_TAB( instance )->priv;
+	priv = my_tab_get_instance_private( MY_TAB( instance ));
 
 	g_free( priv->label );
 
@@ -83,13 +84,15 @@ tab_finalize( GObject *instance )
 static void
 tab_dispose( GObject *instance )
 {
-	myTab *self;
+	myTabPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_TAB( instance ));
 
-	self = MY_TAB( instance );
+	priv = my_tab_get_instance_private( MY_TAB( instance ));
 
-	if( !self->priv->dispose_has_run ){
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -102,13 +105,16 @@ static void
 my_tab_init( myTab *self )
 {
 	static const gchar *thisfn = "my_tab_init";
+	myTabPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( MY_IS_TAB( self ));
+	g_return_if_fail( self && MY_IS_TAB( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_TAB, myTabPrivate );
+	priv = my_tab_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -120,8 +126,6 @@ my_tab_class_init( myTabClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tab_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tab_finalize;
-
-	g_type_class_add_private( klass, sizeof( myTabPrivate ));
 
 	/**
 	 * myTab::tab-close-clicked:
@@ -192,7 +196,7 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	myTabPrivate *priv;
 	GtkWidget *label;
 
-	priv = tab->priv;
+	priv = my_tab_get_instance_private( tab );
 
 	if( image ){
 		gtk_grid_attach( GTK_GRID( tab ), GTK_WIDGET( image ), 0, 0, 1, 1 );
@@ -233,7 +237,7 @@ setup_tab_style( myTab *tab )
 	GError *error;
 	GtkStyleContext *style;
 
-	priv = tab->priv;
+	priv = my_tab_get_instance_private( tab );
 
 	if( !css_provider ){
 		css_provider = gtk_css_provider_new();
@@ -299,11 +303,9 @@ my_tab_get_label( const myTab *tab )
 
 	g_return_val_if_fail( tab && MY_IS_TAB( tab ), NULL );
 
-	priv = tab->priv;
+	priv = my_tab_get_instance_private( tab );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( g_strdup( priv->label ));
 }

@@ -55,10 +55,7 @@ typedef struct _myTabPrivate       myTabPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkGrid            parent;
-
-	/*< private members >*/
-	myTabPrivate *priv;
+	GtkGrid      parent;
 }
 	myTab;
 
@@ -77,11 +74,11 @@ typedef struct {
 #define MY_SIGNAL_TAB_CLOSE_CLICKED     "tab-close-clicked"
 #define MY_SIGNAL_TAB_PIN_CLICKED       "tab-pin-clicked"
 
-GType       my_tab_get_type ( void ) G_GNUC_CONST;
+GType   my_tab_get_type ( void ) G_GNUC_CONST;
 
-myTab *my_tab_new      ( GtkImage *image, const gchar *text );
+myTab  *my_tab_new      ( GtkImage *image, const gchar *text );
 
-gchar      *my_tab_get_label( const myTab *tab );
+gchar  *my_tab_get_label( const myTab *tab );
 
 G_END_DECLS
 
