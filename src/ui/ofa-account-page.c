@@ -65,8 +65,6 @@ struct _ofaAccountPagePrivate {
 	GtkWidget           *reconcil_btn;
 };
 
-G_DEFINE_TYPE( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE )
-
 static void       v_setup_page( ofaPage *page );
 static void       on_new_clicked( GtkButton *button, ofaAccountPage *page );
 static void       on_properties_clicked( GtkButton *button, ofaAccountPage *page );
@@ -78,6 +76,9 @@ static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_selection_changed( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
 static void       do_update_sensitivity( ofaAccountPage *self, ofoAccount *account );
 static void       on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaAccountPage ))
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -118,8 +119,6 @@ ofa_account_page_init( ofaAccountPage *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_PAGE, ofaAccountPagePrivate );
 }
 
 static void
@@ -134,8 +133,6 @@ ofa_account_page_class_init( ofaAccountPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountPagePrivate ));
 }
 
 static void
@@ -149,7 +146,7 @@ v_setup_page( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_ACCOUNT_PAGE( page )->priv;
+	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
 	priv->main_window = ofa_page_get_main_window( page );
 
@@ -196,7 +193,7 @@ on_new_clicked( GtkButton *button, ofaAccountPage *page )
 {
 	ofaAccountPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_account_page_get_instance_private( page );
 
 	ofa_account_frame_bin_do_new( priv->account_bin );
 }
@@ -206,7 +203,7 @@ on_properties_clicked( GtkButton *button, ofaAccountPage *page )
 {
 	ofaAccountPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_account_page_get_instance_private( page );
 
 	ofa_account_frame_bin_do_properties( priv->account_bin );
 }
@@ -216,7 +213,7 @@ on_delete_clicked( GtkButton *button, ofaAccountPage *page )
 {
 	ofaAccountPagePrivate *priv;
 
-	priv = page->priv;
+	priv = ofa_account_page_get_instance_private( page );
 
 	ofa_account_frame_bin_do_delete( priv->account_bin );
 }
@@ -228,7 +225,7 @@ on_view_entries( GtkButton *button, ofaAccountPage *self )
 	gchar *number;
 	ofaPage *page;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( priv->account_bin );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_ENTRIES );
@@ -243,7 +240,7 @@ on_settlement( GtkButton *button, ofaAccountPage *self )
 	gchar *number;
 	ofaPage *page;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( priv->account_bin );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_SETTLEMENT );
@@ -258,7 +255,7 @@ on_reconciliation( GtkButton *button, ofaAccountPage *self )
 	gchar *number;
 	ofaPage *page;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( priv->account_bin );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_RECONCIL );
@@ -274,7 +271,8 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	g_return_val_if_fail( page && OFA_IS_ACCOUNT_PAGE( page ), NULL );
 
-	priv = OFA_ACCOUNT_PAGE( page )->priv;
+	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
+
 	widget = ofa_account_frame_bin_get_current_treeview( priv->account_bin );
 
 	return( widget );
@@ -286,7 +284,8 @@ on_selection_changed( ofaAccountFrameBin *frame, const gchar *number, ofaAccount
 	ofaAccountPagePrivate *priv;
 	ofoAccount *account;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
+
 	account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
 	do_update_sensitivity( self, account );
 }
@@ -297,7 +296,8 @@ do_update_sensitivity( ofaAccountPage *self, ofoAccount *account )
 	ofaAccountPagePrivate *priv;
 	gboolean has_account;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
+
 	has_account = ( account && OFO_IS_ACCOUNT( account ));
 
 	gtk_widget_set_sensitive( priv->properties_btn, has_account );
@@ -313,7 +313,7 @@ on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage
 	ofaAccountPagePrivate *priv;
 	ofoAccount *account;
 
-	priv = self->priv;
+	priv = ofa_account_page_get_instance_private( self );
 
 	if( number ){
 		account = ofo_account_get_by_number( priv->hub, number );
