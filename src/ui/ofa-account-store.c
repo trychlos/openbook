@@ -75,8 +75,8 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
  */
 #define STORE_DATA_HUB                  "ofa-account-store"
 
-static const gchar *st_filler_png       = PKGUIDIR "/filler.png";
-static const gchar *st_notes_png        = PKGUIDIR "/notes1.png";
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/ui/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/ui/notes1.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
 static void     tree_store_load_dataset( ofaTreeStore *store );
@@ -96,7 +96,7 @@ static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
 
-G_DEFINE_TYPE_EXTENDED( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaAccountStore ))
 
 static void
@@ -331,7 +331,7 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	stamp = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
 	notes = ofo_account_get_notes( account );
 	error = NULL;
-	notes_png = gdk_pixbuf_new_from_file( notes ? st_notes_png : st_filler_png, &error );
+	notes_png = gdk_pixbuf_new_from_resource( notes ? st_resource_notes_png : st_resource_filler_png, &error );
 	if( error ){
 		g_warning( "%s: gdk_pixbuf_new_from_file: %s", thisfn, error->message );
 		g_error_free( error );

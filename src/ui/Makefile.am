@@ -238,7 +238,6 @@ openbook_LDADD = \
 	$(NULL)
 
 actions_files = \
-	ofa-app-menubar.ui									\
 	ofa-dos-menubar.ui									\
 	$(NULL)
 
@@ -294,16 +293,18 @@ resources_ui = \
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	\
+	ofa-app-menubar.ui									\
+	\
 	filler.png											\
 	green-checkmark.png									\
 	light-empty-14.png									\
 	light-green-14.png									\
 	light-yellow-14.png									\
+	notes1.png											\
 	$(NULL)
 
 images_files = \
 	arrow-down.png										\
-	notes1.png											\
 	$(NULL)
 
 ui_data_DATA = \
