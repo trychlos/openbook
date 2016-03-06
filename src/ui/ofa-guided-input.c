@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
@@ -59,13 +60,15 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-guided-
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_input_bin_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
 static void      on_ok_clicked( GtkButton *button, ofaGuidedInput *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaGuidedInput, ofa_guided_input, GTK_TYPE_DIALOG, 0, \
-		G_ADD_PRIVATE( ofaGuidedInput ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaGuidedInput, ofa_guided_input, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaGuidedInput )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 guided_input_finalize( GObject *instance )
@@ -198,7 +201,13 @@ iwindow_init( myIWindow *instance )
 	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	priv = ofa_guided_input_get_instance_private( OFA_GUIDED_INPUT( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	my_utils_container_dump( GTK_CONTAINER( instance ));
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
@@ -212,11 +221,18 @@ iwindow_init( myIWindow *instance )
 
 	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( on_input_bin_changed ), instance );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
-
 	check_for_enable_dlg( OFA_GUIDED_INPUT( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_guided_input_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
