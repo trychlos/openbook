@@ -50,16 +50,13 @@ typedef struct _ofaClassPagePrivate        ofaClassPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage              parent;
-
-	/*< private members >*/
-	ofaClassPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaClassPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass         parent;
+	ofaPageClass parent;
 }
 	ofaClassPageClass;
 

@@ -69,8 +69,6 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE )
-
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
@@ -94,6 +92,9 @@ static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gch
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self );
 static gboolean   find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+
+G_DEFINE_TYPE_EXTENDED( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaClassPage ))
 
 static void
 classes_page_finalize( GObject *instance )
@@ -121,7 +122,7 @@ classes_page_dispose( GObject *instance )
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ( OFA_CLASS_PAGE( instance ))->priv;
+		priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( instance ));
 
 		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
@@ -134,14 +135,16 @@ static void
 ofa_class_page_init( ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_init";
+	ofaClassPagePrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_CLASS_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLASS_PAGE, ofaClassPagePrivate );
-	self->priv->hub_handlers = NULL;
+	priv = ofa_class_page_get_instance_private( self );
+
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -157,8 +160,6 @@ ofa_class_page_class_init( ofaClassPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaClassPagePrivate ));
 }
 
 static GtkWidget *
@@ -172,7 +173,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_CLASS_PAGE( page )->priv;
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -213,7 +214,7 @@ setup_tree_view( ofaPage *page )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	priv = OFA_CLASS_PAGE( page )->priv;
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -302,7 +303,7 @@ v_setup_buttons( ofaPage *page )
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_CLASS_PAGE( page )->priv;
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -330,7 +331,8 @@ tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter
 	GtkTreeSelection *select;
 	ofoClass *class;
 
-	priv = page->priv;
+	priv = ofa_class_page_get_instance_private( page );
+
 	class = NULL;
 	select = gtk_tree_view_get_selection( priv->tview );
 	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
@@ -343,9 +345,13 @@ tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaClassPagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_CLASS_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_CLASS_PAGE( page )->priv->tview ));
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
+
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -355,7 +361,8 @@ insert_dataset( ofaClassPage *self )
 	GList *dataset, *iset;
 	ofoClass *class;
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
+
 	dataset = ofo_class_get_dataset( priv->hub );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
@@ -376,7 +383,8 @@ insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection )
 	gint id;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
+
 	tmodel = gtk_tree_view_get_model( priv->tview );
 
 	id = ofo_class_get_number( class );
@@ -422,7 +430,8 @@ setup_first_selection( ofaClassPage *self )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
+
 	model = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( model, &iter )){
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -454,7 +463,8 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 		g_object_unref( class );
 	}
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
+
 	is_class = class && OFO_IS_CLASS( class );
 
 	if( priv->update_btn ){
@@ -652,7 +662,7 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self )
 			type,
 			( void * ) self );
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
 
 	if( type == OFO_TYPE_CLASS ){
 		tmodel = gtk_tree_view_get_model( priv->tview );
@@ -668,7 +678,8 @@ find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter 
 	ofaClassPagePrivate *priv;
 	gint num;
 
-	priv = self->priv;
+	priv = ofa_class_page_get_instance_private( self );
+
 	*tmodel = gtk_tree_view_get_model( priv->tview );
 
 	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
