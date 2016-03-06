@@ -28,8 +28,9 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-iwindow.h"
+#include "api/my-idialog.h"
 #include "api/my-igridlist.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
@@ -131,6 +132,7 @@ static void      init_ledger( ofaOpeTemplateProperties *self );
 static void      init_ledger_locked( ofaOpeTemplateProperties *self );
 static void      init_ref( ofaOpeTemplateProperties *self );
 static void      init_detail( ofaOpeTemplateProperties *self );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
@@ -150,10 +152,11 @@ static gboolean  do_update( ofaOpeTemplateProperties *self, gchar **msgerr );
 static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
 static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
-G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0, \
-		G_ADD_PRIVATE( ofaOpeTemplateProperties ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaOpeTemplateProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
 ope_template_properties_finalize( GObject *instance )
@@ -303,8 +306,14 @@ iwindow_init( myIWindow *instance )
 	ofoDossier *dossier;
 	GtkWidget *button;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
 	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -316,10 +325,6 @@ iwindow_init( myIWindow *instance )
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 	//priv->is_current = FALSE;
-
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	init_dialog_title( self );
 	init_mnemo( self );
@@ -343,7 +348,7 @@ iwindow_init( myIWindow *instance )
 	/* if not the current exercice, then only have a 'Close' button */
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 	if( !priv->is_current ){
-		my_iwindow_set_close_button( MY_IWINDOW( self ));
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
 
@@ -511,6 +516,17 @@ init_detail( ofaOpeTemplateProperties *self )
 	for( i=1 ; i<=count ; ++i ){
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 	}
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
