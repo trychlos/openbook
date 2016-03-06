@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-iprefs-page.h"
@@ -142,6 +143,7 @@ static void           init_import_page( ofaPreferences *self );
 static gboolean       enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
 static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
 //static void           activate_first_page( ofaPreferences *self );
+static void           idialog_iface_init( myIDialogInterface *iface );
 static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
@@ -167,7 +169,8 @@ static ofaIPrefsPage *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 preferences_finalize( GObject *instance )
@@ -290,15 +293,17 @@ iwindow_init( myIWindow *instance )
 	ofaPreferences *self;
 	ofaPreferencesPrivate *priv;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	self = OFA_PREFERENCES( instance );
 	priv = ofa_preferences_get_instance_private( self );
-
-	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "notebook" );
-	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "notebook" );
+	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
 	init_quitting_page( self );
 	init_dossier_page( self );
@@ -639,6 +644,17 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 	}
 
 	return( ok );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_preferences_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
