@@ -30,6 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-editable-date.h"
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
@@ -83,6 +84,7 @@ static void      iwindow_init( myIWindow *instance );
 static void      setup_ledgers_treeview( ofaLedgerClose *self );
 static void      setup_date( ofaLedgerClose *self );
 static void      setup_others( ofaLedgerClose *self );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
@@ -102,7 +104,8 @@ static void      set_settings( ofaLedgerClose *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerClose, ofa_ledger_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerClose )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 ledger_close_finalize( GObject *instance )
@@ -221,6 +224,8 @@ iwindow_init( myIWindow *instance )
 	GtkApplicationWindow *main_window;
 	gulong handler;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
 
 	main_window = my_iwindow_get_main_window( instance );
@@ -321,6 +326,17 @@ setup_others( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 	my_utils_widget_set_style( label, "labelerror" );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ledger_close_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*

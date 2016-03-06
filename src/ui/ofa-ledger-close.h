@@ -33,7 +33,7 @@
  * Run an intermediate closing on the selected ledgers.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    no
  */
