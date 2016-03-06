@@ -79,8 +79,8 @@ static void     on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *c
 static void     concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
 
-G_DEFINE_TYPE_EXTENDED( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE, 0, \
-		G_ADD_PRIVATE( ofaBatStore ));
+G_DEFINE_TYPE_EXTENDED( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaBatStore ))
 
 static void
 bat_store_finalize( GObject *instance )
