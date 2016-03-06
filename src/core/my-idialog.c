@@ -39,6 +39,7 @@ static guint    st_initializations      = 0;		/* interface initialization count 
 static GType     register_type( void );
 static void      interface_base_init( myIDialogInterface *klass );
 static void      interface_base_finalize( myIDialogInterface *klass );
+static void      on_click_to_close( GtkButton *button, myIDialog *instance );
 static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
 static void      on_close_clicked( GtkButton *button, myIDialog *instance );
 static void      on_ok_clicked( GtkButton *button, myIDialog *instance );
@@ -198,6 +199,29 @@ my_idialog_init_dialog( myIDialog *instance )
 	} else {
 		g_debug( "%s: unable to identify the [OK] button", thisfn );
 	}
+}
+
+/**
+ * my_idialog_widget_click_to_close:
+ * @instance: this #myIDialog instance.
+ * @button: the button to be clicked.
+ *
+ * Connect to the 'clicked' signal of the @button, so that the @instance
+ * will be closed on click.
+ */
+void
+my_idialog_widget_click_to_close( myIDialog *instance, GtkWidget *button )
+{
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+
+	g_signal_connect( button, "clicked", G_CALLBACK( on_click_to_close ), instance );
+}
+
+static void
+on_click_to_close( GtkButton *button, myIDialog *instance )
+{
+	do_close( instance );
 }
 
 /**

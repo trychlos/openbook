@@ -85,6 +85,9 @@ guint      my_idialog_get_interface_version     ( const myIDialog *instance );
 
 void       my_idialog_init_dialog               ( myIDialog *instance );
 
+void       my_idialog_widget_click_to_close     ( myIDialog *instance,
+														GtkWidget *button );
+
 GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
 
 G_END_DECLS
