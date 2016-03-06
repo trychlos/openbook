@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 
@@ -55,14 +56,14 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-tem
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
 static void     add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
 static void     on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
-static void     on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help );
-static void     do_close( ofaOpeTemplateHelp *help );
 
-G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateHelp, ofa_ope_template_help, GTK_TYPE_DIALOG, 0, \
-		G_ADD_PRIVATE( ofaOpeTemplateHelp ) \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateHelp, ofa_ope_template_help, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaOpeTemplateHelp )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 ope_template_help_finalize( GObject *instance )
@@ -177,9 +178,22 @@ iwindow_init( myIWindow *instance )
 {
 	GtkWidget *button;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_close_clicked ), instance );
+	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), button );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_help_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
@@ -215,21 +229,6 @@ on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent )
 	priv->parents = g_list_remove( priv->parents, finalized_parent );
 
 	if( !priv->parents || g_list_length( priv->parents ) == 0 ){
-		do_close( self );
+		my_iwindow_close( MY_IWINDOW( self ));
 	}
-}
-
-/*
- * response codes available in /usr/include/gtk-3.0/gtk/gtkdialog.h
- */
-static void
-on_close_clicked( GtkButton *button, ofaOpeTemplateHelp *help )
-{
-	do_close( help );
-}
-
-static void
-do_close( ofaOpeTemplateHelp *help )
-{
-	my_iwindow_close( MY_IWINDOW( help ));
 }
