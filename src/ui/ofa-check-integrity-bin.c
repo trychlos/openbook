@@ -81,10 +81,8 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-integrity-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-integrity-bin.ui";
 static const gchar *st_settings_sufix   = "bin";
-
-G_DEFINE_TYPE( ofaCheckIntegrityBin, ofa_check_integrity_bin, GTK_TYPE_BIN )
 
 static void           setup_bin( ofaCheckIntegrityBin *self );
 static void           setup_from_settings( ofaCheckIntegrityBin *bin );
@@ -103,6 +101,9 @@ static void           set_bar_progression( myProgressBar *bar, gulong total, gul
 static void           set_checks_result( ofaCheckIntegrityBin *bin );
 static void           add_message( ofaCheckIntegrityBin *bin, const gchar *text );
 
+G_DEFINE_TYPE_EXTENDED( ofaCheckIntegrityBin, ofa_check_integrity_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaCheckIntegrityBin ))
+
 static void
 check_integrity_bin_finalize( GObject *instance )
 {
@@ -115,7 +116,7 @@ check_integrity_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CHECK_INTEGRITY_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_CHECK_INTEGRITY_BIN( instance )->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 	g_free( priv->settings );
 
@@ -130,7 +131,7 @@ check_integrity_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CHECK_INTEGRITY_BIN( instance ));
 
-	priv = OFA_CHECK_INTEGRITY_BIN( instance )->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -149,14 +150,16 @@ static void
 ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 {
 	static const gchar *thisfn = "ofa_check_integrity_bin_init";
+	ofaCheckIntegrityBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CHECK_INTEGRITY_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CHECK_INTEGRITY_BIN, ofaCheckIntegrityBinPrivate );
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -168,8 +171,6 @@ ofa_check_integrity_bin_class_init( ofaCheckIntegrityBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = check_integrity_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = check_integrity_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaCheckIntegrityBinPrivate ));
 
 	/**
 	 * ofaCheckIntegrityBin::done:
@@ -204,10 +205,12 @@ ofaCheckIntegrityBin *
 ofa_check_integrity_bin_new( const gchar *settings )
 {
 	ofaCheckIntegrityBin *self;
+	ofaCheckIntegrityBinPrivate *priv;
 
 	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
-	self->priv->settings = g_strdup( settings );
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+	priv->settings = g_strdup( settings );
 
 	setup_bin( self );
 	setup_from_settings( self );
@@ -223,9 +226,9 @@ setup_bin( ofaCheckIntegrityBin *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "cib-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -253,7 +256,7 @@ setup_from_settings( ofaCheckIntegrityBin *bin )
 	const gchar *cstr;
 	gint pos;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	key = get_settings_key( bin );
 	list = ofa_settings_user_get_string_list( key );
@@ -274,7 +277,7 @@ write_to_settings( ofaCheckIntegrityBin *bin )
 	gchar *key, *str;
 	gint pos;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
@@ -292,7 +295,8 @@ get_settings_key( ofaCheckIntegrityBin *bin )
 	ofaCheckIntegrityBinPrivate *priv;
 	gchar *key;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
 	key = g_strdup_printf( "%s-%s", priv->settings, st_settings_sufix );
 
 	return( key );
@@ -309,11 +313,9 @@ ofa_check_integrity_bin_set_hub( ofaCheckIntegrityBin *bin, ofaHub *hub )
 	g_return_if_fail( bin && OFA_IS_CHECK_INTEGRITY_BIN( bin ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->hub = hub;
 	g_idle_add(( GSourceFunc ) do_run, bin );
@@ -324,7 +326,7 @@ do_run( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	check_dossier_run( bin );
 	check_bat_lines_run( bin );
@@ -361,7 +363,8 @@ check_dossier_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "dossier-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ) );
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
 	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->dossier_errs = 0;
@@ -482,7 +485,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "bat-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	priv->bat_lines_errs = 0;
 	bats = ofo_bat_get_dataset( priv->hub );
@@ -560,7 +563,7 @@ check_accounts_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "account-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	priv->accounts_errs = 0;
 	accounts = ofo_account_get_dataset( priv->hub );
@@ -627,7 +630,8 @@ check_entries_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "entry-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
 	count = g_list_length( entries );
@@ -726,7 +730,8 @@ check_ledgers_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "ledger-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
 	priv->ledgers_errs = 0;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
@@ -780,7 +785,8 @@ check_ope_templates_run( ofaCheckIntegrityBin *bin )
 	bar = get_new_bar( bin, "ope-parent" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
 	priv->ope_templates_errs = 0;
 	ope_templates = ofo_ope_template_get_dataset( priv->hub );
 	count = g_list_length( ope_templates );
@@ -882,7 +888,7 @@ set_checks_result( ofaCheckIntegrityBin *bin )
 	GtkWidget *label;
 	gchar *str;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	priv->total_errs =
 			priv->dossier_errs
@@ -924,7 +930,7 @@ add_message( ofaCheckIntegrityBin *bin, const gchar *text )
 	GtkTextIter iter;
 	gchar *str;
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	if( !priv->text_buffer ){
 		view = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "textview" );
@@ -950,12 +956,9 @@ ofa_check_integrity_bin_get_status( const ofaCheckIntegrityBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_CHECK_INTEGRITY_BIN( bin ), FALSE );
 
-	priv = bin->priv;
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		return( priv->total_errs == 0 );
-	}
-
-	return( FALSE );
+	return( priv->total_errs == 0 );
 }

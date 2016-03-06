@@ -62,16 +62,13 @@ typedef struct _ofaCheckIntegrityBinPrivate         ofaCheckIntegrityBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                      parent;
-
-	/*< private members >*/
-	ofaCheckIntegrityBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaCheckIntegrityBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                 parent;
+	GtkBinClass parent;
 }
 	ofaCheckIntegrityBinClass;
 
