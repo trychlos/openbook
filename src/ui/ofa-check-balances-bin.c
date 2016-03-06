@@ -70,9 +70,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-check-balances-bin.ui";
-
-G_DEFINE_TYPE( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN )
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-balances-bin.ui";
 
 static void             setup_bin( ofaCheckBalancesBin *self );
 static gboolean         do_run( ofaCheckBalancesBin *bin );
@@ -88,6 +86,9 @@ static void             set_bar_progression( myProgressBar *bar, gulong total, g
 static void             set_checks_result( ofaCheckBalancesBin *bin );
 static gboolean         cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b );
 
+G_DEFINE_TYPE_EXTENDED( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaCheckBalancesBin ))
+
 static void
 check_balances_bin_finalize( GObject *instance )
 {
@@ -100,7 +101,7 @@ check_balances_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CHECK_BALANCES_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_CHECK_BALANCES_BIN( instance )->priv;
+	priv = ofa_check_balances_bin_get_instance_private( OFA_CHECK_BALANCES_BIN( instance ));
 
 	ofs_currency_list_free( &priv->entries_list );
 	ofs_currency_list_free( &priv->ledgers_list );
@@ -117,7 +118,7 @@ check_balances_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CHECK_BALANCES_BIN( instance ));
 
-	priv = OFA_CHECK_BALANCES_BIN( instance )->priv;
+	priv = ofa_check_balances_bin_get_instance_private( OFA_CHECK_BALANCES_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -134,14 +135,16 @@ static void
 ofa_check_balances_bin_init( ofaCheckBalancesBin *self )
 {
 	static const gchar *thisfn = "ofa_check_balances_bin_init";
+	ofaCheckBalancesBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CHECK_BALANCES_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CHECK_BALANCES_BIN, ofaCheckBalancesBinPrivate );
+	priv = ofa_check_balances_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -153,8 +156,6 @@ ofa_check_balances_bin_class_init( ofaCheckBalancesBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = check_balances_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = check_balances_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaCheckBalancesBinPrivate ));
 
 	/**
 	 * ofaCheckBalancesBin::done:
@@ -203,7 +204,7 @@ setup_bin( ofaCheckBalancesBin *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "cbb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -226,11 +227,9 @@ ofa_check_balances_bin_set_hub( ofaCheckBalancesBin *bin, ofaHub *hub )
 	g_return_if_fail( bin && OFA_IS_CHECK_BALANCES_BIN( bin ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
 
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->hub = hub;
 	g_idle_add(( GSourceFunc ) do_run, bin );
@@ -241,7 +240,7 @@ do_run( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
 
 	check_entries_balance_run( bin );
 	check_ledgers_balance_run( bin );
@@ -281,7 +280,8 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	grid = get_new_balance_grid_bin( bin, "p4-entry-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ) );
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
+
 	dossier = ofa_hub_get_dossier( priv->hub );
 
 	priv->entries_list = NULL;
@@ -337,7 +337,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 	grid = get_new_balance_grid_bin( bin, "p4-ledger-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
 
 	priv->ledgers_list = NULL;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
@@ -391,7 +391,8 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 	grid = get_new_balance_grid_bin( bin, "p4-account-bals" );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
+
 	priv->accounts_list = NULL;
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
@@ -431,7 +432,8 @@ get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *c
 	ofoCurrency *cur_object;
 	gboolean found;
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
+
 	found = FALSE;
 
 	for( it=*list ; it ; it=it->next ){
@@ -541,7 +543,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *label;
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
 
 	priv->result = priv->entries_ok && priv->ledgers_ok && priv->accounts_ok;
 
@@ -612,12 +614,9 @@ ofa_check_balances_bin_get_status( const ofaCheckBalancesBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_CHECK_BALANCES_BIN( bin ), FALSE );
 
-	priv = bin->priv;
+	priv = ofa_check_balances_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		return( priv->result );
-	}
-
-	return( FALSE );
+	return( priv->result );
 }
