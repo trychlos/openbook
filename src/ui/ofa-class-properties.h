@@ -33,12 +33,11 @@
  * Update the class properties.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   no
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-class-def.h"
 
@@ -55,22 +54,20 @@ typedef struct _ofaClassPropertiesPrivate        ofaClassPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                   parent;
-
-	/*< private members >*/
-	ofaClassPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaClassProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass              parent;
+	GtkDialogClass parent;
 }
 	ofaClassPropertiesClass;
 
-GType    ofa_class_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_class_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_class_properties_run     ( const ofaMainWindow *parent, ofoClass *devise );
+void  ofa_class_properties_run     ( const ofaMainWindow *parent,
+										ofoClass *devise );
 
 G_END_DECLS
 

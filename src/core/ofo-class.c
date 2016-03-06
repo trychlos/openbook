@@ -305,10 +305,24 @@ ofo_class_get_upd_stamp( const ofoClass *class )
  * Note that this does NOT check for key duplicate.
  */
 gboolean
-ofo_class_is_valid( gint number, const gchar *label )
+ofo_class_is_valid( gint number, const gchar *label, gchar **msgerr )
 {
-	return( ofo_class_is_valid_number( number ) &&
-			ofo_class_is_valid_label( label ));
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !ofo_class_is_valid_number( number )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Class identifier is not valid (must be a [1-9] digit)" ));
+		}
+		return( FALSE );
+	}
+	if( !ofo_class_is_valid_label( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Class label is empty" ));
+		}
+		return( FALSE );
+	}
+	return( TRUE );
 }
 
 /**

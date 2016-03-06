@@ -29,8 +29,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-class.h"
@@ -43,40 +44,46 @@
 /* private instance data
  */
 struct _ofaClassPropertiesPrivate {
+	gboolean   dispose_has_run;
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
-	ofaHub              *hub;
+	ofaHub    *hub;
 
 	/* internals
 	 */
-	ofoClass            *class;
-	gboolean             is_new;
-	gboolean             updated;
+	ofoClass  *class;
+	gboolean   is_new;
 
 	/* data
 	 */
-	gint                 number;
-	gchar               *label;
+	gint       number;
+	gchar     *label;
 
 	/* UI
 	 */
-	GtkWidget           *btn_ok;
+	GtkWidget *ok_btn;
+	GtkWidget *msgerr_label;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-class-properties.ui";
-static const gchar  *st_ui_id  = "ClassPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-class-properties.ui";
 
-G_DEFINE_TYPE( ofaClassProperties, ofa_class_properties, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_number_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      check_for_enable_dlg( ofaClassProperties *self );
 static gboolean  is_dialog_validable( ofaClassProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaClassProperties *self );
+static void      on_ok_clicked( GtkButton *button, ofaClassProperties *self );
+static gboolean  do_update( ofaClassProperties *self, gchar **msgerr );
+static void      set_msgerr( ofaClassProperties *self, const gchar *msg );
+
+G_DEFINE_TYPE_EXTENDED( ofaClassProperties, ofa_class_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaClassProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 class_properties_finalize( GObject *instance )
@@ -90,7 +97,8 @@ class_properties_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_CLASS_PROPERTIES( instance )->priv;
+	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
+
 	g_free( priv->label );
 
 	/* chain up to the parent class */
@@ -100,9 +108,15 @@ class_properties_finalize( GObject *instance )
 static void
 class_properties_dispose( GObject *instance )
 {
+	ofaClassPropertiesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -115,16 +129,19 @@ static void
 ofa_class_properties_init( ofaClassProperties *self )
 {
 	static const gchar *thisfn = "ofa_class_properties_init";
+	ofaClassPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CLASS_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CLASS_PROPERTIES, ofaClassPropertiesPrivate );
-	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
+	priv = ofa_class_properties_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -137,10 +154,7 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = class_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaClassPropertiesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -150,60 +164,92 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
  *
  * Update the properties of an class
  */
-gboolean
+void
 ofa_class_properties_run( const ofaMainWindow *main_window, ofoClass *class )
 {
 	static const gchar *thisfn = "ofa_class_properties_run";
 	ofaClassProperties *self;
-	gboolean updated;
+	ofaClassPropertiesPrivate *priv;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p, class=%p",
 			thisfn, ( void * ) main_window, ( void * ) class );
 
-	self = g_object_new(
-				OFA_TYPE_CLASS_PROPERTIES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_CLASS_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-	self->priv->class = class;
+	priv = ofa_class_properties_get_instance_private( self );
+	priv->class = class;
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_class_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and template mnemo
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
 {
 	ofaClassPropertiesPrivate *priv;
-	GtkApplication *application;
+	gchar *id;
+
+	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%d",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_class_get_number( priv->class ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaClassPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
 	gchar *str;
-	GtkWindow *toplevel;
 	gboolean is_current;
 	GtkWidget *label;
 
-	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
 
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
@@ -216,12 +262,12 @@ v_init_dialog( myDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating class « %d »" ), number );
 	}
-	gtk_window_set_title( toplevel, title );
+	gtk_window_set_title( GTK_WINDOW( instance ), title );
 
 	/* class number */
 	priv->number = number;
 	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-number" ));
+				my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-number" ));
 	if( priv->is_new ){
 		str = g_strdup( "" );
 	} else {
@@ -229,8 +275,8 @@ v_init_dialog( myDialog *dialog )
 	}
 	gtk_entry_set_text( entry, str );
 	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-class-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_number_changed ), instance );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-class-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -238,31 +284,47 @@ v_init_dialog( myDialog *dialog )
 	priv->label = g_strdup( ofo_class_get_label( priv->class ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-label" ));
+						GTK_CONTAINER( instance ), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-label-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
-	my_utils_container_notes_init( toplevel, class );
-	my_utils_container_updstamp_init( toplevel, class );
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), is_current );
+	my_utils_container_notes_init( instance, class );
+	my_utils_container_updstamp_init( instance, class );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		priv->ok_btn = NULL;
 	}
 
-	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
+	check_for_enable_dlg( OFA_CLASS_PROPERTIES( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_class_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
 on_number_changed( GtkEntry *entry, ofaClassProperties *self )
 {
-	self->priv->number = atoi( gtk_entry_get_text( entry ));
+	ofaClassPropertiesPrivate *priv;
+
+	priv = ofa_class_properties_get_instance_private( self );
+
+	priv->number = atoi( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -270,8 +332,12 @@ on_number_changed( GtkEntry *entry, ofaClassProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaClassProperties *self )
 {
-	g_free( self->priv->label );
-	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
+	ofaClassPropertiesPrivate *priv;
+
+	priv = ofa_class_properties_get_instance_private( self );
+
+	g_free( priv->label );
+	priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -279,12 +345,11 @@ on_label_changed( GtkEntry *entry, ofaClassProperties *self )
 static void
 check_for_enable_dlg( ofaClassProperties *self )
 {
-	GtkWidget *button;
+	ofaClassPropertiesPrivate *priv;
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+	priv = ofa_class_properties_get_instance_private( self );
 
-	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
+	gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 }
 
 static gboolean
@@ -293,35 +358,54 @@ is_dialog_validable( ofaClassProperties *self )
 	ofaClassPropertiesPrivate *priv;
 	gboolean ok;
 	ofoClass *exists;
+	gchar *msgerr;
 
-	priv = self->priv;
+	priv = ofa_class_properties_get_instance_private( self );
 
-	ok = ofo_class_is_valid( priv->number, priv->label );
+	set_msgerr( self, "" );
+
+	ok = ofo_class_is_valid( priv->number, priv->label, &msgerr );
 	if( ok ){
 		exists = ofo_class_get_by_number( priv->hub, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
+		if( !ok ){
+			msgerr = g_strdup( _( "Account class already exists" ));
+		}
 	}
+
+	set_msgerr( self, msgerr );
+	g_free( msgerr );
 
 	return( ok );
 }
 
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaClassProperties *self )
 {
-	return( do_update( OFA_CLASS_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 static gboolean
-do_update( ofaClassProperties *self )
+do_update( ofaClassProperties *self, gchar **msgerr )
 {
 	ofaClassPropertiesPrivate *priv;
 	gint prev_id;
-	GtkWindow *toplevel;
+	gboolean ok;
 
-	priv = self->priv;
-
-	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+	priv = ofa_class_properties_get_instance_private( self );
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -329,13 +413,37 @@ do_update( ofaClassProperties *self )
 
 	ofo_class_set_number( priv->class, priv->number );
 	ofo_class_set_label( priv->class, priv->label );
-	my_utils_container_notes_get( toplevel, class );
+	my_utils_container_notes_get( self, class );
 
 	if( priv->is_new ){
-		priv->updated = ofo_class_insert( priv->class, priv->hub );
+		ok = ofo_class_insert( priv->class, priv->hub );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to create this new account class" ));
+		}
 	} else {
-		priv->updated = ofo_class_update( priv->class, prev_id );
+		ok = ofo_class_update( priv->class, prev_id );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the account class" ));
+		}
 	}
 
-	return( priv->updated );
+	return( ok );
+}
+
+static void
+set_msgerr( ofaClassProperties *self, const gchar *msg )
+{
+	ofaClassPropertiesPrivate *priv;
+	GtkWidget *label;
+
+	priv = ofa_class_properties_get_instance_private( self );
+
+	if( !priv->msgerr_label ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		my_utils_widget_set_style( label, "labelerror" );
+		priv->msgerr_label = label;
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
 }

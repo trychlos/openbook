@@ -10,6 +10,7 @@
     <file>ofa-check-balances-bin.ui</file>
     <file>ofa-check-integrity.ui</file>
     <file>ofa-check-integrity-bin.ui</file>
+    <file>ofa-class-properties.ui</file>
     <file>ofa-entry-page.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
     <file>ofa-export-assistant.ui</file>

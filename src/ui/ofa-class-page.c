@@ -487,14 +487,7 @@ on_new_clicked( GtkButton *button, ofaClassPage *page )
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	class = ofo_class_new();
-
-	if( !ofa_class_properties_run(
-			ofa_page_get_main_window( OFA_PAGE( page )), class )){
-
-		g_object_unref( class );
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	ofa_class_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), class );
 }
 
 static void
@@ -506,10 +499,8 @@ on_update_clicked( GtkButton *button, ofaClassPage *page )
 
 	class = tview_get_selected( page, &tmodel, &iter );
 	if( class ){
-		ofa_class_properties_run(
-				ofa_page_get_main_window( OFA_PAGE( page )), class );
+		ofa_class_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), class );
 	}
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void

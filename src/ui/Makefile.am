@@ -247,7 +247,6 @@ rc_files = \
 ui_files = \
 	ofa-account-select.ui								\
 	ofa-bat-select.ui									\
-	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
 	ofa-dossier-manager.ui								\
@@ -279,6 +278,7 @@ resources_ui = \
 	ofa-check-balances-bin.ui							\
 	ofa-check-integrity.ui								\
 	ofa-check-integrity-bin.ui							\
+	ofa-class-properties.ui								\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
