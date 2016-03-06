@@ -181,6 +181,7 @@ iwindow_init( myIWindow *instance )
 	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
+	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), priv->close_btn );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -191,9 +192,13 @@ iwindow_init( myIWindow *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	ofa_check_balances_bin_set_hub( priv->bin, hub );
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	g_debug( "ofa_check_balances_v_init_dialog: returning..." );
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	ofa_check_balances_bin_set_hub( priv->bin, hub );
 }
 
 /*
