@@ -76,6 +76,7 @@ libofa_core_la_SOURCES = \
 	my-field-combo.c									\
 	my-field-combo.h									\
 	my-file-monitor.c									\
+	my-idialog.c										\
 	my-igridlist.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
