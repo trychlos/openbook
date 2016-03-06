@@ -364,7 +364,7 @@ is_dialog_validable( ofaClassProperties *self )
 
 	set_msgerr( self, "" );
 
-	ok = ofo_class_is_valid( priv->number, priv->label, &msgerr );
+	ok = ofo_class_is_valid_data( priv->number, priv->label, &msgerr );
 	if( ok ){
 		exists = ofo_class_get_by_number( priv->hub, priv->number );
 		ok &= !exists ||

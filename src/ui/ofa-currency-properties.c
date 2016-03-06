@@ -29,8 +29,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-currency.h"
@@ -43,41 +44,51 @@
 /* private instance data
  */
 struct _ofaCurrencyPropertiesPrivate {
+	gboolean     dispose_has_run;
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
-	ofoCurrency         *currency;
+	ofoCurrency *currency;
 
 	/* internals
 	 */
-	ofaHub              *hub;
-	gboolean             is_current;
-	gboolean             is_new;
-	gboolean             updated;
+	ofaHub      *hub;
+	gboolean     is_current;
+	gboolean     is_new;
 
 	/* data
 	 */
-	gchar               *code;
-	gchar               *label;
-	gchar               *symbol;
-	gint                 digits;
+	gchar       *code;
+	gchar       *label;
+	gchar       *symbol;
+	gint         digits;
+
+	/* UI
+	 */
+	GtkWidget   *ok_btn;
+	GtkWidget   *msgerr_label;
 };
 
-static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-currency-properties.ui";
-static const gchar  *st_ui_id           = "CurrencyPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-currency-properties.ui";
 
-G_DEFINE_TYPE( ofaCurrencyProperties, ofa_currency_properties, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self );
 static void      on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self );
 static void      check_for_enable_dlg( ofaCurrencyProperties *self );
-static gboolean  is_dialog_validable( ofaCurrencyProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaCurrencyProperties *self );
+static gboolean  is_dialog_validable( ofaCurrencyProperties *self, gchar **msgerr );
+static void      on_ok_clicked( GtkButton *button, ofaCurrencyProperties *self );
+static gboolean  do_update( ofaCurrencyProperties *self, gchar **msgerr );
+static void      set_msgerr( ofaCurrencyProperties *self, const gchar *msg );
+
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyProperties, ofa_currency_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaCurrencyProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 currency_properties_finalize( GObject *instance )
@@ -91,7 +102,8 @@ currency_properties_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_CURRENCY_PROPERTIES( instance )->priv;
+	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
+
 	g_free( priv->code );
 	g_free( priv->label );
 	g_free( priv->symbol );
@@ -103,9 +115,15 @@ currency_properties_finalize( GObject *instance )
 static void
 currency_properties_dispose( GObject *instance )
 {
+	ofaCurrencyPropertiesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -118,16 +136,19 @@ static void
 ofa_currency_properties_init( ofaCurrencyProperties *self )
 {
 	static const gchar *thisfn = "ofa_currency_properties_init";
+	ofaCurrencyPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CURRENCY_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CURRENCY_PROPERTIES, ofaCurrencyPropertiesPrivate );
-	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -140,10 +161,7 @@ ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = currency_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaCurrencyPropertiesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -153,56 +171,90 @@ ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
  *
  * Update the properties of an currency
  */
-gboolean
+void
 ofa_currency_properties_run( const ofaMainWindow *main_window, ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofa_currency_properties_run";
 	ofaCurrencyProperties *self;
-	gboolean updated;
+	ofaCurrencyPropertiesPrivate *priv;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p, currency=%p",
 			thisfn, ( void * ) main_window, ( void * ) currency );
 
-	self = g_object_new(
-				OFA_TYPE_CURRENCY_PROPERTIES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_CURRENCY_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-	self->priv->currency = currency;
+	priv = ofa_currency_properties_get_instance_private( self );
+	priv->currency = currency;
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-	g_object_unref( self );
-
-	return( updated );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_currency_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and currency iso 3a code
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
 {
 	ofaCurrencyPropertiesPrivate *priv;
-	GtkApplication *application;
+	gchar *id;
+
+	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%s",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_currency_get_code( priv->currency ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaCurrencyPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
 	GtkWidget *label;
 	gchar *str;
-	GtkWindow *toplevel;
 
-	priv = OFA_CURRENCY_PROPERTIES( dialog )->priv;
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
 
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
@@ -215,7 +267,7 @@ v_init_dialog( myDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating « %s » currency" ), code );
 	}
-	gtk_window_set_title( toplevel, title );
+	gtk_window_set_title( GTK_WINDOW( instance ), title );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
 
@@ -223,12 +275,12 @@ v_init_dialog( myDialog *dialog )
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-code-entry" ));
+						GTK_CONTAINER( instance ), "p1-code-entry" ));
 	if( priv->code ){
 		gtk_entry_set_text( entry, priv->code );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-code-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), instance );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-code-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -236,12 +288,12 @@ v_init_dialog( myDialog *dialog )
 	priv->label = g_strdup( ofo_currency_get_label( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-label-entry" ));
+						GTK_CONTAINER( instance ), "p1-label-entry" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-label-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -249,12 +301,12 @@ v_init_dialog( myDialog *dialog )
 	priv->symbol = g_strdup( ofo_currency_get_symbol( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-symbol-entry" ));
+						GTK_CONTAINER( instance ), "p1-symbol-entry" ));
 	if( priv->symbol ){
 		gtk_entry_set_text( entry, priv->symbol );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-symbol-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), instance );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-symbol-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
@@ -262,32 +314,48 @@ v_init_dialog( myDialog *dialog )
 	priv->digits = ofo_currency_get_digits( priv->currency );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( toplevel ), "p1-digits-entry" ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
+						GTK_CONTAINER( instance ), "p1-digits-entry" ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), instance );
 	str = g_strdup_printf( "%d", priv->digits );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-digits-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-digits-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
-	my_utils_container_notes_init( toplevel, currency );
-	my_utils_container_updstamp_init( toplevel, currency );
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), priv->is_current );
+	my_utils_container_notes_init( instance, currency );
+	my_utils_container_updstamp_init( instance, currency );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		priv->ok_btn = NULL;
 	}
 
-	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));
+	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_currency_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
 on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->priv->code );
-	self->priv->code = g_strdup( gtk_entry_get_text( entry ));
+	ofaCurrencyPropertiesPrivate *priv;
+
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	g_free( priv->code );
+	priv->code = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -295,8 +363,12 @@ on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->priv->label );
-	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
+	ofaCurrencyPropertiesPrivate *priv;
+
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	g_free( priv->label );
+	priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -304,8 +376,12 @@ on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->priv->symbol );
-	self->priv->symbol = g_strdup( gtk_entry_get_text( entry ));
+	ofaCurrencyPropertiesPrivate *priv;
+
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	g_free( priv->symbol );
+	priv->symbol = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -313,7 +389,11 @@ on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	self->priv->digits = atoi( gtk_entry_get_text( entry ));
+	ofaCurrencyPropertiesPrivate *priv;
+
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	priv->digits = atoi( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -321,48 +401,69 @@ on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 check_for_enable_dlg( ofaCurrencyProperties *self )
 {
-	GtkWidget *button;
+	ofaCurrencyPropertiesPrivate *priv;
+	gboolean ok;
+	gchar *msgerr;
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+	priv = ofa_currency_properties_get_instance_private( self );
 
-	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
+	msgerr = NULL;
+	ok = is_dialog_validable( self, &msgerr );
+	set_msgerr( self, msgerr );
+
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 static gboolean
-is_dialog_validable( ofaCurrencyProperties *self )
+is_dialog_validable( ofaCurrencyProperties *self, gchar **msgerr )
 {
 	ofaCurrencyPropertiesPrivate *priv;
 	gboolean ok;
 	ofoCurrency *exists;
 
-	priv = self->priv;
+	priv = ofa_currency_properties_get_instance_private( self );
 
-	ok = ofo_currency_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
+	ok = ofo_currency_is_valid_data( priv->code, priv->label, priv->symbol, priv->digits, msgerr );
 	if( ok ){
 		exists = ofo_currency_get_by_code( priv->hub, priv->code );
 		ok = !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
+		if( !ok ){
+			*msgerr = g_strdup( _( "The currency already exists" ));
+		}
 	}
 
 	return( ok );
 }
 
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaCurrencyProperties *self )
 {
-	return( do_update( OFA_CURRENCY_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 static gboolean
-do_update( ofaCurrencyProperties *self )
+do_update( ofaCurrencyProperties *self, gchar **msgerr )
 {
 	ofaCurrencyPropertiesPrivate *priv;
 	gchar *prev_code;
+	gboolean ok;
 
-	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
+	g_return_val_if_fail( is_dialog_validable( self, msgerr ), FALSE );
 
-	priv = self->priv;
+	priv = ofa_currency_properties_get_instance_private( self );
 
 	prev_code = g_strdup( ofo_currency_get_code( priv->currency ));
 
@@ -370,17 +471,39 @@ do_update( ofaCurrencyProperties *self )
 	ofo_currency_set_label( priv->currency, priv->label );
 	ofo_currency_set_symbol( priv->currency, priv->symbol );
 	ofo_currency_set_digits( priv->currency, priv->digits );
-	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), currency );
+	my_utils_container_notes_get( self, currency );
 
 	if( priv->is_new ){
-		priv->updated =
-				ofo_currency_insert( priv->currency, priv->hub );
+		ok = ofo_currency_insert( priv->currency, priv->hub );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to create this new currency" ));
+		}
 	} else {
-		priv->updated =
-				ofo_currency_update( priv->currency, prev_code );
+		ok = ofo_currency_update( priv->currency, prev_code );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the currency" ));
+		}
 	}
 
 	g_free( prev_code );
 
-	return( priv->updated );
+	return( ok );
+}
+
+static void
+set_msgerr( ofaCurrencyProperties *self, const gchar *msg )
+{
+	ofaCurrencyPropertiesPrivate *priv;
+	GtkWidget *label;
+
+	priv = ofa_currency_properties_get_instance_private( self );
+
+	if( !priv->msgerr_label ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		my_utils_widget_set_style( label, "labelerror" );
+		priv->msgerr_label = label;
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
 }

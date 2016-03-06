@@ -91,7 +91,7 @@ const GTimeVal *ofo_currency_get_upd_stamp     ( const ofoCurrency *currency );
 const gdouble   ofo_currency_get_precision     ( const ofoCurrency *currency );
 
 gboolean        ofo_currency_is_deletable      ( const ofoCurrency *currency );
-gboolean        ofo_currency_is_valid          ( const gchar *code, const gchar *label, const gchar *symbol, gint digits );
+gboolean        ofo_currency_is_valid_data     ( const gchar *code, const gchar *label, const gchar *symbol, gint digits, gchar **msgerr );
 
 void            ofo_currency_set_code          ( ofoCurrency *currency, const gchar *code );
 void            ofo_currency_set_label         ( ofoCurrency *currency, const gchar *label );

@@ -297,7 +297,7 @@ ofo_class_get_upd_stamp( const ofoClass *class )
 }
 
 /**
- * ofo_class_is_valid:
+ * ofo_class_is_valid_data:
  *
  * Returns: %TRUE if the provided data makes the ofoClass a valid
  * object.
@@ -305,7 +305,7 @@ ofo_class_get_upd_stamp( const ofoClass *class )
  * Note that this does NOT check for key duplicate.
  */
 gboolean
-ofo_class_is_valid( gint number, const gchar *label, gchar **msgerr )
+ofo_class_is_valid_data( gint number, const gchar *label, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;

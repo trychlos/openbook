@@ -71,8 +71,10 @@ static void         setup_first_selection( ofaCurrencyPage *self );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void         on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self );
 static void         on_new_clicked( GtkButton *button, ofaCurrencyPage *page );
+/*
 static void         select_row_by_code( ofaCurrencyPage *page, const gchar *code );
 static gboolean     find_row_by_code( ofaCurrencyPage *page, const gchar *code, GtkTreeIter *iter );
+*/
 static void         on_update_clicked( GtkButton *button, ofaCurrencyPage *page );
 static void         on_delete_clicked( GtkButton *button, ofaCurrencyPage *page );
 static void         try_to_delete_current_row( ofaCurrencyPage *page );
@@ -413,19 +415,10 @@ on_new_clicked( GtkButton *button, ofaCurrencyPage *page )
 	ofoCurrency *currency;
 
 	currency = ofo_currency_new();
-
-	if( ofa_currency_properties_run(
-			ofa_page_get_main_window( OFA_PAGE( page )), currency )){
-
-		select_row_by_code( page, ofo_currency_get_code( currency ));
-
-	} else {
-		g_object_unref( currency );
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	ofa_currency_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), currency );
 }
 
+#if 0
 static void
 select_row_by_code( ofaCurrencyPage *page, const gchar *code )
 {
@@ -466,6 +459,7 @@ find_row_by_code( ofaCurrencyPage *page, const gchar *code, GtkTreeIter *iter )
 
 	return( FALSE );
 }
+#endif
 
 static void
 on_update_clicked( GtkButton *button, ofaCurrencyPage *page )
@@ -479,20 +473,11 @@ on_update_clicked( GtkButton *button, ofaCurrencyPage *page )
 	priv = ofa_currency_page_get_instance_private( page );
 
 	select = gtk_tree_view_get_selection( priv->tview );
-
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
 		gtk_tree_model_get( tmodel, &iter, CURRENCY_COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
-
-		if( ofa_currency_properties_run(
-				ofa_page_get_main_window( OFA_PAGE( page )), currency )){
-
-			/* take into account by dossier signaling system */
-		}
+		ofa_currency_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), currency );
 	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
 }
 
 static void

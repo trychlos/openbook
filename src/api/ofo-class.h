@@ -86,7 +86,7 @@ const gchar    *ofo_class_get_notes               ( const ofoClass *class );
 const gchar    *ofo_class_get_upd_user            ( const ofoClass *class );
 const GTimeVal *ofo_class_get_upd_stamp           ( const ofoClass *class );
 
-gboolean        ofo_class_is_valid                ( gint number, const gchar *label, gchar **msgerr );
+gboolean        ofo_class_is_valid_data           ( gint number, const gchar *label, gchar **msgerr );
 gboolean        ofo_class_is_valid_number         ( gint number );
 gboolean        ofo_class_is_valid_label          ( const gchar *label );
 gboolean        ofo_class_is_deletable            ( const ofoClass *class );

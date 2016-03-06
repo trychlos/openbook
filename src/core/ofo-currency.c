@@ -374,7 +374,7 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 }
 
 /**
- * ofo_currency_is_valid:
+ * ofo_currency_is_valid_data:
  *
  * Returns: %TRUE if the provided data makes the ofoCurrency a valid
  * object.
@@ -382,12 +382,36 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
  * Note that this does NOT check for key duplicate.
  */
 gboolean
-ofo_currency_is_valid( const gchar *code, const gchar *label, const gchar *symbol, gint digits )
+ofo_currency_is_valid_data( const gchar *code, const gchar *label, const gchar *symbol, gint digits, gchar **msgerr )
 {
-	return( my_strlen( code ) &&
-			my_strlen( label ) &&
-			my_strlen( symbol ) &&
-			digits > 0 );
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( code )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty code" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty label" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( symbol )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty symbol" ));
+		}
+		return( FALSE );
+	}
+	if( digits < 0 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Invalid decimal digits count" ));
+		}
+		return( FALSE );
+	}
+	return( TRUE );
 }
 
 /**
