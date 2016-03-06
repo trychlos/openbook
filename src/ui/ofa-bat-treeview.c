@@ -70,8 +70,8 @@ static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, o
 static void       try_to_delete_current_row( ofaBatTreeview *self );
 static gboolean   delete_confirmed( ofaBatTreeview *self, ofoBat *bat );
 
-G_DEFINE_TYPE_EXTENDED( ofaBatTreeview, ofa_bat_treeview, GTK_TYPE_BIN, 0, \
-		G_ADD_PRIVATE( ofaBatTreeview ));
+G_DEFINE_TYPE_EXTENDED( ofaBatTreeview, ofa_bat_treeview, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaBatTreeview ))
 
 static void
 bat_treeview_finalize( GObject *instance )
