@@ -74,8 +74,8 @@ static void       on_update_clicked( GtkButton *button, ofaBatPage *page );
 static void       on_delete_clicked( GtkButton *button, ofaBatPage *page );
 static void       on_import_clicked( GtkButton *button, ofaBatPage *page );
 
-G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0, \
-		G_ADD_PRIVATE( ofaBatPage ));
+G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaBatPage ))
 
 static void
 bats_page_finalize( GObject *instance )
