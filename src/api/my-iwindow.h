@@ -174,8 +174,6 @@ myIWindow            *my_iwindow_present                   ( myIWindow *instance
 
 void                  my_iwindow_close                     ( myIWindow *instance );
 
-GtkWidget            *my_iwindow_set_close_button          ( myIWindow *instance );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_MY_IWINDOW_H__ */

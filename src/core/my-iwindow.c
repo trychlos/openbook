@@ -52,11 +52,7 @@ static GType     register_type( void );
 static void      interface_base_init( myIWindowInterface *klass );
 static void      interface_base_finalize( myIWindowInterface *klass );
 static void      iwindow_init( myIWindow *instance );
-static void      iwindow_init_dialog( myIWindow *instance );
 static gboolean  iwindow_quit_on_escape( const myIWindow *instance );
-static void      on_cancel_clicked( GtkButton *button, myIWindow *instance );
-static void      on_close_clicked( GtkButton *button, myIWindow *instance );
-static void      on_ok_clicked( GtkButton *button, myIWindow *instance );
 static gboolean  on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void      do_close( myIWindow *instance );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
@@ -299,42 +295,6 @@ my_iwindow_close( myIWindow *instance )
 	do_close( instance );
 }
 
-/**
- * my_iwindow_set_close_button:
- * @instance: this #myIWindow instance.
- *
- * Replace the [OK] / [Cancel] buttons with a [Close] one which has a
- * GTK_RESPONSE_CLOSE response identifier.
- *
- * This method should only be called for GtkDialog classes.
- *
- * Returns: the newly added 'Close' button.
- */
-GtkWidget *
-my_iwindow_set_close_button( myIWindow *instance )
-{
-	GtkWidget *button;
-
-	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
-	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
-
-	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
-	if( button ){
-		gtk_widget_destroy( button );
-	}
-
-	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
-	if( button ){
-		gtk_widget_destroy( button );
-	}
-
-	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
-
-	gtk_widget_show_all( GTK_WIDGET( instance ));
-
-	return( button );
-}
-
 /*
  * iwindow_init:
  * @instance: this #myIWindow instance.
@@ -375,55 +335,11 @@ iwindow_init( myIWindow *instance )
 			my_utils_container_dump( GTK_CONTAINER( instance ));
 		}
 
-		if( GTK_IS_DIALOG( instance )){
-			iwindow_init_dialog( instance );
-		}
-
 		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
 
 	} else {
 		g_info( "%s: myIWindow instance %p (%s) already initialized",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-	}
-}
-
-/*
- * iwindow_init_dialog:
-
- * Specific GtkDialog-derived one-time initialization.
- *
- * Response codes are defined in /usr/include/gtk-3.0/gtk/gtkdialog.h.
- */
-static void
-iwindow_init_dialog( myIWindow *instance )
-{
-	static const gchar *thisfn = "my_iwindow_init_dialog";
-	GtkWidget *cancel_btn, *close_btn, *ok_btn;
-
-	g_return_if_fail( instance && GTK_IS_DIALOG( instance ));
-
-	cancel_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
-	if( cancel_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( cancel_btn ));
-		g_signal_connect( cancel_btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
-	} else {
-		g_debug( "%s: unable to identify the [Cancel] button", thisfn );
-	}
-
-	close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CLOSE );
-	if( close_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( close_btn ));
-		g_signal_connect( close_btn, "clicked", G_CALLBACK( on_close_clicked ), instance );
-	} else {
-		g_debug( "%s: unable to identify the [Close] button", thisfn );
-	}
-
-	ok_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
-	if( ok_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( ok_btn ));
-		g_signal_connect( ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
-	} else {
-		g_debug( "%s: unable to identify the [OK] button", thisfn );
 	}
 }
 
@@ -448,39 +364,6 @@ iwindow_quit_on_escape( const myIWindow *instance )
 	g_info( "%s: myIWindow instance %p does not provide 'quit_on_escape()' method",
 			thisfn, ( void * ) instance );
 	return( TRUE );
-}
-
-/*
- * GtkDialog-specific.
- *
- * click on [Cancel] button: close without confirmation
- */
-static void
-on_cancel_clicked( GtkButton *button, myIWindow *instance )
-{
-	do_close( instance );
-}
-
-/*
- * GtkDialog-specific.
- *
- * click on [Close] button: close without confirmation
- */
-static void
-on_close_clicked( GtkButton *button, myIWindow *instance )
-{
-	do_close( instance );
-}
-
-/*
- * GtkDialog-specific.
- *
- * click on [OK] button: does nothing ?
- */
-static void
-on_ok_clicked( GtkButton *button, myIWindow *instance )
-{
-
 }
 
 static gboolean
