@@ -55,16 +55,13 @@ typedef struct _ofaClosingParmsBinPrivate         ofaClosingParmsBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                     parent;
-
-	/*< private members >*/
-	ofaClosingParmsBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaClosingParmsBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                parent;
+	GtkBinClass parent;
 }
 	ofaClosingParmsBinClass;
 

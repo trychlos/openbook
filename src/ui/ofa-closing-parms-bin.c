@@ -93,9 +93,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-closing-parms-bin.ui";
-
-G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing-parms-bin.ui";
 
 static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
@@ -117,6 +115,9 @@ static GObject *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
 static void     check_bin( ofaClosingParmsBin *bin );
 static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
 static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
+
+G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaClosingParmsBin ))
 
 static void
 closing_parms_bin_finalize( GObject *instance )
@@ -141,7 +142,7 @@ closing_parms_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ));
 
-	priv = OFA_CLOSING_PARMS_BIN( instance )->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( OFA_CLOSING_PARMS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -158,13 +159,16 @@ static void
 ofa_closing_parms_bin_init( ofaClosingParmsBin *self )
 {
 	static const gchar *thisfn = "ofa_closing_parms_bin_init";
+	ofaClosingParmsBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CLOSING_PARMS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLOSING_PARMS_BIN, ofaClosingParmsBinPrivate );
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -176,8 +180,6 @@ ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = closing_parms_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = closing_parms_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaClosingParmsBinPrivate ));
 
 	/**
 	 * ofaClosingParmsBin::changed:
@@ -208,17 +210,14 @@ ofa_closing_parms_bin_new( ofaMainWindow *main_window )
 {
 	ofaClosingParmsBin *bin;
 	ofaClosingParmsBinPrivate *priv;;
-	GtkApplication *application;
 
 	bin = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
-	priv = bin->priv;
+
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	priv->main_window = main_window;
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( main_window );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
@@ -239,8 +238,9 @@ setup_bin( ofaClosingParmsBin *bin )
 	GObject *object;
 	GtkWidget *toplevel, *entry, *label, *button, *image;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "cpb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -294,7 +294,7 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 
-	priv = bin->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	/* operation mnemo for closing entries
 	 * - have a default value */
@@ -318,7 +318,7 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 	GSList *currencies, *it;
 	const gchar *currency, *account;
 
-	priv = bin->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-grid" ));
 	priv->count = 1;
@@ -354,7 +354,7 @@ on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
 	ofaClosingParmsBinPrivate *priv;
 	gchar *mnemo;
 
-	priv = bin->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
@@ -375,7 +375,7 @@ on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
 	ofaClosingParmsBinPrivate *priv;
 	gchar *mnemo;
 
-	priv = bin->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
@@ -403,7 +403,8 @@ add_empty_row( ofaClosingParmsBin *self )
 	ofaCurrencyCombo *combo;
 	gint row;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
 	row = priv->count;
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
@@ -446,7 +447,7 @@ add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint r
 	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *image, *button;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	button = gtk_button_new();
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
@@ -476,7 +477,8 @@ on_account_select( ofaClosingParmsBin *self, gint row )
 	GtkWidget *entry;
 	gchar *acc_number;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
 	entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 
@@ -524,7 +526,7 @@ remove_row( ofaClosingParmsBin *self, gint row )
 	gint i, line;
 	GtkWidget *widget;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	/* first remove the line
 	 * note that there is no 'add' button in a used line */
@@ -579,7 +581,8 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	gint row;
 	GtkWidget *entry;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
 	row = find_currency_row( self, currency );
 
 	if( !row ){
@@ -603,7 +606,7 @@ find_currency_row( ofaClosingParmsBin *self, const gchar *currency )
 	gint row, cmp;
 	gchar *selected;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	for( row=1 ; row<=priv->count ; ++row ){
 
@@ -631,7 +634,7 @@ get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 	GtkWidget *align;
 	GObject *combo;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	align = gtk_grid_get_child_at( priv->grid, COL_CURRENCY, row );
 	if( !align ){
@@ -662,19 +665,17 @@ ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin, gchar **msg )
 
 	g_return_val_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	ok = FALSE;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		ok = TRUE;
-		if( msg ){
-			*msg = NULL;
-		}
-		if( ok ) ok &= check_for_ope( bin, priv->sld_ope, msg );
-		if( ok ) ok &= check_for_ope( bin, priv->for_ope, msg );
-		if( ok ) ok &= check_for_accounts( bin, msg );
+	ok = TRUE;
+	if( msg ){
+		*msg = NULL;
 	}
+	if( ok ) ok &= check_for_ope( bin, priv->sld_ope, msg );
+	if( ok ) ok &= check_for_ope( bin, priv->for_ope, msg );
+	if( ok ) ok &= check_for_accounts( bin, msg );
 
 	return( ok );
 }
@@ -689,7 +690,7 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 	const gchar *cstr;
 	ofoOpeTemplate *ope;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( !my_strlen( cstr )){
@@ -724,7 +725,8 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 	GSList *cursets, *find;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
 	ok = TRUE;
 	cursets = NULL;
 
@@ -836,36 +838,35 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 
 	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		ofo_dossier_set_forward_ope( priv->dossier,
-					gtk_entry_get_text( GTK_ENTRY( priv->for_ope )));
+	ofo_dossier_set_forward_ope( priv->dossier,
+				gtk_entry_get_text( GTK_ENTRY( priv->for_ope )));
 
-		ofo_dossier_set_sld_ope( priv->dossier,
-					gtk_entry_get_text( GTK_ENTRY( priv->sld_ope )));
+	ofo_dossier_set_sld_ope( priv->dossier,
+				gtk_entry_get_text( GTK_ENTRY( priv->sld_ope )));
 
-		ofo_dossier_reset_currencies( priv->dossier );
+	ofo_dossier_reset_currencies( priv->dossier );
 
-		for( row=1 ; row<priv->count ; ++row ){
-			combo = get_currency_combo_at( bin, row );
-			g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
+	for( row=1 ; row<priv->count ; ++row ){
+		combo = get_currency_combo_at( bin, row );
+		g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
 
-			code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
-			if( my_strlen( code )){
+		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
+		if( my_strlen( code )){
 
-				entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
-				g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-				acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
+			entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
+			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 
-				if( my_strlen( acc_number )){
-					ofo_dossier_set_sld_account( priv->dossier, code, acc_number );
-				}
+			if( my_strlen( acc_number )){
+				ofo_dossier_set_sld_account( priv->dossier, code, acc_number );
 			}
-			g_free( code );
 		}
-
-		ofo_dossier_update_currencies( priv->dossier );
+		g_free( code );
 	}
+
+	ofo_dossier_update_currencies( priv->dossier );
 }
