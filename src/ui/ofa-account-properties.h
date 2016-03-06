@@ -33,7 +33,7 @@
  * Update properties of an account.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */

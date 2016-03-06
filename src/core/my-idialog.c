@@ -39,7 +39,6 @@ static guint    st_initializations      = 0;		/* interface initialization count 
 static GType     register_type( void );
 static void      interface_base_init( myIDialogInterface *klass );
 static void      interface_base_finalize( myIDialogInterface *klass );
-static void      idialog_init_dialog( myIDialog *instance );
 static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
 static void      on_close_clicked( GtkButton *button, myIDialog *instance );
 static void      on_ok_clicked( GtkButton *button, myIDialog *instance );
@@ -159,54 +158,14 @@ my_idialog_get_interface_version( const myIDialog *instance )
 }
 
 /**
- * my_idialog_set_close_button:
- * @instance: this #myIDialog instance.
- *
- * Replace the [OK] / [Cancel] buttons with a [Close] one which has a
- * GTK_RESPONSE_CLOSE response identifier.
- *
- * This method should only be called for GtkDialog classes.
- *
- * Returns: the newly added 'Close' button.
- */
-GtkWidget *
-my_idialog_set_close_button( myIDialog *instance )
-{
-	GtkWidget *button;
-
-	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
-	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
-
-	if( 0 ){
-		idialog_init_dialog( instance );
-	}
-
-	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
-	if( button ){
-		gtk_widget_destroy( button );
-	}
-
-	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
-	if( button ){
-		gtk_widget_destroy( button );
-	}
-
-	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
-
-	gtk_widget_show_all( GTK_WIDGET( instance ));
-
-	return( button );
-}
-
-/*
- * idialog_init_dialog:
+ * my_idialog_init_dialog:
 
  * Specific GtkDialog-derived one-time initialization.
  *
  * Response codes are defined in /usr/include/gtk-3.0/gtk/gtkdialog.h.
  */
-static void
-idialog_init_dialog( myIDialog *instance )
+void
+my_idialog_init_dialog( myIDialog *instance )
 {
 	static const gchar *thisfn = "my_idialog_init_dialog";
 	GtkWidget *cancel_btn, *close_btn, *ok_btn;
@@ -236,6 +195,42 @@ idialog_init_dialog( myIDialog *instance )
 	} else {
 		g_debug( "%s: unable to identify the [OK] button", thisfn );
 	}
+}
+
+/**
+ * my_idialog_set_close_button:
+ * @instance: this #myIDialog instance.
+ *
+ * Replace the [OK] / [Cancel] buttons with a [Close] one which has a
+ * GTK_RESPONSE_CLOSE response identifier.
+ *
+ * This method should only be called for GtkDialog classes.
+ *
+ * Returns: the newly added 'Close' button.
+ */
+GtkWidget *
+my_idialog_set_close_button( myIDialog *instance )
+{
+	GtkWidget *button;
+
+	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
+	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
+
+	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
+	if( button ){
+		gtk_widget_destroy( button );
+	}
+
+	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
+	if( button ){
+		gtk_widget_destroy( button );
+	}
+
+	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
+	return( button );
 }
 
 /*

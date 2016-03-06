@@ -30,6 +30,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
@@ -106,6 +107,7 @@ static void      init_ui( ofaAccountProperties *dialog );
 static void      remove_balances_page( ofaAccountProperties *self );
 static void      init_balances_page( ofaAccountProperties *self );
 static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
@@ -120,7 +122,8 @@ static void      set_msgerr( ofaAccountProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaAccountProperties )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 account_properties_finalize( GObject *instance )
@@ -267,14 +270,18 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_account_properties_iwindow_init";
-	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	gchar *title;
 	const gchar *acc_number;
 
-	self = OFA_ACCOUNT_PROPERTIES( instance );
-	priv = ofa_account_properties_get_instance_private( self );
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
+	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -306,7 +313,7 @@ iwindow_init( myIWindow *instance )
 	priv->root = ofo_account_is_root( priv->account );
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
-	init_ui( self );
+	init_ui( OFA_ACCOUNT_PROPERTIES( instance ));
 
 	/* account number
 	 * set read-only if not empty though we would be able to remediate
@@ -327,10 +334,10 @@ iwindow_init( myIWindow *instance )
 	/* type of account */
 	if( priv->root ){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->root_btn ), TRUE );
-		on_root_toggled( GTK_RADIO_BUTTON( priv->root_btn ), self );
+		on_root_toggled( GTK_RADIO_BUTTON( priv->root_btn ), OFA_ACCOUNT_PROPERTIES( instance ));
 	} else {
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->detail_btn ), TRUE );
-		on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), self );
+		on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), OFA_ACCOUNT_PROPERTIES( instance ));
 	}
 
 	/* when closing exercice */
@@ -351,9 +358,9 @@ iwindow_init( myIWindow *instance )
 	}
 
 	if( ofo_account_is_root( priv->account )){
-		remove_balances_page( self );
+		remove_balances_page( OFA_ACCOUNT_PROPERTIES( instance ));
 	} else {
-		init_balances_page( self );
+		init_balances_page( OFA_ACCOUNT_PROPERTIES( instance ));
 	}
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), account );
@@ -370,7 +377,7 @@ iwindow_init( myIWindow *instance )
 	my_utils_widget_set_editable( priv->currency_combo, priv->is_current && !priv->has_entries );
 
 	if( !priv->is_current ){
-		my_iwindow_set_close_button( MY_IWINDOW( self ));
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
 }
@@ -445,10 +452,6 @@ init_ui( ofaAccountProperties *dialog )
 	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->currency_etiq ), GTK_WIDGET( combo ));
 	priv->currency_combo = GTK_WIDGET( combo );
-
-	/* buttons */
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "btn-ok" );
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), dialog );
 }
 
 /*
@@ -525,6 +528,17 @@ set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, cons
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname_cur ));
 	gtk_label_set_text( label, priv->cur_symbol );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
