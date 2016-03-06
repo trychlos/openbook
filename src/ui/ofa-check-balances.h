@@ -31,9 +31,13 @@
  * @include: ui/ofa-check-balances.h
  *
  * Check accounts, ledgers and entries balances.
+ *
+ * Development rules:
+ * - type:       non-modal dialog
+ * - settings:   yes
+ * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -49,16 +53,13 @@ typedef struct _ofaCheckBalancesPrivate        ofaCheckBalancesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                 parent;
-
-	/*< private members >*/
-	ofaCheckBalancesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaCheckBalances;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass            parent;
+	GtkDialogClass parent;
 }
 	ofaCheckBalancesClass;
 

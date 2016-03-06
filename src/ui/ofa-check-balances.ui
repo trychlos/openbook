@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkDialog" id="CheckBalancesDlg">
+  <template class="ofaCheckBalances" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
@@ -23,6 +23,9 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="margin_right">4</property>
+                <property name="margin_top">4</property>
+                <property name="margin_bottom">4</property>
                 <property name="use_stock">True</property>
               </object>
               <packing>
@@ -71,5 +74,5 @@
     <action-widgets>
       <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
-  </object>
+  </template>
 </interface>

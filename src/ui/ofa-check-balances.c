@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 
 #include "core/ofa-main-window.h"
@@ -38,8 +39,8 @@
 /* private instance data
  */
 struct _ofaCheckBalancesPrivate {
+	gboolean             dispose_has_run;
 
-	ofaMainWindow       *main_window;
 	ofaCheckBalancesBin *bin;
 
 	/* UI
@@ -47,13 +48,17 @@ struct _ofaCheckBalancesPrivate {
 	GtkWidget           *close_btn;
 };
 
-static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-check-balances.ui";
-static const gchar  *st_ui_id           = "CheckBalancesDlg";
+static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-balances.ui";
 
-G_DEFINE_TYPE( ofaCheckBalances, ofa_check_balances, MY_TYPE_DIALOG )
+static void  iwindow_iface_init( myIWindowInterface *iface );
+static void  iwindow_init( myIWindow *instance );
+static void  idialog_iface_init( myIDialogInterface *iface );
+static void  on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self );
 
-static void v_init_dialog( myDialog *dialog );
-static void on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self );
+G_DEFINE_TYPE_EXTENDED( ofaCheckBalances, ofa_check_balances, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaCheckBalances )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 check_balances_finalize( GObject *instance )
@@ -75,8 +80,13 @@ static void
 check_balances_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_CHECK_BALANCES( instance ));
+	ofaCheckBalancesPrivate *priv;
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_check_balances_get_instance_private( OFA_CHECK_BALANCES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -89,12 +99,16 @@ static void
 ofa_check_balances_init( ofaCheckBalances *self )
 {
 	static const gchar *thisfn = "ofa_check_balances_init";
+	ofaCheckBalancesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CHECK_BALANCES, ofaCheckBalancesPrivate );
+	priv = ofa_check_balances_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -107,9 +121,7 @@ ofa_check_balances_class_init( ofaCheckBalancesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = check_balances_dispose;
 	G_OBJECT_CLASS( klass )->finalize = check_balances_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-
-	g_type_class_add_private( klass, sizeof( ofaCheckBalancesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -128,52 +140,71 @@ ofa_check_balances_run( ofaMainWindow *main_window )
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
-	self = g_object_new(
-				OFA_TYPE_CHECK_BALANCES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_CHECK_BALANCES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	g_object_unref( self );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_balances_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
 {
 	ofaCheckBalancesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofaHub *hub;
-	GtkWindow *toplevel;
 	GtkWidget *parent;
 
-	priv = OFA_CHECK_BALANCES( dialog )->priv;
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	hub = ofa_main_window_get_hub( priv->main_window );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	priv = ofa_check_balances_get_instance_private( OFA_CHECK_BALANCES( instance ));
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->bin = ofa_check_balances_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 
-	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), dialog );
+	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
 	ofa_check_balances_bin_set_hub( priv->bin, hub );
 
 	g_debug( "ofa_check_balances_v_init_dialog: returning..." );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_balances_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
@@ -181,7 +212,7 @@ on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self )
 {
 	ofaCheckBalancesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_check_balances_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
 }
