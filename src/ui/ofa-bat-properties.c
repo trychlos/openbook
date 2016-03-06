@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
@@ -65,6 +66,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-pro
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      check_for_enable_dlg( ofaBatProperties *self );
 static gboolean  is_dialog_validable( ofaBatProperties *self );
 static void      on_ok_clicked( GtkButton *button, ofaBatProperties *self );
@@ -72,7 +74,8 @@ static gboolean  do_update( ofaBatProperties *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatProperties, ofa_bat_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaBatProperties )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 bat_properties_finalize( GObject *instance )
@@ -178,7 +181,7 @@ ofa_bat_properties_run( const ofaMainWindow *main_window, ofoBat *bat )
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_account_properties_iwindow_iface_init";
+	static const gchar *thisfn = "ofa_bat_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -220,7 +223,13 @@ iwindow_init( myIWindow *instance )
 	GtkWidget *parent;
 	gboolean is_current;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -241,19 +250,26 @@ iwindow_init( myIWindow *instance )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
-
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
-		my_iwindow_set_close_button( MY_IWINDOW( instance ));
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	check_for_enable_dlg( OFA_BAT_PROPERTIES( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_bat_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
