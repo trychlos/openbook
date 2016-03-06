@@ -49,16 +49,13 @@ typedef struct _ofaBalanceRenderPrivate        ofaBalanceRenderPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPage            parent;
-
-	/*< private members >*/
-	ofaBalanceRenderPrivate *priv;
+	ofaRenderPage      parent;
 }
 	ofaBalanceRender;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPageClass       parent;
+	ofaRenderPageClass parent;
 }
 	ofaBalanceRenderClass;
 

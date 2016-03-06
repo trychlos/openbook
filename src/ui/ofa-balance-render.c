@@ -124,13 +124,6 @@ static const gint st_body_font_size      = 8;
 
 #define COLOR_WHITE                      1,      1,      1
 
-static ofaRenderPageClass *ofa_balance_render_parent_class = NULL;
-
-static GType              register_type( void );
-static void               balance_render_finalize( GObject *instance );
-static void               balance_render_dispose( GObject *instance );
-static void               balance_render_instance_init( ofaBalanceRender *self );
-static void               balance_render_class_init( ofaBalanceRenderClass *klass );
 static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
@@ -163,56 +156,15 @@ static void               draw_account_balance( ofaIRenderable *instance, GList 
 static GList             *add_account_balance( ofaBalanceRender *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint               cmp_currencies( const sCurrency *a, const sCurrency *b );
 
+G_DEFINE_TYPE_EXTENDED( ofaBalanceRender, ofa_balance_render, OFA_TYPE_RENDER_PAGE, 0,
+		G_ADD_PRIVATE( ofaBalanceRender )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IRENDERABLE, irenderable_iface_init ))
+
 static void
 free_currency( sCurrency *total_per_currency )
 {
 	g_free( total_per_currency->currency );
 	g_free( total_per_currency );
-}
-
-GType
-ofa_balance_render_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_balance_render_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaBalanceRenderClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) balance_render_class_init,
-		NULL,
-		NULL,
-		sizeof( ofaBalanceRender ),
-		0,
-		( GInstanceInitFunc ) balance_render_instance_init
-	};
-
-	static const GInterfaceInfo irenderable_iface_info = {
-		( GInterfaceInitFunc ) irenderable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_RENDER_PAGE, "ofaBalanceRender", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IRENDERABLE, &irenderable_iface_info );
-
-	return( type );
 }
 
 static void
@@ -227,7 +179,7 @@ balance_render_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BALANCE_RENDER( instance ));
 
 	/* free data members here */
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -251,26 +203,22 @@ balance_render_dispose( GObject *instance )
 }
 
 static void
-balance_render_instance_init( ofaBalanceRender *self )
+ofa_balance_render_init( ofaBalanceRender *self )
 {
-	static const gchar *thisfn = "ofa_balance_render_instance_init";
+	static const gchar *thisfn = "ofa_balance_render_init";
 
 	g_return_if_fail( OFA_IS_BALANCE_RENDER( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BALANCE_RENDER, ofaBalanceRenderPrivate );
 }
 
 static void
-balance_render_class_init( ofaBalanceRenderClass *klass )
+ofa_balance_render_class_init( ofaBalanceRenderClass *klass )
 {
 	static const gchar *thisfn = "ofa_balance_render_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	ofa_balance_render_parent_class = g_type_class_peek_parent( klass );
 
 	G_OBJECT_CLASS( klass )->dispose = balance_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = balance_render_finalize;
@@ -284,8 +232,6 @@ balance_render_class_init( ofaBalanceRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
-
-	g_type_class_add_private( klass, sizeof( ofaBalanceRenderPrivate ));
 }
 
 static void
@@ -298,7 +244,8 @@ page_init_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_BALANCE_RENDER( page )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
+
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
@@ -317,7 +264,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 	ofaBalanceRenderPrivate *priv;
 	ofaBalanceBin *bin;
 
-	priv = OFA_BALANCE_RENDER( page )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
 	bin = ofa_balance_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
@@ -356,7 +303,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
 
-	priv = OFA_BALANCE_RENDER( page )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
@@ -440,7 +387,7 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 	priv->totals = NULL;
@@ -451,7 +398,8 @@ irenderable_want_groups( const ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	priv->per_class = ofa_balance_bin_get_subtotal_per_class( priv->args_bin );
 
 	return( priv->per_class );
@@ -462,7 +410,8 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	priv->new_page = ofa_balance_bin_get_new_page_per_class( priv->args_bin );
 
 	return( priv->new_page );
@@ -480,7 +429,7 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
 			thisfn, ( void * ) instance, render_width, render_height );
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	priv->render_width = render_width;
 	priv->render_height = render_height;
@@ -520,7 +469,8 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
@@ -534,7 +484,7 @@ irenderable_get_page_header_title( const ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	return(
 			g_strdup( priv->accounts_balance ?
@@ -553,7 +503,8 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	GString *stitle;
 	gchar *sfrom_date, *sto_date;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	stitle = g_string_new( "" );
 
 	if( priv->all_accounts ||
@@ -608,8 +559,9 @@ irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num )
 	static const gdouble st_vspace_rate_after = 0.5;
 	gdouble y;
 
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	if( page_num == 0 ){
-		priv = OFA_BALANCE_RENDER( instance )->priv;
 		if( !priv->accounts_balance ){
 
 			y = ofa_irenderable_get_last_y( instance );
@@ -638,7 +590,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	gdouble text_height, y, height, yh, hline;
 	cairo_t *context;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	text_height = ofa_irenderable_get_text_height( instance );
@@ -715,7 +667,7 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList 
 
 	g_return_val_if_fail( current, FALSE );
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	if( priv->per_class ){
 
@@ -748,7 +700,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	gdouble height, y;
 	gchar *str;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
@@ -796,7 +748,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	gchar *str;
 	gdouble solde;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	/*g_debug( "irenderable_draw_line: y=%lf, current=%p", y, ( void * ) current );*/
@@ -873,7 +825,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	ofaBalanceRenderPrivate *priv;
 	gchar *str;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
 	draw_subtotals_balance( instance, str );
@@ -891,7 +843,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	static const gdouble st_vspace_rate = 0.25;
 	gdouble bottom, top, vspace, req_height, height;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	if( !priv->count ){
 		ofa_irenderable_draw_no_data( instance );
@@ -923,7 +875,7 @@ draw_subtotals_balance( ofaIRenderable *instance, const gchar *title )
 	static const gdouble st_vspace_rate = 0.5;
 	gdouble vspace, req_height, last_y, height;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	/* top of the rectangle */
 	height = ofa_irenderable_get_text_height( instance );
@@ -948,7 +900,8 @@ draw_account_balance( ofaIRenderable *instance,
 	gchar *str;
 	gdouble height;
 
-	priv = OFA_BALANCE_RENDER( instance )->priv;
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
 	height = 0;
 
 	for( it=list, first=TRUE ; it ; it=it->next ){

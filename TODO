@@ -485,6 +485,7 @@
                 depreciate myDialog, replacing it with myIDialog
 
  994 2016- 2-14 PACK use G_ADD_PRIVATE
+                     + check for _parent_class
                      + check for g_type_class_peek_parent()
                      + check for g_type_class_add_private()
 
