@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 
 #include "core/ofa-main-window.h"
@@ -38,8 +39,8 @@
 /* private instance data
  */
 struct _ofaCheckIntegrityPrivate {
+	gboolean              dispose_has_run;
 
-	ofaMainWindow        *main_window;
 	ofaCheckIntegrityBin *bin;
 
 	/* UI
@@ -47,13 +48,17 @@ struct _ofaCheckIntegrityPrivate {
 	GtkWidget            *close_btn;
 };
 
-static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-check-integrity.ui";
-static const gchar  *st_ui_id           = "CheckIntegrityDlg";
+static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-integrity.ui";
 
-G_DEFINE_TYPE( ofaCheckIntegrity, ofa_check_integrity, MY_TYPE_DIALOG )
+static void   iwindow_iface_init( myIWindowInterface *iface );
+static void   iwindow_init( myIWindow *instance );
+static void   idialog_iface_init( myIDialogInterface *iface );
+static void   on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self );
 
-static void v_init_dialog( myDialog *dialog );
-static void on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self );
+G_DEFINE_TYPE_EXTENDED( ofaCheckIntegrity, ofa_check_integrity, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaCheckIntegrity )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 check_integrity_finalize( GObject *instance )
@@ -74,9 +79,15 @@ check_integrity_finalize( GObject *instance )
 static void
 check_integrity_dispose( GObject *instance )
 {
+	ofaCheckIntegrityPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_CHECK_INTEGRITY( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_check_integrity_get_instance_private( OFA_CHECK_INTEGRITY( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -89,12 +100,16 @@ static void
 ofa_check_integrity_init( ofaCheckIntegrity *self )
 {
 	static const gchar *thisfn = "ofa_check_integrity_init";
+	ofaCheckIntegrityPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CHECK_INTEGRITY, ofaCheckIntegrityPrivate );
+	priv = ofa_check_integrity_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -107,9 +122,7 @@ ofa_check_integrity_class_init( ofaCheckIntegrityClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = check_integrity_dispose;
 	G_OBJECT_CLASS( klass )->finalize = check_integrity_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-
-	g_type_class_add_private( klass, sizeof( ofaCheckIntegrityPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -128,52 +141,77 @@ ofa_check_integrity_run( ofaMainWindow *main_window )
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
-	self = g_object_new(
-				OFA_TYPE_CHECK_INTEGRITY,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	g_object_unref( self );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_integrity_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
 {
 	ofaCheckIntegrityPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofaHub *hub;
-	GtkWindow *toplevel;
 	GtkWidget *parent;
 
-	priv = OFA_CHECK_INTEGRITY( dialog )->priv;
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	hub = ofa_main_window_get_hub( priv->main_window );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	priv = ofa_check_integrity_get_instance_private( OFA_CHECK_INTEGRITY( instance ));
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
+	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), priv->close_btn );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->bin = ofa_check_integrity_bin_new( st_ui_id );
+	/* have the class name as settings key */
+	priv->bin = ofa_check_integrity_bin_new( G_OBJECT_TYPE_NAME( instance ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 
-	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), dialog );
+	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	ofa_check_integrity_bin_set_hub( priv->bin, hub );
+}
 
-	g_debug( "ofa_check_integrity_v_init_dialog: returning..." );
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_integrity_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
@@ -181,7 +219,7 @@ on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self 
 {
 	ofaCheckIntegrityPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_check_integrity_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
 }
