@@ -51,7 +51,7 @@
  *                     with 01/01/2014
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */

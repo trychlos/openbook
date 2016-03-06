@@ -32,6 +32,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-idialog.h"
 #include "api/my-igridlist.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
@@ -113,6 +114,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-fo
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( const myIGridList *instance );
 static void     igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
@@ -138,6 +140,7 @@ static void     set_message( ofaTVAFormProperties *dialog, const gchar *msg );
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaTVAFormProperties )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
@@ -292,7 +295,13 @@ iwindow_init( myIWindow *instance )
 	GtkEntry *entry;
 	GtkWidget *label;
 
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
 	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	main_window = my_iwindow_get_main_window( instance );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -313,10 +322,6 @@ iwindow_init( myIWindow *instance )
 		title = g_strdup_printf( _( "Updating « %s » TVA form" ), mnemo );
 	}
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
-
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	/* mnemonic */
 	priv->mnemo = g_strdup( mnemo );
@@ -375,11 +380,22 @@ iwindow_init( myIWindow *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_iwindow_set_close_button( MY_IWINDOW( instance ));
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
 
 	check_for_enable_dlg( OFA_TVA_FORM_PROPERTIES( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_form_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
