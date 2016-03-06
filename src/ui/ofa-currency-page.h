@@ -51,16 +51,13 @@ typedef struct _ofaCurrencyPagePrivate        ofaCurrencyPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage                 parent;
-
-	/*< private members >*/
-	ofaCurrencyPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaCurrencyPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass            parent;
+	ofaPageClass parent;
 }
 	ofaCurrencyPageClass;
 

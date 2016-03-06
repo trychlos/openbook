@@ -61,8 +61,6 @@ struct _ofaCurrencyPagePrivate {
 	GtkWidget        *delete_btn;
 };
 
-G_DEFINE_TYPE( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_PAGE )
-
 static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_tree_view( ofaCurrencyPage *self );
 static gboolean     on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrencyPage *self );
@@ -85,6 +83,9 @@ static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const g
 static void         do_on_updated_account( ofaCurrencyPage *self, ofoAccount *account );
 static void         on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyPage *self );
 static void         on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaCurrencyPage ))
 
 static void
 currencies_page_finalize( GObject *instance )
@@ -112,7 +113,7 @@ currencies_page_dispose( GObject *instance )
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ( OFA_CURRENCY_PAGE( instance ))->priv;
+		priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( instance ));
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -128,15 +129,16 @@ static void
 ofa_currency_page_init( ofaCurrencyPage *self )
 {
 	static const gchar *thisfn = "ofa_currency_page_init";
+	ofaCurrencyPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CURRENCY_PAGE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPagePrivate );
-	self->priv->hub_handlers = NULL;
+	priv = ofa_currency_page_get_instance_private( self );
+
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -152,8 +154,6 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaCurrencyPagePrivate ));
 }
 
 static GtkWidget *
@@ -167,7 +167,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_CURRENCY_PAGE( page )->priv;
+	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -206,7 +206,7 @@ setup_tree_view( ofaCurrencyPage *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	priv = self->priv;
+	priv = ofa_currency_page_get_instance_private( self );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -297,7 +297,8 @@ tview_get_selected( ofaCurrencyPage *page, GtkTreeModel **tmodel, GtkTreeIter *i
 	GtkTreeSelection *select;
 	ofoCurrency *currency;
 
-	priv = page->priv;
+	priv = ofa_currency_page_get_instance_private( page );
+
 	currency = NULL;
 
 	select = gtk_tree_view_get_selection( priv->tview );
@@ -317,7 +318,7 @@ v_setup_buttons( ofaPage *page )
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	priv = OFA_CURRENCY_PAGE( page )->priv;
+	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -341,9 +342,13 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaCurrencyPagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_CURRENCY_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_CURRENCY_PAGE( page )->priv->tview ));
+	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
+
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -354,7 +359,8 @@ setup_first_selection( ofaCurrencyPage *self )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->priv;
+	priv = ofa_currency_page_get_instance_private( self );
+
 	model = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( model, &iter )){
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -386,7 +392,8 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self )
 		g_object_unref( currency );
 	}
 
-	priv = self->priv;
+	priv = ofa_currency_page_get_instance_private( self );
+
 	is_currency = currency && OFO_IS_CURRENCY( currency );
 
 	if( priv->update_btn ){
@@ -426,7 +433,7 @@ select_row_by_code( ofaCurrencyPage *page, const gchar *code )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = page->priv;
+	priv = ofa_currency_page_get_instance_private( page );
 
 	if( find_row_by_code( page, code, &iter )){
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -441,7 +448,7 @@ find_row_by_code( ofaCurrencyPage *page, const gchar *code, GtkTreeIter *iter )
 	gchar *row_code;
 	gint cmp;
 
-	priv = page->priv;
+	priv = ofa_currency_page_get_instance_private( page );
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), iter )){
 		while( TRUE ){
@@ -469,7 +476,8 @@ on_update_clicked( GtkButton *button, ofaCurrencyPage *page )
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	priv = page->priv;
+	priv = ofa_currency_page_get_instance_private( page );
+
 	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
@@ -538,7 +546,7 @@ do_delete( ofaCurrencyPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, G
 	ofaCurrencyPagePrivate *priv;
 	gboolean deletable;
 
-	priv = page->priv;
+	priv = ofa_currency_page_get_instance_private( page );
 
 	deletable = ofo_currency_is_deletable( currency );
 	g_return_if_fail( deletable );
@@ -597,7 +605,8 @@ do_on_updated_account( ofaCurrencyPage *self, ofoAccount *account )
 	ofaCurrencyPagePrivate *priv;
 	GtkTreeSelection *select;
 
-	priv = self->priv;
+	priv = ofa_currency_page_get_instance_private( self );
+
 	select = gtk_tree_view_get_selection( priv->tview );
 	on_currency_selected( select, self );
 }
