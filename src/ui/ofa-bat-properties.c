@@ -28,8 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-bat.h"
@@ -43,34 +43,36 @@
 /* private instance data
  */
 struct _ofaBatPropertiesPrivate {
+	gboolean             dispose_has_run;
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
 
 	/* internals
 	 */
 	ofoBat              *bat;
 	ofaHub              *hub;
 	gboolean             is_new;		/* always FALSE here */
-	gboolean             updated;
 	ofaBatPropertiesBin *bat_bin;
 
 	/* UI
 	 */
-	GtkWidget           *btn_ok;
+	GtkWidget           *ok_btn;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-bat-properties.ui";
-static const gchar *st_ui_id            = "BatPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-properties.ui";
 
-G_DEFINE_TYPE( ofaBatProperties, ofa_bat_properties, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
 static void      check_for_enable_dlg( ofaBatProperties *self );
 static gboolean  is_dialog_validable( ofaBatProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaBatProperties *self );
+static void      on_ok_clicked( GtkButton *button, ofaBatProperties *self );
+static gboolean  do_update( ofaBatProperties *self, gchar **msgerr );
+
+G_DEFINE_TYPE_EXTENDED( ofaBatProperties, ofa_bat_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaBatProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 bat_properties_finalize( GObject *instance )
@@ -91,9 +93,15 @@ bat_properties_finalize( GObject *instance )
 static void
 bat_properties_dispose( GObject *instance )
 {
+	ofaBatPropertiesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -106,15 +114,19 @@ static void
 ofa_bat_properties_init( ofaBatProperties *self )
 {
 	static const gchar *thisfn = "ofa_bat_properties_init";
+	ofaBatPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BAT_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_PROPERTIES, ofaBatPropertiesPrivate );
-	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
+	priv = ofa_bat_properties_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -127,10 +139,7 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaBatPropertiesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -141,87 +150,120 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
  * Display the properties of a bat file.
  * Let update the notes if the dossier is not an archive.
  */
-gboolean
+void
 ofa_bat_properties_run( const ofaMainWindow *main_window, ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_properties_run";
 	ofaBatProperties *self;
-	gboolean updated;
+	ofaBatPropertiesPrivate *priv;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p, bat=%p",
 			thisfn, ( void * ) main_window, ( void * ) bat );
 
-	self = g_object_new(
-				OFA_TYPE_BAT_PROPERTIES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_BAT_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-	self->priv->bat = bat;
+	priv = ofa_bat_properties_get_instance_private( self );
+	priv->bat = bat;
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-	g_object_unref( self );
-
-	return( updated );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	ofaBatProperties *self;
+	static const gchar *thisfn = "ofa_account_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and template mnemo
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
 	ofaBatPropertiesPrivate *priv;
-	GtkApplication *application;
+	gchar *id;
+
+	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%ld",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_bat_get_id( priv->bat ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaBatPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gchar *title;
-	GtkWindow *toplevel;
 	GtkWidget *parent;
 	gboolean is_current;
 
-	self = OFA_BAT_PROPERTIES( dialog );
-	priv = self->priv;
+	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	is_current = ofo_dossier_is_current( dossier );
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-
 	title = g_strdup( _( "Updating the BAT properties" ));
-	gtk_window_set_title( toplevel, title );
+	gtk_window_set_title( GTK_WINDOW( instance ), title );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "properties-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
-	priv->btn_ok = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
-	g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !is_current ){
-		priv->btn_ok = my_dialog_set_readonly_buttons( dialog );
+		my_iwindow_set_close_button( MY_IWINDOW( instance ));
+		priv->ok_btn = NULL;
 	}
 
-	check_for_enable_dlg( self );
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
+	check_for_enable_dlg( OFA_BAT_PROPERTIES( instance ));
 }
 
 static void
 check_for_enable_dlg( ofaBatProperties *self )
 {
-	gtk_widget_set_sensitive( self->priv->btn_ok, is_dialog_validable( self ));
+	ofaBatPropertiesPrivate *priv;
+
+	priv = ofa_bat_properties_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 }
 
 static gboolean
@@ -230,25 +272,42 @@ is_dialog_validable( ofaBatProperties *self )
 	return( TRUE );
 }
 
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaBatProperties *self )
 {
-	return( do_update( OFA_BAT_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 static gboolean
-do_update( ofaBatProperties *self )
+do_update( ofaBatProperties *self, gchar **msgerr )
 {
 	ofaBatPropertiesPrivate *priv;
+	gboolean ok;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-	g_return_val_if_fail( !self->priv->is_new, FALSE );
 
-	priv = self->priv;
+	priv = ofa_bat_properties_get_instance_private( self );
 
-	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), bat );
+	g_return_val_if_fail( !priv->is_new, FALSE );
 
-	priv->updated = ofo_bat_update( priv->bat );
+	my_utils_container_notes_get( GTK_WINDOW( self ), bat );
 
-	return( priv->updated );
+	ok = ofo_bat_update( priv->bat );
+	if( !ok ){
+		*msgerr = g_strdup( _( "Unable to update this BAT record" ));
+	}
+
+	return( ok );
 }

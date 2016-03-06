@@ -34,12 +34,11 @@
  * opened dossier is not an archive.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-bat-def.h"
 
@@ -56,22 +55,20 @@ typedef struct _ofaBatPropertiesPrivate        ofaBatPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                 parent;
-
-	/*< private members >*/
-	ofaBatPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaBatProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass            parent;
+	GtkDialogClass parent;
 }
 	ofaBatPropertiesClass;
 
-GType    ofa_bat_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_bat_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_bat_properties_run     ( const ofaMainWindow *parent, ofoBat *bat );
+void  ofa_bat_properties_run     ( const ofaMainWindow *parent,
+										ofoBat *bat );
 
 G_END_DECLS
 
