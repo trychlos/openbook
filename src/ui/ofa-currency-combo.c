@@ -58,7 +58,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void create_combo_columns( ofaCurrencyCombo *combo );
 static void on_currency_changed( ofaCurrencyCombo *combo, void *empty );
 
-G_DEFINE_TYPE( ofaCurrencyCombo, ofa_currency_combo, GTK_TYPE_COMBO_BOX )
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyCombo, ofa_currency_combo, GTK_TYPE_COMBO_BOX, 0,
+		G_ADD_PRIVATE( ofaCurrencyCombo ))
 
 static void
 currency_combo_finalize( GObject *instance )
@@ -83,7 +84,7 @@ currency_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
-	priv = ( OFA_CURRENCY_COMBO( instance ))->priv;
+	priv = ofa_currency_combo_get_instance_private( OFA_CURRENCY_COMBO( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -100,16 +101,16 @@ static void
 ofa_currency_combo_init( ofaCurrencyCombo *self )
 {
 	static const gchar *thisfn = "ofa_currency_combo_init";
+	ofaCurrencyComboPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_CURRENCY_COMBO( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_CURRENCY_COMBO, ofaCurrencyComboPrivate );
+	priv = ofa_currency_combo_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -121,8 +122,6 @@ ofa_currency_combo_class_init( ofaCurrencyComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = currency_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_combo_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaCurrencyComboPrivate ));
 
 	/**
 	 * ofaCurrencyCombo::ofa-changed:
@@ -160,8 +159,7 @@ ofa_currency_combo_new( void )
 
 	self = g_object_new( OFA_TYPE_CURRENCY_COMBO, NULL );
 
-	g_signal_connect(
-			G_OBJECT( self ), "changed", G_CALLBACK( on_currency_changed ), NULL );
+	g_signal_connect( self, "changed", G_CALLBACK( on_currency_changed ), NULL );
 
 	return( self );
 }
@@ -176,13 +174,12 @@ ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, ofaCurrencyColumns colu
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 
-	priv = combo->priv;
+	priv = ofa_currency_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->columns = columns;
-		create_combo_columns( combo );
-	}
+	priv->columns = columns;
+	create_combo_columns( combo );
 }
 
 static void
@@ -191,7 +188,7 @@ create_combo_columns( ofaCurrencyCombo *combo )
 	ofaCurrencyComboPrivate *priv;
 	GtkCellRenderer *cell;
 
-	priv = combo->priv;
+	priv = ofa_currency_combo_get_instance_private( combo );
 
 	if( priv->columns & CURRENCY_DISP_CODE ){
 		cell = gtk_cell_renderer_text_new();
@@ -234,13 +231,12 @@ ofa_currency_combo_set_hub( ofaCurrencyCombo *combo, ofaHub *hub )
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv = combo->priv;
+	priv = ofa_currency_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->store = ofa_currency_store_new( hub );
-		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
-	}
+	priv->store = ofa_currency_store_new( hub );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 }
 
 static void
@@ -268,14 +264,11 @@ ofa_currency_combo_get_selected( ofaCurrencyCombo *combo )
 
 	g_return_val_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ), NULL );
 
-	priv = combo->priv;
+	priv = ofa_currency_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return( g_strdup( gtk_combo_box_get_active_id( GTK_COMBO_BOX( combo ))));
-	}
-
-	return( NULL );
+	return( g_strdup( gtk_combo_box_get_active_id( GTK_COMBO_BOX( combo ))));
 }
 
 /**
@@ -290,10 +283,9 @@ ofa_currency_combo_set_selected( ofaCurrencyCombo *combo, const gchar *code )
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 	g_return_if_fail( my_strlen( code ));
 
-	priv = combo->priv;
+	priv = ofa_currency_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		gtk_combo_box_set_active_id( GTK_COMBO_BOX( combo ), code );
-	}
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( combo ), code );
 }
