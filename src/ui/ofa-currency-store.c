@@ -64,7 +64,8 @@ static gboolean find_currency_by_code( ofaCurrencyStore *store, const gchar *cod
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *store );
 
-G_DEFINE_TYPE( ofaCurrencyStore, ofa_currency_store, OFA_TYPE_LIST_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyStore, ofa_currency_store, OFA_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaCurrencyStore ))
 
 static void
 currency_store_finalize( GObject *instance )
@@ -89,7 +90,7 @@ currency_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_STORE( instance ));
 
-	priv = OFA_CURRENCY_STORE( instance )->priv;
+	priv = ofa_currency_store_get_instance_private( OFA_CURRENCY_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -106,13 +107,16 @@ static void
 ofa_currency_store_init( ofaCurrencyStore *self )
 {
 	static const gchar *thisfn = "ofa_currency_store_init";
+	ofaCurrencyStorePrivate *priv;
 
 	g_return_if_fail( OFA_IS_CURRENCY_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CURRENCY_STORE, ofaCurrencyStorePrivate );
+	priv = ofa_currency_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -124,8 +128,6 @@ ofa_currency_store_class_init( ofaCurrencyStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = currency_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaCurrencyStorePrivate ));
 }
 
 /**
