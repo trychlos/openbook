@@ -67,7 +67,8 @@ static gboolean find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo,
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store );
 
-G_DEFINE_TYPE( ofaLedgerStore, ofa_ledger_store, OFA_TYPE_LIST_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaLedgerStore, ofa_ledger_store, OFA_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaLedgerStore ))
 
 static void
 ledger_store_finalize( GObject *instance )
@@ -92,7 +93,7 @@ ledger_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_STORE( instance ));
 
-	priv = OFA_LEDGER_STORE( instance )->priv;
+	priv = ofa_ledger_store_get_instance_private( OFA_LEDGER_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -109,13 +110,16 @@ static void
 ofa_ledger_store_init( ofaLedgerStore *self )
 {
 	static const gchar *thisfn = "ofa_ledger_store_init";
+	ofaLedgerStorePrivate *priv;
 
-	g_return_if_fail( OFA_IS_LEDGER_STORE( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_STORE, ofaLedgerStorePrivate );
+	priv = ofa_ledger_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -127,8 +131,6 @@ ofa_ledger_store_class_init( ofaLedgerStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledger_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaLedgerStorePrivate ));
 }
 
 /**
