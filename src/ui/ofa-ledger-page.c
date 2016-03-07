@@ -71,8 +71,6 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE )
-
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
@@ -87,6 +85,9 @@ static void       do_update( ofaLedgerPage *self, ofoLedger *ledger );
 static void       on_delete_clicked( GtkButton *button, ofaLedgerPage *page );
 static gboolean   delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger );
 static void       on_entry_page( GtkButton *button, ofaLedgerPage *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaLedgerPage ))
 
 static void
 ledgers_page_finalize( GObject *instance )
@@ -127,8 +128,6 @@ ofa_ledger_page_init( ofaLedgerPage *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_PAGE, ofaLedgerPagePrivate );
 }
 
 static void
@@ -144,8 +143,6 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaLedgerPagePrivate ));
 }
 
 static GtkWidget *
@@ -158,7 +155,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_LEDGER_PAGE( page )->priv;
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -178,7 +175,7 @@ setup_tree_view( ofaPage *page )
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *parent;
 
-	priv = OFA_LEDGER_PAGE( page )->priv;
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	my_utils_widget_set_margins( parent, 4, 4, 4, 0 );
@@ -205,9 +202,9 @@ v_setup_buttons( ofaPage *page )
 	ofaButtonsBox *buttons_box;
 	GtkWidget *btn;
 
-	g_return_val_if_fail( OFA_IS_LEDGER_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	priv = OFA_LEDGER_PAGE( page )->priv;
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -237,9 +234,13 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaLedgerPagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	return( ofa_ledger_treeview_get_treeview( OFA_LEDGER_PAGE( page )->priv->tview ));
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
+
+	return( ofa_ledger_treeview_get_treeview( priv->tview ));
 }
 
 /*
@@ -251,7 +252,7 @@ on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self 
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 
-	priv = self->priv;
+	priv = ofa_ledger_page_get_instance_private( self );
 
 	if( selected ){
 		ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
@@ -271,7 +272,8 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 	ofoLedger *ledger;
 	gboolean is_ledger;
 
-	priv = self->priv;
+	priv = ofa_ledger_page_get_instance_private( self );
+
 	ledger = NULL;
 
 	if( selected ){
@@ -314,7 +316,7 @@ on_new_clicked( GtkButton *button, ofaLedgerPage *page )
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 
-	priv = page->priv;
+	priv = ofa_ledger_page_get_instance_private( page );
 
 	ledger = ofo_ledger_new();
 
@@ -337,7 +339,7 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 	GList *selected;
 	ofoLedger *ledger;
 
-	priv = page->priv;
+	priv = ofa_ledger_page_get_instance_private( page );
 
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
@@ -373,7 +375,7 @@ on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
 	GList *selected;
 	const gchar *mnemo;
 
-	priv = page->priv;
+	priv = ofa_ledger_page_get_instance_private( page );
 
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	mnemo = selected->data;
@@ -419,9 +421,9 @@ on_entry_page( GtkButton *button, ofaLedgerPage *self )
 	const gchar *mnemo;
 	ofoLedger *ledger;
 
-	g_return_if_fail( OFA_IS_LEDGER_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
-	priv = self->priv;
+	priv = ofa_ledger_page_get_instance_private( self );
 
 	list = ofa_ledger_treeview_get_selected( priv->tview );
 	mnemo = ( const gchar * ) list->data;

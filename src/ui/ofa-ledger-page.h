@@ -48,16 +48,13 @@ typedef struct _ofaLedgerPagePrivate        ofaLedgerPagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage               parent;
-
-	/*< private members >*/
-	ofaLedgerPagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaLedgerPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass          parent;
+	ofaPageClass parent;
 }
 	ofaLedgerPageClass;
 
