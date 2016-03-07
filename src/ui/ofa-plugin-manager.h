@@ -31,9 +31,13 @@
  * @include: ui/ofa-plugin-manager.h
  *
  * Manage the existing dossiers.
+ *
+ * Development rules:
+ * - type:       non-modal dialog
+ * - settings:   no
+ * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -49,22 +53,19 @@ typedef struct _ofaPluginManagerPrivate        ofaPluginManagerPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                 parent;
-
-	/*< private members >*/
-	ofaPluginManagerPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaPluginManager;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass            parent;
+	GtkDialogClass parent;
 }
 	ofaPluginManagerClass;
 
 GType ofa_plugin_manager_get_type( void ) G_GNUC_CONST;
 
-void  ofa_plugin_manager_run     ( ofaMainWindow *parent );
+void  ofa_plugin_manager_run     ( ofaMainWindow *main_window );
 
 G_END_DECLS
 

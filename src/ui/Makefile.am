@@ -254,7 +254,6 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-ope-template-select.ui							\
-	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
 	ofa-settlement.ui									\
@@ -288,6 +287,7 @@ resources_ui = \
 	ofa-ledger-summary-bin.ui							\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
+	ofa-plugin-manager.ui								\
 	ofa-reconcil-page.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
