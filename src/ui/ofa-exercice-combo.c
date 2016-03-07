@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-idbmeta.h"
+
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
 
@@ -48,10 +50,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaExerciceCombo, ofa_exercice_combo, GTK_TYPE_COMBO_BOX )
-
 static void setup_combo( ofaExerciceCombo *combo );
 static void on_exercice_changed( ofaExerciceCombo *combo, void *empty );
+
+G_DEFINE_TYPE_EXTENDED( ofaExerciceCombo, ofa_exercice_combo, GTK_TYPE_COMBO_BOX, 0,
+		G_ADD_PRIVATE( ofaExerciceCombo ))
 
 static void
 exercice_combo_finalize( GObject *instance )
@@ -76,7 +79,7 @@ exercice_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_EXERCICE_COMBO( instance ));
 
-	priv = ( OFA_EXERCICE_COMBO( instance ))->priv;
+	priv = ofa_exercice_combo_get_instance_private( OFA_EXERCICE_COMBO( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -93,16 +96,16 @@ static void
 ofa_exercice_combo_init( ofaExerciceCombo *self )
 {
 	static const gchar *thisfn = "ofa_exercice_combo_init";
+	ofaExerciceComboPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_EXERCICE_COMBO( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_EXERCICE_COMBO, ofaExerciceComboPrivate );
+	priv = ofa_exercice_combo_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -114,8 +117,6 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = exercice_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = exercice_combo_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaExerciceComboPrivate ));
 
 	/**
 	 * ofaExerciceCombo::ofa-changed:
@@ -163,7 +164,7 @@ setup_combo( ofaExerciceCombo *combo )
 	ofaExerciceComboPrivate *priv;
 	GtkCellRenderer *cell;
 
-	priv = combo->priv;
+	priv = ofa_exercice_combo_get_instance_private( combo );
 
 	priv->store = ofa_exercice_store_new();
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
@@ -203,7 +204,12 @@ ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIDBMeta *meta )
 {
 	ofaExerciceComboPrivate *priv;
 
-	priv = combo->priv;
+	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+
+	priv = ofa_exercice_combo_get_instance_private( combo );
+
+	g_return_if_fail( !priv->dispose_has_run );
 
 	ofa_exercice_store_set_dossier( priv->store, meta );
 
@@ -263,32 +269,32 @@ ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIDBPeriod *period )
 	gint cmp;
 
 	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	priv = combo->priv;
+	priv = ofa_exercice_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
-		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			while( TRUE ){
-				gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
-				cmp = ofa_idbperiod_compare( period, row_period );
-				g_object_unref( row_period );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
+			cmp = ofa_idbperiod_compare( period, row_period );
+			g_object_unref( row_period );
 
-				if( cmp == 0 ){
-					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
-					return;
-				}
-				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					break;
-				}
+			if( cmp == 0 ){
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+				return;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
 			}
 		}
-
-		/* if not found, then select the first row */
-		g_debug( "%s: asked period not found", thisfn );
-		gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 	}
+
+	/* if not found, then select the first row */
+	g_debug( "%s: asked period not found", thisfn );
+	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }

@@ -53,16 +53,13 @@ typedef struct _ofaExerciceComboPrivate        ofaExerciceComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBox              parent;
-
-	/*< private members >*/
-	ofaExerciceComboPrivate *priv;
+	GtkComboBox      parent;
 }
 	ofaExerciceCombo;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBoxClass         parent;
+	GtkComboBoxClass parent;
 }
 	ofaExerciceComboClass;
 
