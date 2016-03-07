@@ -33,12 +33,11 @@
  * Manage (open/delete) the existing dossiers, or create a new one.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   no
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -54,16 +53,13 @@ typedef struct _ofaDossierManagerPrivate        ofaDossierManagerPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                  parent;
-
-	/*< private members >*/
-	ofaDossierManagerPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaDossierManager;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass             parent;
+	GtkDialogClass parent;
 }
 	ofaDossierManagerClass;
 

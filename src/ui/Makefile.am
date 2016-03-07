@@ -247,7 +247,6 @@ rc_files = \
 ui_files = \
 	ofa-account-select.ui								\
 	ofa-bat-select.ui									\
-	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
 	ofa-dossier-new.ui									\
@@ -278,6 +277,7 @@ resources_ui = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
+	ofa-dossier-manager.ui								\
 	ofa-dossier-properties.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
