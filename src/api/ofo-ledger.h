@@ -103,7 +103,7 @@ ofxAmount       ofo_ledger_get_futur_credit    ( const ofoLedger *ledger, const 
 GDate          *ofo_ledger_get_max_last_close  ( GDate *date, ofaHub *hub );
 gboolean        ofo_ledger_has_entries         ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_deletable        ( const ofoLedger *ledger );
-gboolean        ofo_ledger_is_valid            ( const gchar *mnemo, const gchar *label );
+gboolean        ofo_ledger_is_valid_data       ( const gchar *mnemo, const gchar *label, gchar **msgerr );
 
 void            ofo_ledger_set_mnemo           ( ofoLedger *ledger, const gchar *number );
 void            ofo_ledger_set_label           ( ofoLedger *ledger, const gchar *label );

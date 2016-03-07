@@ -253,7 +253,6 @@ ui_files = \
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
-	ofa-ledger-properties.ui							\
 	ofa-ledger-summary-bin.ui							\
 	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
@@ -286,6 +285,7 @@ resources_ui = \
 	ofa-import-assistant.ui								\
 	ofa-ledger-book-bin.ui								\
 	ofa-ledger-close.ui									\
+	ofa-ledger-properties.ui							\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-reconcil-page.ui								\

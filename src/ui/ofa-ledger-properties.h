@@ -33,12 +33,11 @@
  * Display/update the ledger properties.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-ledger-def.h"
 
@@ -55,22 +54,20 @@ typedef struct _ofaLedgerPropertiesPrivate        ofaLedgerPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                    parent;
-
-	/*< private members >*/
-	ofaLedgerPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaLedgerProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass               parent;
+	GtkDialogClass parent;
 }
 	ofaLedgerPropertiesClass;
 
-GType    ofa_ledger_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_ledger_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_ledger_properties_run     ( const ofaMainWindow *parent, ofoLedger *ledger );
+void  ofa_ledger_properties_run     ( const ofaMainWindow *main_window,
+											ofoLedger *ledger );
 
 G_END_DECLS
 

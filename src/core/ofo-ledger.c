@@ -1038,7 +1038,7 @@ ofo_ledger_is_deletable( const ofoLedger *ledger )
 }
 
 /**
- * ofo_ledger_is_valid:
+ * ofo_ledger_is_valid_data:
  *
  * Returns: %TRUE if the provided data makes the ofoLedger a valid
  * object.
@@ -1046,10 +1046,24 @@ ofo_ledger_is_deletable( const ofoLedger *ledger )
  * Note that this does NOT check for key duplicate.
  */
 gboolean
-ofo_ledger_is_valid( const gchar *mnemo, const gchar *label )
+ofo_ledger_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr )
 {
-	return( my_strlen( mnemo ) &&
-			my_strlen( label ));
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( mnemo )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty mnemonic" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty label" ));
+		}
+		return( FALSE );
+	}
+	return( TRUE );
 }
 
 /**
@@ -1673,8 +1687,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 		priv = ofo_ledger_get_instance_private( ledger );
 		from = g_strdup_printf(
 					"OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
-		priv->balances =
-					ofo_base_load_rows( st_balance_defs, ofa_hub_get_connect( hub ), from );
+		priv->balances = ofo_base_load_rows( st_balance_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 

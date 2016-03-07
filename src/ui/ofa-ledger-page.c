@@ -313,23 +313,10 @@ on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 static void
 on_new_clicked( GtkButton *button, ofaLedgerPage *page )
 {
-	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 
-	priv = ofa_ledger_page_get_instance_private( page );
-
 	ledger = ofo_ledger_new();
-
-	if( ofa_ledger_properties_run(
-			ofa_page_get_main_window( OFA_PAGE( page )), ledger )){
-
-		ofa_ledger_treeview_set_selected( priv->tview, ofo_ledger_get_mnemo( ledger ));
-
-	} else {
-		g_object_unref( ledger );
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	ofa_ledger_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ledger );
 }
 
 static void
@@ -352,15 +339,9 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *page )
 static void
 do_update( ofaLedgerPage *self, ofoLedger *ledger )
 {
-	if( ledger &&
-			ofa_ledger_properties_run(
-					ofa_page_get_main_window( OFA_PAGE( self )), ledger )){
-
-			/* this is managed by the ofaLedgerTreeview convenience
-			 * class, graceful to the dossier signaling system */
+	if( ledger ){
+		ofa_ledger_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), ledger );
 	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*
