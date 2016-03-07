@@ -55,16 +55,13 @@ typedef struct _ofaReconcilBinPrivate        ofaReconcilBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                 parent;
-
-	/*< private members >*/
-	ofaReconcilBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaReconcilBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass            parent;
+	GtkBinClass parent;
 }
 	ofaReconcilBinClass;
 
@@ -73,7 +70,7 @@ GType           ofa_reconcil_bin_get_type   ( void ) G_GNUC_CONST;
 ofaReconcilBin *ofa_reconcil_bin_new        ( const ofaMainWindow *main_window );
 
 gboolean        ofa_reconcil_bin_is_valid   ( ofaReconcilBin *bin,
-													gchar **message );
+													gchar **msgerr );
 
 const gchar    *ofa_reconcil_bin_get_account( const ofaReconcilBin *bin );
 
