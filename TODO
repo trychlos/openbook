@@ -539,7 +539,10 @@
 1037 2016- 3- 7 CODE merge ofaOpeTemplateBookBin and ofaOpeTemplateFrameBin
                      (like ofaAccount equiv.)
 
-1038
+1038 2016- 3- 7 CODE replace self = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+                     by a true function call
+
+1039
 
 -----------------------------------------------------------------------
  DONE

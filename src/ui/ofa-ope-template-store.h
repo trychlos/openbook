@@ -62,10 +62,7 @@ typedef struct _ofaOpeTemplateStorePrivate         ofaOpeTemplateStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaListStore                parent;
-
-	/*< private members >*/
-	ofaOpeTemplateStorePrivate *priv;
+	ofaListStore      parent;
 }
 	ofaOpeTemplateStore;
 
@@ -74,7 +71,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	ofaListStoreClass           parent;
+	ofaListStoreClass parent;
 }
 	ofaOpeTemplateStoreClass;
 
