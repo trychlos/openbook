@@ -533,7 +533,10 @@
 1034 2016- 3- 3 FEAT find a better icon than gtk-index for account selection
                      + have the same, bigger, icon for account chart
 
-1036
+1036 2016- 3- 7 CODE have a my_iwindow_widget_get_child_by_name() which
+                     complete my_utils_container_....
+
+1037
 
 -----------------------------------------------------------------------
  DONE

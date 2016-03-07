@@ -32,9 +32,10 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-editable-date.h"
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -55,17 +56,16 @@
 /* private instance data
  */
 struct _ofaDossierPropertiesPrivate {
+	gboolean            dispose_has_run;
 
 	/* initialization
 	 */
-	ofaMainWindow      *main_window;
 
 	/* runtime
 	 */
 	ofaHub             *hub;
 	ofoDossier         *dossier;
 	gboolean            is_new;
-	gboolean            updated;
 	gboolean            is_current;
 	GDate               begin_init;
 	GDate               end_init;
@@ -105,16 +105,15 @@ struct _ofaDossierPropertiesPrivate {
 #define MSG_WARNING                     "labelwarning"
 #define MSG_ERROR                       "labelerror"
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-properties.ui";
-static const gchar *st_ui_id            = "DossierPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-properties.ui";
 
-G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
-static void      init_properties_page( ofaDossierProperties *self, GtkContainer *container );
-static void      init_forward_page( ofaDossierProperties *self, GtkContainer *container );
-static void      init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container );
-static void      init_counters_page( ofaDossierProperties *self, GtkContainer *container );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      init_properties_page( ofaDossierProperties *self );
+static void      init_forward_page( ofaDossierProperties *self );
+static void      init_exe_notes_page( ofaDossierProperties *self );
+static void      init_counters_page( ofaDossierProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
 static void      on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self );
@@ -127,13 +126,18 @@ static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaDossierProperties *self );
+static void      on_ok_clicked( GtkButton *button, ofaDossierProperties *self );
+static gboolean  do_update( ofaDossierProperties *self, gchar **msgerr );
 static gboolean  confirm_remediation( ofaDossierProperties *self, gint count );
 static void      display_progress_init( ofaDossierProperties *self );
 static void      display_progress_end( ofaDossierProperties *self );
 static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
 static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierProperties, ofa_dossier_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDossierProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 dossier_properties_finalize( GObject *instance )
@@ -147,7 +151,7 @@ dossier_properties_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
+	priv = ofa_dossier_properties_get_instance_private( OFA_DOSSIER_PROPERTIES( instance ));
 
 	g_free( priv->label );
 	g_free( priv->currency );
@@ -166,10 +170,13 @@ dossier_properties_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_dossier_properties_get_instance_private( OFA_DOSSIER_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
 
 		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
@@ -182,19 +189,22 @@ static void
 ofa_dossier_properties_init( ofaDossierProperties *self )
 {
 	static const gchar *thisfn = "ofa_dossier_properties_init";
+	ofaDossierPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_DOSSIER_PROPERTIES, ofaDossierPropertiesPrivate );
+	priv = ofa_dossier_properties_get_instance_private( self );
 
-	self->priv->updated = FALSE;
-	my_date_clear( &self->priv->begin );
-	my_date_clear( &self->priv->end );
-	self->priv->hub_handlers = NULL;
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+	my_date_clear( &priv->begin );
+	my_date_clear( &priv->end );
+	priv->hub_handlers = NULL;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -207,10 +217,7 @@ ofa_dossier_properties_class_init( ofaDossierPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierPropertiesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -219,50 +226,62 @@ ofa_dossier_properties_class_init( ofaDossierPropertiesClass *klass )
  *
  * Update the properties of an dossier
  */
-gboolean
+void
 ofa_dossier_properties_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_properties_run";
 	ofaDossierProperties *self;
-	gboolean updated;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
-	self = g_object_new(
-				OFA_TYPE_DOSSIER_PROPERTIES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	self = g_object_new( OFA_TYPE_DOSSIER_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	ofaDossierProperties *self;
+	static const gchar *thisfn = "ofa_dossier_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * account
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
 	ofaDossierPropertiesPrivate *priv;
-	GtkApplication *application;
-	GtkContainer *container;
+	GtkApplicationWindow *main_window;
 
-	self = OFA_DOSSIER_PROPERTIES( dialog );
-	priv = self->priv;
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	priv = ofa_dossier_properties_get_instance_private( OFA_DOSSIER_PROPERTIES( instance ));
 
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	priv->msgerr = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-msgerr" );
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
@@ -270,29 +289,27 @@ v_init_dialog( myDialog *dialog )
 
 	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
-
-	init_properties_page( self, container );
-	init_forward_page( self, container );
-	init_exe_notes_page( self, container );
-	init_counters_page( self, container );
+	init_properties_page( OFA_DOSSIER_PROPERTIES( instance ));
+	init_forward_page( OFA_DOSSIER_PROPERTIES( instance ));
+	init_exe_notes_page( OFA_DOSSIER_PROPERTIES( instance ));
+	init_counters_page( OFA_DOSSIER_PROPERTIES( instance ));
 
 	/* these are main notes of the dossier */
-	my_utils_container_notes_init( container, dossier );
-	my_utils_container_updstamp_init( container, dossier );
-	my_utils_container_set_editable( container, priv->is_current );
+	my_utils_container_notes_init( instance, dossier );
+	my_utils_container_updstamp_init( instance, dossier );
 
-	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 	if( !priv->is_current ){
-		my_dialog_set_readonly_buttons( dialog );
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
 	}
 
-	check_for_enable_dlg( self );
+	check_for_enable_dlg( OFA_DOSSIER_PROPERTIES( instance ));
 }
 
 static void
-init_properties_page( ofaDossierProperties *self, GtkContainer *container )
+init_properties_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *entry, *label, *parent;
@@ -303,10 +320,10 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gint ivalue;
 	const GDate *last_closed;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	/* dossier name */
-	entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 	cstr = ofo_dossier_get_label( priv->dossier );
@@ -314,12 +331,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
 
-	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* siren identifier */
-	entry = my_utils_container_get_child_by_name( container, "p1-siren-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-siren-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->siren = g_strdup( ofo_dossier_get_siren( priv->dossier ));
 	if( priv->siren ){
@@ -327,12 +344,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	}
 	priv->siren_entry = entry;
 
-	label = my_utils_container_get_child_by_name( container, "p1-siren-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-siren-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* default currency */
-	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	c_combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
@@ -341,12 +358,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p1-currency-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-currency-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( c_combo ));
 
 	/* default import ledger */
-	parent = my_utils_container_get_child_by_name( container, "p1-ledger-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	l_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( l_combo ));
@@ -355,17 +372,17 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p1-ledger-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( l_combo ));
 
 	/* status */
-	label = my_utils_container_get_child_by_name( container, "p1-status" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_text( GTK_LABEL( label ), ofo_dossier_get_status( priv->dossier ));
 
 	/* exercice length */
-	entry = my_utils_container_get_child_by_name( container, "p1-exe-length-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-length-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), self );
 	ivalue = ofo_dossier_get_exe_length( priv->dossier );
@@ -373,12 +390,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p1-exe-length-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-length-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* beginning date */
-	entry = my_utils_container_get_child_by_name( container, "p1-exe-begin-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
@@ -391,12 +408,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	 * how to remediate this ;) */
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p1-exe-begin-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* ending date */
-	entry = my_utils_container_get_child_by_name( container, "p1-exe-end-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
@@ -406,18 +423,18 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p1-exe-end-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* last closed periode */
-	entry = my_utils_container_get_child_by_name( container, "p1-exe-closed-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), last_closed );
 
-	label = my_utils_container_get_child_by_name( container, "p1-exe-closed-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -430,33 +447,34 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 }
 
 static void
-init_forward_page( ofaDossierProperties *self, GtkContainer *container )
+init_forward_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *parent;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
-	parent = my_utils_container_get_child_by_name( container, "p5-forward-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->closing_parms = ofa_closing_parms_bin_new( priv->main_window );
+	priv->closing_parms = ofa_closing_parms_bin_new( OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->closing_parms ));
 	g_signal_connect(
 			priv->closing_parms, "ofa-changed", G_CALLBACK( on_closing_parms_changed ), self );
 }
 
 static void
-init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container )
+init_exe_notes_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *textview;
 	GtkTextBuffer *buffer;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
+
 	priv->exe_notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier ));
 	textview = my_utils_container_notes_setup_full(
-			container, "pexe-notes", priv->exe_notes, priv->is_current );
+			GTK_CONTAINER( self ), "pexe-notes", priv->exe_notes, priv->is_current );
 	g_return_if_fail( textview && GTK_IS_TEXT_VIEW( textview ));
 
 	if( priv->is_current ){
@@ -467,7 +485,7 @@ init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container )
 }
 
 static void
-init_counters_page( ofaDossierProperties *self, GtkContainer *container )
+init_counters_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *label;
@@ -475,45 +493,45 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 	const ofaIDBConnect *connect;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
-	label = my_utils_container_get_child_by_name( container, "p4-last-bat" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_bat( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p4-last-batline" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-batline" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_batline( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p4-last-entry" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p4-last-settlement" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_settlement( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p4-last-concil" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-concil" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_last_concil( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p5-last-entry" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_bigint_to_str( ofo_dossier_get_prev_exe_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p5-version" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-version" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	model = ofa_idbmodel_get_by_name( "CORE" );
 	if( model ){
@@ -525,11 +543,26 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 	}
 }
 
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
 static void
 on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
 {
-	g_free( self->priv->label );
-	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	g_free( priv->label );
+	priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -542,7 +575,7 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierPrope
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
@@ -558,7 +591,7 @@ on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierP
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	g_free( priv->import_ledger );
 	priv->import_ledger = g_strdup( mnemo );
@@ -569,11 +602,14 @@ on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierP
 static void
 on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 {
+	ofaDossierPropertiesPrivate *priv;
 	const gchar *text;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	text = gtk_entry_get_text( entry );
 	if( my_strlen( text )){
-		self->priv->duree = atoi( text );
+		priv->duree = atoi( text );
 	}
 
 	check_for_enable_dlg( self );
@@ -582,13 +618,21 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 static void
 on_begin_changed( GtkEditable *editable, ofaDossierProperties *self )
 {
-	on_date_changed( self, editable, &self->priv->begin, &self->priv->begin_empty );
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	on_date_changed( self, editable, &priv->begin, &priv->begin_empty );
 }
 
 static void
 on_end_changed( GtkEditable *editable, ofaDossierProperties *self )
 {
-	on_date_changed( self, editable, &self->priv->end, &self->priv->end_empty );
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	on_date_changed( self, editable, &priv->end, &priv->end_empty );
 }
 
 static void
@@ -624,7 +668,7 @@ on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	GtkTextIter start, end;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	gtk_text_buffer_get_start_iter( buffer, &start );
 	gtk_text_buffer_get_end_iter( buffer, &end );
@@ -638,16 +682,9 @@ check_for_enable_dlg( ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	if( priv->is_current ){
-
-		if( !priv->ok_btn ){
-			priv->ok_btn = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-			g_return_if_fail( priv->ok_btn && GTK_IS_WIDGET( priv->ok_btn ));
-		}
-
 		ok = is_dialog_valid( self );
 		gtk_widget_set_sensitive( priv->ok_btn, ok );
 	}
@@ -659,7 +696,8 @@ is_dialog_valid( ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	gchar *msg, *sdate;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
+
 	set_msgerr( self, "", MSG_NORMAL );
 
 	if( !priv->begin_empty && !my_date_is_valid( &priv->begin )){
@@ -711,7 +749,7 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	if( priv->msgerr ){
 		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
@@ -719,24 +757,35 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 	}
 }
 
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaDossierProperties *self )
 {
-	return( do_update( OFA_DOSSIER_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 static gboolean
-do_update( ofaDossierProperties *self )
+do_update( ofaDossierProperties *self, gchar **msgerr )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkContainer *container;
 	gboolean date_has_changed;
 	gint count;
+	gboolean ok;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
-	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	ofo_dossier_set_label( priv->dossier, priv->label );
 	ofo_dossier_set_siren( priv->dossier, gtk_entry_get_text( GTK_ENTRY( priv->siren_entry )));
@@ -749,7 +798,7 @@ do_update( ofaDossierProperties *self )
 	ofa_closing_parms_bin_apply( priv->closing_parms );
 
 	ofo_dossier_set_exe_notes( priv->dossier, priv->exe_notes );
-	my_utils_container_notes_get( container, dossier );
+	my_utils_container_notes_get( self, dossier );
 
 	/* have begin or end exe dates changed ? */
 	date_has_changed = FALSE;
@@ -775,12 +824,17 @@ do_update( ofaDossierProperties *self )
 		count = ofo_entry_get_exe_changed_count(
 				priv->hub, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
 		if( count > 0 && !confirm_remediation( self, count )){
+			*msgerr = g_strdup( _( "Update has been cancelled by the user" ));
 			return( FALSE );
 		}
 	}
 
 	/* first update the dossier, and only then send the advertising signal */
-	priv->updated = ofo_dossier_update( priv->dossier );
+	ok = ofo_dossier_update( priv->dossier );
+	if( !ok ){
+		*msgerr = g_strdup( _( "Unable to update the dossier" ));
+		return( FALSE );
+	}
 
 	if( count > 0 ){
 		display_progress_init( self );
@@ -789,9 +843,11 @@ do_update( ofaDossierProperties *self )
 		display_progress_end( self );
 	}
 
-	g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
+	g_signal_emit_by_name(
+			my_iwindow_get_main_window( MY_IWINDOW( self )),
+			OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
-	return( priv->updated );
+	return( ok );
 }
 
 static gboolean
@@ -821,7 +877,7 @@ display_progress_init( ofaDossierProperties *self )
 	GtkWidget *content, *grid, *widget;
 	gulong handler;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	priv->dialog = gtk_dialog_new_with_buttons(
 							_( "Remediating entries" ),
@@ -871,7 +927,7 @@ display_progress_end( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->button, TRUE );
 
@@ -887,7 +943,7 @@ on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count,
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	priv->total = count;
 	priv->count = 0;
@@ -903,7 +959,7 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 	gdouble progress;
 	gchar *text;
 
-	priv = self->priv;
+	priv = ofa_dossier_properties_get_instance_private( self );
 
 	priv->count += 1;
 	progress = ( gdouble ) priv->count / ( gdouble ) priv->total;

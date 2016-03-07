@@ -231,8 +231,6 @@ on_click_to_close( GtkButton *button, myIDialog *instance )
  * Replace the [OK] / [Cancel] buttons with a [Close] one which has a
  * GTK_RESPONSE_CLOSE response identifier.
  *
- * This method should only be called for GtkDialog classes.
- *
  * Returns: the newly added 'Close' button.
  */
 GtkWidget *
@@ -254,8 +252,7 @@ my_idialog_set_close_button( myIDialog *instance )
 	}
 
 	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
-
-	gtk_widget_show_all( GTK_WIDGET( instance ));
+	gtk_widget_show_all( button );
 
 	return( button );
 }

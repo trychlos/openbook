@@ -33,12 +33,11 @@
  * Display/update the dossier properties.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   no
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -54,22 +53,19 @@ typedef struct _ofaDossierPropertiesPrivate        ofaDossierPropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                     parent;
-
-	/*< private members >*/
-	ofaDossierPropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaDossierProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	GtkDialogClass parent;
 }
 	ofaDossierPropertiesClass;
 
-GType    ofa_dossier_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_dossier_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_dossier_properties_run     ( ofaMainWindow *parent );
+void  ofa_dossier_properties_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 

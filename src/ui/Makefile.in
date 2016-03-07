@@ -684,7 +684,6 @@ ui_files = \
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
-	ofa-dossier-properties.ui							\
 	ofa-ledger-properties.ui							\
 	ofa-ledger-book-bin.ui								\
 	ofa-ledger-summary-bin.ui							\
@@ -709,6 +708,7 @@ resources_ui = \
 	ofa-class-properties.ui								\
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
+	ofa-dossier-properties.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
