@@ -55,16 +55,13 @@ typedef struct _ofaLedgerTreeviewPrivate        ofaLedgerTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                    parent;
-
-	/*< private members >*/
-	ofaLedgerTreeviewPrivate *priv;
+	GtkBin      parent;
 }
 	ofaLedgerTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass               parent;
+	GtkBinClass parent;
 }
 	ofaLedgerTreeviewClass;
 
