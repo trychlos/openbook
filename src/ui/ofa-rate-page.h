@@ -48,16 +48,13 @@ typedef struct _ofaRatePagePrivate        ofaRatePagePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage             parent;
-
-	/*< private members >*/
-	ofaRatePagePrivate *priv;
+	ofaPage      parent;
 }
 	ofaRatePage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass        parent;
+	ofaPageClass parent;
 }
 	ofaRatePageClass;
 

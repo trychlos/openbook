@@ -73,8 +73,6 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaRatePage, ofa_rate_page, OFA_TYPE_PAGE )
-
 static GtkWidget *v_setup_view( ofaPage *page );
 static void       connect_to_hub_signaling_system( ofaRatePage *self );
 static GtkWidget *setup_tree_view( ofaRatePage *self );
@@ -100,15 +98,18 @@ static gboolean   delete_confirmed( ofaRatePage *self, ofoRate *rate );
 static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
 static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self );
 
+G_DEFINE_TYPE_EXTENDED( ofaRatePage, ofa_rate_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaRatePage ))
+
 static void
-rates_page_finalize( GObject *instance )
+rate_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_rate_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_RATE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RATE_PAGE( instance ));
 
 	/* free data members here */
 
@@ -117,16 +118,16 @@ rates_page_finalize( GObject *instance )
 }
 
 static void
-rates_page_dispose( GObject *instance )
+rate_page_dispose( GObject *instance )
 {
 	ofaRatePagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_RATE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RATE_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ( OFA_RATE_PAGE( instance ))->priv;
+		priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( instance ));
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -141,14 +142,12 @@ rates_page_dispose( GObject *instance )
 static void
 ofa_rate_page_init( ofaRatePage *self )
 {
-	static const gchar *thisfn = "ofa_rate_page_instance_init";
-
-	g_return_if_fail( OFA_IS_RATE_PAGE( self ));
+	static const gchar *thisfn = "ofa_rate_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RATE_PAGE, ofaRatePagePrivate );
+	g_return_if_fail( self && OFA_IS_RATE_PAGE( self ));
 }
 
 static void
@@ -158,14 +157,12 @@ ofa_rate_page_class_init( ofaRatePageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = rates_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = rates_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = rate_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = rate_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-
-	g_type_class_add_private( klass, sizeof( ofaRatePagePrivate ));
 }
 
 static GtkWidget *
@@ -178,7 +175,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_RATE_PAGE( page )->priv;
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -201,7 +198,7 @@ connect_to_hub_signaling_system( ofaRatePage *self )
 	ofaRatePagePrivate *priv;
 	gulong handler;
 
-	priv = self->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -219,6 +216,7 @@ connect_to_hub_signaling_system( ofaRatePage *self )
 static GtkWidget *
 setup_tree_view( ofaRatePage *self )
 {
+	ofaRatePagePrivate *priv;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -226,6 +224,8 @@ setup_tree_view( ofaRatePage *self )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+
+	priv = ofa_rate_page_get_instance_private( self );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -241,18 +241,16 @@ setup_tree_view( ofaRatePage *self )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(
-			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect(
-			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
-	self->priv->tview = tview;
+	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
+	priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
-	self->priv->tmodel = tmodel;
+	priv->tmodel = tmodel;
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -289,7 +287,7 @@ setup_tree_view( ofaRatePage *self )
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
@@ -307,7 +305,7 @@ v_setup_buttons( ofaPage *page )
 	ofaRatePagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 
-	priv = OFA_RATE_PAGE( page )->priv;
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 
@@ -332,9 +330,13 @@ v_setup_buttons( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
+	ofaRatePagePrivate *priv;
+
 	g_return_val_if_fail( page && OFA_IS_RATE_PAGE( page ), NULL );
 
-	return( GTK_WIDGET( OFA_RATE_PAGE( page )->priv->tview ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
+
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -344,7 +346,8 @@ insert_dataset( ofaRatePage *self )
 	GList *dataset, *it;
 	ofoRate *rate;
 
-	priv = self->priv;
+	priv = ofa_rate_page_get_instance_private( self );
+
 	dataset = ofo_rate_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
@@ -367,7 +370,7 @@ insert_new_row( ofaRatePage *self, ofoRate *rate, gboolean with_selection )
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	priv = self->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( priv->tmodel ),
@@ -417,10 +420,13 @@ set_row_by_iter( ofaRatePage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofo
 static gboolean
 find_row_by_mnemo( ofaRatePage *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
+	ofaRatePagePrivate *priv;
 	gchar *row_mnemo;
 	gint cmp;
 
-	*tmodel = gtk_tree_view_get_model( self->priv->tview );
+	priv = ofa_rate_page_get_instance_private( self );
+
+	*tmodel = gtk_tree_view_get_model( priv->tview );
 
 	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
 		while( TRUE ){
@@ -511,7 +517,7 @@ setup_first_selection( ofaRatePage *self )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	if( gtk_tree_model_get_iter_first( priv->tmodel, &iter )){
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -562,7 +568,7 @@ on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
 	ofoRate *rate;
 	gboolean is_rate;
 
-	priv = self->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	if( gtk_tree_selection_get_selected( selection, NULL, &iter )){
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
@@ -622,14 +628,14 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaRatePage *page )
+on_update_clicked( GtkButton *button, ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoRate *rate;
 
-	priv = page->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	select = gtk_tree_view_get_selection( priv->tview );
 
@@ -639,14 +645,14 @@ on_update_clicked( GtkButton *button, ofaRatePage *page )
 		g_object_unref( rate );
 
 		if( ofa_rate_properties_run(
-				ofa_page_get_main_window( OFA_PAGE( page )), rate )){
+				ofa_page_get_main_window( OFA_PAGE( self )), rate )){
 
 			/* nothing to do here as all is managed by dossier
 			 * signaling system */
 		}
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*
@@ -676,14 +682,14 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRa
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaRatePage *page )
+on_delete_clicked( GtkButton *button, ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoRate *rate;
 
-	priv = page->priv;
+	priv = ofa_rate_page_get_instance_private( self );
 
 	select = gtk_tree_view_get_selection( priv->tview );
 
@@ -692,7 +698,7 @@ on_delete_clicked( GtkButton *button, ofaRatePage *page )
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
 		g_object_unref( rate );
 
-		if( delete_confirmed( page, rate ) &&
+		if( delete_confirmed( self, rate ) &&
 				ofo_rate_delete( rate )){
 
 			/* nothing to do here as all is managed by dossier signaling
@@ -700,7 +706,7 @@ on_delete_clicked( GtkButton *button, ofaRatePage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean
@@ -754,13 +760,16 @@ static void
 on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_on_hub_reload_dataset";
+	ofaRatePagePrivate *priv;
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn, ( void * ) hub, type, ( void * ) self );
 
+	priv = ofa_rate_page_get_instance_private( self );
+
 	if( type == OFO_TYPE_RATE ){
-		tmodel = gtk_tree_view_get_model( self->priv->tview );
+		tmodel = gtk_tree_view_get_model( priv->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self );
 	}
