@@ -50,16 +50,13 @@ typedef struct _ofaLedgerComboPrivate        ofaLedgerComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBox            parent;
-
-	/*< private members >*/
-	ofaLedgerComboPrivate *priv;
+	GtkComboBox      parent;
 }
 	ofaLedgerCombo;
 
 typedef struct {
 	/*< public members >*/
-	GtkComboBoxClass       parent;
+	GtkComboBoxClass parent;
 }
 	ofaLedgerComboClass;
 

@@ -52,10 +52,11 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void     on_ledger_changed( ofaLedgerCombo *combo, void *empty );
-static void     create_combo_columns( ofaLedgerCombo *combo );
+static void on_ledger_changed( ofaLedgerCombo *combo, void *empty );
+static void create_combo_columns( ofaLedgerCombo *combo );
 
-G_DEFINE_TYPE( ofaLedgerCombo, ofa_ledger_combo, GTK_TYPE_COMBO_BOX );
+G_DEFINE_TYPE_EXTENDED( ofaLedgerCombo, ofa_ledger_combo, GTK_TYPE_COMBO_BOX, 0,
+		G_ADD_PRIVATE( ofaLedgerCombo ))
 
 static void
 ledger_combo_finalize( GObject *instance )
@@ -80,7 +81,7 @@ ledger_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_COMBO( instance ));
 
-	priv = ( OFA_LEDGER_COMBO( instance ))->priv;
+	priv = ofa_ledger_combo_get_instance_private( OFA_LEDGER_COMBO( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -97,15 +98,16 @@ static void
 ofa_ledger_combo_init( ofaLedgerCombo *self )
 {
 	static const gchar *thisfn = "ofa_ledger_combo_init";
+	ofaLedgerComboPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_COMBO, ofaLedgerComboPrivate );
+	priv = ofa_ledger_combo_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -117,8 +119,6 @@ ofa_ledger_combo_class_init( ofaLedgerComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledger_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_combo_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaLedgerComboPrivate ));
 
 	/**
 	 * ofaLedgerCombo::ofa-changed:
@@ -156,8 +156,7 @@ ofa_ledger_combo_new( void )
 
 	self = g_object_new( OFA_TYPE_LEDGER_COMBO, NULL );
 
-	g_signal_connect(
-			G_OBJECT( self ), "changed", G_CALLBACK( on_ledger_changed ), NULL );
+	g_signal_connect( self, "changed", G_CALLBACK( on_ledger_changed ), NULL );
 
 	return( self );
 }
@@ -183,13 +182,12 @@ ofa_ledger_combo_set_columns( ofaLedgerCombo *combo, ofaLedgerColumns columns )
 
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
 
-	priv = combo->priv;
+	priv = ofa_ledger_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->columns = columns;
-		create_combo_columns( combo );
-	}
+	priv->columns = columns;
+	create_combo_columns( combo );
 }
 
 static void
@@ -198,7 +196,7 @@ create_combo_columns( ofaLedgerCombo *combo )
 	ofaLedgerComboPrivate *priv;
 	GtkCellRenderer *cell;
 
-	priv = combo->priv;
+	priv = ofa_ledger_combo_get_instance_private( combo );
 
 	if( priv->columns & LEDGER_DISP_MNEMO ){
 		cell = gtk_cell_renderer_text_new();
@@ -241,13 +239,12 @@ ofa_ledger_combo_set_hub( ofaLedgerCombo *combo, ofaHub *hub )
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv = combo->priv;
+	priv = ofa_ledger_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->store = ofa_ledger_store_new( hub );
-		gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
-	}
+	priv->store = ofa_ledger_store_new( hub );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 }
 
 /**
@@ -265,13 +262,11 @@ ofa_ledger_combo_get_selected( ofaLedgerCombo *combo )
 
 	g_return_val_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ), NULL );
 
-	priv = combo->priv;
-	mnemo = NULL;
+	priv = ofa_ledger_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		mnemo = gtk_combo_box_get_active_id( GTK_COMBO_BOX( combo ));
-	}
+	mnemo = gtk_combo_box_get_active_id( GTK_COMBO_BOX( combo ));
 
 	return( g_strdup( mnemo ));
 }
@@ -290,10 +285,9 @@ ofa_ledger_combo_set_selected( ofaLedgerCombo *combo, const gchar *mnemo )
 
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
 
-	priv = combo->priv;
+	priv = ofa_ledger_combo_get_instance_private( combo );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		gtk_combo_box_set_active_id( GTK_COMBO_BOX( combo ), mnemo );
-	}
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( combo ), mnemo );
 }
