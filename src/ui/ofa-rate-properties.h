@@ -51,12 +51,11 @@
  *                     with 01/01/2014
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofo-rate-def.h"
 
 G_BEGIN_DECLS
@@ -72,22 +71,20 @@ typedef struct _ofaRatePropertiesPrivate        ofaRatePropertiesPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                  parent;
-
-	/*< private members >*/
-	ofaRatePropertiesPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaRateProperties;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	GtkDialogClass parent;
 }
 	ofaRatePropertiesClass;
 
-GType    ofa_rate_properties_get_type( void ) G_GNUC_CONST;
+GType ofa_rate_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_rate_properties_run     ( const ofaMainWindow *main_window, ofoRate *rate );
+void  ofa_rate_properties_run     ( const ofaMainWindow *main_window,
+										ofoRate *rate );
 
 G_END_DECLS
 

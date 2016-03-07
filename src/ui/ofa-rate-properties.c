@@ -33,9 +33,10 @@
 #include "api/my-double.h"
 #include "api/my-editable-amount.h"
 #include "api/my-editable-date.h"
+#include "api/my-idialog.h"
 #include "api/my-igridlist.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
@@ -50,6 +51,7 @@
 /* private instance data
  */
 struct _ofaRatePropertiesPrivate {
+	gboolean       dispose_has_run;
 
 	/* internals
 	 */
@@ -57,12 +59,12 @@ struct _ofaRatePropertiesPrivate {
 	gboolean       is_current;
 	ofoRate       *rate;
 	gboolean       is_new;
-	gboolean       updated;
 
 	/* UI
 	 */
 	GtkWidget     *grid;				/* the grid which handles the validity rows */
 	GtkWidget     *ok_btn;
+	GtkWidget     *msgerr_label;
 
 	/* data
 	 */
@@ -86,27 +88,33 @@ enum {
 	N_COLUMNS
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-rate-properties.ui";
-static const gchar  *st_ui_id        = "RatePropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-rate-properties.ui";
 
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaRateProperties *self, guint row );
 static void      set_detail_values( ofaRateProperties *self, guint row );
-static void      v_init_dialog( myDialog *dialog );
 static void      on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_date_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column );
 static void      check_for_enable_dlg( ofaRateProperties *self );
-static gboolean  is_dialog_validable( ofaRateProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaRateProperties *self );
+static gboolean  is_dialog_validable( ofaRateProperties *self, gchar **msgerr );
+static void      on_ok_clicked( GtkButton *button, ofaRateProperties *self );
+static gboolean  do_update( ofaRateProperties *self, gchar **msgerr );
+static void      set_msgerr( ofaRateProperties *self, const gchar *msg );
 
-G_DEFINE_TYPE_EXTENDED( ofaRateProperties, ofa_rate_properties, MY_TYPE_DIALOG, 0, \
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaRateProperties, ofa_rate_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaRateProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
 rate_properties_finalize( GObject *instance )
@@ -117,10 +125,11 @@ rate_properties_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_RATE_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_RATE_PROPERTIES( instance )->priv;
+	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
+
 	g_free( priv->mnemo );
 	g_free( priv->label );
 
@@ -131,9 +140,15 @@ rate_properties_finalize( GObject *instance )
 static void
 rate_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
+	ofaRatePropertiesPrivate *priv;
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	g_return_if_fail( instance && OFA_IS_RATE_PROPERTIES( instance ));
+
+	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -146,16 +161,19 @@ static void
 ofa_rate_properties_init( ofaRateProperties *self )
 {
 	static const gchar *thisfn = "ofa_rate_properties_init";
+	ofaRatePropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( OFA_IS_RATE_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RATE_PROPERTIES, ofaRatePropertiesPrivate );
+	priv = ofa_rate_properties_get_instance_private( self );
 
-	self->priv->is_new = FALSE;
-	self->priv->updated = FALSE;
+	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -168,10 +186,172 @@ ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = rate_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = rate_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
 
-	g_type_class_add_private( klass, sizeof( ofaRatePropertiesPrivate ));
+/**
+ * ofa_rate_properties_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @rate: the #ofoRate to be displayed/updated.
+ *
+ * Update the properties of a rate.
+ */
+void
+ofa_rate_properties_run( const ofaMainWindow *main_window, ofoRate *rate )
+{
+	static const gchar *thisfn = "ofa_rate_properties_run";
+	ofaRateProperties *self;
+	ofaRatePropertiesPrivate *priv;
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	g_debug( "%s: main_window=%p, rate=%p",
+			thisfn, ( void * ) main_window, ( void * ) rate );
+
+	self = g_object_new( OFA_TYPE_RATE_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+
+	priv = ofa_rate_properties_get_instance_private( self );
+	priv->rate = rate;
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_rate_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and rate mnemo
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
+	ofaRatePropertiesPrivate *priv;
+	gchar *id;
+
+	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%s",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_rate_get_mnemo( priv->rate ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * rate
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaRatePropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
+	ofoDossier *dossier;
+	gint count, idx;
+	gchar *title;
+	const gchar *mnemo;
+	GtkEntry *entry;
+	GtkWidget *label;
+
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
+
+	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	priv->is_current = ofo_dossier_is_current( dossier );
+
+	mnemo = ofo_rate_get_mnemo( priv->rate );
+	if( !mnemo ){
+		priv->is_new = TRUE;
+		title = g_strdup( _( "Defining a new rate" ));
+	} else {
+		title = g_strdup_printf( _( "Updating « %s » rate" ), mnemo );
+	}
+	gtk_window_set_title( GTK_WINDOW( instance ), title );
+
+	/* mnemonic */
+	priv->mnemo = g_strdup( mnemo );
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-entry" ));
+	if( priv->mnemo ){
+		gtk_entry_set_text( entry, priv->mnemo );
+	}
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), instance );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
+	priv->label = g_strdup( ofo_rate_get_label( priv->rate ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-entry" ));
+	if( priv->label ){
+		gtk_entry_set_text( entry, priv->label );
+	}
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
+
+	my_utils_container_notes_init( instance, rate );
+	my_utils_container_updstamp_init( instance, rate );
+
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+
+	/* if not the current exercice, then only have a 'Close' button */
+	if( !priv->is_current ){
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		priv->ok_btn = NULL;
+	}
+
+	/* set detail rows after general sensitivity */
+	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-grid" );
+	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
+	my_igridlist_init(
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ), priv->is_current, N_COLUMNS );
+	count = ofo_rate_get_val_count( priv->rate );
+	for( idx=0 ; idx<count ; ++idx ){
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ));
+	}
+
+	check_for_enable_dlg( OFA_RATE_PROPERTIES( instance ));
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_rate_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
@@ -201,7 +381,8 @@ igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
 
 	g_return_if_fail( instance && OFA_IS_RATE_PROPERTIES( instance ));
 
-	priv = OFA_RATE_PROPERTIES( instance )->priv;
+	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
+
 	g_return_if_fail( grid == GTK_GRID( priv->grid ));
 
 	set_detail_widgets( OFA_RATE_PROPERTIES( instance ), row );
@@ -214,7 +395,7 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	ofaRatePropertiesPrivate *priv;
 	GtkWidget *entry, *label;
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
 
 	entry = gtk_entry_new();
 	my_editable_date_init( GTK_EDITABLE( entry ));
@@ -275,7 +456,8 @@ set_detail_values( ofaRateProperties *self, guint row )
 	gdouble rate;
 	guint idx;
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
+
 	idx = row - 1;
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, row );
@@ -291,139 +473,12 @@ set_detail_values( ofaRateProperties *self, guint row )
 	my_editable_amount_set_amount( GTK_EDITABLE( entry ), rate );
 }
 
-/**
- * ofa_rate_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
- * @rate: the #ofoRate to be displayed/updated.
- *
- * Update the properties of a rate.
- */
-gboolean
-ofa_rate_properties_run( const ofaMainWindow *main_window, ofoRate *rate )
-{
-	static const gchar *thisfn = "ofa_rate_properties_run";
-	ofaRateProperties *self;
-	gboolean updated;
-
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-	g_debug( "%s: main_window=%p, rate=%p",
-			thisfn, ( void * ) main_window, ( void * ) rate );
-
-	self = g_object_new(
-					OFA_TYPE_RATE_PROPERTIES,
-					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_WINDOW_XML,  st_ui_xml,
-					MY_PROP_WINDOW_NAME, st_ui_id,
-					NULL );
-
-	self->priv->rate = rate;
-
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
-}
-
-static void
-v_init_dialog( myDialog *dialog )
-{
-	ofaRateProperties *self;
-	ofaRatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	GtkApplication *application;
-	ofoDossier *dossier;
-	gint count, idx;
-	gchar *title;
-	const gchar *mnemo;
-	GtkEntry *entry;
-	GtkWidget *label;
-	GtkContainer *container;
-
-	self = OFA_RATE_PROPERTIES( dialog );
-	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
-
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
-
-	mnemo = ofo_rate_get_mnemo( priv->rate );
-	if( !mnemo ){
-		priv->is_new = TRUE;
-		title = g_strdup( _( "Defining a new rate" ));
-	} else {
-		title = g_strdup_printf( _( "Updating « %s » rate" ), mnemo );
-	}
-	gtk_window_set_title( GTK_WINDOW( container ), title );
-
-	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-
-	/* mnemonic */
-	priv->mnemo = g_strdup( mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo-entry" ));
-	if( priv->mnemo ){
-		gtk_entry_set_text( entry, priv->mnemo );
-	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
-
-	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-
-	priv->label = g_strdup( ofo_rate_get_label( priv->rate ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label-entry" ));
-	if( priv->label ){
-		gtk_entry_set_text( entry, priv->label );
-	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
-
-	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-
-	my_utils_container_notes_init( container, rate );
-	my_utils_container_updstamp_init( container, rate );
-	my_utils_container_set_editable( container, priv->is_current );
-
-	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
-		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
-	}
-
-	/* set detail rows after general sensitivity */
-	priv->grid = my_utils_container_get_child_by_name( container, "p2-grid" );
-	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
-	my_igridlist_init(
-			MY_IGRIDLIST( dialog ), GTK_GRID( priv->grid ), priv->is_current, N_COLUMNS );
-	count = ofo_rate_get_val_count( priv->rate );
-	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( dialog ), GTK_GRID( priv->grid ));
-	}
-
-	check_for_enable_dlg( self );
-}
-
 static void
 on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
 
 	g_free( priv->mnemo );
 	priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -436,7 +491,7 @@ on_label_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
 
 	g_free( priv->label );
 	priv->label = g_strdup( gtk_entry_get_text( entry ));
@@ -475,12 +530,15 @@ on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 static void
 set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column )
 {
+	ofaRatePropertiesPrivate *priv;
 	guint row;
 	GtkLabel *label;
 	gchar *markup;
 
+	priv = ofa_rate_properties_get_instance_private( self );
+
 	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( widget ), DATA_ROW ));
-	label = GTK_LABEL( gtk_grid_get_child_at( GTK_GRID( self->priv->grid ), column, row ));
+	label = GTK_LABEL( gtk_grid_get_child_at( GTK_GRID( priv->grid ), column, row ));
 	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", comment );
 	gtk_label_set_markup( label, markup );
 	g_free( markup );
@@ -494,18 +552,26 @@ check_for_enable_dlg( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
 	gboolean ok;
+	gchar *msgerr;
 
-	priv = self->priv;
-	ok = is_dialog_validable( self );
+	priv = ofa_rate_properties_get_instance_private( self );
 
-	gtk_widget_set_sensitive( priv->ok_btn, ok );
+	msgerr = NULL;
+
+	if( priv->ok_btn ){
+		ok = is_dialog_validable( self, &msgerr );
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	}
+
+	set_msgerr( self, msgerr );
+	g_free( msgerr );
 }
 
 /*
  * are we able to validate this rate, and all its validities
  */
 static gboolean
-is_dialog_validable( ofaRateProperties *self )
+is_dialog_validable( ofaRateProperties *self, gchar **msgerr )
 {
 	ofaRatePropertiesPrivate *priv;
 	GList *valids;
@@ -518,7 +584,7 @@ is_dialog_validable( ofaRateProperties *self )
 	const GDate *dbegin, *dend;
 	guint count;
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
 
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 	for( i=1, valids=NULL ; i<=count ; ++i ){
@@ -539,7 +605,7 @@ is_dialog_validable( ofaRateProperties *self )
 		}
 	}
 
-	ok = ofo_rate_is_valid( priv->mnemo, priv->label, g_list_reverse( valids ));
+	ok = ofo_rate_is_valid_data( priv->mnemo, priv->label, g_list_reverse( valids ), msgerr );
 
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
@@ -548,18 +614,30 @@ is_dialog_validable( ofaRateProperties *self )
 		ok &= !exists ||
 				( !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_rate_get_mnemo( priv->rate )));
+		if( !ok && msgerr ){
+			*msgerr = g_strdup( _( "Rate already exists" ));
+		}
 	}
 
 	return( ok );
 }
 
-/*
- * return %TRUE to allow quitting the dialog
- */
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaRateProperties *self )
 {
-	return( do_update( OFA_RATE_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 /*
@@ -568,7 +646,7 @@ v_quit_on_ok( myDialog *dialog )
  * Please note that a record is uniquely identified by the mnemo + the date
  */
 static gboolean
-do_update( ofaRateProperties *self )
+do_update( ofaRateProperties *self, gchar **msgerr )
 {
 	ofaRatePropertiesPrivate *priv;
 	guint i, count;
@@ -576,16 +654,17 @@ do_update( ofaRateProperties *self )
 	const GDate *dbegin, *dend;
 	gchar *prev_mnemo, *str;
 	gdouble rate;
+	gboolean ok;
 
-	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
+	g_return_val_if_fail( is_dialog_validable( self, msgerr ), FALSE );
 
-	priv = self->priv;
+	priv = ofa_rate_properties_get_instance_private( self );
 
 	prev_mnemo = g_strdup( ofo_rate_get_mnemo( priv->rate ));
 
 	ofo_rate_set_mnemo( priv->rate, priv->mnemo );
 	ofo_rate_set_label( priv->rate, priv->label );
-	my_utils_container_notes_get( my_window_get_toplevel( MY_WINDOW( self )), rate );
+	my_utils_container_notes_get( self, rate );
 
 	ofo_rate_free_all_val( priv->rate );
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
@@ -608,14 +687,36 @@ do_update( ofaRateProperties *self )
 	}
 
 	if( priv->is_new ){
-		priv->updated =
-				ofo_rate_insert( priv->rate, priv->hub );
+		ok = ofo_rate_insert( priv->rate, priv->hub );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to create this new rate" ));
+		}
 	} else {
-		priv->updated =
-				ofo_rate_update( priv->rate, prev_mnemo );
+		ok = ofo_rate_update( priv->rate, prev_mnemo );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the rate" ));
+		}
 	}
 
 	g_free( prev_mnemo );
 
-	return( priv->updated );
+	return( ok );
+}
+
+static void
+set_msgerr( ofaRateProperties *self, const gchar *msg )
+{
+	ofaRatePropertiesPrivate *priv;
+	GtkWidget *label;
+
+	priv = ofa_rate_properties_get_instance_private( self );
+
+	if( !priv->msgerr_label ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		my_utils_widget_set_style( label, "labelerror" );
+		priv->msgerr_label = label;
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
 }

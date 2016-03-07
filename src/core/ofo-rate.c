@@ -587,7 +587,7 @@ ofo_rate_is_deletable( const ofoRate *rate )
 }
 
 /**
- * ofo_rate_is_valid:
+ * ofo_rate_is_valid_data:
  *
  * Note that we only check for the intrinsec validity of the provided
  * data. This does NOT check for an possible duplicate mnemo or so.
@@ -599,19 +599,37 @@ ofo_rate_is_deletable( const ofoRate *rate )
  * is considered as not valid
  */
 gboolean
-ofo_rate_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
+ofo_rate_is_valid_data( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr )
 {
-	gboolean ok;
 	gboolean consistent;
 
-	ok = my_strlen( mnemo ) && my_strlen( label );
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( mnemo )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty mnemonic" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty label" ));
+		}
+		return( FALSE );
+	}
 
 	consistent = TRUE;
 	validities = g_list_sort_with_data(
 			validities, ( GCompareDataFunc ) rate_cmp_by_validity, &consistent );
-	ok &= consistent;
+	if( !consistent ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Validities are not consistent" ));
+		}
+		return( FALSE );
+	}
 
-	return( ok );
+	return( TRUE );
 }
 
 /**

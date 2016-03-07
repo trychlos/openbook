@@ -102,7 +102,7 @@ ofxAmount       ofo_rate_get_val_rate      ( const ofoRate *rate, gint idx );
 ofxAmount       ofo_rate_get_rate_at_date  ( const ofoRate *rate, const GDate *date );
 
 gboolean        ofo_rate_is_deletable      ( const ofoRate *rate );
-gboolean        ofo_rate_is_valid          ( const gchar *mnemo, const gchar *label, GList *validities );
+gboolean        ofo_rate_is_valid_data     ( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr );
 
 void            ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
 void            ofo_rate_set_label         ( ofoRate *rate, const gchar *label );

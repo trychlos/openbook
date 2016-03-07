@@ -594,18 +594,7 @@ on_new_clicked( GtkButton *button, ofaRatePage *page )
 	ofoRate *rate;
 
 	rate = ofo_rate_new();
-
-	if( ofa_rate_properties_run(
-			ofa_page_get_main_window( OFA_PAGE( page )), rate )){
-
-		/* nothing to do here as all is managed by dossier signaling
-		 * system */
-
-	} else {
-		g_object_unref( rate );
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	ofa_rate_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), rate );
 }
 
 /*
@@ -643,16 +632,8 @@ on_update_clicked( GtkButton *button, ofaRatePage *self )
 
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
 		g_object_unref( rate );
-
-		if( ofa_rate_properties_run(
-				ofa_page_get_main_window( OFA_PAGE( self )), rate )){
-
-			/* nothing to do here as all is managed by dossier
-			 * signaling system */
-		}
+		ofa_rate_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), rate );
 	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*
