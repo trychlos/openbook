@@ -84,9 +84,6 @@ typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
 struct _ofaMainWindow {
 	/*< public members >*/
 	GtkApplicationWindow      parent;
-
-	/*< private members >*/
-	ofaMainWindowPrivate     *priv;
 };
 
 typedef struct {

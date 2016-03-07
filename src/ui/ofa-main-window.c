@@ -311,8 +311,6 @@ static const gchar *st_icon_fname       = ICONFNAME;
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
-
 static void             theme_defs_free( GList *themes );
 static void             theme_free( sThemeDef *def );
 static void             pane_save_position( GtkPaned *pane );
@@ -355,6 +353,9 @@ static guint            on_add_theme( ofaMainWindow *main_window, const gchar *t
 static void             on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
 static void             do_dossier_properties( ofaMainWindow *main_window );
 
+G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
+		G_ADD_PRIVATE( ofaMainWindow ))
+
 static void
 main_window_finalize( GObject *instance )
 {
@@ -367,7 +368,7 @@ main_window_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
 	/* free data members here */
-	priv = OFA_MAIN_WINDOW( instance )->priv;
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
 	g_free( priv->orig_title );
 
@@ -385,11 +386,12 @@ main_window_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
-	priv = OFA_MAIN_WINDOW( instance )->priv;
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
+
 		my_utils_window_save_position( GTK_WINDOW( instance ), st_main_window_name );
 		if( priv->pane ){
 			pane_save_position( priv->pane );
@@ -440,7 +442,7 @@ main_window_constructed( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
-	priv = OFA_MAIN_WINDOW( instance )->priv;
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -570,16 +572,17 @@ static void
 ofa_main_window_init( ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_init";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_MAIN_WINDOW( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MAIN_WINDOW, ofaMainWindowPrivate );
+	priv = ofa_main_window_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
-	self->priv->last_theme = THM_LAST_THEME;
+	priv->dispose_has_run = FALSE;
+	priv->last_theme = THM_LAST_THEME;
 }
 
 static void
@@ -592,8 +595,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	G_OBJECT_CLASS( klass )->constructed = main_window_constructed;
 	G_OBJECT_CLASS( klass )->dispose = main_window_dispose;
 	G_OBJECT_CLASS( klass )->finalize = main_window_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMainWindowPrivate ));
 
 	/**
 	 * ofaMainWindow::ofa-dossier-properties:
@@ -735,7 +736,7 @@ ofa_main_window_new( const ofaApplication *application )
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	/* connect to the ofaIHubber (ofaHub holder) signals
 	 */
@@ -795,7 +796,7 @@ on_hub_new( ofaIHubber *hubber, ofaHub *hub, ofaMainWindow *main_window )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
 
 	g_clear_object( &priv->hub );
 	priv->hub = g_object_ref( hub );
@@ -811,7 +812,7 @@ do_open_dossier( ofaMainWindow *main_window )
 	const gchar *main_notes, *exe_notes;
 	ofoDossier *dossier;
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
 
 	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
@@ -859,7 +860,8 @@ on_hub_closed( ofaIHubber *hubber, ofaMainWindow *main_window )
 	static const gchar *thisfn = "ofa_main_window_on_hub_closed";
 	ofaMainWindowPrivate *priv;
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
+
 	g_debug( "%s: priv->hub=%p", thisfn, ( void * ) priv->hub );
 
 	do_close_dossier( main_window );
@@ -875,7 +877,7 @@ do_close_dossier( ofaMainWindow *self )
 	ofaApplication *appli;
 	ofaMainWindowPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_main_window_get_instance_private( self );
 
 	if( GTK_IS_WINDOW( self )){
 		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
@@ -905,11 +907,9 @@ ofa_main_window_close_dossier( ofaMainWindow *main_window )
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
 
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	if( priv->hub ){
 		close_all_pages( main_window );
@@ -941,7 +941,7 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	if( priv->menubar ){
 		gtk_widget_destroy( GTK_WIDGET( priv->menubar ));
@@ -1038,7 +1038,7 @@ set_window_title( const ofaMainWindow *window )
 	ofaIDBPeriod *period;
 	gchar *title, *dos_name, *period_label, *period_name;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	if( priv->hub ){
 		connect = ofa_hub_get_connect( priv->hub );
@@ -1134,6 +1134,7 @@ pane_restore_position( GtkPaned *pane )
 static void
 add_treeview_to_pane_left( ofaMainWindow *window )
 {
+	ofaMainWindowPrivate *priv;
 	GtkFrame *frame;
 	GtkTreeView *view;
 	GtkTreeModel *model;
@@ -1143,10 +1144,12 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	GtkTreeIter iter;
 	gint i;
 
+	priv = ofa_main_window_get_instance_private( window );
+
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 2 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-	gtk_paned_pack1( window->priv->pane, GTK_WIDGET( frame ), FALSE, FALSE );
+	gtk_paned_pack1( priv->pane, GTK_WIDGET( frame ), FALSE, FALSE );
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( view ), FALSE );
@@ -1221,6 +1224,8 @@ get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
 	GList *it;
 	sThemeDef *def;
 
+	priv = ofa_main_window_get_instance_private( main_window );
+
 	if( theme_id < THM_LAST_THEME ){
 		for( i=0 ; st_theme_defs[i].label ; ++i ){
 			if( st_theme_defs[i].theme_id == theme_id ){
@@ -1228,7 +1233,6 @@ get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
 			}
 		}
 	} else if( theme_id > THM_LAST_THEME ){
-		priv = main_window->priv;
 		for( it=priv->themes ; it ; it=it->next ){
 			def = ( sThemeDef * ) it->data;
 			if( def->theme_id == theme_id ){
@@ -1244,17 +1248,19 @@ get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
 static void
 add_empty_notebook_to_pane_right( ofaMainWindow *window )
 {
+	ofaMainWindowPrivate *priv;
 	GtkNotebook *book;
+
+	priv = ofa_main_window_get_instance_private( window );
 
 	book = GTK_NOTEBOOK( gtk_notebook_new());
 	my_utils_widget_set_margins( GTK_WIDGET( book ), 4, 4, 2, 4 );
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
 
-	g_signal_connect(
-			G_OBJECT( book ), "page-removed", G_CALLBACK( on_page_removed ), window );
+	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), window );
 
-	gtk_paned_pack2( window->priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
+	gtk_paned_pack2( priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
 
 /*
@@ -1275,7 +1281,8 @@ do_update_menubar_items( ofaMainWindow *main_window )
 	gboolean is_current;
 	ofoDossier *dossier;
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
+
 	dossier = priv->hub ? ofa_hub_get_dossier( priv->hub ) : NULL;
 	is_current = dossier ? ofo_dossier_is_current( dossier ) : FALSE;
 
@@ -1292,7 +1299,7 @@ enable_action_guided_input( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_guided_input, "guided", enable );
 }
@@ -1302,7 +1309,7 @@ enable_action_settlement( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_settlement, "settlement", enable );
 }
@@ -1312,7 +1319,7 @@ enable_action_reconciliation( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_reconciliation, "concil", enable );
 }
@@ -1322,7 +1329,7 @@ enable_action_close_ledger( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_ledger, "ledclosing", enable );
 }
@@ -1332,7 +1339,7 @@ enable_action_close_exercice( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_exercice, "execlosing", enable );
 }
@@ -1342,7 +1349,7 @@ enable_action_import( ofaMainWindow *window, gboolean enable )
 {
 	ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_import, "import", enable );
 }
@@ -1359,7 +1366,7 @@ on_dossier_properties( ofaMainWindow *window, void *empty )
 	g_debug( "%s: window=%p, empty=%p",
 			thisfn, ( void * ) window, ( void * ) empty );
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
 
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
@@ -1399,11 +1406,9 @@ ofa_main_window_backup_dossier( ofaMainWindow *main_window )
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
 
-	if( priv->dispose_has_run ){
-		g_return_if_reached();
-	}
+	g_return_if_fail( !priv->dispose_has_run );
 
 	do_backup( main_window );
 }
@@ -1741,41 +1746,40 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	ofoDossier *dossier;
 	ofaNomodalPage *nomodal;
 
+	g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
+
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
+	priv = ofa_main_window_get_instance_private( main_window );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
 	page = NULL;
-	priv = main_window->priv;
+	main_book = main_get_book( main_window );
+	g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
 
-	if( !priv->dispose_has_run ){
+	theme_def = get_theme_def_from_id( main_window, theme );
+	g_return_val_if_fail( theme_def, NULL );
+	g_return_val_if_fail( theme_def->fn_get_type, NULL );
 
-		g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
-
-		main_book = main_get_book( main_window );
-		g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
-
-		theme_def = get_theme_def_from_id( main_window, theme );
-		g_return_val_if_fail( theme_def, NULL );
-		g_return_val_if_fail( theme_def->fn_get_type, NULL );
-
-		if( theme_def->if_entries_allowed ){
-			dossier = ofa_hub_get_dossier( priv->hub );
-			if( !ofo_dossier_is_current( dossier )){
-				warning_archived_dossier( main_window );
-				return( NULL );
-			}
+	if( theme_def->if_entries_allowed ){
+		dossier = ofa_hub_get_dossier( priv->hub );
+		if( !ofo_dossier_is_current( dossier )){
+			warning_archived_dossier( main_window );
+			return( NULL );
 		}
+	}
 
-		nomodal = ofa_nomodal_page_get_by_theme( theme );
-		if( nomodal ){
-			my_iwindow_present( MY_IWINDOW( nomodal ));
-		} else {
-			page = main_book_get_page( main_window, main_book, theme );
-			if( !page ){
-				page = main_book_create_page( main_window, main_book, theme_def );
-			}
-			g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-			main_book_activate_page( main_window, main_book, page );
+	nomodal = ofa_nomodal_page_get_by_theme( theme );
+	if( nomodal ){
+		my_iwindow_present( MY_IWINDOW( nomodal ));
+	} else {
+		page = main_book_get_page( main_window, main_book, theme );
+		if( !page ){
+			page = main_book_create_page( main_window, main_book, theme_def );
 		}
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+		main_book_activate_page( main_window, main_book, page );
 	}
 
 	return( page );
@@ -1787,11 +1791,12 @@ main_get_book( const ofaMainWindow *window )
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
 
-	priv = window->priv;
+	priv = ofa_main_window_get_instance_private( window );
+
 	book = NULL;
 
 	if( priv->pane ){
-		book = gtk_paned_get_child2( window->priv->pane );
+		book = gtk_paned_get_child2( priv->pane );
 		g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 		return( GTK_NOTEBOOK( book ));
 	}
@@ -1967,7 +1972,8 @@ on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fnty
 	g_debug( "%s: main_window=%p, theme_name=%s, fntype=%p, with_entries=%s, empty=%p",
 			thisfn,( void * ) main_window, theme_name, fntype, with_entries ? "True":"False", empty );
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
+
 	def = g_new0( sThemeDef, 1 );
 	def->label = g_strdup( theme_name );
 	def->fn_get_type = fntype;
@@ -2004,11 +2010,9 @@ ofa_main_window_get_hub( const ofaMainWindow *main_window )
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	priv = main_window->priv;
+	priv = ofa_main_window_get_instance_private( main_window );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->hub );
 }
