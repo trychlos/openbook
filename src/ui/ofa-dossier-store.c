@@ -69,7 +69,8 @@ static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
 static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
 
-G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaDossierStore ))
 
 static void
 dossier_store_finalize( GObject *instance )
@@ -94,7 +95,7 @@ dossier_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_STORE( instance ));
 
-	priv = OFA_DOSSIER_STORE( instance )->priv;
+	priv = ofa_dossier_store_get_instance_private( OFA_DOSSIER_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -111,13 +112,16 @@ static void
 ofa_dossier_store_init( ofaDossierStore *self )
 {
 	static const gchar *thisfn = "ofa_dossier_store_init";
+	ofaDossierStorePrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_STORE( self ));
+	g_return_if_fail( self && OFA_IS_DOSSIER_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_STORE, ofaDossierStorePrivate );
+	priv = ofa_dossier_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -129,8 +133,6 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierStorePrivate ));
 
 	/**
 	 * ofaDossierStore:

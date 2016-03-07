@@ -64,10 +64,7 @@ typedef struct _ofaDossierStorePrivate        ofaDossierStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkListStore            parent;
-
-	/*< private members >*/
-	ofaDossierStorePrivate *priv;
+	GtkListStore      parent;
 }
 	ofaDossierStore;
 
@@ -76,7 +73,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	GtkListStoreClass       parent;
+	GtkListStoreClass parent;
 }
 	ofaDossierStoreClass;
 
