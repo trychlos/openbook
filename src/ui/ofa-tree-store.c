@@ -60,8 +60,9 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( const ofaIStore *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaTreeStore, ofa_tree_store, GTK_TYPE_TREE_STORE, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ));
+G_DEFINE_TYPE_EXTENDED( ofaTreeStore, ofa_tree_store, GTK_TYPE_TREE_STORE, 0,
+		G_ADD_PRIVATE( ofaTreeStore )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISTORE, istore_iface_init ))
 
 static void
 tree_store_finalize( GObject *instance )
@@ -86,7 +87,7 @@ tree_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_TREE_STORE( instance ));
 
-	priv = OFA_TREE_STORE( instance )->priv;
+	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -106,7 +107,7 @@ tree_store_get_property( GObject *object, guint property_id, GValue *value, GPar
 
 	g_return_if_fail( object && OFA_IS_TREE_STORE( object ));
 
-	priv = OFA_TREE_STORE( object )->priv;
+	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( object ));
 
 	if( !priv->dispose_has_run ){
 
@@ -129,7 +130,7 @@ tree_store_set_property( GObject *object, guint property_id, const GValue *value
 
 	g_return_if_fail( OFA_IS_TREE_STORE( object ));
 
-	priv = OFA_TREE_STORE( object )->priv;
+	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( object ));
 
 	if( !priv->dispose_has_run ){
 
@@ -159,7 +160,8 @@ tree_store_constructed( GObject *instance )
 	 * time of the derived class), so that we will be auto-unreffed at
 	 * dossier finalization
 	 */
-	priv = OFA_TREE_STORE( instance )->priv;
+	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( instance ));
+
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
@@ -169,13 +171,16 @@ static void
 ofa_tree_store_init( ofaTreeStore *self )
 {
 	static const gchar *thisfn = "ofa_tree_store_init";
+	ofaTreeStorePrivate *priv;
 
 	g_return_if_fail( OFA_IS_TREE_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TREE_STORE, ofaTreeStorePrivate );
+	priv = ofa_tree_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -190,8 +195,6 @@ ofa_tree_store_class_init( ofaTreeStoreClass *klass )
 	G_OBJECT_CLASS( klass )->set_property = tree_store_set_property;
 	G_OBJECT_CLASS( klass )->dispose = tree_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tree_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaTreeStorePrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -272,18 +275,17 @@ ofa_tree_store_load_dataset( ofaTreeStore *store )
 
 	g_return_if_fail( store && OFA_IS_TREE_STORE( store ));
 
-	priv = store->priv;
+	priv = ofa_tree_store_get_instance_private( store );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		if( !priv->dataset_loaded ){
-			if( OFA_TREE_STORE_GET_CLASS( store )->load_dataset ){
-				OFA_TREE_STORE_GET_CLASS( store )->load_dataset( store );
-			}
-			priv->dataset_loaded = TRUE;
-
-		} else {
-			ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
+	if( !priv->dataset_loaded ){
+		if( OFA_TREE_STORE_GET_CLASS( store )->load_dataset ){
+			OFA_TREE_STORE_GET_CLASS( store )->load_dataset( store );
 		}
+		priv->dataset_loaded = TRUE;
+
+	} else {
+		ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
 	}
 }

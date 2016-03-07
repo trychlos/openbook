@@ -50,10 +50,7 @@ typedef struct _ofaTreeStorePrivate        ofaTreeStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkTreeStore         parent;
-
-	/*< private members >*/
-	ofaTreeStorePrivate *priv;
+	GtkTreeStore      parent;
 }
 	ofaTreeStore;
 
@@ -62,7 +59,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	GtkTreeStoreClass    parent;
+	GtkTreeStoreClass parent;
 
 	/*< protected virtual functions >*/
 	/**
