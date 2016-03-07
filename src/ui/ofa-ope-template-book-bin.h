@@ -64,16 +64,13 @@ typedef struct _ofaOpeTemplateBookBinPrivate         ofaOpeTemplateBookBinPrivat
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                      parent;
-
-	/*< private members >*/
-	ofaOpeTemplateBookBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaOpeTemplateBookBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                 parent;
+	GtkBinClass parent;
 }
 	ofaOpeTemplateBookBinClass;
 
@@ -81,17 +78,15 @@ GType                  ofa_ope_template_book_bin_get_type            ( void ) G_
 
 ofaOpeTemplateBookBin *ofa_ope_template_book_bin_new                 ( const ofaMainWindow *main_window );
 
-void                   ofa_ope_template_book_bin_expand_all          ( ofaOpeTemplateBookBin *bin );
-
 gchar                 *ofa_ope_template_book_bin_get_selected        ( ofaOpeTemplateBookBin *bin );
 
 void                   ofa_ope_template_book_bin_set_selected        ( ofaOpeTemplateBookBin *bin,
 																				const gchar *mnemo );
 
+GtkWidget             *ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *bin );
+
 void                   ofa_ope_template_book_bin_button_clicked      ( ofaOpeTemplateBookBin *bin,
 																				gint button_id );
-
-GtkWidget             *ofa_ope_template_book_bin_get_current_treeview( const ofaOpeTemplateBookBin *bin );
 
 G_END_DECLS
 
