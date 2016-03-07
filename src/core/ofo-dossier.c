@@ -190,12 +190,6 @@ struct _ofoDossierPrivate {
 	GList         *cur_details;			/* a list of details per currency */
 };
 
-typedef struct {
-	gchar *currency;
-	gchar *sld_account;					/* balance account number for the currency */
-}
-	sCurrency;
-
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
@@ -1621,7 +1615,7 @@ do_update_currency_properties( ofoDossier *dossier )
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query, *userid;
-	sCurrency *sdet;
+	GList *details;
 	gboolean ok;
 	GList *it;
 	GTimeVal stamp;
@@ -1638,10 +1632,13 @@ do_update_currency_properties( ofoDossier *dossier )
 
 	if( ok ){
 		for( it=priv->cur_details ; it && ok ; it=it->next ){
-			sdet = ( sCurrency * ) it->data;
+			details = ( GList * ) it->data;
 			query = g_strdup_printf(
 					"INSERT INTO OFA_T_DOSSIER_CUR (DOS_ID,DOS_CURRENCY,DOS_SLD_ACCOUNT) VALUES "
-					"	(%d,'%s','%s')", DOSSIER_ROW_ID, sdet->currency, sdet->sld_account );
+					"	(%d,'%s','%s')",
+					DOSSIER_ROW_ID,
+					ofa_box_get_string( details, DOS_CURRENCY ),
+					ofa_box_get_string( details, DOS_SLD_ACCOUNT ));
 			ok &= ofa_idbconnect_query( connect, query, TRUE );
 			g_free( query );
 			count += 1;

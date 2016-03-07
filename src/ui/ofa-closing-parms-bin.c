@@ -829,6 +829,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 void
 ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 {
+	static const gchar *thisfn = "ofa_closing_parms_bin_apply";
 	ofaClosingParmsBinPrivate *priv;
 	gint row;
 	GtkWidget *entry;
@@ -852,7 +853,7 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 
 	for( row=1 ; row<priv->count ; ++row ){
 		combo = get_currency_combo_at( bin, row );
-		g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
+		g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 
 		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
 		if( my_strlen( code )){
@@ -862,6 +863,7 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 
 			if( my_strlen( acc_number )){
+				g_debug( "%s: code=%s, acc_number=%s", thisfn, code, acc_number );
 				ofo_dossier_set_sld_account( priv->dossier, code, acc_number );
 			}
 		}

@@ -33,6 +33,7 @@
  Bug fixes:
 
    - ofaDossierTreeview: just ignore rows with empty columns (todo #1035).
+   - ofoDossier: fix update of solde account per currency.
 
  Other changes:
 
