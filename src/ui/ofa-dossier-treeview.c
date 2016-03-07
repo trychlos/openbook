@@ -69,7 +69,8 @@ static void     on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview
 static void     on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
 static void     get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 
-G_DEFINE_TYPE( ofaDossierTreeview, ofa_dossier_treeview, GTK_TYPE_BIN );
+G_DEFINE_TYPE_EXTENDED( ofaDossierTreeview, ofa_dossier_treeview, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaDossierTreeview ))
 
 static void
 dossier_treeview_finalize( GObject *instance )
@@ -94,7 +95,7 @@ dossier_treeview_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_TREEVIEW( instance ));
 
-	priv = OFA_DOSSIER_TREEVIEW( instance )->priv;
+	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -111,15 +112,16 @@ static void
 ofa_dossier_treeview_init( ofaDossierTreeview *self )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_init";
+	ofaDossierTreeviewPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_TREEVIEW( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_TREEVIEW, ofaDossierTreeviewPrivate );
+	priv = ofa_dossier_treeview_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -131,8 +133,6 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_treeview_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierTreeviewPrivate ));
 
 	/**
 	 * ofaDossierTreeview::changed:
@@ -215,7 +215,7 @@ attach_top_widget( ofaDossierTreeview *self )
 	GtkTreeSelection *select;
 	GtkWidget *scrolled;
 
-	priv = self->priv;
+	priv = ofa_dossier_treeview_get_instance_private( self );
 
 	top_widget = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
@@ -253,12 +253,11 @@ ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierDispColumn
 
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		create_treeview_columns( view, columns );
-	}
+	create_treeview_columns( view, columns );
 }
 
 /**
@@ -271,13 +270,12 @@ ofa_dossier_treeview_set_headers( ofaDossierTreeview *view, gboolean visible )
 
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->show_headers = visible;
-		gtk_tree_view_set_headers_visible( priv->tview, visible );
-	}
+	priv->show_headers = visible;
+	gtk_tree_view_set_headers_visible( priv->tview, visible );
 }
 
 /**
@@ -290,14 +288,13 @@ ofa_dossier_treeview_set_show( ofaDossierTreeview *view, ofaDossierShow show )
 
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->show_mode = show;
-		if( priv->tfilter ){
-			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		}
+	priv->show_mode = show;
+	if( priv->tfilter ){
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	}
 }
 
@@ -309,7 +306,7 @@ create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns
 	GtkTreeViewColumn *column;
 	gint i;
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
 	for( i=0 ; columns[i] ; ++i ){
 		if( columns[i] == DOSSIER_DISP_DOSNAME ){
@@ -366,7 +363,7 @@ create_treeview_store( ofaDossierTreeview *view )
 {
 	ofaDossierTreeviewPrivate *priv;
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
 	if( !priv->store ){
 
@@ -398,7 +395,8 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tvi
 	ofaIDBPeriod *period;
 	GList *periods;
 
-	priv = tview->priv;
+	priv = ofa_dossier_treeview_get_instance_private( tview );
+
 	visible = TRUE;
 	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
 
@@ -478,12 +476,11 @@ ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view )
 
 	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
 
-	priv = view->priv;
-	tview = NULL;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
-		tview = GTK_WIDGET( priv->tview );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	tview = GTK_WIDGET( priv->tview );
 
 	return( tview );
 }
@@ -502,12 +499,11 @@ ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )
 
 	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
 
-	priv = view->priv;
-	store = NULL;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
-		store = priv->store;
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	store = priv->store;
 
 	return( store );
 }
@@ -537,39 +533,36 @@ ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, ofaIDBMeta **
 
 	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), FALSE );
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		ok = FALSE;
+	ok = FALSE;
+	if( meta ){
+		*meta = NULL;
+	}
+	if( period ){
+		*period = NULL;
+	}
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		ok = TRUE;
+		gtk_tree_model_get( tmodel, &iter,
+				DOSSIER_COL_META,   &row_meta,
+				DOSSIER_COL_PERIOD, &row_period,
+				-1 );
 		if( meta ){
-			*meta = NULL;
+			*meta = row_meta;
+		} else {
+			g_object_unref( row_meta );
 		}
 		if( period ){
-			*period = NULL;
+			*period = row_period;
+		} else {
+			g_object_unref( row_period );
 		}
-		select = gtk_tree_view_get_selection( priv->tview );
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			ok = TRUE;
-			gtk_tree_model_get( tmodel, &iter,
-					DOSSIER_COL_META,   &row_meta,
-					DOSSIER_COL_PERIOD, &row_period,
-					-1 );
-			if( meta ){
-				*meta = row_meta;
-			} else {
-				g_object_unref( row_meta );
-			}
-			if( period ){
-				*period = row_period;
-			} else {
-				g_object_unref( row_period );
-			}
-		}
-		return( ok );
 	}
-
-	g_return_val_if_reached( FALSE );
+	return( ok );
 }
 
 /**
@@ -592,28 +585,27 @@ ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *
 
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
-	priv = view->priv;
+	priv = ofa_dossier_treeview_get_instance_private( view );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->tfilter ), &iter )){
-			while( TRUE ){
-				gtk_tree_model_get(
-						GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DOSNAME, &str, -1 );
-				cmp = g_utf8_collate( str, dname );
-				g_free( str );
-				if( cmp == 0 ){
-					select = gtk_tree_view_get_selection( priv->tview );
-					path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->tfilter ), &iter );
-					gtk_tree_selection_select_path( select, path );
-					/* move the cursor so that it is visible */
-					gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
-					gtk_tree_path_free( path );
-					break;
-				}
-				if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->tfilter ), &iter )){
-					break;
-				}
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->tfilter ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get(
+					GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DOSNAME, &str, -1 );
+			cmp = g_utf8_collate( str, dname );
+			g_free( str );
+			if( cmp == 0 ){
+				select = gtk_tree_view_get_selection( priv->tview );
+				path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->tfilter ), &iter );
+				gtk_tree_selection_select_path( select, path );
+				/* move the cursor so that it is visible */
+				gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
+				gtk_tree_path_free( path );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->tfilter ), &iter )){
+				break;
 			}
 		}
 	}

@@ -57,16 +57,13 @@ typedef struct _ofaDossierTreeviewPrivate        ofaDossierTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                     parent;
-
-	/*< private members >*/
-	ofaDossierTreeviewPrivate *priv;
+	GtkBin      parent;
 }
 	ofaDossierTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                parent;
+	GtkBinClass parent;
 }
 	ofaDossierTreeviewClass;
 
