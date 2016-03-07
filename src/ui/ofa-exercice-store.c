@@ -51,9 +51,10 @@ static GType st_col_types[EXERCICE_N_COLUMNS] = {
 		G_TYPE_OBJECT					/* ofaIDBPeriod */
 };
 
-G_DEFINE_TYPE( ofaExerciceStore, ofa_exercice_store, GTK_TYPE_LIST_STORE )
-
 static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExerciceStore *store );
+
+G_DEFINE_TYPE_EXTENDED( ofaExerciceStore, ofa_exercice_store, GTK_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaExerciceStore ))
 
 static void
 exercice_store_finalize( GObject *instance )
@@ -78,7 +79,7 @@ exercice_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_EXERCICE_STORE( instance ));
 
-	priv = ( OFA_EXERCICE_STORE( instance ))->priv;
+	priv = ofa_exercice_store_get_instance_private( OFA_EXERCICE_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -95,16 +96,16 @@ static void
 ofa_exercice_store_init( ofaExerciceStore *self )
 {
 	static const gchar *thisfn = "ofa_exercice_store_init";
+	ofaExerciceStorePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_EXERCICE_STORE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_EXERCICE_STORE, ofaExerciceStorePrivate );
+	priv = ofa_exercice_store_get_instance_private( self );
 
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -116,8 +117,6 @@ ofa_exercice_store_class_init( ofaExerciceStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = exercice_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = exercice_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaExerciceStorePrivate ));
 }
 
 /**
@@ -184,42 +183,41 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBMeta *meta )
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 
-	priv = store->priv;
+	priv = ofa_exercice_store_get_instance_private( store );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		period_list = ofa_idbmeta_get_periods( meta );
+	gtk_list_store_clear( GTK_LIST_STORE( store ));
+	period_list = ofa_idbmeta_get_periods( meta );
 
-		for( it=period_list; it ; it=it->next ){
-			period = ( ofaIDBPeriod * ) it->data;
+	for( it=period_list; it ; it=it->next ){
+		period = ( ofaIDBPeriod * ) it->data;
 
-			label = ofa_idbperiod_get_label( period );
-			status = ofa_idbperiod_get_status( period );
-			begin = my_date_to_str(
-							ofa_idbperiod_get_begin_date( period ),
-							ofa_prefs_date_display());
-			end = my_date_to_str(
-							ofa_idbperiod_get_end_date( period ),
-							ofa_prefs_date_display());
+		label = ofa_idbperiod_get_label( period );
+		status = ofa_idbperiod_get_status( period );
+		begin = my_date_to_str(
+						ofa_idbperiod_get_begin_date( period ),
+						ofa_prefs_date_display());
+		end = my_date_to_str(
+						ofa_idbperiod_get_end_date( period ),
+						ofa_prefs_date_display());
 
-			gtk_list_store_insert_with_values(
-					GTK_LIST_STORE( store ),
-					&iter,
-					-1,
-					EXERCICE_COL_LABEL,  label,
-					EXERCICE_COL_BEGIN,  begin,
-					EXERCICE_COL_END,    end,
-					EXERCICE_COL_STATUS, status,
-					EXERCICE_COL_PERIOD, period,
-					-1 );
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( store ),
+				&iter,
+				-1,
+				EXERCICE_COL_LABEL,  label,
+				EXERCICE_COL_BEGIN,  begin,
+				EXERCICE_COL_END,    end,
+				EXERCICE_COL_STATUS, status,
+				EXERCICE_COL_PERIOD, period,
+				-1 );
 
-			g_free( begin );
-			g_free( end );
-			g_free( status );
-			g_free( label );
-		}
-
-		ofa_idbmeta_free_periods( period_list );
+		g_free( begin );
+		g_free( end );
+		g_free( status );
+		g_free( label );
 	}
+
+	ofa_idbmeta_free_periods( period_list );
 }

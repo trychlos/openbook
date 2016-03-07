@@ -49,16 +49,13 @@ typedef struct _ofaExerciceStorePrivate        ofaExerciceStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkListStore             parent;
-
-	/*< private members >*/
-	ofaExerciceStorePrivate *priv;
+	GtkListStore      parent;
 }
 	ofaExerciceStore;
 
 typedef struct {
 	/*< public members >*/
-	GtkListStoreClass        parent;
+	GtkListStoreClass parent;
 }
 	ofaExerciceStoreClass;
 
