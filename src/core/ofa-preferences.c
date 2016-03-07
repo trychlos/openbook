@@ -312,6 +312,8 @@ iwindow_init( myIWindow *instance )
 	init_export_page( self );
 	init_import_page( self );
 	enumerate_prefs_plugins( self, NULL, init_plugin_page );
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 static void
@@ -606,6 +608,7 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 static gboolean
 init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *instance )
 {
+	static const gchar *thisfn = "ofa_preferences_init_plugin_page";
 	ofaPreferencesPrivate *priv;
 	ofaIPrefsPage *page;
 	GtkWidget *wlabel;
@@ -613,6 +616,9 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 	gchar *label;
 	myISettings *settings;
 	gboolean ok;
+
+	g_debug( "%s: self=%p, msgerr=%p, instance=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) msgerr, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	priv = ofa_preferences_get_instance_private( self );
 	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );

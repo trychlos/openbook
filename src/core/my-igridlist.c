@@ -229,6 +229,8 @@ add_button( GtkGrid *grid, const gchar *stock_id, guint column, guint row, guint
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( button, "clicked", cb, user_data );
 	gtk_grid_attach( grid, button, column, row, 1, 1 );
+
+	gtk_widget_show_all( button );
 	gtk_widget_set_sensitive( button, data->is_current );
 
 	return( button );
