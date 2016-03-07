@@ -51,10 +51,7 @@ typedef struct _ofaSettlementPrivate       ofaSettlementPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage               parent;
-
-	/*< private members >*/
-	ofaSettlementPrivate *priv;
+	ofaPage      parent;
 }
 	ofaSettlement;
 
@@ -65,12 +62,6 @@ typedef struct {
 	ofaSettlementClass;
 
 GType ofa_settlement_get_type       ( void ) G_GNUC_CONST;
-
-void  ofa_settlement_display_entries( ofaSettlement *page,
-											GType type,
-											const gchar *id,
-											const GDate *begin,
-											const GDate *end );
 
 void  ofa_settlement_set_account    ( ofaSettlement *page,
 											const gchar *number );

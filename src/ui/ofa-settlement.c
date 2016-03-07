@@ -171,7 +171,7 @@ typedef struct {
 
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlement.ui";
 static const gchar *st_ui_id            = "SettlementWindow";
 
 static const gchar *st_pref_settlement  = "SettlementPrefs";
@@ -232,9 +232,10 @@ static void           on_hub_updated_object( ofaHub *hub, ofoBase *object, const
 static void           on_updated_entry( ofaSettlement *self, ofoEntry *entry );
 static gboolean       find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
 
-G_DEFINE_TYPE_EXTENDED( ofaSettlement, ofa_settlement, OFA_TYPE_PAGE, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaSettlement, ofa_settlement, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaSettlement )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
 static void
 settlement_finalize( GObject *instance )
@@ -245,10 +246,10 @@ settlement_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_SETTLEMENT( instance ));
+	g_return_if_fail( instance && OFA_IS_SETTLEMENT( instance ));
 
 	/* free data members here */
-	priv = OFA_SETTLEMENT( instance )->priv;
+	priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( instance ));
 
 	g_free( priv->account_number );
 
@@ -261,12 +262,13 @@ settlement_dispose( GObject *instance )
 {
 	ofaSettlementPrivate *priv;
 
-	g_return_if_fail( OFA_IS_SETTLEMENT( instance ));
+	g_return_if_fail( instance && OFA_IS_SETTLEMENT( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_SETTLEMENT( instance )->priv;
+		priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( instance ));
+
 		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
@@ -278,17 +280,18 @@ static void
 ofa_settlement_init( ofaSettlement *self )
 {
 	static const gchar *thisfn = "ofa_settlement_init";
+	ofaSettlementPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_SETTLEMENT( self ));
+	g_return_if_fail( self && OFA_IS_SETTLEMENT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_SETTLEMENT, ofaSettlementPrivate );
+	priv = ofa_settlement_get_instance_private( self );
 
-	self->priv->settlement = -1;
-	self->priv->sort_column_id = -1;
-	self->priv->sort_sens = -1;
+	priv->settlement = -1;
+	priv->sort_column_id = -1;
+	priv->sort_sens = -1;
 }
 
 static void
@@ -302,8 +305,6 @@ ofa_settlement_class_init( ofaSettlementClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = settlement_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-
-	g_type_class_add_private( klass, sizeof( ofaSettlementPrivate ));
 }
 
 /*
@@ -382,7 +383,7 @@ v_setup_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_SETTLEMENT( page )->priv;
+	priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( page ));
 
 	get_settings( OFA_SETTLEMENT( page ));
 
@@ -408,13 +409,16 @@ v_setup_view( ofaPage *page )
 static void
 reparent_from_dialog( ofaSettlement *self, GtkContainer *parent )
 {
+	ofaSettlementPrivate *priv;
 	GtkWidget *box;
 
+	priv = ofa_settlement_get_instance_private( self );
+
 	/* load our dialog */
-	box = my_utils_container_attach_from_ui( GTK_CONTAINER( parent ), st_ui_xml, st_ui_id, "top" );
+	box = my_utils_container_attach_from_resource( parent, st_resource_ui, st_ui_id, "top" );
 	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	self->priv->top_box = GTK_CONTAINER( box );
+	priv->top_box = GTK_CONTAINER( box );
 }
 
 static void
@@ -423,7 +427,7 @@ setup_footer( ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	GtkWidget *widget;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "settle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -468,7 +472,7 @@ setup_entries_treeview( ofaSettlement *self )
 	gint column_id;
 	GtkTreeViewColumn *sort_column;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	tview = ( GtkTreeView * ) my_utils_container_get_child_by_name( priv->top_box, "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -703,7 +707,7 @@ setup_account_selection( ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	GtkWidget *widget;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	/* label must be setup before entry may be changed */
 	widget = my_utils_container_get_child_by_name( priv->top_box, "account-label" );
@@ -713,14 +717,14 @@ setup_account_selection( ofaSettlement *self )
 	widget = my_utils_container_get_child_by_name( priv->top_box, "account-number" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
+	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
 	if( my_strlen( priv->account_number )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_account_select ), self );
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_account_select ), self );
 }
 
 static void
@@ -733,7 +737,7 @@ setup_settlement_selection( ofaSettlement *self )
 	gint i, idx;
 	GtkTreeIter iter;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	columns = my_utils_container_get_child_by_name( priv->top_box, "f2-columns" );
 	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
@@ -773,8 +777,7 @@ setup_settlement_selection( ofaSettlement *self )
 		}
 	}
 
-	g_signal_connect(
-			G_OBJECT( combo ), "changed", G_CALLBACK( on_settlement_changed ), self );
+	g_signal_connect( combo, "changed", G_CALLBACK( on_settlement_changed ), self );
 
 	if( idx != -1 ){
 		gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), idx );
@@ -787,7 +790,7 @@ setup_signaling_connect( ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	gulong handler;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	handler = g_signal_connect(
 			priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
@@ -804,7 +807,8 @@ on_account_changed( GtkEntry *entry, ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	ofoAccount *account;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
+
 	priv->account_currency = NULL;
 
 	g_free( priv->account_number );
@@ -831,7 +835,7 @@ on_account_select( GtkButton *button, ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	gchar *account_number;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	account_number = ofa_account_select_run(
 							ofa_page_get_main_window( OFA_PAGE( self )),
@@ -850,7 +854,7 @@ on_settlement_changed( GtkComboBox *box, ofaSettlement *self )
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel, *tsort, *tfilter;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
@@ -906,7 +910,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 			-1 );
 
 	cmp = 0;
-	priv = self->priv;
+
+	priv = ofa_settlement_get_instance_private( self );
 
 	switch( priv->sort_column_id ){
 		case ENT_COL_DOPE:
@@ -1015,7 +1020,8 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 	gint entry_set_number;
 	const gchar *ent_account;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
+
 	visible = FALSE;
 
 	/* make sure an account is selected */
@@ -1127,7 +1133,7 @@ on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self )
 	GtkSortType sort_order;
 	GtkTreeModel *tsort;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
 	gtk_tree_view_column_set_sort_indicator( column, TRUE );
@@ -1157,7 +1163,7 @@ settlement_status_is_valid( ofaSettlement *self )
 {
 	ofaSettlementPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	return( priv->settlement >= 1 );
 }
@@ -1168,7 +1174,7 @@ try_display_entries( ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	GList *entries;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	if( priv->account_number &&
 			settlement_status_is_valid( self ) &&
@@ -1187,7 +1193,7 @@ display_entries( ofaSettlement *self, GList *entries )
 	GtkTreeModel *tsort, *tfilter, *tstore;
 	GList *iset;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	tsort = gtk_tree_view_get_model( priv->tview );
 	tfilter = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( tsort ));
@@ -1269,7 +1275,7 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	sEnumSelected ses;
 	gchar *samount;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -1278,22 +1284,30 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	gtk_widget_set_sensitive( priv->settle_btn, ses.unsettled > 0 );
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
 
+	my_utils_widget_remove_style(
+			priv->footer_label, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
 	my_utils_widget_set_style(
 			priv->footer_label, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = my_double_to_str( ses.debit );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
+	my_utils_widget_remove_style(
+			priv->debit_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
 	my_utils_widget_set_style(
 			priv->debit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = my_double_to_str( ses.credit );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
+	my_utils_widget_remove_style(
+			priv->credit_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
 	my_utils_widget_set_style(
 			priv->credit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), priv->account_currency );
+	my_utils_widget_remove_style(
+			priv->currency_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
 	my_utils_widget_set_style(
 			priv->currency_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 }
@@ -1364,7 +1378,7 @@ update_selection( ofaSettlement *self, gboolean settle )
 	GList *list_iters, *it;
 	ofoDossier *dossier;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -1457,7 +1471,7 @@ get_settings( ofaSettlement *self )
 	GList *slist, *it;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	slist = ofa_settings_user_get_string_list( st_pref_settlement );
 	it = slist ? slist : NULL;
@@ -1494,7 +1508,7 @@ set_settings( ofaSettlement *self )
 	ofaSettlementPrivate *priv;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
 
 	str = g_strdup_printf( "%s;%d;%d;%d;",
 			priv->account_number, priv->settlement, priv->sort_column_id, priv->sort_sens );
@@ -1534,7 +1548,8 @@ on_new_entry( ofaSettlement *self, ofoEntry *entry )
 	const gchar *entry_account;
 	GtkTreeModel *tsort, *tfilter, *tstore;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
+
 	entry_account = ofo_entry_get_account( entry );
 
 	if( !g_utf8_collate( priv->account_number, entry_account )){
@@ -1574,7 +1589,8 @@ on_updated_entry( ofaSettlement *self, ofoEntry *entry )
 	GtkTreeModel *tsort, *tfilter, *tstore;
 	GtkTreeIter iter;
 
-	priv = self->priv;
+	priv = ofa_settlement_get_instance_private( self );
+
 	entry_account = ofo_entry_get_account( entry );
 
 	if( !g_utf8_collate( priv->account_number, entry_account )){
@@ -1627,10 +1643,9 @@ ofa_settlement_set_account( ofaSettlement *page, const gchar *number )
 	ofaSettlementPrivate *priv;
 
 	g_return_if_fail( page && OFA_IS_SETTLEMENT( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+	priv = ofa_settlement_get_instance_private( page );
 
-		priv =page->priv;
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
-	}
+	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
 }
