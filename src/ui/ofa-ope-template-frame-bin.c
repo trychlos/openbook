@@ -71,21 +71,22 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaOpeTemplateFrameBin, ofa_ope_template_frame_bin, GTK_TYPE_BIN )
+static void setup_bin( ofaOpeTemplateFrameBin *self );
+static void on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
+static void on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
+static void on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
+static void on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
+static void on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
+static void on_book_selection_changed( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *self );
+static void on_book_selection_activated( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *self );
+static void update_buttons_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
+static void on_frame_closed( ofaOpeTemplateFrameBin *self, void *empty );
 
-static void setup_bin( ofaOpeTemplateFrameBin *bin );
-static void on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin );
-static void on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin );
-static void on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin );
-static void on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin );
-static void on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin );
-static void on_book_selection_changed( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *bin );
-static void on_book_selection_activated( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *bin );
-static void update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo );
-static void on_frame_closed( ofaOpeTemplateFrameBin *bin, void *empty );
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateFrameBin, ofa_ope_template_frame_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaOpeTemplateFrameBin ))
 
 static void
-ope_templates_frame_finalize( GObject *instance )
+ope_template_frame_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_finalize";
 
@@ -101,13 +102,13 @@ ope_templates_frame_finalize( GObject *instance )
 }
 
 static void
-ope_templates_frame_dispose( GObject *instance )
+ope_template_frame_bin_dispose( GObject *instance )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
 
-	priv = ( OFA_OPE_TEMPLATE_FRAME_BIN( instance ))->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -124,14 +125,16 @@ static void
 ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_init";
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_FRAME_BIN( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, ofaOpeTemplateFrameBinPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -141,10 +144,8 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ope_templates_frame_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ope_templates_frame_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaOpeTemplateFrameBinPrivate ));
+	G_OBJECT_CLASS( klass )->dispose = ope_template_frame_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ope_template_frame_bin_finalize;
 
 	/**
 	 * ofaOpeTemplateFrameBin::changed:
@@ -245,28 +246,30 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 ofaOpeTemplateFrameBin *
 ofa_ope_template_frame_bin_new( const ofaMainWindow *main_window  )
 {
-	ofaOpeTemplateFrameBin *bin;
+	ofaOpeTemplateFrameBin *self;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
-	bin = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
+	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
-	bin->priv->main_window = main_window;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv->main_window = main_window;
 
-	setup_bin( bin );
+	setup_bin( self );
 
-	g_signal_connect( bin, "ofa-closed", G_CALLBACK( on_frame_closed ), NULL );
+	g_signal_connect( self, "ofa-closed", G_CALLBACK( on_frame_closed ), NULL );
 
-	return( bin );
+	return( self );
 }
 
 static void
-setup_bin( ofaOpeTemplateFrameBin *bin )
+setup_bin( ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkApplication *application;
 	ofoDossier *dossier;
 	GtkWidget *grid;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
 	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
@@ -281,7 +284,7 @@ setup_bin( ofaOpeTemplateFrameBin *bin )
 
 	grid = gtk_grid_new();
 	my_utils_widget_set_margins( grid, 0, 4, 4, 0 );
-	gtk_container_add( GTK_CONTAINER( bin ), grid );
+	gtk_container_add( GTK_CONTAINER( self ), grid );
 	priv->grid = GTK_GRID( grid );
 
 	/* create the operation template notebook
@@ -289,54 +292,57 @@ setup_bin( ofaOpeTemplateFrameBin *bin )
 	priv->book = ofa_ope_template_book_bin_new( priv->main_window );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->book ), 0, 0, 1, 1 );
 
-	g_signal_connect(
-			G_OBJECT( priv->book ), "ofa-changed", G_CALLBACK( on_book_selection_changed ), bin );
-	g_signal_connect(
-			G_OBJECT( priv->book ), "ofa-activated", G_CALLBACK( on_book_selection_activated ), bin );
+	g_signal_connect( priv->book, "ofa-changed", G_CALLBACK( on_book_selection_changed ), self );
+	g_signal_connect( priv->book, "ofa-activated", G_CALLBACK( on_book_selection_activated ), self );
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
+on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_NEW );
 }
 
 static void
-on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
+on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_PROPERTIES );
 }
 
 static void
-on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
+on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_DUPLICATE );
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
+on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_DELETE );
 }
 
 static void
-on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *bin )
+on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	ofa_ope_template_book_bin_button_clicked( priv->book, TEMPLATE_BUTTON_GUIDED_INPUT );
 }
 
@@ -350,39 +356,38 @@ ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *bin, gboolean gu
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->box = ofa_buttons_box_new();
-		gtk_grid_attach( priv->grid, GTK_WIDGET( priv->box ), 1, 0, 1, 1 );
+	priv->box = ofa_buttons_box_new();
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->box ), 1, 0, 1, 1 );
 
-		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
-		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
+	ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
+	ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
 
-		priv->new_btn =
+	priv->new_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					priv->box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), bin );
+	gtk_widget_set_sensitive( priv->new_btn, priv->is_current );
+
+	priv->update_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					priv->box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), bin );
+
+	priv->duplicate_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					priv->box, _( "D_uplicate" ), G_CALLBACK( on_duplicate_clicked ), bin );
+
+	priv->delete_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					priv->box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), bin );
+
+	if( guided_input ){
+		ofa_buttons_box_add_spacer( priv->box );
+		priv->guided_input_btn =
 				ofa_buttons_box_add_button_with_mnemonic(
-						priv->box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), bin );
-		gtk_widget_set_sensitive( priv->new_btn, priv->is_current );
-
-		priv->update_btn =
-				ofa_buttons_box_add_button_with_mnemonic(
-						priv->box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), bin );
-
-		priv->duplicate_btn =
-				ofa_buttons_box_add_button_with_mnemonic(
-						priv->box, _( "D_uplicate" ), G_CALLBACK( on_duplicate_clicked ), bin );
-
-		priv->delete_btn =
-				ofa_buttons_box_add_button_with_mnemonic(
-						priv->box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), bin );
-
-		if( guided_input ){
-			ofa_buttons_box_add_spacer( priv->box );
-			priv->guided_input_btn =
-					ofa_buttons_box_add_button_with_mnemonic(
-							priv->box, _( "_Guided input..." ), G_CALLBACK( on_guided_input_clicked ), bin );
-		}
+						priv->box, _( "_Guided input..." ), G_CALLBACK( on_guided_input_clicked ), bin );
 	}
 }
 
@@ -400,38 +405,37 @@ ofa_ope_template_frame_bin_get_book( ofaOpeTemplateFrameBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
 
-	priv = bin->priv;
-	book = NULL;
+	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		book = priv->book;
-	}
+	book = priv->book;
 
 	return( book );
 }
 
 static void
-on_book_selection_changed( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *bin )
+on_book_selection_changed( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *self )
 {
-	update_buttons_sensitivity( bin, mnemo );
-	g_signal_emit_by_name( bin, "ofa-changed", mnemo );
+	update_buttons_sensitivity( self, mnemo );
+	g_signal_emit_by_name( self, "ofa-changed", mnemo );
 }
 
 static void
-on_book_selection_activated( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *bin )
+on_book_selection_activated( ofaOpeTemplateBookBin *book, const gchar *mnemo, ofaOpeTemplateFrameBin *self )
 {
-	g_signal_emit_by_name( bin, "ofa-activated", mnemo );
+	g_signal_emit_by_name( self, "ofa-activated", mnemo );
 }
 
 static void
-update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
+update_buttons_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gboolean has_ope;
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	has_ope = FALSE;
 
 	if( mnemo ){
@@ -455,14 +459,14 @@ update_buttons_sensitivity( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
 }
 
 static void
-on_frame_closed( ofaOpeTemplateFrameBin *bin, void *empty )
+on_frame_closed( ofaOpeTemplateFrameBin *self, void *empty )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_on_frame_closed";
 	ofaOpeTemplateFrameBinPrivate *priv;
 
-	g_debug( "%s: bin=%p, empty=%p", thisfn, ( void * ) bin, ( void * ) empty );
+	g_debug( "%s: self=%p, empty=%p", thisfn, ( void * ) self, ( void * ) empty );
 
-	priv = bin->priv;
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	g_signal_emit_by_name( priv->book, "ofa-closed" );
 }

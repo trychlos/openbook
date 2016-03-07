@@ -536,7 +536,10 @@
 1036 2016- 3- 7 CODE have a my_iwindow_widget_get_child_by_name() which
                      complete my_utils_container_....
 
-1037
+1037 2016- 3- 7 CODE merge ofaOpeTemplateBookBin and ofaOpeTemplateFrameBin
+                     (like ofaAccount equiv.)
+
+1038
 
 -----------------------------------------------------------------------
  DONE

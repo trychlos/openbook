@@ -56,16 +56,13 @@ typedef struct _ofaOpeTemplateFrameBinPrivate          ofaOpeTemplateFrameBinPri
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                         parent;
-
-	/*< private members >*/
-	ofaOpeTemplateFrameBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaOpeTemplateFrameBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                    parent;
+	GtkBinClass parent;
 }
 	ofaOpeTemplateFrameBinClass;
 
