@@ -115,17 +115,10 @@ static const gdouble st_body_vspace_rate = 0.3;
 #define st_amount_width                  (gdouble) 90
 #define st_column_hspacing               (gdouble) 4
 
-static ofaRenderPageClass *ofa_reconcil_render_parent_class = NULL;
-
 #define COLOR_BLACK                      0,      0,      0
 #define COLOR_DARK_CYAN                  0,      0.5156, 0.5156
 #define COLOR_GRAY                       0.6,    0.6,    0.6
 
-static GType              register_type( void );
-static void               reconcil_render_finalize( GObject *instance );
-static void               reconcil_render_dispose( GObject *instance );
-static void               reconcil_render_instance_init( ofaReconcilRender *self );
-static void               reconcil_render_class_init( ofaReconcilRenderClass *klass );
 static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
@@ -150,50 +143,9 @@ static void               irenderable_draw_line( ofaIRenderable *instance, GList
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static gchar             *account_solde_to_str( ofaReconcilRender *self, gdouble amount );
 
-GType
-ofa_reconcil_render_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_reconcil_render_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaReconcilRenderClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) reconcil_render_class_init,
-		NULL,
-		NULL,
-		sizeof( ofaReconcilRender ),
-		0,
-		( GInstanceInitFunc ) reconcil_render_instance_init
-	};
-
-	static const GInterfaceInfo irenderable_iface_info = {
-		( GInterfaceInitFunc ) irenderable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_RENDER_PAGE, "ofaReconcilRender", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_IRENDERABLE, &irenderable_iface_info );
-
-	return( type );
-}
+G_DEFINE_TYPE_EXTENDED( ofaReconcilRender, ofa_reconcil_render, OFA_TYPE_RENDER_PAGE, 0,
+		G_ADD_PRIVATE( ofaReconcilRender )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IRENDERABLE, irenderable_iface_init ))
 
 static void
 reconcil_render_finalize( GObject *instance )
@@ -207,7 +159,7 @@ reconcil_render_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_RECONCIL_RENDER( instance ));
 
 	/* free data members here */
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	g_free( priv->account_number );
 
@@ -230,26 +182,22 @@ reconcil_render_dispose( GObject *instance )
 }
 
 static void
-reconcil_render_instance_init( ofaReconcilRender *self )
+ofa_reconcil_render_init( ofaReconcilRender *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_render_instance_init";
-
-	g_return_if_fail( OFA_IS_RECONCIL_RENDER( self ));
+	static const gchar *thisfn = "ofa_reconcil_render_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RECONCIL_RENDER, ofaReconcilRenderPrivate );
+	g_return_if_fail( self && OFA_IS_RECONCIL_RENDER( self ));
 }
 
 static void
-reconcil_render_class_init( ofaReconcilRenderClass *klass )
+ofa_reconcil_render_class_init( ofaReconcilRenderClass *klass )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	ofa_reconcil_render_parent_class = g_type_class_peek_parent( klass );
 
 	G_OBJECT_CLASS( klass )->dispose = reconcil_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = reconcil_render_finalize;
@@ -263,8 +211,6 @@ reconcil_render_class_init( ofaReconcilRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
-
-	g_type_class_add_private( klass, sizeof( ofaReconcilRenderPrivate ));
 }
 
 static void
@@ -277,7 +223,8 @@ page_init_view( ofaPage *page )
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = OFA_RECONCIL_RENDER( page )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
+
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
@@ -296,7 +243,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 	ofaReconcilRenderPrivate *priv;
 	ofaReconcilBin *bin;
 
-	priv = OFA_RECONCIL_RENDER( page )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
 	bin = ofa_reconcil_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
@@ -334,7 +281,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *dataset;
 	ofoCurrency *currency;
 
-	priv = OFA_RECONCIL_RENDER( page )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
@@ -399,13 +346,12 @@ ofa_reconcil_render_set_account( ofaReconcilRender *page, const gchar *account_n
 
 	g_return_if_fail( page && OFA_IS_RECONCIL_RENDER( page ));
 
-	if( !OFA_PAGE( page )->prot->dispose_has_run ){
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-		priv = page->priv;
+	priv = ofa_reconcil_render_get_instance_private( page );
 
-		ofa_reconcil_bin_set_account( priv->args_bin, account_number );
-		ofa_render_page_clear_drawing_area( OFA_RENDER_PAGE( page ));
-	}
+	ofa_reconcil_bin_set_account( priv->args_bin, account_number );
+	ofa_render_page_clear_drawing_area( OFA_RENDER_PAGE( page ));
 }
 
 static void
@@ -452,7 +398,7 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	priv->line_num = 0;
 	priv->account_solde = 0;
@@ -470,7 +416,7 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	gchar *str;
 	gdouble number_width;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
 			thisfn, ( void * ) instance, render_width, render_height );
@@ -510,7 +456,8 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
+
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
@@ -534,7 +481,7 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	ofaReconcilRenderPrivate *priv;
 	gchar *str;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	/* account number and label in line 4 */
 	str = g_strdup_printf(
@@ -552,7 +499,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	static gdouble st_vspace_rate = 0.5;
 	gdouble y, text_height, vspace;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	text_height = ofa_irenderable_get_text_height( instance );
@@ -595,7 +542,7 @@ irenderable_draw_top_summary( ofaIRenderable *instance )
 	gdouble y, height;
 	GDate date;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
@@ -633,7 +580,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	const gchar *cstr;
 	gdouble amount;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
@@ -697,7 +644,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	GDate date;
 	gchar *str, *sdate, *str_amount, *font;
 
-	priv = OFA_RECONCIL_RENDER( instance )->priv;
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	g_return_if_fail( my_date_is_valid( &priv->date ));
 
@@ -748,7 +695,7 @@ account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 	ofaReconcilRenderPrivate *priv;
 	gchar *str, *str_amount;
 
-	priv = self->priv;
+	priv = ofa_reconcil_render_get_instance_private( self );
 
 	str_amount = my_double_to_str_ex( amount, priv->digits );
 	str = g_strdup_printf( "%s %s", str_amount, priv->currency );

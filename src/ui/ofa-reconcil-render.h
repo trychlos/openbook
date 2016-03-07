@@ -48,16 +48,13 @@ typedef struct _ofaReconcilRenderPrivate        ofaReconcilRenderPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPage             parent;
-
-	/*< private members >*/
-	ofaReconcilRenderPrivate *priv;
+	ofaRenderPage      parent;
 }
 	ofaReconcilRender;
 
 typedef struct {
 	/*< public members >*/
-	ofaRenderPageClass        parent;
+	ofaRenderPageClass parent;
 }
 	ofaReconcilRenderClass;
 
