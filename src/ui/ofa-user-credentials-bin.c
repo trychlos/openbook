@@ -58,15 +58,16 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-user-credentials-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-user-credentials-bin.ui";
 
-G_DEFINE_TYPE( ofaUserCredentialsBin, ofa_user_credentials_bin, GTK_TYPE_BIN )
+static void     setup_bin( ofaUserCredentialsBin *self );
+static void     on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
+static void     on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
+static void     changed_composite( ofaUserCredentialsBin *self );
+static gboolean is_valid_composite( const ofaUserCredentialsBin *self );
 
-static void     setup_bin( ofaUserCredentialsBin *bin );
-static void     on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *bin );
-static void     on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *bin );
-static void     changed_composite( ofaUserCredentialsBin *bin );
-static gboolean is_valid_composite( const ofaUserCredentialsBin *bin );
+G_DEFINE_TYPE_EXTENDED( ofaUserCredentialsBin, ofa_user_credentials_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaUserCredentialsBin ))
 
 static void
 user_credentials_bin_finalize( GObject *instance )
@@ -80,7 +81,7 @@ user_credentials_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_USER_CREDENTIALS_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_USER_CREDENTIALS_BIN( instance )->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( OFA_USER_CREDENTIALS_BIN( instance ));
 
 	g_free( priv->account );
 	g_free( priv->password );
@@ -96,7 +97,7 @@ user_credentials_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_USER_CREDENTIALS_BIN( instance ));
 
-	priv = OFA_USER_CREDENTIALS_BIN( instance )->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( OFA_USER_CREDENTIALS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -113,15 +114,17 @@ user_credentials_bin_dispose( GObject *instance )
 static void
 ofa_user_credentials_bin_init( ofaUserCredentialsBin *self )
 {
-	static const gchar *thisfn = "ofa_user_credentials_bin_instance_init";
+	static const gchar *thisfn = "ofa_user_credentials_bin_init";
+	ofaUserCredentialsBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_USER_CREDENTIALS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_USER_CREDENTIALS_BIN, ofaUserCredentialsBinPrivate );
+	priv = ofa_user_credentials_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -134,8 +137,6 @@ ofa_user_credentials_bin_class_init( ofaUserCredentialsBinClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = user_credentials_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = user_credentials_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaUserCredentialsBinPrivate ));
-
 	/**
 	 * ofaUserCredentialsBin::changed:
 	 *
@@ -145,7 +146,7 @@ ofa_user_credentials_bin_class_init( ofaUserCredentialsBinClass *klass )
 	 * Arguments are account and password.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaUserCredentialsBin *bin,
+	 * void ( *handler )( ofaUserCredentialsBin *self,
 	 * 						const gchar         *account,
 	 * 						const gchar         *password,
 	 * 						gpointer             user_data );
@@ -169,25 +170,26 @@ ofa_user_credentials_bin_class_init( ofaUserCredentialsBinClass *klass )
 ofaUserCredentialsBin *
 ofa_user_credentials_bin_new( void )
 {
-	ofaUserCredentialsBin *bin;
+	ofaUserCredentialsBin *self;
 
-	bin = g_object_new( OFA_TYPE_USER_CREDENTIALS_BIN, NULL );
+	self = g_object_new( OFA_TYPE_USER_CREDENTIALS_BIN, NULL );
 
-	setup_bin( bin );
+	setup_bin( self );
 
-	return( bin );
+	return( self );
 }
 
 static void
-setup_bin( ofaUserCredentialsBin *bin )
+setup_bin( ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *entry, *label;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_user_credentials_bin_get_instance_private( self );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "ucb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -197,22 +199,22 @@ setup_bin( ofaUserCredentialsBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "ucb-account-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ucb-account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "ucb-account-label" );
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ucb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	priv->account_entry = entry;
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "ucb-password-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ucb-password-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "ucb-password-label" );
+			G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ucb-password-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	priv->password_entry = entry;
@@ -244,15 +246,18 @@ ofa_user_credentials_bin_get_size_group( const ofaUserCredentialsBin *bin, guint
 
 	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
 
-	priv = bin->priv;
+	g_return_val_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ), NULL );
 
-	if( !priv->dispose_has_run ){
-		if( column == 0 ){
-			return( priv->group0 );
-		}
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	g_warning( "%s: unknown column=%u", thisfn, column );
+	return( NULL );
 }
 
 /**
@@ -270,52 +275,53 @@ ofa_user_credentials_bin_grab_focus( const ofaUserCredentialsBin *bin )
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
 
-		gtk_widget_grab_focus(
-				my_strlen( priv->account ) ? priv->password_entry : priv->account_entry );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_widget_grab_focus(
+			my_strlen( priv->account ) ? priv->password_entry : priv->account_entry );
 }
 
 static void
-on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *bin )
+on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( self );
 
 	g_free( priv->account );
 	priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	changed_composite( bin );
+	changed_composite( self );
 }
 
 static void
-on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *bin )
+on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( self );
 
 	g_free( priv->password );
 	priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
-	changed_composite( bin );
+	changed_composite( self );
 }
 
 /*
  * check that all fields are set, and that the two passwords are equal
  */
 static void
-changed_composite( ofaUserCredentialsBin *bin )
+changed_composite( ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( self );
 
-	g_signal_emit_by_name( bin, "ofa-changed", priv->account, priv->password );
+	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
 }
 
 /**
@@ -330,12 +336,13 @@ ofa_user_credentials_bin_set_account( ofaUserCredentialsBin *bin, const gchar *a
 {
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
 
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
 }
 
 /**
@@ -350,53 +357,54 @@ ofa_user_credentials_bin_set_password( ofaUserCredentialsBin *bin, const gchar *
 {
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = bin->priv;
+	g_return_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ));
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
 
-		gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
 }
 
 /**
  * ofa_user_credentials_bin_is_valid:
  * @bin: this #ofaUserCredentialsBin instance.
- * @error_message: [allow-none]: set to the error message as a newly
+ * @msgerr: [allow-none]: set to the error message as a newly
  *  allocated string which should be g_free() by the caller.
  *
  * Returns: %TRUE if the widget is valid, i.e. if both account and
  * password are set.
  */
 gboolean
-ofa_user_credentials_bin_is_valid( const ofaUserCredentialsBin *bin, gchar **error_message )
+ofa_user_credentials_bin_is_valid( const ofaUserCredentialsBin *bin, gchar **msgerr )
 {
 	ofaUserCredentialsBinPrivate *priv;
 	gboolean is_valid;
 
-	priv = bin->priv;
-	is_valid = FALSE;
+	g_return_val_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ), FALSE );
 
-	if( !priv->dispose_has_run ){
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
 
-		is_valid = is_valid_composite( bin );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-		if( error_message ){
-			*error_message = is_valid ?
-					NULL :
-					g_strdup( _( "Dossier user credentials are not valid" ));
-		}
+	is_valid = is_valid_composite( bin );
+
+	if( msgerr ){
+		*msgerr = is_valid ?
+				NULL :
+				g_strdup( _( "User credentials are not valid" ));
 	}
 
 	return( is_valid );
 }
 
 static gboolean
-is_valid_composite( const ofaUserCredentialsBin *bin )
+is_valid_composite( const ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 	gboolean ok;
 
-	priv = bin->priv;
+	priv = ofa_user_credentials_bin_get_instance_private( self );
 
 	ok = my_strlen( priv->account ) &&
 			my_strlen( priv->password );

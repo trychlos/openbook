@@ -34,6 +34,7 @@
     <file>ofa-render-page.ui</file>
     <file>ofa-restore-assistant.ui</file>
     <file>ofa-settlement.ui</file>
+    <file>ofa-user-credentials-bin.ui</file>
 
     <file>ofa-app-menubar.ui</file>
 

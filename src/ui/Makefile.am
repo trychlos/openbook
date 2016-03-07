@@ -254,7 +254,6 @@ ui_files = \
 	ofa-dossier-new-mini.ui								\
 	ofa-dossier-open.ui									\
 	ofa-ope-template-select.ui							\
-	ofa-user-credentials-bin.ui							\
 	$(NULL)
 
 resources_ui = \
@@ -291,6 +290,7 @@ resources_ui = \
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
 	ofa-settlement.ui									\
+	ofa-user-credentials-bin.ui							\
 	\
 	ofa-app-menubar.ui									\
 	\

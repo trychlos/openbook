@@ -57,16 +57,13 @@ typedef struct _ofaUserCredentialsBinPrivate         ofaUserCredentialsBinPrivat
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                        parent;
-
-	/*< private members >*/
-	ofaUserCredentialsBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaUserCredentialsBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                   parent;
+	GtkBinClass parent;
 }
 	ofaUserCredentialsBinClass;
 
@@ -86,7 +83,7 @@ void                   ofa_user_credentials_bin_set_password  ( ofaUserCredentia
 																			const gchar *account );
 
 gboolean               ofa_user_credentials_bin_is_valid      ( const ofaUserCredentialsBin *bin,
-																			gchar **error_message );
+																			gchar **msgerr );
 
 G_END_DECLS
 
