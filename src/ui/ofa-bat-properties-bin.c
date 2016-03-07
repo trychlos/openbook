@@ -88,15 +88,16 @@ enum {
 	N_COLUMNS
 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-bat-properties-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-properties-bin.ui";
 
-G_DEFINE_TYPE( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN )
+static void  setup_bin( ofaBatPropertiesBin *self );
+static void  setup_treeview( ofaBatPropertiesBin *self );
+static void  display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat );
+static void  display_bat_lines( ofaBatPropertiesBin *self, ofoBat *bat );
+static void  display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line );
 
-static void  setup_bin( ofaBatPropertiesBin *bin );
-static void  setup_treeview( ofaBatPropertiesBin *bin );
-static void  display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat );
-static void  display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat );
-static void  display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line );
+G_DEFINE_TYPE_EXTENDED( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaBatPropertiesBin ))
 
 static void
 bat_properties_bin_finalize( GObject *instance )
@@ -121,7 +122,7 @@ bat_properties_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES_BIN( instance ));
 
-	priv = ( OFA_BAT_PROPERTIES_BIN( instance ))->priv;
+	priv = ofa_bat_properties_bin_get_instance_private( OFA_BAT_PROPERTIES_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -138,14 +139,16 @@ static void
 ofa_bat_properties_bin_init( ofaBatPropertiesBin *self )
 {
 	static const gchar *thisfn = "ofa_bat_properties_bin_init";
+	ofaBatPropertiesBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BAT_PROPERTIES_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_PROPERTIES_BIN, ofaBatPropertiesBinPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv = ofa_bat_properties_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -157,8 +160,6 @@ ofa_bat_properties_bin_class_init( ofaBatPropertiesBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = bat_properties_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_properties_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaBatPropertiesBinPrivate ));
 }
 
 /**
@@ -167,75 +168,76 @@ ofa_bat_properties_bin_class_init( ofaBatPropertiesBinClass *klass )
 ofaBatPropertiesBin *
 ofa_bat_properties_bin_new( void )
 {
-	ofaBatPropertiesBin *bin;
+	ofaBatPropertiesBin *self;
 
-	bin = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
+	self = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
 
-	setup_bin( bin );
-	setup_treeview( bin );
+	setup_bin( self );
+	setup_treeview( self );
 
-	return( bin );
+	return( self );
 }
 
 static void
-setup_bin( ofaBatPropertiesBin *bin )
+setup_bin( ofaBatPropertiesBin *self )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_bat_properties_bin_get_instance_private( self );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "bpb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	/* identify the widgets for the properties */
-	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-id" );
+	priv->bat_id = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-id" );
 	g_return_if_fail( priv->bat_id && GTK_IS_ENTRY( priv->bat_id ));
 
-	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-format" );
+	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-format" );
 	g_return_if_fail( priv->bat_format && GTK_IS_ENTRY( priv->bat_format ));
 
-	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-count" );
+	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
 
-	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-unused" );
+	priv->bat_unused = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-unused" );
 	g_return_if_fail( priv->bat_unused && GTK_IS_ENTRY( priv->bat_unused ));
 
-	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-begin" );
+	priv->bat_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin" );
 	g_return_if_fail( priv->bat_begin && GTK_IS_ENTRY( priv->bat_begin ));
 
-	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-end" );
+	priv->bat_end = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end" );
 	g_return_if_fail( priv->bat_end && GTK_IS_ENTRY( priv->bat_end ));
 
-	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-rib" );
+	priv->bat_rib = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-rib" );
 	g_return_if_fail( priv->bat_rib && GTK_IS_ENTRY( priv->bat_rib ));
 
-	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-currency" );
+	priv->bat_currency = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-currency" );
 	g_return_if_fail( priv->bat_currency && GTK_IS_ENTRY( priv->bat_currency ));
 
-	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-begin" );
+	priv->bat_solde_begin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-solde-begin" );
 	g_return_if_fail( priv->bat_solde_begin && GTK_IS_ENTRY( priv->bat_solde_begin ));
 
-	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-solde-end" );
+	priv->bat_solde_end = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-solde-end" );
 	g_return_if_fail( priv->bat_solde_end && GTK_IS_ENTRY( priv->bat_solde_end ));
 
-	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-account" );
+	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( bin ), FALSE );
+	my_utils_container_set_editable( GTK_CONTAINER( self ), FALSE );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 }
 
 static void
-setup_treeview( ofaBatPropertiesBin *bin )
+setup_treeview( ofaBatPropertiesBin *self )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GtkWidget *tview;
@@ -244,9 +246,9 @@ setup_treeview( ofaBatPropertiesBin *bin )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	priv = bin->priv;
+	priv = ofa_bat_properties_bin_get_instance_private( self );
 
-	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-treeview" );
+	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 	priv->tview = GTK_TREE_VIEW( tview );
 
@@ -342,7 +344,7 @@ setup_treeview( ofaBatPropertiesBin *bin )
 }
 
 static void
-display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
+display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	ofxCounter bat_id;
@@ -351,7 +353,7 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
 	gint total, used;
 	ofoDossier *dossier;
 
-	priv = bin->priv;
+	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	bat_id = ofo_bat_get_id( bat );
 	str = g_strdup_printf( "%lu", bat_id );
@@ -424,32 +426,32 @@ display_bat_properties( ofaBatPropertiesBin *bin, ofoBat *bat )
 	dossier = ofa_hub_get_dossier( priv->hub );
 
 	my_utils_container_notes_setup_full(
-				GTK_CONTAINER( bin ),
+				GTK_CONTAINER( self ),
 				"pn-notes", ofo_bat_get_notes( bat ), ofo_dossier_is_current( dossier ));
-	my_utils_container_updstamp_init( bin, bat );
+	my_utils_container_updstamp_init( self, bat );
 }
 
 static void
-display_bat_lines( ofaBatPropertiesBin *bin, ofoBat *bat )
+display_bat_lines( ofaBatPropertiesBin *self, ofoBat *bat )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GList *dataset, *it;
 	GtkTreeModel *tmodel;
 
-	priv = bin->priv;
+	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
 	dataset = ofo_bat_line_get_dataset( priv->hub, ofo_bat_get_id( bat ));
 	for( it=dataset ; it ; it=it->next ){
-		display_line( bin, tmodel, OFO_BAT_LINE( it->data ));
+		display_line( self, tmodel, OFO_BAT_LINE( it->data ));
 	}
 	ofo_bat_line_free_dataset( dataset );
 }
 
 static void
-display_line( ofaBatPropertiesBin *bin, GtkTreeModel *tstore, ofoBatLine *line )
+display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line )
 {
 	gchar *sid, *sdope, *sdeffect, *samount;
 	ofxCounter bat_id;
@@ -521,16 +523,15 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 
 	g_debug( "%s: bin=%p, bat=%p", thisfn, ( void * ) bin, ( void * ) bat );
 
-	g_return_if_fail( OFA_IS_BAT_PROPERTIES_BIN( bin ));
-	g_return_if_fail( OFO_IS_BAT( bat ));
+	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
-	priv = bin->priv;
+	priv = ofa_bat_properties_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_if_fail( !priv->dispose_has_run );
 
-		priv->bat = bat;
-		priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
-		display_bat_properties( bin, bat );
-		display_bat_lines( bin, bat );
-	}
+	priv->bat = bat;
+	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
+	display_bat_properties( bin, bat );
+	display_bat_lines( bin, bat );
 }

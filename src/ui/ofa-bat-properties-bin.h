@@ -58,16 +58,13 @@ typedef struct _ofaBatPropertiesBinPrivate         ofaBatPropertiesBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                      parent;
-
-	/*< private members >*/
-	ofaBatPropertiesBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaBatPropertiesBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                 parent;
+	GtkBinClass parent;
 }
 	ofaBatPropertiesBinClass;
 

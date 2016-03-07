@@ -6,6 +6,7 @@
     <file>ofa-account-properties.ui</file>
     <file>ofa-balance-bin.ui</file>
     <file>ofa-bat-properties.ui</file>
+    <file>ofa-bat-properties-bin.ui</file>
     <file>ofa-check-balances.ui</file>
     <file>ofa-check-balances-bin.ui</file>
     <file>ofa-check-integrity.ui</file>

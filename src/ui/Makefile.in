@@ -692,6 +692,7 @@ resources_ui = \
 	ofa-account-properties.ui							\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
+	ofa-bat-properties-bin.ui							\
 	ofa-check-balances.ui								\
 	ofa-check-balances-bin.ui							\
 	ofa-check-integrity.ui								\
