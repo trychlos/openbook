@@ -24,6 +24,7 @@
     <file>ofa-ledger-book-bin.ui</file>
     <file>ofa-ledger-close.ui</file>
     <file>ofa-ledger-properties.ui</file>
+    <file>ofa-ledger-summary-bin.ui</file>
     <file>ofa-ope-template-help.ui</file>
     <file>ofa-ope-template-properties.ui</file>
     <file>ofa-reconcil-page.ui</file>

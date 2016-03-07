@@ -56,16 +56,13 @@ typedef struct _ofaLedgerSummaryBinPrivate         ofaLedgerSummaryBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                      parent;
-
-	/*< private members >*/
-	ofaLedgerSummaryBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaLedgerSummaryBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass                 parent;
+	GtkBinClass parent;
 }
 	ofaLedgerSummaryBinClass;
 
@@ -74,7 +71,7 @@ GType                ofa_ledger_summary_bin_get_type       ( void ) G_GNUC_CONST
 ofaLedgerSummaryBin *ofa_ledger_summary_bin_new            ( const ofaMainWindow *main_window );
 
 gboolean             ofa_ledger_summary_bin_is_valid       ( ofaLedgerSummaryBin *bin,
-																	gchar **message );
+																	gchar **msgerr );
 
 ofaIDateFilter      *ofa_ledger_summary_bin_get_date_filter( const ofaLedgerSummaryBin *bin );
 

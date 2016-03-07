@@ -64,16 +64,17 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-ledger-summary-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-summary-bin.ui";
 static const gchar *st_settings         = "RenderLedgersSummary";
-
-G_DEFINE_TYPE( ofaLedgerSummaryBin, ofa_ledger_summary_bin, GTK_TYPE_BIN )
 
 static void setup_bin( ofaLedgerSummaryBin *bin );
 static void setup_date_selection( ofaLedgerSummaryBin *bin );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryBin *self );
 static void load_settings( ofaLedgerSummaryBin *bin );
 static void set_settings( ofaLedgerSummaryBin *bin );
+
+G_DEFINE_TYPE_EXTENDED( ofaLedgerSummaryBin, ofa_ledger_summary_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaLedgerSummaryBin ))
 
 static void
 ledgers_book_bin_finalize( GObject *instance )
@@ -98,7 +99,7 @@ ledgers_book_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_SUMMARY_BIN( instance ));
 
-	priv = OFA_LEDGER_SUMMARY_BIN( instance )->priv;
+	priv = ofa_ledger_summary_bin_get_instance_private( OFA_LEDGER_SUMMARY_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -115,14 +116,16 @@ static void
 ofa_ledger_summary_bin_init( ofaLedgerSummaryBin *self )
 {
 	static const gchar *thisfn = "ofa_ledger_summary_bin_init";
+	ofaLedgerSummaryBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_LEDGER_SUMMARY_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-						self, OFA_TYPE_LEDGER_SUMMARY_BIN, ofaLedgerSummaryBinPrivate );
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -134,8 +137,6 @@ ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledgers_book_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledgers_book_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaLedgerSummaryBinPrivate ));
 
 	/**
 	 * ofaLedgerSummaryBin::ofa-changed:
@@ -169,10 +170,12 @@ ofaLedgerSummaryBin *
 ofa_ledger_summary_bin_new( const ofaMainWindow *main_window )
 {
 	ofaLedgerSummaryBin *self;
+	ofaLedgerSummaryBinPrivate *priv;
 
 	self = g_object_new( OFA_TYPE_LEDGER_SUMMARY_BIN, NULL );
 
-	self->priv->main_window = main_window;
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv->main_window = main_window;
 
 	setup_bin( self );
 	setup_date_selection( self );
@@ -188,7 +191,7 @@ setup_bin( ofaLedgerSummaryBin *bin )
 	GObject *object;
 	GtkWidget *toplevel;
 
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "lbb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -207,7 +210,7 @@ setup_date_selection( ofaLedgerSummaryBin *bin )
 	GtkWidget *parent, *label;
 	ofaDateFilterHVBin *filter;
 
-	priv = bin->priv;
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -233,31 +236,30 @@ on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboole
 /**
  * ofa_ledger_summary_bin_is_valid:
  * @bin:
- * @message: [out][allow-none]: the error message if any.
+ * @msgerr: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **message )
+ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **msgerr )
 {
 	ofaLedgerSummaryBinPrivate *priv;
 	gboolean valid;
 
 	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_BIN( bin ), FALSE );
 
-	priv = bin->priv;
-	if( message ){
-		*message = NULL;
-	}
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( msgerr ){
+		*msgerr = NULL;
 	}
 
 	valid = ofa_idate_filter_is_valid(
-					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, msgerr ) &&
 			ofa_idate_filter_is_valid(
-					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, msgerr );
 
 	if( valid ){
 		set_settings( bin );
@@ -277,11 +279,9 @@ ofa_ledger_summary_bin_get_date_filter( const ofaLedgerSummaryBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
 
-	if( priv->dispose_has_run ){
-		g_return_val_if_reached( NULL );
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	date_filter = OFA_IDATE_FILTER( priv->date_filter );
 
@@ -300,7 +300,8 @@ load_settings( ofaLedgerSummaryBin *bin )
 	const gchar *cstr;
 	GDate date;
 
-	priv = bin->priv;
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+
 	list = ofa_settings_user_get_string_list( st_settings );
 
 	it = list;
@@ -328,7 +329,7 @@ set_settings( ofaLedgerSummaryBin *bin )
 	ofaLedgerSummaryBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 
-	priv = bin->priv;
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
 
 	sdfrom = my_date_to_str(
 			ofa_idate_filter_get_date(
