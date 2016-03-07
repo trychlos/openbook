@@ -46,16 +46,13 @@ typedef struct _ofaGuidedExPrivate        ofaGuidedExPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaPage             parent;
-
-	/*< private members >*/
-	ofaGuidedExPrivate *priv;
+	ofaPage      parent;
 }
 	ofaGuidedEx;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass        parent;
+	ofaPageClass parent;
 }
 	ofaGuidedExClass;
 
