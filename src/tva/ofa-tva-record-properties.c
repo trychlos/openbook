@@ -130,7 +130,7 @@ static gchar    *get_account_balance( ofaTVARecordProperties *self, const gchar 
 static gdouble   eval_opes( ofaTVARecordProperties *self, const gchar *content );
 static gchar   **eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
 static void      on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void      set_message( ofaTVARecordProperties *dialog, const gchar *msg );
+static void      set_msgerr( ofaTVARecordProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE( ofaTVARecordProperties, ofa_tva_record_properties, MY_TYPE_DIALOG )
 
@@ -581,42 +581,44 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	gchar *msgerr;
 
 	priv = self->priv;
+	msgerr = NULL;
 
-	is_valid = ofo_tva_record_is_valid( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+	if( priv->is_current ){
 
-	if( is_valid ){
-		/* the ending date is no more modifiable */
-		if( 0 ){
-			dend = ofo_tva_record_get_end( priv->tva_record );
-			end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
-			if( end_date_has_changed ){
-				mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-				exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
-				if( exists ){
-					set_message( self, _( "Same declaration is already defined" ));
-					is_valid = FALSE;
+		is_valid = ofo_tva_record_is_valid( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+
+		if( is_valid ){
+			/* the ending date is no more modifiable */
+			if( 0 ){
+				dend = ofo_tva_record_get_end( priv->tva_record );
+				end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
+				if( end_date_has_changed ){
+					mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
+					exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
+					if( exists ){
+						set_msgerr( self, _( "Same declaration is already defined" ));
+						is_valid = FALSE;
+					}
 				}
 			}
 		}
+
+		gtk_widget_set_sensitive( priv->ok_btn, is_valid );
+
+		is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
+		is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date );
+
+		gtk_widget_set_sensitive(
+				priv->compute_btn,
+				priv->is_current && is_valid && is_validable );
+
+		gtk_widget_set_sensitive(
+				priv->validate_btn,
+				priv->is_current && is_valid && !is_validated && is_validable );
 	}
 
-	set_message( self, msgerr );
+	set_msgerr( self, msgerr );
 	g_free( msgerr );
-
-	gtk_widget_set_sensitive(
-			priv->ok_btn,
-			is_valid );
-
-	is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
-	is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date );
-
-	gtk_widget_set_sensitive(
-			priv->compute_btn,
-			priv->is_current && is_valid && is_validable );
-
-	gtk_widget_set_sensitive(
-			priv->validate_btn,
-			priv->is_current && is_valid && !is_validated && is_validable );
 }
 
 /*
@@ -1080,7 +1082,7 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 }
 
 static void
-set_message( ofaTVARecordProperties *dialog, const gchar *msg )
+set_msgerr( ofaTVARecordProperties *dialog, const gchar *msg )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 

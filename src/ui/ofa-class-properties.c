@@ -53,6 +53,7 @@ struct _ofaClassPropertiesPrivate {
 	/* internals
 	 */
 	ofoClass  *class;
+	gboolean   is_current;
 	gboolean   is_new;
 
 	/* data
@@ -63,7 +64,7 @@ struct _ofaClassPropertiesPrivate {
 	/* UI
 	 */
 	GtkWidget *ok_btn;
-	GtkWidget *msgerr_label;
+	GtkWidget *msg_label;
 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-class-properties.ui";
@@ -234,7 +235,6 @@ iwindow_init( myIWindow *instance )
 	gint number;
 	GtkEntry *entry;
 	gchar *str;
-	gboolean is_current;
 	GtkWidget *label;
 
 	my_idialog_init_dialog( MY_IDIALOG( instance ));
@@ -253,7 +253,7 @@ iwindow_init( myIWindow *instance )
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	is_current = ofo_dossier_is_current( dossier );
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -295,10 +295,10 @@ iwindow_init( myIWindow *instance )
 
 	my_utils_container_notes_init( instance, class );
 	my_utils_container_updstamp_init( instance, class );
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !is_current ){
+	if( !priv->is_current ){
 		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
@@ -349,7 +349,9 @@ check_for_enable_dlg( ofaClassProperties *self )
 
 	priv = ofa_class_properties_get_instance_private( self );
 
-	gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
+	if( priv->is_current ){
+		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
+	}
 }
 
 static gboolean
@@ -361,8 +363,6 @@ is_dialog_validable( ofaClassProperties *self )
 	gchar *msgerr;
 
 	priv = ofa_class_properties_get_instance_private( self );
-
-	set_msgerr( self, "" );
 
 	ok = ofo_class_is_valid_data( priv->number, priv->label, &msgerr );
 	if( ok ){
@@ -438,12 +438,12 @@ set_msgerr( ofaClassProperties *self, const gchar *msg )
 
 	priv = ofa_class_properties_get_instance_private( self );
 
-	if( !priv->msgerr_label ){
+	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelerror" );
-		priv->msgerr_label = label;
+		priv->msg_label = label;
 	}
 
-	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

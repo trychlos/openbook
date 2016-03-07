@@ -53,6 +53,7 @@ struct _ofaBatPropertiesPrivate {
 	 */
 	ofoBat              *bat;
 	ofaHub              *hub;
+	gboolean             is_current;
 	gboolean             is_new;		/* always FALSE here */
 	ofaBatPropertiesBin *bat_bin;
 
@@ -221,7 +222,6 @@ iwindow_init( myIWindow *instance )
 	ofoDossier *dossier;
 	gchar *title;
 	GtkWidget *parent;
-	gboolean is_current;
 
 	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
@@ -239,7 +239,7 @@ iwindow_init( myIWindow *instance )
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	is_current = ofo_dossier_is_current( dossier );
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	title = g_strdup( _( "Updating the BAT properties" ));
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
@@ -251,7 +251,7 @@ iwindow_init( myIWindow *instance )
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !is_current ){
+	if( !priv->is_current ){
 		my_idialog_set_close_button( MY_IDIALOG( instance ));
 		priv->ok_btn = NULL;
 	}
@@ -279,7 +279,9 @@ check_for_enable_dlg( ofaBatProperties *self )
 
 	priv = ofa_bat_properties_get_instance_private( self );
 
-	gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
+	if( priv->is_current ){
+		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
+	}
 }
 
 static gboolean

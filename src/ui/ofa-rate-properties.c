@@ -64,7 +64,7 @@ struct _ofaRatePropertiesPrivate {
 	 */
 	GtkWidget     *grid;				/* the grid which handles the validity rows */
 	GtkWidget     *ok_btn;
-	GtkWidget     *msgerr_label;
+	GtkWidget     *msg_label;
 
 	/* data
 	 */
@@ -105,7 +105,7 @@ static void      on_date_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column );
 static void      check_for_enable_dlg( ofaRateProperties *self );
-static gboolean  is_dialog_validable( ofaRateProperties *self, gchar **msgerr );
+static gboolean  is_dialog_validable( ofaRateProperties *self );
 static void      on_ok_clicked( GtkButton *button, ofaRateProperties *self );
 static gboolean  do_update( ofaRateProperties *self, gchar **msgerr );
 static void      set_msgerr( ofaRateProperties *self, const gchar *msg );
@@ -551,27 +551,19 @@ static void
 check_for_enable_dlg( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
-	gboolean ok;
-	gchar *msgerr;
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	msgerr = NULL;
-
-	if( priv->ok_btn ){
-		ok = is_dialog_validable( self, &msgerr );
-		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	if( priv->is_current ){
+		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
-
-	set_msgerr( self, msgerr );
-	g_free( msgerr );
 }
 
 /*
  * are we able to validate this rate, and all its validities
  */
 static gboolean
-is_dialog_validable( ofaRateProperties *self, gchar **msgerr )
+is_dialog_validable( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
 	GList *valids;
@@ -583,6 +575,7 @@ is_dialog_validable( ofaRateProperties *self, gchar **msgerr )
 	ofoRate *exists;
 	const GDate *dbegin, *dend;
 	guint count;
+	gchar *msgerr;
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
@@ -605,7 +598,7 @@ is_dialog_validable( ofaRateProperties *self, gchar **msgerr )
 		}
 	}
 
-	ok = ofo_rate_is_valid_data( priv->mnemo, priv->label, g_list_reverse( valids ), msgerr );
+	ok = ofo_rate_is_valid_data( priv->mnemo, priv->label, g_list_reverse( valids ), &msgerr );
 
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
@@ -614,10 +607,13 @@ is_dialog_validable( ofaRateProperties *self, gchar **msgerr )
 		ok &= !exists ||
 				( !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_rate_get_mnemo( priv->rate )));
-		if( !ok && msgerr ){
-			*msgerr = g_strdup( _( "Rate already exists" ));
+		if( !ok ){
+			msgerr = g_strdup( _( "Rate already exists" ));
 		}
 	}
+
+	set_msgerr( self, msgerr );
+	g_free( msgerr );
 
 	return( ok );
 }
@@ -656,7 +652,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	gdouble rate;
 	gboolean ok;
 
-	g_return_val_if_fail( is_dialog_validable( self, msgerr ), FALSE );
+	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
@@ -711,12 +707,12 @@ set_msgerr( ofaRateProperties *self, const gchar *msg )
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	if( !priv->msgerr_label ){
+	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelerror" );
-		priv->msgerr_label = label;
+		priv->msg_label = label;
 	}
 
-	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

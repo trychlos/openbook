@@ -79,7 +79,7 @@ struct _ofaAccountPropertiesPrivate {
 	GtkWidget           *currency_etiq;
 	GtkWidget           *currency_parent;
 	GtkWidget           *currency_combo;
-	GtkWidget           *msgerr_label;
+	GtkWidget           *msg_label;
 	GtkWidget           *ok_btn;
 
 	/* account data
@@ -667,7 +667,6 @@ is_dialog_validable( ofaAccountProperties *self )
 	priv = ofa_account_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	set_msgerr( self, "" );
 
 	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->root, &msgerr );
 
@@ -767,12 +766,12 @@ set_msgerr( ofaAccountProperties *self, const gchar *msg )
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	if( !priv->msgerr_label ){
+	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelerror" );
-		priv->msgerr_label = label;
+		priv->msg_label = label;
 	}
 
-	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

@@ -49,7 +49,7 @@
 /* private instance data
  */
 struct _ofaTVAFormPropertiesPrivate {
-	gboolean dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* internals
 	 */
@@ -135,7 +135,7 @@ static void     check_for_enable_dlg( ofaTVAFormProperties *self );
 static gboolean is_dialog_validable( ofaTVAFormProperties *self );
 static void     on_ok_clicked( GtkButton *button, ofaTVAFormProperties *self );
 static gboolean do_update( ofaTVAFormProperties *self, gchar **msgerr );
-static void     set_message( ofaTVAFormProperties *dialog, const gchar *msg );
+static void     set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaTVAFormProperties )
@@ -281,7 +281,7 @@ iwindow_get_identifier( const myIWindow *instance )
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
- * account
+ * tva_form
  */
 static void
 iwindow_init( myIWindow *instance )
@@ -354,6 +354,9 @@ iwindow_init( myIWindow *instance )
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_form );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_form );
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 
 	/* set the detail rows after having set editability for current
@@ -716,9 +719,10 @@ check_for_enable_dlg( ofaTVAFormProperties *self )
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
-	ok = is_dialog_validable( self );
-
-	gtk_widget_set_sensitive( priv->ok_btn, ok );
+	if( priv->is_current ){
+		ok = is_dialog_validable( self );
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	}
 }
 
 /*
@@ -746,7 +750,7 @@ is_dialog_validable( ofaTVAFormProperties *self )
 			msgerr = g_strdup( _( "Mnemonic is already defined" ));
 		}
 	}
-	set_message( self, msgerr );
+	set_msgerr( self, msgerr );
 	g_free( msgerr );
 
 	return( ok );
@@ -857,7 +861,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 }
 
 static void
-set_message( ofaTVAFormProperties *dialog, const gchar *msg )
+set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 

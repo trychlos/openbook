@@ -680,13 +680,11 @@ static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	gboolean ok;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
 	if( priv->is_current ){
-		ok = is_dialog_valid( self );
-		gtk_widget_set_sensitive( priv->ok_btn, ok );
+		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_valid( self ));
 	}
 }
 

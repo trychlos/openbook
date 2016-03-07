@@ -93,7 +93,7 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	GtkWidget      *ledger_parent;
 	GtkWidget      *ref_entry;
 	GtkWidget      *details_grid;
-	GtkWidget      *msgerr_label;
+	GtkWidget      *msg_label;
 	GtkWidget      *ok_btn;
 };
 
@@ -792,14 +792,11 @@ static void
 check_for_enable_dlg( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
-	gboolean ok;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	ok = is_dialog_validable( self );
-
-	if( priv->ok_btn ){
-		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	if( priv->is_current ){
+		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
 }
 
@@ -817,7 +814,6 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	set_msgerr( self, "" );
 
 	ok = ofo_ope_template_is_valid( priv->mnemo, priv->label, priv->ledger, &msgerr );
 	if( ok ){
@@ -954,12 +950,12 @@ set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	if( !priv->msgerr_label ){
+	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelerror" );
-		priv->msgerr_label = label;
+		priv->msg_label = label;
 	}
 
-	gtk_label_set_text( GTK_LABEL( priv->msgerr_label ), msg ? msg : "" );
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

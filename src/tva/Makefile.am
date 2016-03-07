@@ -56,6 +56,7 @@ nodist_openbook_SOURCES = \
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
+	$(BUILT_SOURCES)									\
 	ofa-module.c										\
 	ofa-tva.c											\
 	ofa-tva.h											\
@@ -96,12 +97,12 @@ libofa_tva_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-tva-record-new.ui								\
 	ofa-tva-record-properties.ui						\
 	$(NULL)
 
 resources_ui = \
 	ofa-tva-form-properties.ui							\
+	ofa-tva-record-new.ui								\
 	$(NULL)
 
 images_files = \

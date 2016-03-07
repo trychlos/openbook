@@ -31,7 +31,7 @@
  * @include: tva/ofa-tva-declare-page.h
  *
  * This is an ofaPage-derived page which shows the list of existing
- * TVA declaration, either current or validated. The user has Update
+ * TVA declarations, either current or validated. The user has Update
  * and Delete usual buttons.
  * Defining a new TVA declaration means selecting a TVA form from
  * management page, and clicking 'Declare from form' button.

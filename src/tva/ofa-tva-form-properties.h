@@ -30,25 +30,14 @@
  * @short_description: #ofaTVAFormProperties class definition.
  * @include: ui/ofa-tva_form-properties.h
  *
- * Update the tva_form properties.
+ * Create a new/Update the tva_form properties.
  *
- * From the ofaTVAFormSet page, create a new tva_form, or update an existing
- * one. in the two cases, zero, one or more validities can be created,
- * updated, deleted.
+ * From the ofaTVAManage page, create a new tva_form, or update an existing
+ * one.
  *
  * The content of the provided ofoTVAForm object is not modified until the
  * do_update() function. At this time, all its content is _replaced_
  * with which is found in the dialog box.
- *
- * When creating a new validity, we take care of checking that it
- * doesn't override an already existing validity period.
- *
- * Examples:
- * Existing validity
- * (null)     (null)   impossible to create a new period because there
- *                     is no place
- * (null)   31/12/2013 it is possible to create a new period starting
- *                     with 01/01/2014
  *
  * Development rules:
  * - type:       non-modal dialog

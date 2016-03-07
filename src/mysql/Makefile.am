@@ -65,6 +65,7 @@ nodist_openbook_SOURCES = \
 
 libofa_mysql_la_SOURCES = \
 	$(BUILT_SOURCES)									\
+	ofa-module.c										\
 	ofa-mysql.c											\
 	ofa-mysql.h											\
 	ofa-mysql-cmdline.c									\
@@ -89,7 +90,6 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-prefs-bin.h								\
 	ofa-mysql-user-prefs.c								\
 	ofa-mysql-user-prefs.h								\
-	ofa-module.c										\
 	$(NULL)
 
 libofa_mysql_la_LIBADD = \
