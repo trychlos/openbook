@@ -58,16 +58,13 @@ typedef struct _ofaLedgerBookBinPrivate         ofaLedgerBookBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                   parent;
-
-	/*< private members >*/
-	ofaLedgerBookBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaLedgerBookBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass              parent;
+	GtkBinClass parent;
 }
 	ofaLedgerBookBinClass;
 
