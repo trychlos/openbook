@@ -235,6 +235,10 @@ static void          icollectionable_iface_init( ofaICollectionableInterface *if
 static guint         icollectionable_get_interface_version( const ofaICollectionable *instance );
 static GList        *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
+G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
+		G_ADD_PRIVATE( ofoTVARecord )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+
 static void
 details_list_free_detail( GList *fields )
 {
@@ -244,8 +248,12 @@ details_list_free_detail( GList *fields )
 static void
 details_list_free( ofoTVARecord *record )
 {
-	g_list_free_full( record->priv->details, ( GDestroyNotify ) details_list_free_detail );
-	record->priv->details = NULL;
+	ofoTVARecordPrivate *priv;
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	g_list_free_full( priv->details, ( GDestroyNotify ) details_list_free_detail );
+	priv->details = NULL;
 }
 
 static void
@@ -257,8 +265,12 @@ bools_list_free_bool( GList *fields )
 static void
 bools_list_free( ofoTVARecord *record )
 {
-	g_list_free_full( record->priv->bools, ( GDestroyNotify ) bools_list_free_bool );
-	record->priv->bools = NULL;
+	ofoTVARecordPrivate *priv;
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	g_list_free_full( priv->bools, ( GDestroyNotify ) bools_list_free_bool );
+	priv->bools = NULL;
 }
 
 static void
@@ -268,7 +280,7 @@ tva_record_finalize( GObject *instance )
 	ofoTVARecordPrivate *priv;
 	gchar *str;
 
-	priv = OFO_TVA_RECORD( instance )->priv;
+	priv = ofo_tva_record_get_instance_private( OFO_TVA_RECORD( instance ));
 
 	str = my_date_to_str( ofa_box_get_date( OFO_BASE( instance )->prot->fields, TFO_END ), MY_DATE_SQL );
 	g_debug( "%s: instance=%p (%s): %s %s",
@@ -311,8 +323,6 @@ ofo_tva_record_init( ofoTVARecord *self )
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_TVA_RECORD, ofoTVARecordPrivate );
 }
 
 static void
@@ -322,57 +332,8 @@ ofo_tva_record_class_init( ofoTVARecordClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofo_tva_record_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = tva_record_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofoTVARecordPrivate ));
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_tva_record_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoTVARecordClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) ofo_tva_record_class_init,
-		NULL,
-		NULL,
-		sizeof( ofoTVARecord ),
-		0,
-		( GInstanceInitFunc ) ofo_tva_record_init
-	};
-
-	static const GInterfaceInfo icollectionable_iface_info = {
-		( GInterfaceInitFunc ) icollectionable_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoTVARecord", &info, 0 );
-
-	g_type_add_interface_static( type, OFA_TYPE_ICOLLECTIONABLE, &icollectionable_iface_info );
-
-	return( type );
-}
-
-GType
-ofo_tva_record_get_type( void )
-{
-	static GType type = 0;
-
-	if( !type ){
-		type = register_type();
-	}
-
-	return( type );
 }
 
 /**
@@ -462,37 +423,33 @@ ofo_tva_record_new_from_form( const ofoTVAForm *form )
 	gint count, i;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
 
-	dest = NULL;
+	dest = ofo_tva_record_new();
 
-	if( !OFO_BASE( form )->prot->dispose_has_run ){
+	ofo_tva_record_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
+	ofo_tva_record_set_label( dest, ofo_tva_form_get_label( form ));
+	ofo_tva_record_set_has_correspondence( dest, ofo_tva_form_get_has_correspondence( form ));
 
-		dest = ofo_tva_record_new();
+	count = ofo_tva_form_detail_get_count( form );
+	for( i=0 ; i<count ; ++i ){
+		ofo_tva_record_detail_add( dest,
+				ofo_tva_form_detail_get_level( form, i ),
+				ofo_tva_form_detail_get_code( form, i ),
+				ofo_tva_form_detail_get_label( form, i ),
+				ofo_tva_form_detail_get_has_base( form, i ),
+				ofo_tva_form_detail_get_base( form, i ),
+				0,
+				ofo_tva_form_detail_get_has_amount( form, i ),
+				ofo_tva_form_detail_get_amount( form, i ),
+				0 );
+	}
 
-		ofo_tva_record_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
-		ofo_tva_record_set_label( dest, ofo_tva_form_get_label( form ));
-		ofo_tva_record_set_has_correspondence( dest, ofo_tva_form_get_has_correspondence( form ));
-
-		count = ofo_tva_form_detail_get_count( form );
-		for( i=0 ; i<count ; ++i ){
-			ofo_tva_record_detail_add( dest,
-					ofo_tva_form_detail_get_level( form, i ),
-					ofo_tva_form_detail_get_code( form, i ),
-					ofo_tva_form_detail_get_label( form, i ),
-					ofo_tva_form_detail_get_has_base( form, i ),
-					ofo_tva_form_detail_get_base( form, i ),
-					0,
-					ofo_tva_form_detail_get_has_amount( form, i ),
-					ofo_tva_form_detail_get_amount( form, i ),
-					0 );
-		}
-
-		count = ofo_tva_form_boolean_get_count( form );
-		for( i=0 ; i<count ; ++i ){
-			ofo_tva_record_boolean_add( dest,
-					ofo_tva_form_boolean_get_label( form, i ),
-					FALSE );
-		}
+	count = ofo_tva_form_boolean_get_count( form );
+	for( i=0 ; i<count ; ++i ){
+		ofo_tva_record_boolean_add( dest,
+				ofo_tva_form_boolean_get_label( form, i ),
+				FALSE );
 	}
 
 	return( dest );
@@ -505,6 +462,7 @@ void
 ofo_tva_record_dump( const ofoTVARecord *record )
 {
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+
 	ofa_box_dump_fields_list( "ofo_tva_record_dump", OFO_BASE( record )->prot->fields );
 }
 
@@ -536,14 +494,11 @@ ofo_tva_record_get_has_correspondence( const ofoTVARecord *record )
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_HAS_CORRESPONDENCE );
 
-		cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_HAS_CORRESPONDENCE );
-		return( my_utils_boolean_from_str( cstr ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( my_utils_boolean_from_str( cstr ));
 }
 
 /**
@@ -564,14 +519,11 @@ ofo_tva_record_get_is_validated( const ofoTVARecord *record )
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_VALIDATED );
 
-		cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_VALIDATED );
-		return( my_utils_boolean_from_str( cstr ));
-	}
-
-	g_return_val_if_reached( FALSE );
+	return( my_utils_boolean_from_str( cstr ));
 }
 
 /**
@@ -624,10 +576,7 @@ ofo_tva_record_is_deletable( const ofoTVARecord *record )
 	gboolean is_validated;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
-
-	if( OFO_BASE( record )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
 	is_validated = ofo_tva_record_get_is_validated( record );
 
@@ -696,10 +645,7 @@ ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
-
-	if( OFO_BASE( record )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
 	cstr = ofo_tva_record_get_mnemo( record );
 	cbegin = ofo_tva_record_get_begin( record );
@@ -751,13 +697,11 @@ gint cmp;
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
 	g_return_val_if_fail( my_strlen( mnemo ), 0 );
 	g_return_val_if_fail( my_date_is_valid( end ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
-		cmp = record_cmp_by_mnemo_end( record, mnemo, end );
-		return( cmp );
-	}
+	cmp = record_cmp_by_mnemo_end( record, mnemo, end );
 
-	g_return_val_if_reached( 0 );
+	return( cmp );
 }
 
 /**
@@ -848,28 +792,29 @@ ofo_tva_record_detail_add( ofoTVARecord *record,
 							gboolean has_base, const gchar *base_rule, ofxAmount base,
 							gboolean has_amount, const gchar *amount_rule, ofxAmount amount )
 {
+	ofoTVARecordPrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		fields = ofa_box_init_fields_list( st_details_defs );
-		ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_record_get_mnemo( record ));
-		ofa_box_set_date( fields, TFO_END, ofo_tva_record_get_end( record ));
-		ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_record_detail_get_count( record ));
-		ofa_box_set_int( fields, TFO_DET_LEVEL, level );
-		ofa_box_set_string( fields, TFO_DET_CODE, code );
-		ofa_box_set_string( fields, TFO_DET_LABEL, label );
-		ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
-		ofa_box_set_string( fields, TFO_DET_BASE_RULE, base_rule );
-		ofa_box_set_amount( fields, TFO_DET_BASE, base );
-		ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
-		ofa_box_set_string( fields, TFO_DET_AMOUNT_RULE, amount_rule );
-		ofa_box_set_amount( fields, TFO_DET_AMOUNT, amount );
+	fields = ofa_box_init_fields_list( st_details_defs );
+	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_record_get_mnemo( record ));
+	ofa_box_set_date( fields, TFO_END, ofo_tva_record_get_end( record ));
+	ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_record_detail_get_count( record ));
+	ofa_box_set_int( fields, TFO_DET_LEVEL, level );
+	ofa_box_set_string( fields, TFO_DET_CODE, code );
+	ofa_box_set_string( fields, TFO_DET_LABEL, label );
+	ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
+	ofa_box_set_string( fields, TFO_DET_BASE_RULE, base_rule );
+	ofa_box_set_amount( fields, TFO_DET_BASE, base );
+	ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
+	ofa_box_set_string( fields, TFO_DET_AMOUNT_RULE, amount_rule );
+	ofa_box_set_amount( fields, TFO_DET_AMOUNT, amount );
 
-		record->priv->details = g_list_append( record->priv->details, fields );
-	}
+	priv->details = g_list_append( priv->details, fields );
 }
 
 /**
@@ -879,11 +824,9 @@ void
 ofo_tva_record_detail_free_all( ofoTVARecord *record )
 {
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
-
-		details_list_free( record );
-	}
+	details_list_free( record );
 }
 
 /**
@@ -892,14 +835,14 @@ ofo_tva_record_detail_free_all( ofoTVARecord *record )
 guint
 ofo_tva_record_detail_get_count( const ofoTVARecord *record )
 {
+	ofoTVARecordPrivate *priv;
+
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		return( g_list_length( record->priv->details ));
-	}
-
-	g_return_val_if_reached( 0 );
+	return( g_list_length( priv->details ));
 }
 
 /**
@@ -909,19 +852,19 @@ ofo_tva_record_detail_get_count( const ofoTVARecord *record )
 guint
 ofo_tva_record_detail_get_level( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	guint value;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
-		return( value );
-	}
+	nth = g_list_nth( priv->details, idx );
+	value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
 
-	g_return_val_if_reached( 0 );
+	return( value );
 }
 
 /**
@@ -931,19 +874,19 @@ ofo_tva_record_detail_get_level( const ofoTVARecord *record, guint idx )
 const gchar *
 ofo_tva_record_detail_get_code( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_CODE ) : NULL;
-		return( cstr );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_CODE ) : NULL;
 
-	g_return_val_if_reached( NULL );
+	return( cstr );
 }
 
 /**
@@ -953,19 +896,19 @@ ofo_tva_record_detail_get_code( const ofoTVARecord *record, guint idx )
 const gchar *
 ofo_tva_record_detail_get_label( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
-		return( cstr );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
 
-	g_return_val_if_reached( NULL );
+	return( cstr );
 }
 
 /**
@@ -975,21 +918,21 @@ ofo_tva_record_detail_get_label( const ofoTVARecord *record, guint idx )
 gboolean
 ofo_tva_record_detail_get_has_base( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 	gboolean value;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_BASE ) : NULL;
-		value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
-		return( value );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_BASE ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
 
-	g_return_val_if_reached( FALSE );
+	return( value );
 }
 
 /**
@@ -999,19 +942,19 @@ ofo_tva_record_detail_get_has_base( const ofoTVARecord *record, guint idx )
 const gchar *
 ofo_tva_record_detail_get_base_rule( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASE_RULE ) : NULL;
-		return( cstr );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASE_RULE ) : NULL;
 
-	g_return_val_if_reached( NULL );
+	return( cstr );
 }
 
 /**
@@ -1021,19 +964,19 @@ ofo_tva_record_detail_get_base_rule( const ofoTVARecord *record, guint idx )
 ofxAmount
 ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	ofxAmount amount;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_BASE ) : 0;
-		return( amount );
-	}
+	nth = g_list_nth( priv->details, idx );
+	amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_BASE ) : 0;
 
-	g_return_val_if_reached( 0 );
+	return( amount );
 }
 
 /**
@@ -1043,21 +986,21 @@ ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
 gboolean
 ofo_tva_record_detail_get_has_amount( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 	gboolean value;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT ) : NULL;
-		value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
-		return( value );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
 
-	g_return_val_if_reached( FALSE );
+	return( value );
 }
 
 /**
@@ -1067,19 +1010,19 @@ ofo_tva_record_detail_get_has_amount( const ofoTVARecord *record, guint idx )
 const gchar *
 ofo_tva_record_detail_get_amount_rule( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNT_RULE ) : NULL;
-		return( cstr );
-	}
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNT_RULE ) : NULL;
 
-	g_return_val_if_reached( NULL );
+	return( cstr );
 }
 
 /**
@@ -1089,19 +1032,19 @@ ofo_tva_record_detail_get_amount_rule( const ofoTVARecord *record, guint idx )
 ofxAmount
 ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	ofxAmount amount;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_AMOUNT ) : 0;
-		return( amount );
-	}
+	nth = g_list_nth( priv->details, idx );
+	amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_AMOUNT ) : 0;
 
-	g_return_val_if_reached( 0 );
+	return( amount );
 }
 
 /**
@@ -1111,19 +1054,17 @@ ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
 void
 ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, ofxAmount base )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		g_return_if_fail( nth );
-		ofa_box_set_amount( nth->data, TFO_DET_BASE, base );
-		return;
-	}
-
-	g_return_if_reached();
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_amount( nth->data, TFO_DET_BASE, base );
 }
 
 /**
@@ -1133,19 +1074,17 @@ ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, ofxAmount base 
 void
 ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, ofxAmount amount )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->details, idx );
-		g_return_if_fail( nth );
-		ofa_box_set_amount( nth->data, TFO_DET_AMOUNT, amount );
-		return;
-	}
-
-	g_return_if_reached();
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_amount( nth->data, TFO_DET_AMOUNT, amount );
 }
 
 /**
@@ -1157,20 +1096,21 @@ ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, ofxAmount amo
 void
 ofo_tva_record_boolean_add( ofoTVARecord *record, const gchar *label, gboolean is_true )
 {
+	ofoTVARecordPrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		fields = ofa_box_init_fields_list( st_bools_defs );
-		ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_record_get_mnemo( record ));
-		ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_record_boolean_get_count( record ));
-		ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
-		ofa_box_set_string( fields, TFO_BOOL_TRUE, is_true ? "Y":"N" );
+	fields = ofa_box_init_fields_list( st_bools_defs );
+	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_record_get_mnemo( record ));
+	ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_record_boolean_get_count( record ));
+	ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
+	ofa_box_set_string( fields, TFO_BOOL_TRUE, is_true ? "Y":"N" );
 
-		record->priv->bools = g_list_append( record->priv->bools, fields );
-	}
+	priv->bools = g_list_append( priv->bools, fields );
 }
 
 /**
@@ -1180,11 +1120,9 @@ void
 ofo_tva_record_boolean_free_all( ofoTVARecord *record )
 {
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
-
-		bools_list_free( record );
-	}
+	bools_list_free( record );
 }
 
 /**
@@ -1193,14 +1131,14 @@ ofo_tva_record_boolean_free_all( ofoTVARecord *record )
 guint
 ofo_tva_record_boolean_get_count( const ofoTVARecord *record )
 {
+	ofoTVARecordPrivate *priv;
+
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		return( g_list_length( record->priv->bools ));
-	}
-
-	g_return_val_if_reached( 0 );
+	return( g_list_length( priv->bools ));
 }
 
 /**
@@ -1210,19 +1148,19 @@ ofo_tva_record_boolean_get_count( const ofoTVARecord *record )
 const gchar *
 ofo_tva_record_boolean_get_label( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->bools, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
-		return( cstr );
-	}
+	nth = g_list_nth( priv->bools, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
 
-	g_return_val_if_reached( NULL );
+	return( cstr );
 }
 
 /**
@@ -1232,21 +1170,21 @@ ofo_tva_record_boolean_get_label( const ofoTVARecord *record, guint idx )
 gboolean
 ofo_tva_record_boolean_get_is_true( const ofoTVARecord *record, guint idx )
 {
+	ofoTVARecordPrivate *priv;
 	GList *nth;
 	const gchar *cstr;
 	gboolean value;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	if( !OFO_BASE( record )->prot->dispose_has_run ){
+	priv = ofo_tva_record_get_instance_private( record );
 
-		nth = g_list_nth( record->priv->bools, idx );
-		cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_TRUE ) : NULL;
-		value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
-		return( value );
-	}
+	nth = g_list_nth( priv->bools, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_TRUE ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
 
-	g_return_val_if_reached( FALSE );
+	return( value );
 }
 
 /**
@@ -1263,10 +1201,7 @@ ofo_tva_record_insert( ofoTVARecord *tva_record, ofaHub *hub )
 
 	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( OFO_BASE( tva_record )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
@@ -1403,21 +1338,24 @@ record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect )
 static gboolean
 record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
+	ofoTVARecordPrivate *priv;
 	gboolean ok;
 	GList *idet;
 	guint rang;
+
+	priv = ofo_tva_record_get_instance_private( record );
 
 	ok = FALSE;
 
 	if( record_delete_details( record, connect ) && record_delete_bools( record, connect )){
 		ok = TRUE;
-		for( idet=record->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+		for( idet=priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			if( !record_insert_details( record, connect, rang, idet->data )){
 				ok = FALSE;
 				break;
 			}
 		}
-		for( idet=record->priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+		for( idet=priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			if( !record_insert_bools( record, connect, rang, idet->data )){
 				ok = FALSE;
 				break;
@@ -1556,10 +1494,7 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 	g_debug( "%s: record=%p", thisfn, ( void * ) tva_record );
 
 	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
-
-	if( OFO_BASE( tva_record )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( tva_record ));
@@ -1665,10 +1600,7 @@ ofo_tva_record_delete( ofoTVARecord *tva_record )
 
 	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
 	g_return_val_if_fail( ofo_tva_record_is_deletable( tva_record ), FALSE );
-
-	if( OFO_BASE( tva_record )->prot->dispose_has_run ){
-		g_return_val_if_reached( FALSE );
-	}
+	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( tva_record ));
@@ -1766,6 +1698,7 @@ static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_tva_record_load_dataset";
+	ofoTVARecordPrivate *priv;
 	GList *dataset, *it, *ir;
 	ofoTVARecord *record;
 	gchar *from, *send;
@@ -1781,18 +1714,19 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
+		priv = ofo_tva_record_get_instance_private( record );
+
 		send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 
 		from = g_strdup_printf(
 				"TVA_T_RECORDS_DET WHERE TFO_MNEMO='%s' AND TFO_END='%s' ORDER BY TFO_DET_ROW ASC",
 				ofo_tva_record_get_mnemo( record ), send );
-		record->priv->details =
-				ofo_base_load_rows( st_details_defs, connect, from );
+		priv->details = ofo_base_load_rows( st_details_defs, connect, from );
 		g_free( from );
 
 		/* dump the detail rows */
 		if( 0 ){
-			for( ir=record->priv->details ; ir ; ir=ir->next ){
+			for( ir=priv->details ; ir ; ir=ir->next ){
 				ofa_box_dump_fields_list( thisfn, ir->data );
 			}
 		}
@@ -1800,8 +1734,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 		from = g_strdup_printf(
 				"TVA_T_RECORDS_BOOL WHERE TFO_MNEMO='%s' AND TFO_END='%s' ORDER BY TFO_BOOL_ROW ASC",
 				ofo_tva_record_get_mnemo( record ), send );
-		record->priv->bools =
-				ofo_base_load_rows( st_bools_defs, connect, from );
+		priv->bools = ofo_base_load_rows( st_bools_defs, connect, from );
 		g_free( from );
 
 		g_free( send );

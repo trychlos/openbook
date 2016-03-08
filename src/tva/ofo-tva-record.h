@@ -61,16 +61,13 @@ typedef struct _ofoTVARecordPrivate        ofoTVARecordPrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofoBase              parent;
-
-	/*< private members >*/
-	ofoTVARecordPrivate *priv;
+	ofoBase      parent;
 }
 	ofoTVARecord;
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass         parent;
+	ofoBaseClass parent;
 }
 	ofoTVARecordClass;
 

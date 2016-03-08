@@ -34,10 +34,10 @@
 #include "api/my-double.h"
 #include "api/my-editable-amount.h"
 #include "api/my-editable-date.h"
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -52,43 +52,42 @@
 /* private instance data
  */
 struct _ofaTVARecordPropertiesPrivate {
+	gboolean      dispose_has_run;
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
-	ofoTVARecord        *tva_record;
+	ofoTVARecord *tva_record;
 
 	/* internals
 	 */
-	ofaHub              *hub;
-	gboolean             is_current;
-	gboolean             updated;
+	ofaHub       *hub;
+	gboolean      is_current;
 
 	/* UI
 	 */
-	GtkWidget           *label_entry;
-	GtkWidget           *begin_editable;
-	GtkWidget           *end_editable;
-	GtkWidget           *boolean_grid;
-	GtkWidget           *detail_grid;
-	GtkWidget           *textview;
-	GtkWidget           *compute_btn;
-	GtkWidget           *validate_btn;
-	GtkWidget           *ok_btn;
-	GtkWidget           *msg_label;
+	GtkWidget    *label_entry;
+	GtkWidget    *begin_editable;
+	GtkWidget    *end_editable;
+	GtkWidget    *boolean_grid;
+	GtkWidget    *detail_grid;
+	GtkWidget    *textview;
+	GtkWidget    *compute_btn;
+	GtkWidget    *validate_btn;
+	GtkWidget    *ok_btn;
+	GtkWidget    *msg_label;
 
 	/* runtime data
 	 */
-	GDate                init_end_date;
-	gchar               *mnemo;
-	GDate                begin_date;
-	GDate                end_date;
-	gboolean             has_correspondence;
-	gboolean             is_validated;
+	GDate         init_end_date;
+	gchar        *mnemo;
+	GDate         begin_date;
+	GDate         end_date;
+	gboolean      has_correspondence;
+	gboolean      is_validated;
 
 	/* computing the declaration
 	 */
-	GRegex              *regex_fn;
+	GRegex       *regex_fn;
 };
 
 static gboolean st_debug                = FALSE;
@@ -103,14 +102,16 @@ enum {
 	DET_COL_PADDING
 };
 
-static const gchar *st_ui_xml           = PLUGINUIDIR "/ofa-tva-record-properties.ui";
-static const gchar *st_ui_id            = "TVARecordPropertiesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-record-properties.ui";
 
-static void      v_init_dialog( myDialog *dialog );
-static void      init_properties( ofaTVARecordProperties *self, GtkContainer *container );
-static void      init_booleans( ofaTVARecordProperties *self, GtkContainer *container );
-static void      init_taxes( ofaTVARecordProperties *self, GtkContainer *container );
-static void      init_correspondence( ofaTVARecordProperties *self, GtkContainer *container );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static gchar    *iwindow_get_identifier( const myIWindow *instance );
+static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      init_properties( ofaTVARecordProperties *self );
+static void      init_booleans( ofaTVARecordProperties *self );
+static void      init_taxes( ofaTVARecordProperties *self );
+static void      init_correspondence( ofaTVARecordProperties *self );
 static void      on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void      on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void      on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
@@ -118,8 +119,8 @@ static void      on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties
 static void      on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void      check_for_enable_dlg( ofaTVARecordProperties *self );
 static void      set_dialog_title( ofaTVARecordProperties *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaTVARecordProperties *self );
+static void      on_ok_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static gboolean  do_update( ofaTVARecordProperties *self, gchar **msgerr );
 static void      on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static void      alloc_regex( ofaTVARecordProperties *self );
 static gchar    *eval_rule( ofaTVARecordProperties *self, const gchar *rule );
@@ -130,9 +131,12 @@ static gchar    *get_account_balance( ofaTVARecordProperties *self, const gchar 
 static gdouble   eval_opes( ofaTVARecordProperties *self, const gchar *content );
 static gchar   **eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
 static void      on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void      set_msgerr( ofaTVARecordProperties *dialog, const gchar *msg );
+static void      set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
 
-G_DEFINE_TYPE( ofaTVARecordProperties, ofa_tva_record_properties, MY_TYPE_DIALOG )
+G_DEFINE_TYPE_EXTENDED( ofaTVARecordProperties, ofa_tva_record_properties, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaTVARecordProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 tva_record_properties_finalize( GObject *instance )
@@ -143,10 +147,10 @@ tva_record_properties_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_TVA_RECORD_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_TVA_RECORD_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = OFA_TVA_RECORD_PROPERTIES( instance )->priv;
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
 
 	g_free( priv->mnemo );
 
@@ -159,12 +163,15 @@ tva_record_properties_dispose( GObject *instance )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_TVA_RECORD_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_TVA_RECORD_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		priv = OFA_TVA_RECORD_PROPERTIES( instance )->priv;
 
 		if( priv->regex_fn ){
 			g_regex_unref( priv->regex_fn );
@@ -179,15 +186,18 @@ static void
 ofa_tva_record_properties_init( ofaTVARecordProperties *self )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_init";
+	ofaTVARecordPropertiesPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_TVA_RECORD_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_TVA_RECORD_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_RECORD_PROPERTIES, ofaTVARecordPropertiesPrivate );
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	self->priv->updated = FALSE;
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -200,10 +210,7 @@ ofa_tva_record_properties_class_init( ofaTVARecordPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = tva_record_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_properties_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaTVARecordPropertiesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -213,50 +220,93 @@ ofa_tva_record_properties_class_init( ofaTVARecordPropertiesClass *klass )
  *
  * Update the properties of a tva_form.
  */
-gboolean
+void
 ofa_tva_record_properties_run( const ofaMainWindow *main_window, ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_run";
 	ofaTVARecordProperties *self;
-	gboolean updated;
+	ofaTVARecordPropertiesPrivate *priv;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p, record=%p",
 			thisfn, ( void * ) main_window, ( void * ) record );
 
-	self = g_object_new(
-					OFA_TYPE_TVA_RECORD_PROPERTIES,
-					MY_PROP_MAIN_WINDOW, main_window,
-					MY_PROP_WINDOW_XML,  st_ui_xml,
-					MY_PROP_WINDOW_NAME, st_ui_id,
-					NULL );
+	self = g_object_new( OFA_TYPE_TVA_RECORD_PROPERTIES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-	self->priv->tva_record = record;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+	priv->tva_record = record;
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	updated = self->priv->updated;
-
-	g_object_unref( self );
-
-	return( updated );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	ofaTVARecordProperties *self;
+	static const gchar *thisfn = "ofa_tva_record_properties_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
+}
+
+/*
+ * identifier is built with class name and VAT record mnemo
+ */
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
 	ofaTVARecordPropertiesPrivate *priv;
+	gchar *id;
+
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	id = g_strdup_printf( "%s-%s",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_tva_record_get_mnemo( priv->tva_record ));
+
+	return( id );
+}
+
+/*
+ * this dialog is subject to 'is_current' property
+ * so first setup the UI fields, then fills them up with the data
+ * when entering, only initialization data are set: main_window and
+ * VAT record
+ */
+static void
+iwindow_init( myIWindow *instance )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
-	GtkContainer *container;
 
-	self = OFA_TVA_RECORD_PROPERTIES( dialog );
-	priv = self->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
+	my_idialog_init_dialog( MY_IDIALOG( instance ));
 
-	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+
+	priv->compute_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "compute-btn" );
+	g_return_if_fail( priv->compute_btn && GTK_IS_BUTTON( priv->compute_btn ));
+	g_signal_connect( priv->compute_btn, "clicked", G_CALLBACK( on_compute_clicked ), instance );
+
+	priv->validate_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "validate-btn" );
+	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
+	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
+
+	main_window = my_iwindow_get_main_window( instance );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	dossier = ofa_hub_get_dossier( priv->hub );
@@ -265,56 +315,48 @@ v_init_dialog( myDialog *dialog )
 
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( container, "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	init_properties( OFA_TVA_RECORD_PROPERTIES( instance ));
+	init_booleans( OFA_TVA_RECORD_PROPERTIES( instance ));
+	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
+	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
 
-	priv->compute_btn = my_utils_container_get_child_by_name( container, "compute-btn" );
-	g_return_if_fail( priv->compute_btn && GTK_IS_BUTTON( priv->compute_btn ));
-	g_signal_connect( priv->compute_btn, "clicked", G_CALLBACK( on_compute_clicked ), self );
-
-	priv->validate_btn = my_utils_container_get_child_by_name( container, "validate-btn" );
-	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
-	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), self );
-
-	init_properties( self, container );
-	init_booleans( self, container );
-	init_taxes( self, container );
-	init_correspondence( self, container );
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		priv->ok_btn = my_dialog_set_readonly_buttons( dialog );
+		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		priv->ok_btn = NULL;
 	}
 
-	set_dialog_title( self );
-	check_for_enable_dlg( self );
+	set_dialog_title( OFA_TVA_RECORD_PROPERTIES( instance ));
+	check_for_enable_dlg( OFA_TVA_RECORD_PROPERTIES( instance ));
 }
 
 static void
-init_properties( ofaTVARecordProperties *self, GtkContainer *container )
+init_properties( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *entry, *label, *button;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	priv->is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
 
 	/* mnemonic: invariant */
-	entry = my_utils_container_get_child_by_name( container, "p1-mnemo-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->mnemo = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( my_strlen( priv->mnemo ));
 	gtk_entry_set_text( GTK_ENTRY( entry ), priv->mnemo );
 	my_utils_widget_set_editable( entry, FALSE );
 
-	label = my_utils_container_get_child_by_name( container, "p1-mnemo-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* label */
-	priv->label_entry = my_utils_container_get_child_by_name( container, "p1-label-entry" );
+	priv->label_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
 	g_return_if_fail( priv->label_entry && GTK_IS_ENTRY( priv->label_entry ));
 	cstr = ofo_tva_record_get_label( priv->tva_record );
 	if( my_strlen( cstr )){
@@ -322,12 +364,12 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	}
 	my_utils_widget_set_editable( priv->label_entry, priv->is_current );
 
-	label = my_utils_container_get_child_by_name( container, "p1-label-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* has correspondence: invariant */
-	button = my_utils_container_get_child_by_name( container, "p1-has-corresp" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-has-corresp" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( button ),
@@ -335,20 +377,20 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	my_utils_widget_set_editable( button, FALSE );
 
 	/* is validated: invariant */
-	button = my_utils_container_get_child_by_name( container, "p1-validated" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-validated" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), priv->is_validated );
 	my_utils_widget_set_editable( button, FALSE );
 
 	/* begin date */
-	entry = my_utils_container_get_child_by_name( container, "p1-begin-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	priv->begin_editable = entry;
 
-	label = my_utils_container_get_child_by_name( container, "p1-begin-date" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 
@@ -356,7 +398,7 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
 
-	label = my_utils_container_get_child_by_name( container, "p1-begin-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -365,14 +407,14 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	 * if the ending date has to be modified, then the user should
 	 * create a new declaration
 	 */
-	entry = my_utils_container_get_child_by_name( container, "p1-end-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	priv->end_editable = entry;
 
-	label = my_utils_container_get_child_by_name( container, "p1-end-date" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 
@@ -380,13 +422,13 @@ init_properties( ofaTVARecordProperties *self, GtkContainer *container )
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 	my_utils_widget_set_editable( entry, FALSE );
 
-	label = my_utils_container_get_child_by_name( container, "p1-end-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 }
 
 static void
-init_booleans( ofaTVARecordProperties *self, GtkContainer *container )
+init_booleans( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *grid, *button;
@@ -394,8 +436,9 @@ init_booleans( ofaTVARecordProperties *self, GtkContainer *container )
 	const gchar *cstr;
 	gboolean is_true;
 
-	priv = self->priv;
-	grid = my_utils_container_get_child_by_name( container, "p3-grid" );
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-grid" );
 	priv->boolean_grid = grid;
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
@@ -412,7 +455,7 @@ init_booleans( ofaTVARecordProperties *self, GtkContainer *container )
 }
 
 static void
-init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
+init_taxes( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *grid, *label, *entry;
@@ -422,8 +465,9 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 	gboolean has_base, has_amount;
 	ofxAmount amount;
 
-	priv = self->priv;
-	grid = my_utils_container_get_child_by_name( container, "p2-grid" );
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-grid" );
 	priv->detail_grid = grid;
 
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
@@ -502,16 +546,17 @@ init_taxes( ofaTVARecordProperties *self, GtkContainer *container )
 }
 
 static void
-init_correspondence( ofaTVARecordProperties *self, GtkContainer *container )
+init_correspondence( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *book, *label, *scrolled;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
 	priv->has_correspondence = ofo_tva_record_get_has_correspondence( priv->tva_record );
 	if( priv->has_correspondence ){
-		book = my_utils_container_get_child_by_name( container, "tva-book" );
+		book = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tva-book" );
 		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 		label = gtk_label_new_with_mnemonic( _( "_Correspondence" ));
 		scrolled = gtk_scrolled_window_new( NULL, NULL );
@@ -525,12 +570,23 @@ init_correspondence( ofaTVARecordProperties *self, GtkContainer *container )
 	}
 }
 
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
 static void
 on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	my_date_set_from_date( &priv->begin_date, my_editable_date_get_date( entry, NULL ));
 
@@ -542,7 +598,7 @@ on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	my_date_set_from_date( &priv->end_date, my_editable_date_get_date( entry, NULL ));
 
@@ -580,7 +636,8 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	const GDate *dend;
 	gchar *msgerr;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
 	msgerr = NULL;
 
 	if( priv->is_current ){
@@ -629,27 +686,33 @@ static void
 set_dialog_title( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWindow *toplevel;
 	gchar *send, *title;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	send = my_date_to_str( &priv->end_date, MY_DATE_SQL );
 	title = g_strdup_printf( _( "Updating « %s - %s » TVA declaration" ), priv->mnemo, send );
-	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
-	gtk_window_set_title( toplevel, title );
+	gtk_window_set_title( GTK_WINDOW( self ), title );
 	g_free( title );
 	g_free( send );
 }
 
-/*
- * OK button: records the update and quits the dialog
- * return %TRUE to allow quitting the dialog
- */
-static gboolean
-v_quit_on_ok( myDialog *dialog )
+static void
+on_ok_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
-	return( do_update( OFA_TVA_RECORD_PROPERTIES( dialog )));
+	gboolean ok;
+	gchar *msgerr;
+
+	msgerr = NULL;
+	ok = do_update( self, &msgerr );
+
+	if( ok ){
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
+	}
 }
 
 /*
@@ -660,16 +723,16 @@ v_quit_on_ok( myDialog *dialog )
  * new one be re-inserted.
  */
 static gboolean
-do_update( ofaTVARecordProperties *self )
+do_update( ofaTVARecordProperties *self, gchar **msgerr )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	guint idx, row, count;
 	GtkWidget *button, *entry;
 	const gchar *clabel;
-	gboolean is_true;
+	gboolean ok, is_true;
 	ofxAmount amount;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	if( priv->has_correspondence ){
 		my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->textview ), tva_record );
@@ -710,9 +773,12 @@ do_update( ofaTVARecordProperties *self )
 		}
 	}
 
-	priv->updated = ofo_tva_record_update( priv->tva_record );
+	ok = ofo_tva_record_update( priv->tva_record );
+	if( !ok ){
+		*msgerr = g_strdup( _( "Unable to update the VAT declaration" ));
+	}
 
-	return( priv->updated );
+	return( ok );
 }
 
 /*
@@ -722,16 +788,19 @@ static void
 on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *dialog, *entry;
 	gint resp;
 	guint idx, row, count;
 	const gchar *rule;
 	gchar *result;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 
 	dialog = gtk_message_dialog_new(
-					GTK_WINDOW( priv->main_window ),
+					GTK_WINDOW( main_window ),
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_WARNING,
 					GTK_BUTTONS_NONE,
@@ -781,7 +850,7 @@ alloc_regex( ofaTVARecordProperties *self )
 	ofaTVARecordPropertiesPrivate *priv;
 	static const gchar *st_functions = "%(COD|ACC)\\(\\s*([^()]+)\\s*\\)";
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	if( !priv->regex_fn ){
 		/* a regex to identify functions */
@@ -795,7 +864,8 @@ eval_rule( ofaTVARecordProperties *self, const gchar *rule )
 	ofaTVARecordPropertiesPrivate *priv;
 	gchar *str1, *str2;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
 	str1 = g_regex_replace_eval( priv->regex_fn,
 				rule, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, self, NULL );
 	str2 = my_double_to_str( eval_opes( self, str1 ));
@@ -840,7 +910,7 @@ is_function( const gchar *token, ofaTVARecordProperties *self, gchar **str )
 	gchar *field, *content;
 
 	field = NULL;
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	ok = g_regex_match( priv->regex_fn, token, 0, &info );
 	DEBUG( "%s: token=%s, g_regex_match=%s", thisfn, token, ok ? "True":"False" );
@@ -883,7 +953,8 @@ get_code_amount( ofaTVARecordProperties *self, const gchar *content )
 	GtkWidget *entry;
 	const gchar *code, *ctext;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 
 	for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
@@ -913,14 +984,13 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_get_account_balance";
 	ofaTVARecordPropertiesPrivate *priv;
-	ofaHub *hub;
 	GList *list, *it;
 	ofsAccountBalance *sbal;
 	ofxAmount amount;
 	gchar *begin_id, *end_id;
 	gchar **array;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	array = g_strsplit( content, "-", 2 );
 	begin_id = g_strdup( *array );
@@ -932,10 +1002,8 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 	}
 	DEBUG( "%s: begin_id=%s, endid=%s", thisfn, begin_id, end_id );
 
-	hub = ofa_main_window_get_hub( priv->main_window );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	list = ofo_entry_get_dataset_balance_rough_validated(
-				hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
+				priv->hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=list ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
@@ -1059,40 +1127,33 @@ static void
 on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWidget *dialog;
+	gchar *msgerr;
 
-	priv = self->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
-	if( do_update( self )){
-		/* display an informational message */
-		dialog = gtk_message_dialog_new(
-						GTK_WINDOW( priv->main_window ),
-						GTK_DIALOG_MODAL,
-						GTK_MESSAGE_INFO,
-						GTK_BUTTONS_OK,
-						_( "The VAT declaration has been successfully validated." ));
-		gtk_dialog_run( GTK_DIALOG( dialog ));
-		gtk_widget_destroy( dialog );
+
+	if( do_update( self, &msgerr )){
+		my_utils_dialog_info( _( "The VAT declaration has been successfully validated." ));
 		/* close the Properties dialog box
-		 * with Cancel to not trigger another update */
-		gtk_dialog_response(
-				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))), GTK_RESPONSE_CANCEL );
+		 * with Cancel for not trigger another update */
+		my_iwindow_close( MY_IWINDOW( self ));
+
+	} else {
+		my_utils_dialog_warning( msgerr );
+		g_free( msgerr );
 	}
 }
 
 static void
-set_msgerr( ofaTVARecordProperties *dialog, const gchar *msg )
+set_msgerr( ofaTVARecordProperties *self, const gchar *msg )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 
-	priv = dialog->priv;
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	if( !priv->msg_label ){
-		priv->msg_label =
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-						"px-msgerr" );
+		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 		my_utils_widget_set_style( priv->msg_label, "labelerror");
 	}

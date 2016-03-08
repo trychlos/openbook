@@ -70,7 +70,8 @@ static gboolean find_record_by_ptr( ofaTVARecordStore *store, const ofoTVARecord
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaTVARecordStore *store );
 
-G_DEFINE_TYPE( ofaTVARecordStore, ofa_tva_record_store, OFA_TYPE_LIST_STORE )
+G_DEFINE_TYPE_EXTENDED( ofaTVARecordStore, ofa_tva_record_store, OFA_TYPE_LIST_STORE, 0,
+		G_ADD_PRIVATE( ofaTVARecordStore ))
 
 static void
 tva_record_store_finalize( GObject *instance )
@@ -95,7 +96,7 @@ tva_record_store_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_TVA_RECORD_STORE( instance ));
 
-	priv = OFA_TVA_RECORD_STORE( instance )->priv;
+	priv = ofa_tva_record_store_get_instance_private( OFA_TVA_RECORD_STORE( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -112,13 +113,16 @@ static void
 ofa_tva_record_store_init( ofaTVARecordStore *self )
 {
 	static const gchar *thisfn = "ofa_tva_record_store_init";
+	ofaTVARecordStorePrivate *priv;
 
 	g_return_if_fail( OFA_IS_TVA_RECORD_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA_RECORD_STORE, ofaTVARecordStorePrivate );
+	priv = ofa_tva_record_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -130,8 +134,6 @@ ofa_tva_record_store_class_init( ofaTVARecordStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tva_record_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_store_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaTVARecordStorePrivate ));
 }
 
 /**

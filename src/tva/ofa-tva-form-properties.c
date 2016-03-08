@@ -738,7 +738,7 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	ok = ofo_tva_form_is_valid( priv->mnemo, &msgerr );
+	ok = ofo_tva_form_is_valid_data( priv->mnemo, &msgerr );
 	//g_debug( "is_dialog_validable: is_valid=%s", ok ? "True":"False" );
 
 	if( ok ){

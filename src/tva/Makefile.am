@@ -97,12 +97,12 @@ libofa_tva_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-tva-record-properties.ui						\
 	$(NULL)
 
 resources_ui = \
 	ofa-tva-form-properties.ui							\
 	ofa-tva-record-new.ui								\
+	ofa-tva-record-properties.ui						\
 	$(NULL)
 
 images_files = \

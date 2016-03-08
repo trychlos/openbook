@@ -3,5 +3,6 @@
   <gresource prefix="/org/trychlos/openbook/tva">
     <file>ofa-tva-form-properties.ui</file>
     <file>ofa-tva-record-new.ui</file>
+    <file>ofa-tva-record-properties.ui</file>
   </gresource>
 </gresources>

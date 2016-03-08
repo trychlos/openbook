@@ -37,12 +37,11 @@
  * (the declaration has to be deleted before recreated).
  *
  * Development rules:
- * - type:       dialog
+ * - type:       non-modal dialog
  * - settings:   yes
  * - current:    yes
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 #include "tva/ofo-tva-record.h"
@@ -60,23 +59,20 @@ typedef struct _ofaTVARecordNewPrivate         ofaTVARecordNewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                parent;
-
-	/*< private members >*/
-	ofaTVARecordNewPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaTVARecordNew;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass           parent;
+	GtkDialogClass parent;
 }
 	ofaTVARecordNewClass;
 
-GType    ofa_tva_record_new_get_type( void ) G_GNUC_CONST;
+GType ofa_tva_record_new_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_tva_record_new_run     ( const ofaMainWindow *main_window,
-														ofoTVARecord *record );
+void  ofa_tva_record_new_run     ( const ofaMainWindow *main_window,
+										ofoTVARecord *record );
 
 G_END_DECLS
 

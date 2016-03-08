@@ -47,7 +47,6 @@
 #include "tva/ofa-tva-main.h"
 #include "tva/ofa-tva-manage-page.h"
 #include "tva/ofa-tva-record-new.h"
-#include "tva/ofa-tva-record-properties.h"
 #include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
 
@@ -83,7 +82,6 @@ static void        try_to_delete_current_row( ofaTVAManagePage *self );
 static void        do_delete( ofaTVAManagePage *self, ofoTVAForm *form, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean    delete_confirmed( ofaTVAManagePage *self, ofoTVAForm *form );
 static void        on_declare_clicked( GtkButton *button, ofaTVAManagePage *self );
-static void        do_declare( ofaTVAManagePage *self, ofoTVAForm *form );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAManagePage, ofa_tva_manage_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVAManagePage ))
@@ -451,28 +449,13 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
+	ofoTVARecord *record;
 
 	form = treeview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	do_declare( self, form );
-}
-
-static void
-do_declare( ofaTVAManagePage *self, ofoTVAForm *form )
-{
-	ofoTVARecord *record;
-	guint theme;
-	const ofaMainWindow *main_window;
-	ofaPage *declare_page;
-
 	record = ofo_tva_record_new_from_form( form );
-	if( ofa_tva_record_new_run( ofa_page_get_main_window( OFA_PAGE( self )), record ) &&
-		ofa_tva_record_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), record )){
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-		theme = ofa_tva_main_get_theme( "tvadeclare" );
-		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
-		declare_page = ofa_main_window_activate_theme( main_window, theme );
-		ofa_tva_declare_page_set_selected( OFA_TVA_DECLARE_PAGE( declare_page ), record );
-	}
+	ofa_tva_record_new_run( ofa_page_get_main_window( OFA_PAGE( self )), record );
 }
