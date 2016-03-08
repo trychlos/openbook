@@ -195,7 +195,7 @@ ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_account_select_iwindow_iface_init";
+	static const gchar *thisfn = "ofa_bat_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
@@ -206,7 +206,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 static void
 idialog_iface_init( myIDialogInterface *iface )
 {
-	static const gchar *thisfn = "ofa_account_select_idialog_iface_init";
+	static const gchar *thisfn = "ofa_bat_select_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

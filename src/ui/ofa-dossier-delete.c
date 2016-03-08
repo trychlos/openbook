@@ -28,8 +28,9 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
@@ -45,10 +46,10 @@
 /* private instance data
  */
 struct _ofaDossierDeletePrivate {
+	gboolean                  dispose_has_run;
 
 	/* initialization
 	 */
-	ofaMainWindow            *main_window;
 	ofaIDBMeta               *meta;
 	ofaIDBPeriod             *period;
 
@@ -63,21 +64,24 @@ struct _ofaDossierDeletePrivate {
 	/* runtime data
 	 */
 	ofaIDBProvider           *provider;
-	gboolean                  deleted;
 	gchar                    *root_account;
 	gchar                    *root_password;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-delete.ui";
-static const gchar *st_ui_id            = "DossierDeleteDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-delete.ui";
 
-G_DEFINE_TYPE( ofaDossierDelete, ofa_dossier_delete, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog );
 static void      check_for_enable_dlg( ofaDossierDelete *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static gboolean  do_delete_dossier( ofaDossierDelete *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierDelete, ofa_dossier_delete, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDossierDelete )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 dossier_delete_finalize( GObject *instance )
@@ -91,7 +95,7 @@ dossier_delete_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_DELETE( instance )->priv;
+	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
 
 	g_free( priv->root_account );
 	g_free( priv->root_password );
@@ -107,9 +111,11 @@ dossier_delete_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
 
-		priv = OFA_DOSSIER_DELETE( instance )->priv;
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->meta );
@@ -125,13 +131,18 @@ static void
 ofa_dossier_delete_init( ofaDossierDelete *self )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_init";
+	ofaDossierDeletePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_DELETE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_DELETE, ofaDossierDeletePrivate );
+	priv = ofa_dossier_delete_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -144,10 +155,7 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_delete_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_delete_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -157,70 +165,73 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
  * @period:
  *
  * Run the selection dialog to delete a dossier.
- *
- * Returns: %TRUE if the dossier has been deleted, %FALSE if the action
- * has been cancelled by the user or an error has occured.
  */
-gboolean
+void
 ofa_dossier_delete_run( ofaMainWindow *main_window, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_run";
 	ofaDossierDelete *self;
 	ofaDossierDeletePrivate *priv;
-	gboolean deleted;
-
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 
 	g_debug( "%s: main_window=%p, meta=%p, period=%p",
 				thisfn, main_window, ( void * ) meta, ( void * ) period );
 
-	self = g_object_new(
-				OFA_TYPE_DOSSIER_DELETE,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-	priv = self->priv;
+	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	priv->main_window = main_window;
-	priv->deleted = FALSE;
+	priv = ofa_dossier_delete_get_instance_private( self );
+
 	priv->meta = g_object_ref(( gpointer ) meta );
 	priv->period = g_object_ref(( gpointer ) period );
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	deleted = priv->deleted;
-
-	g_object_unref( self );
-
-	return( deleted );
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
 }
 
 /*
- * this dialog is entirely built with composite widgets
+ * myIWindow interface management
  */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
+}
+
+static void
+idialog_init( myIDialog *instance )
 {
 	ofaDossierDeletePrivate *priv;
-	GtkWindow *toplevel;
 	GtkWidget *label, *parent;
 	gchar *msg;
 	GtkSizeGroup *group;
 	gchar *dossier_name;
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-	priv = OFA_DOSSIER_DELETE( dialog )->priv;
+	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* informational message */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
 	msg = g_strdup_printf( _(
@@ -237,7 +248,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( priv->provider && OFA_IS_IDBPROVIDER( priv->provider ));
 	priv->infos = ofa_idbprovider_new_editor( priv->provider, FALSE );
 	g_return_if_fail( priv->infos && GTK_IS_WIDGET( priv->infos ));
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "infos-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "infos-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->infos ));
 	my_utils_size_group_add_size_group(
@@ -245,44 +256,44 @@ v_init_dialog( myDialog *dialog )
 
 	/* root credentials */
 	priv->credentials = ofa_dbms_root_bin_new();
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "credentials-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "credentials-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->credentials ));
 	ofa_dbms_root_bin_set_meta( priv->credentials, priv->meta );
 	my_utils_size_group_add_size_group(
 			group, ofa_dbms_root_bin_get_size_group( priv->credentials, 0 ));
-	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), dialog );
+	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), instance );
 
 	/* preferences */
 	priv->prefs = ofa_dossier_delete_prefs_bin_new();
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "prefs-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "prefs-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs ));
 
 	/* other widgets */
-	priv->err_msg = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "px-errmsg" );
+	priv->err_msg = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-errmsg" );
 	g_return_if_fail( priv->err_msg && GTK_IS_LABEL( priv->err_msg ));
 	my_utils_widget_set_style( priv->err_msg, "labelerror" );
 
-	priv->btn_delete = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	priv->btn_delete = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->btn_delete && GTK_IS_BUTTON( priv->btn_delete ));
 
 	g_object_unref( group );
 }
 
 static void
-on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog )
+on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *self )
 {
 	ofaDossierDeletePrivate *priv;
 
-	priv = dialog->priv;
+	priv = ofa_dossier_delete_get_instance_private( self );
 
 	g_free( priv->root_account );
 	priv->root_account = g_strdup( account );
 	g_free( priv->root_password );
 	priv->root_password = g_strdup( password );
 
-	check_for_enable_dlg( dialog );
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -292,7 +303,7 @@ check_for_enable_dlg( ofaDossierDelete *self )
 	gboolean enabled;
 	gchar *msg;
 
-	priv = self->priv;
+	priv = ofa_dossier_delete_get_instance_private( self );
 
 	enabled = ofa_dbms_root_bin_is_valid( priv->credentials, &msg );
 	gtk_label_set_text( GTK_LABEL( priv->err_msg ), msg ? msg : "" );
@@ -301,15 +312,18 @@ check_for_enable_dlg( ofaDossierDelete *self )
 	gtk_widget_set_sensitive( priv->btn_delete, enabled );
 }
 
+/*
+ * pwi 2016-03-09: this is not supposed to work as quit_on_ok() method
+ * is only called for modal dialogs.
+ */
 static gboolean
-v_quit_on_ok( myDialog *dialog )
+idialog_quit_on_ok( myIDialog *instance )
 {
 	ofaDossierDeletePrivate *priv;
 
-	priv = OFA_DOSSIER_DELETE( dialog )->priv;
+	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
 
-	priv->deleted = do_delete_dossier( OFA_DOSSIER_DELETE( dialog ));
-
+	do_delete_dossier( OFA_DOSSIER_DELETE( instance ));
 	ofa_dossier_delete_prefs_bin_set_settings( priv->prefs );
 
 	return( TRUE );

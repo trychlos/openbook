@@ -31,6 +31,11 @@
  * @include: ui/ofa-bat-select.h
  *
  * Display the chart of bats, letting the user select one.
+ *
+ * Development rules:
+ * - type:       modal dialog
+ * - settings:   yes
+ * - current:    no
  */
 
 #include "api/ofa-main-window-def.h"
