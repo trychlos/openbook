@@ -170,6 +170,14 @@ GtkApplicationWindow *my_iwindow_get_main_window           ( const myIWindow *in
 void                  my_iwindow_set_main_window           ( myIWindow *instance,
 																	GtkApplicationWindow *main_window );
 
+void                  my_iwindow_set_restore_position      ( myIWindow *instance,
+																	gboolean restore_position );
+
+void                  my_iwindow_set_hide_on_close         ( myIWindow *instance,
+																	gboolean hide_on_close );
+
+void                  my_iwindow_init                      ( myIWindow *instance );
+
 myIWindow            *my_iwindow_present                   ( myIWindow *instance );
 
 void                  my_iwindow_close                     ( myIWindow *instance );

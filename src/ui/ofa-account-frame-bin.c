@@ -344,7 +344,7 @@ setup_grid( ofaAccountFrameBin *bin )
 static GtkWidget *
 book_get_page_by_class( ofaAccountFrameBin *bin, gint class_num, gboolean bcreate )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_get_page_by_class";
+	static const gchar *thisfn = "ofa_account_frame_bin_get_page_by_class";
 	ofaAccountFrameBinPrivate *priv;
 	gint count, i;
 	GtkWidget *found, *page_widget;
@@ -353,7 +353,9 @@ book_get_page_by_class( ofaAccountFrameBin *bin, gint class_num, gboolean bcreat
 	priv = ofa_account_frame_bin_get_instance_private( bin );
 
 	if( !ofo_class_is_valid_number( class_num )){
-		g_warning( "%s: invalid class number: %d", thisfn, class_num );
+		/* this is not really an error as %X macros do not begin with
+		 * a valid digit class number */
+		g_debug( "%s: invalid class number: %d", thisfn, class_num );
 		return( NULL );
 	}
 
@@ -562,7 +564,7 @@ on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountFrameBin *
 static GtkWidget *
 page_add_treeview( ofaAccountFrameBin *bin, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_create_treeview";
+	static const gchar *thisfn = "ofa_account_frame_bin_create_treeview";
 	ofaAccountFrameBinPrivate *priv;
 	GtkWidget *tview;
 	GtkTreeModel *tfilter;
@@ -1335,7 +1337,7 @@ connect_to_hub_signaling_system( ofaAccountFrameBin *bin )
 static void
 on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_new_object";
+	static const gchar *thisfn = "ofa_account_frame_bin_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), bin=%p",
 			thisfn, ( void * ) hub,
@@ -1353,7 +1355,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *bin )
 static void
 on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_account_frame_bin_on_hub_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, bin=%p",
 			thisfn, ( void * ) hub,
@@ -1391,7 +1393,7 @@ on_updated_class_label( ofaAccountFrameBin *bin, ofoClass *class )
 static void
 on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_account_frame_bin_on_hub_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
 			thisfn, ( void * ) hub,
@@ -1426,7 +1428,7 @@ on_deleted_class_label( ofaAccountFrameBin *bin, ofoClass *class )
 static void
 on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_account_chart_bin_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_account_frame_bin_on_hub_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, bin=%p",
 			thisfn, ( void * ) hub, type, ( void * ) bin );

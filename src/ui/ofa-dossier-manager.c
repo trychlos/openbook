@@ -195,8 +195,6 @@ iwindow_init( myIWindow *instance )
 	ofaDossierManagerPrivate *priv;
 	GtkWidget *button;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	priv = ofa_dossier_manager_get_instance_private( OFA_DOSSIER_MANAGER( instance ));
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );

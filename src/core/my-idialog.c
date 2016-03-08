@@ -33,17 +33,32 @@
 #include "api/my-utils.h"
 
 #define IDIALOG_LAST_VERSION            1
+#define IDIALOG_DATA                    "my-idialog-data"
+
+/* a data structure attached to each instance
+ */
+typedef struct {
+	gboolean initialized;
+}
+	sIDialog;
 
 static guint    st_initializations      = 0;		/* interface initialization count */
 
 static GType     register_type( void );
 static void      interface_base_init( myIDialogInterface *klass );
 static void      interface_base_finalize( myIDialogInterface *klass );
+static void      idialog_init_application( myIDialog *instance );
+static void      button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb );
 static void      on_click_to_close( GtkButton *button, myIDialog *instance );
 static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
 static void      on_close_clicked( GtkButton *button, myIDialog *instance );
 static void      on_ok_clicked( GtkButton *button, myIDialog *instance );
 static void      do_close( myIDialog *instance );
+static gboolean  ok_to_terminate( myIDialog *instance, gint response_code );
+static gboolean  do_quit_on_ok( myIDialog *instance );
+static gboolean  do_quit_on_code( myIDialog *instance, gint code );
+static sIDialog *get_idialog_data( const myIDialog *instance );
+static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
 /**
  * my_idialog_get_type:
@@ -162,42 +177,65 @@ my_idialog_get_interface_version( const myIDialog *instance )
 }
 
 /**
- * my_idialog_init_dialog:
+ * my_idialog_init:
 
  * Specific GtkDialog-derived one-time initialization.
  *
  * Response codes are defined in /usr/include/gtk-3.0/gtk/gtkdialog.h.
+ *
+ * Note that this method is mainly thought to be called by #myIWindow
+ * interface. It should never be directly called by the application.
+ * Rather call the #my_iwindow_init() method.
  */
 void
-my_idialog_init_dialog( myIDialog *instance )
+my_idialog_init( myIDialog *instance )
 {
-	static const gchar *thisfn = "my_idialog_init_dialog";
-	GtkWidget *cancel_btn, *close_btn, *ok_btn;
+	static const gchar *thisfn = "my_idialog_init";
+	sIDialog *sdata;
 
-	g_return_if_fail( instance && GTK_IS_DIALOG( instance ));
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( GTK_IS_DIALOG( instance ));
 
-	cancel_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CANCEL );
-	if( cancel_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( cancel_btn ));
-		g_signal_connect( cancel_btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
-	} else {
-		g_debug( "%s: unable to identify the [Cancel] button", thisfn );
+	sdata = get_idialog_data( instance );
+
+	if( !sdata->initialized ){
+		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+		sdata->initialized = TRUE;
+
+		idialog_init_application( instance );
+
+		button_connect( instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
+		button_connect( instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
+		button_connect( instance, "OK", GTK_RESPONSE_OK, G_CALLBACK( on_ok_clicked ));
+	}
+}
+
+static void
+idialog_init_application( myIDialog *instance )
+{
+	static const gchar *thisfn = "my_idialog_init";
+
+	if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
+		MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
+		return;
 	}
 
-	close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CLOSE );
-	if( close_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( close_btn ));
-		g_signal_connect( close_btn, "clicked", G_CALLBACK( on_close_clicked ), instance );
-	} else {
-		g_debug( "%s: unable to identify the [Close] button", thisfn );
-	}
+	g_info( "%s: myIDialog instance %p (%s) does not provide 'init()' method",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+}
 
-	ok_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
-	if( ok_btn ){
-		g_return_if_fail( GTK_IS_BUTTON( ok_btn ));
-		g_signal_connect( ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+static void
+button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb )
+{
+	static const gchar *thisfn = "my_idialog_button_connect";
+	GtkWidget *btn;
+
+	btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), response_code );
+	if( btn ){
+		g_return_if_fail( GTK_IS_BUTTON( btn ));
+		g_signal_connect( btn, "clicked", cb, instance );
 	} else {
-		g_debug( "%s: unable to identify the [OK] button", thisfn );
+		g_debug( "%s: unable to identify the [%s] button", thisfn, label );
 	}
 }
 
@@ -213,6 +251,7 @@ void
 my_idialog_widget_click_to_close( myIDialog *instance, GtkWidget *button )
 {
 	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( GTK_IS_DIALOG( instance ));
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 
 	g_signal_connect( button, "clicked", G_CALLBACK( on_click_to_close ), instance );
@@ -301,4 +340,120 @@ do_close( myIDialog *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	my_iwindow_close( MY_IWINDOW( instance ));
+}
+
+/**
+ * my_idialog_run:
+ * @instance: this #myIDialog instance.
+ *
+ * Run as a modal dialog.
+ *
+ * Returns: the #GtkResponseCode of the dialog.
+ */
+gint
+my_idialog_run( myIDialog *instance )
+{
+	static const gchar *thisfn = "my_idialog_run_modal";
+	gint response_code;
+
+	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), 0 );
+	g_return_val_if_fail( GTK_IS_DIALOG( instance ), 0 );
+
+	my_iwindow_init( MY_IWINDOW( instance ));
+
+	g_debug( "%s: calling gtk_dialog_run", thisfn );
+	do {
+		response_code = gtk_dialog_run( GTK_DIALOG( instance ));
+		g_debug( "%s: gtk_dialog_run returns code=%d", thisfn, response_code );
+		/* pressing Escape key makes gtk_dialog_run returns -4 GTK_RESPONSE_DELETE_EVENT */
+	}
+	while( !ok_to_terminate( instance, response_code ));
+
+	return( response_code );
+}
+
+/*
+ * return %TRUE to allow quitting the dialog
+ */
+static gboolean
+ok_to_terminate( myIDialog *instance, gint response_code )
+{
+	gboolean quit = FALSE;
+
+	switch( response_code ){
+		case GTK_RESPONSE_DELETE_EVENT:
+			quit = TRUE;
+			break;
+		case GTK_RESPONSE_CLOSE:
+			quit = TRUE;
+			break;
+		case GTK_RESPONSE_CANCEL:
+			quit = TRUE;
+			break;
+		case GTK_RESPONSE_OK:
+			quit = do_quit_on_ok( instance );
+			break;
+		default:
+			quit = do_quit_on_code( instance, response_code );
+			break;
+	}
+
+	return( quit );
+}
+
+static gboolean
+do_quit_on_ok( myIDialog *instance )
+{
+	static const gchar *thisfn = "my_idialog_do_quit_on_ok";
+
+	if( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_ok ){
+		return( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_ok( instance ));
+	}
+
+	g_info( "%s: myIDialog instance %p (%s) does not provide 'quit_on_ok()' method",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	return( TRUE );
+}
+
+static gboolean
+do_quit_on_code( myIDialog *instance, gint code )
+{
+	static const gchar *thisfn = "my_idialog_do_quit_on_code";
+
+	if( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_code ){
+		return( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_code( instance, code ));
+	}
+
+	g_info( "%s: myIDialog instance %p (%s) does not provide 'quit_on_code()' method",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	return( FALSE );
+}
+
+static sIDialog *
+get_idialog_data( const myIDialog *instance )
+{
+	sIDialog *sdata;
+
+	sdata = ( sIDialog * ) g_object_get_data( G_OBJECT( instance ), IDIALOG_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIDialog, 1 );
+		g_object_set_data( G_OBJECT( instance ), IDIALOG_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_idialog_finalized, sdata );
+
+		sdata->initialized = FALSE;
+	}
+
+	return( sdata );
+}
+
+static void
+on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog )
+{
+	static const gchar *thisfn = "my_idialog_on_idialog_finalized";
+
+	g_debug( "%s: sdata=%p, finalized_idialog=%p",
+			thisfn, ( void * ) sdata, ( void * ) finalized_idialog );
+
+	g_free( sdata );
 }

@@ -32,7 +32,8 @@
  * @include: openbook/my-idialog.h
  *
  * This interface manages for the application:
- * - the dialog buttons.
+ * - the dialog buttons
+ * - the modal dialogs.
  */
 
 #include <gtk/gtk.h>
@@ -50,6 +51,7 @@ typedef struct _myIDialog                    myIDialog;
  * myIDialogInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @init: [should]: one-time initialization.
  *
  * This defines the interface that an #myIDialog may/should/must
  * implement.
@@ -74,6 +76,39 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint    ( *get_interface_version )( const myIDialog *instance );
+
+	/**
+	 * init:
+	 * @instance: the #myIDialog instance.
+	 *
+	 * This is called once, before the first presentation, when running
+	 * a modal dialog.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *init )                 ( myIDialog *instance );
+
+	/**
+	 * quit_on_ok:
+	 * @instance: the #myIDialog instance.
+	 *
+	 * Returns: %TRUE if the implementation is OK to terminate the dialog.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *quit_on_ok )           ( myIDialog *instance );
+
+	/**
+	 * quit_on_code:
+	 * @instance: the #myIDialog instance.
+	 * @response_code: the response code.
+	 *
+	 * Returns: %TRUE if the implementation is OK to terminate the dialog.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *quit_on_code )         ( myIDialog *instance,
+												gint response_code );
 }
 	myIDialogInterface;
 
@@ -83,12 +118,14 @@ guint      my_idialog_get_interface_last_version( void );
 
 guint      my_idialog_get_interface_version     ( const myIDialog *instance );
 
-void       my_idialog_init_dialog               ( myIDialog *instance );
+void       my_idialog_init                      ( myIDialog *instance );
 
 void       my_idialog_widget_click_to_close     ( myIDialog *instance,
 														GtkWidget *button );
 
 GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
+
+gint       my_idialog_run                       ( myIDialog *instance );
 
 G_END_DECLS
 

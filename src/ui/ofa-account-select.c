@@ -28,8 +28,9 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -43,17 +44,16 @@
 /* private instance data
  */
 struct _ofaAccountSelectPrivate {
+	gboolean             dispose_has_run;
 
 	/* input data
 	 */
-	const ofaMainWindow *main_window;
 	ofaHub              *hub;
 	gboolean             is_current;
 	gint                 allowed;
 
 	/* UI
 	 */
-	GtkWindow           *toplevel;
 	ofaAccountFrameBin  *account_bin;
 	GtkWidget           *properties_btn;
 	GtkWidget           *delete_btn;
@@ -65,13 +65,12 @@ struct _ofaAccountSelectPrivate {
 	gchar               *account_number;
 };
 
-static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
-static const gchar      *st_ui_id       = "AccountSelectDlg";
+static const gchar      *st_resource_ui = "/org/trychlos/openbook/ui/ofa-account-select.ui";
 static ofaAccountSelect *st_this        = NULL;
 
-G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
 static void      on_new_clicked( GtkButton *button, ofaAccountSelect *self );
 static void      on_properties_clicked( GtkButton *button, ofaAccountSelect *self );
@@ -81,9 +80,15 @@ static void      on_account_activated( ofaAccountFrameBin *piece, const gchar *n
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
 static void      do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static gboolean  do_select( ofaAccountSelect *self );
 static void      set_message( ofaAccountSelect *self, const gchar *str );
+static void      on_hub_finalized( gpointer is_null, gpointer finalized_hub );
+
+G_DEFINE_TYPE_EXTENDED( ofaAccountSelect, ofa_account_select, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaAccountSelect )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 account_select_finalize( GObject *instance )
@@ -97,7 +102,7 @@ account_select_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_SELECT( instance ));
 
 	/* free data members here */
-	priv = OFA_ACCOUNT_SELECT( instance )->priv;
+	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
 
 	g_free( priv->account_number );
 
@@ -108,9 +113,15 @@ account_select_finalize( GObject *instance )
 static void
 account_select_dispose( GObject *instance )
 {
+	ofaAccountSelectPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_SELECT( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -123,13 +134,18 @@ static void
 ofa_account_select_init( ofaAccountSelect *self )
 {
 	static const gchar *thisfn = "ofa_account_select_init";
+	ofaAccountSelectPrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_ACCOUNT_SELECT( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_SELECT, ofaAccountSelectPrivate );
+	priv = ofa_account_select_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -142,23 +158,7 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_select_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_select_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaAccountSelectPrivate ));
-}
-
-static void
-on_hub_finalized( gpointer is_null, gpointer finalized_hub )
-{
-	static const gchar *thisfn = "ofa_account_select_on_hub_finalized";
-
-	g_debug( "%s: empty=%p, finalized_hub=%p",
-			thisfn, ( void * ) is_null, ( void * ) finalized_hub );
-
-	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
-
-	g_clear_object( &st_this );
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -182,27 +182,25 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 			thisfn, ( void * ) main_window, asked_number );
 
 	if( !st_this ){
+		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
+		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
 
-		st_this = g_object_new(
-				OFA_TYPE_ACCOUNT_SELECT,
-				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_WINDOW_XML,    st_ui_xml,
-				MY_PROP_WINDOW_NAME,   st_ui_id,
-				MY_PROP_SIZE_POSITION, FALSE,
-				NULL );
+		priv = ofa_account_select_get_instance_private( st_this );
 
-		st_this->priv->main_window = main_window;
-		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-		st_this->priv->hub = ofa_main_window_get_hub( main_window );
-		g_return_val_if_fail( st_this->priv->hub && OFA_IS_HUB( st_this->priv->hub ), NULL );
-		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
-		my_dialog_init_dialog( MY_DIALOG( st_this ));
+		priv->hub = ofa_main_window_get_hub( main_window );
+		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+		my_iwindow_init( MY_IWINDOW( st_this ));
+		my_iwindow_set_restore_position( MY_IWINDOW( st_this ), FALSE );
+		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
 
 		/* setup a weak reference on the hub to auto-unref */
-		g_object_weak_ref( G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
+		g_object_weak_ref( G_OBJECT( priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
-	priv = st_this->priv;
+	my_utils_window_restore_position( GTK_WINDOW( st_this ), G_OBJECT_TYPE_NAME( st_this ));
+
+	priv = ofa_account_select_get_instance_private( st_this );
 
 	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
 	check_for_enable_dlg( st_this );
@@ -211,41 +209,70 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 	priv->account_number = NULL;
 	priv->allowed = allowed;
 
-	my_dialog_run_dialog( MY_DIALOG( st_this ));
+	my_idialog_run( MY_IDIALOG( st_this ));
 
-	my_utils_window_save_position( st_this->priv->toplevel, st_ui_id );
-	gtk_widget_hide( GTK_WIDGET( st_this->priv->toplevel ));
+	my_utils_window_save_position( GTK_WINDOW( st_this ), G_OBJECT_TYPE_NAME( st_this ));
+	gtk_widget_hide( GTK_WIDGET( st_this ));
 
 	return( g_strdup( priv->account_number ));
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
+	static const gchar *thisfn = "ofa_account_select_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_select_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_account_select_idialog_init";
 	ofaAccountSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkWidget *parent, *btn;
 	ofaButtonsBox *box;
 	ofoDossier *dossier;
 
-	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
+	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "btn-ok" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "p-message" );
+	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p-message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 	my_utils_widget_set_style( priv->msg_label, "labelerror" );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->toplevel ), "piece-parent" );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_bin = ofa_account_frame_bin_new( priv->main_window );
+	priv->account_bin = ofa_account_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_cell_data_func(
-			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, dialog );
+			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, instance );
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
@@ -253,17 +280,19 @@ v_init_dialog( myDialog *dialog )
 
 	box = ofa_account_frame_bin_get_buttons_box( priv->account_bin );
 
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), dialog );
+	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), instance );
 	gtk_widget_set_sensitive( btn, priv->is_current );
 
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), dialog );
+	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), instance );
 	priv->properties_btn = btn;
 
-	ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), dialog );
+	ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), instance );
 	priv->delete_btn = btn;
 
-	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_account_changed ), dialog );
-	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), dialog );
+	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_account_changed ), instance );
+	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), instance );
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 /*
@@ -278,7 +307,7 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 	ofoAccount *account;
 	GdkRGBA color;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	ofa_account_frame_bin_cell_data_render( priv->account_bin, tcolumn, cell, tmodel, iter );
 
@@ -298,7 +327,7 @@ on_new_clicked( GtkButton *button, ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	ofa_account_frame_bin_do_new( priv->account_bin );
 }
@@ -308,7 +337,7 @@ on_properties_clicked( GtkButton *button, ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	ofa_account_frame_bin_do_properties( priv->account_bin );
 }
@@ -318,7 +347,7 @@ on_delete_clicked( GtkButton *button, ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	ofa_account_frame_bin_do_delete( priv->account_bin );
 }
@@ -332,9 +361,7 @@ on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSe
 static void
 on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self )
 {
-	gtk_dialog_response(
-			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-			GTK_RESPONSE_OK );
+	gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_OK );
 }
 
 static void
@@ -344,7 +371,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 	gchar *account;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( priv->account_bin );
 	ok = is_selection_valid( self, account );
@@ -360,7 +387,8 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	gboolean ok;
 	ofoAccount *account;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
+
 	ok = FALSE;
 	set_message( self, "" );
 
@@ -381,7 +409,8 @@ do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account )
 	ofaAccountSelectPrivate *priv;
 	gboolean has_account;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
+
 	has_account = ( account && OFO_IS_ACCOUNT( account ));
 
 	gtk_widget_set_sensitive( priv->properties_btn, has_account );
@@ -389,9 +418,9 @@ do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account )
 }
 
 static gboolean
-v_quit_on_ok( myDialog *dialog )
+idialog_quit_on_ok( myIDialog *instance )
 {
-	return( do_select( OFA_ACCOUNT_SELECT( dialog )));
+	return( do_select( OFA_ACCOUNT_SELECT( instance )));
 }
 
 static gboolean
@@ -401,7 +430,7 @@ do_select( ofaAccountSelect *self )
 	gchar *account;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( priv->account_bin );
 	ok = is_selection_valid( self, account );
@@ -418,7 +447,22 @@ set_message( ofaAccountSelect *self, const gchar *str )
 {
 	ofaAccountSelectPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_account_select_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
+}
+
+static void
+on_hub_finalized( gpointer is_null, gpointer finalized_hub )
+{
+	static const gchar *thisfn = "ofa_account_select_on_hub_finalized";
+
+	g_debug( "%s: empty=%p, finalized_hub=%p",
+			thisfn, ( void * ) is_null, ( void * ) finalized_hub );
+
+	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
+
+	//g_clear_object( &st_this );
+	gtk_widget_destroy( GTK_WIDGET( st_this ));
+	st_this = NULL;
 }

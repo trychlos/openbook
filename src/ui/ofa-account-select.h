@@ -33,12 +33,11 @@
  * Display the chart of accounts, letting the user edit it.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       modal dialog
  * - settings:   yes
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -54,16 +53,13 @@ typedef struct _ofaAccountSelectPrivate        ofaAccountSelectPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                 parent;
-
-	/*< private members >*/
-	ofaAccountSelectPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaAccountSelect;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass            parent;
+	GtkDialogClass parent;
 }
 	ofaAccountSelectClass;
 

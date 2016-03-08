@@ -178,8 +178,6 @@ iwindow_init( myIWindow *instance )
 {
 	GtkWidget *button;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), button );

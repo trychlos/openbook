@@ -237,8 +237,6 @@ iwindow_init( myIWindow *instance )
 	gchar *str;
 	GtkWidget *label;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );

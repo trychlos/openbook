@@ -293,8 +293,6 @@ iwindow_init( myIWindow *instance )
 	ofaPreferences *self;
 	ofaPreferencesPrivate *priv;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	self = OFA_PREFERENCES( instance );
 	priv = ofa_preferences_get_instance_private( self );
 

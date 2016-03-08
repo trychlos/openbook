@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-idialog.h"
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 
@@ -45,13 +46,16 @@ typedef struct {
 	GtkWindow            *parent;
 	gchar                *settings_name;
 	gboolean              initialized;
+	gboolean              hide_on_close;
+	gboolean              restore_position;
 }
 	sIWindow;
 
 static GType     register_type( void );
 static void      interface_base_init( myIWindowInterface *klass );
 static void      interface_base_finalize( myIWindowInterface *klass );
-static void      iwindow_init( myIWindow *instance );
+static void      iwindow_init_application( myIWindow *instance );
+static void      iwindow_init_window( myIWindow *instance, sIWindow *sdata );
 static gboolean  iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean  on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void      do_close( myIWindow *instance );
@@ -220,6 +224,116 @@ my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_wind
 }
 
 /**
+ * my_iwindow_set_hide_on_close:
+ * @instance: this #myIWindow instance.
+ * @hide_on_close: whether the #GtkwINDOW must be hidden on close, rather
+ *  than being destroyed.
+
+ * Set the @hide_on_close indicator.
+ */
+void
+my_iwindow_set_hide_on_close( myIWindow *instance, gboolean hide_on_close )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_iwindow_data( instance );
+	sdata->hide_on_close = hide_on_close;
+}
+
+/**
+ * my_iwindow_set_restore_position:
+ * @instance: this #myIWindow instance.
+ * @restore_position: whether restore size and position of the #GtkWindow
+ *  at initialization time.
+ *
+ * Sets the @restore_position indicator.
+ *
+ * This method is mainly thought for #GtkWindow which are not destroyed
+ * on cancel or close, but only hidden. The size and position is so
+ * restored on demand only, most often just before re-opening the dialog.
+ *
+ * This same indicator is used both at initialization time and when
+ * closing the window.
+ */
+void
+my_iwindow_set_restore_position( myIWindow *instance, gboolean restore_position )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_iwindow_data( instance );
+	sdata->restore_position = restore_position;
+}
+
+/**
+ * my_iwindow_init:
+ * @instance: this #myIWindow instance.
+ *
+ * One-time initialization of the @instance.
+ */
+void
+my_iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "my_iwindow_init";
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_iwindow_data( instance );
+
+	if( !sdata->initialized ){
+		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+		sdata->initialized = TRUE;
+
+		iwindow_init_application( instance );
+		iwindow_init_window( instance, sdata );
+
+		if( MY_IS_IDIALOG( instance )){
+			my_idialog_init( MY_IDIALOG( instance ));
+		}
+	}
+}
+
+static void
+iwindow_init_application( myIWindow *instance )
+{
+	static const gchar *thisfn = "my_iwindow_init_application";
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->init ){
+		MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
+
+	} else {
+		g_info( "%s: myIWindow instance %p (%s) does not provide 'init()' method",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	}
+}
+
+static void
+iwindow_init_window( myIWindow *instance, sIWindow *sdata )
+{
+	gchar *settings_name;
+
+	iwindow_set_transient_for( instance );
+
+	if( sdata->restore_position ){
+		settings_name = iwindow_get_settings_name( instance );
+		if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
+			iwindow_set_default_size( instance );
+		}
+		g_free( settings_name );
+	}
+
+	if( st_dump_container ){
+		my_utils_container_dump( GTK_CONTAINER( instance ));
+	}
+
+	g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
+}
+
+/**
  * my_iwindow_present:
  * @instance: this #myIWindow instance.
  *
@@ -270,7 +384,7 @@ my_iwindow_present( myIWindow *instance )
 		do_close( instance );
 
 	} else {
-		iwindow_init( instance );
+		my_iwindow_init( instance );
 		st_live_list = g_list_prepend( st_live_list, instance );
 		found = instance;
 	}
@@ -293,54 +407,6 @@ my_iwindow_close( myIWindow *instance )
 	g_return_if_fail( instance && MY_IWINDOW( instance ));
 
 	do_close( instance );
-}
-
-/*
- * iwindow_init:
- * @instance: this #myIWindow instance.
- *
- * Initialize the dialog once before first presentation.
- */
-static void
-iwindow_init( myIWindow *instance )
-{
-	static const gchar *thisfn = "my_iwindow_init";
-	sIWindow *sdata;
-	gchar *settings_name;
-
-	sdata = get_iwindow_data( instance );
-	g_return_if_fail( sdata->main_window && GTK_IS_APPLICATION_WINDOW( sdata->main_window ));
-
-	if( !sdata->initialized ){
-
-		sdata->initialized = TRUE;
-
-		if( MY_IWINDOW_GET_INTERFACE( instance )->init ){
-			MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
-
-		} else {
-			g_info( "%s: myIWindow instance %p (%s) does not provide 'init()' method",
-					thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-		}
-
-		iwindow_set_transient_for( instance );
-
-		settings_name = iwindow_get_settings_name( instance );
-		if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
-			iwindow_set_default_size( instance );
-		}
-		g_free( settings_name );
-
-		if( st_dump_container ){
-			my_utils_container_dump( GTK_CONTAINER( instance ));
-		}
-
-		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
-
-	} else {
-		g_info( "%s: myIWindow instance %p (%s) already initialized",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-	}
 }
 
 /*
@@ -388,15 +454,25 @@ static void
 do_close( myIWindow *instance )
 {
 	static const gchar *thisfn = "my_iwindow_do_close";
+	sIWindow *sdata;
 	gchar *settings_name;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	settings_name = iwindow_get_settings_name( instance );
-	my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
-	g_free( settings_name );
+	sdata = get_iwindow_data( instance );
 
-	gtk_widget_destroy( GTK_WIDGET( instance ));
+	if( sdata->restore_position ){
+		settings_name = iwindow_get_settings_name( instance );
+		my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
+		g_free( settings_name );
+	}
+
+	if( sdata->hide_on_close ){
+		gtk_widget_hide( GTK_WIDGET( instance ));
+
+	} else {
+		gtk_widget_destroy( GTK_WIDGET( instance ));
+	}
 }
 
 /*
@@ -502,6 +578,13 @@ get_iwindow_data( const myIWindow *instance )
 		sdata = g_new0( sIWindow, 1 );
 		g_object_set_data( G_OBJECT( instance ), IWINDOW_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iwindow_finalized, sdata );
+
+		sdata->main_window = NULL;
+		sdata->parent = NULL;
+		sdata->settings_name = NULL;
+		sdata->initialized = FALSE;
+		sdata->hide_on_close = FALSE;
+		sdata->restore_position = TRUE;
 	}
 
 	return( sdata );

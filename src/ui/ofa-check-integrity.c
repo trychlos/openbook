@@ -175,8 +175,6 @@ iwindow_init( myIWindow *instance )
 	ofaHub *hub;
 	GtkWidget *parent;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	priv = ofa_check_integrity_get_instance_private( OFA_CHECK_INTEGRITY( instance ));
 
 	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );

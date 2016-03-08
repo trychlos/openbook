@@ -306,8 +306,6 @@ iwindow_init( myIWindow *instance )
 	ofoDossier *dossier;
 	GtkWidget *button;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
 	priv = ofa_ope_template_properties_get_instance_private( self );
 

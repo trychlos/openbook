@@ -224,8 +224,6 @@ iwindow_init( myIWindow *instance )
 	GtkApplicationWindow *main_window;
 	gulong handler;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
 
 	main_window = my_iwindow_get_main_window( instance );

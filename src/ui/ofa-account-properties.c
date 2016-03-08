@@ -275,8 +275,6 @@ iwindow_init( myIWindow *instance )
 	gchar *title;
 	const gchar *acc_number;
 
-	my_idialog_init_dialog( MY_IDIALOG( instance ));
-
 	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
