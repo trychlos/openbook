@@ -29,8 +29,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
@@ -46,6 +47,7 @@
 /* private instance data
  */
 struct _ofaBatSelectPrivate {
+	gboolean             dispose_has_run;
 
 	/* UI
 	 */
@@ -60,22 +62,25 @@ struct _ofaBatSelectPrivate {
 };
 
 static const gchar *st_settings         = "BatSelect-settings";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-select.ui";
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-bat-select.ui";
-static const gchar *st_ui_id            = "BatSelectDlg";
-
-G_DEFINE_TYPE( ofaBatSelect, ofa_bat_select, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
-static void      setup_pane( ofaBatSelect *self, GtkContainer *parent );
-static void      setup_treeview( ofaBatSelect *self, GtkContainer *parent );
-static void      setup_properties( ofaBatSelect *self, GtkContainer *parent );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
+static void      setup_pane( ofaBatSelect *self );
+static void      setup_treeview( ofaBatSelect *self );
+static void      setup_properties( ofaBatSelect *self );
 static void      on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self );
 static void      on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self );
 static void      check_for_enable_dlg( ofaBatSelect *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static void      get_settings( ofaBatSelect *self );
 static void      set_settings( ofaBatSelect *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaBatSelect, ofa_bat_select, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaBatSelect )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 bat_select_finalize( GObject *instance )
@@ -100,10 +105,13 @@ bat_select_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_bat_select_get_instance_private( OFA_BAT_SELECT( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		priv = OFA_BAT_SELECT( instance )->priv;
 
 		priv->pane_pos = gtk_paned_get_position( priv->paned );
 		set_settings( OFA_BAT_SELECT( instance ));
@@ -117,13 +125,18 @@ static void
 ofa_bat_select_init( ofaBatSelect *self )
 {
 	static const gchar *thisfn = "ofa_bat_select_init";
+	ofaBatSelectPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_BAT_SELECT( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_SELECT, ofaBatSelectPrivate );
+	priv = ofa_bat_select_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -136,10 +149,7 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_select_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_select_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaBatSelectPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -162,54 +172,71 @@ ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 
 	g_debug( "%s: main_window=%p, id=%ld", thisfn, ( void * ) main_window, id );
 
-	self = g_object_new(
-			OFA_TYPE_BAT_SELECT,
-			MY_PROP_MAIN_WINDOW, main_window,
-			MY_PROP_WINDOW_XML,  st_ui_xml,
-			MY_PROP_WINDOW_NAME, st_ui_id,
-			NULL );
+	self = g_object_new( OFA_TYPE_BAT_SELECT, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 	priv->bat_id = id;
 	bat_id = -1;
 
-	if( my_dialog_run_dialog( MY_DIALOG( self )) == GTK_RESPONSE_OK ){
+	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
 		bat_id = priv->bat_id;
 	}
 
-	g_object_unref( self );
+	my_utils_window_save_position( GTK_WINDOW( self ), G_OBJECT_TYPE_NAME( self ));
+	gtk_widget_destroy( GTK_WIDGET( self ));
 
 	return( bat_id );
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
-	GtkWindow *toplevel;
+	static const gchar *thisfn = "ofa_account_select_iwindow_iface_init";
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
 
-	get_settings( OFA_BAT_SELECT( dialog ));
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_select_idialog_iface_init";
 
-	setup_pane( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
-	setup_properties( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
-	setup_treeview( OFA_BAT_SELECT( dialog ), GTK_CONTAINER( toplevel ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	gtk_widget_show_all( GTK_WIDGET( toplevel ));
-
-	check_for_enable_dlg( OFA_BAT_SELECT( dialog ));
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
 }
 
 static void
-setup_pane( ofaBatSelect *self, GtkContainer *parent )
+idialog_init( myIDialog *instance )
+{
+	get_settings( OFA_BAT_SELECT( instance ));
+
+	setup_pane( OFA_BAT_SELECT( instance ));
+	setup_properties( OFA_BAT_SELECT( instance ));
+	setup_treeview( OFA_BAT_SELECT( instance ));
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
+	check_for_enable_dlg( OFA_BAT_SELECT( instance ));
+}
+
+static void
+setup_pane( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	GtkWidget *pane;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 
-	pane = my_utils_container_get_child_by_name( parent, "p-paned" );
+	pane = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p-paned" );
 	g_return_if_fail( pane && GTK_IS_PANED( pane ));
 	priv->paned = GTK_PANED( pane );
 
@@ -217,19 +244,18 @@ setup_pane( ofaBatSelect *self, GtkContainer *parent )
 }
 
 static void
-setup_treeview( ofaBatSelect *self, GtkContainer *parent )
+setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, 0 };
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofaHub *hub;
 	GtkWidget *widget;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 
-	widget = my_utils_container_get_child_by_name( parent, "treeview-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "treeview-parent" );
+	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	priv->tview = ofa_bat_treeview_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
@@ -238,13 +264,10 @@ setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 
-	main_window = my_window_get_main_window( MY_WINDOW( self ));
-	g_return_if_fail( main_window && GTK_IS_WINDOW( main_window ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	ofa_bat_treeview_set_hub( priv->tview, hub );
@@ -252,14 +275,14 @@ setup_treeview( ofaBatSelect *self, GtkContainer *parent )
 }
 
 static void
-setup_properties( ofaBatSelect *self, GtkContainer *parent )
+setup_properties( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	GtkWidget *container;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 
-	container = my_utils_container_get_child_by_name( parent, "properties-parent" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "properties-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	priv->bat_bin = ofa_bat_properties_bin_new();
@@ -271,7 +294,8 @@ on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
+
 	priv->bat_id = -1;
 
 	if( bat ){
@@ -283,9 +307,7 @@ on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 static void
 on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self )
 {
-	gtk_dialog_response(
-			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-			GTK_RESPONSE_OK );
+	gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_OK );
 }
 
 static void
@@ -294,20 +316,20 @@ check_for_enable_dlg( ofaBatSelect *self )
 	ofaBatSelectPrivate *priv;
 	GtkWidget *btn;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 
-	btn = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 
 	gtk_widget_set_sensitive( btn, priv->bat_id > 0 );
 }
 
 static gboolean
-v_quit_on_ok( myDialog *dialog )
+idialog_quit_on_ok( myIDialog *instance )
 {
 	ofaBatSelectPrivate *priv;
 
-	priv = OFA_BAT_SELECT( dialog )->priv;
+	priv = ofa_bat_select_get_instance_private( OFA_BAT_SELECT( instance ));
 
 	return( priv->bat_id > 0 );
 }
@@ -322,7 +344,8 @@ get_settings( ofaBatSelect *self )
 	GList *slist, *it;
 	const gchar *cstr;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
+
 	slist = ofa_settings_user_get_string_list( st_settings );
 
 	it = slist ? slist : NULL;
@@ -338,7 +361,7 @@ set_settings( ofaBatSelect *self )
 	ofaBatSelectPrivate *priv;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_bat_select_get_instance_private( self );
 
 	str = g_strdup_printf( "%u;", priv->pane_pos );
 	ofa_settings_user_set_string( st_settings, str );

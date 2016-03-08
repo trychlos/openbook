@@ -30,10 +30,9 @@
  * @short_description: #ofaBatSelect class definition.
  * @include: ui/ofa-bat-select.h
  *
- * Display the chart of bats, letting the user edit it.
+ * Display the chart of bats, letting the user select one.
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -49,16 +48,13 @@ typedef struct _ofaBatSelectPrivate        ofaBatSelectPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog             parent;
-
-	/*< private members >*/
-	ofaBatSelectPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaBatSelect;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass        parent;
+	GtkDialogClass parent;
 }
 	ofaBatSelectClass;
 

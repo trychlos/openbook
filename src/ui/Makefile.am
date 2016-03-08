@@ -245,7 +245,6 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
-	ofa-bat-select.ui									\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-display-notes.ui						\
 	ofa-dossier-new.ui									\
@@ -263,6 +262,7 @@ resources_ui = \
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
+	ofa-bat-select.ui									\
 	ofa-check-balances.ui								\
 	ofa-check-balances-bin.ui							\
 	ofa-check-integrity.ui								\

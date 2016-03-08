@@ -353,7 +353,7 @@ do_close( myIDialog *instance )
 gint
 my_idialog_run( myIDialog *instance )
 {
-	static const gchar *thisfn = "my_idialog_run_modal";
+	static const gchar *thisfn = "my_idialog_run";
 	gint response_code;
 
 	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), 0 );
