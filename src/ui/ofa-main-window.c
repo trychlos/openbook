@@ -305,7 +305,7 @@ static sTreeDef st_tree_defs[] = {
 };
 
 static const gchar *st_main_window_name = "MainWindow";
-static const gchar *st_dosmenu_xml      = PKGUIDIR "/ofa-dos-menubar.ui";
+static const gchar *st_resource_dosmenu = "/org/trychlos/openbook/ui/ofa-dos-menubar.ui";
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
@@ -466,28 +466,23 @@ main_window_constructed( GObject *instance )
 		 * from the given file
 		 */
 		error = NULL;
-		builder = gtk_builder_new();
-		if( gtk_builder_add_from_file( builder, st_dosmenu_xml, &error )){
-			menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
-			if( menu ){
-				priv->menu = g_object_ref( menu );
-				g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
-						thisfn, st_dosmenu_xml, ( void * ) menu, g_menu_model_get_n_items( menu ));
+		builder = gtk_builder_new_from_resource( st_resource_dosmenu );
+		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
+		if( menu ){
+			priv->menu = g_object_ref( menu );
+			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
+					thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
-				/* store the references to the plugins placeholders */
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
-				window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
+			/* store the references to the plugins placeholders */
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
 
-			} else {
-				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
-			}
 		} else {
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
+			g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
 		}
 		g_object_unref( builder );
 

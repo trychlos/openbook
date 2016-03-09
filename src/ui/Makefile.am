@@ -238,7 +238,6 @@ openbook_LDADD = \
 	$(NULL)
 
 actions_files = \
-	ofa-dos-menubar.ui									\
 	$(NULL)
 
 rc_files = \
@@ -294,6 +293,7 @@ resources_ui = \
 	ofa-user-credentials-bin.ui							\
 	\
 	ofa-app-menubar.ui									\
+	ofa-dos-menubar.ui									\
 	\
 	filler.png											\
 	green-checkmark.png									\
