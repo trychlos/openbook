@@ -110,11 +110,16 @@ static void
 ofa_ope_template_help_init( ofaOpeTemplateHelp *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_help_init";
+	ofaOpeTemplateHelpPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_HELP( self ));
+
+	priv = ofa_ope_template_help_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }

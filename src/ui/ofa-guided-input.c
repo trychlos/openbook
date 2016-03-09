@@ -110,11 +110,16 @@ static void
 ofa_guided_input_init( ofaGuidedInput *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_init";
+	ofaGuidedInputPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_GUIDED_INPUT( self ));
+
+	priv = ofa_guided_input_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }

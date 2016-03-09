@@ -212,6 +212,8 @@ ofa_ope_template_properties_init( ofaOpeTemplateProperties *self )
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 	priv->is_new = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));

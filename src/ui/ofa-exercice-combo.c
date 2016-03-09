@@ -232,18 +232,17 @@ ofa_exercice_combo_get_selected( ofaExerciceCombo *self )
 	gchar *label;
 
 	g_return_val_if_fail( self && OFA_IS_EXERCICE_COMBO( self ), NULL );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	priv = self->priv;
+	priv = ofa_exercice_combo_get_instance_private( self );
+
 	label = NULL;
 
-	if( !priv->dispose_has_run ){
-
-		if( gtk_combo_box_get_active_iter( priv->combo, &iter )){
-			tmodel = gtk_combo_box_get_model( priv->combo );
-			gtk_tree_model_get( tmodel, &iter,
-					COL_LABEL, &label,
-					-1 );
-		}
+	if( gtk_combo_box_get_active_iter( priv->combo, &iter )){
+		tmodel = gtk_combo_box_get_model( priv->combo );
+		gtk_tree_model_get( tmodel, &iter,
+				COL_LABEL, &label,
+				-1 );
 	}
 
 	return( label );

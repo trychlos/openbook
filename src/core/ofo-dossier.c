@@ -1044,24 +1044,22 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 	gchar *str;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
 	dmax = NULL;
 
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-			sexe = ( sDetailExe * ) exe->data;
-			if( sexe->status == DOS_STATUS_CLOSED ){
-				g_return_val_if_fail( my_date_is_valid( &sexe->exe_end ), NULL );
-				if( dmax ){
-					g_return_val_if_fail( my_date_is_valid( dmax ), NULL );
-					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
-						my_date_set_from_date( dmax, &sexe->exe_end );
-					}
-				} else {
-					dmax = g_new0( GDate, 1 );
+	for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
+		sexe = ( sDetailExe * ) exe->data;
+		if( sexe->status == DOS_STATUS_CLOSED ){
+			g_return_val_if_fail( my_date_is_valid( &sexe->exe_end ), NULL );
+			if( dmax ){
+				g_return_val_if_fail( my_date_is_valid( dmax ), NULL );
+				if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
 					my_date_set_from_date( dmax, &sexe->exe_end );
 				}
+			} else {
+				dmax = g_new0( GDate, 1 );
+				my_date_set_from_date( dmax, &sexe->exe_end );
 			}
 		}
 	}

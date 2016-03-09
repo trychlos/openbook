@@ -175,8 +175,11 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
+	g_return_if_fail( self && OFA_IS_ACCOUNT_PROPERTIES( self ));
+
 	priv = ofa_account_properties_get_instance_private( self );
 
+	priv->dispose_has_run = FALSE;
 	priv->account = NULL;
 	priv->is_new = FALSE;
 	priv->balances_displayed = TRUE;

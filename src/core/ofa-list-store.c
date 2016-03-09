@@ -158,6 +158,7 @@ list_store_constructed( GObject *instance )
 	 * dossier finalization
 	 */
 	priv = ofa_list_store_get_instance_private( OFA_LIST_STORE( instance ));
+
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
@@ -167,11 +168,16 @@ static void
 ofa_list_store_init( ofaListStore *self )
 {
 	static const gchar *thisfn = "ofa_list_store_init";
-
-	g_return_if_fail( OFA_IS_LIST_STORE( self ));
+	ofaListStorePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_LIST_STORE( self ));
+
+	priv = ofa_list_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

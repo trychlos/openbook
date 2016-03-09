@@ -101,11 +101,16 @@ static void
 ofa_nomodal_page_init( ofaNomodalPage *self )
 {
 	static const gchar *thisfn = "ofa_nomodal_page_init";
+	ofaNomodalPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_NOMODAL_PAGE( self ));
+
+	priv = ofa_nomodal_page_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

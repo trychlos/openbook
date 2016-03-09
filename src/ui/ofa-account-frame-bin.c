@@ -188,14 +188,19 @@ accounts_frame_dispose( GObject *instance )
 }
 
 static void
-ofa_account_frame_bin_init( ofaAccountFrameBin *bin )
+ofa_account_frame_bin_init( ofaAccountFrameBin *self )
 {
 	static const gchar *thisfn = "ofa_account_frame_bin_init";
-
-	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
+	ofaAccountFrameBinPrivate *priv;
 
 	g_debug( "%s: bin=%p (%s)",
-			thisfn, ( void * ) bin, G_OBJECT_TYPE_NAME( bin ));
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_ACCOUNT_FRAME_BIN( self ));
+
+	priv = ofa_account_frame_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

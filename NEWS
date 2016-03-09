@@ -37,6 +37,7 @@
 
  Other changes:
 
+   - Fails when dispose_has_run is True (todo #995).
    - myIDialog: new interface.
 
 -----------------------------------------------------------------------

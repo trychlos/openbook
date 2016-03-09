@@ -122,11 +122,16 @@ static void
 ofa_bat_store_init( ofaBatStore *self )
 {
 	static const gchar *thisfn = "ofa_bat_store_init";
-
-	g_return_if_fail( OFA_IS_BAT_STORE( self ));
+	ofaBatStorePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_BAT_STORE( self ));
+
+	priv = ofa_bat_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

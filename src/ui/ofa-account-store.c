@@ -139,11 +139,16 @@ static void
 ofa_account_store_init( ofaAccountStore *self )
 {
 	static const gchar *thisfn = "ofa_account_store_init";
-
-	g_return_if_fail( OFA_IS_ACCOUNT_STORE( self ));
+	ofaAccountStorePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_ACCOUNT_STORE( self ));
+
+	priv = ofa_account_store_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

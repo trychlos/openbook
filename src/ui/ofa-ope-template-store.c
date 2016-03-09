@@ -117,7 +117,7 @@ ofa_ope_template_store_init( ofaOpeTemplateStore *self )
 
 	priv = ofa_ope_template_store_get_instance_private( self );
 
-	priv->dispose_has_run = TRUE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void

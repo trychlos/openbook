@@ -113,11 +113,16 @@ static void
 ofa_bat_treeview_init( ofaBatTreeview *self )
 {
 	static const gchar *thisfn = "ofa_bat_treeview_init";
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_if_fail( self && OFA_IS_BAT_TREEVIEW( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_BAT_TREEVIEW( self ));
+	priv = ofa_bat_treeview_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void

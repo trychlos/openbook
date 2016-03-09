@@ -484,12 +484,7 @@
  992 2016- 2-14 dialogs are non-modal when possible
                 depreciate myDialog, replacing it with myIDialog
 
- 995 2016- 2-14 PACK use g_return_if_fail( !priv->dipose_has_run )
-
  999 2016- 2-24 FEAT add a Close button to detached nomodal pages
-
-1000 2016- 2-24 FEAT myIDialog: add a debug message on cancel and close
-                     actions
 
 1001 2016- 2-24 FEAT ReconciliationRender: slightly decrease the font
                      size of text at bottom page (+ italic)
@@ -847,6 +842,9 @@
                      + check for g_type_class_add_private()
      20116- 3- 9 done
 
+ 995 2016- 2-14 PACK use g_return_if_fail( !priv->dispose_has_run )
+     2016- 3- 9 done
+
  996 2016- 2-22 ofo_bat_set_begin/end -> ofo_date_set_begin/end_date
                 ofo_bat_set_solde_begin/end -> ofo_date_set_begin/end_solde
      2016- 2-22 done
@@ -856,6 +854,10 @@
      2016- 2-24 fixed
 
  998 2016- 2-14 FEAT objects valid_data method() provides an error message
+     2016- 3- 9 done
+
+1000 2016- 2-24 FEAT myIDialog: add a debug message on cancel and close
+                     actions
      2016- 3- 9 done
 
 1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
